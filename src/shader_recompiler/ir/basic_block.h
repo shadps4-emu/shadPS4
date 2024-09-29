@@ -44,6 +44,8 @@ public:
     iterator PrependNewInst(iterator insertion_point, Opcode op,
                             std::initializer_list<Value> args = {}, u32 flags = 0);
 
+    void MoveInst(iterator insertion_point, const Inst& inst);
+
     /// Adds a new branch to this basic block.
     void AddBranch(Block* block);
 

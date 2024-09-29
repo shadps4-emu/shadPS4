@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string_view>
+#include "common/hash.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -100,57 +101,51 @@ bool Value::operator!=(const Value& other) const {
 } // namespace Shader::IR
 
 namespace std {
-template <>
-struct std::hash<Shader::IR::Value> {
-    std::size_t operator()(const Shader::IR::Value& v) const {
-        auto hash_combine = [](size_t seed, size_t hash) -> u32 {
-            return seed ^ (hash + 0x9e3779b9 + (seed << 12) + (seed >> 4));
-        };
-        using std::size_t;
-        using namespace Shader::IR;
+std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) const {
+    using std::size_t;
+    using namespace Shader::IR;
 
-        u32 h = static_cast<u32>(v.type);
+    size_t h = HashCombine(static_cast<size_t>(v.type), 0);
 
-        switch (v.type) {
-        case Type::Void:
-            return static_cast<size_t>(v.type);
-        case Type::Opaque:
-            return reinterpret_cast<size_t>(v.inst);
-        case Type::ScalarReg:
-            return hash_combine(static_cast<size_t>(v.sreg), h);
-        case Type::VectorReg:
-            return hash_combine(static_cast<size_t>(v.vreg), h);
-        case Type::Attribute:
-            return hash_combine(static_cast<size_t>(v.attribute), h);
-        case Type::U1:
-            return hash_combine(static_cast<size_t>(v.attribute), h);
-        case Type::U8:
-            return hash_combine(static_cast<size_t>(v.imm_u8), h);
-        case Type::U16:
-        case Type::F16:
-            return hash_combine(static_cast<size_t>(v.imm_u16), h);
-        case Type::U32:
-        case Type::F32:
-            return hash_combine(static_cast<size_t>(v.imm_u32), h);
-        case Type::U64:
-        case Type::F64:
-            return hash_combine(static_cast<size_t>(v.imm_u64), h);
-        case Type::U32x2:
-        case Type::U32x3:
-        case Type::U32x4:
-        case Type::F16x2:
-        case Type::F16x3:
-        case Type::F16x4:
-        case Type::F32x2:
-        case Type::F32x3:
-        case Type::F32x4:
-        case Type::F64x2:
-        case Type::F64x3:
-        case Type::F64x4:
-        default:
-            break;
-        }
-        UNREACHABLE_MSG("Invalid type {}", v.type);
+    switch (v.type) {
+    case Type::Void:
+        return h;
+    case Type::Opaque:
+        return reinterpret_cast<size_t>(v.InstRecursive());
+    case Type::ScalarReg:
+        return HashCombine(static_cast<size_t>(v.sreg), h);
+    case Type::VectorReg:
+        return HashCombine(static_cast<size_t>(v.vreg), h);
+    case Type::Attribute:
+        return HashCombine(static_cast<size_t>(v.attribute), h);
+    case Type::U1:
+        return HashCombine(static_cast<size_t>(v.attribute), h);
+    case Type::U8:
+        return HashCombine(static_cast<size_t>(v.imm_u8), h);
+    case Type::U16:
+    case Type::F16:
+        return HashCombine(static_cast<size_t>(v.imm_u16), h);
+    case Type::U32:
+    case Type::F32:
+        return HashCombine(static_cast<size_t>(v.imm_u32), h);
+    case Type::U64:
+    case Type::F64:
+        return HashCombine(static_cast<size_t>(v.imm_u64), h);
+    case Type::U32x2:
+    case Type::U32x3:
+    case Type::U32x4:
+    case Type::F16x2:
+    case Type::F16x3:
+    case Type::F16x4:
+    case Type::F32x2:
+    case Type::F32x3:
+    case Type::F32x4:
+    case Type::F64x2:
+    case Type::F64x3:
+    case Type::F64x4:
+    default:
+        break;
     }
-};
+    UNREACHABLE_MSG("Invalid type {}", v.type);
+}
 } // namespace std

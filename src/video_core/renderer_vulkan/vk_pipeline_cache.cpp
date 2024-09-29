@@ -4,6 +4,7 @@
 #include <ranges>
 
 #include "common/config.h"
+#include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -22,10 +23,6 @@ extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 namespace Vulkan {
 
 using Shader::VsOutput;
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
 
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},

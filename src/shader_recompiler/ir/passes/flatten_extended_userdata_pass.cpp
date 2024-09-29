@@ -15,6 +15,8 @@
 
 using namespace Xbyak::util;
 
+// TODO make sure no problems with identity and Insts being used in maps
+
 namespace Shader {
 // Hacky. TODO refactor info RuntimeInfo or smtn
 FlatSharpBuffer::FlatSharpBuffer(const Info& info) {
@@ -26,9 +28,9 @@ FlatSharpBuffer::FlatSharpBuffer(const Info& info) {
 namespace Shader::Optimization {
 
 namespace {
-static u32 GetReadConstOff(const IR::Inst* inst) {
+static IR::Value GetReadConstOff(const IR::Inst* inst) {
     ASSERT(inst->GetOpcode() == IR::Opcode::ReadConst);
-    return inst->Arg(1).U32();
+    return inst->Arg(1);
 }
 
 static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
@@ -142,7 +144,7 @@ private:
 
             PushPtr(off_dw);
             for (const IR::Inst* use : use_list) {
-                Visit(use, GetReadConstOff(use));
+                Visit(use, GetReadConstOff(use).U32());
             }
             PopPtr();
         } else if (node->use_kind.pointer_hi) {
@@ -165,9 +167,15 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     SrtInfo& srt_info = program.info.srt_info;
 
     // Build tree
+    // TODO after GVN, should only have to run this on entry block (assuming only handling readconst
+    // w/ imm offsets)
     for (IR::Block* const block : program.blocks) {
         for (const IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() == IR::Opcode::ReadConst) {
+                if (!GetReadConstOff(&inst).IsImmediate()) {
+                    continue;
+                }
+
                 const IR::Inst* spgpr_base = inst.Arg(0).InstRecursive();
 
                 const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {

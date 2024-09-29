@@ -366,3 +366,10 @@ inline const char* Value::StringLiteral() const {
 }
 
 } // namespace Shader::IR
+
+namespace std {
+template <>
+struct hash<Shader::IR::Value> {
+    std::size_t operator()(const Shader::IR::Value& v) const;
+};
+} // namespace std
