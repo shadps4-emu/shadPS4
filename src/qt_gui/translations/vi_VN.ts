@@ -975,7 +975,7 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an option to display it's description.</source>
+			<source>Point your mouse at an option to display its description.</source>
 			<translation>Di chuyển chuột đến tùy chọn để hiển thị mô tả của nó.</translation>
 		</message>
 		<message>

@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an option to display it's description.</source>
-			<translation>Point your mouse at an option to display it's description.</translation>
+			<source>Point your mouse at an option to display its description.</source>
+			<translation>Point your mouse at an option to display its description.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1066,7 +1066,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about it's internal state. This will reduce performance and likely change the behavior of emulation.</translation>
+			<translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state. This will reduce performance and likely change the behavior of emulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
