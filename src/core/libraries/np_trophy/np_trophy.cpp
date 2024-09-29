@@ -250,10 +250,10 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
 
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result =
-        doc.load_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").c_str());
+    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
 
@@ -345,10 +345,10 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
 
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result =
-        doc.load_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").c_str());
+    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
 
@@ -444,10 +444,10 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
 
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result =
-        doc.load_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").c_str());
+    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
 
@@ -861,10 +861,10 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result =
-        doc.load_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").c_str());
+    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
 
@@ -955,7 +955,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             int platinum_trophy_id =
                 platinum_node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
             const char* platinum_trophy_name = platinum_node.child("name").text().as_string();
-            
+
             std::string platinum_icon_file = "TROP";
             platinum_icon_file.append(platinum_node.attribute("id").value());
             platinum_icon_file.append(".PNG");
