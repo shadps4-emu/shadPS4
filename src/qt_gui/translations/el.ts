@@ -975,7 +975,7 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an option to display it's description.</source>
+			<source>Point your mouse at an option to display its description.</source>
 			<translation>Τοποθετήστε το ποντίκι σας πάνω σε μια επιλογή για να εμφανίσετε την περιγραφή της.</translation>
 		</message>
 		<message>
