@@ -37,10 +37,9 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
     return result_it;
 }
 
-void Block::MoveInst(iterator insertion_point, const Inst& inst) {
-    IR::Block::InstructionList& list{instructions};
-    // list.erase()
-    auto it = IR::Block::InstructionList::s_iterator_to(inst);
+void Block::MoveInst(iterator insertion_point, Inst& inst, IR::Block& original_parent) {
+    instructions.insert(insertion_point, inst);
+    original_parent.instructions.erase(InstructionList::s_iterator_to(inst));
 }
 
 void Block::AddBranch(Block* block) {

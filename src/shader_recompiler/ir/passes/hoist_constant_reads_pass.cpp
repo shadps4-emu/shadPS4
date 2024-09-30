@@ -56,17 +56,31 @@ public:
         }
     }
 
+    u32 GetValueNumber(const IR::Inst* inst) {
+        return GetValueNumber(IR::Value(inst));
+    }
+
     u32 GetValueNumber(const IR::Value v) {
         if (auto it = value_numbers.find(v); it != value_numbers.end()) {
             return it->second;
         }
-        if (auto inst = v.InstRecursive()) {
-            return GetValueNumber(inst);
+        if (auto inst = v.TryInstRecursive()) {
+            return ComputeInstValueNumber(inst);
         }
         return NextValueNumber(v);
     }
 
-    u32 GetValueNumber(const IR::Inst* inst) {
+    // Call after FillTable
+    IR::Value GetCanonicalValue(u32 vn) {
+        return IR::Value(pick_one_inst[vn]);
+    }
+
+    IR::Value GetCanonicalValue(const IR::Inst* inst) {
+        return GetCanonicalValue(GetValueNumber(inst));
+    }
+
+private:
+    u32 ComputeInstValueNumber(const IR::Inst* inst) {
         if (inst->MayHaveSideEffects()) {
             return NextValueNumber(IR::Value(inst));
         }
@@ -96,15 +110,6 @@ public:
         return vn;
     }
 
-    IR::Value GetCanonicalValue(u32 vn) {
-        return IR::Value(pick_one_inst[vn]);
-    }
-
-    IR::Value GetCanonicalValue(const IR::Inst* inst) {
-        return GetCanonicalValue(GetValueNumber(inst));
-    }
-
-private:
     u32 NextValueNumber(IR::Value v) {
         u32 rv = next_num++;
         value_numbers[v] = rv;
@@ -195,13 +200,11 @@ void HoistConstantReadsPass(IR::Program& program) {
                     break;
                 }
 
-                // TODO
-                // Remove from parent block
-                // insert at insert_point
-
-                // entry_bb->PrependNewInst(insert_point, inst);
+                // Hoist to entry block
+                entry_bb->MoveInst(insert_point, inst, *block);
 
                 hoisted_vns.insert(vn);
+                break;
             }
             default:
                 break;
