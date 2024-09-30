@@ -85,11 +85,11 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     }
 }
 
-Id OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
+std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& info{ctx.output_params.at(index)};
-        return info.component_type;
+        return {info.component_type, info.is_integer};
     }
     switch (attr) {
     case IR::Attribute::Position0:
@@ -97,7 +97,7 @@ Id OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     case IR::Attribute::Position2:
     case IR::Attribute::Position3:
     case IR::Attribute::Depth:
-        return ctx.F32[1];
+        return {ctx.F32[1], false};
     case IR::Attribute::RenderTarget0:
     case IR::Attribute::RenderTarget1:
     case IR::Attribute::RenderTarget2:
@@ -108,7 +108,7 @@ Id OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     case IR::Attribute::RenderTarget7: {
         const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
         const auto& info{ctx.frag_outputs.at(index)};
-        return info.component_type;
+        return {info.component_type, info.is_integer};
     }
     default:
         throw NotImplementedException("Write attribute {}", attr);
@@ -257,8 +257,12 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return;
     }
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    const Id component_type{OutputAttrComponentType(ctx, attr)};
-    ctx.OpStore(pointer, ctx.OpBitcast(component_type, value));
+    const auto component_type{OutputAttrComponentType(ctx, attr)};
+    if (component_type.second) {
+        ctx.OpStore(pointer, ctx.OpBitcast(component_type.first, value));
+    } else {
+        ctx.OpStore(pointer, value);
+    }
 }
 
 template <u32 N>
