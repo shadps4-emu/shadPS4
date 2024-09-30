@@ -229,7 +229,10 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     }
 
     std::scoped_lock lk{file->m_mutex};
-    file->f.Seek(offset, origin);
+    if (!file->f.Seek(offset, origin)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelLseek: failed to seek");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
     return file->f.Tell();
 }
 
@@ -311,6 +314,58 @@ int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    bool ro = false;
+
+    const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
+
+    if (dir_name.empty()) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, permission denied",
+                 fmt::UTF(dir_name.u8string()));
+        return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    if (ro) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, directory is read only",
+                 fmt::UTF(dir_name.u8string()));
+        return SCE_KERNEL_ERROR_EROFS;
+    }
+
+    if (!std::filesystem::is_directory(dir_name)) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, path is not a directory",
+                 fmt::UTF(dir_name.u8string()));
+        return ORBIS_KERNEL_ERROR_ENOTDIR;
+    }
+
+    if (!std::filesystem::exists(dir_name)) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, no such file or directory",
+                 fmt::UTF(dir_name.u8string()));
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+
+    std::error_code ec;
+    int result = std::filesystem::remove_all(dir_name, ec);
+
+    if (!ec) {
+        LOG_DEBUG(Kernel_Fs, "Removed directory: {}", fmt::UTF(dir_name.u8string()));
+        return ORBIS_OK;
+    }
+    LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, error_code={}",
+              fmt::UTF(dir_name.u8string()), ec.message());
+    return ErrnoToSceKernelError(ec.value());
+}
+
+int PS4_SYSV_ABI posix_rmdir(const char* path) {
+    int result = sceKernelRmdir(path);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_rmdir: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -380,7 +435,10 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     SCOPE_EXIT {
         file->f.Seek(pos);
     };
-    file->f.Seek(offset);
+    if (!file->f.Seek(offset)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelPread: failed to seek");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     return file->f.ReadRaw<u8>(buf, nbytes);
 }
 
@@ -514,7 +572,10 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
     SCOPE_EXIT {
         file->f.Seek(pos);
     };
-    file->f.Seek(offset);
+    if (!file->f.Seek(offset)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelPwrite: failed to seek");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
@@ -565,6 +626,8 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AqBioC2vF3I", "libScePosix", 1, "libkernel", 1, 1, posix_read);
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
     LIB_FUNCTION("JGMio+21L4c", "libScePosix", 1, "libkernel", 1, 1, posix_mkdir);
+    LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", 1, 1, sceKernelRmdir);
+    LIB_FUNCTION("c7ZnT7V1B98", "libScePosix", 1, "libkernel", 1, 1, posix_rmdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);

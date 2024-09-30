@@ -101,14 +101,14 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
         return 0;
     }
     // TODO mixing channels
-    int result = SDL_PutAudioStreamData(port.stream, ptr,
-                                        port.samples_num * port.sample_size * port.channels_num);
+    SDL_bool result = SDL_PutAudioStreamData(
+        port.stream, ptr, port.samples_num * port.sample_size * port.channels_num);
     // TODO find a correct value 8192 is estimated
     while (SDL_GetAudioStreamAvailable(port.stream) > 65536) {
         SDL_Delay(0);
     }
 
-    return result;
+    return result ? ORBIS_OK : -1;
 }
 
 bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
