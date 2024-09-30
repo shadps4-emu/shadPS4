@@ -79,6 +79,18 @@ public:
         return m_modules.at(index).get();
     }
 
+    u32 MaxTlsIndex() const {
+        return max_tls_index;
+    }
+
+    u32 GenerationCounter() const {
+        return dtv_generation_counter;
+    }
+
+    size_t StaticTlsSize() const noexcept {
+        return static_tls_size;
+    }
+
     void RelocateAnyImports(Module* m) {
         Relocate(m);
         for (auto& module : m_modules) {
@@ -98,6 +110,7 @@ public:
     }
 
     void* TlsGetAddr(u64 module_index, u64 offset);
+    void* AllocateTlsForThread(bool is_primary);
 
     s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
     Module* FindByAddress(VAddr address);

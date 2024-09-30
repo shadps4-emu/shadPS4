@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <chrono>
 #include <sys/types.h>
-
 #include "common/types.h"
 
 namespace Common {
@@ -30,6 +30,12 @@ struct OrbisKernelTimezone {
 struct OrbisKernelTimespec {
     s64 tv_sec;
     s64 tv_nsec;
+
+    std::chrono::system_clock::time_point TimePoint() const noexcept {
+        using namespace std::chrono;
+        const auto duration = seconds{tv_sec} + nanoseconds{tv_nsec};
+        return system_clock::time_point{duration};
+    }
 };
 
 struct OrbisTimesec {

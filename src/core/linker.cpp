@@ -326,7 +326,6 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         // Module was just loaded by above code. Allocate TLS block for it.
         Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
-        // TODO: Determine if Windows will crash from this
         u8* dest =
             reinterpret_cast<u8*>(ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
@@ -349,7 +348,7 @@ void Linker::EnsureThreadInitialized(bool is_primary) const {
     });
 }
 
-void Linker::InitTlsForThread(bool is_primary) const {
+void* Linker::AllocateTlsForThread(bool is_primary) {
     static constexpr size_t TcbSize = 0x40;
     static constexpr size_t TlsAllocAlign = 0x20;
     const size_t total_tls_size = Common::AlignUp(static_tls_size, TlsAllocAlign) + TcbSize;
@@ -370,54 +369,12 @@ void Linker::InitTlsForThread(bool is_primary) const {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
-#ifndef WIN32
-            addr_out = ExecuteGuestWithoutTls(heap_api->heap_malloc, total_tls_size);
+            addr_out = heap_api->heap_malloc(total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
-#else
-            // TODO: Windows tls malloc replacement, refer to rtld_tls_block_malloc
-            LOG_ERROR(Core_Linker, "TLS user malloc called, using std::malloc");
-            addr_out = std::malloc(total_tls_size);
-            if (!addr_out) {
-                auto pth_id = pthread_self();
-                auto handle = pthread_gethandle(pth_id);
-                ASSERT_MSG(addr_out,
-                           "Cannot allocate TLS block defined for handle=%x, index=%d size=%d",
-                           handle, pth_id, total_tls_size);
-            }
-#endif
         }
     }
-
-    // Initialize allocated memory and allocate DTV table.
-    const u32 num_dtvs = max_tls_index;
-    std::memset(addr_out, 0, total_tls_size);
-    DtvEntry* dtv_table = new DtvEntry[num_dtvs + 2];
-
-    // Initialize thread control block
-    u8* addr = reinterpret_cast<u8*>(addr_out);
-    Tcb* tcb = reinterpret_cast<Tcb*>(addr + static_tls_size);
-    tcb->tcb_self = tcb;
-    tcb->tcb_dtv = dtv_table;
-
-    // Dtv[0] is the generation counter. libkernel puts their number into dtv[1] (why?)
-    dtv_table[0].counter = dtv_generation_counter;
-    dtv_table[1].counter = num_dtvs;
-
-    // Copy init images to TLS thread blocks and map them to DTV slots.
-    for (u32 i = 0; i < num_static_modules; i++) {
-        auto* module = m_modules[i].get();
-        if (module->tls.image_size == 0) {
-            continue;
-        }
-        u8* dest = reinterpret_cast<u8*>(addr + static_tls_size - module->tls.offset);
-        const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
-        std::memcpy(dest, src, module->tls.init_image_size);
-        tcb->tcb_dtv[module->tls.modid + 1].pointer = dest;
-    }
-
-    // Set pointer to FS base
-    SetTcbBase(tcb);
+    return addr_out;
 }
 
 void Linker::DebugDump() {
