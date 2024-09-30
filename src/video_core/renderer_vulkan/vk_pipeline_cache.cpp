@@ -247,6 +247,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
+    key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
     // recompiler.
@@ -310,7 +311,26 @@ bool PipelineCache::RefreshGraphicsKey() {
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }
 
-    const auto* fs_info = infos[u32(Shader::Stage::Fragment)];
+    const auto* vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
+    if (vs_info && !instance.IsVertexInputDynamicState()) {
+        u32 vertex_binding = 0;
+        for (const auto& input : vs_info->vs_inputs) {
+            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+                continue;
+            }
+            const auto& buffer =
+                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            if (buffer.GetSize() == 0) {
+                continue;
+            }
+            ASSERT(vertex_binding < MaxVertexBufferCount);
+            key.vertex_buffer_formats[vertex_binding++] =
+                Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
+        }
+    }
+
+    const auto* fs_info = infos[static_cast<u32>(Shader::Stage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
 
     // Second pass to fill remain CB pipeline key data
