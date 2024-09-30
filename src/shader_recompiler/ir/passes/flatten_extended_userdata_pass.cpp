@@ -92,30 +92,30 @@ public:
         // %rdi is the src pointer to the base of the user_data registers
         // %rsi is the dst pointer to the base of the flattened sharp buffer
 
-        // dunno scratch registers on different platforms. So just using r10, r11 for now
+        // dunno scratch registers on different platforms. So just using r10d, r11d for now
         c.inLocalLabel();
 
         // Special case for V# step rate buffers in fetch shader
         for (auto i = 0; i < srt_info.fetch_reservations.size(); i++) {
             SrtInfo::FetchShaderReservation res = srt_info.fetch_reservations[i];
             // get pointer to V#
-            c.mov(r10, ptr[rdi + (res.sgpr_base << 2)]);
+            c.mov(r10d, ptr[rdi + (res.sgpr_base << 2)]);
 
             u32 src_off = res.dword_offset << 2;
             // 4 dwords per V#
             u32 dst_off = (NumUserDataRegs + 4 * i) << 2;
 
-            c.mov(r11, ptr[r10 + src_off]);
-            c.mov(ptr[rsi + dst_off], r11);
+            c.mov(r11d, ptr[r10d + src_off]);
+            c.mov(ptr[rsi + dst_off], r11d);
 
-            c.mov(r11, ptr[r10 + (src_off + 4)]);
-            c.mov(ptr[rsi + (dst_off + 4)], r11);
+            c.mov(r11d, ptr[r10d + (src_off + 4)]);
+            c.mov(ptr[rsi + (dst_off + 4)], r11d);
 
-            c.mov(r11, ptr[r10 + (src_off + 8)]);
-            c.mov(ptr[rsi + (dst_off + 8)], r11);
+            c.mov(r11d, ptr[r10d + (src_off + 8)]);
+            c.mov(ptr[rsi + (dst_off + 8)], r11d);
 
-            c.mov(r11, ptr[r10 + (src_off + 12)]);
-            c.mov(ptr[rsi + (dst_off + 12)], r11);
+            c.mov(r11d, ptr[r10d + (src_off + 12)]);
+            c.mov(ptr[rsi + (dst_off + 12)], r11d);
         }
 
         for (const auto& [sgpr_base, root] : srt_info.srt_roots) {
@@ -153,8 +153,8 @@ private:
             // TODO
         } else {
             // Assume sharp for now
-            c.mov(r10, ptr[rdi + (off_dw << 2)]);
-            c.mov(ptr[rsi + (node->flattened_sharp_off_dw << 2)], r10);
+            c.mov(r10d, ptr[rdi + (off_dw << 2)]);
+            c.mov(ptr[rsi + (node->flattened_sharp_off_dw << 2)], r10d);
         }
     }
 
