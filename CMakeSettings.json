@@ -10,7 +10,19 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "clang_cl_x64_x64" ],
-      "intelliSenseMode": "windows-clang-x64"
+      "intelliSenseMode": "windows-clang-x64",
+      "variables": [
+        {
+          "name": "ENABLE_QT_GUI",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "CMAKE_PREFIX_PATH",
+          "value": "C:/Qt/6.7.2/msvc2019_64",
+          "type": "PATH"
+        }
+      ]
     },
     {
       "name": "x64-Clang-Debug",
@@ -22,7 +34,19 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "clang_cl_x64_x64" ],
-      "intelliSenseMode": "windows-clang-x64"
+      "intelliSenseMode": "windows-clang-x64",
+      "variables": [
+        {
+          "name": "ENABLE_QT_GUI",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "CMAKE_PREFIX_PATH",
+          "value": "C:/Qt/6.7.2/msvc2019_64",
+          "type": "PATH"
+        }
+      ]
     },
     {
       "name": "x64-Clang-RelWithDebInfo",

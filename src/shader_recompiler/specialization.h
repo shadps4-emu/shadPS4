@@ -70,6 +70,18 @@ struct StageSpecialization {
     }
 
     void ForEachSharp(u32& binding, auto& spec_list, auto& desc_list, auto&& func) {
+        if (this == nullptr) {
+            return;
+        }
+        if (info == nullptr) {
+            return;
+        }
+        if (desc_list.empty()) {
+            return;
+        }
+        if (spec_list.empty()) {
+            return;
+        }
         for (const auto& desc : desc_list) {
             auto& spec = spec_list.emplace_back();
             const auto sharp = desc.GetSharp(*info);

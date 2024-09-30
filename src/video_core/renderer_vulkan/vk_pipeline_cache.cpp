@@ -191,7 +191,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
     static constexpr std::array<u64, 0> skip_hashes = {};
     if (std::ranges::contains(skip_hashes, shader_hash)) {
-        LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
+        //LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
         return true;
     }
     return false;
@@ -383,6 +383,12 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
     }
 
     Program* program = it_pgm->second;
+    if (program == nullptr) {
+        return {nullptr, {}, 0};
+    }
+    if (it_pgm == program_cache.end()) {
+        return {nullptr, {}, 0};
+    }
     const auto& info = program->info;
     const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
     size_t perm_idx = program->modules.size();

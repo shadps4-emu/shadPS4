@@ -43,7 +43,7 @@ public:
         // Perform the wait.
         const s32 result = waiter.Wait(lk, timeout);
         if (result == SCE_KERNEL_ERROR_ETIMEDOUT) {
-            wait_list.erase(it);
+            //wait_list.erase(it);
         }
         return result;
     }
