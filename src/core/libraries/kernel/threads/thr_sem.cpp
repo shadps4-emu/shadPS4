@@ -4,21 +4,30 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
-#include <pthread.h>
-
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
-class Semaphore {
+constexpr int ORBIS_KERNEL_SEM_VALUE_MAX = 0x7FFFFFFF;
+
+struct PthreadSem {
+    explicit PthreadSem(s32 value_) : semaphore{value_}, value{value_} {}
+
+    std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX> semaphore;
+    std::atomic<s32> value;
+};
+
+class OrbisSem {
 public:
-    Semaphore(s32 init_count, s32 max_count, std::string_view name, bool is_fifo)
+    OrbisSem(s32 init_count, s32 max_count, std::string_view name, bool is_fifo)
         : name{name}, token_count{init_count}, max_count{max_count}, init_count{init_count},
           is_fifo{is_fifo} {}
-    ~Semaphore() {
+    ~OrbisSem() {
         ASSERT(wait_list.empty());
     }
 
@@ -163,7 +172,7 @@ public:
     bool is_fifo;
 };
 
-using OrbisKernelSema = Semaphore*;
+using OrbisKernelSema = OrbisSem*;
 
 s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema* sem, const char* pName, u32 attr,
                                      s32 initCount, s32 maxCount, const void* pOptParam) {
@@ -171,7 +180,7 @@ s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema* sem, const char* pName, u3
         LOG_ERROR(Lib_Kernel, "Semaphore creation parameters are invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    *sem = new Semaphore(initCount, maxCount, pName, attr == 1);
+    *sem = new OrbisSem(initCount, maxCount, pName, attr == 1);
     return ORBIS_OK;
 }
 
@@ -214,13 +223,105 @@ int PS4_SYSV_ABI sceKernelDeleteSema(OrbisKernelSema sem) {
     return ORBIS_OK;
 }
 
-void SemaphoreSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+int PS4_SYSV_ABI posix_sem_init(PthreadSem** sem, int pshared, unsigned int value) {
+    if (value > ORBIS_KERNEL_SEM_VALUE_MAX) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (sem != nullptr) {
+        *sem = new PthreadSem(value);
+    }
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_wait(PthreadSem** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    (*sem)->semaphore.acquire();
+    --(*sem)->value;
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_trywait(PthreadSem** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (!(*sem)->semaphore.try_acquire()) {
+        *__Error() = POSIX_EAGAIN;
+        return -1;
+    }
+    --(*sem)->value;
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_timedwait(PthreadSem** sem, const OrbisKernelTimespec* t) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (!(*sem)->semaphore.try_acquire_until(t->TimePoint())) {
+        *__Error() = POSIX_ETIMEDOUT;
+        return -1;
+    }
+    --(*sem)->value;
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_post(PthreadSem** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if ((*sem)->value == ORBIS_KERNEL_SEM_VALUE_MAX) {
+        *__Error() = POSIX_EOVERFLOW;
+        return -1;
+    }
+    ++(*sem)->value;
+    (*sem)->semaphore.release();
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_destroy(PthreadSem** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    delete *sem;
+    *sem = nullptr;
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_sem_getvalue(PthreadSem** sem, int* sval) {
+    if (sem == nullptr || *sem == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (sval) {
+        *sval = (*sem)->value;
+    }
+    return 0;
+}
+
+void RegisterSemaphore(Core::Loader::SymbolsResolver* sym) {
+    // Orbis
     LIB_FUNCTION("188x57JYp0g", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateSema);
     LIB_FUNCTION("Zxa0VhQVTsk", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitSema);
     LIB_FUNCTION("4czppHBiriw", "libkernel", 1, "libkernel", 1, 1, sceKernelSignalSema);
     LIB_FUNCTION("12wOHk8ywb0", "libkernel", 1, "libkernel", 1, 1, sceKernelPollSema);
     LIB_FUNCTION("4DM06U2BNEY", "libkernel", 1, "libkernel", 1, 1, sceKernelCancelSema);
     LIB_FUNCTION("R1Jvn8bSCW8", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteSema);
+
+    // Posix
+    LIB_FUNCTION("pDuPEf3m4fI", "libScePosix", 1, "libkernel", 1, 1, posix_sem_init);
+    LIB_FUNCTION("YCV5dGGBcCo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_wait);
+    LIB_FUNCTION("WBWzsRifCEA", "libScePosix", 1, "libkernel", 1, 1, posix_sem_trywait);
+    LIB_FUNCTION("w5IHyvahg-o", "libScePosix", 1, "libkernel", 1, 1, posix_sem_timedwait);
+    LIB_FUNCTION("IKP8typ0QUk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_post);
+    LIB_FUNCTION("cDW233RAwWo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_destroy);
+    LIB_FUNCTION("Bq+LRV-N6Hk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_getvalue);
 }
 
 } // namespace Libraries::Kernel

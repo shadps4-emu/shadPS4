@@ -289,6 +289,15 @@ void PS4_SYSV_ABI sched_yield() {
     return std::this_thread::yield();
 }
 
+struct OrbisKernelUuid {
+    u32 timeLow;
+    u16 timeMid;
+    u16 timeHiAndVersion;
+    u8 clockSeqHiAndReserved;
+    u8 clockSeqLow;
+    u8 node[6];
+};
+
 int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 #ifdef _WIN64
     UUID uuid;
@@ -324,7 +333,7 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 4096;
 }
 
-void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
+void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
     Libraries::Kernel::RegisterFileSystem(sym);
