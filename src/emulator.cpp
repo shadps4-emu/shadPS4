@@ -213,7 +213,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     //Discord RPC
     Discord::RPC rpc;
-    /*rpc.init();*/
+    rpc.init();
     rpc.updatePlaying(game_info.title, id);
 
     // start execution

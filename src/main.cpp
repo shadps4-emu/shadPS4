@@ -34,6 +34,6 @@ int main(int argc, char* argv[]) {
 
     Core::Emulator emulator;
     emulator.Run(argv[1]);
-    
+
     return 0;
 }

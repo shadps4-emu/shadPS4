@@ -37,7 +37,7 @@ void RPC::updatePlaying(const std::string& game, const std::string& game_id) {
 void RPC::updateIdle() {
 
     DiscordRichPresence rpc{};
-    rpc.largeImageKey = "shadps4";
+    rpc.largeImageKey = "https://github.com/shadps4-emu/shadPS4/raw/main/.github/shadps4.png";
     rpc.largeImageText = "ShadPS4 is a PS4 emulator";
     rpc.startTimestamp = startTimestamp;
     rpc.details = "Idle";
