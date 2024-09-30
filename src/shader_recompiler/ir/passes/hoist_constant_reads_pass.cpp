@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <iterator>
-#include <ranges>
 #include <unordered_map>
 #include <boost/algorithm/find_backward.hpp>
 #include <boost/container/set.hpp>
@@ -14,7 +13,6 @@
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/program.h"
-#include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::Optimization {
@@ -53,6 +51,10 @@ public:
             IR::Block* block = *r_it;
             for (IR::Inst& inst : block->Instructions()) {
                 switch (inst.GetOpcode()) {
+                // Temp workaround
+                case IR::Opcode::Phi:
+                    TryRemoveTrivialPhi(&inst);
+                    break;
                 case IR::Opcode::GetUserData:
                 case IR::Opcode::CompositeConstructU32x2:
                 case IR::Opcode::ReadConst:
@@ -140,6 +142,33 @@ private:
             iv.push_back(GetValueNumber(inst->Arg(i)));
         }
         return iv;
+    }
+
+    // Temp workaround for something like this:
+    // [0000555558a5baf8] %297   = Phi [ %24, {Block $1} ], [ %297, {Block $5} ] (uses: 4)
+    // [0000555558a4e038] %305   = CompositeConstructU32x2 %297, %296 (uses: 4)
+    // [0000555558a4e0a8] %306   = ReadConst %305, #0 (uses: 2)
+    // Should probably be fixed in ssa_rewrite
+    std::optional<IR::Value> TryRemoveTrivialPhi(IR::Inst* phi) {
+        IR::Value single_source{};
+
+        for (auto i = 0; i < phi->NumArgs(); i++) {
+            IR::Value v = phi->Arg(i);
+            if (auto inst = v.TryInstRecursive()) {
+                v = IR::Value(inst);
+            };
+            if (v == IR::Value(phi)) {
+                continue;
+            }
+            if (!single_source.IsEmpty() && single_source != v) {
+                return std::nullopt;
+            }
+            single_source = v;
+        }
+
+        ASSERT(!single_source.IsEmpty());
+        phi->ReplaceUsesWith(single_source);
+        return single_source;
     }
 
     struct HashInstVector {
