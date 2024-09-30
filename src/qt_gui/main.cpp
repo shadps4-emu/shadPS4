@@ -7,6 +7,7 @@
 #include "emulator.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
+#include "common/discord.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -54,6 +55,11 @@ int main(int argc, char* argv[]) {
         }
         emulator.Run(argv[1]);
     }
+
+    //Initialize Discord RPC
+    Discord::RPC rpc;
+    rpc.init();
+    rpc.updateIdle();
 
     // Run the Qt application
     return a.exec();

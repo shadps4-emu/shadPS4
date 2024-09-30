@@ -20,7 +20,8 @@ class RPC {
 
 public:
     void init();
-    void update(RPCStatus status, const std::string& title);
+    void updatePlaying(const std::string& title, const std::string& game_id);
+    void updateIdle();
     void stop();
 };
 

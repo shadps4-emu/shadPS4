@@ -13,6 +13,7 @@
 #include "input/controller.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
+#include "common/discord.h"
 
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
@@ -73,7 +74,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 }
 
 WindowSDL::~WindowSDL() = default;
-
+Discord::RPC rpc;
 void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event;
@@ -112,6 +113,8 @@ void WindowSDL::waitEvent() {
         onGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
+        rpc.init();
+        rpc.updateIdle();
         is_open = false;
         break;
     default:

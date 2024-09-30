@@ -6,7 +6,7 @@
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\Build\\${name}",
       "installRoot": "${projectDir}\\Install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DENABLE_QT_GUI=ON -DCMAKE_PREFIX_PATH=C:\\Qt\\6.7.3\\msvc2019_64",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "clang_cl_x64_x64" ],

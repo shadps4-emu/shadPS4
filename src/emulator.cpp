@@ -34,6 +34,7 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+#include "common/discord.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -209,6 +210,11 @@ void Emulator::Run(const std::filesystem::path& file) {
             linker->LoadModule(entry.path());
         }
     }
+
+    //Discord RPC
+    Discord::RPC rpc;
+    /*rpc.init();*/
+    rpc.updatePlaying(game_info.title, id);
 
     // start execution
     std::jthread mainthread =

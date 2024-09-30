@@ -361,6 +361,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/decoder.cpp
            src/common/decoder.h
+           src/common/discord.h
+           src/common/discord.cpp
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
@@ -839,3 +841,8 @@ if (UNIX AND NOT APPLE)
         target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
     endif()
 endif()
+
+#Discord Lib
+add_subdirectory(externals/discord-rpc)
+target_link_libraries(shadps4 PRIVATE discord-rpc)
+include_directories(externals/discord-rpc/include)
