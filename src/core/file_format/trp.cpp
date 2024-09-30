@@ -69,7 +69,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                 file.Read(entry);
                 std::string_view name(entry.entry_name);
                 if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
-                    if (file.Seek(entry.entry_pos)) {
+                    if (!file.Seek(entry.entry_pos)) {
                         LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
                         return false;
                     }
@@ -79,7 +79,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                 }
                 if (entry.flag == 3 && np_comm_id[0] == 'N' &&
                     np_comm_id[1] == 'P') { // ESFM, encrypted.
-                    if (file.Seek(entry.entry_pos)) {
+                    if (!file.Seek(entry.entry_pos)) {
                         LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
                         return false;
                     }
@@ -88,7 +88,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                     // clean xml file.
                     std::vector<u8> ESFM(entry.entry_len - iv_len);
                     std::vector<u8> XML(entry.entry_len - iv_len);
-                    if (file.Seek(entry.entry_pos + iv_len)) {
+                    if (!file.Seek(entry.entry_pos + iv_len)) {
                         LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry + iv offset");
                         return false;
                     }
