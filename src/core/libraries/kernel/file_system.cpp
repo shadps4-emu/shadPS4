@@ -229,7 +229,10 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     }
 
     std::scoped_lock lk{file->m_mutex};
-    file->f.Seek(offset, origin);
+    if (!file->f.Seek(offset, origin)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelLseek: failed to seek");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
     return file->f.Tell();
 }
 
@@ -380,7 +383,10 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     SCOPE_EXIT {
         file->f.Seek(pos);
     };
-    file->f.Seek(offset);
+    if (!file->f.Seek(offset)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelPread: failed to seek");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     return file->f.ReadRaw<u8>(buf, nbytes);
 }
 
@@ -514,7 +520,10 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
     SCOPE_EXIT {
         file->f.Seek(pos);
     };
-    file->f.Seek(offset);
+    if (!file->f.Seek(offset)) {
+        LOG_CRITICAL(Kernel_Fs, "sceKernelPwrite: failed to seek");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 

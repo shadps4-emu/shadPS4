@@ -204,7 +204,10 @@ void Elf::Open(const std::filesystem::path& file_name) {
         }
 
         out.resize(num);
-        m_f.Seek(offset, SeekOrigin::SetOrigin);
+        if (!m_f.Seek(offset, SeekOrigin::SetOrigin)) {
+            LOG_CRITICAL(Loader, "Failed to seek to header tables");
+            return;
+        }
         m_f.Read(out);
     };
 
@@ -465,7 +468,10 @@ std::string Elf::ElfPHeaderStr(u16 no) {
 void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     if (!is_self) {
         // It's elf file
-        m_f.Seek(file_offset, SeekOrigin::SetOrigin);
+        if (!m_f.Seek(file_offset, SeekOrigin::SetOrigin)) {
+            LOG_CRITICAL(Loader, "Failed to seek to ELF header");
+            return;
+        }
         m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
         return;
     }
@@ -479,7 +485,10 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
 
             if (file_offset >= phdr.p_offset && file_offset < phdr.p_offset + phdr.p_filesz) {
                 auto offset = file_offset - phdr.p_offset;
-                m_f.Seek(offset + seg.file_offset, SeekOrigin::SetOrigin);
+                if (!m_f.Seek(offset + seg.file_offset, SeekOrigin::SetOrigin)) {
+                    LOG_CRITICAL(Loader, "Failed to seek to segment");
+                    return;
+                }
                 m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
                 return;
             }

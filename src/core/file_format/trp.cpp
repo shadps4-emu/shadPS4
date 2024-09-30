@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging/log.h"
 #include "common/path_util.h"
 #include "trp.h"
 
@@ -13,7 +14,10 @@ void TRP::GetNPcommID(const std::filesystem::path& trophyPath, int index) {
     if (!npbindFile.IsOpen()) {
         return;
     }
-    npbindFile.Seek(0x84 + (index * 0x180));
+    if (!npbindFile.Seek(0x84 + (index * 0x180))) {
+        LOG_CRITICAL(Common_Filesystem, "Failed to seek to NPbind offset");
+        return;
+    }
     npbindFile.ReadRaw<u8>(np_comm_id.data(), 12);
     std::fill(np_comm_id.begin() + 12, np_comm_id.end(), 0); // fill with 0, we need 16 bytes.
 }
@@ -56,26 +60,38 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
             std::filesystem::create_directory(trpFilesPath / "Xml");
 
             for (int i = 0; i < header.entry_num; i++) {
-                file.Seek(seekPos);
+                if (!file.Seek(seekPos)) {
+                    LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
+                    return false;
+                }
                 seekPos += (s64)header.entry_size;
                 TrpEntry entry;
                 file.Read(entry);
                 std::string_view name(entry.entry_name);
                 if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
-                    file.Seek(entry.entry_pos);
+                    if (file.Seek(entry.entry_pos)) {
+                        LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
+                        return false;
+                    }
                     std::vector<u8> icon(entry.entry_len);
                     file.Read(icon);
                     Common::FS::IOFile::WriteBytes(trpFilesPath / "Icons" / name, icon);
                 }
                 if (entry.flag == 3 && np_comm_id[0] == 'N' &&
                     np_comm_id[1] == 'P') { // ESFM, encrypted.
-                    file.Seek(entry.entry_pos);
+                    if (file.Seek(entry.entry_pos)) {
+                        LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
+                        return false;
+                    }
                     file.Read(esfmIv); // get iv key.
                     // Skip the first 16 bytes which are the iv key on every entry as we want a
                     // clean xml file.
                     std::vector<u8> ESFM(entry.entry_len - iv_len);
                     std::vector<u8> XML(entry.entry_len - iv_len);
-                    file.Seek(entry.entry_pos + iv_len);
+                    if (file.Seek(entry.entry_pos + iv_len)) {
+                        LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry + iv offset");
+                        return false;
+                    }
                     file.Read(ESFM);
                     crypto.decryptEFSM(np_comm_id, esfmIv, ESFM, XML); // decrypt
                     removePadding(XML);

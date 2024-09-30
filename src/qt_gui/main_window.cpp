@@ -625,10 +625,7 @@ void MainWindow::InstallPkg() {
         int pkgNum = 0;
         for (const QString& file : fileNames) {
             ++pkgNum;
-            std::filesystem::path path(file.toStdString());
-#ifdef _WIN64
-            path = std::filesystem::path(file.toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(file);
             MainWindow::InstallDragDropPkg(path, pkgNum, nPkg);
         }
     }
@@ -646,10 +643,7 @@ void MainWindow::BootGame() {
             QMessageBox::critical(nullptr, tr("Game Boot"),
                                   QString(tr("Only one file can be selected!")));
         } else {
-            std::filesystem::path path(fileNames[0].toStdString());
-#ifdef _WIN64
-            path = std::filesystem::path(fileNames[0].toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(fileNames[0]);
             Core::Emulator emulator;
             if (!std::filesystem::exists(path)) {
                 QMessageBox::critical(nullptr, tr("Run Game"),
@@ -663,9 +657,12 @@ void MainWindow::BootGame() {
 
 void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
-        pkg = PKG();
-        pkg.Open(file);
         std::string failreason;
+        pkg = PKG();
+        if (!pkg.Open(file, failreason)) {
+            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
+            return;
+        }
         auto extract_path = Config::getGameInstallDir() / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         QString gameDirPath;

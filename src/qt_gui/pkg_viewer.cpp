@@ -104,11 +104,12 @@ void PKGViewer::ProcessPKGInfo() {
     m_pkg_patch_list.clear();
     m_full_pkg_list.clear();
     for (int i = 0; i < m_pkg_list.size(); i++) {
-        std::filesystem::path path(m_pkg_list[i].toStdString());
-#ifdef _WIN32
-        path = std::filesystem::path(m_pkg_list[i].toStdWString());
-#endif
-        package.Open(path);
+        std::filesystem::path path = Common::FS::PathFromQString(m_pkg_list[i]);
+        std::string failreason;
+        if (!package.Open(path, failreason)) {
+            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
+            return;
+        }
         psf.Open(package.sfo);
         QString title_name =
             QString::fromStdString(std::string{psf.GetString("TITLE").value_or("Unknown")});
