@@ -29,6 +29,7 @@ class Value {
 public:
     Value() noexcept = default;
     explicit Value(IR::Inst* value) noexcept;
+    explicit Value(const IR::Inst* value) noexcept;
     explicit Value(IR::ScalarReg reg) noexcept;
     explicit Value(IR::VectorReg reg) noexcept;
     explicit Value(IR::Attribute value) noexcept;

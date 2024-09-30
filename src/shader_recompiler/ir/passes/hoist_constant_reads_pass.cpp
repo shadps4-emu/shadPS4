@@ -31,6 +31,15 @@ namespace Shader::Optimization {
 //      hoisted
 // 3. Replace duplicates of the hoisted values
 
+// Note: use non-const IR::Value/IR::Inst, because IR::Value(const IR::Inst *) invokes
+// explicit Value(bool value) noexcept; lol
+
+// TODO delete, for debugger
+void PrintBlock(const Shader::IR::Block* block) {
+    std::string s = Shader::IR::DumpBlock(*block);
+    printf("%s\n", s.c_str());
+}
+
 class ConstantReadGvnTable {
 public:
     using ValueNumberTable = std::unordered_map<IR::Value, u32>;
@@ -38,11 +47,11 @@ public:
 
     ConstantReadGvnTable() : value_numbers(), next_num(0) {}
 
-    void FillTable(const IR::Program& program) {
+    void FillTable(IR::Program& program) {
         for (auto r_it = program.post_order_blocks.rbegin();
              r_it != program.post_order_blocks.rend(); r_it++) {
-            const IR::Block* block = *r_it;
-            for (const IR::Inst& inst : block->Instructions()) {
+            IR::Block* block = *r_it;
+            for (IR::Inst& inst : block->Instructions()) {
                 switch (inst.GetOpcode()) {
                 case IR::Opcode::GetUserData:
                 case IR::Opcode::CompositeConstructU32x2:
@@ -56,11 +65,11 @@ public:
         }
     }
 
-    u32 GetValueNumber(const IR::Inst* inst) {
-        return GetValueNumber(IR::Value(inst));
+    u32 GetValueNumber(IR::Inst* inst) {
+        return GetValueNumber(IR::Value{inst});
     }
 
-    u32 GetValueNumber(const IR::Value v) {
+    u32 GetValueNumber(IR::Value v) {
         if (auto it = value_numbers.find(v); it != value_numbers.end()) {
             return it->second;
         }
@@ -75,12 +84,12 @@ public:
         return IR::Value(pick_one_inst[vn]);
     }
 
-    IR::Value GetCanonicalValue(const IR::Inst* inst) {
+    IR::Value GetCanonicalValue(IR::Inst* inst) {
         return GetCanonicalValue(GetValueNumber(inst));
     }
 
 private:
-    u32 ComputeInstValueNumber(const IR::Inst* inst) {
+    u32 ComputeInstValueNumber(IR::Inst* inst) {
         if (inst->MayHaveSideEffects()) {
             return NextValueNumber(IR::Value(inst));
         }
@@ -96,7 +105,7 @@ private:
                 vn = it->second;
             } else {
                 vn = NextValueNumber(IR::Value(inst));
-                iv_to_vn[std::move(iv)] = vn;
+                iv_to_vn.emplace(std::move(iv), vn);
             }
             break;
         }
@@ -121,7 +130,7 @@ private:
 
     using InstVector = boost::container::small_vector<u32, 8>;
 
-    InstVector MakeInstVector(const IR::Inst* inst) {
+    InstVector MakeInstVector(IR::Inst* inst) {
         ASSERT(inst->GetOpcode() != IR::Opcode::Identity);
         InstVector iv;
         iv.reserve(2 + inst->NumArgs());
@@ -147,7 +156,7 @@ private:
     // used to redirect insts to a single source if they are duplicates.
     // For now, we can just hoist the canonical inst to the entry block, but in general GVN we'd
     // need to put it in a block that dominates the uses and is dominated by its operands
-    std::unordered_map<u32, const IR::Inst*> pick_one_inst;
+    std::unordered_map<u32, IR::Inst*> pick_one_inst;
 };
 
 void HoistConstantReadsPass(IR::Program& program) {
@@ -155,16 +164,17 @@ void HoistConstantReadsPass(IR::Program& program) {
     table.FillTable(program);
 
     IR::Block* entry_bb = *program.blocks.begin();
-    auto insert_point = boost::algorithm::find_if_backward(*entry_bb, [](const IR::Inst& inst) {
-        return inst.GetOpcode() == IR::Opcode::GetUserData;
-    });
+    auto insert_point = boost::algorithm::find_if_backward(
+        *entry_bb, [](IR::Inst& inst) { return inst.GetOpcode() == IR::Opcode::GetUserData; });
     // one past the last GetUserData
     // TODO seems dangerous
     insert_point++;
 
     boost::container::set<u32> hoisted_vns;
 
-    auto all_args_hoisted = [&](const IR::Inst* inst) {
+    // IdentityRemovalPass(program.blocks);
+
+    auto can_hoist_all_args = [&](IR::Inst* inst) {
         for (auto i = 0; i < inst->NumArgs(); i++) {
             IR::Value v = inst->Arg(i);
             if (auto arg_inst = v.TryInstRecursive()) {
@@ -180,6 +190,12 @@ void HoistConstantReadsPass(IR::Program& program) {
         return true;
     };
 
+    struct HoistInfo {
+        IR::Inst* inst;
+        IR::Block* src_block;
+    };
+    boost::container::small_vector<HoistInfo, 16> hoists;
+
     for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
          r_it++) {
         IR::Block* block = *r_it;
@@ -189,7 +205,7 @@ void HoistConstantReadsPass(IR::Program& program) {
                 break;
             case IR::Opcode::CompositeConstructU32x2:
             case IR::Opcode::ReadConst: {
-                if (!all_args_hoisted(&inst)) {
+                if (!can_hoist_all_args(&inst)) {
                     break;
                 }
 
@@ -200,9 +216,7 @@ void HoistConstantReadsPass(IR::Program& program) {
                     break;
                 }
 
-                // Hoist to entry block
-                entry_bb->MoveInst(insert_point, inst, *block);
-
+                hoists.emplace_back(&inst, block);
                 hoisted_vns.insert(vn);
                 break;
             }
@@ -210,6 +224,22 @@ void HoistConstantReadsPass(IR::Program& program) {
                 break;
             }
         }
+    }
+
+    for (HoistInfo& h_info : hoists) {
+        // Copy logic from IdentityRemoval
+        // (Just add another pass before this?)
+        IR::Inst* inst = h_info.inst;
+        IR::Block* src_block = h_info.src_block;
+        for (size_t i = 0; i < inst->NumArgs(); ++i) {
+            IR::Value arg;
+            while ((arg = inst->Arg(i)).IsIdentity()) {
+                inst->SetArg(i, arg.Inst()->Arg(0));
+            }
+        }
+
+        // Hoist to entry block
+        entry_bb->MoveInst(insert_point, *inst, *src_block);
     }
 }
 

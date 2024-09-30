@@ -38,8 +38,8 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
 }
 
 void Block::MoveInst(iterator insertion_point, Inst& inst, IR::Block& original_parent) {
-    instructions.insert(insertion_point, inst);
     original_parent.instructions.erase(InstructionList::s_iterator_to(inst));
+    instructions.insert(insertion_point, inst);
 }
 
 void Block::AddBranch(Block* block) {

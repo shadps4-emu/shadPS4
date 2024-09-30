@@ -216,8 +216,9 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         }
     }
 
-    // Dont sort by offsets yet
-    // this causes duplicated loads for sharps to become interleaved
+    /* NOTES */
+    // Without GVN, sorting by offsets causes duplicate sharp loads to become interleaved
+
     // example, for:
     // s_load_dwordx4  s[16:19], s[12:13], 0x24
     // ...
@@ -226,20 +227,18 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     // the flat buffer will look like this:
     // V#.x, V#.x, V#.y, V#.y, V#.z, V#.z, V#.w, V#.w
 
-    // TODO: do GVN on readconsts to solve this problem. GetUserData should already be unique
+    // instead of
+    // V#.x, V#.y, V#.z, V#.w, V#.x, V#.y, V#.z, V#.w
 
-    // For now, rely on the fact that we push_back sharp components in instruction order (loop
-    // over basic blocks, over insts), so they should be written contiguously to the flat buffer
-    // (there will be duplicates though) like: V#.x, V#.y, V#.z, V#.w, V#.x, V#.y, V#.z, V#.w
+    // With (limited) GVN, and sorting by offset, we can make it:
+    // V#.x, V#.y, V#.z, V#.w
 
-    /*
     for (auto& [_, user_list] : srt_info.pointer_uses) {
         std::sort(user_list.begin(), user_list.end(),
                   [](const IR::Inst*& a, const IR::Inst*& b) -> bool {
-                      return GetReadConstOff(a) < GetReadConstOff(b);
+                      return GetReadConstOff(a).U32() < GetReadConstOff(b).U32();
                   });
     }
-    */
 
     AssignOffsetsVisitor assign_off_vis(srt_info);
     assign_off_vis.VisitRoots();
