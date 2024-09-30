@@ -60,8 +60,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     }
     auto dumpMatchingIR = [&](std::string phase) {
         if (dump_ir) {
-            std::string s = IR::DumpProgram(program);
             if (Config::dumpShaders()) {
+                std::string s = IR::DumpProgram(program);
                 using namespace Common::FS;
                 const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
                 if (!std::filesystem::exists(dump_dir)) {
