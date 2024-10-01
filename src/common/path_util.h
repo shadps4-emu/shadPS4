@@ -26,7 +26,6 @@ enum class PathType {
     CapturesDir,    // Where rdoc captures are stored.
     CheatsDir,      // Where cheats are stored.
     PatchesDir,     // Where patches are stored.
-    AddonsDir,      // Where additional content is stored.
     MetaDataDir,    // Where game metadata (e.g. trophies and menu backgrounds) is stored.
 };
 
