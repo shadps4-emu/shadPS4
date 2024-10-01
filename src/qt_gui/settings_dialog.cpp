@@ -133,6 +133,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->ps4proCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setNeoMode(val); });
 
+        connect(ui->separateUpdatesCheckBox, &QCheckBox::stateChanged, this,
+                [](int val) { Config::setSeparateUpdateEnabled(val); });
+
         connect(ui->logTypeComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& text) { Config::setLogType(text.toStdString()); });
 
@@ -270,6 +273,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->showSplashCheckBox->installEventFilter(this);
         ui->ps4proCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
+        ui->separateUpdatesCheckBox->installEventFilter(this);
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
@@ -328,6 +332,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->logTypeComboBox->setCurrentText(QString::fromStdString(Config::getLogType()));
     ui->logFilterLineEdit->setText(QString::fromStdString(Config::getLogFilter()));
     ui->userNameLineEdit->setText(QString::fromStdString(Config::getUserName()));
+    ui->separateUpdatesCheckBox->setChecked(Config::getSeparateUpdateEnabled());
 
     ui->debugDump->setChecked(Config::debugDump());
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());
@@ -437,6 +442,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("ps4proCheckBox");
     } else if (elementName == "discordRPCCheckbox") {
         text = tr("discordRPCCheckbox");
+    } else if (elementName == "separateUpdatesCheckBox") {
+        text = tr("separateUpdatesCheckBox");
     } else if (elementName == "userName") {
         text = tr("userName");
     } else if (elementName == "logTypeGroupBox") {

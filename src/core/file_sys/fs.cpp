@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/config.h"
 #include "common/string_util.h"
 #include "core/file_sys/fs.h"
 
@@ -56,7 +57,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, b
     std::filesystem::path host_path = mount->host_path / rel_path;
 
     std::filesystem::path patch_path = mount->host_path.string() + "-UPDATE";
-    if (std::filesystem::exists(patch_path / rel_path)) {
+    if (std::filesystem::exists(patch_path / rel_path) && Config::getSeparateUpdateEnabled()) {
         host_path = patch_path / rel_path;
     }
 

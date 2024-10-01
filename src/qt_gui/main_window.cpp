@@ -678,9 +678,10 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         auto game_install_dir = ids.getSelectedDirectory();
         auto game_folder_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        auto game_update_path = pkgType.contains("PATCH")
-                                    ? Config::getGameInstallDir() / (std::string(pkg.GetTitleID()) + "-UPDATE")
-                                   : game_folder_path;
+        bool use_game_update = pkgType.contains("Patch") && Config::getSeparateUpdateEnabled();
+        auto game_update_path = use_game_update ? Config::getGameInstallDir() /
+                                                      (std::string(pkg.GetTitleID()) + "-UPDATE")
+                                                : game_folder_path;
         if (!std::filesystem::exists(game_update_path)) {
             std::filesystem::create_directory(game_update_path);
         }

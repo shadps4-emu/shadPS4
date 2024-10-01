@@ -60,6 +60,7 @@ static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
+static bool separateupdatefolder = false;
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -207,6 +208,10 @@ bool vkCrashDiagnosticEnabled() {
     return vkCrashDiagnostic;
 }
 
+bool getSeparateUpdateEnabled() {
+    return separateupdatefolder;
+}
+
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -317,6 +322,10 @@ void setUseSpecialPad(bool use) {
 
 void setSpecialPadClass(int type) {
     specialPadClass = type;
+}
+
+void setSeparateUpdateEnabled(bool use) {
+    separateupdatefolder = use;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -483,6 +492,7 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
+        separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
     }
 
     if (data.contains("Input")) {
@@ -597,6 +607,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
+    data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;

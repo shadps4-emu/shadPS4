@@ -94,11 +94,13 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            std::string game_folder_path = m_games[itemID].path;
-            if (std::filesystem::exists(game_folder_path + "-UPDATE")) {
-                game_folder_path += "-UPDATE";
+            QString game_update_path;
+            Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
+            std::filesystem::path game_folder_path = m_games[itemID].path;
+            if (std::filesystem::exists(m_games[itemID].path)) {
+                game_folder_path = Common::FS::PathFromQString(game_update_path);
             }
-            if (psf.Open(std::filesystem::path(game_folder_path) / "sce_sys" / "param.sfo")) {
+            if (psf.Open(game_folder_path / "sce_sys" / "param.sfo")) {
                 int rows = psf.GetEntries().size();
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
                 tableWidget->setAttribute(Qt::WA_DeleteOnClose);
@@ -288,22 +290,31 @@ public:
 
         if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC) {
             bool error = false;
-            QString folder_path = QString::fromStdString(m_games[itemID].path);
+            QString folder_path, game_update_path;
+            Common::FS::PathToQString(folder_path, m_games[itemID].path.concat("-UPDATE"));
+            Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             QString message_type = tr("Game");
             if (selected == deleteUpdate) {
-                if (!std::filesystem::exists(m_games[itemID].path + "-UPDATE")) {
+                if (!Config::getSeparateUpdateEnabled()) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This feature requires the 'Enable Separate Update Folder' "
+                                   "config option "
+                                   "to work. If you want to use this feature, please enable it.")));
+                    error = true;
+                } else if (!std::filesystem::exists(m_games[itemID].path.concat("-UPDATE"))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update to delete!")));
                     error = true;
                 } else {
-                    folder_path = QString::fromStdString(m_games[itemID].path + "-UPDATE");
+                    folder_path = game_update_path;
                     message_type = tr("Update");
                 }
             } else if (selected == deleteDLC) {
-                std::filesystem::path game_path = folder_path.toStdString();
                 std::filesystem::path addon_path =
-                    Config::getAddonInstallDir() / game_path.parent_path().filename();
-                if (!std::filesystem::exists(addon_path.string())) {
+                    Config::getAddonInstallDir() /
+                    Common::FS::PathFromQString(folder_path).parent_path().filename();
+                if (!std::filesystem::exists(addon_path)) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no DLC to delete!")));
                     error = true;
