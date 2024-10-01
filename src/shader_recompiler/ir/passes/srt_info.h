@@ -4,16 +4,12 @@
 #pragma once
 
 #include <vector>
-// #include <boost/container/flat_map.hpp>
-// #include <boost/container/flat_set.hpp>
 #include <boost/container/map.hpp>
 #include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
 
-#include <memory>
 #include <unordered_map>
 #include "common/assert.h"
-#include "common/bit_field.h"
 #include "common/types.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
