@@ -92,8 +92,8 @@ QWidget* GameInstallDialog::SetupUserDirectory() {
     QString user_dir;
     std::filesystem::path default_path =
         Config::getEmulatorUserDir().empty()
-        ? Common::FS::GetUserPath(Common::FS::PathType::ConfigDir)
-        : Config::getEmulatorUserDir();
+            ? Common::FS::GetUserPath(Common::FS::PathType::ConfigDir)
+            : Config::getEmulatorUserDir();
     Common::FS::PathToQString(user_dir, default_path);
     m_userDirectory->setText(user_dir);
     m_userDirectory->setMinimumWidth(400);
