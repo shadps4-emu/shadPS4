@@ -4,8 +4,10 @@
 #pragma once
 
 #include <vector>
-#include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
+// #include <boost/container/flat_map.hpp>
+// #include <boost/container/flat_set.hpp>
+#include <boost/container/map.hpp>
+#include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
 
 #include <memory>
@@ -67,7 +69,7 @@ struct SrtInfo {
     // keys are GetUserData or ReadConst instructions that are used as pointers
     std::unordered_map<const IR::Inst*, PtrUserList> pointer_uses;
     // GetUserData instructions corresponding to sgpr_base of SRT roots
-    boost::container::small_flat_map<IR::ScalarReg, const IR::Inst*, 4> srt_roots;
+    boost::container::map<IR::ScalarReg, const IR::Inst*> srt_roots;
 
     // Special case when fetch shader uses step rates.
     // Need to reserve space for those V#s, and find them in SrtWalker function
