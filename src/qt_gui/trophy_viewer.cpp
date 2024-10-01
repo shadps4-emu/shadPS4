@@ -76,7 +76,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 trpType.append(reader.attributes().value("ttype").toString());
                 trpPid.append(reader.attributes().value("pid").toString());
                 if (reader.attributes().hasAttribute("unlockstate")) {
-                    if (reader.attributes().value("unlockstate").toString() == "unlocked") {
+                    if (reader.attributes().value("unlockstate").toString() == "true") {
                         trpUnlocked.append("unlocked");
                     } else {
                         trpUnlocked.append("locked");

@@ -26,6 +26,7 @@ using Liverpool = AmdGpu::Liverpool;
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
+    std::array<AmdGpu::NumberFormat, Liverpool::NumColorBuffers> color_num_formats;
     std::array<Liverpool::ColorBuffer::SwapMode, Liverpool::NumColorBuffers> mrt_swizzles;
     vk::Format depth_format;
     vk::Format stencil_format;
@@ -82,6 +83,16 @@ public:
 
     bool IsDepthEnabled() const {
         return key.depth_stencil.depth_enable.Value();
+    }
+
+    [[nodiscard]] bool IsPrimitiveListTopology() const {
+        return key.prim_type == Liverpool::PrimitiveType::PointList ||
+               key.prim_type == Liverpool::PrimitiveType::LineList ||
+               key.prim_type == Liverpool::PrimitiveType::TriangleList ||
+               key.prim_type == Liverpool::PrimitiveType::AdjLineList ||
+               key.prim_type == Liverpool::PrimitiveType::AdjTriangleList ||
+               key.prim_type == Liverpool::PrimitiveType::RectList ||
+               key.prim_type == Liverpool::PrimitiveType::QuadList;
     }
 
 private:

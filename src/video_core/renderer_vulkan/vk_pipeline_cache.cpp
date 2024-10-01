@@ -95,10 +95,6 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     case Shader::Stage::Fragment: {
         info.num_user_data = regs.ps_program.settings.num_user_regs;
         info.num_allocated_vgprs = regs.ps_program.settings.num_vgprs * 4;
-        std::ranges::transform(graphics_key.mrt_swizzles, info.fs_info.mrt_swizzles.begin(),
-                               [](Liverpool::ColorBuffer::SwapMode mode) {
-                                   return static_cast<Shader::MrtSwizzle>(mode);
-                               });
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs.push_back({
@@ -107,6 +103,12 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
                 .is_flat = bool(ps_inputs[i].flat_shade),
                 .default_value = u8(ps_inputs[i].default_value),
             });
+        }
+        for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
+            info.fs_info.color_buffers[i] = {
+                .num_format = graphics_key.color_num_formats[i],
+                .mrt_swizzle = static_cast<Shader::MrtSwizzle>(graphics_key.mrt_swizzles[i]),
+            };
         }
         break;
     }
@@ -244,6 +246,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
     // order. We need to do some arrays compaction at this stage
     key.color_formats.fill(vk::Format::eUndefined);
+    key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
@@ -261,6 +264,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
         key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
             base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
         }
