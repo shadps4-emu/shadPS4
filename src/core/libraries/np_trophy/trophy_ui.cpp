@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
+#include <mutex>
 #include <imgui.h>
 #include "common/assert.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
-#include <mutex>
 #include "trophy_ui.h"
 
 using namespace ImGui;
