@@ -3,7 +3,6 @@
 
 #include <iterator>
 #include <unordered_map>
-#include <boost/algorithm/find_backward.hpp>
 #include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
@@ -193,11 +192,14 @@ void HoistConstantReadsPass(IR::Program& program) {
     table.FillTable(program);
 
     IR::Block* entry_bb = *program.blocks.begin();
-    auto insert_point = boost::algorithm::find_if_backward(
-        *entry_bb, [](IR::Inst& inst) { return inst.GetOpcode() == IR::Opcode::GetUserData; });
-    // one past the last GetUserData
-    // TODO seems dangerous
-    insert_point++;
+    IR::Block::iterator insert_point = entry_bb->end();
+    for (auto it = entry_bb->rbegin(); it != entry_bb->rend(); it++) {
+        if (it->GetOpcode() == IR::Opcode::GetUserData) {
+            insert_point = IR::Block::InstructionList::s_iterator_to(*it);
+            ++insert_point;
+            break;
+        }
+    }
 
     boost::container::set<u32> hoisted_vns;
 
