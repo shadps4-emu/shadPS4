@@ -81,7 +81,7 @@ Emulator::Emulator() {
 }
 
 Emulator::~Emulator() {
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigDir);
     Config::save(config_dir / "config.toml");
 }
 

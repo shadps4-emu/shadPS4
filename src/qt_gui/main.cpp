@@ -23,14 +23,14 @@ int main(int argc, char* argv[]) {
     QApplication a(argc, argv);
 
     // Load configurations and initialize Qt application
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigDir);
+    Config::load(config_dir / "config.toml");
 
     // Check if elf or eboot.bin path was passed as a command line argument
     bool has_command_line_argument = argc > 1;
 
     // Check if the game install directory is set
-    if (Config::getGameInstallDir().empty() && !has_command_line_argument) {
+    if ((Config::getGameInstallDir().empty() || Config::getEmulatorUserDir().empty()) && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }

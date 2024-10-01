@@ -19,6 +19,7 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
 
     layout->addWidget(SetupGamesDirectory());
     layout->addWidget(SetupAddonsDirectory());
+    layout->addWidget(SetupUserDirectory());
     layout->addStretch();
     layout->addWidget(SetupDialogActions());
 
@@ -28,22 +29,13 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
 
 GameInstallDialog::~GameInstallDialog() {}
 
-void GameInstallDialog::BrowseGamesDirectory() {
-    auto path = QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
+void GameInstallDialog::Browse(const QString& browseTitle, QLineEdit* browseDir) {
+    auto path = QFileDialog::getExistingDirectory(this, browseTitle);
 
     if (!path.isEmpty()) {
-        m_gamesDirectory->setText(QDir::toNativeSeparators(path));
+        browseDir->setText(QDir::toNativeSeparators(path));
     }
 }
-
-void GameInstallDialog::BrowseAddonsDirectory() {
-    auto path = QFileDialog::getExistingDirectory(this, tr("Directory to install DLC"));
-
-    if (!path.isEmpty()) {
-        m_addonsDirectory->setText(QDir::toNativeSeparators(path));
-    }
-}
-
 QWidget* GameInstallDialog::SetupGamesDirectory() {
     auto group = new QGroupBox(tr("Directory to install games"));
     auto layout = new QHBoxLayout(group);
@@ -60,7 +52,8 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     // Browse button.
     auto browse = new QPushButton(tr("Browse"));
 
-    connect(browse, &QPushButton::clicked, this, &GameInstallDialog::BrowseGamesDirectory);
+    connect(browse, &QPushButton::clicked, this,
+            [this]() { Browse(tr("Directory to install games"), m_gamesDirectory); });
 
     layout->addWidget(browse);
 
@@ -83,7 +76,34 @@ QWidget* GameInstallDialog::SetupAddonsDirectory() {
     // Browse button.
     auto browse = new QPushButton(tr("Browse"));
 
-    connect(browse, &QPushButton::clicked, this, &GameInstallDialog::BrowseAddonsDirectory);
+    connect(browse, &QPushButton::clicked, this,
+            [this]() { Browse(tr("Directory to install DLC"), m_addonsDirectory); });
+
+    layout->addWidget(browse);
+
+    return group;
+}
+
+QWidget* GameInstallDialog::SetupUserDirectory() {
+    auto group = new QGroupBox(tr("Location of user directory"));
+    auto layout = new QHBoxLayout(group);
+
+    m_userDirectory = new QLineEdit();
+    QString user_dir;
+    std::filesystem::path default_path = Config::getEmulatorUserDir().empty()
+        ? Common::FS::GetUserPath(Common::FS::PathType::ConfigDir)
+        : Config::getEmulatorUserDir();
+    Common::FS::PathToQString(user_dir, default_path);
+    m_userDirectory->setText(user_dir);
+    m_userDirectory->setMinimumWidth(400);
+
+    layout->addWidget(m_userDirectory);
+
+    // Browse button.
+    auto browse = new QPushButton(tr("Browse"));
+
+    connect(browse, &QPushButton::clicked, this,
+            [this]() { Browse(tr("Location of user directory"), m_userDirectory); });
 
     layout->addWidget(browse);
 
@@ -103,11 +123,12 @@ void GameInstallDialog::Save() {
     // Check games directory.
     auto gamesDirectory = m_gamesDirectory->text();
     auto addonsDirectory = m_addonsDirectory->text();
+    auto userDirectory = m_userDirectory->text();
 
     if (gamesDirectory.isEmpty() || !QDir(gamesDirectory).exists() ||
         !QDir::isAbsolutePath(gamesDirectory)) {
         QMessageBox::critical(this, tr("Error"),
-                              "The value for location to install games is not valid.");
+                              tr("The value for location to install games is not valid."));
         return;
     }
 
@@ -118,9 +139,18 @@ void GameInstallDialog::Save() {
         return;
     }
 
+    if (!userDirectory.endsWith("user", Qt::CaseInsensitive) || !QDir(userDirectory).exists() ||
+        !QDir::isAbsolutePath(userDirectory)) {
+        QMessageBox::critical(this, tr("Error"),
+                              tr("The value for location of user directory is not valid."));
+        return;
+    }
+    Config::setEmulatorUserDir(Common::FS::PathFromQString(userDirectory));
+    Common::FS::SetUserPath(Common::FS::PathType::UserDir, Config::getEmulatorUserDir());
+
     Config::setGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
     Config::setAddonInstallDir(Common::FS::PathFromQString(addonsDirectory));
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigDir);
     Config::save(config_dir / "config.toml");
     accept();
 }

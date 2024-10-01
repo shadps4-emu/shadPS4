@@ -14,6 +14,7 @@ namespace Common::FS {
 
 enum class PathType {
     UserDir,        // Where shadPS4 stores its data.
+    ConfigDir,      // Where shadPS4 stores its config.
     LogDir,         // Where log files are stored.
     ScreenshotsDir, // Where screenshots are stored.
     ShaderDir,      // Where shaders are stored.

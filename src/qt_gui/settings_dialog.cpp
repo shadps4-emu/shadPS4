@@ -51,7 +51,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
 
