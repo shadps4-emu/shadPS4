@@ -147,6 +147,7 @@ static void GenerateSrtProgram(Shader::Info& info) {
 }; // namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
+    int x = 5;
     Shader::Info& info = program.info;
     SrtInfo& srt_info = program.info.srt_info;
 
