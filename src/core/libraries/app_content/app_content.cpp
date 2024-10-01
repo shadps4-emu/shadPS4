@@ -5,6 +5,7 @@
 
 #include "app_content.h"
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -59,8 +60,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            OrbisAppContentMountPoint* mount_point) {
     LOG_INFO(Lib_AppContent, "called");
 
-    const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) / title_id /
-                            entitlement_label->data;
+    const auto& mount_dir = Config::getAddonInstallDir() / title_id / entitlement_label->data;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     for (int i = 0; i < addcont_count; i++) {
@@ -246,7 +246,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     LOG_ERROR(Lib_AppContent, "(DUMMY) called");
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
-    const auto addons_dir = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir);
+    const auto addons_dir = Config::getAddonInstallDir();
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
         title_id = *value;
     } else {
