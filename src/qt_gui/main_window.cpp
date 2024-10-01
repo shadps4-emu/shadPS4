@@ -70,7 +70,7 @@ bool MainWindow::Init() {
         "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
 
-    //Initialize Discord RPC
+    // Initialize Discord RPC
     discordRPC.init();
     discordRPC.setStatusIdling();
 
