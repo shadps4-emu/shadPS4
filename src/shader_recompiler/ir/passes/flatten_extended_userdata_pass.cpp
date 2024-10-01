@@ -128,6 +128,8 @@ private:
     void PushPtr(u32 off_dw) {
         c.push(rdi);
         c.mov(rdi, ptr[rdi + (off_dw << 2)]);
+        c.mov(r10, 0xFFFFFFFFFFFFULL);
+        c.and_(rdi, r10);
     }
     void PopPtr() {
         c.pop(rdi);
