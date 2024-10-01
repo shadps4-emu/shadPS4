@@ -45,24 +45,44 @@ public:
     int icon_size;
 
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
-        if (columnIndex == 1) {
+        switch (columnIndex) {
+        case 1:
             return a.name < b.name;
-        } else if (columnIndex == 2) {
+        case 2:
             return a.serial < b.serial;
-        } else if (columnIndex == 3) {
+        case 3:
+            return a.region < b.region;
+        case 4:
             return a.fw < b.fw;
+        case 5:
+            return a.size < b.size;
+        case 6:
+            return a.version < b.version;
+        case 7:
+            return a.path < b.path;
+        default:
+            return false;
         }
-        return false;
     }
 
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
-        if (columnIndex == 1) {
+        switch (columnIndex) {
+        case 1:
             return a.name > b.name;
-        } else if (columnIndex == 2) {
+        case 2:
             return a.serial > b.serial;
-        } else if (columnIndex == 3) {
+        case 3:
+            return a.region > b.region;
+        case 4:
             return a.fw > b.fw;
+        case 5:
+            return a.size > b.size;
+        case 6:
+            return a.version > b.version;
+        case 7:
+            return a.path > b.path;
+        default:
+            return false;
         }
-        return false;
     }
 };
