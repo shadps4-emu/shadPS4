@@ -102,35 +102,34 @@ bool Value::operator!=(const Value& other) const {
 
 namespace std {
 std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) const {
-    using std::size_t;
     using namespace Shader::IR;
 
-    size_t h = HashCombine(static_cast<size_t>(v.type), 0);
+    u64 h = HashCombine(static_cast<u64>(v.type), 0ULL);
 
     switch (v.type) {
     case Type::Void:
         return h;
     case Type::Opaque:
-        return reinterpret_cast<size_t>(v.InstRecursive());
+        return reinterpret_cast<u64>(v.InstRecursive());
     case Type::ScalarReg:
-        return HashCombine(static_cast<size_t>(v.sreg), h);
+        return HashCombine(static_cast<u64>(v.sreg), h);
     case Type::VectorReg:
-        return HashCombine(static_cast<size_t>(v.vreg), h);
+        return HashCombine(static_cast<u64>(v.vreg), h);
     case Type::Attribute:
-        return HashCombine(static_cast<size_t>(v.attribute), h);
+        return HashCombine(static_cast<u64>(v.attribute), h);
     case Type::U1:
-        return HashCombine(static_cast<size_t>(v.attribute), h);
+        return HashCombine(static_cast<u64>(v.attribute), h);
     case Type::U8:
-        return HashCombine(static_cast<size_t>(v.imm_u8), h);
+        return HashCombine(static_cast<u64>(v.imm_u8), h);
     case Type::U16:
     case Type::F16:
-        return HashCombine(static_cast<size_t>(v.imm_u16), h);
+        return HashCombine(static_cast<u64>(v.imm_u16), h);
     case Type::U32:
     case Type::F32:
-        return HashCombine(static_cast<size_t>(v.imm_u32), h);
+        return HashCombine(static_cast<u64>(v.imm_u32), h);
     case Type::U64:
     case Type::F64:
-        return HashCombine(static_cast<size_t>(v.imm_u64), h);
+        return HashCombine(static_cast<u64>(v.imm_u64), h);
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
