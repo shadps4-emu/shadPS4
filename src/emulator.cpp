@@ -114,7 +114,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::string app_version;
     u32 fw_version;
 
-    std::filesystem::path game_patch_folder = (file.parent_path().string() + "-UPDATE");
+    std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
     std::filesystem::path sce_sys_folder = std::filesystem::exists(game_patch_folder / "sce_sys")
                                                ? game_patch_folder / "sce_sys"
                                                : file.parent_path() / "sce_sys";
