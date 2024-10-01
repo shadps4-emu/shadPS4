@@ -15,7 +15,7 @@ std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 
 TrophyUI::TrophyUI(std::filesystem::path trophyIconPath, std::string trophyName)
-                   : trophy_icon_path(trophyIconPath), trophy_name(trophyName) {
+    : trophy_icon_path(trophyIconPath), trophy_name(trophyName) {
     trophy_start_time = std::chrono::system_clock::now().time_since_epoch().count();
     trophy_time_now = trophy_start_time;
     if (std::filesystem::exists(trophy_icon_path)) {
@@ -66,9 +66,9 @@ void TrophyUI::Draw() {
     trophy_time_now += io.DeltaTime * 1000;
     if (trophy_time_now >= trophy_start_time + 5000) {
         if (!trophy_queue.empty()) {
-            TrophyInfo nextTrophy = trophy_queue.front();
+            TrophyInfo next_trophy = trophy_queue.front();
             trophy_queue.pop();
-            current_trophy_ui.emplace(nextTrophy.trophy_icon_path, nextTrophy.trophy_name);
+            current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.trophy_name);
         } else {
             current_trophy_ui.reset();
         }
