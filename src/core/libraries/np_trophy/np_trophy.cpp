@@ -14,8 +14,6 @@
 
 namespace Libraries::NpTrophy {
 
-static TrophyUI g_trophy_ui;
-
 std::string game_serial;
 
 static constexpr auto MaxTrophyHandles = 4u;
@@ -927,7 +925,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                     std::filesystem::path current_icon_path =
                         trophy_dir / "trophy00" / "Icons" / trophy_icon_file;
 
-                    g_trophy_ui.AddTrophyToQueue(current_icon_path, current_trophy_name);
+                    AddTrophyToQueue(current_icon_path, current_trophy_name);
                 }
             }
         }
@@ -964,7 +962,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                 trophy_dir / "trophy00" / "Icons" / platinum_icon_file;
 
             *platinumId = platinum_trophy_id;
-            g_trophy_ui.AddTrophyToQueue(platinum_icon_path, platinum_trophy_name);
+            AddTrophyToQueue(platinum_icon_path, platinum_trophy_name);
         }
     }
 

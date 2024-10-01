@@ -5,32 +5,38 @@
 
 #include <string>
 #include <variant>
-#include <vector>
+#include <queue>
 
 #include "common/fixed_value.h"
 #include "common/types.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "imgui/imgui_layer.h"
+#include "imgui/imgui_texture.h"
 
 namespace Libraries::NpTrophy {
+
+class TrophyUI final : public ImGui::Layer {
+public:
+    TrophyUI(std::filesystem::path trophyIconPath, std::string trophyName);
+    ~TrophyUI() override;
+
+    void Finish();
+
+    void Draw() override;
+
+private:
+    std::filesystem::path trophy_icon_path;
+    std::string trophy_name;
+    double trophy_start_time;
+    double trophy_time_now;
+    ImGui::RefCountedTexture trophy_icon;
+};
 
 struct TrophyInfo {
     std::filesystem::path trophy_icon_path;
     std::string trophy_name;
 };
 
-class TrophyUI final : public ImGui::Layer {
-    std::vector<TrophyInfo> trophy_queue;
-
-public:
-    TrophyUI();
-    ~TrophyUI() override;
-
-    void AddTrophyToQueue(std::filesystem::path trophyIconPath, std::string trophyName);
-
-    void Finish();
-
-    void Draw() override;
-};
+void AddTrophyToQueue(std::filesystem::path trophyIconPath, std::string trophyName);
 
 }; // namespace Libraries::NpTrophy
