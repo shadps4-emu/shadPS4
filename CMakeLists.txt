@@ -842,8 +842,7 @@ if (UNIX AND NOT APPLE)
     endif()
 endif()
 
+#Discord RPC
 if(ENABLE_QT_GUI)
-    add_subdirectory(externals/discord-rpc)
     target_link_libraries(shadps4 PRIVATE discord-rpc)
-    include_directories(externals/discord-rpc/include)
 endif()
