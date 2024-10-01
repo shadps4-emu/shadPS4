@@ -8,7 +8,7 @@
 
 namespace Libraries::ImeDialog {
 
-static OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_NONE;
+static OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::NONE;
 
 int PS4_SYSV_ABI sceImeDialogAbort() {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
@@ -46,14 +46,14 @@ int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
 }
 
 int PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
-    result->endstatus = OrbisImeDialogEndStatus::ORBIS_IME_DIALOG_END_STATUS_OK;
+    result->endstatus = OrbisImeDialogEndStatus::OK;
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogGetStatus() {
-    if (g_ime_dlg_status == OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING) {
-        return OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_FINISHED;
+OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
+    if (g_ime_dlg_status == OrbisImeDialogStatus::RUNNING) {
+        return OrbisImeDialogStatus::FINISHED;
     }
     return g_ime_dlg_status;
 }
@@ -63,7 +63,7 @@ int PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExten
     const std::wstring_view text = L"shadPS4";
     param->maxTextLength = text.size();
     std::memcpy(param->inputTextBuffer, text.data(), text.size() * sizeof(wchar_t));
-    g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING;
+    g_ime_dlg_status = OrbisImeDialogStatus::RUNNING;
     return ORBIS_OK;
 }
 
@@ -89,7 +89,7 @@ int PS4_SYSV_ABI sceImeDialogSetPanelPosition() {
 
 int PS4_SYSV_ABI sceImeDialogTerm() {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_NONE;
+    g_ime_dlg_status = OrbisImeDialogStatus::NONE;
     return ORBIS_OK;
 }
 
