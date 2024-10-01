@@ -25,7 +25,6 @@ public:
     void Draw() override;
 
 private:
-    std::filesystem::path trophy_icon_path;
     std::string trophy_name;
     float trophy_timer = 5.0f;
     ImGui::RefCountedTexture trophy_icon;
