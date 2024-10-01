@@ -7,6 +7,7 @@
 
 #include "frame_dump.h"
 #include "imgui_internal.h"
+#include "imgui_memory_editor.h"
 
 using namespace ImGui;
 using namespace DebugStateType;
@@ -43,13 +44,18 @@ FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_
 
     cmd_list_viewer.reserve(frame_dump.queues.size());
     for (const auto& cmd : frame_dump.queues) {
-        cmd_list_viewer.emplace_back(cmd.data);
+        cmd_list_viewer.emplace_back(this, cmd.data);
         if (cmd.type == QueueType::dcb && cmd.submit_num == selected_submit_num &&
             cmd.num2 == selected_queue_num2) {
             selected_cmd = cmd_list_viewer.size() - 1;
         }
     }
+
+    cmdb_view.Open = false;
+    cmdb_view.ReadOnly = true;
 }
+
+FrameDumpViewer::~FrameDumpViewer() {}
 
 void FrameDumpViewer::Draw() {
     if (!is_open) {
@@ -143,6 +149,21 @@ void FrameDumpViewer::Draw() {
         }
     }
     End();
+
+    if (cmdb_view.Open && selected_cmd != -1) {
+        auto& cmd = frame_dump.queues[selected_cmd].data;
+        auto cmd_size = cmd.size() * sizeof(u32);
+        MemoryEditor::Sizes s;
+        cmdb_view.CalcSizes(s, cmd_size, (size_t)cmd.data());
+        SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
+
+        char name[64];
+        snprintf(name, sizeof(name), "[GFX] Command buffer %d###cmdbuf_hex_%d", id, id);
+        if (Begin(name, &cmdb_view.Open, ImGuiWindowFlags_NoScrollbar)) {
+            cmdb_view.DrawContents(cmd.data(), cmd_size, (size_t)cmd.data());
+        }
+        End();
+    }
 }
 
 } // namespace Core::Devtools::Widget

@@ -17,6 +17,8 @@ enum class PM4ItOpcode : u32;
 
 namespace Core::Devtools::Widget {
 
+class FrameDumpViewer;
+
 class CmdListViewer {
     /*
      * Generic PM4 header
@@ -38,6 +40,7 @@ class CmdListViewer {
         bool bypass{false};
     };
 
+    FrameDumpViewer* parent;
     std::vector<BatchInfo> batches{};
     uintptr_t cmdb_addr;
     size_t cmdb_size;
@@ -52,7 +55,7 @@ class CmdListViewer {
     void OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* body);
 
 public:
-    explicit CmdListViewer(const std::vector<u32>& cmd_list);
+    explicit CmdListViewer(FrameDumpViewer* parent, const std::vector<u32>& cmd_list);
 
     void Draw();
 };

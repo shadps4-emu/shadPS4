@@ -8,6 +8,9 @@
 #include <imgui.h>
 
 #include "cmd_list.h"
+#include "frame_dump.h"
+#include "imgui_internal.h"
+#include "imgui_memory_editor.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 
@@ -29,7 +32,7 @@ const char* GetShaderRegName(u32 reg_offset);
 namespace Core::Devtools::Widget {
 
 template <typename HdrType>
-static HdrType get_next(HdrType this_pm4, uint32_t n) {
+static HdrType GetNext(HdrType this_pm4, uint32_t n) {
     HdrType curr_pm4 = this_pm4;
     while (n) {
         curr_pm4 = reinterpret_cast<HdrType>(reinterpret_cast<uint32_t const*>(curr_pm4) +
@@ -1021,7 +1024,8 @@ void CmdListViewer::OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* 
     EndGroup();
 }
 
-CmdListViewer::CmdListViewer(const std::vector<u32>& cmd_list) {
+CmdListViewer::CmdListViewer(FrameDumpViewer* parent, const std::vector<u32>& cmd_list)
+    : parent(parent) {
     using namespace AmdGpu;
 
     cmdb_addr = (uintptr_t)cmd_list.data();
@@ -1035,7 +1039,7 @@ CmdListViewer::CmdListViewer(const std::vector<u32>& cmd_list) {
     std::string marker{};
 
     while (processed_size < cmdb_size) {
-        auto* next_pm4_hdr = get_next(pm4_hdr, 1);
+        auto* next_pm4_hdr = GetNext(pm4_hdr, 1);
         auto processed_len =
             reinterpret_cast<uintptr_t>(next_pm4_hdr) - reinterpret_cast<uintptr_t>(pm4_hdr);
         processed_size += processed_len;
@@ -1102,11 +1106,10 @@ void CmdListViewer::Draw() {
 
     if (BeginChild(queue_name.c_str())) {
         Text("queue    : %s", queue_name.c_str());
-        Text("base addr: %08lX", 0ul); // cmdb_addr); // TODO
+        Text("base addr: %08lX", cmdb_addr);
         SameLine();
         if (SmallButton(">")) {
-            // cmdb_view.Open = true;
-            // TODO: Memory view
+            parent->cmdb_view.Open ^= true;
         }
         Text("size     : %04llX", cmdb_size);
         Separator();
@@ -1141,15 +1144,18 @@ void CmdListViewer::Draw() {
                                 enum_name(op).data());
 
                         if (TreeNode(header_name)) {
+                            bool just_opened = IsItemToggledOpen();
                             if (BeginTable("split", 1)) {
                                 TableNextColumn();
                                 Text("size: %d", pm4_hdr->count + 1);
 
-                                // Editor
-                                /*cmdb_view.GotoAddrAndHighlight(
-                                    reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr,
-                                    reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr +
-                                        (pm4_hdr->count + 2) * 4);*/
+                                if (just_opened) {
+                                    // Editor
+                                    parent->cmdb_view.GotoAddrAndHighlight(
+                                        reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr,
+                                        reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr +
+                                            (pm4_hdr->count + 2) * 4);
+                                }
 
                                 auto const* it_body =
                                     reinterpret_cast<uint32_t const*>(pm4_hdr + 1);
@@ -1191,7 +1197,7 @@ void CmdListViewer::Draw() {
                         Text("<UNK PACKET>");
                     }
 
-                    auto const* next_pm4_hdr = get_next(pm4_hdr, 1);
+                    auto const* next_pm4_hdr = GetNext(pm4_hdr, 1);
                     auto const processed_len = reinterpret_cast<uintptr_t>(next_pm4_hdr) -
                                                reinterpret_cast<uintptr_t>(pm4_hdr);
                     pm4_hdr = next_pm4_hdr;
