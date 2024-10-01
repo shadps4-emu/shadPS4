@@ -84,6 +84,16 @@ public:
         return key.depth_stencil.depth_enable.Value();
     }
 
+    [[nodiscard]] bool IsPrimitiveListTopology() const {
+        return key.prim_type == Liverpool::PrimitiveType::PointList ||
+               key.prim_type == Liverpool::PrimitiveType::LineList ||
+               key.prim_type == Liverpool::PrimitiveType::TriangleList ||
+               key.prim_type == Liverpool::PrimitiveType::AdjLineList ||
+               key.prim_type == Liverpool::PrimitiveType::AdjTriangleList ||
+               key.prim_type == Liverpool::PrimitiveType::RectList ||
+               key.prim_type == Liverpool::PrimitiveType::QuadList;
+    }
+
 private:
     void BuildDescSetLayout();
 
