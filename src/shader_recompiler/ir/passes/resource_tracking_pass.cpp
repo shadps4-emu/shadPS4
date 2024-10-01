@@ -290,8 +290,7 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
     } else {
         ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst,
                    "Sharp load not from constant memory");
-        const SrtNode* node = info.srt_info.getNode(inst);
-        return node->flattened_sharp_off_dw;
+        return info.srt_info.GetReadFlatOffsetDw(inst);
     }
 }
 
