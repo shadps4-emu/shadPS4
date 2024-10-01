@@ -44,7 +44,6 @@ constexpr auto DOWNLOAD_DIR = "download";
 constexpr auto CAPTURES_DIR = "captures";
 constexpr auto CHEATS_DIR = "cheats";
 constexpr auto PATCHES_DIR = "patches";
-constexpr auto ADDONS_DIR = "addcont";
 constexpr auto METADATA_DIR = "game_data";
 
 // Filenames
