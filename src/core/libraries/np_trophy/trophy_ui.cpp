@@ -16,8 +16,6 @@ std::queue<TrophyInfo> trophy_queue;
 
 TrophyUI::TrophyUI(std::filesystem::path trophyIconPath, std::string trophyName)
     : trophy_icon_path(trophyIconPath), trophy_name(trophyName) {
-    trophy_start_time = std::chrono::system_clock::now().time_since_epoch().count();
-    trophy_time_now = trophy_start_time;
     if (std::filesystem::exists(trophy_icon_path)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophy_icon_path);
     } else {
@@ -55,7 +53,8 @@ void TrophyUI::Draw() {
             ImGui::SameLine();
         } else {
             // placeholder
-            ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(1040, 60), ImVec2(1090, 110),
+            const auto pos = GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{50.0f},
                                                       GetColorU32(ImVec4{0.7f}));
             ImGui::Indent(60);
         }
@@ -63,8 +62,8 @@ void TrophyUI::Draw() {
     }
     End();
 
-    trophy_time_now += io.DeltaTime * 1000;
-    if (trophy_time_now >= trophy_start_time + 5000) {
+    trophy_timer -= io.DeltaTime;
+    if (trophy_timer <= 0) {
         if (!trophy_queue.empty()) {
             TrophyInfo next_trophy = trophy_queue.front();
             trophy_queue.pop();

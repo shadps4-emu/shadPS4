@@ -27,8 +27,7 @@ public:
 private:
     std::filesystem::path trophy_icon_path;
     std::string trophy_name;
-    double trophy_start_time;
-    double trophy_time_now;
+    float trophy_timer = 5.0f;
     ImGui::RefCountedTexture trophy_icon;
 };
 
