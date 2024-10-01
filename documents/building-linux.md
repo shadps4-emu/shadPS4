@@ -14,7 +14,7 @@ sudo apt install build-essential clang git cmake libasound2-dev libpulse-dev lib
 
 #### Fedora
 ```
-sudo dnf install clang cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers
+sudo dnf install clang git cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel libXext-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers
 ```
 
 #### Arch Linux

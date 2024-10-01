@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [ "*" ]
 
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 env:
   BUILD_TYPE: Release
 

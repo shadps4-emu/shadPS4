@@ -100,6 +100,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     if (ptr == nullptr) {
         return 0;
     }
+    lock.unlock();
     // TODO mixing channels
     SDL_bool result = SDL_PutAudioStreamData(
         port.stream, ptr, port.samples_num * port.sample_size * port.channels_num);
