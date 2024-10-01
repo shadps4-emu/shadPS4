@@ -48,15 +48,41 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
 
+static void VisitPointer(u32 off_dw, const IR::Inst* subtree, Info& info, Xbyak::CodeGenerator& c) {
+    PushPtr(c, off_dw);
+    SrtInfo& srt_info = info.srt_info;
+    const SrtInfo::PtrUserList* use_list = srt_info.GetUsesAsPointer(subtree);
+    ASSERT(use_list);
+
+    // First copy all the src data from this tree level
+    // That way, all data that was contiguous in the guest SRT is also contiguous in the
+    // flattened buffer.
+    // TODO src and dst are contiguous. Optimize with wider loads/stores
+    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
+    for (const auto [src_off_dw, use] : *use_list) {
+        u32 dst_off_dw = srt_info.flattened_bufsize_dw++;
+
+        c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
+        c.mov(ptr[rsi + (dst_off_dw << 2)], r10d);
+
+        srt_info.srt_node_to_flat_off_dw[use] = dst_off_dw;
+    }
+
+    // Then visit any children used as pointers
+    for (const auto [src_off_dw, use] : *use_list) {
+        if (srt_info.GetUsesAsPointer(use)) {
+            VisitPointer(src_off_dw, use, info, c);
+        }
+    }
+
+    PopPtr(c);
+}
+
 static void GenerateSrtProgram(Shader::Info& info) {
     SrtInfo& srt_info = info.srt_info;
     Xbyak::CodeGenerator& c = info.srt_codegen;
-    u32 current_flat_off_dw = NumUserDataRegs + 4 * srt_info.fetch_reservations.size();
+    srt_info.flattened_bufsize_dw = NumUserDataRegs + 4 * srt_info.fetch_reservations.size();
 
-    // %rdi is the src pointer to the base of the user_data registers
-    // %rsi is the dst pointer to the base of the flattened sharp buffer
-
-    // dunno scratch registers on different platforms. So just using r10d, r11d for now
     c.inLocalLabel();
 
     // Special case for V# step rate buffers in fetch shader
@@ -82,72 +108,16 @@ static void GenerateSrtProgram(Shader::Info& info) {
         c.mov(ptr[rsi + (dst_off + 12)], r11d);
     }
 
-    // visit in breadth first order so readconsts on the same tree branch are all assigned
-    // contiguous offsets in the flat buffer
-    enum Action {
-        VisitRoot,
-        Push,
-        Visit,
-        Pop,
-    };
-    struct Item {
-        const IR::Inst* node;
-        Action action;
-        u32 push_offset_dw;
-    };
-
-    std::queue<Item> worklist;
-
     for (const auto& [sgpr_base, root] : srt_info.srt_roots) {
-        worklist.emplace(root, VisitRoot, -1U);
-    }
-
-    while (!worklist.empty()) {
-        const Item item = worklist.front();
-        const IR::Inst* node = item.node;
-        Action action = item.action;
-
-        switch (action) {
-        case Push:
-            PushPtr(c, item.push_offset_dw);
-            break;
-        case Pop:
-            PopPtr(c);
-            break;
-        case Visit: {
-            u32 dst_off_dw = current_flat_off_dw++;
-            srt_info.srt_node_to_flat_off_dw[node] = dst_off_dw;
-
-            u32 src_off_dw = GetReadConstOff(node).U32();
-
-            c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
-            c.mov(ptr[rsi + (dst_off_dw << 2)], r10d);
-        }
-            // FALLTHROUGH
-        case VisitRoot: {
-            if (const SrtInfo::PtrUserList* use_list = srt_info.GetUsesAsPointer(node)) {
-                u32 push_off = action == VisitRoot ? static_cast<u32>(GetUserDataSgprBase(node))
-                                                   : GetReadConstOff(node).U32();
-
-                worklist.emplace(nullptr, Push, push_off);
-                for (const auto [_, use] : *use_list) {
-                    worklist.emplace(use, Visit, -1U);
-                }
-                worklist.emplace(nullptr, Pop, -1U);
-            }
-            break;
-        }
-        }
-        worklist.pop();
+        VisitPointer(static_cast<u32>(sgpr_base), root, info, c);
     }
 
     c.ret();
-    srt_info.flattened_sharp_bufsize_dw = current_flat_off_dw;
 }
+
 }; // namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
-    int x = 5;
     Shader::Info& info = program.info;
     SrtInfo& srt_info = program.info.srt_info;
 

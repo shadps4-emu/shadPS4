@@ -254,7 +254,7 @@ struct Info {
     }
 
     void RunSrtWalker(FlatSharpBuffer& sharp_buf) const {
-        sharp_buf.buf.resize(srt_info.flattened_sharp_bufsize_dw);
+        sharp_buf.buf.resize(srt_info.flattened_bufsize_dw);
         ASSERT(user_data.size() <= NumUserDataRegs);
         std::memcpy(sharp_buf.buf.data(), user_data.data(), user_data.size_bytes());
         // not necessary

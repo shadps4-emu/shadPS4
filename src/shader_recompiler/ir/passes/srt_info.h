@@ -55,7 +55,7 @@ struct SrtInfo {
     };
     boost::container::small_vector<FetchShaderReservation, 2> fetch_reservations;
 
-    u32 flattened_sharp_bufsize_dw{0};
+    u32 flattened_bufsize_dw{0};
 
     // Special case for fetch shaders because we don't generate IR to read from step rate buffers,
     // so we won't see usage with GetUserData/ReadConst.
