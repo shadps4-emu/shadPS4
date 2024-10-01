@@ -659,6 +659,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/check_update.cpp
            src/qt_gui/check_update.h
+           src/qt_gui/discord_rpc_handler.cpp
+           src/qt_gui/discord_rpc_handler.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -838,4 +840,10 @@ if (UNIX AND NOT APPLE)
         find_package(OpenSSL REQUIRED)
         target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
     endif()
+endif()
+
+if(ENABLE_QT_GUI)
+    add_subdirectory(externals/discord-rpc)
+    target_link_libraries(shadps4 PRIVATE discord-rpc)
+    include_directories(externals/discord-rpc/include)
 endif()

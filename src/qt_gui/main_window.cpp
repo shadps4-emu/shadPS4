@@ -69,6 +69,11 @@ bool MainWindow::Init() {
     QString statusMessage =
         "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
+
+    //Initialize Discord RPC
+    discordRPC.init();
+    discordRPC.setStatusIdling();
+
     return true;
 }
 
@@ -527,17 +532,23 @@ void MainWindow::StartGame() {
     if (table_mode == 0) {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
+            discordRPC.setStatusPlaying(m_game_info->m_games[itemID].name,
+                                        m_game_info->m_games[itemID].serial);
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
+            discordRPC.setStatusPlaying(m_game_info->m_games[itemID].name,
+                                        m_game_info->m_games[itemID].serial);
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else {
         if (m_elf_viewer->currentItem()) {
             int itemID = m_elf_viewer->currentItem()->row();
+            discordRPC.setStatusPlaying(m_game_info->m_games[itemID].name,
+                                        m_game_info->m_games[itemID].serial);
             gamePath = m_elf_viewer->m_elf_list[itemID];
         }
     }

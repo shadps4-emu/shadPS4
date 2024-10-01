@@ -12,6 +12,7 @@
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
+#include "qt_gui/discord_rpc_handler.h"
 #include "elf_viewer.h"
 #include "emulator.h"
 #include "game_grid_frame.h"
@@ -92,6 +93,9 @@ private:
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
 
     QTranslator* translator;
+
+    DiscordRPCHandler::RPC discordRPC;
+    
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;

@@ -7,7 +7,7 @@
 #include <string>
 #include <discord_rpc.h>
 
-namespace Discord {
+namespace DiscordRPCHandler {
 
 enum class RPCStatus {
     Idling,
@@ -20,8 +20,8 @@ class RPC {
 
 public:
     void init();
-    void update(RPCStatus status, const std::string& title);
-    void stop();
+    void setStatusIdling();
+    void setStatusPlaying(const std::string& game_name, const std::string& game_id);
 };
 
-} // namespace Discord
+} // namespace DiscordRPCHandler
