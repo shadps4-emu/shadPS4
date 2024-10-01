@@ -5,7 +5,6 @@
 
 #include <condition_variable>
 
-#include "imgui/layer/video_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -105,8 +104,6 @@ private:
     std::condition_variable_any frame_cv;
     std::optional<VideoCore::Image> splash_img;
     std::vector<VAddr> vo_buffers_addr;
-
-    ImGui::Layers::VideoInfo video_info_ui;
 };
 
 } // namespace Vulkan

@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/path_util.h"
+#include "core/devtools/layer.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -74,12 +75,14 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 16.0f,
-                                             &font_cfg, ranges.Data);
+    io.Fonts->AddFontDefault();
+    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
+        imgui_font_notosansjp_regular_compressed_data,
+        imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
 
     StyleColorsDark();
 
+    ::Core::Devtools::Layer::SetupSettings();
     Sdl::Init(window.GetSdlWindow());
 
     const Vulkan::InitInfo vk_info{
@@ -165,6 +168,8 @@ void NewFrame() {
 
     Sdl::NewFrame();
     ImGui::NewFrame();
+
+    DockSpaceOverViewport(0, GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
     for (auto* layer : layers) {
         layer->Draw();

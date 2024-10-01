@@ -61,7 +61,6 @@ Emulator::Emulator() {
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-    LOG_INFO(Config, "GPU shouldDumpPM4: {}", Config::dumpPM4());
     LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
     LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());

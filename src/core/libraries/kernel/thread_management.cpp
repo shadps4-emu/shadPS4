@@ -11,13 +11,13 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
-#include "core/system.h"
 #include "core/tls.h"
 #ifdef _WIN64
 #include <windows.h>
@@ -989,7 +989,7 @@ static void cleanup_thread(void* arg) {
     }
     Core::SetTcbBase(nullptr);
     thread->is_almost_done = true;
-    Common::Singleton<SystemState>::Instance()->RemoveCurrentThreadFromGuestList();
+    DebugState.RemoveCurrentThreadFromGuestList();
 }
 
 static void* run_thread(void* arg) {
@@ -1000,7 +1000,7 @@ static void* run_thread(void* arg) {
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
     thread->is_started = true;
-    Common::Singleton<SystemState>::Instance()->AddCurrentThreadToGuestList();
+    DebugState.AddCurrentThreadToGuestList();
     ret = linker->ExecuteGuest(thread->entry, thread->arg);
     pthread_cleanup_pop(1);
     return ret;
