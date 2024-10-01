@@ -107,16 +107,7 @@ static auto UserPaths = [] {
     };
 
     create_path(PathType::UserDir, user_dir);
-
-#ifdef _WIN32
-    auto config_path = std::filesystem::path(getenv("APPDATA")) / "shadPS4";
-#elif __APPLE__
-    auto config_path = user_dir;
-#else
-    auto config_path = std::filesystem::current_path();
-#endif
-    create_path(PathType::ConfigDir, config_path);
-
+    create_path(PathType::ConfigDir, std::filesystem::current_path());
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
     create_path(PathType::ShaderDir, user_dir / SHADER_DIR);

@@ -28,7 +28,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     SaveWindowState();
-    Common::FS::SetUserPath(Common::FS::PathType::UserDir, Config::getEmulatorUserDir());
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigDir);
     Config::save(config_dir / "config.toml");
 }
