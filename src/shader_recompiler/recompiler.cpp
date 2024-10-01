@@ -55,6 +55,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     bool dump_ir = false;
+    bool extra_id_removal = false;
     if (true /*info.pgm_hash == 0x6fd3463f*/) {
         dump_ir = true;
     }
@@ -84,7 +85,6 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     // Run optimization passes
     dumpMatchingIR("pre_ssa");
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
-    // Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
     dumpMatchingIR("pre_const_prop");
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     if (program.info.stage != Stage::Compute) {
@@ -93,14 +93,18 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::RingAccessElimination(program, runtime_info, program.info.stage);
     dumpMatchingIR("pre_hoist_pre_id");
     // Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
+    if (extra_id_removal) {
+        Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
+    }
     dumpMatchingIR("pre_hoist");
     Shader::Optimization::HoistConstantReadsPass(program);
+    if (extra_id_removal) {
+        Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
+    }
     dumpMatchingIR("pre_flatten");
-    // Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     dumpMatchingIR("pre_resource_tracking");
     Shader::Optimization::ResourceTrackingPass(program);
-    // dumpMatchingIR("");
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     dumpMatchingIR("pre_dce");
     Shader::Optimization::DeadCodeEliminationPass(program);
