@@ -111,11 +111,18 @@ void GameInstallDialog::Save() {
         return;
     }
 
-    if (addonsDirectory.isEmpty() || !QDir(addonsDirectory).exists() ||
-        !QDir::isAbsolutePath(addonsDirectory)) {
+    if (addonsDirectory.isEmpty() || !QDir::isAbsolutePath(addonsDirectory)) {
         QMessageBox::critical(this, tr("Error"),
                               "The value for location to install DLC is not valid.");
         return;
+    }
+    QDir addonsDir(addonsDirectory);
+    if (!addonsDir.exists()) {
+        if (!addonsDir.mkpath(".")) {
+            QMessageBox::critical(this, tr("Error"),
+                                  "The DLC install location could not be created.");
+            return;
+        }
     }
 
     Config::setGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
