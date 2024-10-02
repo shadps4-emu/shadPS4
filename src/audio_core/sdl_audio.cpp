@@ -17,165 +17,165 @@ namespace Audio {
 constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
 
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
-						   Libraries::AudioOut::OrbisAudioOutParamFormat format) {
-	using Libraries::AudioOut::OrbisAudioOutParamFormat;
-	std::unique_lock lock{m_mutex};
-	for (int id = 0; id < portsOut.size(); id++) {
-		auto& port = portsOut[id];
-		if (!port.isOpen) {
-			port.isOpen = true;
-			port.type = type;
-			port.samples_num = samples_num;
-			port.freq = freq;
-			port.format = format;
-			SDL_AudioFormat sampleFormat;
-			switch (format) {
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
-				sampleFormat = SDL_AUDIO_S16;
-				port.channels_num = 1;
-				port.sample_size = 2;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
-				sampleFormat = SDL_AUDIO_F32;
-				port.channels_num = 1;
-				port.sample_size = 4;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
-				sampleFormat = SDL_AUDIO_S16;
-				port.channels_num = 2;
-				port.sample_size = 2;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
-				sampleFormat = SDL_AUDIO_F32;
-				port.channels_num = 2;
-				port.sample_size = 4;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
-				sampleFormat = SDL_AUDIO_S16;
-				port.channels_num = 8;
-				port.sample_size = 2;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
-				sampleFormat = SDL_AUDIO_F32;
-				port.channels_num = 8;
-				port.sample_size = 4;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
-				sampleFormat = SDL_AUDIO_S16;
-				port.channels_num = 8;
-				port.sample_size = 2;
-				break;
-			case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
-				sampleFormat = SDL_AUDIO_F32;
-				port.channels_num = 8;
-				port.sample_size = 4;
-				break;
-			default:
-				UNREACHABLE_MSG("Unknown format");
-			}
+                           Libraries::AudioOut::OrbisAudioOutParamFormat format) {
+    using Libraries::AudioOut::OrbisAudioOutParamFormat;
+    std::unique_lock lock{m_mutex};
+    for (int id = 0; id < portsOut.size(); id++) {
+        auto& port = portsOut[id];
+        if (!port.isOpen) {
+            port.isOpen = true;
+            port.type = type;
+            port.samples_num = samples_num;
+            port.freq = freq;
+            port.format = format;
+            SDL_AudioFormat sampleFormat;
+            switch (format) {
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
+                sampleFormat = SDL_AUDIO_S16;
+                port.channels_num = 1;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 1;
+                port.sample_size = 4;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
+                sampleFormat = SDL_AUDIO_S16;
+                port.channels_num = 2;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 2;
+                port.sample_size = 4;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
+                sampleFormat = SDL_AUDIO_S16;
+                port.channels_num = 8;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 8;
+                port.sample_size = 4;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
+                sampleFormat = SDL_AUDIO_S16;
+                port.channels_num = 8;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 8;
+                port.sample_size = 4;
+                break;
+            default:
+                UNREACHABLE_MSG("Unknown format");
+            }
 
-			for (int i = 0; i < port.channels_num; i++) {
-				port.volume[i] = Libraries::AudioOut::SCE_AUDIO_OUT_VOLUME_0DB;
-			}
+            for (int i = 0; i < port.channels_num; i++) {
+                port.volume[i] = Libraries::AudioOut::SCE_AUDIO_OUT_VOLUME_0DB;
+            }
 
-			SDL_AudioSpec fmt;
-			SDL_zero(fmt);
-			fmt.format = sampleFormat;
-			fmt.channels = port.channels_num;
-			fmt.freq = freq; // Set frequency from the argument
-			port.stream =
-				SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, NULL, NULL);
-			SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
-			return id + 1;
-		}
-	}
+            SDL_AudioSpec fmt;
+            SDL_zero(fmt);
+            fmt.format = sampleFormat;
+            fmt.channels = port.channels_num;
+            fmt.freq = freq; // Set frequency from the argument
+            port.stream =
+                SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, NULL, NULL);
+            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
+            return id + 1;
+        }
+    }
 
-	return -1; // all ports are used
+    return -1; // all ports are used
 }
 
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
-	if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-		return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-	}
+    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
 
-	std::shared_lock lock{m_mutex};
-	auto& port = portsOut[handle - 1];
-	if (!port.isOpen) {
-		return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-	}
-	if (ptr == nullptr) {
-		return 0;
-	}
+    if (ptr == nullptr) {
+        return 0; // Nothing to output
+    }
 
-	// TODO mixing channels
-	SDL_bool result = SDL_PutAudioStreamData(
-		port.stream, ptr, port.samples_num * port.sample_size * port.channels_num);
+    std::shared_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    if (!port.isOpen) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
 
-	lock.unlock(); // Unlock after the critical section
+    const size_t data_size = port.samples_num * port.sample_size * port.channels_num;
 
-	// TODO find a correct value 8192 is estimated
-	while (SDL_GetAudioStreamAvailable(port.stream) > AUDIO_STREAM_BUFFER_THRESHOLD) {
-		SDL_Delay(0);
-	}
+    SDL_bool result = SDL_PutAudioStreamData(port.stream, ptr, data_size);
 
-	return result ? ORBIS_OK : -1;
+    lock.unlock(); // Unlock only after necessary operations
+
+    while (SDL_GetAudioStreamAvailable(port.stream) > AUDIO_STREAM_BUFFER_THRESHOLD) {
+        SDL_Delay(0);
+    }
+
+    return result ? ORBIS_OK : -1;
 }
 
 bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
-	if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-		return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-	}
+    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
 
-	using Libraries::AudioOut::OrbisAudioOutParamFormat;
-	std::shared_lock lock{m_mutex};
-	auto& port = portsOut[handle - 1];
-	if (!port.isOpen) {
-		return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-	}
+    using Libraries::AudioOut::OrbisAudioOutParamFormat;
+    std::shared_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    if (!port.isOpen) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
 
-	for (int i = 0; i < port.channels_num; i++, bitflag >>= 1u) {
-		auto bit = bitflag & 0x1u;
+    for (int i = 0; i < port.channels_num; i++, bitflag >>= 1u) {
+        auto bit = bitflag & 0x1u;
 
-		if (bit == 1) {
-			int src_index = i;
-			if (port.format ==
-					OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD ||
-				port.format == OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD) {
-				switch (i) {
-				case 4:
-					src_index = 6;
-					break;
-				case 5:
-					src_index = 7;
-					break;
-				case 6:
-					src_index = 4;
-					break;
-				case 7:
-					src_index = 5;
-					break;
-				default:
-					break;
-				}
-			}
-			port.volume[i] = volume[src_index];
-		}
-	}
+        if (bit == 1) {
+            int src_index = i;
+            if (port.format ==
+                    OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD ||
+                port.format == OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD) {
+                switch (i) {
+                case 4:
+                    src_index = 6;
+                    break;
+                case 5:
+                    src_index = 7;
+                    break;
+                case 6:
+                    src_index = 4;
+                    break;
+                case 7:
+                    src_index = 5;
+                    break;
+                default:
+                    break;
+                }
+            }
+            port.volume[i] = volume[src_index];
+        }
+    }
 
-	return true;
+    return true;
 }
 
 bool SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
-	if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-		return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-	}
+    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
 
-	std::shared_lock lock{m_mutex};
-	auto& port = portsOut[handle - 1];
-	*type = port.type;
-	*channels_num = port.channels_num;
+    std::shared_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    *type = port.type;
+    *channels_num = port.channels_num;
 
-	return true;
+    return true;
 }
 
 } // namespace Audio
