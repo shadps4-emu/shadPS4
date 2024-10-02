@@ -115,7 +115,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                     Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
                 if (!std::filesystem::exists(trophyDir)) {
                     TRP trp;
-                    if (!trp.Extract(file.parent_path())) {
+                    if (!trp.Extract(file.parent_path(), id)) {
                         LOG_ERROR(Loader, "Couldn't extract trophies");
                     }
                 }

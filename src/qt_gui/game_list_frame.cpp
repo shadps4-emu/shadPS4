@@ -80,7 +80,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
-    if (!item) {
+    if (!item || !Config::getPlayBGM()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }

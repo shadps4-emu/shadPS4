@@ -343,8 +343,8 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
             return;
         }
 
-        QString userPath =
-            QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+        QString userPath;
+        Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
         QString tempDownloadPath = userPath + "/temp_download_update";
         QDir dir(tempDownloadPath);
         if (!dir.exists()) {
@@ -371,12 +371,13 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
 }
 
 void CheckUpdate::Install() {
-    QString userPath =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+    QString userPath;
+    Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 
     QString startingUpdate = tr("Starting Update...");
     QString tempDirPath = userPath + "/temp_download_update";
-    QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
+    QString rootPath;
+    Common::FS::PathToQString(rootPath, std::filesystem::current_path());
 
     QString scriptContent;
     QString scriptFileName;

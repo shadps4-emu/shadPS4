@@ -157,7 +157,11 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         if (copy_icon) {
             const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
             if (fs::exists(src_icon)) {
-                fs::copy_file(src_icon, GetIconPath());
+                auto output_icon = GetIconPath();
+                if (fs::exists(output_icon)) {
+                    fs::remove(output_icon);
+                }
+                fs::copy_file(src_icon, output_icon);
             }
         }
         exists = true;
