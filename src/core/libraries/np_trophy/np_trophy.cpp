@@ -253,7 +253,10 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
-    ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
+    if (!result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to parse trophy xml : {}", result.description());
+        return ORBIS_OK;
+    }
 
     GameTrophyInfo game_info{};
 
@@ -348,7 +351,10 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
-    ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
+    if (!result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy xml : {}", result.description());
+        return ORBIS_OK;
+    }
 
     GroupTrophyInfo group_info{};
 
@@ -447,7 +453,10 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
-    ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
+    if (!result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy xml : {}", result.description());
+        return ORBIS_OK;
+    }
 
     auto trophyconf = doc.child("trophyconf");
 
@@ -509,7 +518,10 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
-    ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
+    if (!result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy xml : {}", result.description());
+        return ORBIS_OK;
+    }
 
     int num_trophies = 0;
     auto trophyconf = doc.child("trophyconf");
@@ -864,7 +876,10 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
-    ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
+    if (!result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to parse trophy xml : {}", result.description());
+        return ORBIS_OK;
+    }
 
     *platinumId = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
 
