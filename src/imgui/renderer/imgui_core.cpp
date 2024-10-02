@@ -17,6 +17,7 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
+#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -75,10 +76,12 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.Fonts->AddFontDefault();
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
         imgui_font_notosansjp_regular_compressed_data,
         imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
+                                             imgui_font_proggyvector_regular_compressed_size,
+                                             16.0f);
 
     StyleColorsDark();
 

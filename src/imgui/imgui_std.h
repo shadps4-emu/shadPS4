@@ -10,6 +10,9 @@
 
 #define IM_COL32_GRAY(x) IM_COL32(x, x, x, 0xFF)
 
+#define IMGUI_FONT_TEXT 0
+#define IMGUI_FONT_MONO 1
+
 namespace ImGui {
 
 namespace Easing {

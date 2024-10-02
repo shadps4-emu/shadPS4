@@ -204,7 +204,7 @@ void L::Draw() {
     }
 
     if (show_advanced_debug) {
-        PushFont(io.Fonts->Fonts[0]);
+        PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();
         PopID();
