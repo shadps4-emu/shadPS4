@@ -315,6 +315,9 @@ void GcnDecodeContext::repairOperandType() {
     case Opcode::IMAGE_GATHER4_C:
         m_instruction.src[0].type = ScalarType::Any;
         break;
+    case Opcode::IMAGE_GATHER4_C_O:
+        m_instruction.src[0].type = ScalarType::Any;
+        break;
     default:
         break;
     }
