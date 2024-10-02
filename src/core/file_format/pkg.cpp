@@ -249,12 +249,6 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         file.Seek(currentPos);
     }
 
-    // Extract trophy files
-    if (!trp.Extract(extract_path)) {
-        // Do nothing some pkg come with no trp file.
-        // return false;
-    }
-
     // Read the seed
     std::array<u8, 16> seed;
     if (!file.Seek(pkgheader.pfs_image_offset + 0x370)) {
