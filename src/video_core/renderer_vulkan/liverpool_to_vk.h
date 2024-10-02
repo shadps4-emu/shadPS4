@@ -73,7 +73,7 @@ void EmitQuadToTriangleListIndices(u8* out_indices, u32 num_vertices);
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
     if (fmt == vk::Format::eR32Sfloat) {
         return vk::Format::eD32Sfloat;
-    } else if (fmt == vk::Format::eR16Unorm) {
+    } else if (fmt == vk::Format::eR16Unorm || fmt == vk::Format::eR8Unorm) {
         return vk::Format::eD16Unorm;
     }
     UNREACHABLE();
