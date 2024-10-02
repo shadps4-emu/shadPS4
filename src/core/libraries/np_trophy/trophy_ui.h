@@ -17,7 +17,7 @@ namespace Libraries::NpTrophy {
 
 class TrophyUI final : public ImGui::Layer {
 public:
-    TrophyUI(std::filesystem::path trophyIconPath, std::string trophyName);
+    TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
     ~TrophyUI() override;
 
     void Finish();
@@ -35,6 +35,6 @@ struct TrophyInfo {
     std::string trophy_name;
 };
 
-void AddTrophyToQueue(std::filesystem::path trophyIconPath, std::string trophyName);
+void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
 
 }; // namespace Libraries::NpTrophy
