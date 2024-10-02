@@ -6,6 +6,7 @@
 #include <atomic>
 #include <mutex>
 #include <vector>
+#include <queue>
 
 #include "common/types.h"
 
@@ -66,6 +67,8 @@ class DebugStateImpl {
     std::mutex frame_dump_list_mutex;
     std::vector<FrameDump> frame_dump_list{};
 
+    std::queue<std::string> debug_message_popup;
+
 public:
     void AddCurrentThreadToGuestList();
 
@@ -109,6 +112,13 @@ public:
     void PushQueueDump(QueueDump dump) {
         std::unique_lock lock{frame_dump_list_mutex};
         GetFrameDump().queues.push_back(std::move(dump));
+    }
+
+    void ShowDebugMessage(std::string message) {
+        if (message.empty()) {
+            return;
+        }
+        debug_message_popup.push(std::move(message));
     }
 };
 } // namespace DebugStateType

@@ -2,9 +2,11 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdio>
+#include <fmt/chrono.h>
 #include <imgui.h>
 #include <magic_enum.hpp>
 
+#include "common/io_file.h"
 #include "frame_dump.h"
 #include "imgui_internal.h"
 #include "imgui_memory_editor.h"
@@ -20,7 +22,7 @@ using namespace DebugStateType;
     }
 
 // 00 to 99
-static std::array<char, 3> small_int_to_str(s8 i) {
+static std::array<char, 3> small_int_to_str(const s32 i) {
     std::array<char, 3> label{};
     if (i == -1) {
         label[0] = 'N';
@@ -69,7 +71,7 @@ void FrameDumpViewer::Draw() {
     if (Begin(name, &is_open, ImGuiWindowFlags_NoSavedSettings)) {
         if (IsWindowAppearing()) {
             auto window = GetCurrentWindow();
-            SetWindowSize(window, ImVec2{450.0f, 500.0f});
+            SetWindowSize(window, ImVec2{470.0f, 600.0f});
         }
         BeginGroup();
         TextEx("Queue type");
@@ -142,6 +144,24 @@ void FrameDumpViewer::Draw() {
             }
             EndCombo();
         }
+        SameLine();
+        BeginDisabled(selected_cmd == -1);
+        if (SmallButton("Dump cmd")) {
+            auto now_time = fmt::localtime(std::time(nullptr));
+            const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
+                                           magic_enum::enum_name(selected_queue_type),
+                                           selected_submit_num, selected_queue_num2);
+            Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Write);
+            auto& data = frame_dump.queues[selected_cmd].data;
+            if (file.IsOpen()) {
+                DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
+                file.Write(data);
+            } else {
+                DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
+                LOG_ERROR(Core, "Failed to open file {}", fname);
+            }
+        }
+        EndDisabled();
         EndGroup();
 
         if (selected_cmd != -1) {

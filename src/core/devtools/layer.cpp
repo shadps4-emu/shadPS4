@@ -25,6 +25,8 @@ static int dump_frame_count = 1;
 static Widget::FrameGraph frame_graph;
 static std::vector<Widget::FrameDumpViewer> frame_viewers;
 
+static float debug_popup_timing = 3.0f;
+
 void L::DrawMenuBar() {
     const auto& ctx = *GImGui;
     const auto& io = ctx.IO;
@@ -103,6 +105,30 @@ void L::DrawAdvanced() {
             ++it;
         } else {
             it = frame_viewers.erase(it);
+        }
+    }
+
+    if (!DebugState.debug_message_popup.empty()) {
+        if (debug_popup_timing > 0.0f) {
+            debug_popup_timing -= io.DeltaTime;
+            if (Begin("##devtools_msg", nullptr,
+                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                          ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove)) {
+                BringWindowToDisplayFront(GetCurrentWindow());
+                const auto display_size = io.DisplaySize;
+                const auto& msg = DebugState.debug_message_popup.front();
+                const auto padding = GetStyle().WindowPadding;
+                const auto txt_size = CalcTextSize(&msg.front(), &msg.back() + 1, false, 250.0f);
+                SetWindowPos({display_size.x - padding.x * 2.0f - txt_size.x, 50.0f});
+                SetWindowSize({txt_size.x + padding.x * 2.0f, txt_size.y + padding.y * 2.0f});
+                PushTextWrapPos(250.0f);
+                TextEx(&msg.front(), &msg.back() + 1);
+                PopTextWrapPos();
+            }
+            End();
+        } else {
+            DebugState.debug_message_popup.pop();
+            debug_popup_timing = 3.0f;
         }
     }
 }
