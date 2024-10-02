@@ -909,6 +909,8 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
         return ir.SetVcc(value);
+    case OperandField::ScalarGPR:
+        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), value);
     default:
         UNREACHABLE();
     }

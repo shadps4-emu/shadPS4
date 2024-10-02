@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Soita otsikkomusiikkia</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Äänenvoimakkuus</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
@@ -970,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Vie hiiri valinnan päälle näyttääksesi kuvauksen tähän</translation>
+			<source>Point your mouse at an option to display its description.</source>
+			<translation>Siirrä hiiri vaihtoehdon päälle näyttämään sen kuvaus.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1016,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Päivitys:\nVakaa: Viralliset versiot, jotka julkaistaan joka kuukausi ja voivat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nEpävakaa: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne voivat sisältää bugeja ja ovat vähemmän vakaita.</translation>
+			<translation>Päivitys:\nRelease: Viralliset versiot, jotka julkaistaan joka kuukausi ja voivat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nNightly: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne voivat sisältää bugeja ja ovat vähemmän vakaita.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

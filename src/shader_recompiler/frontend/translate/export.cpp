@@ -25,7 +25,7 @@ void Translator::EmitExport(const GcnInst& inst) {
             return comp;
         }
         const u32 index = u32(attrib) - u32(IR::Attribute::RenderTarget0);
-        switch (runtime_info.fs_info.mrt_swizzles[index]) {
+        switch (runtime_info.fs_info.color_buffers[index].mrt_swizzle) {
         case MrtSwizzle::Identity:
             return comp;
         case MrtSwizzle::Alt:

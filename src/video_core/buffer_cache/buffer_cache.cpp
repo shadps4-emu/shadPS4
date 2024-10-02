@@ -114,6 +114,8 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
     std::array<vk::Buffer, NumVertexBuffers> host_buffers;
     std::array<vk::DeviceSize, NumVertexBuffers> host_offsets;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_sizes;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_strides;
     boost::container::static_vector<AmdGpu::Buffer, NumVertexBuffers> guest_buffers;
 
     struct BufferRange {
@@ -193,11 +195,18 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
         host_buffers[i] = host_buffer->vk_buffer;
         host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
+        host_sizes[i] = buffer.GetSize();
+        host_strides[i] = buffer.GetStride();
     }
 
     if (num_buffers > 0) {
         const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        if (instance.IsVertexInputDynamicState()) {
+            cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        } else {
+            cmdbuf.bindVertexBuffers2EXT(0, num_buffers, host_buffers.data(), host_offsets.data(),
+                                         host_sizes.data(), host_strides.data());
+        }
     }
 
     return has_step_rate;

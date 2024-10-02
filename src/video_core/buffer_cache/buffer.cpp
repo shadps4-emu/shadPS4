@@ -95,7 +95,8 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     // Create buffer object.
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
-        .usage = flags,
+        // When maintenance5 is not supported, use all flags since we can't add flags to views.
+        .usage = instance->IsMaintenance5Supported() ? flags : AllFlags,
     };
     VmaAllocationInfo alloc_info{};
     buffer.Create(buffer_ci, usage, &alloc_info);
@@ -119,7 +120,7 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
                             : vk::BufferUsageFlagBits2KHR::eUniformTexelBuffer,
     };
     const vk::BufferViewCreateInfo view_ci = {
-        .pNext = &usage_flags,
+        .pNext = instance->IsMaintenance5Supported() ? &usage_flags : nullptr,
         .buffer = buffer.buffer,
         .format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt),
         .offset = offset,

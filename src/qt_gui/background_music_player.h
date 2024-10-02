@@ -16,6 +16,7 @@ public:
         return instance;
     }
 
+    void setVolume(int volume);
     void playMusic(const QString& snd0path);
     void stopMusic();
 

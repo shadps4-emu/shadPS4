@@ -192,8 +192,9 @@ int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileS
 #endif
 
     if (!IsOpen()) {
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}",
-                  PathToUTF8String(file_path));
+        const auto ec = std::error_code{result, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                  PathToUTF8String(file_path), ec.message());
     }
 
     return result;
@@ -369,6 +370,18 @@ u64 IOFile::GetSize() const {
 
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     if (!IsOpen()) {
+        return false;
+    }
+
+    u64 size = GetSize();
+    if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+        return false;
+    } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+        return false;
+    } else if (origin == SeekOrigin::End && offset > 0) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
         return false;
     }
 

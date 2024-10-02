@@ -41,7 +41,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
     PopulateGameList();
 
-    connect(this, &QTableWidget::itemClicked, this, &GameListFrame::SetListBackgroundImage);
+    connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this,
             &GameListFrame::RefreshListBackgroundImage);
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
@@ -67,6 +67,16 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
     });
+}
+
+void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                                         int previousColumn) {
+    QTableWidgetItem* item = this->item(currentRow, currentColumn);
+    if (!item) {
+        return;
+    }
+    SetListBackgroundImage(item);
+    PlayBackgroundMusic(item);
 }
 
 void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {

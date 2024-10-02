@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Luaj muzikën e titullit</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Volumi</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
@@ -970,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Vendosni miun në një opsion për të shfaqur një përshkrim këtu</translation>
+			<source>Point your mouse at an option to display its description.</source>
+			<translation>Hidhni mouse-in mbi një opsion për të shfaqur përshkrimin e tij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1016,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aktualizimi:\nStabil: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të testuara.\nPanshkuar: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të testuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

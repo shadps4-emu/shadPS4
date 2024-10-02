@@ -8,6 +8,7 @@
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 #include "common/logging/formatter.h"
+#include "common/path_util.h"
 #include "config.h"
 
 namespace toml {
@@ -32,6 +33,7 @@ namespace Config {
 static bool isNeo = false;
 static bool isFullscreen = false;
 static bool playBGM = false;
+static int BGMvolume = 50;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
@@ -58,6 +60,7 @@ static bool vkCrashDiagnostic = false;
 
 // Gui
 std::filesystem::path settings_install_dir = {};
+std::filesystem::path settings_addon_install_dir = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -87,6 +90,10 @@ bool isFullscreenMode() {
 
 bool getPlayBGM() {
     return playBGM;
+}
+
+int getBGMvolume() {
+    return BGMvolume;
 }
 
 u32 getScreenWidth() {
@@ -249,6 +256,10 @@ void setPlayBGM(bool enable) {
     playBGM = enable;
 }
 
+void setBGMvolume(int volume) {
+    BGMvolume = volume;
+}
+
 void setLanguage(u32 language) {
     m_language = language;
 }
@@ -289,6 +300,9 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
 }
 void setGameInstallDir(const std::filesystem::path& dir) {
     settings_install_dir = dir;
+}
+void setAddonInstallDir(const std::filesystem::path& dir) {
+    settings_addon_install_dir = dir;
 }
 void setMainWindowTheme(u32 theme) {
     mw_themes = theme;
@@ -345,6 +359,13 @@ u32 getMainWindowGeometryH() {
 }
 std::filesystem::path getGameInstallDir() {
     return settings_install_dir;
+}
+std::filesystem::path getAddonInstallDir() {
+    if (settings_addon_install_dir.empty()) {
+        // Default for users without a config file or a config file from before this option existed
+        return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
+    }
+    return settings_addon_install_dir;
 }
 u32 getMainWindowTheme() {
     return mw_themes;
@@ -412,6 +433,7 @@ void load(const std::filesystem::path& path) {
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
+        BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
@@ -472,6 +494,7 @@ void load(const std::filesystem::path& path) {
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
         settings_install_dir = toml::find_fs_path_or(gui, "installDir", {});
+        settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
@@ -513,6 +536,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["playBGM"] = playBGM;
+    data["General"]["BGMvolume"] = BGMvolume;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
@@ -545,6 +569,8 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["mw_width"] = m_window_size_W;
     data["GUI"]["mw_height"] = m_window_size_H;
     data["GUI"]["installDir"] = std::string{fmt::UTF(settings_install_dir.u8string()).data};
+    data["GUI"]["addonInstallDir"] =
+        std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["GUI"]["geometry_x"] = main_window_geometry_x;
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;
@@ -565,6 +591,7 @@ void setDefaultValues() {
     isNeo = false;
     isFullscreen = false;
     playBGM = false;
+    BGMvolume = 50;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";

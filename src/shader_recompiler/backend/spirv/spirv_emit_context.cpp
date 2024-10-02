@@ -120,6 +120,7 @@ void EmitContext::DefineArithmeticTypes() {
 
     output_f32 = Name(TypePointer(spv::StorageClass::Output, F32[1]), "output_f32");
     output_u32 = Name(TypePointer(spv::StorageClass::Output, U32[1]), "output_u32");
+    output_s32 = Name(TypePointer(spv::StorageClass::Output, S32[1]), "output_s32");
 
     full_result_i32x2 = Name(TypeStruct(S32[1], S32[1]), "full_result_i32x2");
     full_result_u32x2 = Name(TypeStruct(U32[1], U32[1]), "full_result_u32x2");
@@ -151,21 +152,21 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
-EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id) {
+EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
+                                                          bool output) {
     switch (fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
     case AmdGpu::NumberFormat::SnormNz:
-        return {id, input_f32, F32[1], 4};
-    case AmdGpu::NumberFormat::Uint:
-        return {id, input_u32, U32[1], 4};
-    case AmdGpu::NumberFormat::Sint:
-        return {id, input_s32, S32[1], 4};
     case AmdGpu::NumberFormat::Sscaled:
-        return {id, input_f32, F32[1], 4};
     case AmdGpu::NumberFormat::Uscaled:
-        return {id, input_f32, F32[1], 4};
+    case AmdGpu::NumberFormat::Srgb:
+        return {id, output ? output_f32 : input_f32, F32[1], 4, false};
+    case AmdGpu::NumberFormat::Uint:
+        return {id, output ? output_u32 : input_u32, U32[1], 4, true};
+    case AmdGpu::NumberFormat::Sint:
+        return {id, output ? output_s32 : input_s32, S32[1], 4, true};
     default:
         break;
     }
@@ -236,9 +237,13 @@ void EmitContext::DefineInputs() {
                                                                                              : 1;
                 // Note that we pass index rather than Id
                 input_params[input.binding] = {
-                    rate_idx, input_u32,
-                    U32[1],   input.num_components,
-                    false,    input.instance_data_buf,
+                    rate_idx,
+                    input_u32,
+                    U32[1],
+                    input.num_components,
+                    true,
+                    false,
+                    input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
@@ -247,7 +252,7 @@ void EmitContext::DefineInputs() {
                 } else {
                     Name(id, fmt::format("vs_in_attr{}", input.binding));
                 }
-                input_params[input.binding] = GetAttributeInfo(input.fmt, id);
+                input_params[input.binding] = GetAttributeInfo(input.fmt, id, false);
                 interfaces.push_back(id);
             }
         }
@@ -320,10 +325,12 @@ void EmitContext::DefineOutputs() {
                 continue;
             }
             const u32 num_components = info.stores.NumComponents(mrt);
-            frag_color[i] = DefineOutput(F32[num_components], i);
-            frag_num_comp[i] = num_components;
-            Name(frag_color[i], fmt::format("frag_color{}", i));
-            interfaces.push_back(frag_color[i]);
+            const AmdGpu::NumberFormat num_format{runtime_info.fs_info.color_buffers[i].num_format};
+            const Id type{GetAttributeType(*this, num_format)[num_components]};
+            const Id id = DefineOutput(type, i);
+            Name(id, fmt::format("frag_color{}", i));
+            frag_outputs[i] = GetAttributeInfo(num_format, id, true);
+            interfaces.push_back(id);
         }
         break;
     default:

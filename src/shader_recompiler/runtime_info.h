@@ -80,10 +80,16 @@ struct FragmentRuntimeInfo {
         auto operator<=>(const PsInput&) const noexcept = default;
     };
     boost::container::static_vector<PsInput, 32> inputs;
-    std::array<MrtSwizzle, MaxColorBuffers> mrt_swizzles;
+    struct PsColorBuffer {
+        AmdGpu::NumberFormat num_format;
+        MrtSwizzle mrt_swizzle;
+
+        auto operator<=>(const PsColorBuffer&) const noexcept = default;
+    };
+    std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
-        return std::ranges::equal(mrt_swizzles, other.mrt_swizzles) &&
+        return std::ranges::equal(color_buffers, other.color_buffers) &&
                std::ranges::equal(inputs, other.inputs);
     }
 };

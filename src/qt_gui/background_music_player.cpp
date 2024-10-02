@@ -10,6 +10,12 @@ BackgroundMusicPlayer::BackgroundMusicPlayer(QObject* parent) : QObject(parent) 
     m_mediaPlayer->setLoops(QMediaPlayer::Infinite);
 }
 
+void BackgroundMusicPlayer::setVolume(int volume) {
+    float linearVolume = QAudio::convertVolume(volume / 100.0f, QAudio::LogarithmicVolumeScale,
+                                               QAudio::LinearVolumeScale);
+    m_audioOutput->setVolume(linearVolume);
+}
+
 void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
     if (snd0path.isEmpty()) {
         stopMusic();
