@@ -54,8 +54,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
             s64 seekPos = sizeof(TrpHeader);
             std::filesystem::path trpFilesPath(
                 Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / titleId /
-                "TrophyFiles" /
-                it.path().stem());
+                "TrophyFiles" / it.path().stem());
             std::filesystem::create_directories(trpFilesPath / "Icons");
             std::filesystem::create_directory(trpFilesPath / "Xml");
 
