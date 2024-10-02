@@ -11,6 +11,8 @@ class SymbolsResolver;
 
 namespace Libraries::ImeDialog {
 
+constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 0x78;
+
 enum class Error : u32 {
     OK = 0x0,
     BUSY = 0x80bc0001,
@@ -53,19 +55,19 @@ enum class Error : u32 {
     DIALOG_NOT_IN_USE = 0x80bc0107
 };
 
-enum class OrbisImeDialogStatus : s32 {
+enum class OrbisImeDialogStatus : u32 {
     NONE = 0,
     RUNNING = 1,
     FINISHED = 2
 };
 
-enum class OrbisImeDialogEndStatus : s32 {
+enum class OrbisImeDialogEndStatus : u32 {
     OK = 0,
     USER_CANCELED = 1,
     ABORTED = 2
 };
 
-enum class OrbisImeType : s32 {
+enum class OrbisImeType : u32 {
     DEFAULT = 0,
     BASIC_LATIN = 1,
     URL = 2,
@@ -73,7 +75,7 @@ enum class OrbisImeType : s32 {
     NUMBER = 4
 };
 
-enum class OrbisImeEnterLabel : s32 {
+enum class OrbisImeEnterLabel : u32 {
     DEFAULT = 0,
     SEND = 1,
     SEARCH = 2,
@@ -87,30 +89,30 @@ enum class OrbisImeDialogOption : u32 {
     NO_AUTO_COMPLETION = 4
 };
 
-enum class OrbisImeInputMethod : s32 {
+enum class OrbisImeInputMethod : u32 {
     DEFAULT = 0
 };
 
-enum class OrbisImeHorizontalAlignment : s32 {
+enum class OrbisImeHorizontalAlignment : u32 {
     LEFT = 0,
     CENTER = 1,
     RIGHT = 2
 };
 
-enum class OrbisImeVerticalAlignment : s32 {
+enum class OrbisImeVerticalAlignment : u32 {
     TOP = 0,
     CENTER = 1,
     BOTTOM = 2
 };
 
-enum class OrbisImePanelPriority : s32 {
+enum class OrbisImePanelPriority : u32 {
     DEFAULT = 0,
     ALPHABET = 1,
     SYMBOL = 2,
     ACCENT = 3
 };
 
-enum class OrbisImeKeyboardType : s32 {
+enum class OrbisImeKeyboardType : u32 {
     NONE = 0,
     DANISH = 1,
     GERMAN = 2,
@@ -188,13 +190,13 @@ struct OrbisImeDialogParam {
     OrbisImeTextFilter filter;
     OrbisImeDialogOption option;
     u32 maxTextLength;
-    wchar_t* inputTextBuffer;
+    char16_t* inputTextBuffer;
     float posx;
     float posy;
     OrbisImeHorizontalAlignment horizontalAlignment;
     OrbisImeVerticalAlignment verticalAlignment;
-    const wchar_t* placeholder;
-    const wchar_t* title;
+    const char16_t* placeholder;
+    const char16_t* title;
     s8 reserved[16];
 };
 
