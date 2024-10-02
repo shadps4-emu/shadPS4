@@ -88,11 +88,17 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                     "Rectangle List primitive type is only supported for embedded VS");
     }
 
+    auto prim_restart = key.enable_primitive_restart != 0;
+    if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
+        LOG_WARNING(Render_Vulkan,
+                    "Primitive restart is enabled for list topology but not supported by driver.");
+        prim_restart = false;
+    }
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = key.enable_primitive_restart != 0,
+        .primitiveRestartEnable = prim_restart,
     };
-    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF ||
+    ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
@@ -387,7 +393,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
-            if (vsharp) {
+            if (vsharp && vsharp.GetSize() > 0) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");

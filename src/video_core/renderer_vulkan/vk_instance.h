@@ -138,6 +138,15 @@ public:
         return null_descriptor;
     }
 
+    /// Returns true when VK_KHR_maintenance5 is supported.
+    bool IsMaintenance5Supported() const {
+        return maintenance5;
+    }
+
+    bool IsListRestartSupported() const {
+        return list_restart;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -280,6 +289,8 @@ private:
     bool color_write_en{};
     bool vertex_input_dynamic_state{};
     bool null_descriptor{};
+    bool maintenance5{};
+    bool list_restart{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};
