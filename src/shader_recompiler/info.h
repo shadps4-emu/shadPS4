@@ -179,8 +179,8 @@ struct Info {
 
     // TODO move out of Info, not needed
     SrtInfo srt_info;
-    // TODO maybe move
-    Xbyak::CodeGenerator srt_codegen;
+
+    SmallCodeArray srt_fn;
 
     std::span<const u32> user_data;
     Stage stage;
@@ -260,9 +260,10 @@ struct Info {
         // not necessary
         std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        // srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), sharp_buf.buf.data());
-        PFN_SrtWalker fn = srt_codegen.getCode<PFN_SrtWalker>();
-        fn(user_data.data(), sharp_buf.buf.data());
+        auto pfn = srt_fn.getCode<PFN_SrtWalker>();
+        if (pfn) {
+            pfn(user_data.data(), sharp_buf.buf.data());
+        }
     }
 };
 

@@ -8,15 +8,17 @@
 #include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
 
+#include <memory>
 #include <unordered_map>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/types.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
+#include "xbyak/xbyak.h"
 
 namespace Shader {
 
-// TODO: GVN for readconst instructions to dedup them before SRT pass?
 // Refactor FlatSharpBuffer so we only rerun walker once per draw. Stuff it in
 // runtime_info?
 
@@ -34,6 +36,46 @@ struct FlatSharpBuffer {
 };
 
 typedef void (*PFN_SrtWalker)(const u32* /*user_data*/, u32* /*flat_dst*/);
+
+// Utility for copying a simple relocatable function from a Xbyak code generator to manage memory
+// separately
+class SmallCodeArray {
+public:
+    SmallCodeArray() {}
+    SmallCodeArray& operator=(SmallCodeArray&& other) = default;
+    SmallCodeArray(SmallCodeArray&& other) = default;
+
+    SmallCodeArray& operator=(const SmallCodeArray& other) {
+        *this = SmallCodeArray(codebuf.get(), bufsize);
+        return *this;
+    }
+    SmallCodeArray(const SmallCodeArray& other) {
+        *this = other;
+    };
+
+    SmallCodeArray(const u8* code, size_t codesize) {
+        size_t pagesize = Xbyak::inner::getPageSize();
+        bufsize = Common::AlignUp(codesize, pagesize);
+        auto fn = new (std::align_val_t(pagesize)) u8[bufsize];
+        ASSERT(fn);
+        codebuf = std::unique_ptr<u8[]>(fn);
+        memcpy(codebuf.get(), code, codesize);
+        Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RE);
+    }
+
+    ~SmallCodeArray() {
+        Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RW);
+    }
+
+    template <class F>
+    F getCode() const {
+        return reinterpret_cast<F>(codebuf.get());
+    }
+
+private:
+    size_t bufsize;
+    std::unique_ptr<u8[]> codebuf;
+};
 
 // Only put the Inst corresponding to the LO dword (the sgpr base) of the pointer in the node
 // -> children map (as a key)
@@ -78,6 +120,10 @@ struct SrtInfo {
             return &it->second;
         }
         return nullptr;
+    }
+
+    bool IsEmpty() {
+        return fetch_reservations.empty() && srt_roots.empty();
     }
 };
 

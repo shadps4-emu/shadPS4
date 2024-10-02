@@ -2,8 +2,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <new>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#include "common/alignment.h"
+#include "common/singleton.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
@@ -15,6 +18,13 @@
 using namespace Xbyak::util;
 
 // TODO make sure no problems with identity and Insts being used in maps
+
+namespace {
+class SrtCodegen : public Xbyak::CodeGenerator {
+public:
+    SrtCodegen() : CodeGenerator(1_MB) {}
+};
+} // namespace
 
 namespace Shader {
 // Hacky. TODO refactor info RuntimeInfo or smtn
@@ -80,10 +90,12 @@ static void VisitPointer(u32 off_dw, const IR::Inst* subtree, Info& info, Xbyak:
 
 static void GenerateSrtProgram(Shader::Info& info) {
     SrtInfo& srt_info = info.srt_info;
-    Xbyak::CodeGenerator& c = info.srt_codegen;
+    Xbyak::CodeGenerator& c = *Common::Singleton<SrtCodegen>::Instance();
     srt_info.flattened_bufsize_dw = NumUserDataRegs + 4 * srt_info.fetch_reservations.size();
 
-    c.inLocalLabel();
+    if (srt_info.IsEmpty()) {
+        return;
+    }
 
     // Special case for V# step rate buffers in fetch shader
     for (auto i = 0; i < srt_info.fetch_reservations.size(); i++) {
@@ -113,6 +125,11 @@ static void GenerateSrtProgram(Shader::Info& info) {
     }
 
     c.ret();
+    c.ready();
+
+    info.srt_fn = SmallCodeArray(c.getCode(), c.getSize());
+
+    c.reset();
 }
 
 }; // namespace
