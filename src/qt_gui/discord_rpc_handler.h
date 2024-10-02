@@ -19,7 +19,7 @@ class RPC {
     bool enabled = false;
 
 public:
-    void init();
+    void init(const std::string& appId);
     void setStatusIdling();
     void setStatusPlaying(const std::string& game_name, const std::string& game_id);
 };

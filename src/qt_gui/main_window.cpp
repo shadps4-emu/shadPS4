@@ -71,7 +71,7 @@ bool MainWindow::Init() {
     statusBar->showMessage(statusMessage);
 
     // Initialize Discord RPC
-    discordRPC.init();
+    discordRPC.init("1290207945476280360");
     discordRPC.setStatusIdling();
 
     return true;

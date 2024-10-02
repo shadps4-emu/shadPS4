@@ -7,10 +7,10 @@
 
 namespace DiscordRPCHandler {
 
-void RPC::init() {
+void RPC::init(const std::string& appId) {
     DiscordEventHandlers handlers{};
-    std::string discordAppId = "1290207945476280360";
-    Discord_Initialize(discordAppId.c_str(), &handlers, 1, nullptr);
+
+    Discord_Initialize(appId.c_str(), &handlers, 1, nullptr);
     startTimestamp = time(nullptr);
     enabled = true;
 }
@@ -18,7 +18,7 @@ void RPC::init() {
 void RPC::setStatusIdling() {
     DiscordRichPresence rpc{};
     rpc.largeImageKey = "https://github.com/shadps4-emu/shadPS4/raw/main/.github/shadps4.png";
-    rpc.largeImageText = "ShadPS4 is a PS4 emulator";
+    rpc.largeImageText = "shadPS4 is a PS4 emulator";
     rpc.startTimestamp = startTimestamp;
     rpc.details = "Idle";
 
