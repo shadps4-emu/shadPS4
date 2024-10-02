@@ -153,7 +153,7 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
 }
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
-                                                          bool output) {
+                                                          u32 num_components, bool output) {
     switch (fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
@@ -162,11 +162,11 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     case AmdGpu::NumberFormat::Sscaled:
     case AmdGpu::NumberFormat::Uscaled:
     case AmdGpu::NumberFormat::Srgb:
-        return {id, output ? output_f32 : input_f32, F32[1], 4, false};
+        return {id, output ? output_f32 : input_f32, F32[1], num_components, false};
     case AmdGpu::NumberFormat::Uint:
-        return {id, output ? output_u32 : input_u32, U32[1], 4, true};
+        return {id, output ? output_u32 : input_u32, U32[1], num_components, true};
     case AmdGpu::NumberFormat::Sint:
-        return {id, output ? output_s32 : input_s32, S32[1], 4, true};
+        return {id, output ? output_s32 : input_s32, S32[1], num_components, true};
     default:
         break;
     }
@@ -228,6 +228,7 @@ void EmitContext::DefineInputs() {
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
 
         for (const auto& input : info.vs_inputs) {
+            ASSERT(input.binding < IR::NumParams);
             const Id type{GetAttributeType(*this, input.fmt)[4]};
             if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
                 input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
@@ -252,7 +253,7 @@ void EmitContext::DefineInputs() {
                 } else {
                     Name(id, fmt::format("vs_in_attr{}", input.binding));
                 }
-                input_params[input.binding] = GetAttributeInfo(input.fmt, id, false);
+                input_params[input.binding] = GetAttributeInfo(input.fmt, id, 4, false);
                 interfaces.push_back(id);
             }
         }
@@ -264,9 +265,11 @@ void EmitContext::DefineInputs() {
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : runtime_info.fs_info.inputs) {
             const u32 semantic = input.param_index;
+            ASSERT(semantic < IR::NumParams);
             if (input.is_default && !input.is_flat) {
-                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), F32[1],
-                                          F32[1], 4, true};
+                input_params[semantic] = {
+                    MakeDefaultValue(*this, input.default_value), input_f32, F32[1], 4, false, true,
+                };
                 continue;
             }
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
@@ -277,7 +280,8 @@ void EmitContext::DefineInputs() {
                 Decorate(id, spv::Decoration::Flat);
             }
             Name(id, fmt::format("fs_in_attr{}", semantic));
-            input_params[semantic] = {id, input_f32, F32[1], num_components};
+            input_params[semantic] =
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, false);
             interfaces.push_back(id);
         }
         break;
@@ -313,7 +317,8 @@ void EmitContext::DefineOutputs() {
             const u32 num_components = info.stores.NumComponents(param);
             const Id id{DefineOutput(F32[num_components], i)};
             Name(id, fmt::format("out_attr{}", i));
-            output_params[i] = {id, output_f32, F32[1], num_components};
+            output_params[i] =
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
             interfaces.push_back(id);
         }
         break;
@@ -327,9 +332,9 @@ void EmitContext::DefineOutputs() {
             const u32 num_components = info.stores.NumComponents(mrt);
             const AmdGpu::NumberFormat num_format{runtime_info.fs_info.color_buffers[i].num_format};
             const Id type{GetAttributeType(*this, num_format)[num_components]};
-            const Id id = DefineOutput(type, i);
+            const Id id{DefineOutput(type, i)};
             Name(id, fmt::format("frag_color{}", i));
-            frag_outputs[i] = GetAttributeInfo(num_format, id, true);
+            frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             interfaces.push_back(id);
         }
         break;
