@@ -545,6 +545,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 break;
             }
+            case PM4ItOpcode::SetPredication: {
+                const auto* set_predication = reinterpret_cast<const PM4CmdSetPredication*>(header);
+                LOG_WARNING(Lib_GnmDriver, "SetPredication ignored");
+                break;
+            }
             default:
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
@@ -643,6 +648,14 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
             release_mem->SignalFence(Platform::InterruptId::Compute0RelMem); // <---
+            break;
+        }
+        case PM4ItOpcode::SetQueueReg: {
+            const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
+            // Find what is the value of QueueRegWordOffset?
+            // std::memcpy(&regs.reg_array[QueueRegWordOffset + set_data->reg_offset],
+            //             header + 2, (count - 1) * sizeof(u32));
+            LOG_WARNING(Lib_GnmDriver, "SetQueueReg ignored, offset={:#x}, value={:#x}", u32(set_data->reg_offset), *(set_data->data));
             break;
         }
         default:

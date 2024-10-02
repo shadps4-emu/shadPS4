@@ -807,4 +807,41 @@ struct PM4CmdDrawIndexIndirect {
     u32 draw_initiator; ///< Draw Initiator Register
 };
 
+struct PM4CmdSetPredication {
+    enum class Predication : u32 {
+        DrawIfNotVisibleOrOverflow = 0u,
+        DrawIfVisibleOrNoOverflow = 1u
+    };
+    enum class PredicationOp : u32 {
+        ClearPredicate = 0b000u,
+        SetZPassPredicate = 0b001u,
+        SetPrimCountPredicate = 0b010u,
+    };
+    enum class PredicationHint : u32 {
+        WaitUntilFinalZPassWritten = 0u,
+        DrawIfNotFinalZPassWritten = 1u
+    };
+
+    PM4Type3Header header; ///< header
+    union {
+        BitField<4, 28, u32> start_addr_lo; ///< Start address bits [31:4]
+        u32 dw1;
+    };
+    union {
+        BitField<0, 8, u32> start_addr_hi; ///< Start address bits [39:32] - taken from PAL
+                                           ///< SI programming guide says it's 16 bits but that
+                                           ///< overlaps with subsequent fields, so likely an error
+        BitField<8, 1, Predication> predication; ///< Predication boolean, valid for both ops
+        BitField<12, 1, PredicationHint> hint; ///< Only valid for ZPass/Occlusion Predicate
+        BitField<16, 3, PredicationOp> op; ///< Predicate operation
+        BitField<31, 1, u32> cont; ///< Continue set predication, true if subsequent packet
+        u32 dw2;
+    };
+
+    template <typename T>
+    T Address() const {
+        return reinterpret_cast<T>(start_addr_lo | u64(start_addr_hi) << 32);
+    }
+};
+
 } // namespace AmdGpu
