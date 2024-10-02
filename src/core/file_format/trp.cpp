@@ -104,12 +104,13 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                     size_t pos = xml_name.find("ESFM");
                     if (pos != std::string::npos)
                         xml_name.replace(pos, xml_name.length(), "XML");
-                    size_t written =
-                        Common::FS::IOFile::WriteBytes(trpFilesPath / "Xml" / xml_name, XML);
+                    std::filesystem::path path = trpFilesPath / "Xml" / xml_name;
+                    size_t written = Common::FS::IOFile::WriteBytes(path, XML);
                     if (written != XML.size()) {
-                        LOG_CRITICAL(Common_Filesystem,
-                                     "Trophy XML write failed, wanted to write {} bytes, wrote {}",
-                                     XML.size(), written);
+                        LOG_CRITICAL(
+                            Common_Filesystem,
+                            "Trophy XML {} write failed, wanted to write {} bytes, wrote {}",
+                            fmt::UTF(path.u8string()), XML.size(), written);
                     }
                 }
             }
