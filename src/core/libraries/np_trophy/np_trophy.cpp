@@ -966,7 +966,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         }
     }
 
-    doc.save_file((trophy_dir.string() + "/trophy00/Xml/TROP.XML").c_str());
+    doc.save_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").native().c_str());
 
     return ORBIS_OK;
 }

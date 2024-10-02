@@ -16,12 +16,13 @@ std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
 
-TrophyUI::TrophyUI(std::filesystem::path trophyIconPath, std::string trophyName)
+TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName)
     : trophy_name(trophyName) {
     if (std::filesystem::exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
-        LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}", trophyIconPath.string());
+        LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
+                  fmt::UTF(trophyIconPath.u8string()));
     }
     AddLayer(this);
 }
@@ -66,7 +67,7 @@ void TrophyUI::Draw() {
 
     trophy_timer -= io.DeltaTime;
     if (trophy_timer <= 0) {
-        queueMtx.lock();
+        std::lock_guard<std::mutex> lock(queueMtx);
         if (!trophy_queue.empty()) {
             TrophyInfo next_trophy = trophy_queue.front();
             trophy_queue.pop();
@@ -74,12 +75,11 @@ void TrophyUI::Draw() {
         } else {
             current_trophy_ui.reset();
         }
-        queueMtx.unlock();
     }
 }
 
-void AddTrophyToQueue(std::filesystem::path trophyIconPath, std::string trophyName) {
-    queueMtx.lock();
+void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName) {
+    std::lock_guard<std::mutex> lock(queueMtx);
     if (current_trophy_ui.has_value()) {
         TrophyInfo new_trophy;
         new_trophy.trophy_icon_path = trophyIconPath;
@@ -88,7 +88,6 @@ void AddTrophyToQueue(std::filesystem::path trophyIconPath, std::string trophyNa
     } else {
         current_trophy_ui.emplace(trophyIconPath, trophyName);
     }
-    queueMtx.unlock();
 }
 
 } // namespace Libraries::NpTrophy
