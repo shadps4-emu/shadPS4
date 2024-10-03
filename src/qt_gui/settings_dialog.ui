@@ -664,13 +664,6 @@
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QCheckBox" name="dumpPM4CheckBox">
-                 <property name="text">
-                  <string>Enable PM4 Dumping</string>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>

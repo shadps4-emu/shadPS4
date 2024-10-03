@@ -36,6 +36,8 @@ union PM4Type0Header {
 };
 
 union PM4Type3Header {
+    static constexpr u32 TYPE = 3;
+
     constexpr PM4Type3Header(PM4ItOpcode code, u32 num_words_min_one,
                              PM4ShaderType stype = PM4ShaderType::ShaderGraphics,
                              PM4Predicate pred = PM4Predicate::PredDisable) {

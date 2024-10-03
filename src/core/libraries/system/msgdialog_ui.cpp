@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include <utility>
 
 #include <imgui.h>
 #include "common/assert.h"
@@ -281,10 +282,15 @@ void MsgDialogUi::Draw() {
     first_render = false;
 }
 
-DialogResult Libraries::MsgDialog::ShowMsgDialog(MsgDialogState state, bool block) {
-    DialogResult result{};
-    Status status = Status::RUNNING;
-    MsgDialogUi dialog(&state, &status, &result);
+DialogResult Libraries::MsgDialog::ShowMsgDialog(MsgDialogState p_state, bool block) {
+    static DialogResult result{};
+    static Status status;
+    static MsgDialogUi dialog;
+    static MsgDialogState state;
+    dialog = MsgDialogUi{};
+    status = Status::RUNNING;
+    state = std::move(p_state);
+    dialog = MsgDialogUi(&state, &status, &result);
     if (block) {
         while (status == Status::RUNNING) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));

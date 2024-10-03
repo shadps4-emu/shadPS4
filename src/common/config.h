@@ -34,7 +34,6 @@ bool autoUpdate();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
-bool dumpPM4();
 bool isRdocEnabled();
 u32 vblankDiv();
 
@@ -44,7 +43,6 @@ void setAutoUpdate(bool enable);
 void setNullGpu(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);
-void setDumpPM4(bool enable);
 void setVblankDiv(u32 value);
 void setGpuId(s32 selectedGpuId);
 void setScreenWidth(u32 width);

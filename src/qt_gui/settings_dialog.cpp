@@ -174,9 +174,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->nullGpuCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setNullGpu(val); });
-
-        connect(ui->dumpPM4CheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setDumpPM4(val); });
     }
 
     // DEBUG TAB
@@ -215,7 +212,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
-        ui->dumpPM4CheckBox->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -238,7 +234,6 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vblankSpinBox->setValue(Config::vblankDiv());
     ui->dumpShadersCheckBox->setChecked(Config::dumpShaders());
     ui->nullGpuCheckBox->setChecked(Config::nullGpu());
-    ui->dumpPM4CheckBox->setChecked(Config::dumpPM4());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
     ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());

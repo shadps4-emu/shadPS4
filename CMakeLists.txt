@@ -338,6 +338,19 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
 )
 
+set(DEV_TOOLS src/core/devtools/layer.cpp
+              src/core/devtools/layer.h
+              src/core/devtools/gcn/gcn_context_regs.cpp
+              src/core/devtools/gcn/gcn_op_names.cpp
+              src/core/devtools/gcn/gcn_shader_regs.cpp
+              src/core/devtools/widget/cmd_list.cpp
+              src/core/devtools/widget/cmd_list.h
+              src/core/devtools/widget/frame_dump.cpp
+              src/core/devtools/widget/frame_dump.h
+              src/core/devtools/widget/frame_graph.cpp
+              src/core/devtools/widget/frame_graph.h
+)
+
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h
            src/common/logging/filter.cpp
@@ -449,6 +462,9 @@ set(CORE src/core/aerolib/stubs.cpp
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
+         ${DEV_TOOLS}
+         src/core/debug_state.cpp
+         src/core/debug_state.h
          src/core/linker.cpp
          src/core/linker.h
          src/core/memory.cpp
@@ -623,8 +639,6 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
           src/imgui/imgui_texture.h
-          src/imgui/layer/video_info.cpp
-          src/imgui/layer/video_info.h
           src/imgui/renderer/imgui_core.cpp
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
@@ -723,7 +737,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")

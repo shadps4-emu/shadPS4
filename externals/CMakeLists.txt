@@ -183,3 +183,6 @@ add_subdirectory(tracy)
 if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
+
+# GCN Headers
+add_subdirectory(gcn)

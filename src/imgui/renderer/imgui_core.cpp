@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/path_util.h"
+#include "core/devtools/layer.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -16,6 +17,7 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
+#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -74,12 +76,16 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 16.0f,
-                                             &font_cfg, ranges.Data);
+    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
+        imgui_font_notosansjp_regular_compressed_data,
+        imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
+                                             imgui_font_proggyvector_regular_compressed_size,
+                                             16.0f);
 
     StyleColorsDark();
 
+    ::Core::Devtools::Layer::SetupSettings();
     Sdl::Init(window.GetSdlWindow());
 
     const Vulkan::InitInfo vk_info{
@@ -165,6 +171,8 @@ void NewFrame() {
 
     Sdl::NewFrame();
     ImGui::NewFrame();
+
+    DockSpaceOverViewport(0, GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
     for (auto* layer : layers) {
         layer->Draw();
