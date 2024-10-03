@@ -82,8 +82,8 @@ static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
 static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
     c.push(rdi);
     c.mov(rdi, ptr[rdi + (off_dw << 2)]);
-    c.mov(r10d, 0xFFFFFFFFFFFFULL);
-    c.and_(rdi, r10d);
+    c.mov(r10, 0xFFFFFFFFFFFFULL);
+    c.and_(rdi, r10);
 }
 
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
