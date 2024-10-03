@@ -151,6 +151,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             Config::setBGMvolume(val);
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
+
+        connect(ui->discordRPCCheckbox, &QCheckBox::stateChanged, this, [](int val) {
+            Config::setEnableDiscordRPC(val);
+            if (val) {
+                DiscordRPCHandler::RPC::getInstance().init();
+                DiscordRPCHandler::RPC::getInstance().setStatusIdling();
+            } else {
+                DiscordRPCHandler::RPC::getInstance().shutdown();
+            }
+        });
     }
 
     // GPU TAB
@@ -241,6 +251,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->dumpPM4CheckBox->setChecked(Config::dumpPM4());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
     ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
+    ui->discordRPCCheckbox->setChecked(Config::getEnableDiscordRPC());
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());
     ui->showSplashCheckBox->setChecked(Config::showSplash());
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());

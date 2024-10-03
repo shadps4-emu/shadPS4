@@ -15,6 +15,7 @@ bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
+bool getEnableDiscordRPC();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -52,6 +53,7 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
+void setEnableDiscordRPC(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);

@@ -16,12 +16,20 @@ enum class RPCStatus {
 
 class RPC {
     std::uint64_t startTimestamp;
-    bool enabled = false;
+    bool rpcEnabled = false;
+    RPCStatus status;
 
 public:
-    void init(const std::string& appId);
+    static RPC& getInstance() {
+        static RPC instance;
+        return instance;
+    }
+
+    void init();
     void setStatusIdling();
     void setStatusPlaying(const std::string& game_name, const std::string& game_id);
+    void shutdown();
+    bool getRPCEnabled();
 };
 
 } // namespace DiscordRPCHandler

@@ -3,16 +3,16 @@
 
 #include <cstring>
 #include <ctime>
-#include "src/qt_gui/discord_rpc_handler.h"
+#include "src/common/discord_rpc_handler.h"
 
 namespace DiscordRPCHandler {
 
-void RPC::init(const std::string& appId) {
+void RPC::init() {
     DiscordEventHandlers handlers{};
 
-    Discord_Initialize(appId.c_str(), &handlers, 1, nullptr);
+    Discord_Initialize("1290207945476280360", &handlers, 1, nullptr);
     startTimestamp = time(nullptr);
-    enabled = true;
+    rpcEnabled = true;
 }
 
 void RPC::setStatusIdling() {
@@ -22,6 +22,7 @@ void RPC::setStatusIdling() {
     rpc.startTimestamp = startTimestamp;
     rpc.details = "Idle";
 
+    status = RPCStatus::Idling;
     Discord_UpdatePresence(&rpc);
 }
 
@@ -37,7 +38,20 @@ void RPC::setStatusPlaying(const std::string& game_name, const std::string& game
     rpc.largeImageText = game_name.c_str();
     rpc.startTimestamp = startTimestamp;
 
+    status = RPCStatus::Playing;
     Discord_UpdatePresence(&rpc);
+}
+
+void RPC::shutdown() {
+    if (rpcEnabled) {
+        rpcEnabled = false;
+        Discord_ClearPresence();
+        Discord_Shutdown();
+    }
+}
+
+bool RPC::getRPCEnabled() {
+    return rpcEnabled;
 }
 
 } // namespace DiscordRPCHandler

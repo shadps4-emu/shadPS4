@@ -361,6 +361,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/decoder.cpp
            src/common/decoder.h
+           src/common/discord_rpc_handler.cpp
+           src/common/discord_rpc_handler.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
@@ -659,8 +661,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/check_update.cpp
            src/qt_gui/check_update.h
-           src/qt_gui/discord_rpc_handler.cpp
-           src/qt_gui/discord_rpc_handler.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -843,6 +843,4 @@ if (UNIX AND NOT APPLE)
 endif()
 
 #Discord RPC
-if(ENABLE_QT_GUI)
-    target_link_libraries(shadps4 PRIVATE discord-rpc)
-endif()
+target_link_libraries(shadps4 PRIVATE discord-rpc)

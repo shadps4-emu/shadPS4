@@ -33,6 +33,7 @@ static bool isNeo = false;
 static bool isFullscreen = false;
 static bool playBGM = false;
 static int BGMvolume = 50;
+static bool enableDiscordRPC = false;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
@@ -92,6 +93,10 @@ bool getPlayBGM() {
 
 int getBGMvolume() {
     return BGMvolume;
+}
+
+bool getEnableDiscordRPC() {
+    return enableDiscordRPC;
 }
 
 u32 getScreenWidth() {
@@ -258,6 +263,10 @@ void setBGMvolume(int volume) {
     BGMvolume = volume;
 }
 
+void setEnableDiscordRPC(bool enable) {
+    enableDiscordRPC = enable;
+}
+
 void setLanguage(u32 language) {
     m_language = language;
 }
@@ -422,6 +431,7 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
+        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", false);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
@@ -524,6 +534,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["playBGM"] = playBGM;
     data["General"]["BGMvolume"] = BGMvolume;
+    data["General"]["enableDiscordRPC"] = enableDiscordRPC;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
@@ -577,6 +588,7 @@ void setDefaultValues() {
     isFullscreen = false;
     playBGM = false;
     BGMvolume = 50;
+    enableDiscordRPC = true;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";

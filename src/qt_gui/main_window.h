@@ -9,6 +9,7 @@
 
 #include "background_music_player.h"
 #include "common/config.h"
+#include "common/discord_rpc_handler.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -21,7 +22,6 @@
 #include "main_window_themes.h"
 #include "main_window_ui.h"
 #include "pkg_viewer.h"
-#include "qt_gui/discord_rpc_handler.h"
 
 class GameListFrame;
 
@@ -93,8 +93,6 @@ private:
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
 
     QTranslator* translator;
-
-    DiscordRPCHandler::RPC discordRPC;
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
