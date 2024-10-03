@@ -15,6 +15,7 @@
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
+#include "src/common/arch.h"
 #include "src/common/decoder.h"
 
 using namespace Xbyak::util;
@@ -80,9 +81,9 @@ static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
 
 static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
     c.push(rdi);
-    c.mov(rdi, qword[rdi + (off_dw << 2)]);
-    c.mov(r10, 0xFFFFFFFFFFFFULL);
-    c.and_(rdi, r10);
+    c.mov(rdi, ptr[rdi + (off_dw << 2)]);
+    c.mov(r10d, 0xFFFFFFFFFFFFULL);
+    c.and_(rdi, r10d);
 }
 
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
@@ -103,8 +104,8 @@ static void VisitPointer(u32 off_dw, const IR::Inst* subtree, Info& info, Xbyak:
     for (const auto [src_off_dw, use] : *use_list) {
         u32 dst_off_dw = srt_info.flattened_bufsize_dw++;
 
-        c.mov(r10, dword[rdi + (src_off_dw << 2)]);
-        c.mov(dword[rsi + (dst_off_dw << 2)], r10);
+        c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
+        c.mov(ptr[rsi + (dst_off_dw << 2)], r10d);
 
         srt_info.srt_node_to_flat_off_dw[use] = dst_off_dw;
     }
@@ -132,23 +133,23 @@ static void GenerateSrtProgram(Shader::Info& info) {
     for (auto i = 0; i < srt_info.fetch_reservations.size(); i++) {
         SrtInfo::FetchShaderReservation res = srt_info.fetch_reservations[i];
         // get pointer to V#
-        c.mov(r10, dword[rdi + (res.sgpr_base << 2)]);
+        c.mov(r10d, ptr[rdi + (res.sgpr_base << 2)]);
 
         u32 src_off = res.dword_offset << 2;
         // 4 dwords per V#
         u32 dst_off = (NumUserDataRegs + 4 * i) << 2;
 
-        c.mov(r11, dword[r10 + src_off]);
-        c.mov(dword[rsi + dst_off], r11);
+        c.mov(r11d, ptr[r10d + src_off]);
+        c.mov(ptr[rsi + dst_off], r11d);
 
-        c.mov(r11, dword[r10 + (src_off + 4)]);
-        c.mov(dword[rsi + (dst_off + 4)], r11);
+        c.mov(r11d, ptr[r10d + (src_off + 4)]);
+        c.mov(ptr[rsi + (dst_off + 4)], r11d);
 
-        c.mov(r11, dword[r10 + (src_off + 8)]);
-        c.mov(dword[rsi + (dst_off + 8)], r11);
+        c.mov(r11d, ptr[r10d + (src_off + 8)]);
+        c.mov(ptr[rsi + (dst_off + 8)], r11d);
 
-        c.mov(r11, dword[r10 + (src_off + 12)]);
-        c.mov(dword[rsi + (dst_off + 12)], r11);
+        c.mov(r11d, ptr[r10d + (src_off + 12)]);
+        c.mov(ptr[rsi + (dst_off + 12)], r11d);
     }
 
     for (const auto& [sgpr_base, root] : srt_info.srt_roots) {
