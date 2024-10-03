@@ -993,7 +993,7 @@ static void cleanup_thread(void* arg) {
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
