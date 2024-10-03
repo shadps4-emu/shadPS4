@@ -147,7 +147,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
         return;
     }
 
-    pass_info.dst_off_dw = info.srt_info.flattened_bufsize_dw;
+    pass_info.dst_off_dw = NumUserDataRegs;
 
     // Special case for V# step rate buffers in fetch shader
     for (auto i = 0; i < info.srt_info.srt_reservations.size(); i++) {
@@ -165,6 +165,8 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
             ++pass_info.dst_off_dw;
         }
     }
+
+    ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
         VisitPointer(static_cast<u32>(sgpr_base), root, pass_info, c);
