@@ -20,11 +20,6 @@ class RPC {
     RPCStatus status;
 
 public:
-    static RPC& getInstance() {
-        static RPC instance;
-        return instance;
-    }
-
     void init();
     void setStatusIdling();
     void setStatusPlaying(const std::string& game_name, const std::string& game_id);

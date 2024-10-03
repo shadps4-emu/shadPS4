@@ -213,10 +213,11 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     // Discord RPC
     if (Config::getEnableDiscordRPC()) {
-        if (DiscordRPCHandler::RPC::getInstance().getRPCEnabled() == false) {
-            DiscordRPCHandler::RPC::getInstance().init();
+        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+        if (rpc->getRPCEnabled() == false) {
+            rpc->init();
         }
-        DiscordRPCHandler::RPC::getInstance().setStatusPlaying(game_info.title, id);
+        rpc->setStatusPlaying(game_info.title, id);
     }
 
     // start execution

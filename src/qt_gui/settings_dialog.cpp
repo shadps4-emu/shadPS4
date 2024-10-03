@@ -154,11 +154,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->discordRPCCheckbox, &QCheckBox::stateChanged, this, [](int val) {
             Config::setEnableDiscordRPC(val);
-            if (val) {
-                DiscordRPCHandler::RPC::getInstance().init();
-                DiscordRPCHandler::RPC::getInstance().setStatusIdling();
+            auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+            if (val == Qt::Checked) {
+                rpc->init();
+                rpc->setStatusIdling();
             } else {
-                DiscordRPCHandler::RPC::getInstance().shutdown();
+                rpc->shutdown();
             }
         });
     }

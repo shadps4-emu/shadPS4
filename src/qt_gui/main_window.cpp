@@ -72,8 +72,9 @@ bool MainWindow::Init() {
 
     // Initialize Discord RPC
     if (Config::getEnableDiscordRPC()) {
-        DiscordRPCHandler::RPC::getInstance().init();
-        DiscordRPCHandler::RPC::getInstance().setStatusIdling();
+        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+        rpc->init();
+        rpc->setStatusIdling();
     }
 
     return true;
