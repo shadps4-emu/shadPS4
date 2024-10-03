@@ -124,7 +124,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CVT_F32_UBYTE3:
         return V_CVT_F32_UBYTE(3, inst);
     case Opcode::V_CVT_F64_I32:
-        return V_CVT_F64_I32(inst); 
+        return V_CVT_F64_I32(inst);
     case Opcode::V_FRACT_F32:
         return V_FRACT_F32(inst);
     case Opcode::V_TRUNC_F32:
