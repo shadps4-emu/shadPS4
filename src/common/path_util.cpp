@@ -95,6 +95,14 @@ static auto UserPaths = [] {
         user_dir =
             std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadPS4";
     }
+#elif defined(__linux__)
+    auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
+    // Check if the "user" directory exists in the current path:
+    if (!std::filesystem::exists(user_dir)) {
+        // If it doesn't exist, use the new hardcoded path:
+        user_dir =
+            std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
+    }
 #else
     const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 #endif
