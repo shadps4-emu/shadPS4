@@ -431,7 +431,7 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
-        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", false);
+        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");

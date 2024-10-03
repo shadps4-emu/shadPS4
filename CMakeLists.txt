@@ -842,5 +842,5 @@ if (UNIX AND NOT APPLE)
     endif()
 endif()
 
-#Discord RPC
+# Discord RPC
 target_link_libraries(shadps4 PRIVATE discord-rpc)
