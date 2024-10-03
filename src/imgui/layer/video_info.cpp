@@ -29,7 +29,7 @@ static float frame_graph_height = 50.0f;
 
 static void DrawSimple() {
     const auto io = GetIO();
-    Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    Text("FPS: %.1f (%.3f ms)", io.Framerate, 1000.0f / io.Framerate);
 }
 
 static void DrawAdvanced() {
@@ -38,7 +38,7 @@ static void DrawAdvanced() {
     const auto& window = *ctx.CurrentWindow;
     auto& draw_list = *window.DrawList;
 
-    Text("Frame time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, io.Framerate);
+    Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
     SeparatorText("Frame graph");
     const float full_width = GetContentRegionAvail().x;
@@ -108,13 +108,11 @@ void Layers::VideoInfo::Draw() {
 
     if (show) {
         if (show_advanced) {
-            if (Begin("Video debug info", &show, 0)) {
+            if (Begin("Video Debug Info", nullptr, ImGuiWindowFlags_NoDecoration)) {
                 DrawAdvanced();
             }
         } else {
-            if (Begin("Video Info", nullptr,
-                      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
-                          ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (Begin("Video Info", nullptr, ImGuiWindowFlags_NoDecoration)) {
                 DrawSimple();
             }
         }
