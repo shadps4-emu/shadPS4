@@ -341,6 +341,7 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
               src/core/devtools/gcn/gcn_context_regs.cpp
+              src/core/devtools/gcn/gcn_op_names.cpp
               src/core/devtools/gcn/gcn_shader_regs.cpp
               src/core/devtools/widget/cmd_list.cpp
               src/core/devtools/widget/cmd_list.h

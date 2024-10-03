@@ -26,6 +26,7 @@ namespace Core::Devtools::Gcn {
 
 const char* GetContextRegName(u32 reg_offset);
 const char* GetShaderRegName(u32 reg_offset);
+const char* GetOpCodeName(u32 op);
 
 } // namespace Core::Devtools::Gcn
 
@@ -1098,15 +1099,17 @@ CmdListViewer::CmdListViewer(FrameDumpViewer* parent, const std::vector<u32>& cm
 }
 
 void CmdListViewer::Draw() {
-    std::string queue_name = vqid > 254 ? "GFX" : "ASC";
+    if (BeginChild("cmd_queue", {})) {
+        char queue_name[32]{};
+        if (vqid < 254) {
+            std::snprintf(queue_name, sizeof(queue_name), "%s %d", vqid > 254 ? "GFX" : "ASC",
+                          vqid);
+        } else {
+            std::snprintf(queue_name, sizeof(queue_name), "%s", vqid > 254 ? "GFX" : "ASC");
+        }
 
-    if (vqid < 254) {
-        queue_name += std::to_string(vqid);
-    }
-
-    if (BeginChild(queue_name.c_str())) {
-        Text("queue    : %s", queue_name.c_str());
-        Text("base addr: %08lX", cmdb_addr);
+        Text("queue    : %s", queue_name);
+        Text("base addr: %08llX", cmdb_addr);
         SameLine();
         if (SmallButton(">")) {
             parent->cmdb_view.Open ^= true;
@@ -1141,7 +1144,7 @@ void CmdListViewer::Draw() {
                         static char header_name[128];
                         sprintf(header_name, "%08llX: %s",
                                 cmdb_addr + batches[batch_id].start_addr + processed_size,
-                                enum_name(op).data());
+                                Gcn::GetOpCodeName((u32)op));
 
                         if (TreeNode(header_name)) {
                             bool just_opened = IsItemToggledOpen();
