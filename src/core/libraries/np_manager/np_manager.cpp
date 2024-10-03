@@ -874,19 +874,6 @@ int PS4_SYSV_ABI sceNpCheckCallback() {
     return ORBIS_OK;
 }
 
-struct NpStateCallbackForNpToolkit {
-    OrbisNpStateCallbackForNpToolkit func;
-    void* userdata;
-};
-
-NpStateCallbackForNpToolkit NpStateCbForNp;
-
-int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    NpStateCbForNp.func(0, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNpCheckNpAvailability() {
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     return ORBIS_OK;
@@ -983,9 +970,10 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
 }
 
 int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId) {
-    LOG_ERROR(Lib_NpManager, "(DUMMY) called");
-
+    LOG_INFO(Lib_NpManager, "userId {}", userId);
     std::string name = Config::getUserName();
+    // Fill the unused stuffs to 0
+    memset(npId, 0, sizeof(*npId));
     strcpy(npId->handle.data, name.c_str());
     return ORBIS_OK;
 }
@@ -1010,8 +998,9 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetState() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state) {
+    *state = ORBIS_NP_STATE_SIGNED_OUT;
+    LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
 }
 
@@ -2515,12 +2504,26 @@ int PS4_SYSV_ABI Func_FF966E4351E564D6() {
     return ORBIS_OK;
 }
 
+struct NpStateCallbackForNpToolkit {
+    OrbisNpStateCallbackForNpToolkit func;
+    void* userdata;
+};
+
+NpStateCallbackForNpToolkit NpStateCbForNp;
+
+int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
+    // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    NpStateCbForNp.func(1, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
                                                       void* userdata) {
+    static int id = 0;
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpStateCbForNp.func = callback;
     NpStateCbForNp.userdata = userdata;
-    return 1;
+    return id;
 }
 
 int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
