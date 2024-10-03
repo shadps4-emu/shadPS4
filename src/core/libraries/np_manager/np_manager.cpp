@@ -6,6 +6,9 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "np_manager.h"
+#include <common/singleton.h>
+#include <common/singleton.h>
+#include <core/linker.h>
 
 namespace Libraries::NpManager {
 
@@ -2513,7 +2516,8 @@ NpStateCallbackForNpToolkit NpStateCbForNp;
 
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
     // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    NpStateCbForNp.func(1, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    linker->ExecuteGuest(NpStateCbForNp.func,1, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
     return ORBIS_OK;
 }
 
