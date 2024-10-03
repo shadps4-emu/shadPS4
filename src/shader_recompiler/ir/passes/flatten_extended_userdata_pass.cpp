@@ -2,10 +2,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <new>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
-#include "common/alignment.h"
+#include "common/config.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "common/singleton.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -14,10 +15,40 @@
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
+#include "src/common/decoder.h"
 
 using namespace Xbyak::util;
 
 // TODO make sure no problems with identity and Insts being used in maps
+
+// TODO refactor, copied from signals.cpp
+static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t codesize) {
+#ifdef ARCH_X86_64
+    using namespace Common::FS;
+
+    const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+    if (!std::filesystem::exists(dump_dir)) {
+        std::filesystem::create_directories(dump_dir);
+    }
+    const auto filename =
+        fmt::format("{}_{:#018x}_{}.srtprogram.txt", info.stage, info.pgm_hash, info.perm_idx);
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write, FileType::TextFile};
+
+    u64 address = reinterpret_cast<u64>(code);
+    u64 code_end = address + codesize;
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    ZyanStatus status = ZYAN_STATUS_SUCCESS;
+    while (address < code_end && ZYAN_SUCCESS(Common::Decoder::Instance()->decodeInstruction(
+                                     instruction, operands, reinterpret_cast<void*>(address)))) {
+        std::string s =
+            Common::Decoder::Instance()->disassembleInst(instruction, operands, address);
+        s += "\n";
+        file.WriteString(s);
+        address += instruction.length;
+    }
+#endif
+}
 
 namespace {
 class SrtCodegen : public Xbyak::CodeGenerator {
@@ -49,7 +80,7 @@ static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
 
 static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
     c.push(rdi);
-    c.mov(rdi, ptr[rdi + (off_dw << 2)]);
+    c.mov(rdi, qword[rdi + (off_dw << 2)]);
     c.mov(r10, 0xFFFFFFFFFFFFULL);
     c.and_(rdi, r10);
 }
@@ -127,9 +158,14 @@ static void GenerateSrtProgram(Shader::Info& info) {
     c.ret();
     c.ready();
 
-    info.srt_fn = SmallCodeArray(c.getCode(), c.getSize());
+    size_t codesize = c.getSize();
+    info.srt_fn = SmallCodeArray(c.getCode(), codesize);
 
     c.reset();
+
+    if (Config::dumpShaders()) {
+        DumpSrtProgram(info, info.srt_fn.getCode<u8*>(), codesize);
+    }
 }
 
 }; // namespace
