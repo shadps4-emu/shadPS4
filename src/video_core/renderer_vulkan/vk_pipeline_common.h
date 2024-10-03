@@ -5,7 +5,6 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace VideoCore {

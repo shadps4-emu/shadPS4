@@ -4,7 +4,6 @@
 #include <boost/container/static_vector.hpp>
 
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"

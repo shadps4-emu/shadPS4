@@ -21,7 +21,6 @@ namespace Shader {
 
 // Refactor FlatSharpBuffer so we only rerun walker once per draw. Stuff it in
 // runtime_info?
-
 struct Info;
 
 struct FlatSharpBuffer {
@@ -77,53 +76,29 @@ private:
     std::unique_ptr<u8[]> codebuf;
 };
 
-// Only put the Inst corresponding to the LO dword (the sgpr base) of the pointer in the node
-// -> children map (as a key)
-struct SrtInfo {
-    // map offset to inst
-    using PtrUserList = boost::container::map<u32, const IR::Inst*>;
-
-    std::unordered_map<const IR::Inst*, u32> srt_node_to_flat_off_dw;
-    // keys are GetUserData or ReadConst instructions that are used as pointers
-    std::unordered_map<const IR::Inst*, PtrUserList> pointer_uses;
-    // GetUserData instructions corresponding to sgpr_base of SRT roots
-    boost::container::map<IR::ScalarReg, const IR::Inst*> srt_roots;
+struct PersistentSrtInfo {
+    PersistentSrtInfo() : flattened_bufsize_dw(/*NumUserDataRegs*/ 16) {}
 
     // Special case when fetch shader uses step rates.
     // Need to reserve space for those V#s, and find them in SrtWalker function
-    struct FetchShaderReservation {
+    struct SrtSharpReservation {
         u32 sgpr_base;
         u32 dword_offset;
+        u32 num_dwords;
     };
-    boost::container::small_vector<FetchShaderReservation, 2> fetch_reservations;
 
-    u32 flattened_bufsize_dw{0};
+    SmallCodeArray walker;
+    boost::container::small_vector<SrtSharpReservation, 2> srt_reservations;
+    u32 flattened_bufsize_dw;
 
     // Special case for fetch shaders because we don't generate IR to read from step rate buffers,
     // so we won't see usage with GetUserData/ReadConst.
-    // Reserve space in the flattened sharp buffer for a V#, and return dword offset into
-    // flattened sharp buffer, to be filled during SRT walk
-    u32 reserve_fetch_sharp(u32 sgpr_base, u32 dword_offset) {
-        u32 rv = 16 /*NumUserDataRegs*/ + 4 * fetch_reservations.size();
-        fetch_reservations.emplace_back(sgpr_base, dword_offset);
+    // Reserve space in the flattened buffer for a sharp ahead of time
+    u32 reserve_sharp(u32 sgpr_base, u32 dword_offset, u32 num_dwords) {
+        u32 rv = flattened_bufsize_dw;
+        srt_reservations.emplace_back(sgpr_base, dword_offset, num_dwords);
+        flattened_bufsize_dw += num_dwords;
         return rv;
-    }
-
-    u32 GetReadFlatOffsetDw(const IR::Inst* read) const {
-        ASSERT(srt_node_to_flat_off_dw.contains(read));
-        return srt_node_to_flat_off_dw.find(read)->second;
-    }
-
-    const PtrUserList* GetUsesAsPointer(const IR::Inst* inst) const {
-        auto it = pointer_uses.find(inst);
-        if (it != pointer_uses.end()) {
-            return &it->second;
-        }
-        return nullptr;
-    }
-
-    bool IsEmpty() {
-        return fetch_reservations.empty() && srt_roots.empty();
     }
 };
 

@@ -11,7 +11,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
+#include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
@@ -56,6 +56,27 @@ class SrtCodegen : public Xbyak::CodeGenerator {
 public:
     SrtCodegen() : CodeGenerator(1_MB) {}
 };
+
+using namespace Shader;
+struct PassInfo {
+    // map offset to inst
+    using PtrUserList = boost::container::map<u32, Shader::IR::Inst*>;
+
+    // keys are GetUserData or ReadConst instructions that are used as pointers
+    std::unordered_map<IR::Inst*, PtrUserList> pointer_uses;
+    // GetUserData instructions corresponding to sgpr_base of SRT roots
+    boost::container::map<IR::ScalarReg, IR::Inst*> srt_roots;
+
+    u32 dst_off_dw;
+
+    PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
+        auto it = pointer_uses.find(inst);
+        if (it != pointer_uses.end()) {
+            return &it->second;
+        }
+        return nullptr;
+    }
+};
 } // namespace
 
 namespace Shader {
@@ -90,10 +111,10 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
 
-static void VisitPointer(u32 off_dw, const IR::Inst* subtree, Info& info, Xbyak::CodeGenerator& c) {
+static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
+                         Xbyak::CodeGenerator& c) {
     PushPtr(c, off_dw);
-    SrtInfo& srt_info = info.srt_info;
-    const SrtInfo::PtrUserList* use_list = srt_info.GetUsesAsPointer(subtree);
+    PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
     ASSERT(use_list);
 
     // First copy all the src data from this tree level
@@ -101,90 +122,85 @@ static void VisitPointer(u32 off_dw, const IR::Inst* subtree, Info& info, Xbyak:
     // flattened buffer.
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (const auto [src_off_dw, use] : *use_list) {
-        u32 dst_off_dw = srt_info.flattened_bufsize_dw++;
-
+    for (auto [src_off_dw, use] : *use_list) {
         c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
-        c.mov(ptr[rsi + (dst_off_dw << 2)], r10d);
+        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
-        srt_info.srt_node_to_flat_off_dw[use] = dst_off_dw;
+        use->SetFlags<u32>(pass_info.dst_off_dw);
+        pass_info.dst_off_dw++;
     }
 
     // Then visit any children used as pointers
     for (const auto [src_off_dw, use] : *use_list) {
-        if (srt_info.GetUsesAsPointer(use)) {
-            VisitPointer(src_off_dw, use, info, c);
+        if (pass_info.GetUsesAsPointer(use)) {
+            VisitPointer(src_off_dw, use, pass_info, c);
         }
     }
 
     PopPtr(c);
 }
 
-static void GenerateSrtProgram(Shader::Info& info) {
-    SrtInfo& srt_info = info.srt_info;
+static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     Xbyak::CodeGenerator& c = *Common::Singleton<SrtCodegen>::Instance();
-    srt_info.flattened_bufsize_dw = NumUserDataRegs + 4 * srt_info.fetch_reservations.size();
 
-    if (srt_info.IsEmpty()) {
+    if (info.srt_info.srt_reservations.empty() && pass_info.srt_roots.empty()) {
         return;
     }
 
+    pass_info.dst_off_dw = info.srt_info.flattened_bufsize_dw;
+
     // Special case for V# step rate buffers in fetch shader
-    for (auto i = 0; i < srt_info.fetch_reservations.size(); i++) {
-        SrtInfo::FetchShaderReservation res = srt_info.fetch_reservations[i];
+    for (auto i = 0; i < info.srt_info.srt_reservations.size(); i++) {
+        PersistentSrtInfo::SrtSharpReservation res = info.srt_info.srt_reservations[i];
         // get pointer to V#
         c.mov(r10d, ptr[rdi + (res.sgpr_base << 2)]);
 
         u32 src_off = res.dword_offset << 2;
-        // 4 dwords per V#
-        u32 dst_off = (NumUserDataRegs + 4 * i) << 2;
 
-        c.mov(r11d, ptr[r10d + src_off]);
-        c.mov(ptr[rsi + dst_off], r11d);
+        for (auto j = 0; j < res.num_dwords; j++) {
+            c.mov(r11d, ptr[r10d + src_off]);
+            c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r11d);
 
-        c.mov(r11d, ptr[r10d + (src_off + 4)]);
-        c.mov(ptr[rsi + (dst_off + 4)], r11d);
-
-        c.mov(r11d, ptr[r10d + (src_off + 8)]);
-        c.mov(ptr[rsi + (dst_off + 8)], r11d);
-
-        c.mov(r11d, ptr[r10d + (src_off + 12)]);
-        c.mov(ptr[rsi + (dst_off + 12)], r11d);
+            src_off += 4;
+            ++pass_info.dst_off_dw;
+        }
     }
 
-    for (const auto& [sgpr_base, root] : srt_info.srt_roots) {
-        VisitPointer(static_cast<u32>(sgpr_base), root, info, c);
+    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+        VisitPointer(static_cast<u32>(sgpr_base), root, pass_info, c);
     }
 
     c.ret();
     c.ready();
 
     size_t codesize = c.getSize();
-    info.srt_fn = SmallCodeArray(c.getCode(), codesize);
+    info.srt_info.walker = SmallCodeArray(c.getCode(), codesize);
+
+    if (Config::dumpShaders()) {
+        DumpSrtProgram(info, c.getCode(), codesize);
+    }
 
     c.reset();
 
-    if (Config::dumpShaders()) {
-        DumpSrtProgram(info, info.srt_fn.getCode<u8*>(), codesize);
-    }
+    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
 }; // namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
     Shader::Info& info = program.info;
-    SrtInfo& srt_info = program.info.srt_info;
+    PassInfo srt_info;
 
     // HoistConstantReads should have put all SRT reads into the entry block
-    const IR::Block* entry_bb = *program.blocks.begin();
+    IR::Block* entry_bb = *program.blocks.begin();
 
-    for (const IR::Inst& inst : *entry_bb) {
+    for (IR::Inst& inst : *entry_bb) {
         if (inst.GetOpcode() == IR::Opcode::ReadConst) {
             if (!GetReadConstOff(&inst).IsImmediate()) {
                 continue;
             }
 
-            const IR::Inst* spgpr_base = inst.Arg(0).InstRecursive();
+            IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
 
             const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
                 if (inst->GetOpcode() == IR::Opcode::GetUserData ||
@@ -193,25 +209,27 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 }
                 return std::nullopt;
             };
-            const auto base0 = IR::BreadthFirstSearch(spgpr_base->Arg(0), pred);
-            const auto base1 = IR::BreadthFirstSearch(spgpr_base->Arg(1), pred);
+            auto base0 = IR::BreadthFirstSearch(ptr_composite->Arg(0), pred);
+            auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
             ASSERT_MSG(base0 && base1 && "ReadConst not from constant memory");
 
-            const IR::Inst* ptr = base0.value();
+            // TODO this probably requires some template magic to fix. BFS needs non-const variant
+            // Needs to be non-const to change flags
+            IR::Inst* ptr_lo = const_cast<IR::Inst*>(base0.value());
 
-            auto it = srt_info.pointer_uses.try_emplace(ptr, SrtInfo::PtrUserList{});
-            SrtInfo::PtrUserList& user_list = it.first->second;
+            auto it = srt_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
+            PassInfo::PtrUserList& user_list = it.first->second;
 
             user_list[GetReadConstOff(&inst).U32()] = &inst;
 
-            if (ptr->GetOpcode() == IR::Opcode::GetUserData) {
-                IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr);
-                srt_info.srt_roots[ud_reg] = ptr;
+            if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
+                IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr_lo);
+                srt_info.srt_roots[ud_reg] = ptr_lo;
             }
         }
     }
 
-    GenerateSrtProgram(info);
+    GenerateSrtProgram(info, srt_info);
 }
 
 } // namespace Shader::Optimization

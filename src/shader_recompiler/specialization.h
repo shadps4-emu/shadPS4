@@ -8,7 +8,6 @@
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
 
 namespace Shader {
 

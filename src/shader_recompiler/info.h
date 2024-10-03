@@ -11,7 +11,7 @@
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/ir/attribute.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
+#include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/params.h"
@@ -177,10 +177,7 @@ struct Info {
     ImageResourceList images;
     SamplerResourceList samplers;
 
-    // TODO move out of Info, not needed
-    SrtInfo srt_info;
-
-    SmallCodeArray srt_fn;
+    PersistentSrtInfo srt_info; // TODO rename
 
     std::span<const u32> user_data;
     Stage stage;
@@ -260,7 +257,7 @@ struct Info {
         // not necessary
         std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        auto pfn = srt_fn.getCode<PFN_SrtWalker>();
+        auto pfn = srt_info.walker.getCode<PFN_SrtWalker>();
         if (pfn) {
             pfn(user_data.data(), sharp_buf.buf.data());
         }

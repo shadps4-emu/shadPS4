@@ -4,7 +4,6 @@
 #include <boost/container/small_vector.hpp>
 
 #include "common/alignment.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"

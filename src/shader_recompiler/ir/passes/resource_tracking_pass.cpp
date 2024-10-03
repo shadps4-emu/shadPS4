@@ -7,7 +7,6 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
-#include "shader_recompiler/ir/passes/srt_info.h"
 #include "shader_recompiler/ir/program.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -290,7 +289,7 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
     } else {
         ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst,
                    "Sharp load not from constant memory");
-        return info.srt_info.GetReadFlatOffsetDw(inst);
+        return inst->Flags<u32>();
     }
 }
 
