@@ -193,40 +193,41 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     Shader::Info& info = program.info;
     PassInfo srt_info;
 
-    // HoistConstantReads should have put all SRT reads into the entry block
-    IR::Block* entry_bb = *program.blocks.begin();
-
-    for (IR::Inst& inst : *entry_bb) {
-        if (inst.GetOpcode() == IR::Opcode::ReadConst) {
-            if (!GetReadConstOff(&inst).IsImmediate()) {
-                continue;
-            }
-
-            IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
-
-            const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                    inst->GetOpcode() == IR::Opcode::ReadConst) {
-                    return inst;
+    for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
+         r_it++) {
+        IR::Block* block = *r_it;
+        for (IR::Inst& inst : *block) {
+            if (inst.GetOpcode() == IR::Opcode::ReadConst) {
+                if (!GetReadConstOff(&inst).IsImmediate()) {
+                    continue;
                 }
-                return std::nullopt;
-            };
-            auto base0 = IR::BreadthFirstSearch(ptr_composite->Arg(0), pred);
-            auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
-            ASSERT_MSG(base0 && base1 && "ReadConst not from constant memory");
 
-            // TODO this probably requires some template magic to fix. BFS needs non-const variant
-            // Needs to be non-const to change flags
-            IR::Inst* ptr_lo = const_cast<IR::Inst*>(base0.value());
+                IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
 
-            auto it = srt_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
-            PassInfo::PtrUserList& user_list = it.first->second;
+                const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                        inst->GetOpcode() == IR::Opcode::ReadConst) {
+                        return inst;
+                    }
+                    return std::nullopt;
+                };
+                auto base0 = IR::BreadthFirstSearch(ptr_composite->Arg(0), pred);
+                auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
+                ASSERT_MSG(base0 && base1 && "ReadConst not from constant memory");
 
-            user_list[GetReadConstOff(&inst).U32()] = &inst;
+                // TODO this probably requires some template magic to fix. BFS needs non-const
+                // variant Needs to be non-const to change flags
+                IR::Inst* ptr_lo = const_cast<IR::Inst*>(base0.value());
 
-            if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
-                IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr_lo);
-                srt_info.srt_roots[ud_reg] = ptr_lo;
+                auto it = srt_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
+                PassInfo::PtrUserList& user_list = it.first->second;
+
+                user_list[GetReadConstOff(&inst).U32()] = &inst;
+
+                if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
+                    IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr_lo);
+                    srt_info.srt_roots[ud_reg] = ptr_lo;
+                }
             }
         }
     }

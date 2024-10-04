@@ -55,7 +55,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     bool dump_ir = false;
-    bool extra_id_removal = false;
+    bool extra_id_removal = true; // TODO remove all this stuff
     if (true /*info.pgm_hash == 0x6fd3463f*/) {
         dump_ir = true;
     }
