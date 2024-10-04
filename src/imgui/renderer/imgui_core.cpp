@@ -28,13 +28,9 @@ static std::vector<ImGui::Layer*> layers;
 // Update layers before rendering to allow layer changes to be applied during rendering.
 // Using deque to keep the order of changes in case a Layer is removed then added again between
 // frames.
-std::deque<std::pair<bool, ImGui::Layer*>>& GetChangeLayers() {
-    static std::deque<std::pair<bool, ImGui::Layer*>>* change_layers =
-        new std::deque<std::pair<bool, ImGui::Layer*>>;
-    return *change_layers;
-}
-
+static std::deque<std::pair<bool, ImGui::Layer*>> change_layers{};
 static std::mutex change_layers_mutex{};
+
 static ImGuiID dock_id;
 
 namespace ImGui {
@@ -54,7 +50,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f); // Makes the window edges rounded
+    PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f); // Makes the window edges rounded
 
     auto path = config_path.u8string();
     char* config_file_buf = new char[path.size() + 1]();
@@ -174,15 +170,15 @@ bool ProcessEvent(SDL_Event* event) {
 void NewFrame() {
     {
         std::scoped_lock lock{change_layers_mutex};
-        while (!GetChangeLayers().empty()) {
-            const auto [to_be_added, layer] = GetChangeLayers().front();
+        while (!change_layers.empty()) {
+            const auto [to_be_added, layer] = change_layers.front();
             if (to_be_added) {
                 layers.push_back(layer);
             } else {
                 const auto [begin, end] = std::ranges::remove(layers, layer);
                 layers.erase(begin, end);
             }
-            GetChangeLayers().pop_front();
+            change_layers.pop_front();
         }
     }
 
@@ -217,7 +213,7 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
             .storeOp = vk::AttachmentStoreOp::eStore,
         },
     };
-    vk::RenderingInfo render_info = {};
+    vk::RenderingInfo render_info{};
     render_info.renderArea = vk::Rect2D{
         .offset = {0, 0},
         .extent = {frame->width, frame->height},
@@ -237,12 +233,12 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
 
 void Layer::AddLayer(Layer* layer) {
     std::scoped_lock lock{change_layers_mutex};
-    GetChangeLayers().emplace_back(true, layer);
+    change_layers.emplace_back(true, layer);
 }
 
 void Layer::RemoveLayer(Layer* layer) {
     std::scoped_lock lock{change_layers_mutex};
-    GetChangeLayers().emplace_back(false, layer);
+    change_layers.emplace_back(false, layer);
 }
 
 } // namespace ImGui
