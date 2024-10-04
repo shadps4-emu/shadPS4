@@ -36,6 +36,17 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     ASSERT(null_id.index == 0);
     const vk::Buffer& null_buffer = slot_buffers[null_id].buffer;
     Vulkan::SetObjectName(instance.GetDevice(), null_buffer, "Null Buffer");
+
+    const vk::BufferViewCreateInfo null_view_ci = {
+        .buffer = null_buffer,
+        .format = vk::Format::eR8Unorm,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE,
+    };
+    const auto [null_view_result, null_view] = instance.GetDevice().createBufferView(null_view_ci);
+    ASSERT_MSG(null_view_result == vk::Result::eSuccess, "Failed to create null buffer view.");
+    null_buffer_view = null_view;
+    Vulkan::SetObjectName(instance.GetDevice(), null_buffer_view, "Null Buffer View");
 }
 
 BufferCache::~BufferCache() = default;
