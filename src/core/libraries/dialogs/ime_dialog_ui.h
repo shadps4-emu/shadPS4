@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #ifndef _WIN32
 #include <iconv.h>
 #endif
@@ -18,22 +19,26 @@ class ImeDialogUi;
 class ImeDialogState final {
     friend ImeDialogUi;
 
-    OrbisImeDialogStatus status = OrbisImeDialogStatus::NONE;
+    bool input_changed = false;
 
     s32 userId{};
-    bool isMultiLine{};
+    bool is_multiLine{};
     OrbisImeType type{};
-    OrbisImeEnterLabel enterLabel{};
-    OrbisImeTextFilter textFilter{};
-    OrbisImeExtKeyboardFilter extKeyboardFilter{};
-    u32 maxTextLength{};
-    char16_t* textBuffer{};
-    wchar_t* title = nullptr;
-    wchar_t* placeholder = nullptr;
-    wchar_t currentText[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH] = {0};
+    OrbisImeEnterLabel enter_label{};
+    OrbisImeTextFilter text_filter{};
+    OrbisImeExtKeyboardFilter keyboard_filter{};
+    u32 max_text_length{};
+    char16_t* text_buffer{};
+    char* title = nullptr;
+    char* placeholder = nullptr;
+
+    // A character can hold up to 4 bytes in UTF-8
+    char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4] = {0};
+
+    std::mutex mutex;
 #ifndef _WIN32
-    iconv_t orbis_to_native = (iconv_t)-1;
-    iconv_t native_to_orbis = (iconv_t)-1;
+    iconv_t orbis_to_utf8 = (iconv_t)-1;
+    iconv_t utf8_to_orbis = (iconv_t)-1;
 #endif
 public:
     ImeDialogState(const OrbisImeDialogParam* param = nullptr, const OrbisImeParamExtended* extended = nullptr);
@@ -42,23 +47,36 @@ public:
     ImeDialogState() = default;
     
     bool CallTextFilter();
-
 private:
-    bool ConvertOrbisToNative(const char16_t* orbis_text, std::size_t orbis_text_len, wchar_t* native_text, std::size_t native_text_len);
-    bool ConvertNativeToOrbis(const wchar_t* native_text, std::size_t native_text_len, char16_t* orbis_text, std::size_t orbis_text_len);
+    bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
+
+    bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text, std::size_t native_text_len);
+    bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len, char16_t* orbis_text, std::size_t orbis_text_len);
+    bool ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char, std::size_t& utf8_char_len);
+    bool ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orbis_char);
 };
 
 class ImeDialogUi final : public ImGui::Layer {
-    
-public:
-    explicit ImeDialogUi();
+    ImeDialogState* state{};
+    OrbisImeDialogStatus* status{};
+    OrbisImeDialogResult* result{};
 
+    bool first_render = true;
+
+public:
+    explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr, OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
     ImeDialogUi(const ImeDialogUi& other) = delete;
     ImeDialogUi(ImeDialogUi&& other) noexcept;
     ImeDialogUi& operator=(ImeDialogUi other);
 
     void Draw() override;
+
+private:
+    void DrawInputText();
+    void DrawMultiLineInputText();
+
+    static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };
 
 } // namespace Libraries::ImeDialog

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -89,6 +90,8 @@ enum class OrbisImeDialogOption : u32 {
     NO_AUTO_COMPLETION = 4
 };
 
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
+
 enum class OrbisImeInputMethod : u32 {
     DEFAULT = 0
 };
@@ -167,7 +170,7 @@ struct OrbisImeDialogResult {
 
 struct OrbisImeKeycode {
     u16 keycode;
-    wchar_t character;
+    char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
     s32 userId;
@@ -175,7 +178,7 @@ struct OrbisImeKeycode {
     u64 timestamp;
 };
 
-typedef int (*OrbisImeTextFilter)(wchar_t* outText, u32* outTextLength, const wchar_t* srcText,
+typedef int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength, const char16_t* srcText,
                                   u32 srcTextLength);
 
 typedef int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode, u16* outKeycode,
