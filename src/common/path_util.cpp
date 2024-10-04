@@ -99,8 +99,13 @@ static auto UserPaths = [] {
     auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
     // Check if the "user" directory exists in the current path:
     if (!std::filesystem::exists(user_dir)) {
-        // If it doesn't exist, use the new hardcoded path:
-        user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
+        // If it doesn't exist, use XDG_DATA_HOME if it is set, and provide a standard default
+        const char* xdg_data_home = getenv("XDG_DATA_HOME");
+        if (xdg_data_home != nullptr && strlen(xdg_data_home) > 0) {
+            user_dir = std::filesystem::path(xdg_data_home) / "shadPS4";
+        } else {
+            user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
+        }
     }
 #else
     const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
