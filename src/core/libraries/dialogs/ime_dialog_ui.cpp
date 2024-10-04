@@ -87,6 +87,8 @@ ImeDialogState::~ImeDialogState() {
 }
 
 bool ImeDialogState::CallTextFilter() {
+    std::scoped_lock lock(mutex);
+    
     if (!text_filter || !input_changed) {
         return true;
     }
@@ -298,8 +300,6 @@ void ImeDialogUi::Draw() {
     if (!status || *status != OrbisImeDialogStatus::RUNNING) {
         return;
     }
-
-    std::scoped_lock lock2{state->mutex};
 
     const auto& ctx = *GetCurrentContext();
     const auto& io = ctx.IO;
