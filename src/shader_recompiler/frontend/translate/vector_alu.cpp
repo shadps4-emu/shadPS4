@@ -117,6 +117,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_F32_F16(inst);
     case Opcode::V_CVT_FLR_I32_F32:
         return V_CVT_FLR_I32_F32(inst);
+    case Opcode::V_CVT_F32_F64:
+        return V_CVT_F32_F64(inst);
+    case Opcode::V_CVT_F64_F32:
+        return V_CVT_F64_F32(inst);
+    case Opcode::V_CVT_RPI_I32_F32:
+        return V_CVT_RPI_I32_F32(inst);
     case Opcode::V_CVT_OFF_F32_I4:
         return V_CVT_OFF_F32_I4(inst);
     case Opcode::V_CVT_F32_UBYTE0:
