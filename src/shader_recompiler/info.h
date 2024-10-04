@@ -257,7 +257,7 @@ struct Info {
         // not necessary
         std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        auto pfn = srt_info.walker.getCode<PFN_SrtWalker>();
+        PFN_SrtWalker pfn = srt_info.walker.getCode<PFN_SrtWalker>();
         if (pfn) {
             pfn(user_data.data(), sharp_buf.buf.data());
         }

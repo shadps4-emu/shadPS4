@@ -34,7 +34,8 @@ struct FlatSharpBuffer {
     std::vector<u32> buf;
 };
 
-typedef void (*PFN_SrtWalker)(const u32* /*user_data*/, u32* /*flat_dst*/);
+typedef void(__attribute__((sysv_abi)) * PFN_SrtWalker)(const u32* /*user_data*/,
+                                                        u32* /*flat_dst*/);
 
 // Utility for copying a simple relocatable function from a Xbyak code generator to manage memory
 // separately
