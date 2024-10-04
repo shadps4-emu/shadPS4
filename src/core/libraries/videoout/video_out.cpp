@@ -106,13 +106,13 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
-    LOG_INFO(Lib_VideoOut, "called");
+    LOG_TRACE(Lib_VideoOut, "called");
     driver->GetPort(handle)->flip_rate = rate;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    LOG_INFO(Lib_VideoOut, "called");
+    LOG_TRACE(Lib_VideoOut, "called");
     auto* port = driver->GetPort(handle);
     std::unique_lock lock{port->port_mutex};
     s32 pending = port->flip_status.flipPendingNum;
