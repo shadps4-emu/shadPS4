@@ -148,11 +148,17 @@ bool ProcessEvent(SDL_Event* event) {
     // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
     case SDL_EVENT_MOUSE_WHEEL:
-    case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        return GetIO().WantCaptureMouse;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+        const auto& io = GetIO();
+        return io.WantCaptureMouse && io.Ctx->NavWindow != nullptr &&
+               io.Ctx->NavWindow->ID != dock_id;
+    }
     case SDL_EVENT_TEXT_INPUT:
-    case SDL_EVENT_KEY_DOWN:
-        return GetIO().WantCaptureKeyboard;
+    case SDL_EVENT_KEY_DOWN: {
+        const auto& io = GetIO();
+        return io.WantCaptureKeyboard && io.Ctx->NavWindow != nullptr &&
+               io.Ctx->NavWindow->ID != dock_id;
+    }
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
