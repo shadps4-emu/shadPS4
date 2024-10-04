@@ -105,6 +105,15 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         if (instance.IsVertexInputDynamicState()) {
             const auto cmdbuf = scheduler.CommandBuffer();
             cmdbuf.setVertexInputEXT(bindings, attributes);
+        } else if (bindings.empty()) {
+            // Required to call bindVertexBuffers2EXT at least once in the current command buffer
+            // with non-null strides without a non-dynamic stride pipeline in between. Thus even
+            // when nothing is bound we still need to make a dummy call. Non-null strides in turn
+            // requires a count greater than 0.
+            const auto cmdbuf = scheduler.CommandBuffer();
+            const std::array null_buffers = {GetBuffer(NULL_BUFFER_ID).buffer.buffer};
+            constexpr std::array null_offsets = {static_cast<vk::DeviceSize>(0)};
+            cmdbuf.bindVertexBuffers2EXT(0, null_buffers, null_offsets, null_offsets, null_offsets);
         }
     };
 

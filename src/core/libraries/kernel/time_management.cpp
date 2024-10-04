@@ -247,6 +247,17 @@ int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
     return SCE_OK;
 }
 
+namespace Dev {
+u64& GetInitialPtc() {
+    return initial_ptc;
+}
+
+Common::NativeClock* GetClock() {
+    return clock.get();
+}
+
+} // namespace Dev
+
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();

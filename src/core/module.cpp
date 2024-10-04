@@ -70,7 +70,7 @@ Module::~Module() = default;
 
 s32 Module::Start(size_t args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
     return linker->ExecuteGuest(reinterpret_cast<EntryFunc>(addr), args, argp, param);
 }

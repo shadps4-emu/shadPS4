@@ -1402,6 +1402,15 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         switch (value.Type()) {
         case Type::F16:
             return Inst<F32>(Opcode::ConvertF32F16, value);
+        case Type::F64:
+            return Inst<F32>(Opcode::ConvertF32F64, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::F32:
+            return Inst<F64>(Opcode::ConvertF64F32, value);
         default:
             break;
         }

@@ -17,7 +17,6 @@ enum class PathType {
     LogDir,         // Where log files are stored.
     ScreenshotsDir, // Where screenshots are stored.
     ShaderDir,      // Where shaders are stored.
-    PM4Dir,         // Where command lists are stored.
     SaveDataDir,    // Where guest save data is stored.
     TempDataDir,    // Where game temp data is stored.
     GameDataDir,    // Where game data is stored.
@@ -35,7 +34,6 @@ constexpr auto PORTABLE_DIR = "user";
 constexpr auto LOG_DIR = "log";
 constexpr auto SCREENSHOTS_DIR = "screenshots";
 constexpr auto SHADER_DIR = "shader";
-constexpr auto PM4_DIR = "pm4";
 constexpr auto SAVEDATA_DIR = "savedata";
 constexpr auto GAMEDATA_DIR = "data";
 constexpr auto TEMPDATA_DIR = "temp";

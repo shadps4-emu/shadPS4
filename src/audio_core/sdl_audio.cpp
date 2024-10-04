@@ -16,7 +16,7 @@ namespace Audio {
 
 constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
 
-int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
+s32 SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParamFormat format) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::unique_lock lock{m_mutex};
@@ -90,18 +90,11 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
         }
     }
 
-    return -1; // all ports are used
+    LOG_ERROR(Lib_AudioOut, "Audio ports are full");
+    return ORBIS_AUDIO_OUT_ERROR_PORT_FULL; // all ports are used
 }
 
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
-    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-    }
-
-    if (ptr == nullptr) {
-        return 0; // Nothing to output
-    }
-
     std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
@@ -121,11 +114,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     return result ? ORBIS_OK : -1;
 }
 
-bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
-    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-    }
-
+s32 SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
@@ -162,20 +151,16 @@ bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
         }
     }
 
-    return true;
+    return ORBIS_OK;
 }
 
-bool SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
-    if (handle < 1 || handle > portsOut.size()) { // Add handle range check
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
-    }
-
+s32 SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
     std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     *type = port.type;
     *channels_num = port.channels_num;
 
-    return true;
+    return ORBIS_OK;
 }
 
 } // namespace Audio

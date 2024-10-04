@@ -109,16 +109,23 @@ public:
     void DebugDump();
 
     template <class ReturnType, class... FuncArgs, class... CallArgs>
-    ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
+    ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...),
+                            CallArgs&&... args) const {
         // Make sure TLS is initialized for the thread before entering guest.
         EnsureThreadInitialized();
-        return func(std::forward<CallArgs>(args)...);
+        return ExecuteGuestWithoutTls(func, args...);
     }
 
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
-    void EnsureThreadInitialized(bool is_primary = false);
-    void InitTlsForThread(bool is_primary);
+    void EnsureThreadInitialized(bool is_primary = false) const;
+    void InitTlsForThread(bool is_primary) const;
+
+    template <class ReturnType, class... FuncArgs, class... CallArgs>
+    ReturnType ExecuteGuestWithoutTls(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...),
+                                      CallArgs&&... args) const {
+        return func(std::forward<CallArgs>(args)...);
+    }
 
     MemoryManager* memory;
     std::mutex mutex;

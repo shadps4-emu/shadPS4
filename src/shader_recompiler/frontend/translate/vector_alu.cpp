@@ -99,6 +99,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MOV(inst);
     case Opcode::V_READFIRSTLANE_B32:
         return V_READFIRSTLANE_B32(inst);
+    case Opcode::V_CVT_I32_F64:
+        return V_CVT_I32_F64(inst);
+    case Opcode::V_CVT_F64_I32:
+        return V_CVT_F64_I32(inst);
     case Opcode::V_CVT_F32_I32:
         return V_CVT_F32_I32(inst);
     case Opcode::V_CVT_F32_U32:
@@ -113,6 +117,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_F32_F16(inst);
     case Opcode::V_CVT_FLR_I32_F32:
         return V_CVT_FLR_I32_F32(inst);
+    case Opcode::V_CVT_F32_F64:
+        return V_CVT_F32_F64(inst);
+    case Opcode::V_CVT_F64_F32:
+        return V_CVT_F64_F32(inst);
+    case Opcode::V_CVT_RPI_I32_F32:
+        return V_CVT_RPI_I32_F32(inst);
     case Opcode::V_CVT_OFF_F32_I4:
         return V_CVT_OFF_F32_I4(inst);
     case Opcode::V_CVT_F32_UBYTE0:
@@ -610,6 +620,16 @@ void Translator::V_MOV(const GcnInst& inst) {
     SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
 }
 
+void Translator::V_CVT_I32_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst(inst.dst[0], ir.ConvertFToS(32, src0));
+}
+
+void Translator::V_CVT_F64_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    SetDst64(inst.dst[0], ir.ConvertSToF(64, 32, src0));
+}
+
 void Translator::V_CVT_F32_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertSToF(32, 32, src0));
@@ -642,6 +662,11 @@ void Translator::V_CVT_F32_F16(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPConvert(32, ir.BitCast<IR::F16>(src0l)));
 }
 
+void Translator::V_CVT_RPI_I32_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst(inst.dst[0], ir.ConvertFToI(32, true, ir.FPFloor(ir.FPAdd(src0, ir.Imm32(0.5f)))));
+}
+
 void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertFToI(32, true, ir.FPFloor(src0)));
@@ -654,6 +679,16 @@ void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
         0.0f,     0.0625f,  0.1250f,  0.1875f,  0.2500f,  0.3125f,  0.3750f,  0.4375f,
         -0.5000f, -0.4375f, -0.3750f, -0.3125f, -0.2500f, -0.1875f, -0.1250f, -0.0625f};
     SetDst(inst.dst[0], ir.Imm32(IntToFloat[src0.U32() & 0xF]));
+}
+
+void Translator::V_CVT_F32_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPConvert(32, src0));
+}
+
+void Translator::V_CVT_F64_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPConvert(64, src0));
 }
 
 void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {

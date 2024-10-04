@@ -91,7 +91,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
     const auto callback = self->m_event_replacement.event_callback;
     const auto ptr = self->m_event_replacement.object_ptr;
     if (callback != nullptr) {
-        auto* linker = Common::Singleton<Core::Linker>::Instance();
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
         linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
     }
 }
@@ -367,7 +367,7 @@ void AvPlayerState::EmitEvent(SceAvPlayerEvents event_id, void* event_data) {
     const auto callback = m_init_data.event_replacement.event_callback;
     if (callback) {
         const auto ptr = m_init_data.event_replacement.object_ptr;
-        auto* linker = Common::Singleton<Core::Linker>::Instance();
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
         linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
     }
 }
