@@ -45,9 +45,7 @@ public:
     int icon_size;
 
     static float parseAsFloat(const std::string& str, const int& offset) {
-        float num;
-        std::from_chars(str.data(), str.data() + str.size() - offset, num);
-        return num;
+        return std::stof(str.substr(0, str.size() - offset));
     }
 
     static float parseSizeMB(const std::string& size) {
