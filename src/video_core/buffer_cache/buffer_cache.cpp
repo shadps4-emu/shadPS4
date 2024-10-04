@@ -224,7 +224,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::QuadList) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
         is_indexed = true;
 
         // Emit indices.

@@ -7,7 +7,6 @@
 #include "common/bit_field.h"
 #include "common/enum.h"
 #include "common/types.h"
-#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
@@ -67,6 +66,7 @@ union BufferInstInfo {
     BitField<0, 1, u32> index_enable;
     BitField<1, 1, u32> offset_enable;
     BitField<2, 12, u32> inst_offset;
+    BitField<14, 1, u32> ring_access; // global + system coherency
 };
 
 enum class ScalarReg : u32 {

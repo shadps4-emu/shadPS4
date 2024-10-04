@@ -10,6 +10,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 #define MAGIC_ENUM_RANGE_MIN 0
 #define MAGIC_ENUM_RANGE_MAX 1515
@@ -35,6 +36,7 @@ void Translator::EmitPrologue() {
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
     switch (info.stage) {
     case Stage::Vertex:
+    case Stage::Export:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
         // v1: instance ID, step rate 0
@@ -75,6 +77,20 @@ void Translator::EmitPrologue() {
         if (runtime_info.cs_info.tgid_enable[2]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
         }
+        break;
+    case Stage::Geometry:
+        switch (runtime_info.gs_info.out_primitive[0]) {
+        case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+            ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
+            [[fallthrough]];
+        case AmdGpu::GsOutputPrimitiveType::LineStrip:
+            ir.SetVectorReg(IR::VectorReg::V1, ir.Imm32(1u)); // vertex 1
+            [[fallthrough]];
+        default:
+            ir.SetVectorReg(IR::VectorReg::V0, ir.Imm32(0u)); // vertex 0
+            break;
+        }
+        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     default:
         throw NotImplementedException("Unknown shader stage");
@@ -359,7 +375,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         if (!std::filesystem::exists(dump_dir)) {
             std::filesystem::create_directories(dump_dir);
         }
-        const auto filename = fmt::format("vs_{:#018x}_fetch.bin", info.pgm_hash);
+        const auto filename = fmt::format("vs_{:#018x}.fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
         file.WriteRaw<u8>(code, fetch_size);
     }
@@ -424,31 +440,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
     }
 }
 
-void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
-    switch (inst.opcode) {
-    case Opcode::S_BARRIER:
-        return S_BARRIER();
-    case Opcode::S_TTRACEDATA:
-        LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
-        return;
-    case Opcode::S_GETPC_B64:
-        return S_GETPC_B64(pc, inst);
-    case Opcode::S_WAITCNT:
-    case Opcode::S_NOP:
-    case Opcode::S_ENDPGM:
-    case Opcode::S_CBRANCH_EXECZ:
-    case Opcode::S_CBRANCH_SCC0:
-    case Opcode::S_CBRANCH_SCC1:
-    case Opcode::S_CBRANCH_VCCNZ:
-    case Opcode::S_CBRANCH_VCCZ:
-    case Opcode::S_CBRANCH_EXECNZ:
-    case Opcode::S_BRANCH:
-        return;
-    default:
-        UNREACHABLE();
-    }
-}
-
 void Translator::LogMissingOpcode(const GcnInst& inst) {
     LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({}, category = {})",
               magic_enum::enum_name(inst.opcode), u32(inst.opcode),
@@ -467,7 +458,7 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
 
         // Special case for emitting fetch shader.
         if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex);
+            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export);
             translator.EmitFetch(inst);
             continue;
         }

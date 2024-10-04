@@ -19,6 +19,7 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
+#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -842,26 +843,6 @@ struct Liverpool {
         }
     };
 
-    enum class PrimitiveType : u32 {
-        None = 0,
-        PointList = 1,
-        LineList = 2,
-        LineStrip = 3,
-        TriangleList = 4,
-        TriangleFan = 5,
-        TriangleStrip = 6,
-        PatchPrimitive = 9,
-        AdjLineList = 10,
-        AdjLineStrip = 11,
-        AdjTriangleList = 12,
-        AdjTriangleStrip = 13,
-        RectList = 17,
-        LineLoop = 18,
-        QuadList = 19,
-        QuadStrip = 20,
-        Polygon = 21,
-    };
-
     enum ContextRegs : u32 {
         DbZInfo = 0xA010,
         CbColor0Base = 0xA318,
@@ -936,7 +917,12 @@ struct Liverpool {
     };
 
     union ShaderStageEnable {
-        u32 raw;
+        enum VgtStages : u32 {
+            Vs = 0u, // always enabled
+            EsGs = 0xB0u,
+        };
+
+        VgtStages raw;
         BitField<0, 2, u32> ls_en;
         BitField<2, 1, u32> hs_en;
         BitField<3, 2, u32> es_en;
@@ -960,6 +946,81 @@ struct Liverpool {
                 UNREACHABLE();
             }
         }
+    };
+
+    union GsInstances {
+        u32 raw;
+        struct {
+            u32 enable : 2;
+            u32 count : 6;
+        };
+
+        bool IsEnabled() const {
+            return enable && count > 0;
+        }
+    };
+
+    union GsOutPrimitiveType {
+        u32 raw;
+        struct {
+            GsOutputPrimitiveType outprim_type : 6;
+            GsOutputPrimitiveType outprim_type1 : 6;
+            GsOutputPrimitiveType outprim_type2 : 6;
+            GsOutputPrimitiveType outprim_type3 : 6;
+            u32 reserved : 3;
+            u32 unique_type_per_stream : 1;
+        };
+
+        GsOutputPrimitiveType GetPrimitiveType(u32 stream) const {
+            if (unique_type_per_stream == 0) {
+                return outprim_type;
+            }
+
+            switch (stream) {
+            case 0:
+                return outprim_type;
+            case 1:
+                return outprim_type1;
+            case 2:
+                return outprim_type2;
+            case 3:
+                return outprim_type3;
+            default:
+                UNREACHABLE();
+            }
+        }
+    };
+
+    union GsMode {
+        u32 raw;
+        BitField<0, 3, u32> mode;
+        BitField<3, 2, u32> cut_mode;
+        BitField<22, 2, u32> onchip;
+    };
+
+    union StreamOutConfig {
+        u32 raw;
+        struct {
+            u32 streamout_0_en : 1;
+            u32 streamout_1_en : 1;
+            u32 streamout_2_en : 1;
+            u32 streamout_3_en : 1;
+            u32 rast_stream : 3;
+            u32 : 1;
+            u32 rast_stream_mask : 4;
+            u32 : 19;
+            u32 use_rast_stream_mask : 1;
+        };
+    };
+
+    union StreamOutBufferConfig {
+        u32 raw;
+        struct {
+            u32 stream_0_buf_en : 4;
+            u32 stream_1_buf_en : 4;
+            u32 stream_2_buf_en : 4;
+            u32 stream_3_buf_en : 4;
+        };
     };
 
     union Eqaa {
@@ -1053,9 +1114,13 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA292 - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA290 - 0xA207 - 1);
+            GsMode vgt_gs_mode;
+            INSERT_PADDING_WORDS(1);
             ModeControl mode_control;
-            INSERT_PADDING_WORDS(0xA29D - 0xA292 - 1);
+            INSERT_PADDING_WORDS(8);
+            GsOutPrimitiveType vgt_gs_out_prim_type;
+            INSERT_PADDING_WORDS(1);
             u32 index_size;
             u32 max_index_size;
             IndexBufferType index_buffer_type;
@@ -1066,11 +1131,21 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A5 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
+            INSERT_PADDING_WORDS(0xA2AB - 0xA2A9 - 1);
+            u32 vgt_esgs_ring_itemsize;
+            u32 vgt_gsvs_ring_itemsize;
+            INSERT_PADDING_WORDS(0xA2CE - 0xA2AC - 1);
+            BitField<0, 11, u32> vgt_gs_max_vert_out;
+            INSERT_PADDING_WORDS(0xA2D5 - 0xA2CE - 1);
             ShaderStageEnable stage_enable;
-            INSERT_PADDING_WORDS(9);
+            INSERT_PADDING_WORDS(1);
+            u32 vgt_gs_vert_itemsize[4];
+            INSERT_PADDING_WORDS(4);
             PolygonOffset poly_offset;
-            INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
+            GsInstances vgt_gs_instance_cnt;
+            StreamOutConfig vgt_strmout_config;
+            StreamOutBufferConfig vgt_strmout_buffer_config;
+            INSERT_PADDING_WORDS(0xA2F8 - 0xA2E6 - 1);
             AaConfig aa_config;
             INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
@@ -1291,15 +1366,24 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_mode) == 0xA290);
 static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_out_prim_type) == 0xA29B);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_restart) == 0xA2A5);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(vgt_esgs_ring_itemsize) == 0xA2AB);
+static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_vert_itemsize[0]) == 0xA2D7);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_instance_cnt) == 0xA2E4);
+static_assert(GFX6_3D_REG_INDEX(vgt_strmout_config) == 0xA2E5);
+static_assert(GFX6_3D_REG_INDEX(vgt_strmout_buffer_config) == 0xA2E6);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
