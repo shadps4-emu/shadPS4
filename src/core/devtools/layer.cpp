@@ -18,6 +18,8 @@ using namespace Core::Devtools;
 using L = Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
+static float fps_scale = 1.0f;
+
 static bool show_advanced_debug = false;
 
 static int dump_frame_count = 1;
@@ -149,8 +151,9 @@ void L::SetupSettings() {
     };
     handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void*, const char* line) {
         int v;
-        if (sscanf(line, "show_simple_fps=%d", &v) == 1) {
-            show_simple_fps = v != 0;
+        float f;
+        if (sscanf(line, "fps_scale=%f", &f) == 1) {
+            fps_scale = f;
         } else if (sscanf(line, "show_advanced_debug=%d", &v) == 1) {
             show_advanced_debug = v != 0;
         } else if (sscanf(line, "show_frame_graph=%d", &v) == 1) {
@@ -161,7 +164,7 @@ void L::SetupSettings() {
     };
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
-        buf->appendf("show_simple_fps=%d\n", show_simple_fps);
+        buf->appendf("fps_scale=%f\n", fps_scale);
         buf->appendf("show_advanced_debug=%d\n", show_advanced_debug);
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
@@ -193,11 +196,24 @@ void L::Draw() {
     }
 
     if (show_simple_fps) {
-        SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_FirstUseEver);
         if (Begin("Video Info", nullptr,
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
+            SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_FirstUseEver);
+            if (BeginPopupContextWindow()) {
+#define M(label, value)                                                                            \
+    if (MenuItem(label, nullptr, fps_scale == value))                                              \
+    fps_scale = value
+                M("0.5x", 0.5f);
+                M("1.0x", 1.0f);
+                M("1.5x", 1.5f);
+                M("2.0x", 2.0f);
+                M("2.5x", 2.5f);
+                EndPopup();
+#undef M
+            }
             KeepWindowInside();
+            SetWindowFontScale(fps_scale);
             DrawSimple();
         }
         End();

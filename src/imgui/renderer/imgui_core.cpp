@@ -35,6 +35,7 @@ std::deque<std::pair<bool, ImGui::Layer*>>& GetChangeLayers() {
 }
 
 static std::mutex change_layers_mutex{};
+static ImGuiID dock_id;
 
 namespace ImGui {
 
@@ -106,6 +107,14 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     Vulkan::Init(vk_info);
 
     TextureManager::StartWorker();
+
+    char label[32];
+    ImFormatString(label, IM_ARRAYSIZE(label), "WindowOverViewport_%08X", GetMainViewport()->ID);
+    dock_id = ImHashStr(label);
+
+    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSdlWindow()); dpi > 0.0f) {
+        GetIO().FontGlobalScale = dpi;
+    }
 }
 
 void OnResize() {
@@ -147,8 +156,10 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        return GetIO().NavActive;
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION: {
+        const auto& io = GetIO();
+        return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id;
+    }
     default:
         return false;
     }
