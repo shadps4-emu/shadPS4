@@ -18,6 +18,7 @@
 #include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
+#include "debug_state.h"
 
 namespace Core {
 
@@ -27,8 +28,8 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
 }
 
-static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
 #ifdef ARCH_X86_64
+static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
     // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
     // a specific layout
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
@@ -48,10 +49,8 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  :
                  : "r"(addr), "r"(params), "r"(exit_func)
                  : "rax", "rsi", "rdi");
-#else
-    UNIMPLEMENTED_MSG("Missing RunMainEntry() implementation for target CPU architecture.");
-#endif
 }
+#endif
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -90,6 +89,7 @@ void Linker::Execute() {
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+    DebugState.AddCurrentThreadToGuestList();
     Libraries::Kernel::pthreadInitSelfMainThread();
     EnsureThreadInitialized(true);
 
@@ -107,7 +107,12 @@ void Linker::Execute() {
 
     for (auto& m : m_modules) {
         if (!m->IsSharedLib()) {
-            RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
+#ifdef ARCH_X86_64
+            ExecuteGuest(RunMainEntry, m->GetEntryAddress(), &p, ProgramExitFunc);
+#else
+            UNIMPLEMENTED_MSG(
+                "Missing guest entrypoint implementation for target CPU architecture.");
+#endif
         }
     }
 
@@ -322,7 +327,8 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
         // TODO: Determine if Windows will crash from this
-        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        u8* dest =
+            reinterpret_cast<u8*>(ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -334,7 +340,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
 
 thread_local std::once_flag init_tls_flag;
 
-void Linker::EnsureThreadInitialized(bool is_primary) {
+void Linker::EnsureThreadInitialized(bool is_primary) const {
     std::call_once(init_tls_flag, [this, is_primary] {
 #ifdef ARCH_X86_64
         InitializeThreadPatchStack();
@@ -343,7 +349,7 @@ void Linker::EnsureThreadInitialized(bool is_primary) {
     });
 }
 
-void Linker::InitTlsForThread(bool is_primary) {
+void Linker::InitTlsForThread(bool is_primary) const {
     static constexpr size_t TcbSize = 0x40;
     static constexpr size_t TlsAllocAlign = 0x20;
     const size_t total_tls_size = Common::AlignUp(static_tls_size, TlsAllocAlign) + TcbSize;
@@ -365,7 +371,7 @@ void Linker::InitTlsForThread(bool is_primary) {
     } else {
         if (heap_api) {
 #ifndef WIN32
-            addr_out = heap_api->heap_malloc(total_tls_size);
+            addr_out = ExecuteGuestWithoutTls(heap_api->heap_malloc, total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
 #else

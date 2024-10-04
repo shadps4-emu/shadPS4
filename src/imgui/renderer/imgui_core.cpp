@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/path_util.h"
+#include "core/devtools/layer.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -16,6 +17,7 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
+#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -33,6 +35,7 @@ std::deque<std::pair<bool, ImGui::Layer*>>& GetChangeLayers() {
 }
 
 static std::mutex change_layers_mutex{};
+static ImGuiID dock_id;
 
 namespace ImGui {
 
@@ -51,6 +54,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f); // Makes the window edges rounded
 
     auto path = config_path.u8string();
     char* config_file_buf = new char[path.size() + 1]();
@@ -73,12 +77,16 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 16.0f,
-                                             &font_cfg, ranges.Data);
+    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
+        imgui_font_notosansjp_regular_compressed_data,
+        imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
+                                             imgui_font_proggyvector_regular_compressed_size,
+                                             16.0f);
 
     StyleColorsDark();
 
+    ::Core::Devtools::Layer::SetupSettings();
     Sdl::Init(window.GetSdlWindow());
 
     const Vulkan::InitInfo vk_info{
@@ -99,6 +107,14 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     Vulkan::Init(vk_info);
 
     TextureManager::StartWorker();
+
+    char label[32];
+    ImFormatString(label, IM_ARRAYSIZE(label), "WindowOverViewport_%08X", GetMainViewport()->ID);
+    dock_id = ImHashStr(label);
+
+    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSdlWindow()); dpi > 0.0f) {
+        GetIO().FontGlobalScale = dpi;
+    }
 }
 
 void OnResize() {
@@ -140,8 +156,10 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        return GetIO().NavActive;
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION: {
+        const auto& io = GetIO();
+        return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id;
+    }
     default:
         return false;
     }
@@ -164,6 +182,8 @@ void NewFrame() {
 
     Sdl::NewFrame();
     ImGui::NewFrame();
+
+    DockSpaceOverViewport(0, GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
     for (auto* layer : layers) {
         layer->Draw();

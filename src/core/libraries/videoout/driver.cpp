@@ -8,6 +8,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/thread.h"
+#include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
@@ -260,7 +261,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
     const auto vblank_period = VblankPeriod / Config::vblankDiv();
 
-    Common::SetCurrentThreadName("PresentThread");
+    Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);
 
     Common::AccurateTimer timer{vblank_period};
@@ -284,7 +285,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (!request) {
-                if (!main_port.is_open) {
+                if (!main_port.is_open || DebugState.IsGuestThreadsPaused()) {
                     DrawBlankFrame();
                 }
             } else {

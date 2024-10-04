@@ -23,6 +23,7 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include <common/version.h>
+#include <qprogressbar.h>
 #include "check_update.h"
 
 using namespace Common::FS;
@@ -313,20 +314,37 @@ void CheckUpdate::requestChangelog(const QString& currentRev, const QString& lat
 }
 
 void CheckUpdate::DownloadUpdate(const QString& url) {
+    QProgressBar* progressBar = new QProgressBar(this);
+    progressBar->setRange(0, 100);
+    progressBar->setTextVisible(true);
+    progressBar->setValue(0);
+
+    layout()->addWidget(progressBar);
+
     QNetworkRequest request(url);
     QNetworkReply* reply = networkManager->get(request);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
+    connect(reply, &QNetworkReply::downloadProgress, this,
+            [progressBar](qint64 bytesReceived, qint64 bytesTotal) {
+                if (bytesTotal > 0) {
+                    int percentage = static_cast<int>((bytesReceived * 100) / bytesTotal);
+                    progressBar->setValue(percentage);
+                }
+            });
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, progressBar, url]() {
+        progressBar->setValue(100);
         if (reply->error() != QNetworkReply::NoError) {
             QMessageBox::warning(this, tr("Error"),
                                  tr("Network error occurred while trying to access the URL") +
                                      ":\n" + url + "\n" + reply->errorString());
             reply->deleteLater();
+            progressBar->deleteLater();
             return;
         }
 
-        QString userPath =
-            QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+        QString userPath;
+        Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
         QString tempDownloadPath = userPath + "/temp_download_update";
         QDir dir(tempDownloadPath);
         if (!dir.exists()) {
@@ -348,16 +366,18 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
         }
 
         reply->deleteLater();
+        progressBar->deleteLater();
     });
 }
 
 void CheckUpdate::Install() {
-    QString userPath =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+    QString userPath;
+    Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 
     QString startingUpdate = tr("Starting Update...");
     QString tempDirPath = userPath + "/temp_download_update";
-    QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
+    QString rootPath;
+    Common::FS::PathToQString(rootPath, std::filesystem::current_path());
 
     QString scriptContent;
     QString scriptFileName;

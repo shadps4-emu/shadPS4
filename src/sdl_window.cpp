@@ -23,7 +23,7 @@ namespace Frontend {
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controller{controller_} {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
@@ -304,6 +304,9 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
     }
+    if (SDL_GetCursor() != NULL) {
+        SDL_HideCursor();
+    }
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {
@@ -328,6 +331,9 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
         button = sdlGamepadToOrbisButton(event->gbutton.button);
         if (button != 0) {
             controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+        }
+        if (SDL_GetCursor() != NULL) {
+            SDL_HideCursor();
         }
         break;
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:

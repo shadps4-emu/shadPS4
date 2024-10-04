@@ -50,15 +50,17 @@ enum class VMAType : u32 {
     Direct = 2,
     Flexible = 3,
     Pooled = 4,
-    Stack = 5,
-    Code = 6,
-    File = 7,
+    PoolReserved = 5,
+    Stack = 6,
+    Code = 7,
+    File = 8,
 };
 
 struct DirectMemoryArea {
     PAddr base = 0;
     size_t size = 0;
     int memory_type = 0;
+    bool is_pooled = false;
     bool is_free = true;
 
     PAddr GetEnd() const {
@@ -96,7 +98,7 @@ struct VirtualMemoryArea {
     }
 
     bool IsMapped() const noexcept {
-        return type != VMAType::Free && type != VMAType::Reserved;
+        return type != VMAType::Free && type != VMAType::Reserved && type != VMAType::PoolReserved;
     }
 
     bool CanMergeWith(const VirtualMemoryArea& next) const {
@@ -135,6 +137,10 @@ public:
         return total_direct_size;
     }
 
+    u64 GetTotalFlexibleSize() const {
+        return total_flexible_size;
+    }
+
     u64 GetAvailableFlexibleSize() const {
         return total_flexible_size - flexible_usage;
     }
@@ -145,13 +151,20 @@ public:
 
     void SetupMemoryRegions(u64 flexible_size);
 
+    PAddr PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment);
+
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
 
     void Free(PAddr phys_addr, size_t size);
 
+    int PoolReserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
+                    u64 alignment = 0);
+
     int Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
                 u64 alignment = 0);
+
+    int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "",
@@ -159,6 +172,8 @@ public:
 
     int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                 MemoryMapFlags flags, uintptr_t fd, size_t offset);
+
+    void PoolDecommit(VAddr virtual_addr, size_t size);
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 

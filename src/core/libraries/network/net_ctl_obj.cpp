@@ -59,7 +59,7 @@ s32 Libraries::NetCtl::NetCtlInternal::registerNpToolkitCallback(
 
 void Libraries::NetCtl::NetCtlInternal::checkCallback() {
     std::unique_lock lock{m_mutex};
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     for (auto& callback : callbacks) {
         if (callback.func != nullptr) {
             linker->ExecuteGuest(callback.func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED,
@@ -70,7 +70,7 @@ void Libraries::NetCtl::NetCtlInternal::checkCallback() {
 
 void Libraries::NetCtl::NetCtlInternal::checkNpToolkitCallback() {
     std::unique_lock lock{m_mutex};
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     for (auto& callback : nptoolCallbacks) {
         if (callback.func != nullptr) {
             linker->ExecuteGuest(callback.func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED,

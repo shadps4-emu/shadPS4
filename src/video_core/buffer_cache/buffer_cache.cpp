@@ -105,6 +105,15 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         if (instance.IsVertexInputDynamicState()) {
             const auto cmdbuf = scheduler.CommandBuffer();
             cmdbuf.setVertexInputEXT(bindings, attributes);
+        } else if (bindings.empty()) {
+            // Required to call bindVertexBuffers2EXT at least once in the current command buffer
+            // with non-null strides without a non-dynamic stride pipeline in between. Thus even
+            // when nothing is bound we still need to make a dummy call. Non-null strides in turn
+            // requires a count greater than 0.
+            const auto cmdbuf = scheduler.CommandBuffer();
+            const std::array null_buffers = {GetBuffer(NULL_BUFFER_ID).buffer.buffer};
+            constexpr std::array null_offsets = {static_cast<vk::DeviceSize>(0)};
+            cmdbuf.bindVertexBuffers2EXT(0, null_buffers, null_offsets, null_offsets, null_offsets);
         }
     };
 
@@ -114,6 +123,8 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
     std::array<vk::Buffer, NumVertexBuffers> host_buffers;
     std::array<vk::DeviceSize, NumVertexBuffers> host_offsets;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_sizes;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_strides;
     boost::container::static_vector<AmdGpu::Buffer, NumVertexBuffers> guest_buffers;
 
     struct BufferRange {
@@ -193,11 +204,18 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
         host_buffers[i] = host_buffer->vk_buffer;
         host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
+        host_sizes[i] = buffer.GetSize();
+        host_strides[i] = buffer.GetStride();
     }
 
     if (num_buffers > 0) {
         const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        if (instance.IsVertexInputDynamicState()) {
+            cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        } else {
+            cmdbuf.bindVertexBuffers2EXT(0, num_buffers, host_buffers.data(), host_offsets.data(),
+                                         host_sizes.data(), host_strides.data());
+        }
     }
 
     return has_step_rate;

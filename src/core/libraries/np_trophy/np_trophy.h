@@ -47,7 +47,7 @@ bool ORBIS_NP_TROPHY_FLAG_ISSET(int32_t trophyId, OrbisNpTrophyFlagArray* p);
 
 struct OrbisNpTrophyData {
     size_t size;
-    OrbisNpTrophyId trophyId;
+    OrbisNpTrophyId trophy_id;
     bool unlocked;
     uint8_t reserved[3];
     Rtc::OrbisRtcTick timestamp;
@@ -66,9 +66,9 @@ constexpr int ORBIS_NP_TROPHY_INVALID_GROUP_ID = -2;
 
 struct OrbisNpTrophyDetails {
     size_t size;
-    OrbisNpTrophyId trophyId;
-    OrbisNpTrophyGrade trophyGrade;
-    OrbisNpTrophyGroupId groupId;
+    OrbisNpTrophyId trophy_id;
+    OrbisNpTrophyGrade trophy_grade;
+    OrbisNpTrophyGroupId group_id;
     bool hidden;
     uint8_t reserved[3];
     char name[ORBIS_NP_TROPHY_NAME_MAX_SIZE];
@@ -77,46 +77,46 @@ struct OrbisNpTrophyDetails {
 
 struct OrbisNpTrophyGameData {
     size_t size;
-    uint32_t unlockedTrophies;
-    uint32_t unlockedPlatinum;
-    uint32_t unlockedGold;
-    uint32_t unlockedSilver;
-    uint32_t unlockedBronze;
-    uint32_t progressPercentage;
+    uint32_t unlocked_trophies;
+    uint32_t unlocked_platinum;
+    uint32_t unlocked_gold;
+    uint32_t unlocked_silver;
+    uint32_t unlocked_bronze;
+    uint32_t progress_percentage;
 };
 
 struct OrbisNpTrophyGameDetails {
     size_t size;
-    uint32_t numGroups;
-    uint32_t numTrophies;
-    uint32_t numPlatinum;
-    uint32_t numGold;
-    uint32_t numSilver;
-    uint32_t numBronze;
+    uint32_t num_groups;
+    uint32_t num_trophies;
+    uint32_t num_platinum;
+    uint32_t num_gold;
+    uint32_t num_silver;
+    uint32_t num_bronze;
     char title[ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE];
     char description[ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE];
 };
 
 struct OrbisNpTrophyGroupData {
     size_t size;
-    OrbisNpTrophyGroupId groupId;
-    uint32_t unlockedTrophies;
-    uint32_t unlockedPlatinum;
-    uint32_t unlockedGold;
-    uint32_t unlockedSilver;
-    uint32_t unlockedBronze;
-    uint32_t progressPercentage;
+    OrbisNpTrophyGroupId group_id;
+    uint32_t unlocked_trophies;
+    uint32_t unlocked_platinum;
+    uint32_t unlocked_gold;
+    uint32_t unlocked_silver;
+    uint32_t unlocked_bronze;
+    uint32_t progress_percentage;
     uint8_t reserved[4];
 };
 
 struct OrbisNpTrophyGroupDetails {
     size_t size;
-    OrbisNpTrophyGroupId groupId;
-    uint32_t numTrophies;
-    uint32_t numPlatinum;
-    uint32_t numGold;
-    uint32_t numSilver;
-    uint32_t numBronze;
+    OrbisNpTrophyGroupId group_id;
+    uint32_t num_trophies;
+    uint32_t num_platinum;
+    uint32_t num_gold;
+    uint32_t num_silver;
+    uint32_t num_bronze;
     char title[ORBIS_NP_TROPHY_GROUP_TITLE_MAX_SIZE];
     char description[ORBIS_NP_TROPHY_GROUP_DESCR_MAX_SIZE];
 };

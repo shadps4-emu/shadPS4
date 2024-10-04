@@ -253,6 +253,13 @@ struct Liverpool {
         }
     };
 
+    struct ModeControl {
+        s32 msaa_enable : 1;
+        s32 vport_scissor_enable : 1;
+        s32 line_stripple_enable : 1;
+        s32 send_unlit_stiles_to_pkr : 1;
+    };
+
     enum class ZOrder : u32 {
         LateZ = 0,
         EarlyZLateZ = 1,
@@ -356,13 +363,16 @@ struct Liverpool {
             Stencil8 = 1,
         };
 
-        union {
+        union ZInfo {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
+            BitField<20, 3, u32> tile_mode_index;
+            BitField<23, 4, u32> decompress_on_n_zplanes;
             BitField<27, 1, u32> allow_expclear;
             BitField<28, 1, u32> read_size;
             BitField<29, 1, u32> tile_surface_en;
+            BitField<30, 1, u32> clear_disallowed;
             BitField<31, 1, u32> zrange_precision;
         } z_info;
         union {
@@ -465,6 +475,8 @@ struct Liverpool {
         BitField<13, 1, u32> enable_polygon_offset_para;
         BitField<16, 1, u32> enable_window_offset;
         BitField<19, 1, ProvokingVtxLast> provoking_vtx_last;
+        BitField<20, 1, u32> persp_corr_dis;
+        BitField<21, 1, u32> multi_prim_ib_ena;
 
         PolygonMode PolyMode() const {
             return enable_polygon_mode ? polygon_mode_front.Value() : PolygonMode::Fill;
@@ -559,29 +571,39 @@ struct Liverpool {
             s16 top_left_x;
             s16 top_left_y;
         };
-        union {
-            BitField<0, 15, u32> bottom_right_x;
-            BitField<16, 15, u32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
+        // From AMD spec: 'Negative numbers clamped to 0'
+        static s16 Clamp(s16 value) {
+            return std::max(s16(0), value);
+        }
+
         u32 GetWidth() const {
-            return static_cast<u32>(bottom_right_x - top_left_x);
+            return static_cast<u32>(Clamp(bottom_right_x) - Clamp(top_left_x));
         }
 
         u32 GetHeight() const {
-            return static_cast<u32>(bottom_right_y - top_left_y);
+            return static_cast<u32>(Clamp(bottom_right_y) - Clamp(top_left_y));
         }
+    };
+
+    struct WindowOffset {
+        s32 window_x_offset : 16;
+        s32 window_y_offset : 16;
     };
 
     struct ViewportScissor {
         union {
             BitField<0, 15, s32> top_left_x;
-            BitField<15, 15, s32> top_left_y;
-            BitField<30, 1, s32> window_offset_disable;
+            BitField<16, 15, s32> top_left_y;
+            BitField<31, 1, s32> window_offset_disable;
         };
-        union {
-            BitField<0, 15, s32> bottom_right_x;
-            BitField<15, 15, s32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
         u32 GetWidth() const {
@@ -617,6 +639,7 @@ struct Liverpool {
         BitField<8, 1, u32> xy_transformed;
         BitField<9, 1, u32> z_transformed;
         BitField<10, 1, u32> w_transformed;
+        BitField<11, 1, u32> perfcounter_ref;
     };
 
     struct ClipUserData {
@@ -672,6 +695,7 @@ struct Liverpool {
         BitField<24, 5, BlendFactor> alpha_dst_factor;
         BitField<29, 1, u32> separate_alpha_blend;
         BitField<30, 1, u32> enable;
+        BitField<31, 1, u32> disable_rop3;
     };
 
     union ColorControl {
@@ -680,9 +704,11 @@ struct Liverpool {
             Normal = 1u,
             EliminateFastClear = 2u,
             Resolve = 3u,
+            Err = 4u,
             FmaskDecompress = 5u,
         };
 
+        BitField<0, 1, u32> disable_dual_quad;
         BitField<3, 1, u32> degamma_enable;
         BitField<4, 3, OperationMode> mode;
         BitField<16, 8, u32> rop3;
@@ -720,7 +746,7 @@ struct Liverpool {
             BitField<0, 11, u32> slice_start;
             BitField<13, 11, u32> slice_max;
         } view;
-        union {
+        union Color0Info {
             BitField<0, 2, EndianSwap> endian;
             BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
@@ -733,10 +759,17 @@ struct Liverpool {
             BitField<17, 1, u32> simple_float;
             BitField<18, 1, RoundMode> round_mode;
             BitField<19, 1, u32> cmask_is_linear;
+            BitField<20, 3, u32> blend_opt_dont_rd_dst;
+            BitField<23, 3, u32> blend_opt_discard_pixel;
+            BitField<26, 1, u32> fmask_compression_disable_ci;
+            BitField<27, 1, u32> fmask_compress_1frag_only;
+            BitField<28, 1, u32> dcc_enable;
+            BitField<29, 1, u32> cmask_addr_type;
         } info;
-        union {
+        union Color0Attrib {
             BitField<0, 5, TilingMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
+            BitField<10, 2, u32> fmask_bank_height;
             BitField<12, 3, u32> num_samples_log2;
             BitField<15, 2, u32> num_fragments_log2;
             BitField<17, 1, u32> force_dst_alpha_1;
@@ -869,8 +902,14 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<2, 1, u32> depth_copy;
+        BitField<3, 1, u32> stencil_copy;
+        BitField<4, 1, u32> resummarize_enable;
         BitField<5, 1, u32> stencil_compress_disable;
         BitField<6, 1, u32> depth_compress_disable;
+        BitField<7, 1, u32> copy_centroid;
+        BitField<8, 1, u32> copy_sample;
+        BitField<9, 1, u32> decompress_enable;
     };
 
     union DepthView {
@@ -923,6 +962,22 @@ struct Liverpool {
         }
     };
 
+    union Eqaa {
+        u32 raw;
+        BitField<0, 1, u32> max_anchor_samples;
+        BitField<4, 3, u32> ps_iter_samples;
+        BitField<8, 3, u32> mask_export_num_samples;
+        BitField<12, 3, u32> alpha_to_mask_num_samples;
+        BitField<16, 1, u32> high_quality_intersections;
+        BitField<17, 1, u32> incoherent_eqaa_reads;
+        BitField<18, 1, u32> interpolate_comp_z;
+        BitField<19, 1, u32> interpolate_src_z;
+        BitField<20, 1, u32> static_anchor_associations;
+        BitField<21, 1, u32> alpha_to_mask_eqaa_disable;
+        BitField<24, 3, u32> overrasterization_amount;
+        BitField<27, 1, u32> enable_postz_overrasterization;
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -953,10 +1008,14 @@ struct Liverpool {
             Scissor screen_scissor;
             INSERT_PADDING_WORDS(0xA010 - 0xA00C - 2);
             DepthBuffer depth_buffer;
-            INSERT_PADDING_WORDS(0xA08E - 0xA018);
+            INSERT_PADDING_WORDS(0xA080 - 0xA018);
+            WindowOffset window_offset;
+            ViewportScissor window_scissor;
+            INSERT_PADDING_WORDS(0xA08E - 0xA081 - 2);
             ColorBufferMask color_target_mask;
             ColorBufferMask color_shader_mask;
-            INSERT_PADDING_WORDS(0xA094 - 0xA08E - 2);
+            ViewportScissor generic_scissor;
+            INSERT_PADDING_WORDS(2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
             INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
@@ -994,7 +1053,9 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA29E - 0xA207 - 2);
+            INSERT_PADDING_WORDS(0xA292 - 0xA207 - 1);
+            ModeControl mode_control;
+            INSERT_PADDING_WORDS(0xA29D - 0xA292 - 1);
             u32 index_size;
             u32 max_index_size;
             IndexBufferType index_buffer_type;
@@ -1206,8 +1267,11 @@ static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
+static_assert(GFX6_3D_REG_INDEX(window_offset) == 0xA080);
+static_assert(GFX6_3D_REG_INDEX(window_scissor) == 0xA081);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
+static_assert(GFX6_3D_REG_INDEX(generic_scissor) == 0xA090);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
 static_assert(GFX6_3D_REG_INDEX(primitive_restart_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
@@ -1227,6 +1291,7 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);

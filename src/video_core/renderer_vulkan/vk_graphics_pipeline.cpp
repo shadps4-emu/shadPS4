@@ -46,28 +46,34 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
-    const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
-    for (const auto& input : vs_info->vs_inputs) {
-        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
-            // Skip attribute binding as the data will be pulled by shader
-            continue;
-        }
+    if (!instance.IsVertexInputDynamicState()) {
+        const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
+        for (const auto& input : vs_info->vs_inputs) {
+            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+                // Skip attribute binding as the data will be pulled by shader
+                continue;
+            }
 
-        const auto buffer = vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        vertex_attributes.push_back({
-            .location = input.binding,
-            .binding = input.binding,
-            .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
-            .offset = 0,
-        });
-        vertex_bindings.push_back({
-            .binding = input.binding,
-            .stride = buffer.GetStride(),
-            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
-                             ? vk::VertexInputRate::eVertex
-                             : vk::VertexInputRate::eInstance,
-        });
+            const auto buffer =
+                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            if (buffer.GetSize() == 0) {
+                continue;
+            }
+            vertex_attributes.push_back({
+                .location = input.binding,
+                .binding = input.binding,
+                .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+                .offset = 0,
+            });
+            vertex_bindings.push_back({
+                .binding = input.binding,
+                .stride = buffer.GetStride(),
+                .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+                                 ? vk::VertexInputRate::eVertex
+                                 : vk::VertexInputRate::eInstance,
+            });
+        }
     }
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
@@ -82,11 +88,17 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                     "Rectangle List primitive type is only supported for embedded VS");
     }
 
+    auto prim_restart = key.enable_primitive_restart != 0;
+    if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
+        LOG_WARNING(Render_Vulkan,
+                    "Primitive restart is enabled for list topology but not supported by driver.");
+        prim_restart = false;
+    }
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = key.enable_primitive_restart != 0,
+        .primitiveRestartEnable = prim_restart,
     };
-    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF ||
+    ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
@@ -147,6 +159,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     }
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
+    } else {
+        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -273,7 +287,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pNext = &pipeline_rendering_ci,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
-        .pVertexInputState = &vertex_input_info,
+        .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
@@ -379,7 +393,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
-            if (vsharp) {
+            if (vsharp && vsharp.GetSize() > 0) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");

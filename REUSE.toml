@@ -3,16 +3,16 @@ version = 1
 [[annotations]]
 path = [
     "REUSE.toml",
-    "CMakeSettings.json", 
-    ".github/FUNDING.yml", 
-    ".github/shadps4.desktop", 
-    ".github/shadps4.png", 
-    ".gitmodules", 
-    "documents/changelog.txt", 
-    "documents/Quickstart/2.png", 
-    "documents/Screenshots/*", 
-    "scripts/ps4_names.txt", 
-    "src/images/about_icon.png", 
+    "CMakeSettings.json",
+    ".github/FUNDING.yml",
+    ".github/shadps4.desktop",
+    ".github/shadps4.png",
+    ".gitmodules",
+    "documents/changelog.txt",
+    "documents/Quickstart/2.png",
+    "documents/Screenshots/*",
+    "scripts/ps4_names.txt",
+    "src/images/about_icon.png",
     "src/images/controller_icon.png",
     "src/images/dump_icon.png",
     "src/images/exit_icon.png",
@@ -26,18 +26,18 @@ path = [
     "src/images/folder_icon.png",
     "src/images/grid_icon.png",
     "src/images/iconsize_icon.png",
-    "src/images/list_icon.png", 
-    "src/images/list_mode_icon.png", 
-    "src/images/pause_icon.png", 
-    "src/images/play_icon.png", 
-    "src/images/refresh_icon.png", 
-    "src/images/settings_icon.png", 
-    "src/images/stop_icon.png", 
-    "src/images/shadPS4.icns", 
-    "src/images/shadps4.ico", 
-    "src/images/themes_icon.png", 
-    "src/images/update_icon.png", 
-    "src/shadps4.qrc", 
+    "src/images/list_icon.png",
+    "src/images/list_mode_icon.png",
+    "src/images/pause_icon.png",
+    "src/images/play_icon.png",
+    "src/images/refresh_icon.png",
+    "src/images/settings_icon.png",
+    "src/images/stop_icon.png",
+    "src/images/shadPS4.icns",
+    "src/images/shadps4.ico",
+    "src/images/themes_icon.png",
+    "src/images/update_icon.png",
+    "src/shadps4.qrc",
     "src/shadps4.rc",
 ]
 precedence = "aggregate"
@@ -73,3 +73,15 @@ path = "src/imgui/renderer/fonts/NotoSansJP-Regular.ttf"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2012 Google Inc. All Rights Reserved."
 SPDX-License-Identifier = "OFL-1.1"
+
+[[annotations]]
+path = "src/imgui/renderer/fonts/ProggyVector-Regular.ttf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2004, 2005 Tristan Grimmer"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "externals/gcn/include/**"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+

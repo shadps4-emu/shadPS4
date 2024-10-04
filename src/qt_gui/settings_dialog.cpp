@@ -70,7 +70,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
-    defaultTextEdit = tr("Point your mouse at an options to display a description in here");
+    defaultTextEdit = tr("Point your mouse at an option to display its description.");
     ui->descriptionText->setText(defaultTextEdit);
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
@@ -140,8 +140,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             checkUpdate->exec();
         });
 
-        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setPlayBGM(val); });
+        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this, [](int val) {
+            Config::setPlayBGM(val);
+            if (val == Qt::Unchecked) {
+                BackgroundMusicPlayer::getInstance().stopMusic();
+            }
+        });
+
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this, [](float val) {
+            Config::setBGMvolume(val);
+            BackgroundMusicPlayer::getInstance().setVolume(val);
+        });
     }
 
     // GPU TAB
@@ -165,9 +174,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->nullGpuCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setNullGpu(val); });
-
-        connect(ui->dumpPM4CheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setDumpPM4(val); });
     }
 
     // DEBUG TAB
@@ -206,7 +212,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
-        ui->dumpPM4CheckBox->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -229,8 +234,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vblankSpinBox->setValue(Config::vblankDiv());
     ui->dumpShadersCheckBox->setChecked(Config::dumpShaders());
     ui->nullGpuCheckBox->setChecked(Config::nullGpu());
-    ui->dumpPM4CheckBox->setChecked(Config::dumpPM4());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
+    ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());
     ui->showSplashCheckBox->setChecked(Config::showSplash());
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());

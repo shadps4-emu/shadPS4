@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>タイトル音楽を再生する</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>音量</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
@@ -970,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>ここに説明を表示するには、オプションにマウスをポイントしてください</translation>
+			<source>Point your mouse at an option to display its description.</source>
+			<translation>オプションにマウスをポイントすると、その説明が表示されます。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1016,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>更新:\n安定版: 非常に古いかもしれないが、より信頼性が高くテスト済みの公式バージョンを毎月リリースします。\n不安定版: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
+			<translation>更新:\nRelease: 非常に古いかもしれないが、より信頼性が高くテスト済みの公式バージョンを毎月リリースします。\nNightly: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

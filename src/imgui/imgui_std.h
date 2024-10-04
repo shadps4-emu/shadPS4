@@ -10,6 +10,9 @@
 
 #define IM_COL32_GRAY(x) IM_COL32(x, x, x, 0xFF)
 
+#define IMGUI_FONT_TEXT 0
+#define IMGUI_FONT_MONO 1
+
 namespace ImGui {
 
 namespace Easing {
@@ -25,6 +28,20 @@ inline float FastInFastOutCubic(float x) {
 inline void CentralizeWindow() {
     const auto display_size = GetIO().DisplaySize;
     SetNextWindowPos(display_size / 2.0f, ImGuiCond_Always, {0.5f});
+}
+
+inline void KeepWindowInside(ImVec2 display_size = GetIO().DisplaySize) {
+    const auto cur_pos = GetWindowPos();
+    if (cur_pos.x < 0.0f || cur_pos.y < 0.0f) {
+        SetWindowPos(ImMax(cur_pos, ImVec2(0.0f, 0.0f)));
+        return;
+    }
+    const auto cur_size = GetWindowSize();
+    const auto bottom_right = cur_pos + cur_size;
+    if (bottom_right.x > display_size.x || bottom_right.y > display_size.y) {
+        const auto max_pos = display_size - cur_size;
+        SetWindowPos(ImMin(cur_pos, max_pos));
+    }
 }
 
 inline void KeepNavHighlight() {
