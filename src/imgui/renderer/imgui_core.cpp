@@ -111,6 +111,10 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     char label[32];
     ImFormatString(label, IM_ARRAYSIZE(label), "WindowOverViewport_%08X", GetMainViewport()->ID);
     dock_id = ImHashStr(label);
+
+    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSdlWindow()); dpi > 0.0f) {
+        GetIO().FontGlobalScale = dpi;
+    }
 }
 
 void OnResize() {
