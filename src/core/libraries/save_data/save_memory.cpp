@@ -207,7 +207,7 @@ void SetIcon(void* buf, size_t buf_size) {
     } else {
         g_icon_memory.resize(buf_size);
         std::memcpy(g_icon_memory.data(), buf, buf_size);
-        IOFile file(g_icon_path, Common::FS::FileAccessMode::Append);
+        IOFile file(g_icon_path, Common::FS::FileAccessMode::Write);
         file.Seek(0);
         file.WriteRaw<u8>(g_icon_memory.data(), buf_size);
         file.Close();

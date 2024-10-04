@@ -363,13 +363,16 @@ struct Liverpool {
             Stencil8 = 1,
         };
 
-        union {
+        union ZInfo {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
+            BitField<20, 3, u32> tile_mode_index;
+            BitField<23, 4, u32> decompress_on_n_zplanes;
             BitField<27, 1, u32> allow_expclear;
             BitField<28, 1, u32> read_size;
             BitField<29, 1, u32> tile_surface_en;
+            BitField<30, 1, u32> clear_disallowed;
             BitField<31, 1, u32> zrange_precision;
         } z_info;
         union {
@@ -472,6 +475,8 @@ struct Liverpool {
         BitField<13, 1, u32> enable_polygon_offset_para;
         BitField<16, 1, u32> enable_window_offset;
         BitField<19, 1, ProvokingVtxLast> provoking_vtx_last;
+        BitField<20, 1, u32> persp_corr_dis;
+        BitField<21, 1, u32> multi_prim_ib_ena;
 
         PolygonMode PolyMode() const {
             return enable_polygon_mode ? polygon_mode_front.Value() : PolygonMode::Fill;
@@ -634,6 +639,7 @@ struct Liverpool {
         BitField<8, 1, u32> xy_transformed;
         BitField<9, 1, u32> z_transformed;
         BitField<10, 1, u32> w_transformed;
+        BitField<11, 1, u32> perfcounter_ref;
     };
 
     struct ClipUserData {
@@ -689,6 +695,7 @@ struct Liverpool {
         BitField<24, 5, BlendFactor> alpha_dst_factor;
         BitField<29, 1, u32> separate_alpha_blend;
         BitField<30, 1, u32> enable;
+        BitField<31, 1, u32> disable_rop3;
     };
 
     union ColorControl {
@@ -697,9 +704,11 @@ struct Liverpool {
             Normal = 1u,
             EliminateFastClear = 2u,
             Resolve = 3u,
+            Err = 4u,
             FmaskDecompress = 5u,
         };
 
+        BitField<0, 1, u32> disable_dual_quad;
         BitField<3, 1, u32> degamma_enable;
         BitField<4, 3, OperationMode> mode;
         BitField<16, 8, u32> rop3;
@@ -737,7 +746,7 @@ struct Liverpool {
             BitField<0, 11, u32> slice_start;
             BitField<13, 11, u32> slice_max;
         } view;
-        union {
+        union Color0Info {
             BitField<0, 2, EndianSwap> endian;
             BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
@@ -750,10 +759,17 @@ struct Liverpool {
             BitField<17, 1, u32> simple_float;
             BitField<18, 1, RoundMode> round_mode;
             BitField<19, 1, u32> cmask_is_linear;
+            BitField<20, 3, u32> blend_opt_dont_rd_dst;
+            BitField<23, 3, u32> blend_opt_discard_pixel;
+            BitField<26, 1, u32> fmask_compression_disable_ci;
+            BitField<27, 1, u32> fmask_compress_1frag_only;
+            BitField<28, 1, u32> dcc_enable;
+            BitField<29, 1, u32> cmask_addr_type;
         } info;
-        union {
+        union Color0Attrib {
             BitField<0, 5, TilingMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
+            BitField<10, 2, u32> fmask_bank_height;
             BitField<12, 3, u32> num_samples_log2;
             BitField<15, 2, u32> num_fragments_log2;
             BitField<17, 1, u32> force_dst_alpha_1;
@@ -886,8 +902,14 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<2, 1, u32> depth_copy;
+        BitField<3, 1, u32> stencil_copy;
+        BitField<4, 1, u32> resummarize_enable;
         BitField<5, 1, u32> stencil_compress_disable;
         BitField<6, 1, u32> depth_compress_disable;
+        BitField<7, 1, u32> copy_centroid;
+        BitField<8, 1, u32> copy_sample;
+        BitField<9, 1, u32> decompress_enable;
     };
 
     union DepthView {
@@ -938,6 +960,22 @@ struct Liverpool {
                 UNREACHABLE();
             }
         }
+    };
+
+    union Eqaa {
+        u32 raw;
+        BitField<0, 1, u32> max_anchor_samples;
+        BitField<4, 3, u32> ps_iter_samples;
+        BitField<8, 3, u32> mask_export_num_samples;
+        BitField<12, 3, u32> alpha_to_mask_num_samples;
+        BitField<16, 1, u32> high_quality_intersections;
+        BitField<17, 1, u32> incoherent_eqaa_reads;
+        BitField<18, 1, u32> interpolate_comp_z;
+        BitField<19, 1, u32> interpolate_src_z;
+        BitField<20, 1, u32> static_anchor_associations;
+        BitField<21, 1, u32> alpha_to_mask_eqaa_disable;
+        BitField<24, 3, u32> overrasterization_amount;
+        BitField<27, 1, u32> enable_postz_overrasterization;
     };
 
     union Regs {

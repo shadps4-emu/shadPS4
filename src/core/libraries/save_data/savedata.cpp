@@ -262,6 +262,14 @@ struct OrbisSaveDataRestoreBackupData {
     s32 : 32;
 };
 
+struct OrbisSaveDataTransferringMount {
+    OrbisUserServiceUserId userId;
+    const OrbisSaveDataTitleId* titleId;
+    const OrbisSaveDataDirName* dirName;
+    const OrbisSaveDataFingerprint* fingerprint;
+    std::array<u8, 32> _reserved;
+};
+
 struct OrbisSaveDataDirNameSearchCond {
     OrbisUserServiceUserId userId;
     int : 32;
@@ -357,7 +365,8 @@ static Error setNotInitializedError() {
 }
 
 static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
-                           OrbisSaveDataMountResult* mount_result) {
+                           OrbisSaveDataMountResult* mount_result,
+                           std::string_view title_id = g_game_serial) {
 
     if (mount_info->userId < 0) {
         return Error::INVALID_LOGIN_USER;
@@ -369,8 +378,8 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
 
     // check backup status
     {
-        const auto save_path = SaveInstance::MakeDirSavePath(mount_info->userId, g_game_serial,
-                                                             mount_info->dirName->data);
+        const auto save_path =
+            SaveInstance::MakeDirSavePath(mount_info->userId, title_id, mount_info->dirName->data);
         if (Backup::IsBackupExecutingFor(save_path) && g_fw_ver) {
             return Error::BACKUP_BUSY;
         }
@@ -409,7 +418,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
         return Error::MOUNT_FULL;
     }
 
-    SaveInstance save_instance{slot_num, mount_info->userId, g_game_serial, dir_name,
+    SaveInstance save_instance{slot_num, mount_info->userId, std::string{title_id}, dir_name,
                                (int)mount_info->blocks};
 
     if (save_instance.Mounted()) {
@@ -1573,6 +1582,7 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
                 SaveMemory::SetIcon(nullptr, 0);
             }
         }
+        SaveMemory::TriggerSaveWithoutEvent();
         if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
             result->existedMemorySize = existed_size;
         }
@@ -1646,9 +1656,24 @@ Error PS4_SYSV_ABI sceSaveDataTerminate() {
     return Error::OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataTransferringMount() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataTransferringMount(const OrbisSaveDataTransferringMount* mount,
+                                                OrbisSaveDataMountResult* mountResult) {
+    LOG_DEBUG(Lib_SaveData, "called");
+    if (!g_initialized) {
+        LOG_INFO(Lib_SaveData, "called without initialize");
+        return setNotInitializedError();
+    }
+    if (mount == nullptr || mount->titleId == nullptr || mount->dirName == nullptr) {
+        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+        return Error::PARAMETER;
+    }
+    LOG_DEBUG(Lib_SaveData, "called titleId: {}, dirName: {}", mount->titleId->data.to_view(),
+              mount->dirName->data.to_view());
+    OrbisSaveDataMount2 mount_info{};
+    mount_info.userId = mount->userId;
+    mount_info.dirName = mount->dirName;
+    mount_info.mountMode = OrbisSaveDataMountMode::RDONLY;
+    return saveDataMount(&mount_info, mountResult, mount->titleId->data.to_string());
 }
 
 Error PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint) {

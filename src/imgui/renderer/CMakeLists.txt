@@ -7,6 +7,7 @@ add_executable(Dear_ImGui_FontEmbed ${CMAKE_SOURCE_DIR}/externals/dear_imgui/mis
 
 set(FONT_LIST
     NotoSansJP-Regular.ttf
+    ProggyVector-Regular.ttf
 )
 
 set(OutputList "")

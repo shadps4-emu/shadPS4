@@ -205,9 +205,9 @@ public:
         return WriteSpan(string);
     }
 
-    static void WriteBytes(const std::filesystem::path path, std::span<const u8> data) {
+    static size_t WriteBytes(const std::filesystem::path path, std::span<const u8> data) {
         IOFile out(path, FileAccessMode::Write);
-        out.Write(data);
+        return out.Write(data);
     }
 
 private:

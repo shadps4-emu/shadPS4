@@ -277,7 +277,6 @@ vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_lay
     vk::DescriptorSet descriptor_set;
     {
         vk::DescriptorSetAllocateInfo alloc_info{
-            .sType = vk::StructureType::eDescriptorSetAllocateInfo,
             .descriptorPool = bd->descriptor_pool,
             .descriptorSetCount = 1,
             .pSetLayouts = &bd->descriptor_set_layout,
@@ -296,7 +295,6 @@ vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_lay
         };
         vk::WriteDescriptorSet write_desc[1]{
             {
-                .sType = vk::StructureType::eWriteDescriptorSet,
                 .dstSet = descriptor_set,
                 .descriptorCount = 1,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -411,7 +409,6 @@ UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, 
     {
         vk::ImageMemoryBarrier copy_barrier[1]{
             {
-                .sType = vk::StructureType::eImageMemoryBarrier,
                 .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
                 .oldLayout = vk::ImageLayout::eUndefined,
                 .newLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -444,7 +441,6 @@ UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, 
                                               vk::ImageLayout::eTransferDstOptimal, {region});
 
         vk::ImageMemoryBarrier use_barrier[1]{{
-            .sType = vk::StructureType::eImageMemoryBarrier,
             .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
             .dstAccessMask = vk::AccessFlagBits::eShaderRead,
             .oldLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -488,7 +484,6 @@ static void CreateOrResizeBuffer(RenderBuffer& rb, size_t new_size, vk::BufferUs
     const vk::DeviceSize buffer_size_aligned =
         AlignBufferSize(IM_MAX(v.min_allocation_size, new_size), bd->buffer_memory_alignment);
     vk::BufferCreateInfo buffer_info{
-        .sType = vk::StructureType::eBufferCreateInfo,
         .size = buffer_size_aligned,
         .usage = usage,
         .sharingMode = vk::SharingMode::eExclusive,
@@ -498,7 +493,6 @@ static void CreateOrResizeBuffer(RenderBuffer& rb, size_t new_size, vk::BufferUs
     const vk::MemoryRequirements req = v.device.getBufferMemoryRequirements(rb.buffer);
     bd->buffer_memory_alignment = IM_MAX(bd->buffer_memory_alignment, req.alignment);
     vk::MemoryAllocateInfo alloc_info{
-        .sType = vk::StructureType::eMemoryAllocateInfo,
         .allocationSize = req.size,
         .memoryTypeIndex =
             FindMemoryType(vk::MemoryPropertyFlagBits::eHostVisible, req.memoryTypeBits),
@@ -608,12 +602,10 @@ void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
         }
         vk::MappedMemoryRange range[2]{
             {
-                .sType = vk::StructureType::eMappedMemoryRange,
                 .memory = frb.vertex.buffer_memory,
                 .size = VK_WHOLE_SIZE,
             },
             {
-                .sType = vk::StructureType::eMappedMemoryRange,
                 .memory = frb.index.buffer_memory,
                 .size = VK_WHOLE_SIZE,
             },
@@ -725,7 +717,6 @@ static bool CreateFontsTexture() {
     // Create command buffer
     if (bd->font_command_buffer == VK_NULL_HANDLE) {
         vk::CommandBufferAllocateInfo info{
-            .sType = vk::StructureType::eCommandBufferAllocateInfo,
             .commandPool = bd->command_pool,
             .commandBufferCount = 1,
         };
@@ -737,7 +728,6 @@ static bool CreateFontsTexture() {
     {
         CheckVkErr(bd->font_command_buffer.reset());
         vk::CommandBufferBeginInfo begin_info{};
-        begin_info.sType = vk::StructureType::eCommandBufferBeginInfo;
         begin_info.flags |= vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
         CheckVkErr(bd->font_command_buffer.begin(&begin_info));
     }
@@ -750,7 +740,6 @@ static bool CreateFontsTexture() {
     // Create the Image:
     {
         vk::ImageCreateInfo info{
-            .sType = vk::StructureType::eImageCreateInfo,
             .imageType = vk::ImageType::e2D,
             .format = vk::Format::eR8G8B8A8Unorm,
             .extent{
@@ -769,7 +758,6 @@ static bool CreateFontsTexture() {
         bd->font_image = CheckVkResult(v.device.createImage(info, v.allocator));
         vk::MemoryRequirements req = v.device.getImageMemoryRequirements(bd->font_image);
         vk::MemoryAllocateInfo alloc_info{
-            .sType = vk::StructureType::eMemoryAllocateInfo,
             .allocationSize = IM_MAX(v.min_allocation_size, req.size),
             .memoryTypeIndex =
                 FindMemoryType(vk::MemoryPropertyFlagBits::eDeviceLocal, req.memoryTypeBits),
@@ -781,7 +769,6 @@ static bool CreateFontsTexture() {
     // Create the Image View:
     {
         vk::ImageViewCreateInfo info{
-            .sType = vk::StructureType::eImageViewCreateInfo,
             .image = bd->font_image,
             .viewType = vk::ImageViewType::e2D,
             .format = vk::Format::eR8G8B8A8Unorm,
@@ -802,7 +789,6 @@ static bool CreateFontsTexture() {
     vk::Buffer upload_buffer{};
     {
         vk::BufferCreateInfo buffer_info{
-            .sType = vk::StructureType::eBufferCreateInfo,
             .size = upload_size,
             .usage = vk::BufferUsageFlagBits::eTransferSrc,
             .sharingMode = vk::SharingMode::eExclusive,
@@ -811,7 +797,6 @@ static bool CreateFontsTexture() {
         vk::MemoryRequirements req = v.device.getBufferMemoryRequirements(upload_buffer);
         bd->buffer_memory_alignment = IM_MAX(bd->buffer_memory_alignment, req.alignment);
         vk::MemoryAllocateInfo alloc_info{
-            .sType = vk::StructureType::eMemoryAllocateInfo,
             .allocationSize = IM_MAX(v.min_allocation_size, req.size),
             .memoryTypeIndex =
                 FindMemoryType(vk::MemoryPropertyFlagBits::eHostVisible, req.memoryTypeBits),
@@ -826,7 +811,6 @@ static bool CreateFontsTexture() {
         memcpy(map, pixels, upload_size);
         vk::MappedMemoryRange range[1]{
             {
-                .sType = vk::StructureType::eMappedMemoryRange,
                 .memory = upload_buffer_memory,
                 .size = upload_size,
             },
@@ -839,7 +823,6 @@ static bool CreateFontsTexture() {
     {
         vk::ImageMemoryBarrier copy_barrier[1]{
             {
-                .sType = vk::StructureType::eImageMemoryBarrier,
                 .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
                 .oldLayout = vk::ImageLayout::eUndefined,
                 .newLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -872,7 +855,6 @@ static bool CreateFontsTexture() {
                                                   vk::ImageLayout::eTransferDstOptimal, {region});
 
         vk::ImageMemoryBarrier use_barrier[1]{{
-            .sType = vk::StructureType::eImageMemoryBarrier,
             .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
             .dstAccessMask = vk::AccessFlagBits::eShaderRead,
             .oldLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -892,11 +874,10 @@ static bool CreateFontsTexture() {
     }
 
     // Store our identifier
-    io.Fonts->SetTexID((ImTextureID)bd->font_descriptor_set);
+    io.Fonts->SetTexID(bd->font_descriptor_set);
 
     // End command buffer
     vk::SubmitInfo end_info = {};
-    end_info.sType = vk::StructureType::eSubmitInfo;
     end_info.commandBufferCount = 1;
     end_info.pCommandBuffers = &bd->font_command_buffer;
     CheckVkErr(bd->font_command_buffer.end());
@@ -965,7 +946,6 @@ static void CreateShaderModules(vk::Device device, const vk::AllocationCallbacks
     VkData* bd = GetBackendData();
     if (bd->shader_module_vert == VK_NULL_HANDLE) {
         vk::ShaderModuleCreateInfo vert_info{
-            .sType = vk::StructureType::eShaderModuleCreateInfo,
             .codeSize = sizeof(glsl_shader_vert_spv),
             .pCode = (uint32_t*)glsl_shader_vert_spv,
         };
@@ -973,7 +953,6 @@ static void CreateShaderModules(vk::Device device, const vk::AllocationCallbacks
     }
     if (bd->shader_module_frag == VK_NULL_HANDLE) {
         vk::ShaderModuleCreateInfo frag_info{
-            .sType = vk::StructureType::eShaderModuleCreateInfo,
             .codeSize = sizeof(glsl_shader_frag_spv),
             .pCode = (uint32_t*)glsl_shader_frag_spv,
         };
@@ -991,13 +970,11 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
 
     vk::PipelineShaderStageCreateInfo stage[2]{
         {
-            .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
             .stage = vk::ShaderStageFlagBits::eVertex,
             .module = bd->shader_module_vert,
             .pName = "main",
         },
         {
-            .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
             .stage = vk::ShaderStageFlagBits::eFragment,
             .module = bd->shader_module_frag,
             .pName = "main",
@@ -1033,7 +1010,6 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
     };
 
     vk::PipelineVertexInputStateCreateInfo vertex_info{
-        .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = binding_desc,
         .vertexAttributeDescriptionCount = 3,
@@ -1041,18 +1017,15 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
     };
 
     vk::PipelineInputAssemblyStateCreateInfo ia_info{
-        .sType = vk::StructureType::ePipelineInputAssemblyStateCreateInfo,
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
 
     vk::PipelineViewportStateCreateInfo viewport_info{
-        .sType = vk::StructureType::ePipelineViewportStateCreateInfo,
         .viewportCount = 1,
         .scissorCount = 1,
     };
 
     vk::PipelineRasterizationStateCreateInfo raster_info{
-        .sType = vk::StructureType::ePipelineRasterizationStateCreateInfo,
         .polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eNone,
         .frontFace = vk::FrontFace::eCounterClockwise,
@@ -1060,7 +1033,6 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
     };
 
     vk::PipelineMultisampleStateCreateInfo ms_info{
-        .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .rasterizationSamples = vk::SampleCountFlagBits::e1,
     };
 
@@ -1078,12 +1050,9 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
         },
     };
 
-    vk::PipelineDepthStencilStateCreateInfo depth_info{
-        .sType = vk::StructureType::ePipelineDepthStencilStateCreateInfo,
-    };
+    vk::PipelineDepthStencilStateCreateInfo depth_info{};
 
     vk::PipelineColorBlendStateCreateInfo blend_info{
-        .sType = vk::StructureType::ePipelineColorBlendStateCreateInfo,
         .attachmentCount = 1,
         .pAttachments = color_attachment,
     };
@@ -1093,13 +1062,11 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
         vk::DynamicState::eScissor,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_state{
-        .sType = vk::StructureType::ePipelineDynamicStateCreateInfo,
         .dynamicStateCount = (uint32_t)IM_ARRAYSIZE(dynamic_states),
         .pDynamicStates = dynamic_states,
     };
 
     vk::GraphicsPipelineCreateInfo info{
-        .sType = vk::StructureType::eGraphicsPipelineCreateInfo,
         .pNext = &v.pipeline_rendering_create_info,
         .flags = bd->pipeline_create_flags,
         .stageCount = 2,
@@ -1143,7 +1110,6 @@ bool CreateDeviceObjects() {
         };
 
         vk::DescriptorPoolCreateInfo pool_info{
-            .sType = vk::StructureType::eDescriptorPoolCreateInfo,
             .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
             .maxSets = 1000,
             .poolSizeCount = std::size(pool_sizes),
@@ -1162,7 +1128,6 @@ bool CreateDeviceObjects() {
             },
         };
         vk::DescriptorSetLayoutCreateInfo info{
-            .sType = vk::StructureType::eDescriptorSetLayoutCreateInfo,
             .bindingCount = 1,
             .pBindings = binding,
         };
@@ -1182,7 +1147,6 @@ bool CreateDeviceObjects() {
         };
         vk::DescriptorSetLayout set_layout[1] = {bd->descriptor_set_layout};
         vk::PipelineLayoutCreateInfo layout_info{
-            .sType = vk::StructureType::ePipelineLayoutCreateInfo,
             .setLayoutCount = 1,
             .pSetLayouts = set_layout,
             .pushConstantRangeCount = 1,
@@ -1196,7 +1160,6 @@ bool CreateDeviceObjects() {
 
     if (bd->command_pool == VK_NULL_HANDLE) {
         vk::CommandPoolCreateInfo info{
-            .sType = vk::StructureType::eCommandPoolCreateInfo,
             .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
             .queueFamilyIndex = v.queue_family,
         };
@@ -1209,7 +1172,6 @@ bool CreateDeviceObjects() {
         // ImFontAtlasFlags_NoBakedLines' or 'style.AntiAliasedLinesUseTex = false' to allow
         // point/nearest sampling.
         vk::SamplerCreateInfo info{
-            .sType = vk::StructureType::eSamplerCreateInfo,
             .magFilter = vk::Filter::eLinear,
             .minFilter = vk::Filter::eLinear,
             .mipmapMode = vk::SamplerMipmapMode::eLinear,

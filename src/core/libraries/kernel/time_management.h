@@ -7,6 +7,10 @@
 
 #include "common/types.h"
 
+namespace Common {
+class NativeClock;
+}
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
@@ -46,6 +50,12 @@ constexpr int ORBIS_CLOCK_EXT_NETWORK = 16;
 constexpr int ORBIS_CLOCK_EXT_DEBUG_NETWORK = 17;
 constexpr int ORBIS_CLOCK_EXT_AD_NETWORK = 18;
 constexpr int ORBIS_CLOCK_EXT_RAW_NETWORK = 19;
+
+namespace Dev {
+u64& GetInitialPtc();
+
+Common::NativeClock* GetClock();
+} // namespace Dev
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency();
 u64 PS4_SYSV_ABI sceKernelGetProcessTime();

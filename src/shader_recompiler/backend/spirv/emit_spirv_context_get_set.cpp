@@ -52,6 +52,15 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
             return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
         }
     }
+    if (IR::IsMrt(attr)) {
+        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
+        const auto& info{ctx.frag_outputs.at(index)};
+        if (info.num_components == 1) {
+            return info.id;
+        } else {
+            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+        }
+    }
     switch (attr) {
     case IR::Attribute::Position0: {
         return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
@@ -61,22 +70,6 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::Position3: {
         const u32 index = u32(attr) - u32(IR::Attribute::Position1);
         return VsOutputAttrPointer(ctx, ctx.runtime_info.vs_info.outputs[index][element]);
-    }
-    case IR::Attribute::RenderTarget0:
-    case IR::Attribute::RenderTarget1:
-    case IR::Attribute::RenderTarget2:
-    case IR::Attribute::RenderTarget3:
-    case IR::Attribute::RenderTarget4:
-    case IR::Attribute::RenderTarget5:
-    case IR::Attribute::RenderTarget6:
-    case IR::Attribute::RenderTarget7: {
-        const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
-        const auto& info{ctx.frag_outputs.at(index)};
-        if (info.num_components > 1) {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
-        } else {
-            return info.id;
-        }
     }
     case IR::Attribute::Depth:
         return ctx.frag_depth;
@@ -91,6 +84,11 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
         const auto& info{ctx.output_params.at(index)};
         return {info.component_type, info.is_integer};
     }
+    if (IR::IsMrt(attr)) {
+        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
+        const auto& info{ctx.frag_outputs.at(index)};
+        return {info.component_type, info.is_integer};
+    }
     switch (attr) {
     case IR::Attribute::Position0:
     case IR::Attribute::Position1:
@@ -98,18 +96,6 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     case IR::Attribute::Position3:
     case IR::Attribute::Depth:
         return {ctx.F32[1], false};
-    case IR::Attribute::RenderTarget0:
-    case IR::Attribute::RenderTarget1:
-    case IR::Attribute::RenderTarget2:
-    case IR::Attribute::RenderTarget3:
-    case IR::Attribute::RenderTarget4:
-    case IR::Attribute::RenderTarget5:
-    case IR::Attribute::RenderTarget6:
-    case IR::Attribute::RenderTarget7: {
-        const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
-        const auto& info{ctx.frag_outputs.at(index)};
-        return {info.component_type, info.is_integer};
-    }
     default:
         throw NotImplementedException("Write attribute {}", attr);
     }

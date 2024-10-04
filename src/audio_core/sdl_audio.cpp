@@ -14,7 +14,9 @@
 
 namespace Audio {
 
-int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
+constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
+
+s32 SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParamFormat format) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::unique_lock lock{m_mutex};
@@ -80,7 +82,7 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             SDL_zero(fmt);
             fmt.format = sampleFormat;
             fmt.channels = port.channels_num;
-            fmt.freq = 48000;
+            fmt.freq = freq; // Set frequency from the argument
             port.stream =
                 SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, NULL, NULL);
             SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
@@ -88,7 +90,8 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
         }
     }
 
-    return -1; // all ports are used
+    LOG_ERROR(Lib_AudioOut, "Audio ports are full");
+    return ORBIS_AUDIO_OUT_ERROR_PORT_FULL; // all ports are used
 }
 
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
@@ -97,28 +100,28 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     if (!port.isOpen) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
-    if (ptr == nullptr) {
-        return 0;
-    }
-    lock.unlock();
-    // TODO mixing channels
-    SDL_bool result = SDL_PutAudioStreamData(
-        port.stream, ptr, port.samples_num * port.sample_size * port.channels_num);
-    // TODO find a correct value 8192 is estimated
-    while (SDL_GetAudioStreamAvailable(port.stream) > 65536) {
+
+    const size_t data_size = port.samples_num * port.sample_size * port.channels_num;
+
+    SDL_bool result = SDL_PutAudioStreamData(port.stream, ptr, data_size);
+
+    lock.unlock(); // Unlock only after necessary operations
+
+    while (SDL_GetAudioStreamAvailable(port.stream) > AUDIO_STREAM_BUFFER_THRESHOLD) {
         SDL_Delay(0);
     }
 
     return result ? ORBIS_OK : -1;
 }
 
-bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
+s32 SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
+
     for (int i = 0; i < port.channels_num; i++, bitflag >>= 1u) {
         auto bit = bitflag & 0x1u;
 
@@ -148,16 +151,16 @@ bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
         }
     }
 
-    return true;
+    return ORBIS_OK;
 }
 
-bool SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
+s32 SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
     std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     *type = port.type;
     *channels_num = port.channels_num;
 
-    return true;
+    return ORBIS_OK;
 }
 
 } // namespace Audio

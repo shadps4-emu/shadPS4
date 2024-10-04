@@ -12,6 +12,7 @@ void TRP::GetNPcommID(const std::filesystem::path& trophyPath, int index) {
     std::filesystem::path trpPath = trophyPath / "sce_sys/npbind.dat";
     Common::FS::IOFile npbindFile(trpPath, Common::FS::FileAccessMode::Read);
     if (!npbindFile.IsOpen()) {
+        LOG_CRITICAL(Common_Filesystem, "Failed to open npbind.dat file");
         return;
     }
     if (!npbindFile.Seek(0x84 + (index * 0x180))) {
@@ -32,10 +33,10 @@ static void removePadding(std::vector<u8>& vec) {
     }
 }
 
-bool TRP::Extract(const std::filesystem::path& trophyPath) {
-    std::filesystem::path title = trophyPath.filename();
+bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
     if (!std::filesystem::exists(gameSysDir)) {
+        LOG_CRITICAL(Common_Filesystem, "Game sce_sys directory doesn't exist");
         return false;
     }
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
@@ -44,18 +45,21 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
 
             Common::FS::IOFile file(it.path(), Common::FS::FileAccessMode::Read);
             if (!file.IsOpen()) {
+                LOG_CRITICAL(Common_Filesystem, "Unable to open trophy file for read");
                 return false;
             }
 
             TrpHeader header;
             file.Read(header);
-            if (header.magic != 0xDCA24D00)
+            if (header.magic != 0xDCA24D00) {
+                LOG_CRITICAL(Common_Filesystem, "Wrong trophy magic number");
                 return false;
+            }
 
             s64 seekPos = sizeof(TrpHeader);
             std::filesystem::path trpFilesPath(
-                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / title / "TrophyFiles" /
-                it.path().stem());
+                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / titleId /
+                "TrophyFiles" / it.path().stem());
             std::filesystem::create_directories(trpFilesPath / "Icons");
             std::filesystem::create_directory(trpFilesPath / "Xml");
 
@@ -99,7 +103,14 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                     size_t pos = xml_name.find("ESFM");
                     if (pos != std::string::npos)
                         xml_name.replace(pos, xml_name.length(), "XML");
-                    Common::FS::IOFile::WriteBytes(trpFilesPath / "Xml" / xml_name, XML);
+                    std::filesystem::path path = trpFilesPath / "Xml" / xml_name;
+                    size_t written = Common::FS::IOFile::WriteBytes(path, XML);
+                    if (written != XML.size()) {
+                        LOG_CRITICAL(
+                            Common_Filesystem,
+                            "Trophy XML {} write failed, wanted to write {} bytes, wrote {}",
+                            fmt::UTF(path.u8string()), XML.size(), written);
+                    }
                 }
             }
         }

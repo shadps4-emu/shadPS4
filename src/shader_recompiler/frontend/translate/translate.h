@@ -161,14 +161,19 @@ public:
     // VOP1
     void V_MOV(const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
+    void V_CVT_I32_F64(const GcnInst& inst);
+    void V_CVT_F64_I32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
     void V_CVT_F32_U32(const GcnInst& inst);
     void V_CVT_U32_F32(const GcnInst& inst);
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_CVT_F16_F32(const GcnInst& inst);
     void V_CVT_F32_F16(const GcnInst& inst);
+    void V_CVT_RPI_I32_F32(const GcnInst& inst);
     void V_CVT_FLR_I32_F32(const GcnInst& inst);
     void V_CVT_OFF_F32_I4(const GcnInst& inst);
+    void V_CVT_F32_F64(const GcnInst& inst);
+    void V_CVT_F64_F32(const GcnInst& inst);
     void V_CVT_F32_UBYTE(u32 index, const GcnInst& inst);
     void V_FRACT_F32(const GcnInst& inst);
     void V_TRUNC_F32(const GcnInst& inst);

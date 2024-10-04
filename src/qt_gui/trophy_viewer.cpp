@@ -29,7 +29,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     QDir dir(trophyDirQt);
     if (!dir.exists()) {
         std::filesystem::path path = Common::FS::PathFromQString(gameTrpPath_);
-        if (!trp.Extract(path))
+        if (!trp.Extract(path, title.toStdString()))
             return;
     }
     QFileInfoList dirList = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
