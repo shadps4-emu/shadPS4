@@ -438,9 +438,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             ++binding.buffer;
         }
 
+        const auto null_buffer_view =
+            instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
         for (const auto& desc : stage->texture_buffers) {
             const auto vsharp = desc.GetSharp(*stage);
-            vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+            vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
             const u32 size = vsharp.GetSize();
             if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
                 const VAddr address = vsharp.base_address;

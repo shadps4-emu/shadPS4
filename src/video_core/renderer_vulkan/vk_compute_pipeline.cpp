@@ -170,9 +170,11 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         ++binding.buffer;
     }
 
+    const auto null_buffer_view =
+        instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
     for (const auto& desc : info->texture_buffers) {
         const auto vsharp = desc.GetSharp(*info);
-        vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+        vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         const u32 size = vsharp.GetSize();
         if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
             const VAddr address = vsharp.base_address;
