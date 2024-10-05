@@ -1558,6 +1558,16 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
 }
 
+// Debug print maps to SPIRV's NonSemantic DebugPrintf instruction
+// Renderdoc will hook in its own implementation of the SPIRV instruction
+// Renderdoc accepts format specifiers, e.g. %u, listed here:
+// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
+//
+// Example usage:
+//         ir.DebugPrint("invocation xyz: (%u, %u, %u)",
+//                      {ir.GetVectorReg(IR::VectorReg::V0),
+//                       ir.GetVectorReg(IR::VectorReg::V1),
+//                       ir.GetVectorReg(IR::VectorReg::V2)});
 void IREmitter::DebugPrint(std::string_view format,
                            boost::container::small_vector<Value, 5> format_args) {
     constexpr size_t PRINT_MAX_ARGS = NumArgsOf(IR::Opcode::DebugPrint);
