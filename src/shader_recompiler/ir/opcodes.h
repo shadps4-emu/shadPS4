@@ -52,7 +52,7 @@ constexpr Type F64x2{Type::F64x2};
 constexpr Type F64x3{Type::F64x3};
 constexpr Type F64x4{Type::F64x4};
 
-constexpr OpcodeMeta META_TABLE[] {
+constexpr OpcodeMeta META_TABLE[]{
 #define OPCODE(name_token, type_token, ...)                                                        \
     {                                                                                              \
         .name{#name_token},                                                                        \
