@@ -211,7 +211,9 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.depth_bias_enable = regs.polygon_control.NeedsBias();
 
     const auto& db = regs.depth_buffer;
-    const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+    const auto ds_format = instance.GetSupportedFormat(
+        LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format),
+        vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
     if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
         key.depth_format = ds_format;
     } else {

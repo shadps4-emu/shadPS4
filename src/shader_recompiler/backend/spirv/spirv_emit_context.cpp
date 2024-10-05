@@ -390,11 +390,11 @@ void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(sharp);
+        const u32 array_size = sharp.NumDwords() != 0 ? sharp.NumDwords() : MaxUboDwords;
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const Id record_array_type{
-            is_storage ? TypeRuntimeArray(data_type)
-                       : TypeArray(data_type, ConstU32(std::max(sharp.NumDwords(), 1U)))};
+        const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
+                                              : TypeArray(data_type, ConstU32(array_size))};
         const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
 
         const auto storage_class =
