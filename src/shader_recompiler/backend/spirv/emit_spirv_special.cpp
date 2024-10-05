@@ -55,7 +55,7 @@ void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id arg0, Id arg1, Id arg2,
     const std::string& format_string = ctx.info.string_pool[flags.string_idx];
     Id fmt = ctx.String(format_string);
 
-    std::array<Id, 5> fmt_args = {arg0, arg1, arg2, arg3, arg4};
+    std::array<Id, IR::NumArgsOf(IR::Opcode::DebugPrint)> fmt_args = {arg0, arg1, arg2, arg3, arg4};
     auto fmt_args_span = std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
     ctx.OpDebugPrintf(fmt, fmt_args_span);
 }
