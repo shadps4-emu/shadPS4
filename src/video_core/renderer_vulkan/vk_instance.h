@@ -222,6 +222,11 @@ public:
         return properties.limits.maxTexelBufferElements;
     }
 
+    /// Returns the maximum sampler LOD bias.
+    float MaxSamplerLodBias() const {
+        return properties.limits.maxSamplerLodBias;
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;
