@@ -1,14 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-#include <iterator>
-#include <boost/container/small_vector.hpp>
-#include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/debug_print.h"
-#include "shader_recompiler/ir/opcodes.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -61,8 +56,7 @@ void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id arg0, Id arg1, Id arg2,
     Id fmt = ctx.String(format_string);
 
     std::array<Id, 5> fmt_args = {arg0, arg1, arg2, arg3, arg4};
-    const std::span<Id> fmt_args_span =
-        std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
+    auto fmt_args_span = std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
     ctx.OpDebugPrintf(fmt, fmt_args_span);
 }
 

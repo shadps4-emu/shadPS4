@@ -1557,8 +1557,7 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value
 }
 
 void IREmitter::DebugPrint(std::string_view format,
-                           boost::container::small_vector<Value, 5> format_args,
-                           bool infer_specifiers) {
+                           boost::container::small_vector<Value, 5> format_args) {
     std::array<Value, 5> args;
 
     for (int i = 0; i < format_args.size(); i++) {

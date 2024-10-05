@@ -4,9 +4,7 @@
 #pragma once
 
 #include <cstring>
-#include <string_view>
 #include <type_traits>
-#include <boost/container/small_vector.hpp>
 
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -47,8 +45,7 @@ public:
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
-    void DebugPrint(std::string_view format, boost::container::small_vector<Value, 5> args,
-                    bool infer_specifiers = false);
+    void DebugPrint(std::string_view format, boost::container::small_vector<Value, 5> args);
 
     void Barrier();
     void WorkgroupMemoryBarrier();
