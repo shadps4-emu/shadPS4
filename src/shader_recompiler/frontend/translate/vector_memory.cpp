@@ -602,10 +602,6 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
 
 void Translator::IMAGE_GATHER(const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
-    if (mimg.da) {
-        LOG_WARNING(Render_Vulkan, "Image instruction declares an array");
-    }
-
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg dest_reg{inst.dst[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
