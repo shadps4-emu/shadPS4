@@ -98,7 +98,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = param_sfo.GetLastWrite();
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__)
             auto utc_time = std::chrono::file_clock::to_utc(last_write);
 #else
             auto utc_time = std::chrono::file_clock::to_sys(last_write);
