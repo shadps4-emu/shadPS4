@@ -68,13 +68,13 @@ enum class OrbisImeDialogEndStatus : u32 {
     ABORTED = 2
 };
 
-enum class OrbisImeType : u32 {
-    DEFAULT = 0,
-    BASIC_LATIN = 1,
-    URL = 2,
-    MAIL = 3,
-    NUMBER = 4
-};
+    enum class OrbisImeType : u32 {
+        DEFAULT = 0,
+        BASIC_LATIN = 1,
+        URL = 2,
+        MAIL = 3,
+        NUMBER = 4
+    };
 
 enum class OrbisImeEnterLabel : u32 {
     DEFAULT = 0,
@@ -87,7 +87,9 @@ enum class OrbisImeDialogOption : u32 {
     DEFAULT = 0,
     MULTILINE = 1,
     NO_AUTO_CORRECTION = 2,
-    NO_AUTO_COMPLETION = 4
+    NO_AUTO_COMPLETION = 4,
+    // TODO: Document missing options
+    LARGE_RESOLUTION = 1024
 };
 
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
@@ -222,21 +224,21 @@ struct OrbisImeParamExtended {
     int8_t reserved[60];
 };
 
-int PS4_SYSV_ABI sceImeDialogAbort();
-int PS4_SYSV_ABI sceImeDialogForceClose();
-int PS4_SYSV_ABI sceImeDialogForTestFunction();
+Error PS4_SYSV_ABI sceImeDialogAbort();
+Error PS4_SYSV_ABI sceImeDialogForceClose();
+Error PS4_SYSV_ABI sceImeDialogForTestFunction();
 int PS4_SYSV_ABI sceImeDialogGetCurrentStarState();
 int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm();
 int PS4_SYSV_ABI sceImeDialogGetPanelSize();
 int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended();
-int PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result);
+Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result);
 OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus();
-int PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended);
+Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended);
 int PS4_SYSV_ABI sceImeDialogInitInternal();
 int PS4_SYSV_ABI sceImeDialogInitInternal2();
 int PS4_SYSV_ABI sceImeDialogInitInternal3();
 int PS4_SYSV_ABI sceImeDialogSetPanelPosition();
-int PS4_SYSV_ABI sceImeDialogTerm();
+Error PS4_SYSV_ABI sceImeDialogTerm();
 
 void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::ImeDialog

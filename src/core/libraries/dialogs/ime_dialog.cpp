@@ -1,28 +1,76 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <magic_enum.hpp>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "ime_dialog.h"
+#include "ime_dialog_ui.h"
+
+static constexpr float MAX_X_POSITIONS[] = {3840.0f, 1920.0f};
+static constexpr float MAX_Y_POSITIONS[] = {2160.0f, 1080.0f};
 
 namespace Libraries::ImeDialog {
 
 static OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::NONE;
+static OrbisImeDialogResult g_ime_dlg_result{};
+static ImeDialogState g_ime_dlg_state{};
+static ImeDialogUi g_ime_dlg_ui;
 
-int PS4_SYSV_ABI sceImeDialogAbort() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
+    if (False(~option & (OrbisImeDialogOption::MULTILINE | OrbisImeDialogOption::NO_AUTO_COMPLETION))) {
+        return false;
+    }
+
+    if (True(option & OrbisImeDialogOption::MULTILINE) && type != OrbisImeType::DEFAULT && type != OrbisImeType::BASIC_LATIN) {
+        return false;
+    }
+
+    if (True(option & OrbisImeDialogOption::NO_AUTO_COMPLETION) && type != OrbisImeType::NUMBER && type != OrbisImeType::BASIC_LATIN    ) {
+        return false;
+    }
+
+    return true;
 }
 
-int PS4_SYSV_ABI sceImeDialogForceClose() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+// static bool IsMemZero(const void* ptr, size_t size) {
+//     return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c) { return c == 0; });
+// }
+
+Error PS4_SYSV_ABI sceImeDialogAbort() {
+    if (g_ime_dlg_status == OrbisImeDialogStatus::NONE) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
+        return Error::DIALOG_NOT_IN_USE;
+    }
+
+    if (g_ime_dlg_status != OrbisImeDialogStatus::RUNNING) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog not running");
+        return Error::DIALOG_NOT_RUNNING;
+    }
+
+    g_ime_dlg_status = OrbisImeDialogStatus::FINISHED;
+    g_ime_dlg_result.endstatus = OrbisImeDialogEndStatus::ABORTED;
+
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogForTestFunction() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceImeDialogForceClose() {
+    if (g_ime_dlg_status == OrbisImeDialogStatus::NONE) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
+        return Error::DIALOG_NOT_IN_USE;
+    }
+
+    g_ime_dlg_status = OrbisImeDialogStatus::NONE;
+    g_ime_dlg_ui = ImeDialogUi();
+    g_ime_dlg_state = ImeDialogState();
+
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceImeDialogForTestFunction() {
+    return Error::INTERNAL;
 }
 
 int PS4_SYSV_ABI sceImeDialogGetCurrentStarState() {
@@ -45,26 +93,134 @@ int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
-    result->endstatus = OrbisImeDialogEndStatus::OK;
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
+    if (g_ime_dlg_status == OrbisImeDialogStatus::NONE) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog is not running");
+        return Error::DIALOG_NOT_IN_USE;
+    }
+
+    if (result == nullptr) {
+        LOG_INFO(Lib_ImeDialog, "called with result (NULL)");
+        return Error::INVALID_ADDRESS;
+    }
+
+    // if (!IsMemZero(result->reserved, 12)) {
+    //     LOG_INFO(Lib_ImeDialog, "Invalid result->reserved");
+    //     return Error::INVALID_RESERVED;
+    // }
+
+    result->endstatus = g_ime_dlg_result.endstatus;
+
+    if (g_ime_dlg_status == OrbisImeDialogStatus::RUNNING) {
+        return Error::DIALOG_NOT_FINISHED;
+    }
+
+    g_ime_dlg_state.CopyTextToOrbisBuffer();
+    return Error::OK;
 }
 
 OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
     if (g_ime_dlg_status == OrbisImeDialogStatus::RUNNING) {
-        return OrbisImeDialogStatus::FINISHED;
+        g_ime_dlg_state.CallTextFilter();
     }
+
     return g_ime_dlg_status;
 }
 
-int PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    const std::wstring_view text = L"shadPS4";
-    param->maxTextLength = text.size();
-    std::memcpy(param->inputTextBuffer, text.data(), text.size() * sizeof(wchar_t));
+Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
+    if (g_ime_dlg_status != OrbisImeDialogStatus::NONE) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog is already running");
+        return Error::BUSY;
+    }
+
+    if (param == nullptr) {
+        LOG_INFO(Lib_ImeDialog, "called with param (NULL)");
+        return Error::INVALID_ADDRESS;
+    }
+
+    if (!magic_enum::enum_contains(param->type)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->type");
+        return Error::INVALID_ADDRESS;
+    }
+    
+    //TODO: do correct param->option validation
+    //TODO: do correct param->supportedLanguages validation
+
+    if (param->posx < 0.0f || param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->posx");
+        return Error::INVALID_POSX;
+    }
+
+    if (param->posy < 0.0f || param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->posy");
+        return Error::INVALID_POSY;
+    }
+
+    if (!magic_enum::enum_contains(param->horizontalAlignment)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->horizontalAlignment");
+        return Error::INVALID_HORIZONTALIGNMENT;
+    }
+
+    if (!magic_enum::enum_contains(param->verticalAlignment)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->verticalAlignment");
+        return Error::INVALID_VERTICALALIGNMENT;
+    }
+
+    if (!IsValidOption(param->option, param->type)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->option");
+        return Error::INVALID_PARAM;
+    }
+
+    if (param->userId != 1) { //We only support user 1 for now
+        LOG_INFO(Lib_ImeDialog, "Invalid param->userId");
+        return Error::INVALID_USER_ID;
+    }
+
+    // if (IsMemZero(param->reserved, 16)) {
+    //     LOG_INFO(Lib_ImeDialog, "Invalid param->reserved");
+    //     return Error::INVALID_RESERVED;
+    // }
+
+    if (param->inputTextBuffer == nullptr) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->inputTextBuffer");
+        return Error::INVALID_INPUT_TEXT_BUFFER;
+    }
+
+    if (extended) {
+        if (magic_enum::enum_contains(extended->priority)) {
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->priority");
+            return Error::INVALID_EXTENDED;
+        }
+
+        //TODO: do correct extended->option validation
+
+        // if (IsMemZero(extended->reserved, 60)) {
+        //     LOG_INFO(Lib_ImeDialog, "Invalid extended->reserved");
+        //     return Error::INVALID_EXTENDED;
+        // }
+
+        if ((extended->extKeyboardMode & 0xe3fffffc) != 0) {
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->extKeyboardMode");
+            return Error::INVALID_EXTENDED;
+        }
+
+        if (extended->disableDevice > 7) {
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->disableDevice");
+            return Error::INVALID_EXTENDED;
+        }
+    }
+
+    if (param->maxTextLength > ORBIS_IME_DIALOG_MAX_TEXT_LENGTH) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->maxTextLength");
+        return Error::INVALID_MAX_TEXT_LENGTH;
+    }
+
+    g_ime_dlg_result = {};
+    g_ime_dlg_state = ImeDialogState(param, extended);
     g_ime_dlg_status = OrbisImeDialogStatus::RUNNING;
-    return ORBIS_OK;
+    g_ime_dlg_ui = ImeDialogUi(&g_ime_dlg_state, &g_ime_dlg_status, &g_ime_dlg_result);
+
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceImeDialogInitInternal() {
@@ -87,10 +243,22 @@ int PS4_SYSV_ABI sceImeDialogSetPanelPosition() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogTerm() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
+Error PS4_SYSV_ABI sceImeDialogTerm() {
+    if (g_ime_dlg_status == OrbisImeDialogStatus::NONE) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
+        return Error::DIALOG_NOT_IN_USE;
+    }
+
+    if (g_ime_dlg_status == OrbisImeDialogStatus::RUNNING) {
+        LOG_INFO(Lib_ImeDialog, "IME dialog is still running");
+        return Error::DIALOG_NOT_FINISHED;
+    }
+
     g_ime_dlg_status = OrbisImeDialogStatus::NONE;
-    return ORBIS_OK;
+    g_ime_dlg_ui = ImeDialogUi();
+    g_ime_dlg_state = ImeDialogState();
+
+    return Error::OK;
 }
 
 void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym) {

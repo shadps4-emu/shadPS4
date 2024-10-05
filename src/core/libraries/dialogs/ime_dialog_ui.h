@@ -7,7 +7,7 @@
 #ifndef _WIN32
 #include <iconv.h>
 #endif
-
+#include <imgui.h>
 #include "core/libraries/dialogs/ime_dialog.h"
 #include "common/types.h"
 #include "imgui/imgui_layer.h"
@@ -23,6 +23,7 @@ class ImeDialogState final {
 
     s32 userId{};
     bool is_multiLine{};
+    bool is_numeric{};
     OrbisImeType type{};
     OrbisImeEnterLabel enter_label{};
     OrbisImeTextFilter text_filter{};
@@ -34,20 +35,22 @@ class ImeDialogState final {
 
     // A character can hold up to 4 bytes in UTF-8
     char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4] = {0};
-
-    std::mutex mutex;
 #ifndef _WIN32
     iconv_t orbis_to_utf8 = (iconv_t)-1;
     iconv_t utf8_to_orbis = (iconv_t)-1;
 #endif
 public:
     ImeDialogState(const OrbisImeDialogParam* param = nullptr, const OrbisImeParamExtended* extended = nullptr);
-    ~ImeDialogState();
+    ImeDialogState(const ImeDialogState& other) = delete;
+    ImeDialogState(ImeDialogState&& other) noexcept;
+    ImeDialogState& operator=(ImeDialogState&& other);
 
-    ImeDialogState() = default;
+    ~ImeDialogState();
     
+    bool CopyTextToOrbisBuffer();
     bool CallTextFilter();
 private:
+    void Free();
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
 
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text, std::size_t native_text_len);
@@ -62,17 +65,19 @@ class ImeDialogUi final : public ImGui::Layer {
     OrbisImeDialogResult* result{};
 
     bool first_render = true;
-
+    std::mutex draw_mutex;
 public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr, OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
     ImeDialogUi(const ImeDialogUi& other) = delete;
     ImeDialogUi(ImeDialogUi&& other) noexcept;
-    ImeDialogUi& operator=(ImeDialogUi other);
+    ImeDialogUi& operator=(ImeDialogUi&& other);
 
     void Draw() override;
 
 private:
+    void Free();
+
     void DrawInputText();
     void DrawMultiLineInputText();
 
