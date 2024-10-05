@@ -42,6 +42,7 @@ struct QueueDump {
     u32 submit_num;
     u32 num2; // acb: queue_num; else: buffer_in_submit
     std::vector<u32> data;
+    uintptr_t base_addr;
 };
 
 struct FrameDump {

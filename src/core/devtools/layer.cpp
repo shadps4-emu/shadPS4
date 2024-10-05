@@ -140,26 +140,50 @@ void L::DrawSimple() {
     Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 }
 
+static void LoadSettings(const char* line) {
+    int i;
+    float f;
+    if (sscanf(line, "fps_scale=%f", &f) == 1) {
+        fps_scale = f;
+        return;
+    }
+    if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
+        show_advanced_debug = i != 0;
+        return;
+    }
+    if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
+        frame_graph.is_open = i != 0;
+        return;
+    }
+    if (sscanf(line, "dump_frame_count=%d", &i) == 1) {
+        dump_frame_count = i;
+        return;
+    }
+}
+
 void L::SetupSettings() {
     frame_graph.is_open = true;
+
+    using SettingLoader = void (*)(const char*);
 
     ImGuiSettingsHandler handler{};
     handler.TypeName = "DevtoolsLayer";
     handler.TypeHash = ImHashStr(handler.TypeName);
     handler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler*, const char* name) {
-        return std::string_view("Data") == name ? (void*)1 : nullptr;
+        if (std::string_view("Data") == name) {
+            static_assert(std::is_same_v<decltype(&LoadSettings), SettingLoader>);
+            return (void*)&LoadSettings;
+        }
+        if (std::string_view("CmdList") == name) {
+            static_assert(
+                std::is_same_v<decltype(&Widget::CmdListViewer::LoadConfig), SettingLoader>);
+            return (void*)&Widget::CmdListViewer::LoadConfig;
+        }
+        return (void*)nullptr;
     };
-    handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void*, const char* line) {
-        int v;
-        float f;
-        if (sscanf(line, "fps_scale=%f", &f) == 1) {
-            fps_scale = f;
-        } else if (sscanf(line, "show_advanced_debug=%d", &v) == 1) {
-            show_advanced_debug = v != 0;
-        } else if (sscanf(line, "show_frame_graph=%d", &v) == 1) {
-            frame_graph.is_open = v != 0;
-        } else if (sscanf(line, "dump_frame_count=%d", &v) == 1) {
-            dump_frame_count = v;
+    handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* handle, const char* line) {
+        if (handle != nullptr) {
+            reinterpret_cast<SettingLoader>(handle)(line);
         }
     };
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
@@ -168,6 +192,9 @@ void L::SetupSettings() {
         buf->appendf("show_advanced_debug=%d\n", show_advanced_debug);
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
+        buf->append("\n");
+        buf->appendf("[%s][CmdList]\n", handler->TypeName);
+        Widget::CmdListViewer::SerializeConfig(buf);
         buf->append("\n");
     };
     AddSettingsHandler(&handler);
