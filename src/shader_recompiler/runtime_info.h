@@ -73,10 +73,10 @@ struct VertexRuntimeInfo {
 static constexpr auto GsMaxOutputStreams = 4u;
 using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
 struct GeometryRuntimeInfo {
-    u32 num_invocations;
-    u32 output_vertices;
-    u32 in_vertex_data_size;
-    u32 out_vertex_data_size;
+    u32 num_invocations{};
+    u32 output_vertices{};
+    u32 in_vertex_data_size{};
+    u32 out_vertex_data_size{};
     AmdGpu::PrimitiveType in_primitive;
     GsOutputPrimTypes out_primitive;
     CopyShaderData copy_data;
@@ -157,6 +157,10 @@ struct RuntimeInfo {
             return vs_info == other.vs_info;
         case Stage::Compute:
             return cs_info == other.cs_info;
+        case Stage::Export:
+            return es_info == other.es_info;
+        case Stage::Geometry:
+            return gs_info == other.gs_info;
         default:
             return true;
         }

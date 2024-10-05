@@ -25,6 +25,7 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
     case AmdGpu::PrimitiveType::LineList:
         return spv::ExecutionMode::InputLines;
     case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleStrip:
         return spv::ExecutionMode::Triangles;
     default:
         UNREACHABLE();
@@ -322,6 +323,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
         break;
     }
     PatchPhiNodes(program, ctx);
+    binding.user_data += program.info.ud_mask.NumRegs();
     return ctx.Assemble();
 }
 

@@ -12,7 +12,7 @@
 namespace Shader {
 
 struct CopyShaderData {
-    std::unordered_map<u32, Shader::IR::Attribute> attr_map;
+    std::unordered_map<u32, std::pair<Shader::IR::Attribute, u32>> attr_map;
     u32 num_attrs{0};
 };
 
