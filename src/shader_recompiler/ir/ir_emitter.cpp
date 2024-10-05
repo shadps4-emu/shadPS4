@@ -5,9 +5,11 @@
 #include <bit>
 #include <source_location>
 #include <boost/container/small_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -1558,13 +1560,17 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value
 
 void IREmitter::DebugPrint(std::string_view format,
                            boost::container::small_vector<Value, 5> format_args) {
-    std::array<Value, 5> args;
+    constexpr size_t PRINT_MAX_ARGS = NumArgsOf(IR::Opcode::DebugPrint);
+    std::array<Value, PRINT_MAX_ARGS> args;
+
+    ASSERT_MSG(format_args.size() < PRINT_MAX_ARGS, "DebugPrint only supports up to {} format args",
+               PRINT_MAX_ARGS);
 
     for (int i = 0; i < format_args.size(); i++) {
         args[i] = format_args[i];
     }
 
-    for (int i = format_args.size(); i < 4; i++) {
+    for (int i = format_args.size(); i < PRINT_MAX_ARGS; i++) {
         args[i] = Inst(Opcode::Void);
     }
 
