@@ -19,7 +19,8 @@ namespace Shader::Gcn {
 
 Translator::Translator(IR::Block* block_, Info& info_, const RuntimeInfo& runtime_info_,
                        const Profile& profile_)
-    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {}
+    : ir{*block_, block_->begin(), info_}, info{info_}, runtime_info{runtime_info_},
+      profile{profile_} {}
 
 void Translator::EmitPrologue() {
     ir.Prologue();

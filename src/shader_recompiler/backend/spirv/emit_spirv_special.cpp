@@ -55,45 +55,15 @@ void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }
 
-static bool isEmptyInst(IR::Value val) {
-    if (auto* inst = val.TryInstRecursive()) {
-        return inst->GetOpcode() == IR::Opcode::Void;
-    }
-    return false;
-}
+void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id arg0, Id arg1, Id arg2, Id arg3, Id arg4) {
+    DebugPrintFlags flags = inst->Flags<DebugPrintFlags>();
+    const std::string& format_string = ctx.info.string_pool[flags.string_idx];
+    Id fmt = ctx.String(format_string);
 
-void EmitVaArg(EmitContext& ctx, IR::Inst* inst, Id arg, Id next) {
-    IR::Value next_val = inst->Arg(1);
-    u32 va_arglist_idx;
-    if (isEmptyInst(next_val)) {
-        va_arglist_idx = ctx.va_arg_lists.size();
-        ctx.va_arg_lists.emplace_back();
-    } else {
-        va_arglist_idx = next_val.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
-    }
-
-    ctx.va_arg_lists[va_arglist_idx].push_back(arg);
-    auto va_info = inst->Flags<VariadicArgInfo>();
-    va_info.va_arg_idx.Assign(va_arglist_idx);
-    inst->SetFlags(va_info);
-}
-
-Id EmitStringLiteral(EmitContext& ctx, IR::Inst* inst) {
-    // ctx.
-    return ctx.String(inst->StringLiteral());
-}
-
-void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt) {
-    IR::Value arglist = inst->Arg(1);
-    boost::container::small_vector<Id, 4> fmt_arg_operands;
-    if (!isEmptyInst(arglist)) {
-        u32 va_arglist_idx = arglist.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
-        const auto& va_arglist = ctx.va_arg_lists[va_arglist_idx];
-        // reverse the order
-        std::copy(va_arglist.rbegin(), va_arglist.rend(), std::back_inserter(fmt_arg_operands));
-    }
-
-    ctx.OpDebugPrintf(fmt, fmt_arg_operands);
+    std::array<Id, 5> fmt_args = {arg0, arg1, arg2, arg3, arg4};
+    const std::span<Id> fmt_args_span =
+        std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
+    ctx.OpDebugPrintf(fmt, fmt_args_span);
 }
 
 } // namespace Shader::Backend::SPIRV

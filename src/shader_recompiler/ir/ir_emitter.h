@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <boost/container/small_vector.hpp>
 
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
@@ -17,9 +18,10 @@ namespace Shader::IR {
 
 class IREmitter {
 public:
-    explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
-    explicit IREmitter(Block& block_, Block::iterator insertion_point_)
-        : block{&block_}, insertion_point{insertion_point_} {}
+    explicit IREmitter(Block& block_, Shader::Info& info_)
+        : block{&block_}, insertion_point{block->end()}, info(info_) {}
+    explicit IREmitter(Block& block_, Block::iterator insertion_point_, Shader::Info& info_)
+        : block{&block_}, insertion_point{insertion_point_}, info(info_) {}
 
     Block* block;
 
@@ -45,11 +47,7 @@ public:
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
-
-    Value VaArg(Value arg, Value next);
-    Value StringLiteral(std::string_view s);
-
-    void DebugPrint(std::string_view format, boost::container::small_vector<Value, 4> args,
+    void DebugPrint(std::string_view format, boost::container::small_vector<Value, 5> args,
                     bool infer_specifiers = false);
 
     void Barrier();
@@ -320,6 +318,7 @@ public:
 
 private:
     IR::Block::iterator insertion_point;
+    Shader::Info& info;
 
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {

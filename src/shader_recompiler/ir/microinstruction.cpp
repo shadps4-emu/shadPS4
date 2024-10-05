@@ -14,8 +14,6 @@ namespace Shader::IR {
 Inst::Inst(IR::Opcode op_, u32 flags_) noexcept : op{op_}, flags{flags_} {
     if (op == Opcode::Phi) {
         std::construct_at(&phi_args);
-    } else if (op == Opcode::StringLiteral) {
-        std::construct_at(&string_literal);
     } else {
         std::construct_at(&args);
     }
@@ -24,8 +22,6 @@ Inst::Inst(IR::Opcode op_, u32 flags_) noexcept : op{op_}, flags{flags_} {
 Inst::Inst(const Inst& base) : op{base.op}, flags{base.flags} {
     if (base.op == Opcode::Phi) {
         throw NotImplementedException("Copying phi node");
-    } else if (base.op == Opcode::StringLiteral) {
-        std::construct_at(&string_literal, base.string_literal);
     } else {
         std::construct_at(&args);
         const size_t num_args{base.NumArgs()};
@@ -38,8 +34,6 @@ Inst::Inst(const Inst& base) : op{base.op}, flags{base.flags} {
 Inst::~Inst() {
     if (op == Opcode::Phi) {
         std::destroy_at(&phi_args);
-    } else if (op == Opcode::StringLiteral) {
-        std::destroy_at(&string_literal);
     } else {
         std::destroy_at(&args);
     }
@@ -107,9 +101,6 @@ bool Inst::AreAllArgsImmediates() const {
     if (op == Opcode::Phi) {
         UNREACHABLE_MSG("Testing for all arguments are immediates on phi instruction");
     }
-    if (op == Opcode::StringLiteral) {
-        UNREACHABLE_MSG("Testing for all arguments are immediates on StringLiteral instruction");
-    }
     return std::all_of(args.begin(), args.begin() + NumArgs(),
                        [](const IR::Value& value) { return value.IsImmediate(); });
 }
@@ -131,8 +122,6 @@ void Inst::SetArg(size_t index, Value value) {
     }
     if (op == Opcode::Phi) {
         phi_args[index].second = value;
-    } else if (op == Opcode::StringLiteral) {
-        UNREACHABLE_MSG("SetArg on StringLiteral instruction");
     } else {
         args[index] = value;
     }
@@ -169,8 +158,6 @@ void Inst::ClearArgs() {
             }
         }
         phi_args.clear();
-    } else if (op == Opcode::StringLiteral) {
-        string_literal.clear();
     } else {
         for (auto& value : args) {
             if (!value.IsImmediate()) {
@@ -195,9 +182,6 @@ void Inst::ReplaceUsesWith(Value replacement) {
 void Inst::ReplaceOpcode(IR::Opcode opcode) {
     if (opcode == IR::Opcode::Phi) {
         UNREACHABLE_MSG("Cannot transition into Phi");
-    }
-    if (op == IR::Opcode::StringLiteral || opcode == IR::Opcode::StringLiteral) {
-        UNREACHABLE_MSG("Cannot transition to or from StringLiteral");
     }
     if (op == Opcode::Phi) {
         // Transition out of phi arguments into non-phi
