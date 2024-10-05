@@ -225,8 +225,9 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        bnd.buffer += buffers.size() + texture_buffers.size();
-        bnd.unified += bnd.buffer + images.size() + samplers.size();
+        const auto total_buffers = buffers.size() + texture_buffers.size();
+        bnd.buffer += total_buffers;
+        bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
     }
 

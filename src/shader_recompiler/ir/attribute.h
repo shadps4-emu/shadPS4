@@ -81,9 +81,17 @@ constexpr size_t NumAttributes = static_cast<size_t>(Attribute::Max);
 constexpr size_t NumRenderTargets = 8;
 constexpr size_t NumParams = 32;
 
-[[nodiscard]] bool IsParam(Attribute attribute) noexcept;
+constexpr bool IsPosition(Attribute attribute) noexcept {
+    return attribute >= Attribute::Position0 && attribute <= Attribute::Position3;
+}
 
-[[nodiscard]] bool IsMrt(Attribute attribute) noexcept;
+constexpr bool IsParam(Attribute attribute) noexcept {
+    return attribute >= Attribute::Param0 && attribute <= Attribute::Param31;
+}
+
+constexpr bool IsMrt(Attribute attribute) noexcept {
+    return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
+}
 
 [[nodiscard]] std::string NameOf(Attribute attribute);
 

@@ -2491,4 +2491,23 @@ enum class ImageAddrComponent : u32 {
     Clamp,
 };
 
+struct SendMsgSimm {
+    enum class Message : u32 {
+        Interrupt = 1,
+        Gs = 2,
+        GsDone = 3,
+        System = 15,
+    };
+
+    enum class GsOp : u32 {
+        Nop = 0,
+        Cut = 1,
+        Emit = 2,
+        EmitCut = 3,
+    };
+
+    Message msg : 4;
+    GsOp op : 2;
+};
+
 } // namespace Shader::Gcn

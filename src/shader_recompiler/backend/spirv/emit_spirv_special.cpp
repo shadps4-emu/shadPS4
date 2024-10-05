@@ -41,6 +41,14 @@ void EmitDiscardCond(EmitContext& ctx, Id condition) {
     ctx.AddLabel(merge_label);
 }
 
+void EmitEmitVertex(EmitContext& ctx) {
+    ctx.OpEmitVertex();
+}
+
+void EmitEmitPrimitive(EmitContext& ctx) {
+    ctx.OpEndPrimitive();
+}
+
 void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }
