@@ -304,9 +304,6 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
     }
-    if (SDL_GetCursor() != NULL) {
-        SDL_HideCursor();
-    }
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {
@@ -331,9 +328,6 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
         button = sdlGamepadToOrbisButton(event->gbutton.button);
         if (button != 0) {
             controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
-        }
-        if (SDL_GetCursor() != NULL) {
-            SDL_HideCursor();
         }
         break;
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:

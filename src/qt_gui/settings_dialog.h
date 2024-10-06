@@ -33,6 +33,7 @@ private:
     void LoadValuesFromConfig();
     void InitializeEmulatorLanguages();
     void OnLanguageChanged(int index);
+    void OnCursorStateChanged(s16 index);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 
