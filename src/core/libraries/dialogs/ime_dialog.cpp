@@ -38,10 +38,10 @@ static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
     return true;
 }
 
-// static bool IsMemZero(const void* ptr, size_t size) {
-//     return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c)
-//     { return c == 0; });
-// }
+static bool IsMemZero(const void* ptr, size_t size) {
+    return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c)
+    { return c == 0; });
+}
 
 Error PS4_SYSV_ABI sceImeDialogAbort() {
     if (g_ime_dlg_status == OrbisImeDialogStatus::NONE) {
@@ -108,10 +108,10 @@ Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
         return Error::INVALID_ADDRESS;
     }
 
-    // if (!IsMemZero(result->reserved, 12)) {
-    //     LOG_INFO(Lib_ImeDialog, "Invalid result->reserved");
-    //     return Error::INVALID_RESERVED;
-    // }
+    if (!IsMemZero(result->reserved, 12)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid result->reserved");
+        return Error::INVALID_RESERVED;
+    }
 
     result->endstatus = g_ime_dlg_result.endstatus;
 
@@ -184,10 +184,10 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         return Error::INVALID_USER_ID;
     }
 
-    // if (IsMemZero(param->reserved, 16)) {
-    //     LOG_INFO(Lib_ImeDialog, "Invalid param->reserved");
-    //     return Error::INVALID_RESERVED;
-    // }
+    if (!IsMemZero(param->reserved, 16)) {
+        LOG_INFO(Lib_ImeDialog, "Invalid param->reserved");
+        return Error::INVALID_RESERVED;
+    }
 
     if (param->inputTextBuffer == nullptr) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->inputTextBuffer");
@@ -202,10 +202,10 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
 
         // TODO: do correct extended->option validation
 
-        // if (IsMemZero(extended->reserved, 60)) {
-        //     LOG_INFO(Lib_ImeDialog, "Invalid extended->reserved");
-        //     return Error::INVALID_EXTENDED;
-        // }
+        if (!IsMemZero(extended->reserved, 60)) {
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->reserved");
+            return Error::INVALID_EXTENDED;
+        }
 
         if ((extended->extKeyboardMode & 0xe3fffffc) != 0) {
             LOG_INFO(Lib_ImeDialog, "Invalid extended->extKeyboardMode");
