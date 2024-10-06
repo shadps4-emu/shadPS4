@@ -194,18 +194,19 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
-         {"libSceFiber.sprx", nullptr},
-         {"libSceUlt.sprx", nullptr},
-         {"libSceJson.sprx", nullptr},
-         {"libSceJson2.sprx", nullptr},
-         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
-         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
-         {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
-         {"libSceFont.sprx", nullptr}},
-    };
+    constexpr std::array<SysModules, 16> ModulesToLoad{{
+        {"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+        {"libSceFiber.sprx", nullptr},
+        {"libSceUlt.sprx", nullptr},
+        {"libSceJson.sprx", nullptr},
+        {"libSceJson2.sprx", nullptr},
+        {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+        {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
+        {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
+        {"libSceJpegEnc.sprx", nullptr},
+        {"libSceFont.sprx", nullptr},
+        {"libSceRazorCpu.sprx", nullptr},
+    }};
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);

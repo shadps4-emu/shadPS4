@@ -66,7 +66,6 @@ struct AjmMp3Decoder : public AjmInstance {
     const AVCodec* codec = nullptr;
     AVCodecContext* c = nullptr;
     AVCodecParserContext* parser = nullptr;
-    u32 index;
     std::ofstream file;
 
     explicit AjmMp3Decoder();

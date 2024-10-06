@@ -57,6 +57,7 @@ struct AjmInstance {
     u32 decoded_samples{};
     AjmFormatEncoding fmt{};
     u32 num_channels{};
+    u32 index{};
 
     explicit AjmInstance() = default;
     virtual ~AjmInstance() = default;

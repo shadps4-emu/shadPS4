@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "common/types.h"
 #include "common/enum.h"
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -92,6 +92,8 @@ struct AjmSingleJob {
     };
 };
 
+static_assert(sizeof(AjmSingleJob) == 0x40);
+
 struct AjmMultiJob {
     AjmHLEOpcode opcode;
     u32 job_size;
@@ -128,26 +130,37 @@ union AjmInstanceFlags {
     };
 };
 
+struct SceAjmSidebandDecAt9CodecInfo {
+    u32 uiSuperFrameSize;
+    u32 uiFramesInSuperFrame;
+    u32 uiNextFrameSize;
+    u32 uiFrameSamples;
+};
+
 struct AjmDecMp3ParseFrame;
 enum class AjmCodecType : u32;
 
 int PS4_SYSV_ABI sceAjmBatchCancel();
 int PS4_SYSV_ABI sceAjmBatchErrorDump();
-void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmSingleJob* batch_pos, u32 instance, AjmFlags flags,
-                                                 u8* in_buffer, u32 in_size, u8* out_buffer,
-                                                 u32 out_size, const void* ret_addr);
-int PS4_SYSV_ABI sceAjmBatchJobInlineBuffer();
-int PS4_SYSV_ABI sceAjmBatchJobRunBufferRa();
-void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 instance, AjmFlags flags,
-                                                  const AjmBuffer* input_buffers,
+void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmSingleJob* batch_pos, u32 instance,
+                                                 AjmFlags flags, u8* in_buffer, u32 in_size,
+                                                 u8* out_buffer, u32 out_size,
+                                                 const void* ret_addr);
+void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(AjmSingleJob* batch_pos, const void* in_buffer,
+                                              size_t in_size, const void** batch_address);
+void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(AjmSingleJob* batch_pos, u32 instance, AjmFlags flags,
+                                             void * in_buffer, u32 in_size, u8* out_buffer,
+                                             const u32 out_size, u8* sideband_output,
+                                             const u32 sideband_output_size, const void* ret_addr);
+void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 instance,
+                                                  AjmFlags flags, const AjmBuffer* input_buffers,
                                                   u64 num_input_buffers,
                                                   const AjmBuffer* output_buffers,
-                                                  u64 num_output_buffers,
-                                                  void* sideband_output,
-                                                  u64 sideband_output_size,
-                                                  const void* ret_addr);
-int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size, const int priority,
-                                        AjmBatchError* patch_error, u32* out_batch_id);
+                                                  u64 num_output_buffers, void* sideband_output,
+                                                  u64 sideband_output_size, const void* ret_addr);
+int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size,
+                                        const int priority, AjmBatchError* patch_error,
+                                        u32* out_batch_id);
 int PS4_SYSV_ABI sceAjmBatchWait();
 int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData();
 int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* stream, u32 stream_size, int parse_ofl,
@@ -155,7 +168,8 @@ int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* stream, u32 stream_size, int p
 int PS4_SYSV_ABI sceAjmFinalize();
 int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* out_context);
 int PS4_SYSV_ABI sceAjmInstanceCodecType();
-int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags, u32* instance);
+int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags,
+                                      u32* instance);
 int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context, u32 instance);
 int PS4_SYSV_ABI sceAjmInstanceExtend();
 int PS4_SYSV_ABI sceAjmInstanceSwitch();
