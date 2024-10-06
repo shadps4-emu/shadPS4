@@ -1563,35 +1563,31 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value
 // Renderdoc accepts format specifiers, e.g. %u, listed here:
 // https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
 //
+// fmt must be a string literal (pointer is shallow copied into a Value)
 // Example usage:
 //         ir.DebugPrint("invocation xyz: (%u, %u, %u)",
 //                      {ir.GetVectorReg(IR::VectorReg::V0),
 //                       ir.GetVectorReg(IR::VectorReg::V1),
 //                       ir.GetVectorReg(IR::VectorReg::V2)});
-void IREmitter::DebugPrint(std::string_view format,
-                           boost::container::small_vector<Value, 5> format_args) {
-    constexpr size_t PRINT_MAX_ARGS = NumArgsOf(IR::Opcode::DebugPrint);
-    std::array<Value, PRINT_MAX_ARGS> args;
+void IREmitter::DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> format_args) {
+    std::array<Value, DEBUGPRINT_NUM_FORMAT_ARGS> args;
 
-    ASSERT_MSG(format_args.size() < PRINT_MAX_ARGS, "DebugPrint only supports up to {} format args",
-               PRINT_MAX_ARGS);
+    ASSERT_MSG(format_args.size() < DEBUGPRINT_NUM_FORMAT_ARGS,
+               "DebugPrint only supports up to {} format args", DEBUGPRINT_NUM_FORMAT_ARGS);
 
     for (int i = 0; i < format_args.size(); i++) {
         args[i] = format_args[i];
     }
 
-    for (int i = format_args.size(); i < PRINT_MAX_ARGS; i++) {
+    for (int i = format_args.size(); i < DEBUGPRINT_NUM_FORMAT_ARGS; i++) {
         args[i] = Inst(Opcode::Void);
     }
 
-    Value val = Inst(Opcode::DebugPrint, args[0], args[1], args[2], args[3], args[4]);
+    IR::Value fmt_val{fmt};
+
     DebugPrintFlags flags;
-
-    flags.string_idx.Assign(info.string_pool.size());
-    info.string_pool.emplace_back(format);
     flags.num_args.Assign(format_args.size());
-
-    val.Inst()->SetFlags<DebugPrintFlags>(flags);
+    Inst(Opcode::DebugPrint, Flags{flags}, fmt_val, args[0], args[1], args[2], args[3]);
 }
 
 } // namespace Shader::IR

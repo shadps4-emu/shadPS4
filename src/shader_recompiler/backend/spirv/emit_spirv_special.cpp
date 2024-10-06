@@ -50,12 +50,9 @@ void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }
 
-void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id arg0, Id arg1, Id arg2, Id arg3, Id arg4) {
-    DebugPrintFlags flags = inst->Flags<DebugPrintFlags>();
-    const std::string& format_string = ctx.info.string_pool[flags.string_idx];
-    Id fmt = ctx.String(format_string);
-
-    std::array<Id, IR::NumArgsOf(IR::Opcode::DebugPrint)> fmt_args = {arg0, arg1, arg2, arg3, arg4};
+void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, Id arg2, Id arg3) {
+    IR::DebugPrintFlags flags = inst->Flags<IR::DebugPrintFlags>();
+    std::array<Id, IR::DEBUGPRINT_NUM_FORMAT_ARGS> fmt_args = {arg0, arg1, arg2, arg3};
     auto fmt_args_span = std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
     ctx.OpDebugPrintf(fmt, fmt_args_span);
 }

@@ -39,6 +39,7 @@ public:
     explicit Value(f32 value) noexcept;
     explicit Value(u64 value) noexcept;
     explicit Value(f64 value) noexcept;
+    explicit Value(const char* value) noexcept;
 
     [[nodiscard]] bool IsIdentity() const noexcept;
     [[nodiscard]] bool IsPhi() const noexcept;
@@ -60,6 +61,7 @@ public:
     [[nodiscard]] f32 F32() const;
     [[nodiscard]] u64 U64() const;
     [[nodiscard]] f64 F64() const;
+    [[nodiscard]] const char* StringLiteral() const;
 
     [[nodiscard]] bool operator==(const Value& other) const;
     [[nodiscard]] bool operator!=(const Value& other) const;
@@ -78,6 +80,7 @@ private:
         f32 imm_f32;
         u64 imm_u64;
         f64 imm_f64;
+        const char* string_literal;
     };
 };
 static_assert(static_cast<u32>(IR::Type::Void) == 0, "memset relies on IR::Type being zero");
@@ -346,6 +349,14 @@ inline f64 Value::F64() const {
     }
     DEBUG_ASSERT(type == Type::F64);
     return imm_f64;
+}
+
+inline const char* Value::StringLiteral() const {
+    if (IsIdentity()) {
+        return inst->Arg(0).StringLiteral();
+    }
+    DEBUG_ASSERT(type == Type::StringLiteral);
+    return string_literal;
 }
 
 [[nodiscard]] inline bool IsPhi(const Inst& inst) {
