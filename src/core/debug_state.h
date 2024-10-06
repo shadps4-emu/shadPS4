@@ -9,6 +9,8 @@
 #include <queue>
 
 #include "common/types.h"
+#include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -45,8 +47,20 @@ struct QueueDump {
     uintptr_t base_addr;
 };
 
+struct ShaderDump {
+    Vulkan::Liverpool::ShaderProgram user_data{};
+    std::vector<u32> code{};
+};
+
+struct RegDump {
+    static constexpr size_t MaxShaderStages = 5;
+    Vulkan::Liverpool::Regs regs{};
+    std::array<ShaderDump, MaxShaderStages> stages{};
+};
+
 struct FrameDump {
     std::vector<QueueDump> queues;
+    std::unordered_map<uintptr_t, RegDump> regs; // address -> reg dump
 };
 
 class DebugStateImpl {
@@ -71,6 +85,13 @@ class DebugStateImpl {
     std::queue<std::string> debug_message_popup;
 
 public:
+    void ShowDebugMessage(std::string message) {
+        if (message.empty()) {
+            return;
+        }
+        debug_message_popup.push(std::move(message));
+    }
+
     void AddCurrentThreadToGuestList();
 
     void RemoveCurrentThreadFromGuestList();
@@ -110,17 +131,9 @@ public:
         return frame_dump_list[frame_dump_list.size() - gnm_frame_dump_request_count];
     }
 
-    void PushQueueDump(QueueDump dump) {
-        std::unique_lock lock{frame_dump_list_mutex};
-        GetFrameDump().queues.push_back(std::move(dump));
-    }
+    void PushQueueDump(QueueDump dump);
 
-    void ShowDebugMessage(std::string message) {
-        if (message.empty()) {
-            return;
-        }
-        debug_message_popup.push(std::move(message));
-    }
+    void PushRegsDump(uintptr_t base_addr, const AmdGpu::Liverpool::Regs& regs);
 };
 } // namespace DebugStateType
 

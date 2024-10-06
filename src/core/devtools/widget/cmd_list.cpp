@@ -1044,9 +1044,9 @@ void CmdListViewer::OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* 
     EndGroup();
 }
 
-CmdListViewer::CmdListViewer(const std::vector<u32>& cmd_list, uintptr_t base_addr,
-                             std::string name)
-    : base_addr(base_addr), name(std::move(name)) {
+CmdListViewer::CmdListViewer(const FrameDumpViewer* parent, const std::vector<u32>& cmd_list,
+                             uintptr_t base_addr, std::string name)
+    : parent(parent), base_addr(base_addr), name(std::move(name)) {
     using namespace AmdGpu;
 
     cmdb_addr = (uintptr_t)cmd_list.data();
@@ -1244,6 +1244,12 @@ void CmdListViewer::Draw() {
                 if (!group_batches || CollapsingHeader(batch_hdr)) {
                     auto bb = ctx.LastItemData.Rect;
                     if (group_batches) {
+                        if (IsItemToggledOpen()) {
+                            if (parent->frame_dump.regs.contains(batch.command_addr)) {
+                                batch_view.data = parent->frame_dump.regs.at(batch.command_addr);
+                                batch_view.open = true;
+                            }
+                        }
                         Indent();
                     }
                     auto const batch_sz = batch.end_addr - batch.start_addr;
@@ -1262,18 +1268,18 @@ void CmdListViewer::Draw() {
                                     Gcn::GetOpCodeName((u32)op));
 
                             if (TreeNode(header_name)) {
-                                bool just_opened = IsItemToggledOpen();
+                                const bool just_opened = IsItemToggledOpen();
+                                if (just_opened) {
+                                    // Editor
+                                    cmdb_view.GotoAddrAndHighlight(
+                                        reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr,
+                                        reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr +
+                                            (pm4_hdr->count + 2) * 4);
+                                }
+
                                 if (BeginTable("split", 1)) {
                                     TableNextColumn();
                                     Text("size: %d", pm4_hdr->count + 1);
-
-                                    if (just_opened) {
-                                        // Editor
-                                        cmdb_view.GotoAddrAndHighlight(
-                                            reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr,
-                                            reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr +
-                                                (pm4_hdr->count + 2) * 4);
-                                    }
 
                                     auto const* it_body =
                                         reinterpret_cast<uint32_t const*>(pm4_hdr + 1);
@@ -1366,6 +1372,18 @@ void CmdListViewer::Draw() {
             }
         }
         End();
+    }
+
+    if (batch_view.open) {
+        batch_view.Draw();
+    }
+    for (auto it = extra_batch_view.begin(); it != extra_batch_view.end(); ++it) {
+        if (!it->open) {
+            it = extra_batch_view.erase(it);
+            continue;
+        }
+        it->Draw();
+        ++it;
     }
 }
 

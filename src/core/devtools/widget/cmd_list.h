@@ -10,8 +10,8 @@
 
 #include "common/types.h"
 #include "imgui_memory_editor.h"
+#include "reg_view.h"
 #include "types.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 
 namespace AmdGpu {
 union PM4Type3Header;
@@ -23,6 +23,8 @@ namespace Core::Devtools::Widget {
 class FrameDumpViewer;
 
 class CmdListViewer {
+
+    const FrameDumpViewer* parent;
 
     uintptr_t base_addr;
     std::string name;
@@ -37,6 +39,9 @@ class CmdListViewer {
     int vqid{255};
     s32 highlight_batch{-1};
 
+    RegView batch_view;
+    std::vector<RegView> extra_batch_view;
+
     void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
     void OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* body);
     void OnSetContextReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
@@ -47,8 +52,8 @@ public:
     static void LoadConfig(const char* line);
     static void SerializeConfig(ImGuiTextBuffer* buf);
 
-    explicit CmdListViewer(const std::vector<u32>& cmd_list, uintptr_t base_addr = 0,
-                           std::string name = "");
+    explicit CmdListViewer(const FrameDumpViewer* parent, const std::vector<u32>& cmd_list,
+                           uintptr_t base_addr = 0, std::string name = "");
 
     void Draw();
 };

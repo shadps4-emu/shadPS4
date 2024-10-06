@@ -935,7 +935,7 @@ struct Liverpool {
         BitField<5, 1, u32> gs_en;
         BitField<6, 1, u32> vs_en;
 
-        bool IsStageEnabled(u32 stage) {
+        bool IsStageEnabled(u32 stage) const {
             switch (stage) {
             case 0:
             case 1:

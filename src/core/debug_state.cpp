@@ -5,9 +5,10 @@
 #include "common/native_clock.h"
 #include "common/singleton.h"
 #include "debug_state.h"
-#include "libraries/kernel/event_queues.h"
+#include "devtools/widget/types.h"
 #include "libraries/kernel/time_management.h"
 #include "libraries/system/msgdialog.h"
+#include "video_core/amdgpu/pm4_cmds.h"
 
 using namespace DebugStateType;
 
@@ -95,8 +96,35 @@ void DebugStateImpl::ResumeGuestThreads() {
 }
 
 void DebugStateImpl::RequestFrameDump(s32 count) {
+    ASSERT(!DumpingCurrentFrame());
     gnm_frame_dump_request_count = count;
     frame_dump_list.clear();
     frame_dump_list.resize(count);
     waiting_submit_pause = true;
+}
+
+void DebugStateImpl::PushQueueDump(QueueDump dump) {
+    ASSERT(DumpingCurrentFrame());
+    std::unique_lock lock{frame_dump_list_mutex};
+    GetFrameDump().queues.push_back(std::move(dump));
+}
+
+void DebugStateImpl::PushRegsDump(uintptr_t base_addr, const AmdGpu::Liverpool::Regs& regs) {
+    ASSERT(DumpingCurrentReg());
+    std::unique_lock lock{frame_dump_list_mutex};
+    auto& dump =
+        frame_dump_list[frame_dump_list.size() - liverpool_dump_request_count].regs[base_addr];
+    dump.regs = regs;
+    for (int i = 0; i < RegDump::MaxShaderStages; i++) {
+        if (regs.stage_enable.IsStageEnabled(i)) {
+            auto stage = regs.ProgramForStage(i);
+            if (stage->address_lo != 0) {
+                auto code = stage->Code();
+                dump.stages[i] = ShaderDump{
+                    .user_data = *stage,
+                    .code = std::vector<u32>{code.begin(), code.end()},
+                };
+            }
+        }
+    }
 }

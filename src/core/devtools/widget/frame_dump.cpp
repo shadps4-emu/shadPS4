@@ -49,7 +49,7 @@ FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_
         const auto fname =
             fmt::format("{}_{}_{:02}_{:02}", id, magic_enum::enum_name(selected_queue_type),
                         selected_submit_num, selected_queue_num2);
-        cmd_list_viewer.emplace_back(cmd.data, cmd.base_addr, fname);
+        cmd_list_viewer.emplace_back(this, cmd.data, cmd.base_addr, fname);
         if (cmd.type == QueueType::dcb && cmd.submit_num == selected_submit_num &&
             cmd.num2 == selected_queue_num2) {
             selected_cmd = cmd_list_viewer.size() - 1;
