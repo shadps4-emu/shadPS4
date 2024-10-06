@@ -34,7 +34,7 @@ class ImeDialogState final {
     char* placeholder = nullptr;
 
     // A character can hold up to 4 bytes in UTF-8
-    char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4] = {0};
+    char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1] = {0};
 #ifndef _WIN32
     iconv_t orbis_to_utf8 = (iconv_t)-1;
     iconv_t utf8_to_orbis = (iconv_t)-1;
@@ -59,9 +59,6 @@ private:
                             std::size_t native_text_len);
     bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len,
                             char16_t* orbis_text, std::size_t orbis_text_len);
-    bool ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char,
-                                std::size_t& utf8_char_len);
-    bool ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orbis_char);
 };
 
 class ImeDialogUi final : public ImGui::Layer {

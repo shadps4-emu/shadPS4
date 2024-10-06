@@ -53,8 +53,9 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     if (param->title) {
         std::size_t title_len = std::char_traits<char16_t>::length(param->title);
         title = new char[title_len * 4 + 1];
+        title[title_len * 4] = '\0';
 
-        if (!ConvertOrbisToUTF8(param->title, title_len, title, title_len)) {
+        if (!ConvertOrbisToUTF8(param->title, title_len, title, title_len * 4)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert title to utf8 encoding");
         }
     }
@@ -62,9 +63,10 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     if (param->placeholder) {
         std::size_t placeholder_len = std::char_traits<char16_t>::length(param->placeholder);
         placeholder = new char[placeholder_len * 4 + 1];
+        placeholder[placeholder_len * 4] = '\0';
 
         if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, placeholder,
-                                placeholder_len)) {
+                                placeholder_len * 4)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert placeholder to utf8 encoding");
         }
     }
@@ -172,7 +174,7 @@ bool ImeDialogState::CallTextFilter() {
     }
 
     if (!ConvertOrbisToUTF8(out_text, out_text_length, current_text,
-                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
+                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
         return false;
     }
@@ -213,6 +215,7 @@ bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16*
 
 bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
                                         char* utf8_text, std::size_t utf8_text_len) {
+    std::fill(utf8_text, utf8_text + utf8_text_len, '\0');
 #ifndef _WIN32
     std::size_t orbis_text_len_bytes = orbis_text_len * sizeof(char16_t);
     std::size_t utf8_text_len_bytes = utf8_text_len * sizeof(char);
@@ -223,12 +226,7 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
     std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_text_ptr, &orbis_text_len_bytes,
                                (char**)&utf8_text_ptr, &utf8_text_len_bytes);
 
-    if (result == (std::size_t)-1) {
-        return false;
-    }
-
-    *utf8_text_ptr = '\0'; // Null-terminate the string
-    return true;
+    return result != (std::size_t)-1;
 #else
     int required_size =
         WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text),
@@ -241,18 +239,13 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
         WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text),
                             orbis_text_len, utf8_text, utf8_text_len, nullptr, nullptr);
 
-    if (required_size == 0) {
-        return false;
-    }
-
-    utf8_text[converted_size] = '\0';
-
-    return true;
+    return converted_size != 0;
 #endif
 }
 
 bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len,
                                         char16_t* orbis_text, std::size_t orbis_text_len) {
+    std::fill(orbis_text, orbis_text + orbis_text_len, u'\0');
 #ifndef _WIN32
     std::size_t utf8_text_len_bytes = utf8_text_len * sizeof(char);
     std::size_t orbis_text_len_bytes = orbis_text_len * sizeof(char16_t);
@@ -263,12 +256,8 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
     std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_text_ptr, &utf8_text_len_bytes,
                                (char**)&orbis_text_ptr, &orbis_text_len_bytes);
 
-    if (result == (std::size_t)-1) {
-        return false;
-    }
-
-    *orbis_text_ptr = u'\0'; // Null-terminate the string
-    return true;
+    
+    return result != (std::size_t)-1;
 #else
     int required_size = MultiByteToWideChar(CP_UTF8, 0, utf8_text, utf8_text_len, nullptr, 0);
     if (required_size > orbis_text_len) {
@@ -279,70 +268,7 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
         MultiByteToWideChar(CP_UTF8, 0, utf8_text, utf8_text_len,
                             reinterpret_cast<wchar_t*>(orbis_text), orbis_text_len);
 
-    if (required_size == 0) {
-        return false;
-    }
-
-    orbis_text[converted_size] = u'\0';
-
-    return true;
-#endif
-}
-
-bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char,
-                                            std::size_t& utf8_char_len) {
-    std::fill(utf8_char, utf8_char + 4, '\0');
-#ifndef _WIN32
-    std::size_t orbis_char_len_bytes = sizeof(char16_t);
-    std::size_t utf8_char_len_bytes = utf8_char_len;
-
-    char16_t orbis_char_ptr = orbis_char;
-    char* utf8_char_ptr = utf8_char;
-
-    std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_char_ptr, &orbis_char_len_bytes,
-                               (char**)&utf8_char_ptr, &utf8_char_len_bytes);
-
-    if (result == (std::size_t)-1) {
-        utf8_char_len = 0;
-        return false;
-    }
-
-    utf8_char_len = 4 - utf8_char_len_bytes;
-    return true;
-#else
-    int required_size = WideCharToMultiByte(
-        CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, nullptr, 0, nullptr, nullptr);
-    if (required_size > 4) {
-        UNREACHABLE_MSG("UTF-8 character is never more than 4 bytes");
-    }
-
-    utf8_char_len = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char),
-                                        1, utf8_char, 4, nullptr, nullptr);
-
-    return utf8_char_len != 0;
-#endif
-}
-
-bool ImeDialogState::ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orbis_char) {
-#ifndef _WIN32
-    std::size_t utf8_char_len_bytes = 4 * sizeof(char);
-    std::size_t orbis_char_len_bytes = sizeof(char16_t);
-
-    char* utf8_char_ptr = const_cast<char*>(utf8_char);
-    char16_t* orbis_char_ptr = &orbis_char;
-
-    std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_char_ptr, &utf8_char_len_bytes,
-                               (char**)&orbis_char_ptr, &orbis_char_len_bytes);
-
-    if (result == (std::size_t)-1) {
-        return false;
-    }
-
-    return true;
-#else
-    int required_size = MultiByteToWideChar(CP_UTF8, 0, utf8_char, std::strlen(utf8_char),
-                                            reinterpret_cast<wchar_t*>(&orbis_char), 1);
-    return required_size != 0;
+    return converted_size != 0;
 #endif
 }
 
@@ -543,7 +469,7 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         .resourceId = 0,
         .timestamp = 0};
 
-    if (!ui->state->ConvertUTF8CharToOrbis(event_char, src_keycode.character)) {
+    if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert orbis char to utf8");
         return 0;
     }
