@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <functional>
 #include <vector>
+#include <boost/align/aligned_allocator.hpp>
+#include <boost/align/aligned_delete.hpp>
 #include <boost/container/map.hpp>
 #include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
@@ -41,30 +44,34 @@ typedef void(__attribute__((sysv_abi)) * PFN_SrtWalker)(const u32* /*user_data*/
 // separately
 class SmallCodeArray {
 public:
-    SmallCodeArray() {}
+    SmallCodeArray() : bufsize(0), codebuf(nullptr) {}
     SmallCodeArray& operator=(SmallCodeArray&& other) = default;
     SmallCodeArray(SmallCodeArray&& other) = default;
 
     SmallCodeArray& operator=(const SmallCodeArray& other) {
-        *this = SmallCodeArray(codebuf.get(), bufsize);
+        *this = SmallCodeArray(reinterpret_cast<u8*>(codebuf.get()), bufsize);
         return *this;
     }
     SmallCodeArray(const SmallCodeArray& other) {
         *this = other;
     };
 
-    SmallCodeArray(const u8* code, size_t codesize) {
+    SmallCodeArray(const u8* code, size_t codesize) : SmallCodeArray() {
         size_t pagesize = Xbyak::inner::getPageSize();
         bufsize = Common::AlignUp(codesize, pagesize);
-        auto fn = new (std::align_val_t(pagesize)) u8[bufsize];
-        ASSERT(fn);
-        codebuf = std::unique_ptr<u8[]>(fn);
-        memcpy(codebuf.get(), code, codesize);
-        Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RE);
+        if (bufsize > 0) {
+            auto fn = reinterpret_cast<u8*>(boost::alignment::aligned_alloc(pagesize, bufsize));
+            ASSERT(fn);
+            codebuf = aligned_unique_ptr(fn);
+            memcpy(codebuf.get(), code, codesize);
+            Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RE);
+        }
     }
 
     ~SmallCodeArray() {
-        Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RW);
+        if (bufsize > 0) {
+            Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RW);
+        }
     }
 
     template <class F>
@@ -73,8 +80,10 @@ public:
     }
 
 private:
+    using aligned_unique_ptr = std::unique_ptr<u8, boost::alignment::aligned_delete>;
+
     size_t bufsize;
-    std::unique_ptr<u8[]> codebuf;
+    aligned_unique_ptr codebuf;
 };
 
 struct PersistentSrtInfo {
