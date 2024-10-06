@@ -256,7 +256,6 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
     std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_text_ptr, &utf8_text_len_bytes,
                                (char**)&orbis_text_ptr, &orbis_text_len_bytes);
 
-    
     return result != (std::size_t)-1;
 #else
     int required_size = MultiByteToWideChar(CP_UTF8, 0, utf8_text, utf8_text_len, nullptr, 0);

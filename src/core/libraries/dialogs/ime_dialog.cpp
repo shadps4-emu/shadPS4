@@ -39,8 +39,8 @@ static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
 }
 
 static bool IsMemZero(const void* ptr, size_t size) {
-    return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c)
-    { return c == 0; });
+    return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size,
+                       [](u8 c) { return c == 0; });
 }
 
 Error PS4_SYSV_ABI sceImeDialogAbort() {
