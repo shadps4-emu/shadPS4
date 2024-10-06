@@ -540,14 +540,6 @@ void Translator::S_BREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
 }
 
-void Translator::S_GETPC_B64(u32 pc, const GcnInst& inst) {
-    // This only really exists to let resource tracking pass know
-    // there is an inline cbuf.
-    const IR::ScalarReg dst{inst.dst[0].code};
-    ir.SetScalarReg(dst, ir.Imm32(pc));
-    ir.SetScalarReg(dst + 1, ir.Imm32(0));
-}
-
 void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
     // This instruction normally operates on 64-bit data (EXEC, VCC, SGPRs)
     // However here we flatten it to 1-bit EXEC and 1-bit VCC. For the destination

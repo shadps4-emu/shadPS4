@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "common/assert.h"
 #include "common/func_traits.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -12,9 +13,37 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Shader::Backend::SPIRV {
 namespace {
+
+static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType type) {
+    switch (type) {
+    case AmdGpu::PrimitiveType::PointList:
+        return spv::ExecutionMode::InputPoints;
+    case AmdGpu::PrimitiveType::LineList:
+        return spv::ExecutionMode::InputLines;
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleStrip:
+        return spv::ExecutionMode::Triangles;
+    default:
+        UNREACHABLE();
+    }
+}
+
+static constexpr spv::ExecutionMode GetOutputPrimitiveType(AmdGpu::GsOutputPrimitiveType type) {
+    switch (type) {
+    case AmdGpu::GsOutputPrimitiveType::PointList:
+        return spv::ExecutionMode::OutputVertices;
+    case AmdGpu::GsOutputPrimitiveType::LineStrip:
+        return spv::ExecutionMode::OutputLineStrip;
+    case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+        return spv::ExecutionMode::OutputTriangleStrip;
+    default:
+        UNREACHABLE();
+    }
+}
 
 template <auto func, typename... Args>
 void SetDefinition(EmitContext& ctx, IR::Inst* inst, Args... args) {
@@ -222,6 +251,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
                              workgroup_size[1], workgroup_size[2]);
         break;
     }
+    case Stage::Export:
     case Stage::Vertex:
         execution_model = spv::ExecutionModel::Vertex;
         break;
@@ -239,6 +269,16 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         if (info.stores.Get(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
+        break;
+    case Stage::Geometry:
+        execution_model = spv::ExecutionModel::Geometry;
+        ctx.AddExecutionMode(main, GetInputPrimitiveType(ctx.runtime_info.gs_info.in_primitive));
+        ctx.AddExecutionMode(main,
+                             GetOutputPrimitiveType(ctx.runtime_info.gs_info.out_primitive[0]));
+        ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices,
+                             ctx.runtime_info.gs_info.output_vertices);
+        ctx.AddExecutionMode(main, spv::ExecutionMode::Invocations,
+                             ctx.runtime_info.gs_info.num_invocations);
         break;
     default:
         throw NotImplementedException("Stage {}", u32(program.info.stage));
@@ -270,11 +310,20 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    if (program.info.stage == Stage::Vertex) {
+    switch (program.info.stage) {
+    case Stage::Export:
+    case Stage::Vertex:
         ctx.AddExtension("SPV_KHR_shader_draw_parameters");
         ctx.AddCapability(spv::Capability::DrawParameters);
+        break;
+    case Stage::Geometry:
+        ctx.AddCapability(spv::Capability::Geometry);
+        break;
+    default:
+        break;
     }
     PatchPhiNodes(program, ctx);
+    binding.user_data += program.info.ud_mask.NumRegs();
     return ctx.Assemble();
 }
 

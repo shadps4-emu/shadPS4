@@ -116,6 +116,7 @@ public:
 
     // SOPP
     void S_BARRIER();
+    void S_SENDMSG(const GcnInst& inst);
 
     // Scalar Memory
     // SMRD

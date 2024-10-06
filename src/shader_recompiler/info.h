@@ -18,6 +18,8 @@
 namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
+static constexpr size_t MaxUboSize = 65536;
+static constexpr size_t MaxUboDwords = MaxUboSize >> 2;
 
 enum class TextureType : u32 {
     Color1D,
@@ -42,7 +44,6 @@ struct BufferResource {
     bool is_written{};
 
     bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
-        static constexpr size_t MaxUboSize = 65536;
         return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
     }
 
@@ -224,8 +225,9 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        bnd.buffer += buffers.size() + texture_buffers.size();
-        bnd.unified += bnd.buffer + images.size() + samplers.size();
+        const auto total_buffers = buffers.size() + texture_buffers.size();
+        bnd.buffer += total_buffers;
+        bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
     }
 

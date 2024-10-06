@@ -147,6 +147,16 @@ public:
         return list_restart;
     }
 
+    /// Returns true when geometry shaders are supported by the device
+    bool IsGeometryStageSupported() const {
+        return features.geometryShader;
+    }
+
+    /// Returns true when tessellation is supported by the device
+    bool IsTessellationSupported() const {
+        return features.tessellationShader;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -220,6 +230,11 @@ public:
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;
+    }
+
+    /// Returns the maximum sampler LOD bias.
+    float MaxSamplerLodBias() const {
+        return properties.limits.maxSamplerLodBias;
     }
 
     /// Returns the maximum number of push descriptors.
