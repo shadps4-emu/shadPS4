@@ -176,8 +176,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         const auto vsharp = desc.GetSharp(*info);
         vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         const u32 size = vsharp.GetSize();
-        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
-            const VAddr address = vsharp.base_address;
+        const VAddr address = vsharp.base_address;
+        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && address != 0 && size != 0) {
             if (desc.is_written) {
                 if (texture_cache.TouchMeta(address, true)) {
                     LOG_TRACE(Render_Vulkan, "Metadata update skipped");
@@ -192,8 +192,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             const auto [vk_buffer, offset] =
                 buffer_cache.ObtainBuffer(address, size, desc.is_written, true);
             const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
-            ASSERT_MSG(fmt_stride == vsharp.GetStride(),
-                       "Texel buffer stride must match format stride");
+            //ASSERT_MSG(fmt_stride == vsharp.GetStride(),
+            //           "Texel buffer stride must match format stride");
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % fmt_stride == 0);

@@ -383,6 +383,8 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayout16BitAccess = true,
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
+            .robustBufferAccess2 = true,
+            .robustImageAccess2 = true,
             .nullDescriptor = true,
         },
         vk::PhysicalDeviceSynchronization2Features{

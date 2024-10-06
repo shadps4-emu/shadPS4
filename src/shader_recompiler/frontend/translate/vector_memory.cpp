@@ -8,7 +8,6 @@ namespace Shader::Gcn {
 void Translator::EmitVectorMemory(const GcnInst& inst) {
     switch (inst.opcode) {
         // MUBUF / MTBUF
-
         // Buffer load operations
     case Opcode::TBUFFER_LOAD_FORMAT_X:
         return BUFFER_LOAD(1, true, inst);

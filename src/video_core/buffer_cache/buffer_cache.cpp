@@ -621,6 +621,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     const u32 num_layers = image.info.resources.layers;
     const u32 max_offset = offset + size;
     for (u32 m = 0; m < image.info.resources.levels; m++) {
+        if (offset >= buffer.SizeBytes()) {
+            break;
+        }
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =

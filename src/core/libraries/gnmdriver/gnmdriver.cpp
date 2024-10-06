@@ -1107,7 +1107,7 @@ int PS4_SYSV_ABI sceGnmInsertSetColorMarker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmInsertSetMarker() {
+int PS4_SYSV_ABI sceGnmInsertSetMarker(u32 *param_1,int param_2,char *param_3) {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
     return ORBIS_OK;
 }

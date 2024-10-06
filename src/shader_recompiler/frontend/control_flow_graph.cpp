@@ -205,11 +205,13 @@ void CFG::LinkBlocks() {
             end_inst.opcode == Opcode::S_ANDN2_B64 || end_inst.IsCmpx()) {
             // Blocks are stored ordered by address in the set
             auto next_it = std::next(it);
+            ASSERT(next_it != blocks.end());
             auto* target_block = &(*next_it);
             ++target_block->num_predecessors;
             block.branch_true = target_block;
 
             auto merge_it = std::next(next_it);
+            ASSERT(merge_it != blocks.end());
             auto* merge_block = &(*merge_it);
             ++merge_block->num_predecessors;
             block.branch_false = merge_block;

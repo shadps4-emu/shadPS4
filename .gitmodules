@@ -95,3 +95,6 @@
 	path = externals/pugixml
 	url = https://github.com/zeux/pugixml.git
 	shallow = true
+[submodule "externals/LibAtrac9"]
+	path = externals/LibAtrac9
+	url = https://github.com/Vita3K/LibAtrac9
