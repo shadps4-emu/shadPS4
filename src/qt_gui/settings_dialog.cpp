@@ -167,7 +167,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                         QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
                         Config::setBackButtonBehavior(data.toStdString());
                     }
-        });
+                });
     }
 
     // GPU TAB
