@@ -644,7 +644,7 @@ private:
             }
             case StatementType::SetVariable: {
                 ensure_block();
-                IR::IREmitter ir{*current_block, info};
+                IR::IREmitter ir{*current_block};
                 ir.SetGotoVariable(stmt.id, VisitExpr(ir, *stmt.op));
                 break;
             }
@@ -653,7 +653,7 @@ private:
                 IR::Block* const merge_block{MergeBlock(parent, stmt)};
 
                 // Implement if header block
-                IR::IREmitter ir{*current_block, info};
+                IR::IREmitter ir{*current_block};
                 const IR::U1 cond{ir.ConditionRef(VisitExpr(ir, *stmt.cond))};
 
                 const size_t if_node_index{syntax_list.size()};
@@ -703,7 +703,7 @@ private:
                 Visit(stmt, merge_block, continue_block);
 
                 // The continue block is located at the end of the loop
-                IR::IREmitter ir{*continue_block, info};
+                IR::IREmitter ir{*continue_block};
                 const IR::U1 cond{ir.ConditionRef(VisitExpr(ir, *stmt.cond))};
 
                 IR::Block* const body_block{syntax_list.at(body_block_index).data.block};
@@ -739,7 +739,7 @@ private:
                 ensure_block();
                 IR::Block* const skip_block{MergeBlock(parent, stmt)};
 
-                IR::IREmitter ir{*current_block, info};
+                IR::IREmitter ir{*current_block};
                 const IR::U1 cond{ir.ConditionRef(VisitExpr(ir, *stmt.cond))};
                 current_block->AddBranch(break_block);
                 current_block->AddBranch(skip_block);
@@ -759,7 +759,7 @@ private:
             case StatementType::Return: {
                 ensure_block();
                 IR::Block* return_block{block_pool.Create(inst_pool)};
-                IR::IREmitter{*return_block, info}.Epilogue();
+                IR::IREmitter{*return_block}.Epilogue();
                 current_block->AddBranch(return_block);
 
                 auto& merge{syntax_list.emplace_back()};
@@ -773,7 +773,7 @@ private:
             case StatementType::Kill: {
                 ensure_block();
                 IR::Block* demote_block{MergeBlock(parent, stmt)};
-                IR::IREmitter{*current_block, info}.Discard();
+                IR::IREmitter{*current_block}.Discard();
                 current_block->AddBranch(demote_block);
                 current_block = demote_block;
 

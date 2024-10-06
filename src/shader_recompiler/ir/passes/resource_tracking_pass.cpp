@@ -377,7 +377,7 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
 
     // Replace handle with binding index in buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst), info};
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.add_tid_enable);
 
@@ -436,7 +436,7 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     });
 
     // Replace handle with binding index in texture buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst), info};
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
 }
@@ -534,7 +534,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     image_binding |= (sampler_binding << 16);
 
     // Patch image handle
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst), info};
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(image_binding));
 
     // No need to patch coordinates if we are just querying.
@@ -667,7 +667,7 @@ void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     }();
 
     // Patch instruction.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst), info};
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(gds_addr >> 2));
     inst.SetArg(1, ir.Imm32(binding));
 }

@@ -180,8 +180,6 @@ struct Info {
     std::span<const u32> user_data;
     Stage stage;
 
-    std::vector<std::string> string_pool;
-
     u64 pgm_hash{};
     VAddr pgm_base;
     bool has_storage_images{};

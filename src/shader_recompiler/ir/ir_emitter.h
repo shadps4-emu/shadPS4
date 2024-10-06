@@ -16,10 +16,9 @@ namespace Shader::IR {
 
 class IREmitter {
 public:
-    explicit IREmitter(Block& block_, Shader::Info& info_)
-        : block{&block_}, insertion_point{block->end()}, info(info_) {}
-    explicit IREmitter(Block& block_, Block::iterator insertion_point_, Shader::Info& info_)
-        : block{&block_}, insertion_point{insertion_point_}, info(info_) {}
+    explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
+    explicit IREmitter(Block& block_, Block::iterator insertion_point_)
+        : block{&block_}, insertion_point{insertion_point_} {}
 
     Block* block;
 
@@ -315,7 +314,6 @@ public:
 
 private:
     IR::Block::iterator insertion_point;
-    Shader::Info& info;
 
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {
