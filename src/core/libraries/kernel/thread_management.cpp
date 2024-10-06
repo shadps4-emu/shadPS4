@@ -1121,6 +1121,12 @@ int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res) {
 }
 
 int PS4_SYSV_ABI posix_pthread_join(ScePthread thread, void** res) {
+    if (!thread) {
+        return 22;
+    }
+    if (res == 0x0000000000000000) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_join(thread->pth, res);
     LOG_INFO(Kernel_Pthread, "posix_pthread_join result = {}", result);
     thread->is_detached = false;
