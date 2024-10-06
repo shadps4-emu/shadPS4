@@ -151,6 +151,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             Config::setBGMvolume(val);
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
+
+        connect(ui->backButtonBehaviorComboBox, &QComboBox::currentTextChanged, this, [](const QString& text) {
+            Config::setBackButtonBehavior(text.toStdString());
+        });
     }
 
     // GPU TAB
@@ -258,6 +262,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         }
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+
+    ui->backButtonBehaviorComboBox->setCurrentText(QString::fromStdString(Config::getBackButtonBehavior()));
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {

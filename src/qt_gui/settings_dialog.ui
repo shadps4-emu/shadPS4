@@ -442,20 +442,64 @@
            </layout>
           </item>
           <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Policy::Expanding</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
+           <layout class="QVBoxLayout" name="ControllerTabLayoutRight" stretch="1">
+            <item>
+             <widget class="QGroupBox" name="ControllerGroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="title">
+               <string>Controller Settings</string>
+              </property>
+              <widget class="QGroupBox" name="backButtonBehaviorGroupBox">
+               <property name="geometry">
+                <rect>
+                 <x>12</x>
+                 <y>30</y>
+                 <width>241</width>
+                 <height>65</height>
+                </rect>
+               </property>
+               <property name="title">
+                <string>Back Button Behavior</string>
+               </property>
+               <widget class="QComboBox" name="backButtonBehaviorComboBox">
+                <property name="geometry">
+                 <rect>
+                  <x>12</x>
+                  <y>30</y>
+                  <width>217</width>
+                  <height>28</height>
+                 </rect>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>Touchpad Left</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Touchpad Right</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Touchpad Center</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>None</string>
+                 </property>
+                </item>
+               </widget>
+              </widget>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>

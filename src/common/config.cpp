@@ -41,6 +41,7 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static std::string backButtonBehavior = "Touchpad Left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
@@ -121,6 +122,10 @@ std::string getUserName() {
 
 std::string getUpdateChannel() {
     return updateChannel;
+}
+
+std::string getBackButtonBehavior() {
+    return backButtonBehavior;
 }
 
 bool getUseSpecialPad() {
@@ -273,6 +278,10 @@ void setUserName(const std::string& type) {
 
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
+}
+
+void setBackButtonBehavior(const std::string& type) {
+    backButtonBehavior = type;
 }
 
 void setUseSpecialPad(bool use) {
@@ -435,6 +444,7 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
+        backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "Touchpad Left");
     }
 
     if (data.contains("Input")) {
@@ -533,6 +543,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
+    data["General"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -591,6 +602,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    backButtonBehavior = "Touchpad Left";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
