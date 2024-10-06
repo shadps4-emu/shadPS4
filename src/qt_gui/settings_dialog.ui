@@ -475,26 +475,6 @@
                   <height>28</height>
                  </rect>
                 </property>
-                <item>
-                 <property name="text">
-                  <string>Touchpad Left</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Touchpad Right</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Touchpad Center</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>None</string>
-                 </property>
-                </item>
                </widget>
               </widget>
              </widget>

@@ -98,6 +98,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
     ui->buttonBox->button(QDialogButtonBox::Close)->setText(tr("Close"));
 
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
+    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
+
+    QString currentBackButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
+    int index = ui->backButtonBehaviorComboBox->findData(currentBackButtonBehavior);
+    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+
     connect(ui->tabWidgetSettings, &QTabWidget::currentChanged, this,
             [this]() { ui->buttonBox->button(QDialogButtonBox::Close)->setFocus(); });
 
@@ -152,8 +161,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
 
-        connect(ui->backButtonBehaviorComboBox, &QComboBox::currentTextChanged, this, [](const QString& text) {
-            Config::setBackButtonBehavior(text.toStdString());
+        connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
+                        QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
+                        Config::setBackButtonBehavior(data.toStdString());
+                    }
         });
     }
 
@@ -264,7 +277,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
 
-    ui->backButtonBehaviorComboBox->setCurrentText(QString::fromStdString(Config::getBackButtonBehavior()));
+    QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
+    int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
+    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {

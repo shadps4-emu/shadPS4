@@ -41,7 +41,7 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
-static std::string backButtonBehavior = "Touchpad Left";
+static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
@@ -444,7 +444,7 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
-        backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "Touchpad Left");
+        backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "left");
     }
 
     if (data.contains("Input")) {
@@ -602,7 +602,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
-    backButtonBehavior = "Touchpad Left";
+    backButtonBehavior = "left";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;

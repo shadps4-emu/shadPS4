@@ -332,8 +332,8 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
         if (button != 0) {
             if (event->gbutton.button == SDL_GAMEPAD_BUTTON_BACK) {
                 std::string backButtonBehavior = Config::getBackButtonBehavior();
-                if (backButtonBehavior != "None") {
-                    float x = backButtonBehavior == "Touchpad Left" ? 0.25f : (backButtonBehavior == "Touchpad Right" ? 0.75f : 0.5f);
+                if (backButtonBehavior != "none") {
+                    float x = backButtonBehavior == "left" ? 0.25f : (backButtonBehavior == "right" ? 0.75f : 0.5f);
                     // trigger a touchpad event so that the touchpad emulation for back button works
                     controller->SetTouchpadState(0, true, x, 0.5f);
                     controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
