@@ -379,24 +379,45 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     // Replace handle with binding index in buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
-    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+    ASSERT(!buffer.add_tid_enable);
 
     // Address of constant buffer reads can be calculated at IR emittion time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
         return;
     }
 
+    const IR::U32 index_stride = ir.Imm32(buffer.index_stride);
+    const IR::U32 element_size = ir.Imm32(buffer.element_size);
+
     // Compute address of the buffer using the stride.
     IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
     if (inst_info.index_enable) {
         const IR::U32 index = inst_info.offset_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
                                                       : IR::U32{inst.Arg(1)};
-        address = ir.IAdd(address, ir.IMul(index, ir.Imm32(buffer.GetStride())));
+        if (buffer.swizzle_enable) {
+            const IR::U32 stride_index_stride =
+                ir.Imm32(static_cast<u32>(buffer.stride * buffer.index_stride));
+            const IR::U32 index_msb = ir.IDiv(index, index_stride);
+            const IR::U32 index_lsb = ir.IMod(index, index_stride);
+            address = ir.IAdd(address, ir.IAdd(ir.IMul(index_msb, stride_index_stride),
+                                               ir.IMul(index_lsb, element_size)));
+        } else {
+            address = ir.IAdd(address, ir.IMul(index, ir.Imm32(buffer.GetStride())));
+        }
     }
     if (inst_info.offset_enable) {
         const IR::U32 offset = inst_info.index_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
                                                       : IR::U32{inst.Arg(1)};
-        address = ir.IAdd(address, offset);
+        if (buffer.swizzle_enable) {
+            const IR::U32 element_size_index_stride =
+                ir.Imm32(buffer.element_size * buffer.index_stride);
+            const IR::U32 offset_msb = ir.IDiv(offset, element_size);
+            const IR::U32 offset_lsb = ir.IMod(offset, element_size);
+            address = ir.IAdd(address,
+                              ir.IAdd(ir.IMul(offset_msb, element_size_index_stride), offset_lsb));
+        } else {
+            address = ir.IAdd(address, offset);
+        }
     }
     inst.SetArg(1, address);
 }
@@ -421,18 +442,29 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_storage) {
+                         const IR::Value& z, bool is_storage, bool is_array) {
     // When cubemap is written with imageStore it is treated like 2DArray.
     if (is_storage) {
         return ir.CompositeConstruct(s, t, z);
     }
+
+    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
+
     // We need to fix x and y coordinate,
     // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
     // We already force the scale value to be 1.0 when handling v_cubema_f32,
     // here we subtract 1.5 to recover the original value.
     const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
     const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    return ir.CompositeConstruct(x, y, z);
+    if (is_array) {
+        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
+        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
+        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
+        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
+                                     ir.ConvertIToF(32, 32, false, slice_id));
+    } else {
+        return ir.CompositeConstruct(x, y, z);
+    }
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -461,14 +493,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
+    const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
-        .type = image.GetType(),
+        .type = type,
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
+        .is_array = bool(inst_info.is_array),
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
@@ -525,7 +559,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage),
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
+                                   inst_info.is_array),
                     body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
@@ -564,7 +599,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }
     if (inst_info.has_derivatives) {
-        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D,
+        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D ||
+                       image.GetType() == AmdGpu::ImageType::Color2DArray,
                    "User derivatives only supported for 2D images");
     }
     if (inst_info.has_lod_clamp) {

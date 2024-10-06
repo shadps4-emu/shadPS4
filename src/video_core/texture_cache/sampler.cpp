@@ -16,7 +16,7 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         .addressModeU = LiverpoolToVK::ClampMode(sampler.clamp_x),
         .addressModeV = LiverpoolToVK::ClampMode(sampler.clamp_y),
         .addressModeW = LiverpoolToVK::ClampMode(sampler.clamp_z),
-        .mipLodBias = sampler.LodBias(),
+        .mipLodBias = std::min(sampler.LodBias(), instance.MaxSamplerLodBias()),
         .compareEnable = sampler.depth_compare_func != AmdGpu::DepthCompare::Never,
         .compareOp = LiverpoolToVK::DepthCompare(sampler.depth_compare_func),
         .minLod = sampler.MinLod(),
@@ -24,7 +24,10 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         .borderColor = LiverpoolToVK::BorderColor(sampler.border_color_type),
         .unnormalizedCoordinates = bool(sampler.force_unnormalized),
     };
-    handle = instance.GetDevice().createSamplerUnique(sampler_ci);
+    auto [sampler_result, smplr] = instance.GetDevice().createSamplerUnique(sampler_ci);
+    ASSERT_MSG(sampler_result == vk::Result::eSuccess, "Failed to create sampler: {}",
+               vk::to_string(sampler_result));
+    handle = std::move(smplr);
 }
 
 Sampler::~Sampler() = default;

@@ -24,7 +24,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
-    wfi_event = instance.GetDevice().createEventUnique({});
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -62,7 +61,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
 
-    BeginRendering();
+    BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
 
     const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
@@ -71,9 +70,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
                            instance_offset);
     } else {
-        const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
-                                     ? 4
-                                     : regs.num_indices;
+        const u32 num_vertices =
+            regs.primitive_type == AmdGpu::PrimitiveType::RectList ? 4 : regs.num_indices;
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
@@ -89,7 +87,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
         return;
     }
 
-    ASSERT_MSG(regs.primitive_type != AmdGpu::Liverpool::PrimitiveType::RectList,
+    ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
                "Unsupported primitive type for indirect draw");
 
     try {
@@ -102,7 +100,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    BeginRendering();
+    BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
@@ -179,7 +177,7 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::BeginRendering() {
+void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
     const auto& regs = liverpool->regs;
     RenderState state;
 
@@ -196,6 +194,13 @@ void Rasterizer::BeginRendering() {
         // If the color buffer is still bound but rendering to it is disabled by the target mask,
         // we need to prevent the render area from being affected by unbound render target extents.
         if (!regs.color_target_mask.GetMask(col_buf_id)) {
+            continue;
+        }
+
+        // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
+        // an unnecessary transition and may result in state conflict if the resource is already
+        // bound for reading.
+        if ((pipeline.GetMrtMask() & (1 << col_buf_id)) == 0) {
             continue;
         }
 
@@ -240,7 +245,7 @@ void Rasterizer::BeginRendering() {
         state.depth_image = image.image;
         state.depth_attachment = {
             .imageView = *image_view.image_view,
-            .imageLayout = image.layout,
+            .imageLayout = image.last_state.layout,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
@@ -297,6 +302,43 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
         cmdbuf.setColorWriteEnableEXT(write_ens);
         cmdbuf.setColorWriteMaskEXT(0, write_masks);
     }
+    if (regs.depth_control.depth_bounds_enable) {
+        cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
+    }
+    if (regs.polygon_control.NeedsBias()) {
+        if (regs.polygon_control.enable_polygon_offset_front) {
+            cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.front_scale);
+        } else {
+            cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.back_scale);
+        }
+    }
+    if (regs.depth_control.stencil_enable) {
+        const auto front = regs.stencil_ref_front;
+        const auto back = regs.stencil_ref_back;
+        if (front.stencil_test_val == back.stencil_test_val) {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_test_val);
+        } else {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFront, front.stencil_test_val);
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eBack, back.stencil_test_val);
+        }
+        if (front.stencil_write_mask == back.stencil_write_mask) {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_write_mask);
+        } else {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFront, front.stencil_write_mask);
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eBack, back.stencil_write_mask);
+        }
+        if (front.stencil_mask == back.stencil_mask) {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                         front.stencil_mask);
+        } else {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFront, front.stencil_mask);
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eBack, back.stencil_mask);
+        }
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {
@@ -306,7 +348,10 @@ void Rasterizer::UpdateViewportScissorState() {
     boost::container::static_vector<vk::Rect2D, Liverpool::NumViewports> scissors;
 
     const float reduce_z =
-        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
+        instance.IsDepthClipControlSupported() &&
+                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
+            ? 1.0f
+            : 0.0f;
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];
@@ -322,11 +367,55 @@ void Rasterizer::UpdateViewportScissorState() {
             .maxDepth = vp.zscale + vp.zoffset,
         });
     }
-    const auto& sc = regs.screen_scissor;
-    scissors.push_back({
-        .offset = {sc.top_left_x, sc.top_left_y},
-        .extent = {sc.GetWidth(), sc.GetHeight()},
-    });
+
+    const bool enable_offset = !regs.window_scissor.window_offset_disable.Value();
+    Liverpool::Scissor scsr{};
+    const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+        return std::max({scr, s16(win + win_offset), s16(gen + win_offset)});
+    };
+
+    scsr.top_left_x = combined_scissor_value_tl(
+        regs.screen_scissor.top_left_x, s16(regs.window_scissor.top_left_x.Value()),
+        s16(regs.generic_scissor.top_left_x.Value()),
+        enable_offset ? regs.window_offset.window_x_offset : 0);
+
+    scsr.top_left_y = combined_scissor_value_tl(
+        regs.screen_scissor.top_left_y, s16(regs.window_scissor.top_left_y.Value()),
+        s16(regs.generic_scissor.top_left_y.Value()),
+        enable_offset ? regs.window_offset.window_y_offset : 0);
+
+    const auto combined_scissor_value_br = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+        return std::min({scr, s16(win + win_offset), s16(gen + win_offset)});
+    };
+
+    scsr.bottom_right_x = combined_scissor_value_br(
+        regs.screen_scissor.bottom_right_x, regs.window_scissor.bottom_right_x,
+        regs.generic_scissor.bottom_right_x,
+        enable_offset ? regs.window_offset.window_x_offset : 0);
+
+    scsr.bottom_right_y = combined_scissor_value_br(
+        regs.screen_scissor.bottom_right_y, regs.window_scissor.bottom_right_y,
+        regs.generic_scissor.bottom_right_y,
+        enable_offset ? regs.window_offset.window_y_offset : 0);
+
+    for (u32 idx = 0; idx < Liverpool::NumViewports; idx++) {
+        auto vp_scsr = scsr;
+        if (regs.mode_control.vport_scissor_enable) {
+            vp_scsr.top_left_x =
+                std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[idx].top_left_x.Value()));
+            vp_scsr.top_left_y =
+                std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[idx].top_left_y.Value()));
+            vp_scsr.bottom_right_x =
+                std::min(vp_scsr.bottom_right_x, regs.viewport_scissors[idx].bottom_right_x);
+            vp_scsr.bottom_right_y =
+                std::min(vp_scsr.bottom_right_y, regs.viewport_scissors[idx].bottom_right_y);
+        }
+        scissors.push_back({
+            .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
+            .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
+        });
+    }
+
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setViewport(0, viewports);
     cmdbuf.setScissor(0, scissors);

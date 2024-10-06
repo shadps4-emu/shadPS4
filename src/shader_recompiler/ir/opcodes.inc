@@ -24,6 +24,10 @@ OPCODE(Barrier,                                             Void,               
 OPCODE(WorkgroupMemoryBarrier,                              Void,                                                                                           )
 OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
 
+// Geometry shader specific
+OPCODE(EmitVertex,                                          Void,                                                                                           )
+OPCODE(EmitPrimitive,                                       Void,                                                                                           )
+
 // Shared memory operations
 OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
@@ -34,9 +38,9 @@ OPCODE(WriteSharedU128,                                     Void,           U32,
 
 // Shared atomic operations
 OPCODE(SharedAtomicIAdd32,                                  U32,            U32,            U32,                                                            )
-OPCODE(SharedAtomicSMin32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMin32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMin32,                                  U32,            U32,            U32,                                                            )
-OPCODE(SharedAtomicSMax32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMax32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMax32,                                  U32,            U32,            U32,                                                            )
 
 // Context getters/setters
@@ -49,24 +53,24 @@ OPCODE(GetVectorRegister,                                   U32,            Vect
 OPCODE(SetVectorRegister,                                   Void,           VectorReg,      U32,                                                            )
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
 OPCODE(SetGotoVariable,                                     Void,           U32,            U1,                                                             )
-OPCODE(GetAttribute,                                        F32,            Attribute,      U32,                                                            )
+OPCODE(GetAttribute,                                        F32,            Attribute,      U32,            U32,                                            )
 OPCODE(GetAttributeU32,                                     U32,            Attribute,      U32,                                                            )
 OPCODE(SetAttribute,                                        Void,           Attribute,      F32,            U32,                                            )
 
 // Flags
-OPCODE(GetScc,                                             U1,             Void,                                                                            )
-OPCODE(GetExec,                                            U1,             Void,                                                                            )
-OPCODE(GetVcc,                                             U1,             Void,                                                                            )
-OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
-OPCODE(GetVccHi,                                           U32,            Void,                                                                            )
-OPCODE(GetM0,                                              U32,            Void,                                                                            )
-OPCODE(SetScc,                                             Void,           U1,                                                                              )
-OPCODE(SetExec,                                            Void,           U1,                                                                              )
-OPCODE(SetVcc,                                             Void,           U1,                                                                              )
-OPCODE(SetSccLo,                                           Void,           U32,                                                                             )
-OPCODE(SetVccLo,                                           Void,           U32,                                                                             )
-OPCODE(SetVccHi,                                           Void,           U32,                                                                             )
-OPCODE(SetM0,                                              Void,           U32,                                                                             )
+OPCODE(GetScc,                                              U1,             Void,                                                                           )
+OPCODE(GetExec,                                             U1,             Void,                                                                           )
+OPCODE(GetVcc,                                              U1,             Void,                                                                           )
+OPCODE(GetVccLo,                                            U32,            Void,                                                                           )
+OPCODE(GetVccHi,                                            U32,            Void,                                                                           )
+OPCODE(GetM0,                                               U32,            Void,                                                                           )
+OPCODE(SetScc,                                              Void,           U1,                                                                             )
+OPCODE(SetExec,                                             Void,           U1,                                                                             )
+OPCODE(SetVcc,                                              Void,           U1,                                                                             )
+OPCODE(SetSccLo,                                            Void,           U32,                                                                            )
+OPCODE(SetVccLo,                                            Void,           U32,                                                                            )
+OPCODE(SetVccHi,                                            Void,           U32,                                                                            )
+OPCODE(SetM0,                                               Void,           U32,                                                                            )
 
 // Undefined
 OPCODE(UndefU1,                                             U1,                                                                                             )
@@ -88,17 +92,17 @@ OPCODE(StoreBufferU32x4,                                    Void,           Opaq
 OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         U32x4,                                          )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,                                  U32,	    Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicInc32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicDec32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicSwap32,				    U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicIAdd32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicInc32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicDec32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicOr32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicXor32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicSwap32,                                  U32,            Opaque,         Opaque,         U32,                                            )
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -156,6 +160,7 @@ OPCODE(BitCastF32U32,                                       F32,            U32,
 OPCODE(BitCastF64U64,                                       F64,            U64,                                                                            )
 OPCODE(PackUint2x32,                                        U64,            U32x2,                                                                          )
 OPCODE(UnpackUint2x32,                                      U32x2,          U64,                                                                            )
+OPCODE(PackFloat2x32,                                       F64,            F32x2,                                                                          )
 OPCODE(PackFloat2x16,                                       U32,            F16x2,                                                                          )
 OPCODE(UnpackFloat2x16,                                     F16x2,          U32,                                                                            )
 OPCODE(PackHalf2x16,                                        U32,            F32x2,                                                                          )
@@ -243,6 +248,8 @@ OPCODE(SMulExt,                                             U32x2,          U32,
 OPCODE(UMulExt,                                             U32x2,          U32,            U32,                                                            )
 OPCODE(SDiv32,                                              U32,            U32,            U32,                                                            )
 OPCODE(UDiv32,                                              U32,            U32,            U32,                                                            )
+OPCODE(SMod32,                                              U32,            U32,            U32,                                                            )
+OPCODE(UMod32,                                              U32,            U32,            U32,                                                            )
 OPCODE(INeg32,                                              U32,            U32,                                                                            )
 OPCODE(INeg64,                                              U64,            U64,                                                                            )
 OPCODE(IAbs32,                                              U32,            U32,                                                                            )

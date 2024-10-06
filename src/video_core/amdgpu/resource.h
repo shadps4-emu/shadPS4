@@ -23,7 +23,7 @@ enum class CompSwizzle : u32 {
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
-    u64 : 4;
+    u64 _padding0 : 4;
     u64 stride : 14;
     u64 cache_swizzle : 1;
     u64 swizzle_enable : 1;
@@ -37,7 +37,7 @@ struct Buffer {
     u32 element_size : 2;
     u32 index_stride : 2;
     u32 add_tid_enable : 1;
-    u32 : 6;
+    u32 _padding1 : 6;
     u32 type : 2; // overlaps with T# type, so should be 0 for buffer
 
     bool Valid() const {
@@ -66,7 +66,7 @@ struct Buffer {
     }
 
     u32 GetStride() const noexcept {
-        return stride == 0 ? 1U : stride;
+        return stride;
     }
 
     u32 NumDwords() const noexcept {
@@ -74,7 +74,7 @@ struct Buffer {
     }
 
     u32 GetSize() const noexcept {
-        return GetStride() * num_records;
+        return stride == 0 ? num_records : (stride * num_records);
     }
 };
 static_assert(sizeof(Buffer) == 16); // 128bits
@@ -238,10 +238,15 @@ struct Image {
         return pitch + 1;
     }
 
-    u32 NumLayers() const {
+    u32 NumLayers(bool is_array) const {
         u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
         if (GetType() == ImageType::Cube) {
-            slices *= 6;
+            if (is_array) {
+                slices = last_array + 1;
+                ASSERT(slices % 6 == 0);
+            } else {
+                slices = 6;
+            }
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -281,6 +286,11 @@ struct Image {
 
     bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
+    }
+
+    bool IsPartialCubemap() const {
+        const auto viewed_slice = last_array - base_array + 1;
+        return GetType() == ImageType::Cube && viewed_slice < 6;
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits

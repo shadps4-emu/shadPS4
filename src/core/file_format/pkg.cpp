@@ -44,7 +44,7 @@ PKG::PKG() = default;
 
 PKG::~PKG() = default;
 
-bool PKG::Open(const std::filesystem::path& filepath) {
+bool PKG::Open(const std::filesystem::path& filepath, std::string& failreason) {
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
         return false;
@@ -70,7 +70,11 @@ bool PKG::Open(const std::filesystem::path& filepath) {
     u32 offset = pkgheader.pkg_table_entry_offset;
     u32 n_files = pkgheader.pkg_table_entry_count;
 
-    file.Seek(offset);
+    if (!file.Seek(offset)) {
+        failreason = "Failed to seek to PKG table entry offset";
+        return false;
+    }
+
     for (int i = 0; i < n_files; i++) {
         PKGEntry entry{};
         file.Read(entry.id);
@@ -85,7 +89,10 @@ bool PKG::Open(const std::filesystem::path& filepath) {
         const auto name = GetEntryNameByType(entry.id);
         if (name == "param.sfo") {
             sfo.clear();
-            file.Seek(entry.offset);
+            if (!file.Seek(entry.offset)) {
+                failreason = "Failed to seek to param.sfo offset";
+                return false;
+            }
             sfo.resize(entry.size);
             file.ReadRaw<u8>(sfo.data(), entry.size);
         }
@@ -127,7 +134,11 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
     std::array<std::array<u8, 256>, 7> key1;
     std::array<u8, 256> imgkeydata;
 
-    file.Seek(offset);
+    if (!file.Seek(offset)) {
+        failreason = "Failed to seek to PKG table entry offset";
+        return false;
+    }
+
     for (int i = 0; i < n_files; i++) {
         PKGEntry entry{};
         file.Read(entry.id);
@@ -149,7 +160,10 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
             // Just print with id
             Common::FS::IOFile out(extract_path / "sce_sys" / std::to_string(entry.id),
                                    Common::FS::FileAccessMode::Write);
-            file.Seek(entry.offset);
+            if (!file.Seek(entry.offset)) {
+                failreason = "Failed to seek to PKG entry offset";
+                return false;
+            }
 
             std::vector<u8> data;
             data.resize(entry.size);
@@ -195,7 +209,10 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         }
 
         Common::FS::IOFile out(extract_path / "sce_sys" / name, Common::FS::FileAccessMode::Write);
-        file.Seek(entry.offset);
+        if (!file.Seek(entry.offset)) {
+            failreason = "Failed to seek to PKG entry offset";
+            return false;
+        }
 
         std::vector<u8> data;
         data.resize(entry.size);
@@ -207,7 +224,10 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         if (entry.id == 0x400 || entry.id == 0x401 || entry.id == 0x402 ||
             entry.id == 0x403) { // somehow 0x401 is not decrypting
             decNp.resize(entry.size);
-            file.Seek(entry.offset);
+            if (!file.Seek(entry.offset)) {
+                failreason = "Failed to seek to PKG entry offset";
+                return false;
+            }
 
             std::vector<u8> data;
             data.resize(entry.size);
@@ -229,15 +249,12 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         file.Seek(currentPos);
     }
 
-    // Extract trophy files
-    if (!trp.Extract(extract_path)) {
-        // Do nothing some pkg come with no trp file.
-        // return false;
-    }
-
     // Read the seed
     std::array<u8, 16> seed;
-    file.Seek(pkgheader.pfs_image_offset + 0x370);
+    if (!file.Seek(pkgheader.pfs_image_offset + 0x370)) {
+        failreason = "Failed to seek to PFS image offset";
+        return false;
+    }
     file.Read(seed);
 
     // Get data and tweak keys.
@@ -371,8 +388,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
                 if (table.type == PFS_CURRENT_DIR) {
                     current_dir = extractPaths[table.inode];
                 }
-                extractPaths[table.inode] =
-                    current_dir.string() / std::filesystem::path(table.name);
+                extractPaths[table.inode] = current_dir / std::filesystem::path(table.name);
 
                 if (table.type == PFS_FILE || table.type == PFS_DIR) {
                     if (table.type == PFS_DIR) { // Create dirs.
@@ -402,7 +418,7 @@ void PKG::ExtractFiles(const int index) {
         int bsize = iNodeBuf[inode_number].Size;
 
         Common::FS::IOFile inflated;
-        inflated.Open(extractPaths[inode_number].string(), Common::FS::FileAccessMode::Write);
+        inflated.Open(extractPaths[inode_number], Common::FS::FileAccessMode::Write);
 
         Common::FS::IOFile pkgFile; // Open the file for each iteration to avoid conflict.
         pkgFile.Open(pkgpath, Common::FS::FileAccessMode::Read);

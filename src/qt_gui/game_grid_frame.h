@@ -5,6 +5,7 @@
 
 #include <QScrollBar>
 
+#include "background_music_player.h"
 #include "common/config.h"
 #include "game_info.h"
 #include "game_list_utils.h"
@@ -19,6 +20,9 @@ Q_SIGNALS:
 public Q_SLOTS:
     void SetGridBackgroundImage(int row, int column);
     void RefreshGridBackgroundImage();
+    void PlayBackgroundMusic(QString path);
+    void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                              int previousColumn);
 
 private:
     QImage backgroundImage;
@@ -26,10 +30,12 @@ private:
     GuiContextMenus m_gui_context_menus;
     std::shared_ptr<GameInfoClass> m_game_info;
     std::shared_ptr<QVector<GameInfo>> m_games_shared;
+    bool validCellSelected = false;
 
 public:
     explicit GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
     void PopulateGameGrid(QVector<GameInfo> m_games, bool fromSearch);
+    bool IsValidCellSelected();
 
     bool cellClicked = false;
     int icon_size;

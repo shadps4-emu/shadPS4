@@ -4,6 +4,7 @@
 #include <mutex>
 #include "common/assert.h"
 #include "common/debug.h"
+#include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
@@ -58,58 +59,6 @@ void Scheduler::EndRendering() {
     }
     is_rendering = false;
     current_cmdbuf.endRendering();
-
-    boost::container::static_vector<vk::ImageMemoryBarrier, 9> barriers;
-    for (size_t i = 0; i < render_state.num_color_attachments; ++i) {
-        barriers.push_back(vk::ImageMemoryBarrier{
-            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
-            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = render_state.color_images[i],
-            .subresourceRange =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = VK_REMAINING_MIP_LEVELS,
-                    .baseArrayLayer = 0,
-                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                },
-        });
-    }
-    if (render_state.has_depth || render_state.has_stencil) {
-        barriers.push_back(vk::ImageMemoryBarrier{
-            .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
-            .oldLayout = render_state.depth_attachment.imageLayout,
-            .newLayout = render_state.depth_attachment.imageLayout,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = render_state.depth_image,
-            .subresourceRange =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eDepth |
-                                  (render_state.has_stencil ? vk::ImageAspectFlagBits::eStencil
-                                                            : vk::ImageAspectFlagBits::eNone),
-                    .baseMipLevel = 0,
-                    .levelCount = VK_REMAINING_MIP_LEVELS,
-                    .baseArrayLayer = 0,
-                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                },
-        });
-    }
-
-    if (!barriers.empty()) {
-        const auto src_stages =
-            vk::PipelineStageFlagBits::eColorAttachmentOutput |
-            (render_state.has_depth ? vk::PipelineStageFlagBits::eLateFragmentTests |
-                                          vk::PipelineStageFlagBits::eEarlyFragmentTests
-                                    : vk::PipelineStageFlagBits::eNone);
-        current_cmdbuf.pipelineBarrier(src_stages, vk::PipelineStageFlagBits::eFragmentShader,
-                                       vk::DependencyFlagBits::eByRegion, {}, {}, barriers);
-    }
 }
 
 void Scheduler::Flush(SubmitInfo& info) {
@@ -140,7 +89,9 @@ void Scheduler::AllocateWorkerCommandBuffers() {
     };
 
     current_cmdbuf = command_pool.Commit();
-    current_cmdbuf.begin(begin_info);
+    auto begin_result = current_cmdbuf.begin(begin_info);
+    ASSERT_MSG(begin_result == vk::Result::eSuccess, "Failed to begin command buffer: {}",
+               vk::to_string(begin_result));
 
     auto* profiler_ctx = instance.GetProfilerContext();
     if (profiler_ctx) {
@@ -161,7 +112,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     }
 
     EndRendering();
-    current_cmdbuf.end();
+    auto end_result = current_cmdbuf.end();
+    ASSERT_MSG(end_result == vk::Result::eSuccess, "Failed to end command buffer: {}",
+               vk::to_string(end_result));
 
     const vk::Semaphore timeline = master_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
@@ -189,11 +142,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         .pSignalSemaphores = info.signal_semas.data(),
     };
 
-    try {
-        instance.GetGraphicsQueue().submit(submit_info, info.fence);
-    } catch (vk::DeviceLostError& err) {
-        UNREACHABLE_MSG("Device lost during submit: {}", err.what());
-    }
+    ImGui::Core::TextureManager::Submit();
+    auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
+    ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();

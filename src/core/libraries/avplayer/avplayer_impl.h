@@ -40,8 +40,6 @@ public:
     bool SetLooping(bool is_looping);
 
 private:
-    using ScePthreadMutex = Kernel::ScePthreadMutex;
-
     // Memory Replacement
     static void* PS4_SYSV_ABI Allocate(void* handle, u32 alignment, u32 size);
     static void PS4_SYSV_ABI Deallocate(void* handle, void* memory);

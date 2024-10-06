@@ -44,7 +44,7 @@ Liverpool::~Liverpool() {
 }
 
 void Liverpool::Process(std::stop_token stoken) {
-    Common::SetCurrentThreadName("GPU_CommandProcessor");
+    Common::SetCurrentThreadName("shadPS4:GPU_CommandProcessor");
 
     for (int i = 0; i < NumTotalQueues; i++) {
         GpuQueue& queue = mapped_queues[i];
@@ -671,6 +671,12 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
 std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
     std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
+
+    // std::vector resize can invalidate spans for commands in flight
+    ASSERT_MSG(queue.dcb_buffer.capacity() >= queue.dcb_buffer_offset + dcb.size(),
+               "dcb copy buffer out of reserved space");
+    ASSERT_MSG(queue.ccb_buffer.capacity() >= queue.ccb_buffer_offset + ccb.size(),
+               "ccb copy buffer out of reserved space");
 
     queue.dcb_buffer.resize(
         std::max(queue.dcb_buffer.size(), queue.dcb_buffer_offset + dcb.size()));

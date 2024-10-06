@@ -28,9 +28,9 @@
 #include <QXmlStreamReader>
 #include <common/logging/log.h>
 #include "cheats_patches.h"
+#include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/module.h"
-#include "qt_gui/memory_patcher.h"
 
 using namespace Common::FS;
 
@@ -50,8 +50,9 @@ void CheatsPatches::setupUI() {
     defaultTextEdit = tr("defaultTextEdit_MSG");
     defaultTextEdit.replace("\\n", "\n");
 
-    QString CHEATS_DIR_QString =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
+    QString CHEATS_DIR_QString;
+    Common::FS::PathToQString(CHEATS_DIR_QString,
+                              Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
     QString NameCheatJson = m_gameSerial + "_" + m_gameVersion + ".json";
     m_cheatFilePath = CHEATS_DIR_QString + "/" + NameCheatJson;
 
@@ -275,9 +276,9 @@ void CheatsPatches::onSaveButtonClicked() {
     int separatorIndex = selectedPatchName.indexOf(" | ");
     selectedPatchName = selectedPatchName.mid(separatorIndex + 3);
 
-    QString patchDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string()) +
-        "/" + selectedPatchName;
+    QString patchDir;
+    Common::FS::PathToQString(patchDir, Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
+    patchDir += "/" + selectedPatchName;
 
     QString filesJsonPath = patchDir + "/files.json";
     QFile jsonFile(filesJsonPath);
@@ -455,10 +456,9 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
     if (source == "GoldHEN") {
         url = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
     } else if (source == "wolf2022") {
-        url = "https://wolf2022.ir/trainer/" + gameSerial + "_" + gameVersion + ".json";
+        url = "https://wolf2022.ir/trainer/list.json";
     } else if (source == "shadPS4") {
-        url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/"
-              "CHEATS_JSON.txt";
+        url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/CHEATS_JSON.txt";
     } else {
         QMessageBox::warning(this, tr("Invalid Source"),
                              QString(tr("The selected source is invalid.") + "\n%1").arg(source));
@@ -473,44 +473,32 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
             QByteArray jsonData = reply->readAll();
             bool foundFiles = false;
 
-            if (source == "GoldHEN" || source == "shadPS4") {
-                QString textContent(jsonData);
-                QRegularExpression regex(
-                    QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
-                QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
-                QString baseUrl;
+            if (source == "wolf2022") {
+                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+                QJsonArray gamesArray = jsonDoc.object().value("games").toArray();
 
-                if (source == "GoldHEN") {
-                    baseUrl = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/"
-                              "main/json/";
-                } else {
-                    baseUrl = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/"
-                              "main/CHEATS/";
-                }
+                foreach (const QJsonValue& value, gamesArray) {
+                    QJsonObject gameObject = value.toObject();
+                    QString title = gameObject.value("title").toString();
+                    QString version = gameObject.value("version").toString();
 
-                while (matches.hasNext()) {
-                    QRegularExpressionMatch match = matches.next();
-                    QString fileName = match.captured(0);
+                    if (title == gameSerial &&
+                        (version == gameVersion || version == gameVersion.mid(1))) {
+                        QString fileUrl =
+                            "https://wolf2022.ir/trainer/" + gameObject.value("url").toString();
 
-                    if (!fileName.isEmpty()) {
-                        QString newFileName = fileName;
-                        int dotIndex = newFileName.lastIndexOf('.');
-                        if (dotIndex != -1) {
+                        QString localFileName = gameObject.value("url").toString();
+                        localFileName =
+                            localFileName.left(localFileName.lastIndexOf('.')) + "_wolf2022.json";
 
-                            if (source == "GoldHEN") {
-                                newFileName.insert(dotIndex, "_GoldHEN");
-                            } else {
-                                newFileName.insert(dotIndex, "_shadPS4");
-                            }
-                        }
-                        QString fileUrl = baseUrl + fileName;
-                        QString localFilePath = dir.filePath(newFileName);
+                        QString localFilePath = dir.filePath(localFileName);
 
                         if (QFile::exists(localFilePath) && showMessageBox) {
                             QMessageBox::StandardButton reply;
                             reply = QMessageBox::question(
                                 this, tr("File Exists"),
-                                tr("File already exists. Do you want to replace it?"),
+                                tr("File already exists. Do you want to replace it?") + "\n" +
+                                    localFileName,
                                 QMessageBox::Yes | QMessageBox::No);
                             if (reply == QMessageBox::No) {
                                 continue;
@@ -548,38 +536,81 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
                 if (!foundFiles && showMessageBox) {
                     QMessageBox::warning(this, tr("Cheats Not Found"), tr("CheatsNotFound_MSG"));
                 }
-            } else if (source == "wolf2022") {
-                QString fileName = QFileInfo(QUrl(url).path()).fileName();
-                QString baseFileName = fileName;
-                int dotIndex = baseFileName.lastIndexOf('.');
-                if (dotIndex != -1) {
-                    baseFileName.insert(dotIndex, "_wolf2022");
+            } else if (source == "GoldHEN" || source == "shadPS4") {
+                QString textContent(jsonData);
+                QRegularExpression regex(
+                    QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
+                QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
+                QString baseUrl;
+
+                if (source == "GoldHEN") {
+                    baseUrl = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/"
+                              "main/json/";
+                } else {
+                    baseUrl = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/"
+                              "main/CHEATS/";
                 }
-                QString filePath =
-                    QString::fromStdString(
-                        Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string()) +
-                    "/" + baseFileName;
-                if (QFile::exists(filePath) && showMessageBox) {
-                    QMessageBox::StandardButton reply2;
-                    reply2 =
-                        QMessageBox::question(this, tr("File Exists"),
-                                              tr("File already exists. Do you want to replace it?"),
-                                              QMessageBox::Yes | QMessageBox::No);
-                    if (reply2 == QMessageBox::No) {
-                        reply->deleteLater();
-                        return;
+
+                while (matches.hasNext()) {
+                    QRegularExpressionMatch match = matches.next();
+                    QString fileName = match.captured(0);
+
+                    if (!fileName.isEmpty()) {
+                        QString newFileName = fileName;
+                        int dotIndex = newFileName.lastIndexOf('.');
+                        if (dotIndex != -1) {
+
+                            if (source == "GoldHEN") {
+                                newFileName.insert(dotIndex, "_GoldHEN");
+                            } else {
+                                newFileName.insert(dotIndex, "_shadPS4");
+                            }
+                        }
+                        QString fileUrl = baseUrl + fileName;
+                        QString localFilePath = dir.filePath(newFileName);
+
+                        if (QFile::exists(localFilePath) && showMessageBox) {
+                            QMessageBox::StandardButton reply;
+                            reply = QMessageBox::question(
+                                this, tr("File Exists"),
+                                tr("File already exists. Do you want to replace it?") + "\n" +
+                                    newFileName,
+                                QMessageBox::Yes | QMessageBox::No);
+                            if (reply == QMessageBox::No) {
+                                continue;
+                            }
+                        }
+                        QNetworkRequest fileRequest(fileUrl);
+                        QNetworkReply* fileReply = manager->get(fileRequest);
+
+                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
+                            if (fileReply->error() == QNetworkReply::NoError) {
+                                QByteArray fileData = fileReply->readAll();
+                                QFile localFile(localFilePath);
+                                if (localFile.open(QIODevice::WriteOnly)) {
+                                    localFile.write(fileData);
+                                    localFile.close();
+                                } else {
+                                    QMessageBox::warning(
+                                        this, tr("Error"),
+                                        QString(tr("Failed to save file:") + "\n%1")
+                                            .arg(localFilePath));
+                                }
+                            } else {
+                                QMessageBox::warning(this, tr("Error"),
+                                                     QString(tr("Failed to download file:") +
+                                                             "%1\n\n" + tr("Error:") + "%2")
+                                                         .arg(fileUrl)
+                                                         .arg(fileReply->errorString()));
+                            }
+                            fileReply->deleteLater();
+                        });
+
+                        foundFiles = true;
                     }
                 }
-                QFile cheatFile(filePath);
-                if (cheatFile.open(QIODevice::WriteOnly)) {
-                    cheatFile.write(jsonData);
-                    cheatFile.close();
-                    foundFiles = true;
-                    populateFileListCheats();
-                } else {
-                    QMessageBox::warning(
-                        this, tr("Error"),
-                        QString(tr("Failed to save file:") + "\n%1").arg(filePath));
+                if (!foundFiles && showMessageBox) {
+                    QMessageBox::warning(this, tr("Cheats Not Found"), tr("CheatsNotFound_MSG"));
                 }
             }
             if (foundFiles && showMessageBox) {
@@ -612,8 +643,9 @@ void CheatsPatches::populateFileListPatches() {
     }
     m_patchInfos.clear();
 
-    QString patchesDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
+    QString patchesDir;
+    Common::FS::PathToQString(patchesDir,
+                              Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
     QDir dir(patchesDir);
 
     QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -669,105 +701,86 @@ void CheatsPatches::populateFileListPatches() {
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
     if (repository == "GoldHEN") {
-        url = "https://github.com/illusion0001/PS4-PS5-Game-Patch/tree/main/"
-              "patches/xml";
+        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
     }
     if (repository == "shadPS4") {
-        url = "https://github.com/shadps4-emu/ps4_cheats/tree/main/"
-              "PATCHES";
+        url = "https://api.github.com/repos/shadps4-emu/ps4_cheats/contents/PATCHES";
     }
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request(url);
+    request.setRawHeader("Accept", "application/vnd.github.v3+json");
     QNetworkReply* reply = manager->get(request);
 
     connect(reply, &QNetworkReply::finished, [=, this]() {
         if (reply->error() == QNetworkReply::NoError) {
-            QByteArray htmlData = reply->readAll();
+            QByteArray jsonData = reply->readAll();
             reply->deleteLater();
 
-            // Parsear HTML e extrair JSON usando QRegularExpression
-            QString htmlString = QString::fromUtf8(htmlData);
-            QRegularExpression jsonRegex(
-                R"(<script type="application/json" data-target="react-app.embeddedData">(.+?)</script>)");
-            QRegularExpressionMatch match = jsonRegex.match(htmlString);
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+            QJsonArray itemsArray = jsonDoc.array();
 
-            if (match.hasMatch()) {
-                QByteArray jsonData = match.captured(1).toUtf8();
-                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                QJsonObject jsonObj = jsonDoc.object();
-                QJsonArray itemsArray =
-                    jsonObj["payload"].toObject()["tree"].toObject()["items"].toArray();
-
-                QDir dir(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
-                QString fullPath = dir.filePath(repository);
-                if (!dir.exists(fullPath)) {
-                    dir.mkpath(fullPath);
-                }
-                dir.setPath(fullPath);
-
-                foreach (const QJsonValue& value, itemsArray) {
-                    QJsonObject fileObj = value.toObject();
-                    QString fileName = fileObj["name"].toString();
-                    QString filePath = fileObj["path"].toString();
-
-                    if (fileName.endsWith(".xml")) {
-                        QString fileUrl;
-                        if (repository == "GoldHEN") {
-                            fileUrl = QString("https://raw.githubusercontent.com/illusion0001/"
-                                              "PS4-PS5-Game-Patch/main/%1")
-                                          .arg(filePath);
-                        }
-                        if (repository == "shadPS4") {
-                            fileUrl = QString("https://raw.githubusercontent.com/shadps4-emu/"
-                                              "ps4_cheats/main/%1")
-                                          .arg(filePath);
-                        }
-                        QNetworkRequest fileRequest(fileUrl);
-                        QNetworkReply* fileReply = manager->get(fileRequest);
-
-                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
-                            if (fileReply->error() == QNetworkReply::NoError) {
-                                QByteArray fileData = fileReply->readAll();
-                                QFile localFile(dir.filePath(fileName));
-                                if (localFile.open(QIODevice::WriteOnly)) {
-                                    localFile.write(fileData);
-                                    localFile.close();
-                                } else {
-                                    if (showMessageBox) {
-                                        QMessageBox::warning(
-                                            this, tr("Error"),
-                                            QString(tr("Failed to save:") + "\n%1").arg(fileName));
-                                    }
-                                }
-                            } else {
-                                if (showMessageBox) {
-                                    QMessageBox::warning(
-                                        this, tr("Error"),
-                                        QString(tr("Failed to download:") + "\n%1").arg(fileUrl));
-                                }
-                            }
-                            fileReply->deleteLater();
-                        });
-                    }
-                }
-                if (showMessageBox) {
-                    QMessageBox::information(this, tr("Download Complete"),
-                                             QString(tr("DownloadComplete_MSG")));
-                }
-
-                // Create the files.json file with the identification of which file to open
-                createFilesJson(repository);
-                populateFileListPatches();
-
-            } else {
+            if (itemsArray.isEmpty()) {
                 if (showMessageBox) {
                     QMessageBox::warning(this, tr("Error"),
                                          tr("Failed to parse JSON data from HTML."));
                 }
+                return;
             }
+
+            QDir dir(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
+            QString fullPath = dir.filePath(repository);
+            if (!dir.exists(fullPath)) {
+                dir.mkpath(fullPath);
+            }
+            dir.setPath(fullPath);
+
+            foreach (const QJsonValue& value, itemsArray) {
+                QJsonObject fileObj = value.toObject();
+                QString fileName = fileObj["name"].toString();
+                QString filePath = fileObj["path"].toString();
+                QString downloadUrl = fileObj["download_url"].toString();
+
+                if (fileName.endsWith(".xml")) {
+                    QNetworkRequest fileRequest(downloadUrl);
+                    QNetworkReply* fileReply = manager->get(fileRequest);
+
+                    connect(fileReply, &QNetworkReply::finished, [=, this]() {
+                        if (fileReply->error() == QNetworkReply::NoError) {
+                            QByteArray fileData = fileReply->readAll();
+                            QFile localFile(dir.filePath(fileName));
+                            if (localFile.open(QIODevice::WriteOnly)) {
+                                localFile.write(fileData);
+                                localFile.close();
+                            } else {
+                                if (showMessageBox) {
+                                    QMessageBox::warning(
+                                        this, tr("Error"),
+                                        QString(tr("Failed to save:") + "\n%1").arg(fileName));
+                                }
+                            }
+                        } else {
+                            if (showMessageBox) {
+                                QMessageBox::warning(
+                                    this, tr("Error"),
+                                    QString(tr("Failed to download:") + "\n%1").arg(downloadUrl));
+                            }
+                        }
+                        fileReply->deleteLater();
+                    });
+                }
+            }
+            if (showMessageBox) {
+                QMessageBox::information(this, tr("Download Complete"),
+                                         QString(tr("DownloadComplete_MSG")));
+            }
+            // Create the files.json file with the identification of which file to open
+            createFilesJson(repository);
+            populateFileListPatches();
         } else {
             if (showMessageBox) {
-                QMessageBox::warning(this, tr("Error"), tr("Failed to retrieve HTML page."));
+                QMessageBox::warning(this, tr("Error"),
+                                     QString(tr("Failed to retrieve HTML page.") + "\n%1")
+                                         .arg(reply->errorString()));
             }
         }
         emit downloadFinished();
@@ -925,13 +938,18 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
 }
 
 void CheatsPatches::populateFileListCheats() {
-    QString cheatsDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
-    QString pattern = m_gameSerial + "_" + m_gameVersion + "*.json";
+    QString cheatsDir;
+    Common::FS::PathToQString(cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
+
+    QString fullGameVersion = m_gameVersion;
+    QString modifiedGameVersion = m_gameVersion.mid(1);
+
+    QString patternWithFirstChar = m_gameSerial + "_" + fullGameVersion + "*.json";
+    QString patternWithoutFirstChar = m_gameSerial + "_" + modifiedGameVersion + "*.json";
 
     QDir dir(cheatsDir);
     QStringList filters;
-    filters << pattern;
+    filters << patternWithFirstChar << patternWithoutFirstChar;
     dir.setNameFilters(filters);
 
     QFileInfoList fileList = dir.entryInfoList(QDir::Files);
@@ -951,8 +969,9 @@ void CheatsPatches::populateFileListCheats() {
                 if (!selectedIndexes.isEmpty()) {
 
                     QString selectedFileName = selectedIndexes.first().data().toString();
-                    QString cheatsDir = QString::fromStdString(
-                        Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
+                    QString cheatsDir;
+                    Common::FS::PathToQString(
+                        cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
 
                     QFile file(cheatsDir + "/" + selectedFileName);
                     if (file.open(QIODevice::ReadOnly)) {
@@ -1197,7 +1216,8 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString patchValue = lineObject["Value"].toString();
             QString maskOffsetStr = lineObject["Offset"].toString();
 
-            patchValue = MemoryPatcher::convertValueToHex(type, patchValue);
+            patchValue = QString::fromStdString(
+                MemoryPatcher::convertValueToHex(type.toStdString(), patchValue.toStdString()));
 
             bool littleEndian = false;
 

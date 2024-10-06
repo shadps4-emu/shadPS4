@@ -9,6 +9,7 @@ static constexpr u32 SQ_SRC_LITERAL = 0xFF;
 
 void Translator::EmitScalarMemory(const GcnInst& inst) {
     switch (inst.opcode) {
+        // SMRD
     case Opcode::S_LOAD_DWORDX4:
         return S_LOAD_DWORD(4, inst);
     case Opcode::S_LOAD_DWORDX8:
@@ -29,6 +30,8 @@ void Translator::EmitScalarMemory(const GcnInst& inst) {
         LogMissingOpcode(inst);
     }
 }
+
+// SMRD
 
 void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     const auto& smrd = inst.control.smrd;

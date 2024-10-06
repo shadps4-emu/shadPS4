@@ -9,7 +9,8 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);
     gameTrpPath_ = gameTrpPath;
-    headers << "Trophy"
+    headers << "Unlocked"
+            << "Trophy"
             << "Name"
             << "Description"
             << "ID"
@@ -20,23 +21,15 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
-#ifdef _WIN32
     const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                           title.toStdWString() / "TrophyFiles";
-    const auto trophyDirQt = QString::fromStdWString(trophyDir.wstring());
-#else
-    const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                           title.toStdString() / "TrophyFiles";
-    const auto trophyDirQt = QString::fromStdString(trophyDir.string());
-#endif
+                           Common::FS::PathFromQString(title) / "TrophyFiles";
+    QString trophyDirQt;
+    Common::FS::PathToQString(trophyDirQt, trophyDir);
 
     QDir dir(trophyDirQt);
     if (!dir.exists()) {
-        std::filesystem::path path(gameTrpPath_.toStdString());
-#ifdef _WIN64
-        path = std::filesystem::path(gameTrpPath_.toStdWString());
-#endif
-        if (!trp.Extract(path))
+        std::filesystem::path path = Common::FS::PathFromQString(gameTrpPath_);
+        if (!trp.Extract(path, title.toStdString()))
             return;
     }
     QFileInfoList dirList = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -61,6 +54,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
 
         QStringList trpId;
         QStringList trpHidden;
+        QStringList trpUnlocked;
         QStringList trpType;
         QStringList trpPid;
         QStringList trophyNames;
@@ -81,6 +75,15 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 trpHidden.append(reader.attributes().value("hidden").toString());
                 trpType.append(reader.attributes().value("ttype").toString());
                 trpPid.append(reader.attributes().value("pid").toString());
+                if (reader.attributes().hasAttribute("unlockstate")) {
+                    if (reader.attributes().value("unlockstate").toString() == "true") {
+                        trpUnlocked.append("unlocked");
+                    } else {
+                        trpUnlocked.append("locked");
+                    }
+                } else {
+                    trpUnlocked.append("locked");
+                }
             }
 
             if (reader.name().toString() == "name" && !trpId.isEmpty()) {
@@ -93,7 +96,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         }
         QTableWidget* tableWidget = new QTableWidget(this);
         tableWidget->setShowGrid(false);
-        tableWidget->setColumnCount(7);
+        tableWidget->setColumnCount(8);
         tableWidget->setHorizontalHeaderLabels(headers);
         tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
         tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -105,21 +108,22 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             QTableWidgetItem* item = new QTableWidgetItem();
             item->setData(Qt::DecorationRole, icon);
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-            tableWidget->setItem(row, 0, item);
+            tableWidget->setItem(row, 1, item);
             if (!trophyNames.isEmpty() && !trophyDetails.isEmpty()) {
-                SetTableItem(tableWidget, row, 1, trophyNames[row]);
-                SetTableItem(tableWidget, row, 2, trophyDetails[row]);
-                SetTableItem(tableWidget, row, 3, trpId[row]);
-                SetTableItem(tableWidget, row, 4, trpHidden[row]);
-                SetTableItem(tableWidget, row, 5, GetTrpType(trpType[row].at(0)));
-                SetTableItem(tableWidget, row, 6, trpPid[row]);
+                SetTableItem(tableWidget, row, 0, trpUnlocked[row]);
+                SetTableItem(tableWidget, row, 2, trophyNames[row]);
+                SetTableItem(tableWidget, row, 3, trophyDetails[row]);
+                SetTableItem(tableWidget, row, 4, trpId[row]);
+                SetTableItem(tableWidget, row, 5, trpHidden[row]);
+                SetTableItem(tableWidget, row, 6, GetTrpType(trpType[row].at(0)));
+                SetTableItem(tableWidget, row, 7, trpPid[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
             row++;
         }
         tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
         int width = 16;
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
             width += tableWidget->horizontalHeader()->sectionSize(i);
         }
         tableWidget->resize(width, 720);

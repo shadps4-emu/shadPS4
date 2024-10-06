@@ -192,8 +192,9 @@ int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileS
 #endif
 
     if (!IsOpen()) {
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}",
-                  PathToUTF8String(file_path));
+        const auto ec = std::error_code{result, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                  PathToUTF8String(file_path), ec.message());
     }
 
     return result;
@@ -372,6 +373,18 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
+    u64 size = GetSize();
+    if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+        return false;
+    } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+        return false;
+    } else if (origin == SeekOrigin::End && offset > 0) {
+        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+        return false;
+    }
+
     errno = 0;
 
     const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
@@ -394,6 +407,20 @@ s64 IOFile::Tell() const {
     errno = 0;
 
     return ftello(file);
+}
+
+u64 GetDirectorySize(const std::filesystem::path& path) {
+    if (!fs::exists(path)) {
+        return 0;
+    }
+
+    u64 total = 0;
+    for (const auto& entry : fs::recursive_directory_iterator(path)) {
+        if (fs::is_regular_file(entry.path())) {
+            total += fs::file_size(entry.path());
+        }
+    }
+    return total;
 }
 
 } // namespace Common::FS

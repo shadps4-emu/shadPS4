@@ -166,8 +166,8 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
 bool PS4_SYSV_ABI sceAvPlayerIsActive(SceAvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        LOG_TRACE(Lib_AvPlayer, "returning false");
+        return false;
     }
     const auto res = handle->IsActive();
     LOG_TRACE(Lib_AvPlayer, "returning {}", res);

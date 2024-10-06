@@ -7,6 +7,7 @@
 #include <QDragEnterEvent>
 #include <QTranslator>
 
+#include "background_music_player.h"
 #include "common/config.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
@@ -54,6 +55,7 @@ private:
     void CreateDockWindows();
     void GetPhysicalDevices();
     void LoadGameLists();
+    void CheckUpdateMain(bool checkSave);
     void CreateConnects();
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
@@ -62,9 +64,11 @@ private:
     void BootGame();
     void AddRecentFiles(QString filePath);
     void LoadTranslation();
+    void PlayBackgroundMusic();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;
     bool isTableList = true;
+    bool isGameRunning = false;
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
     QActionGroup* m_theme_act_group = nullptr;
@@ -90,6 +94,8 @@ private:
     QTranslator* translator;
 
 protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
     void dragEnterEvent(QDragEnterEvent* event1) override {
         if (event1->mimeData()->hasUrls()) {
             event1->acceptProposedAction();
@@ -104,10 +110,7 @@ protected:
             int nPkg = urlList.size();
             for (const QUrl& url : urlList) {
                 pkgNum++;
-                std::filesystem::path path(url.toLocalFile().toStdString());
-#ifdef _WIN64
-                path = std::filesystem::path(url.toLocalFile().toStdWString());
-#endif
+                std::filesystem::path path = Common::FS::PathFromQString(url.toLocalFile());
                 InstallDragDropPkg(path, pkgNum, nPkg);
             }
         }

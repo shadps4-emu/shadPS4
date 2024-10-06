@@ -134,7 +134,7 @@ s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, co
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone();
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload();
 int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset();
-int PS4_SYSV_ABI sceGnmResetVgtControl();
+s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmSdmaClose();
 int PS4_SYSV_ABI sceGnmSdmaConstFill();
 int PS4_SYSV_ABI sceGnmSdmaCopyLinear();

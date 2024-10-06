@@ -108,8 +108,7 @@ void CFG::EmitDivergenceLabels() {
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
-               inst.opcode == Opcode::S_CBRANCH_EXECZ ||
-               inst.opcode == Opcode::S_ENDPGM ||
+               inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ENDPGM ||
                (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo);
     };
 
@@ -128,7 +127,7 @@ void CFG::EmitDivergenceLabels() {
         for (size_t index = GetIndex(start); index < end_index; index++) {
             const auto& inst = inst_list[index];
             const bool is_close = is_close_scope(inst);
-            if (is_close && curr_begin != -1) {
+            if ((is_close || index == end_index - 1) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
                 if (index - curr_begin == 1) {
                     curr_begin = -1;
@@ -140,12 +139,12 @@ void CFG::EmitDivergenceLabels() {
                 const Label label = index_to_pc[curr_begin] + save_inst.length;
                 AddLabel(label);
                 // Add a label to the close scope instruction.
-                // There are 3 cases of when we need to close a scope.
+                // There are 3 cases where we need to close a scope.
                 // * Close scope instruction inside the block
-                // * Close scope instruction at end of the block (cbranch of endpgm)
-                // * Normal instruction at end of block
+                // * Close scope instruction at the end of the block (cbranch or endpgm)
+                // * Normal instruction at the end of the block
                 // For the last case we must NOT add a label as that would cause
-                // the last instruction to be separated into its own basic block
+                // the instruction to be separated into its own basic block.
                 if (is_close) {
                     AddLabel(index_to_pc[index]);
                 }

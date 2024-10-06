@@ -6,13 +6,12 @@
 #include <thread>
 
 #include "common/alignment.h"
-#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-#include "core/cpu_patches.h"
+#include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
@@ -416,6 +415,7 @@ ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     if (addr == nullptr || *addr != nullptr) {
         return addr;
     }
+
     const VAddr vaddr = reinterpret_cast<VAddr>(addr);
     std::string name = fmt::format("mutex{:#x}", vaddr);
     scePthreadMutexInit(addr, nullptr, name.c_str());
@@ -517,8 +517,11 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
         ptype = PTHREAD_MUTEX_RECURSIVE;
         break;
     case ORBIS_PTHREAD_MUTEX_NORMAL:
-    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
         ptype = PTHREAD_MUTEX_NORMAL;
+        break;
+    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
+        LOG_ERROR(Kernel_Pthread, "Unimplemented adaptive mutex");
+        ptype = PTHREAD_MUTEX_ERRORCHECK;
         break;
     default:
         return SCE_KERNEL_ERROR_EINVAL;
@@ -654,7 +657,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
 
     if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
     }
 
     switch (result) {
@@ -986,21 +989,19 @@ static void cleanup_thread(void* arg) {
     }
     Core::SetTcbBase(nullptr);
     thread->is_almost_done = true;
+    DebugState.RemoveCurrentThreadFromGuestList();
 }
 
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
-#ifdef ARCH_X86_64
-    Core::InitializeThreadPatchStack();
-#endif
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->InitTlsForThread(false);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
     thread->is_started = true;
-    ret = thread->entry(thread->arg);
+    DebugState.AddCurrentThreadToGuestList();
+    ret = linker->ExecuteGuest(thread->entry, thread->arg);
     pthread_cleanup_pop(1);
     return ret;
 }
@@ -1063,7 +1064,7 @@ ScePthread PThreadPool::Create(const char* name) {
     std::scoped_lock lock{m_mutex};
 
     for (auto* p : m_threads) {
-        if (p->is_free && p->name == name) {
+        if (p->is_free && name != nullptr && p->name == name) {
             p->is_free = false;
             return p;
         }
@@ -1521,6 +1522,10 @@ int PS4_SYSV_ABI scePthreadGetprio(ScePthread thread, int* prio) {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio) {
+    if (thread == nullptr) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadSetprio: thread is nullptr");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     thread->prio = prio;
     return ORBIS_OK;
 }
@@ -1630,6 +1635,10 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
     LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTimedlock);
+
+    // scePthreadMutexInitForInternalLibc, scePthreadMutexattrInitForInternalLibc
+    LIB_FUNCTION("qH1gXoq71RY", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
+    LIB_FUNCTION("n2MMpvU8igI", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
 
     // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);

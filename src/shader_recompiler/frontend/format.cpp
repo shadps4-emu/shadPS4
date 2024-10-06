@@ -3625,8 +3625,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 88 = IMAGE_GATHER4_C_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 89 = IMAGE_GATHER4_C_CL_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
@@ -3718,8 +3718,9 @@ InstFormat InstructionFormat(InstEncoding encoding, uint32_t opcode) {
         return InstructionFormatSOP2[opcode];
     case InstEncoding::VOP2:
         return InstructionFormatVOP2[opcode];
+    default:
+        UNREACHABLE();
     }
-    UNREACHABLE();
     return {};
 }
 

@@ -20,6 +20,7 @@
 #include <objbase.h>
 #include <shlguid.h>
 #include <shobjidl.h>
+#include <wrl/client.h>
 #endif
 #include "common/path_util.h"
 
@@ -74,14 +75,15 @@ public:
         }
 
         if (selected == &openFolder) {
-            QString folderPath = QString::fromStdString(m_games[itemID].path);
+            QString folderPath;
+            Common::FS::PathToQString(folderPath, m_games[itemID].path);
             QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
         }
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            if (psf.open(m_games[itemID].path + "/sce_sys/param.sfo", {})) {
-                int rows = psf.map_strings.size() + psf.map_integers.size();
+            if (psf.Open(std::filesystem::path(m_games[itemID].path) / "sce_sys" / "param.sfo")) {
+                int rows = psf.GetEntries().size();
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
                 tableWidget->setAttribute(Qt::WA_DeleteOnClose);
                 connect(widget->parent(), &QWidget::destroyed, tableWidget,
@@ -90,23 +92,45 @@ public:
                 tableWidget->verticalHeader()->setVisible(false); // Hide vertical header
                 int row = 0;
 
-                for (const auto& pair : psf.map_strings) {
+                for (const auto& entry : psf.GetEntries()) {
                     QTableWidgetItem* keyItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.first));
-                    QTableWidgetItem* valueItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.second));
-
-                    tableWidget->setItem(row, 0, keyItem);
-                    tableWidget->setItem(row, 1, valueItem);
-                    keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
-                    valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
-                    row++;
-                }
-                for (const auto& pair : psf.map_integers) {
-                    QTableWidgetItem* keyItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.first));
-                    QTableWidgetItem* valueItem = new QTableWidgetItem(
-                        QString("0x").append(QString::number(pair.second, 16)));
+                        new QTableWidgetItem(QString::fromStdString(entry.key));
+                    QTableWidgetItem* valueItem;
+                    switch (entry.param_fmt) {
+                    case PSFEntryFmt::Binary: {
+                        const auto bin = psf.GetBinary(entry.key);
+                        if (!bin.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            std::string text;
+                            text.reserve(bin->size() * 2);
+                            for (const auto& c : *bin) {
+                                static constexpr char hex[] = "0123456789ABCDEF";
+                                text.push_back(hex[c >> 4 & 0xF]);
+                                text.push_back(hex[c & 0xF]);
+                            }
+                            valueItem = new QTableWidgetItem(QString::fromStdString(text));
+                        }
+                    } break;
+                    case PSFEntryFmt::Text: {
+                        auto text = psf.GetString(entry.key);
+                        if (!text.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            valueItem =
+                                new QTableWidgetItem(QString::fromStdString(std::string{*text}));
+                        }
+                    } break;
+                    case PSFEntryFmt::Integer: {
+                        auto integer = psf.GetInteger(entry.key);
+                        if (!integer.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            valueItem =
+                                new QTableWidgetItem(QString("0x") + QString::number(*integer, 16));
+                        }
+                    } break;
+                    }
 
                     tableWidget->setItem(row, 0, keyItem);
                     tableWidget->setItem(row, 1, valueItem);
@@ -135,7 +159,9 @@ public:
             QString gameSerial = QString::fromStdString(m_games[itemID].serial);
             QString gameVersion = QString::fromStdString(m_games[itemID].version);
             QString gameSize = QString::fromStdString(m_games[itemID].size);
-            QPixmap gameImage(QString::fromStdString(m_games[itemID].icon_path));
+            QString iconPath;
+            Common::FS::PathToQString(iconPath, m_games[itemID].icon_path);
+            QPixmap gameImage(iconPath);
             CheatsPatches* cheatsPatches =
                 new CheatsPatches(gameName, gameSerial, gameVersion, gameSize, gameImage);
             cheatsPatches->show();
@@ -144,8 +170,9 @@ public:
         }
 
         if (selected == &openTrophyViewer) {
-            QString trophyPath = QString::fromStdString(m_games[itemID].serial);
-            QString gameTrpPath = QString::fromStdString(m_games[itemID].path);
+            QString trophyPath, gameTrpPath;
+            Common::FS::PathToQString(trophyPath, m_games[itemID].serial);
+            Common::FS::PathToQString(gameTrpPath, m_games[itemID].path);
             TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
@@ -153,11 +180,13 @@ public:
         }
 
         if (selected == &createShortcut) {
-            QString targetPath = QString::fromStdString(m_games[itemID].path);
+            QString targetPath;
+            Common::FS::PathToQString(targetPath, m_games[itemID].path);
             QString ebootPath = targetPath + "/eboot.bin";
 
             // Get the full path to the icon
-            QString iconPath = QString::fromStdString(m_games[itemID].icon_path);
+            QString iconPath;
+            Common::FS::PathToQString(iconPath, m_games[itemID].icon_path);
             QFileInfo iconFileInfo(iconPath);
             QString icoPath = iconFileInfo.absolutePath() + "/" + iconFileInfo.baseName() + ".ico";
 
@@ -283,10 +312,7 @@ public:
 
         if (selected == &installPackage) {
             QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
-            std::filesystem::path path(pkg_app_[9].toStdString());
-#ifdef _WIN32
-            path = std::filesystem::path(pkg_app_[9].toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(pkg_app_[9]);
             InstallDragDropPkg(path, 1, 1);
         }
     }
@@ -320,9 +346,9 @@ private:
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
         // Create the ShellLink object
-        IShellLink* pShellLink = nullptr;
+        Microsoft::WRL::ComPtr<IShellLink> pShellLink;
         HRESULT hres = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                        IID_IShellLink, (LPVOID*)&pShellLink);
+                                        IID_PPV_ARGS(&pShellLink));
         if (SUCCEEDED(hres)) {
             // Defines the path to the program executable
             pShellLink->SetPath((LPCWSTR)exePath.utf16());
@@ -338,13 +364,11 @@ private:
             pShellLink->SetIconLocation((LPCWSTR)iconPath.utf16(), 0);
 
             // Save the shortcut
-            IPersistFile* pPersistFile = nullptr;
-            hres = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&pPersistFile);
+            Microsoft::WRL::ComPtr<IPersistFile> pPersistFile;
+            hres = pShellLink.As(&pPersistFile);
             if (SUCCEEDED(hres)) {
                 hres = pPersistFile->Save((LPCWSTR)linkPath.utf16(), TRUE);
-                pPersistFile->Release();
             }
-            pShellLink->Release();
         }
 
         CoUninitialize();

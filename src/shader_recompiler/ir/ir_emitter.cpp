@@ -249,8 +249,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -627,6 +627,10 @@ U64 IREmitter::PackUint2x32(const Value& vector) {
 
 Value IREmitter::UnpackUint2x32(const U64& value) {
     return Inst<Value>(Opcode::UnpackUint2x32, value);
+}
+
+F64 IREmitter::PackFloat2x32(const Value& vector) {
+    return Inst<F64>(Opcode::PackFloat2x32, vector);
 }
 
 U32 IREmitter::PackFloat2x16(const Value& vector) {
@@ -1055,6 +1059,10 @@ U32 IREmitter::IDiv(const U32& a, const U32& b, bool is_signed) {
     return Inst<U32>(is_signed ? Opcode::SDiv32 : Opcode::UDiv32, a, b);
 }
 
+U32 IREmitter::IMod(const U32& a, const U32& b, bool is_signed) {
+    return Inst<U32>(is_signed ? Opcode::SMod32 : Opcode::UMod32, a, b);
+}
+
 U32U64 IREmitter::INeg(const U32U64& value) {
     switch (value.Type()) {
     case Type::U32:
@@ -1071,6 +1079,10 @@ U32 IREmitter::IAbs(const U32& value) {
 }
 
 U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftLeftLogical32, base, shift);
@@ -1082,6 +1094,10 @@ U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightLogical32, base, shift);
@@ -1093,6 +1109,10 @@ U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightArithmetic32, base, shift);
@@ -1360,6 +1380,8 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         switch (value.Type()) {
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
+        default:
+            break;
         }
     default:
         break;
@@ -1380,6 +1402,15 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         switch (value.Type()) {
         case Type::F16:
             return Inst<F32>(Opcode::ConvertF32F16, value);
+        case Type::F64:
+            return Inst<F32>(Opcode::ConvertF32F64, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::F32:
+            return Inst<F64>(Opcode::ConvertF64F32, value);
         default:
             break;
         }
@@ -1520,6 +1551,14 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInst
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
                            TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+}
+
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EmitPrimitive() {
+    Inst(Opcode::EmitPrimitive);
 }
 
 } // namespace Shader::IR

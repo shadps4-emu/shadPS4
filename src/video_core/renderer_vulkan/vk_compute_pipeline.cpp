@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/container/small_vector.hpp>
+
 #include "common/alignment.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
@@ -15,7 +16,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
                                  DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
                                  u64 compute_key_, const Shader::Info& info_,
                                  vk::ShaderModule module)
-    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, compute_key{compute_key_},
+    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, compute_key{compute_key_},
       info{&info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
@@ -77,7 +78,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    auto [descriptor_set_result, descriptor_set] =
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
+               "Failed to create compute descriptor set layout: {}",
+               vk::to_string(descriptor_set_result));
+    desc_layout = std::move(descriptor_set);
 
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
@@ -86,19 +92,20 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pushConstantRangeCount = 1U,
         .pPushConstantRanges = &push_constants,
     };
-    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
+    pipeline_layout = std::move(layout);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
         .layout = *pipeline_layout,
     };
-    auto result =
+    auto [pipeline_result, pipe] =
         instance.GetDevice().createComputePipelineUnique(pipeline_cache, compute_pipeline_ci);
-    if (result.result == vk::Result::eSuccess) {
-        pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Graphics pipeline creation failed!");
-    }
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
+               vk::to_string(pipeline_result));
+    pipeline = std::move(pipe);
 }
 
 ComputePipeline::~ComputePipeline() = default;
@@ -108,12 +115,14 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::BufferView, 8> buffer_views;
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
 
+    image_infos.clear();
+
+    info->PushUd(binding, push_data);
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
         if (desc.is_gds_buffer) {
@@ -145,26 +154,27 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 buffer_cache.ObtainBuffer(address, size, desc.is_written);
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
-            if (adjust != 0) {
-                ASSERT(adjust % 4 == 0);
-                push_data.AddOffset(binding, adjust);
-            }
+            ASSERT(adjust % 4 == 0);
+            push_data.AddOffset(binding.buffer, adjust);
             buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
                                          : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
+        ++binding.buffer;
     }
 
+    const auto null_buffer_view =
+        instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
     for (const auto& desc : info->texture_buffers) {
         const auto vsharp = desc.GetSharp(*info);
-        vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+        vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         const u32 size = vsharp.GetSize();
         const VAddr address = vsharp.base_address;
         if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && address != 0 && size != 0) {
@@ -186,10 +196,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             //           "Texel buffer stride must match format stride");
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
-            if (adjust != 0) {
-                ASSERT(adjust % fmt_stride == 0);
-                push_data.AddOffset(binding, adjust / fmt_stride);
-            }
+            ASSERT(adjust % fmt_stride == 0);
+            push_data.AddOffset(binding.buffer, adjust / fmt_stride);
             buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                           vsharp.GetDataFmt(), vsharp.GetNumberFmt());
             if (auto barrier =
@@ -199,45 +207,23 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written) {
-                texture_cache.MarkWritten(address, size);
+                texture_cache.InvalidateMemoryFromGPU(address, size);
             }
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                               : vk::DescriptorType::eUniformTexelBuffer,
             .pTexelBufferView = &buffer_view,
         });
+        ++binding.buffer;
     }
 
-    for (const auto& image_desc : info->images) {
-        const auto tsharp = image_desc.GetSharp(*info);
-        if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-            VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
-            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-            const auto& image_view = texture_cache.FindTexture(image_info, view_info);
-            const auto& image = texture_cache.GetImage(image_view.image_id);
-            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
-        } else {
-            image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-        }
-        set_writes.push_back({
-            .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = image_desc.is_storage ? vk::DescriptorType::eStorageImage
-                                                    : vk::DescriptorType::eSampledImage,
-            .pImageInfo = &image_infos.back(),
-        });
+    BindTextures(texture_cache, *info, binding, set_writes);
 
-        if (texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (texture)");
-        }
-    }
     for (const auto& sampler : info->samplers) {
         const auto ssharp = sampler.GetSharp(*info);
         if (ssharp.force_degamma) {
@@ -247,7 +233,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eSampler,

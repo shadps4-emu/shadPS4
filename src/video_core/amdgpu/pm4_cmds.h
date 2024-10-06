@@ -36,6 +36,8 @@ union PM4Type0Header {
 };
 
 union PM4Type3Header {
+    static constexpr u32 TYPE = 3;
+
     constexpr PM4Type3Header(PM4ItOpcode code, u32 num_words_min_one,
                              PM4ShaderType stype = PM4ShaderType::ShaderGraphics,
                              PM4Predicate pred = PM4Predicate::PredDisable) {
@@ -500,7 +502,7 @@ struct PM4CmdWriteData {
 struct PM4CmdEventWriteEos {
     enum class Command : u32 {
         GdsStore = 1u,
-        SingalFence = 2u,
+        SignalFence = 2u,
     };
 
     PM4Type3Header header;
@@ -534,7 +536,7 @@ struct PM4CmdEventWriteEos {
     void SignalFence() const {
         const auto cmd = command.Value();
         switch (cmd) {
-        case Command::SingalFence: {
+        case Command::SignalFence: {
             *Address() = DataDWord();
             break;
         }

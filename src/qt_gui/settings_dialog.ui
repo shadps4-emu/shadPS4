@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>854</width>
-    <height>480</height>
+    <height>570</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -52,7 +52,7 @@
         <x>0</x>
         <y>0</y>
         <width>836</width>
-        <height>428</height>
+        <height>446</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -70,7 +70,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
+         <layout class="QHBoxLayout" name="generalTabHLayoutTop" stretch="1,1,1">
           <item>
            <layout class="QVBoxLayout" name="systemTabLayoutLeft">
             <item>
@@ -255,17 +255,209 @@
          </layout>
         </item>
         <item>
-         <spacer name="generalSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
+         <layout class="QHBoxLayout" name="generalTabHLayout_2">
+          <item>
+           <layout class="QVBoxLayout" name="updaterTabLayoutLeft">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="updaterGroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>265</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="title">
+               <string>Update</string>
+              </property>
+              <widget class="QCheckBox" name="updateCheckBox">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>130</y>
+                 <width>261</width>
+                 <height>22</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Check for Updates at Startup</string>
+               </property>
+              </widget>
+              <widget class="QGroupBox" name="updaterComboBox">
+               <property name="geometry">
+                <rect>
+                 <x>12</x>
+                 <y>30</y>
+                 <width>241</width>
+                 <height>65</height>
+                </rect>
+               </property>
+               <property name="title">
+                <string>Update Channel</string>
+               </property>
+               <widget class="QComboBox" name="updateComboBox">
+                <property name="geometry">
+                 <rect>
+                  <x>12</x>
+                  <y>30</y>
+                  <width>217</width>
+                  <height>28</height>
+                 </rect>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>Release</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Nightly</string>
+                 </property>
+                </item>
+               </widget>
+              </widget>
+              <widget class="QPushButton" name="checkUpdateButton">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>100</y>
+                 <width>215</width>
+                 <height>24</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Check for Updates</string>
+               </property>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="GUITabLayoutMiddle" stretch="1">
+            <item>
+             <widget class="QGroupBox" name="GUIgroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="title">
+               <string>GUI Settings</string>
+              </property>
+              <widget class="QWidget" name="verticalLayoutWidget_3">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>30</y>
+                 <width>241</width>
+                 <height>71</height>
+                </rect>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                 <widget class="QCheckBox" name="playBGMCheckBox">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>Play title music</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout">
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_2">
+                    <item>
+                     <widget class="QLabel" name="label">
+                      <property name="text">
+                       <string>Volume</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSlider" name="BGMVolumeSlider">
+                      <property name="toolTip">
+                       <string>Set the volume of the background music.</string>
+                      </property>
+                      <property name="maximum">
+                       <number>100</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>10</number>
+                      </property>
+                      <property name="pageStep">
+                       <number>20</number>
+                      </property>
+                      <property name="value">
+                       <number>50</number>
+                      </property>
+                      <property name="orientation">
+                       <enum>Qt::Orientation::Horizontal</enum>
+                      </property>
+                      <property name="invertedAppearance">
+                       <bool>false</bool>
+                      </property>
+                      <property name="invertedControls">
+                       <bool>false</bool>
+                      </property>
+                      <property name="tickPosition">
+                       <enum>QSlider::TickPosition::NoTicks</enum>
+                      </property>
+                      <property name="tickInterval">
+                       <number>10</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -472,13 +664,6 @@
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QCheckBox" name="dumpPM4CheckBox">
-                 <property name="text">
-                  <string>Enable PM4 Dumping</string>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
@@ -607,6 +792,19 @@
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="standardButtons">
       <set>QDialogButtonBox::StandardButton::Apply|QDialogButtonBox::StandardButton::Close|QDialogButtonBox::StandardButton::RestoreDefaults|QDialogButtonBox::StandardButton::Save</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTextEdit" name="descriptionText">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>70</height>
+      </size>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

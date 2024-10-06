@@ -127,7 +127,7 @@ void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
 bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
     if (m_sdl_gamepad != nullptr) {
         return SDL_RumbleGamepad(m_sdl_gamepad, (smallMotor / 255.0f) * 0xFFFF,
-                                 (largeMotor / 255.0f) * 0xFFFF, -1) == 0;
+                                 (largeMotor / 255.0f) * 0xFFFF, -1);
     }
     return true;
 }

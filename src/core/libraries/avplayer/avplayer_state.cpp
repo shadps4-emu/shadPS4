@@ -5,8 +5,11 @@
 #include "avplayer_source.h"
 #include "avplayer_state.h"
 
+#include "common/singleton.h"
+#include "common/thread.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
+#include "core/linker.h"
 
 #include <magic_enum.hpp>
 
@@ -14,8 +17,8 @@ namespace Libraries::AvPlayer {
 
 using namespace Kernel;
 
-void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, s32 event_id, s32 source_id,
-                                                       void* event_data) {
+void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayerEvents event_id,
+                                                       s32 source_id, void* event_data) {
     auto const self = reinterpret_cast<AvPlayerState*>(opaque);
 
     if (event_id == SCE_AVPLAYER_STATE_READY) {
@@ -88,7 +91,8 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, s32 event_i
     const auto callback = self->m_event_replacement.event_callback;
     const auto ptr = self->m_event_replacement.object_ptr;
     if (callback != nullptr) {
-        callback(ptr, event_id, 0, event_data);
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
+        linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
     }
 }
 
@@ -178,6 +182,7 @@ bool AvPlayerState::Start() {
 
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
     using std::chrono::milliseconds;
+    Common::SetCurrentThreadName("shadPS4:AvController");
 
     while (!stop.stop_requested()) {
         if (m_event_queue.Size() != 0) {
@@ -362,7 +367,8 @@ void AvPlayerState::EmitEvent(SceAvPlayerEvents event_id, void* event_data) {
     const auto callback = m_init_data.event_replacement.event_callback;
     if (callback) {
         const auto ptr = m_init_data.event_replacement.object_ptr;
-        callback(ptr, event_id, 0, event_data);
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
+        linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
     }
 }
 

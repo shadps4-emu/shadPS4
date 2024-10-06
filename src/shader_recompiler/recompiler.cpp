@@ -63,6 +63,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     if (program.info.stage != Stage::Compute) {
         Shader::Optimization::LowerSharedMemToRegisters(program);
     }
+    Shader::Optimization::RingAccessElimination(program, runtime_info, program.info.stage);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);

@@ -62,6 +62,15 @@ public:
         return &gds_buffer;
     }
 
+    /// Retrieves the buffer with the specified id.
+    [[nodiscard]] Buffer& GetBuffer(BufferId id) {
+        return slot_buffers[id];
+    }
+
+    [[nodiscard]] vk::BufferView& NullBufferView() {
+        return null_buffer_view;
+    }
+
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
@@ -141,6 +150,7 @@ private:
     Buffer gds_buffer;
     std::mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    vk::BufferView null_buffer_view;
     MemoryTracker memory_tracker;
     PageTable page_table;
 };

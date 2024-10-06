@@ -6,6 +6,7 @@
 #include <array>
 #include <sirit/sirit.h>
 
+#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
@@ -37,7 +38,7 @@ struct VectorIds {
 class EmitContext final : public Sirit::Module {
 public:
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
-                         u32& binding);
+                         Bindings& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
@@ -165,10 +166,14 @@ public:
     Id input_s32{};
     Id output_u32{};
     Id output_f32{};
+    Id output_s32{};
+
+    Id gl_in{};
 
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
     Id push_data_block{};
@@ -176,8 +181,6 @@ public:
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
-    std::array<Id, 8> frag_color{};
-    std::array<u32, 8> frag_num_comp{};
     Id clip_distances{};
     Id cull_distances{};
 
@@ -200,7 +203,8 @@ public:
         Id sampled_type;
         Id pointer_type;
         Id image_type;
-        bool is_storage;
+        bool is_integer = false;
+        bool is_storage = false;
     };
 
     struct BufferDefinition {
@@ -217,11 +221,11 @@ public:
         u32 binding;
         Id image_type;
         Id result_type;
-        bool is_integer;
-        bool is_storage;
+        bool is_integer = false;
+        bool is_storage = false;
     };
 
-    u32& binding;
+    Bindings& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
@@ -235,11 +239,13 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        bool is_integer{};
         bool is_default{};
         s32 buffer_handle{-1};
     };
-    std::array<SpirvAttribute, 32> input_params{};
-    std::array<SpirvAttribute, 32> output_params{};
+    std::array<SpirvAttribute, IR::NumParams> input_params{};
+    std::array<SpirvAttribute, IR::NumParams> output_params{};
+    std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
 private:
     void DefineArithmeticTypes();
@@ -252,7 +258,8 @@ private:
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
 
-    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
+    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
+                                    bool output);
 };
 
 } // namespace Shader::Backend::SPIRV

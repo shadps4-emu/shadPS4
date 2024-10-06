@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <string>
+#include <thread>
 
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
+#include "ntapi.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <mach/mach_time.h>
 #include <pthread.h>
 #elif defined(_WIN32)
 #include <windows.h>
@@ -30,6 +33,48 @@
 #endif
 
 namespace Common {
+
+#ifdef __APPLE__
+
+void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
+    // CPU time to grant.
+    const std::chrono::nanoseconds computation_ns = period_ns / 2;
+
+    // Determine the timebase for converting time to ticks.
+    struct mach_timebase_info timebase {};
+    mach_timebase_info(&timebase);
+    const auto ticks_per_ns =
+        static_cast<double>(timebase.denom) / static_cast<double>(timebase.numer);
+
+    const auto period_ticks =
+        static_cast<u32>(static_cast<double>(period_ns.count()) * ticks_per_ns);
+    const auto computation_ticks =
+        static_cast<u32>(static_cast<double>(computation_ns.count()) * ticks_per_ns);
+
+    thread_time_constraint_policy policy = {
+        .period = period_ticks,
+        .computation = computation_ticks,
+        // Should not matter since preemptible is false, but needs to be >= computation regardless.
+        .constraint = computation_ticks,
+        .preemptible = false,
+    };
+
+    int ret = thread_policy_set(
+        pthread_mach_thread_np(pthread_self()), THREAD_TIME_CONSTRAINT_POLICY,
+        reinterpret_cast<thread_policy_t>(&policy), THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+    if (ret != KERN_SUCCESS) {
+        LOG_ERROR(Common, "Could not set thread to real-time with period {} ns: {}",
+                  period_ns.count(), ret);
+    }
+}
+
+#else
+
+void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
+    // Not implemented
+}
+
+#endif
 
 #ifdef _WIN32
 
@@ -59,6 +104,16 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     SetThreadPriority(handle, windows_priority);
 }
 
+static void AccurateSleep(std::chrono::nanoseconds duration) {
+    LARGE_INTEGER interval{
+        .QuadPart = -1 * (duration.count() / 100u),
+    };
+    HANDLE timer = ::CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &interval, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    ::CloseHandle(timer);
+}
+
 #else
 
 void SetCurrentThreadPriority(ThreadPriority new_priority) {
@@ -77,6 +132,10 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     }
 
     pthread_setschedparam(this_thread, scheduling_type, &params);
+}
+
+static void AccurateSleep(std::chrono::nanoseconds duration) {
+    std::this_thread::sleep_for(duration);
 }
 
 #endif
@@ -120,5 +179,23 @@ void SetCurrentThreadName(const char*) {
 #endif
 
 #endif
+
+AccurateTimer::AccurateTimer(std::chrono::nanoseconds target_interval)
+    : target_interval(target_interval) {}
+
+void AccurateTimer::Start() {
+    auto begin_sleep = std::chrono::high_resolution_clock::now();
+    if (total_wait.count() > 0) {
+        AccurateSleep(total_wait);
+    }
+    start_time = std::chrono::high_resolution_clock::now();
+    total_wait -= std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - begin_sleep);
+}
+
+void AccurateTimer::End() {
+    auto now = std::chrono::high_resolution_clock::now();
+    total_wait +=
+        target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+}
 
 } // namespace Common

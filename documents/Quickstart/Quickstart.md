@@ -39,16 +39,12 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ## How to run the latest Work-in-Progress builds of ShadPS4
 
-1. Go to <https://github.com/shadps4-emu/shadPS4/actions> and make sure you are logged into your GitHub account (important!)
-2. On the left side of the page, select your operating system of choice (the "**qt**" versions have a user interface, which is probably the one you want. The others are SDL versions, which can only be run via command line). ![image](https://github.com/user-attachments/assets/43f01bbf-236c-4d6d-98ac-f5a5badd4ce8)
+1. Go to <https://github.com/shadps4-emu/shadPS4/releases> In the release identified as 'pre-release' click on the down arrow(Assets), select your operating system of choice (the "**qt**" versions have a user interface, which is probably the one you want. The others are SDL versions, which can only be run via command line).
+![image](https://github.com/user-attachments/assets/af520c77-797c-41a0-8f67-d87f5de3e3df)
 
-3. In the workflow list, select the latest entry with a green :white_check_mark: icon in front of it. (or the latest entry for whatever pull request you wish to test). ![image](https://github.com/user-attachments/assets/6365f407-867c-44ae-bf00-944f8d84a349)
+2. Once downloaded, extract to its own folder, and run ShadPS4's executable from the extracted folder.
 
-4. On the bottom of this page, select the name of the file, and it should start downloading. (If there is no file here, double check that you are indeed logged into a GitHub account, and that there is a green :white_check_mark: icon. ![image](https://github.com/user-attachments/assets/97924500-3911-4f90-ab63-ffae7e52700b)
-
-5. Once downloaded, extract to its own folder, and run ShadPS4's executable from the extracted folder.
-
-6. Upon first launch, ShadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that ShadPS4 can use to install your PKG files to.
+3. Upon first launch, ShadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that ShadPS4 can use to install your PKG files to.
 
 ## Install PKG files
 

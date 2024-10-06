@@ -22,6 +22,10 @@
 #endif
 #endif
 
+#ifdef ENABLE_QT_GUI
+#include <QString>
+#endif
+
 namespace Common::FS {
 
 namespace fs = std::filesystem;
@@ -106,7 +110,6 @@ static auto UserPaths = [] {
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
     create_path(PathType::ShaderDir, user_dir / SHADER_DIR);
-    create_path(PathType::PM4Dir, user_dir / PM4_DIR);
     create_path(PathType::SaveDataDir, user_dir / SAVEDATA_DIR);
     create_path(PathType::GameDataDir, user_dir / GAMEDATA_DIR);
     create_path(PathType::TempDataDir, user_dir / TEMPDATA_DIR);
@@ -115,7 +118,6 @@ static auto UserPaths = [] {
     create_path(PathType::CapturesDir, user_dir / CAPTURES_DIR);
     create_path(PathType::CheatsDir, user_dir / CHEATS_DIR);
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
-    create_path(PathType::AddonsDir, user_dir / ADDONS_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
 
     return paths;
@@ -164,5 +166,23 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
 
     UserPaths.insert_or_assign(shad_path, new_path);
 }
+
+#ifdef ENABLE_QT_GUI
+void PathToQString(QString& result, const std::filesystem::path& path) {
+#ifdef _WIN32
+    result = QString::fromStdWString(path.wstring());
+#else
+    result = QString::fromStdString(path.string());
+#endif
+}
+
+std::filesystem::path PathFromQString(const QString& path) {
+#ifdef _WIN32
+    return std::filesystem::path(path.toStdWString());
+#else
+    return std::filesystem::path(path.toStdString());
+#endif
+}
+#endif
 
 } // namespace Common::FS
