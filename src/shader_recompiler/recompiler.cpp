@@ -96,11 +96,6 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     if (extra_id_removal) {
         Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
     }
-    dumpMatchingIR("pre_hoist");
-    Shader::Optimization::HoistConstantReadsPass(program);
-    if (extra_id_removal) {
-        Shader::Optimization::IdentityRemovalPass(program.blocks); // temp
-    }
     dumpMatchingIR("pre_flatten");
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     dumpMatchingIR("pre_resource_tracking");

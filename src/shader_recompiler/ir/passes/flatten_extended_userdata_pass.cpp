@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #include "common/config.h"
@@ -14,6 +15,7 @@
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
 #include "src/common/arch.h"
 #include "src/common/decoder.h"
@@ -58,15 +60,23 @@ public:
 };
 
 using namespace Shader;
+
 struct PassInfo {
     // map offset to inst
     using PtrUserList = boost::container::map<u32, Shader::IR::Inst*>;
 
+    // TODO use flat_* for some of these (needs ext-boost update)
+
+    Optimization::SrtGvnTable gvn_table;
     // keys are GetUserData or ReadConst instructions that are used as pointers
     std::unordered_map<IR::Inst*, PtrUserList> pointer_uses;
     // GetUserData instructions corresponding to sgpr_base of SRT roots
     boost::container::map<IR::ScalarReg, IR::Inst*> srt_roots;
 
+    // pick a single inst for a given value number
+    boost::container::map<u32, IR::Inst*> vn_to_inst;
+
+    // Bumped during codegen to assign offsets to readconsts
     u32 dst_off_dw;
 
     PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
@@ -75,6 +85,14 @@ struct PassInfo {
             return &it->second;
         }
         return nullptr;
+    }
+
+    // Return a single instruction that this instruction is identical to, according
+    // to value number
+    // The "original" is arbitrary. Here it's the first instruction found for a given value number
+    IR::Inst* DeduplicateInstruction(IR::Inst* inst) {
+        auto it = vn_to_inst.try_emplace(gvn_table.GetValueNumber(inst), inst);
+        return it.first->second;
     }
 };
 } // namespace
@@ -191,7 +209,11 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
     Shader::Info& info = program.info;
-    PassInfo srt_info;
+    PassInfo pass_info;
+
+    // traverse at end and assign offsets to duplicate readconsts, using
+    // vn_to_inst as the source
+    boost::container::small_vector<IR::Inst*, 32> all_readconsts;
 
     for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
          r_it++) {
@@ -199,6 +221,12 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         for (IR::Inst& inst : *block) {
             if (inst.GetOpcode() == IR::Opcode::ReadConst) {
                 if (!GetReadConstOff(&inst).IsImmediate()) {
+                    continue;
+                }
+
+                all_readconsts.push_back(&inst);
+                if (pass_info.DeduplicateInstruction(&inst) != &inst) {
+                    // This is a duplicate of a readconst we've already visited
                     continue;
                 }
 
@@ -216,23 +244,32 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 ASSERT_MSG(base0 && base1 && "ReadConst not from constant memory");
 
                 // TODO this probably requires some template magic to fix. BFS needs non-const
-                // variant Needs to be non-const to change flags
+                // variant. Needs to be non-const to change flags
                 IR::Inst* ptr_lo = const_cast<IR::Inst*>(base0.value());
+                ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
 
-                auto it = srt_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
-                PassInfo::PtrUserList& user_list = it.first->second;
+                auto ptr_uses_kv =
+                    pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
+                PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
                 user_list[GetReadConstOff(&inst).U32()] = &inst;
 
                 if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
                     IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr_lo);
-                    srt_info.srt_roots[ud_reg] = ptr_lo;
+                    pass_info.srt_roots[ud_reg] = ptr_lo;
                 }
             }
         }
     }
 
-    GenerateSrtProgram(info, srt_info);
+    GenerateSrtProgram(info, pass_info);
+
+    // Assign offsets to duplicate readconsts
+    for (IR::Inst* readconst : all_readconsts) {
+        ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
+        IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
+        readconst->SetFlags<u32>(original->Flags<u32>());
+    }
 }
 
 } // namespace Shader::Optimization
