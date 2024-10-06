@@ -9,6 +9,7 @@
 #include "common/hash.h"
 #include "common/types.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/program.h"
@@ -19,17 +20,12 @@ namespace Shader::Optimization {
 // This could be general GVN pass in future
 // inspiration from spirv-opt
 
-// TODO make sure identity handled ok
-
 // Deduplicate reads from constant memory
 // 1. Do GVN on GetUserData, ReadConst, and CompositeConstructU32x2 (pointers)
 // 2. Hoist the distinct values to the entry block
 //      - Trivial for readconst with immediate offset, and a pointer arg which has already been
 //      hoisted
 // 3. Replace duplicates of the hoisted values
-
-// Note: use non-const IR::Value/IR::Inst, because IR::Value(const IR::Inst *) invokes
-// explicit Value(bool value) noexcept; lol
 
 // TODO delete, for debugger
 void PrintBlock(const Shader::IR::Block* block) {
@@ -71,6 +67,7 @@ public:
     }
 
     u32 GetValueNumber(IR::Value v) {
+        v = v.Resolve();
         if (auto it = value_numbers.find(v); it != value_numbers.end()) {
             return it->second;
         }
@@ -91,6 +88,9 @@ public:
 
 private:
     u32 ComputeInstValueNumber(IR::Inst* inst) {
+        ASSERT(!value_numbers.contains(
+            IR::Value(inst))); // Should always be checking before calling this function
+
         if (inst->MayHaveSideEffects()) {
             return NextValueNumber(IR::Value(inst));
         }
@@ -98,12 +98,31 @@ private:
         u32 vn;
 
         switch (inst->GetOpcode()) {
+        case IR::Opcode::Phi: {
+            // hack to get to parity with main
+            // Need to fix ssa_rewrite pass to remove certain phis
+            // main also has BFS in resource_tracking pass which ends up brute forcing through
+            // certain phis
+            const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                    inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
+                    inst->GetOpcode() == IR::Opcode::ReadConst) {
+                    return inst;
+                }
+                return std::nullopt;
+            };
+            auto source = IR::BreadthFirstSearch(inst, pred);
+            ASSERT(source);
+            vn = GetValueNumber(const_cast<IR::Inst*>(source.value()));
+            value_numbers[IR::Value(inst)] = vn;
+        }
         case IR::Opcode::GetUserData:
         case IR::Opcode::CompositeConstructU32x2:
         case IR::Opcode::ReadConst: {
             InstVector iv = MakeInstVector(inst);
             if (auto it = iv_to_vn.find(iv); it != iv_to_vn.end()) {
                 vn = it->second;
+                value_numbers[IR::Value(inst)] = vn;
             } else {
                 vn = NextValueNumber(IR::Value(inst));
                 iv_to_vn.emplace(std::move(iv), vn);
@@ -115,7 +134,6 @@ private:
             break;
         }
 
-        value_numbers[IR::Value(inst)] = vn;
         pick_one_inst.try_emplace(vn, inst);
         return vn;
     }
