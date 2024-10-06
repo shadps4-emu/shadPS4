@@ -73,7 +73,7 @@ bool Value::operator==(const Value& other) const {
     case Type::F64:
         return imm_u64 == other.imm_u64;
     case Type::StringLiteral:
-        return std::string(string_literal) == other.string_literal;
+        return std::string_view(string_literal) == other.string_literal;
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
