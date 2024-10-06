@@ -345,7 +345,7 @@ ImeDialogUi::~ImeDialogUi() {
 }
 
 ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
-    : state(other.state), status(other.status), result(other.result) {
+    : state(other.state), status(other.status), result(other.result), first_render(other.first_render) {
     
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
     other.state = nullptr;
@@ -364,6 +364,7 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     state = other.state;
     status = other.status;
     result = other.result;
+    first_render = other.first_render;
     other.state = nullptr;
     other.status = nullptr;
     other.result = nullptr;
@@ -396,9 +397,9 @@ void ImeDialogUi::Draw() {
     ImVec2 window_size;
 
     if (state->is_multiLine) {
-        window_size = {400.0f, 200.0f};
+        window_size = {500.0f, 300.0f};
     } else {
-        window_size = {400.0f, 100.0f};
+        window_size = {500.0f, 150.0f};
     }
 
     CentralizeWindow();
@@ -409,17 +410,13 @@ void ImeDialogUi::Draw() {
         SetNextWindowFocus();
     }
 
-    first_render = false;
-
     if (Begin("IME Dialog##ImeDialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         DrawPrettyBackground();
-        Separator();
 
         if (state->title) {
             SetWindowFontScale(1.7f);
             TextUnformatted(state->title);
             SetWindowFontScale(1.0f);
-            Separator();
         }
 
         if (state->is_multiLine) {
@@ -428,7 +425,7 @@ void ImeDialogUi::Draw() {
             DrawInputText();
         }
 
-        Separator();
+        SetCursorPosY(GetCursorPosY() + 10.0f);
 
         const char* button_text;
 
@@ -448,29 +445,48 @@ void ImeDialogUi::Draw() {
             break;
         }
 
+        float button_spacing = 10.0f;
+        float total_button_width = BUTTON_SIZE.x * 2 + button_spacing;
+        float button_start_pos = (window_size.x - total_button_width) / 2.0f;
+
+        SetCursorPosX(button_start_pos);
+
         if (Button(button_text, BUTTON_SIZE)) {
             *status = OrbisImeDialogStatus::FINISHED;
             result->endstatus = OrbisImeDialogEndStatus::OK;
         }
 
+        SameLine(0.0f, button_spacing);
+
         if (Button("Cancel##ImeDialogCancel", BUTTON_SIZE)) {
             *status = OrbisImeDialogStatus::FINISHED;
             result->endstatus = OrbisImeDialogEndStatus::USER_CANCELED;
-
         }
     }
     End();
+
+    first_render = false;
 }
 
 void ImeDialogUi::DrawInputText() {
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, ImVec2(0, 0), ImGuiInputTextFlags_CallbackCharFilter, InputTextCallback, this)) {
+    ImVec2 input_size = {GetWindowWidth() - 40.0f, 0.0f};
+    SetCursorPosX(20.0f);
+    if (first_render) {
+        SetKeyboardFocusHere();
+    }
+    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
 
 void ImeDialogUi::DrawMultiLineInputText() {
+    ImVec2 input_size = {GetWindowWidth() - 40.0f, 200.0f};
+    SetCursorPosX(20.0f);
     ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter | static_cast<ImGuiInputTextFlags>(ImGuiInputTextFlags_Multiline);
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, ImVec2(380.0f, 100.0f), flags, InputTextCallback, this)) {
+    if (first_render) {
+        SetKeyboardFocusHere();
+    }
+    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
