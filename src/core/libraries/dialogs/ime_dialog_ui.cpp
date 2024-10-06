@@ -303,9 +303,9 @@ bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf
         UNREACHABLE_MSG("UTF-8 character is never more than 4 bytes");
     }
 
-    *utf8_char_len = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, utf8_char, 4, nullptr, nullptr);
+    utf8_char_len = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, utf8_char, 4, nullptr, nullptr);
 
-    return *utf8_char_len != 0;
+    return utf8_char_len != 0;
 #endif
 }
 
@@ -469,12 +469,10 @@ void ImeDialogUi::DrawInputText() {
 }
 
 void ImeDialogUi::DrawMultiLineInputText() {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, ImVec2(380.0f, 100.0f), ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_Multiline, InputTextCallback, this)) {
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter | static_cast<ImGuiInputTextFlags>(ImGuiInputTextFlags_Multiline);
+    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, ImVec2(380.0f, 100.0f), flags, InputTextCallback, this)) {
         state->input_changed = true;
     }
-#pragma clang diagnostic pop
 }
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {

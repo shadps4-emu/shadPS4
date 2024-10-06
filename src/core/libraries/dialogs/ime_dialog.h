@@ -180,10 +180,10 @@ struct OrbisImeKeycode {
     u64 timestamp;
 };
 
-typedef int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength, const char16_t* srcText,
+typedef PS4_SYSV_ABI int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength, const char16_t* srcText,
                                   u32 srcTextLength);
 
-typedef int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode, u16* outKeycode,
+typedef PS4_SYSV_ABI int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode, u16* outKeycode,
                                          u32* outStatus, void* reserved);
 
 struct OrbisImeDialogParam {
