@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <string>
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -26,6 +27,8 @@ Value::Value(f32 value) noexcept : type{Type::F32}, imm_f32{value} {}
 Value::Value(u64 value) noexcept : type{Type::U64}, imm_u64{value} {}
 
 Value::Value(f64 value) noexcept : type{Type::F64}, imm_f64{value} {}
+
+Value::Value(const char* value) noexcept : type{Type::StringLiteral}, string_literal{value} {}
 
 IR::Type Value::Type() const noexcept {
     if (IsPhi()) {
@@ -69,6 +72,8 @@ bool Value::operator==(const Value& other) const {
     case Type::U64:
     case Type::F64:
         return imm_u64 == other.imm_u64;
+    case Type::StringLiteral:
+        return std::string_view(string_literal) == other.string_literal;
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:

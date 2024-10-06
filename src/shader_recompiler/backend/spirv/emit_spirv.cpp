@@ -70,6 +70,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg.ScalarReg();
     } else if constexpr (std::is_same_v<ArgType, IR::VectorReg>) {
         return arg.VectorReg();
+    } else if constexpr (std::is_same_v<ArgType, const char*>) {
+        return arg.StringLiteral();
     }
 }
 

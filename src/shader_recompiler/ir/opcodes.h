@@ -51,6 +51,7 @@ constexpr Type F32x4{Type::F32x4};
 constexpr Type F64x2{Type::F64x2};
 constexpr Type F64x3{Type::F64x3};
 constexpr Type F64x4{Type::F64x4};
+constexpr Type StringLiteral{Type::StringLiteral};
 
 constexpr OpcodeMeta META_TABLE[]{
 #define OPCODE(name_token, type_token, ...)                                                        \
@@ -81,7 +82,7 @@ constexpr u8 NUM_ARGS[]{
 }
 
 /// Get the number of arguments an opcode accepts
-[[nodiscard]] inline size_t NumArgsOf(Opcode op) noexcept {
+[[nodiscard]] constexpr inline size_t NumArgsOf(Opcode op) noexcept {
     return static_cast<size_t>(Detail::NUM_ARGS[static_cast<size_t>(op)]);
 }
 
