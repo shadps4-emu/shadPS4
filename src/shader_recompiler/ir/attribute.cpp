@@ -6,14 +6,6 @@
 
 namespace Shader::IR {
 
-bool IsParam(Attribute attribute) noexcept {
-    return attribute >= Attribute::Param0 && attribute <= Attribute::Param31;
-}
-
-bool IsMrt(Attribute attribute) noexcept {
-    return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
-}
-
 std::string NameOf(Attribute attribute) {
     switch (attribute) {
     case Attribute::RenderTarget0:

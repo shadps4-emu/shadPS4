@@ -16,6 +16,10 @@
 
 namespace Vulkan {
 
+static constexpr auto gp_stage_flags = vk::ShaderStageFlagBits::eVertex |
+                                       vk::ShaderStageFlagBits::eGeometry |
+                                       vk::ShaderStageFlagBits::eFragment;
+
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
@@ -27,7 +31,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     BuildDescSetLayout();
 
     const vk::PushConstantRange push_constants = {
-        .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+        .stageFlags = gp_stage_flags,
         .offset = 0,
         .size = sizeof(Shader::PushData),
     };
@@ -46,28 +50,34 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
-    const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
-    for (const auto& input : vs_info->vs_inputs) {
-        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
-            // Skip attribute binding as the data will be pulled by shader
-            continue;
-        }
+    if (!instance.IsVertexInputDynamicState()) {
+        const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
+        for (const auto& input : vs_info->vs_inputs) {
+            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+                // Skip attribute binding as the data will be pulled by shader
+                continue;
+            }
 
-        const auto buffer = vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        vertex_attributes.push_back({
-            .location = input.binding,
-            .binding = input.binding,
-            .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
-            .offset = 0,
-        });
-        vertex_bindings.push_back({
-            .binding = input.binding,
-            .stride = buffer.GetStride(),
-            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
-                             ? vk::VertexInputRate::eVertex
-                             : vk::VertexInputRate::eInstance,
-        });
+            const auto buffer =
+                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            if (buffer.GetSize() == 0) {
+                continue;
+            }
+            vertex_attributes.push_back({
+                .location = input.binding,
+                .binding = input.binding,
+                .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+                .offset = 0,
+            });
+            vertex_bindings.push_back({
+                .binding = input.binding,
+                .stride = buffer.GetStride(),
+                .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+                                 ? vk::VertexInputRate::eVertex
+                                 : vk::VertexInputRate::eInstance,
+            });
+        }
     }
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
@@ -77,16 +87,22 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
-    if (key.prim_type == Liverpool::PrimitiveType::RectList && !IsEmbeddedVs()) {
+    if (key.prim_type == AmdGpu::PrimitiveType::RectList && !IsEmbeddedVs()) {
         LOG_WARNING(Render_Vulkan,
                     "Rectangle List primitive type is only supported for embedded VS");
     }
 
+    auto prim_restart = key.enable_primitive_restart != 0;
+    if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
+        LOG_WARNING(Render_Vulkan,
+                    "Primitive restart is enabled for list topology but not supported by driver.");
+        prim_restart = false;
+    }
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = key.enable_primitive_restart != 0,
+        .primitiveRestartEnable = prim_restart,
     };
-    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF ||
+    ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
@@ -147,6 +163,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     }
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
+    } else {
+        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -182,12 +200,20 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         },
     };
 
-    auto stage = u32(Shader::Stage::Vertex);
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
+    auto stage = u32(Shader::Stage::Vertex);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
+    stage = u32(Shader::Stage::Geometry);
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eGeometry,
             .module = modules[stage],
             .pName = "main",
         });
@@ -273,7 +299,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pNext = &pipeline_rendering_ci,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
-        .pVertexInputState = &vertex_input_info,
+        .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
@@ -308,7 +334,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
                                                           : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                .stageFlags = gp_stage_flags,
             });
         }
         for (const auto& tex_buffer : stage->texture_buffers) {
@@ -317,7 +343,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                                         : vk::DescriptorType::eUniformTexelBuffer,
                 .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                .stageFlags = gp_stage_flags,
             });
         }
         for (const auto& image : stage->images) {
@@ -326,7 +352,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
                                                    : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                .stageFlags = gp_stage_flags,
             });
         }
         for (const auto& sampler : stage->samplers) {
@@ -334,7 +360,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .binding = binding++,
                 .descriptorType = vk::DescriptorType::eSampler,
                 .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                .stageFlags = gp_stage_flags,
             });
         }
     }
@@ -379,7 +405,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
-            if (vsharp) {
+            if (vsharp && vsharp.GetSize() > 0) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
@@ -412,9 +438,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             ++binding.buffer;
         }
 
+        const auto null_buffer_view =
+            instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
         for (const auto& desc : stage->texture_buffers) {
             const auto vsharp = desc.GetSharp(*stage);
-            vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+            vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
             const u32 size = vsharp.GetSize();
             if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
                 const VAddr address = vsharp.base_address;
@@ -504,9 +532,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                       desc_set, {});
         }
     }
-    cmdbuf.pushConstants(*pipeline_layout,
-                         vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0U,
-                         sizeof(push_data), &push_data);
+    cmdbuf.pushConstants(*pipeline_layout, gp_stage_flags, 0U, sizeof(push_data), &push_data);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, Handle());
 }
 

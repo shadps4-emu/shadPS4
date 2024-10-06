@@ -7,7 +7,10 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
+#include "shader_recompiler/frontend/copy_shader.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/recompiler.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -82,6 +85,13 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     auto info = Shader::RuntimeInfo{stage};
     const auto& regs = liverpool->regs;
     switch (stage) {
+    case Shader::Stage::Export: {
+        info.num_user_data = regs.es_program.settings.num_user_regs;
+        info.num_input_vgprs = regs.es_program.settings.vgpr_comp_cnt;
+        info.num_allocated_vgprs = regs.es_program.settings.num_vgprs * 4;
+        info.es_info.vertex_data_size = regs.vgt_esgs_ring_itemsize;
+        break;
+    }
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
         info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
@@ -92,13 +102,32 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
         break;
     }
+    case Shader::Stage::Geometry: {
+        info.num_user_data = regs.gs_program.settings.num_user_regs;
+        info.num_input_vgprs = regs.gs_program.settings.vgpr_comp_cnt;
+        info.num_allocated_vgprs = regs.gs_program.settings.num_vgprs * 4;
+        info.gs_info.output_vertices = regs.vgt_gs_max_vert_out;
+        info.gs_info.num_invocations =
+            regs.vgt_gs_instance_cnt.IsEnabled() ? regs.vgt_gs_instance_cnt.count : 1;
+        info.gs_info.in_primitive = regs.primitive_type;
+        for (u32 stream_id = 0; stream_id < Shader::GsMaxOutputStreams; ++stream_id) {
+            info.gs_info.out_primitive[stream_id] =
+                regs.vgt_gs_out_prim_type.GetPrimitiveType(stream_id);
+        }
+        info.gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
+        info.gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
+
+        // Extract semantics offsets from a copy shader
+        const auto vc_stage = Shader::Stage::Vertex;
+        const auto* pgm_vc = regs.ProgramForStage(static_cast<u32>(vc_stage));
+        const auto params_vc = Liverpool::GetParams(*pgm_vc);
+        DumpShader(params_vc.code, params_vc.hash, Shader::Stage::Vertex, 0, "copy.bin");
+        info.gs_info.copy_data = Shader::ParseCopyShader(params_vc.code);
+        break;
+    }
     case Shader::Stage::Fragment: {
         info.num_user_data = regs.ps_program.settings.num_user_regs;
         info.num_allocated_vgprs = regs.ps_program.settings.num_vgprs * 4;
-        std::ranges::transform(graphics_key.mrt_swizzles, info.fs_info.mrt_swizzles.begin(),
-                               [](Liverpool::ColorBuffer::SwapMode mode) {
-                                   return static_cast<Shader::MrtSwizzle>(mode);
-                               });
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs.push_back({
@@ -107,6 +136,12 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
                 .is_flat = bool(ps_inputs[i].flat_shade),
                 .default_value = u8(ps_inputs[i].default_value),
             });
+        }
+        for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
+            info.fs_info.color_buffers[i] = {
+                .num_format = graphics_key.color_num_formats[i],
+                .mrt_swizzle = static_cast<Shader::MrtSwizzle>(graphics_key.mrt_swizzles[i]),
+            };
         }
         break;
     }
@@ -147,7 +182,7 @@ PipelineCache::~PipelineCache() = default;
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     const auto& regs = liverpool->regs;
     // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
         return nullptr;
     }
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
@@ -161,7 +196,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
-    if (regs.primitive_type == Liverpool::PrimitiveType::None) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::None) {
         LOG_TRACE(Render_Vulkan, "Primitive type 'None' skipped");
         return nullptr;
     }
@@ -188,15 +223,6 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     return it->second;
 }
 
-bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
-    static constexpr std::array<u64, 0> skip_hashes = {};
-    if (std::ranges::contains(skip_hashes, shader_hash)) {
-        LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
-        return true;
-    }
-    return false;
-}
-
 bool PipelineCache::RefreshGraphicsKey() {
     std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
 
@@ -209,7 +235,9 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.depth_bias_enable = regs.polygon_control.NeedsBias();
 
     const auto& db = regs.depth_buffer;
-    const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+    const auto ds_format = instance.GetSupportedFormat(
+        LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format),
+        vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
     if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
         key.depth_format = ds_format;
     } else {
@@ -244,9 +272,11 @@ bool PipelineCache::RefreshGraphicsKey() {
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
     // order. We need to do some arrays compaction at this stage
     key.color_formats.fill(vk::Format::eUndefined);
+    key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
+    key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
     // recompiler.
@@ -260,6 +290,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
         key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
             base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
         }
@@ -268,50 +299,86 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
 
     Shader::Backend::Bindings binding{};
-    for (u32 i = 0; i < MaxShaderStages; i++) {
-        if (!regs.stage_enable.IsStageEnabled(i)) {
-            key.stage_hashes[i] = 0;
-            infos[i] = nullptr;
-            continue;
+    const auto& TryBindStageRemap = [&](Shader::Stage stage_in, Shader::Stage stage_out) -> bool {
+        const auto stage_in_idx = static_cast<u32>(stage_in);
+        const auto stage_out_idx = static_cast<u32>(stage_out);
+        if (!regs.stage_enable.IsStageEnabled(stage_in_idx)) {
+            key.stage_hashes[stage_out_idx] = 0;
+            infos[stage_out_idx] = nullptr;
+            return false;
         }
-        auto* pgm = regs.ProgramForStage(i);
+
+        const auto* pgm = regs.ProgramForStage(stage_in_idx);
         if (!pgm || !pgm->Address<u32*>()) {
-            key.stage_hashes[i] = 0;
-            infos[i] = nullptr;
-            continue;
+            key.stage_hashes[stage_out_idx] = 0;
+            infos[stage_out_idx] = nullptr;
+            return false;
         }
+
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
         if (!bininfo->Valid()) {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
-            key.stage_hashes[i] = 0;
-            infos[i] = nullptr;
-            continue;
-        }
-        if (ShouldSkipShader(bininfo->shader_hash, "graphics")) {
-            return false;
-        }
-        const auto stage = Shader::StageFromIndex(i);
-        const auto params = Liverpool::GetParams(*pgm);
-
-        if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
+            key.stage_hashes[stage_out_idx] = 0;
+            infos[stage_out_idx] = nullptr;
             return false;
         }
 
-        static bool TessMissingLogged = false;
-        if (auto* pgm = regs.ProgramForStage(3);
-            regs.stage_enable.IsStageEnabled(3) && pgm->Address() != 0) {
-            if (!TessMissingLogged) {
-                LOG_WARNING(Render_Vulkan, "Tess pipeline compilation skipped");
-                TessMissingLogged = true;
-            }
+        auto params = Liverpool::GetParams(*pgm);
+        std::tie(infos[stage_out_idx], modules[stage_out_idx], key.stage_hashes[stage_out_idx]) =
+            GetProgram(stage_in, params, binding);
+        return true;
+    };
+
+    const auto& TryBindStage = [&](Shader::Stage stage) { return TryBindStageRemap(stage, stage); };
+
+    const auto& IsGsFeaturesSupported = [&]() -> bool {
+        // These checks are temporary until all functionality is implemented.
+        return !regs.vgt_gs_mode.onchip && !regs.vgt_strmout_config.raw;
+    };
+
+    TryBindStage(Shader::Stage::Fragment);
+
+    const auto* fs_info = infos[static_cast<u32>(Shader::Stage::Fragment)];
+    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+
+    switch (regs.stage_enable.raw) {
+    case Liverpool::ShaderStageEnable::VgtStages::EsGs: {
+        if (!instance.IsGeometryStageSupported() || !IsGsFeaturesSupported()) {
+            break;
+        }
+        if (!TryBindStageRemap(Shader::Stage::Export, Shader::Stage::Vertex)) {
             return false;
         }
-
-        std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
+        if (!TryBindStage(Shader::Stage::Geometry)) {
+            return false;
+        }
+        break;
+    }
+    default: {
+        TryBindStage(Shader::Stage::Vertex);
+        infos[static_cast<u32>(Shader::Stage::Geometry)] = nullptr;
+        break;
+    }
     }
 
-    const auto* fs_info = infos[u32(Shader::Stage::Fragment)];
-    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    const auto* vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
+    if (vs_info && !instance.IsVertexInputDynamicState()) {
+        u32 vertex_binding = 0;
+        for (const auto& input : vs_info->vs_inputs) {
+            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+                continue;
+            }
+            const auto& buffer =
+                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            if (buffer.GetSize() == 0) {
+                continue;
+            }
+            ASSERT(vertex_binding < MaxVertexBufferCount);
+            key.vertex_buffer_formats[vertex_binding++] =
+                Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
+        }
+    }
 
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
@@ -338,9 +405,6 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const auto cs_params = Liverpool::GetParams(*cs_pgm);
-    if (ShouldSkipShader(cs_params.hash, "compute")) {
-        return false;
-    }
     std::tie(infos[0], modules[0], compute_key) =
         GetProgram(Shader::Stage::Compute, cs_params, binding);
     return true;
@@ -352,15 +416,11 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
                                               Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
-    if (Config::dumpShaders()) {
-        DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
-    }
+    DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     const auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
-    if (Config::dumpShaders()) {
-        DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
-    }
+    DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
     const auto module = CompileSPV(spv, instance.GetDevice());
     const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
@@ -403,6 +463,10 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
                                size_t perm_idx, std::string_view ext) {
+    if (!Config::dumpShaders()) {
+        return;
+    }
+
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
     if (!std::filesystem::exists(dump_dir)) {

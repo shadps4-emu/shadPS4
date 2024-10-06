@@ -19,6 +19,7 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
+#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -253,6 +254,13 @@ struct Liverpool {
         }
     };
 
+    struct ModeControl {
+        s32 msaa_enable : 1;
+        s32 vport_scissor_enable : 1;
+        s32 line_stripple_enable : 1;
+        s32 send_unlit_stiles_to_pkr : 1;
+    };
+
     enum class ZOrder : u32 {
         LateZ = 0,
         EarlyZLateZ = 1,
@@ -356,13 +364,16 @@ struct Liverpool {
             Stencil8 = 1,
         };
 
-        union {
+        union ZInfo {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
+            BitField<20, 3, u32> tile_mode_index;
+            BitField<23, 4, u32> decompress_on_n_zplanes;
             BitField<27, 1, u32> allow_expclear;
             BitField<28, 1, u32> read_size;
             BitField<29, 1, u32> tile_surface_en;
+            BitField<30, 1, u32> clear_disallowed;
             BitField<31, 1, u32> zrange_precision;
         } z_info;
         union {
@@ -465,6 +476,8 @@ struct Liverpool {
         BitField<13, 1, u32> enable_polygon_offset_para;
         BitField<16, 1, u32> enable_window_offset;
         BitField<19, 1, ProvokingVtxLast> provoking_vtx_last;
+        BitField<20, 1, u32> persp_corr_dis;
+        BitField<21, 1, u32> multi_prim_ib_ena;
 
         PolygonMode PolyMode() const {
             return enable_polygon_mode ? polygon_mode_front.Value() : PolygonMode::Fill;
@@ -559,29 +572,39 @@ struct Liverpool {
             s16 top_left_x;
             s16 top_left_y;
         };
-        union {
-            BitField<0, 15, u32> bottom_right_x;
-            BitField<16, 15, u32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
+        // From AMD spec: 'Negative numbers clamped to 0'
+        static s16 Clamp(s16 value) {
+            return std::max(s16(0), value);
+        }
+
         u32 GetWidth() const {
-            return static_cast<u32>(bottom_right_x - top_left_x);
+            return static_cast<u32>(Clamp(bottom_right_x) - Clamp(top_left_x));
         }
 
         u32 GetHeight() const {
-            return static_cast<u32>(bottom_right_y - top_left_y);
+            return static_cast<u32>(Clamp(bottom_right_y) - Clamp(top_left_y));
         }
+    };
+
+    struct WindowOffset {
+        s32 window_x_offset : 16;
+        s32 window_y_offset : 16;
     };
 
     struct ViewportScissor {
         union {
             BitField<0, 15, s32> top_left_x;
-            BitField<15, 15, s32> top_left_y;
-            BitField<30, 1, s32> window_offset_disable;
+            BitField<16, 15, s32> top_left_y;
+            BitField<31, 1, s32> window_offset_disable;
         };
-        union {
-            BitField<0, 15, s32> bottom_right_x;
-            BitField<15, 15, s32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
         u32 GetWidth() const {
@@ -617,6 +640,7 @@ struct Liverpool {
         BitField<8, 1, u32> xy_transformed;
         BitField<9, 1, u32> z_transformed;
         BitField<10, 1, u32> w_transformed;
+        BitField<11, 1, u32> perfcounter_ref;
     };
 
     struct ClipUserData {
@@ -672,6 +696,7 @@ struct Liverpool {
         BitField<24, 5, BlendFactor> alpha_dst_factor;
         BitField<29, 1, u32> separate_alpha_blend;
         BitField<30, 1, u32> enable;
+        BitField<31, 1, u32> disable_rop3;
     };
 
     union ColorControl {
@@ -680,9 +705,11 @@ struct Liverpool {
             Normal = 1u,
             EliminateFastClear = 2u,
             Resolve = 3u,
+            Err = 4u,
             FmaskDecompress = 5u,
         };
 
+        BitField<0, 1, u32> disable_dual_quad;
         BitField<3, 1, u32> degamma_enable;
         BitField<4, 3, OperationMode> mode;
         BitField<16, 8, u32> rop3;
@@ -720,7 +747,7 @@ struct Liverpool {
             BitField<0, 11, u32> slice_start;
             BitField<13, 11, u32> slice_max;
         } view;
-        union {
+        union Color0Info {
             BitField<0, 2, EndianSwap> endian;
             BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
@@ -733,10 +760,17 @@ struct Liverpool {
             BitField<17, 1, u32> simple_float;
             BitField<18, 1, RoundMode> round_mode;
             BitField<19, 1, u32> cmask_is_linear;
+            BitField<20, 3, u32> blend_opt_dont_rd_dst;
+            BitField<23, 3, u32> blend_opt_discard_pixel;
+            BitField<26, 1, u32> fmask_compression_disable_ci;
+            BitField<27, 1, u32> fmask_compress_1frag_only;
+            BitField<28, 1, u32> dcc_enable;
+            BitField<29, 1, u32> cmask_addr_type;
         } info;
-        union {
+        union Color0Attrib {
             BitField<0, 5, TilingMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
+            BitField<10, 2, u32> fmask_bank_height;
             BitField<12, 3, u32> num_samples_log2;
             BitField<15, 2, u32> num_fragments_log2;
             BitField<17, 1, u32> force_dst_alpha_1;
@@ -809,26 +843,6 @@ struct Liverpool {
         }
     };
 
-    enum class PrimitiveType : u32 {
-        None = 0,
-        PointList = 1,
-        LineList = 2,
-        LineStrip = 3,
-        TriangleList = 4,
-        TriangleFan = 5,
-        TriangleStrip = 6,
-        PatchPrimitive = 9,
-        AdjLineList = 10,
-        AdjLineStrip = 11,
-        AdjTriangleList = 12,
-        AdjTriangleStrip = 13,
-        RectList = 17,
-        LineLoop = 18,
-        QuadList = 19,
-        QuadStrip = 20,
-        Polygon = 21,
-    };
-
     enum ContextRegs : u32 {
         DbZInfo = 0xA010,
         CbColor0Base = 0xA318,
@@ -869,8 +883,14 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<2, 1, u32> depth_copy;
+        BitField<3, 1, u32> stencil_copy;
+        BitField<4, 1, u32> resummarize_enable;
         BitField<5, 1, u32> stencil_compress_disable;
         BitField<6, 1, u32> depth_compress_disable;
+        BitField<7, 1, u32> copy_centroid;
+        BitField<8, 1, u32> copy_sample;
+        BitField<9, 1, u32> decompress_enable;
     };
 
     union DepthView {
@@ -897,7 +917,12 @@ struct Liverpool {
     };
 
     union ShaderStageEnable {
-        u32 raw;
+        enum VgtStages : u32 {
+            Vs = 0u, // always enabled
+            EsGs = 0xB0u,
+        };
+
+        VgtStages raw;
         BitField<0, 2, u32> ls_en;
         BitField<2, 1, u32> hs_en;
         BitField<3, 2, u32> es_en;
@@ -921,6 +946,97 @@ struct Liverpool {
                 UNREACHABLE();
             }
         }
+    };
+
+    union GsInstances {
+        u32 raw;
+        struct {
+            u32 enable : 2;
+            u32 count : 6;
+        };
+
+        bool IsEnabled() const {
+            return enable && count > 0;
+        }
+    };
+
+    union GsOutPrimitiveType {
+        u32 raw;
+        struct {
+            GsOutputPrimitiveType outprim_type : 6;
+            GsOutputPrimitiveType outprim_type1 : 6;
+            GsOutputPrimitiveType outprim_type2 : 6;
+            GsOutputPrimitiveType outprim_type3 : 6;
+            u32 reserved : 3;
+            u32 unique_type_per_stream : 1;
+        };
+
+        GsOutputPrimitiveType GetPrimitiveType(u32 stream) const {
+            if (unique_type_per_stream == 0) {
+                return outprim_type;
+            }
+
+            switch (stream) {
+            case 0:
+                return outprim_type;
+            case 1:
+                return outprim_type1;
+            case 2:
+                return outprim_type2;
+            case 3:
+                return outprim_type3;
+            default:
+                UNREACHABLE();
+            }
+        }
+    };
+
+    union GsMode {
+        u32 raw;
+        BitField<0, 3, u32> mode;
+        BitField<3, 2, u32> cut_mode;
+        BitField<22, 2, u32> onchip;
+    };
+
+    union StreamOutConfig {
+        u32 raw;
+        struct {
+            u32 streamout_0_en : 1;
+            u32 streamout_1_en : 1;
+            u32 streamout_2_en : 1;
+            u32 streamout_3_en : 1;
+            u32 rast_stream : 3;
+            u32 : 1;
+            u32 rast_stream_mask : 4;
+            u32 : 19;
+            u32 use_rast_stream_mask : 1;
+        };
+    };
+
+    union StreamOutBufferConfig {
+        u32 raw;
+        struct {
+            u32 stream_0_buf_en : 4;
+            u32 stream_1_buf_en : 4;
+            u32 stream_2_buf_en : 4;
+            u32 stream_3_buf_en : 4;
+        };
+    };
+
+    union Eqaa {
+        u32 raw;
+        BitField<0, 1, u32> max_anchor_samples;
+        BitField<4, 3, u32> ps_iter_samples;
+        BitField<8, 3, u32> mask_export_num_samples;
+        BitField<12, 3, u32> alpha_to_mask_num_samples;
+        BitField<16, 1, u32> high_quality_intersections;
+        BitField<17, 1, u32> incoherent_eqaa_reads;
+        BitField<18, 1, u32> interpolate_comp_z;
+        BitField<19, 1, u32> interpolate_src_z;
+        BitField<20, 1, u32> static_anchor_associations;
+        BitField<21, 1, u32> alpha_to_mask_eqaa_disable;
+        BitField<24, 3, u32> overrasterization_amount;
+        BitField<27, 1, u32> enable_postz_overrasterization;
     };
 
     union Regs {
@@ -953,10 +1069,14 @@ struct Liverpool {
             Scissor screen_scissor;
             INSERT_PADDING_WORDS(0xA010 - 0xA00C - 2);
             DepthBuffer depth_buffer;
-            INSERT_PADDING_WORDS(0xA08E - 0xA018);
+            INSERT_PADDING_WORDS(0xA080 - 0xA018);
+            WindowOffset window_offset;
+            ViewportScissor window_scissor;
+            INSERT_PADDING_WORDS(0xA08E - 0xA081 - 2);
             ColorBufferMask color_target_mask;
             ColorBufferMask color_shader_mask;
-            INSERT_PADDING_WORDS(0xA094 - 0xA08E - 2);
+            ViewportScissor generic_scissor;
+            INSERT_PADDING_WORDS(2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
             INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
@@ -994,7 +1114,13 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA29E - 0xA207 - 2);
+            INSERT_PADDING_WORDS(0xA290 - 0xA207 - 1);
+            GsMode vgt_gs_mode;
+            INSERT_PADDING_WORDS(1);
+            ModeControl mode_control;
+            INSERT_PADDING_WORDS(8);
+            GsOutPrimitiveType vgt_gs_out_prim_type;
+            INSERT_PADDING_WORDS(1);
             u32 index_size;
             u32 max_index_size;
             IndexBufferType index_buffer_type;
@@ -1005,11 +1131,21 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A5 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
+            INSERT_PADDING_WORDS(0xA2AB - 0xA2A9 - 1);
+            u32 vgt_esgs_ring_itemsize;
+            u32 vgt_gsvs_ring_itemsize;
+            INSERT_PADDING_WORDS(0xA2CE - 0xA2AC - 1);
+            BitField<0, 11, u32> vgt_gs_max_vert_out;
+            INSERT_PADDING_WORDS(0xA2D5 - 0xA2CE - 1);
             ShaderStageEnable stage_enable;
-            INSERT_PADDING_WORDS(9);
+            INSERT_PADDING_WORDS(1);
+            u32 vgt_gs_vert_itemsize[4];
+            INSERT_PADDING_WORDS(4);
             PolygonOffset poly_offset;
-            INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
+            GsInstances vgt_gs_instance_cnt;
+            StreamOutConfig vgt_strmout_config;
+            StreamOutBufferConfig vgt_strmout_buffer_config;
+            INSERT_PADDING_WORDS(0xA2F8 - 0xA2E6 - 1);
             AaConfig aa_config;
             INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
@@ -1206,8 +1342,11 @@ static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
+static_assert(GFX6_3D_REG_INDEX(window_offset) == 0xA080);
+static_assert(GFX6_3D_REG_INDEX(window_scissor) == 0xA081);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
+static_assert(GFX6_3D_REG_INDEX(generic_scissor) == 0xA090);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
 static_assert(GFX6_3D_REG_INDEX(primitive_restart_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
@@ -1227,14 +1366,24 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_mode) == 0xA290);
+static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_out_prim_type) == 0xA29B);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_restart) == 0xA2A5);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(vgt_esgs_ring_itemsize) == 0xA2AB);
+static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_vert_itemsize[0]) == 0xA2D7);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
+static_assert(GFX6_3D_REG_INDEX(vgt_gs_instance_cnt) == 0xA2E4);
+static_assert(GFX6_3D_REG_INDEX(vgt_strmout_config) == 0xA2E5);
+static_assert(GFX6_3D_REG_INDEX(vgt_strmout_buffer_config) == 0xA2E6);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);

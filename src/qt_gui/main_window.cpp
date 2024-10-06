@@ -695,8 +695,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             }
             std::string entitlement_label = Common::SplitString(content_id, '-')[2];
 
-            auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
-                                      pkg.GetTitleID() / entitlement_label;
+            auto addon_extract_path =
+                Config::getAddonInstallDir() / pkg.GetTitleID() / entitlement_label;
             QString addonDirPath;
             Common::FS::PathToQString(addonDirPath, addon_extract_path);
             QDir addon_dir(addonDirPath);
@@ -776,7 +776,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                msgBox.setText(QString(tr("Game already installed") + "\n" + addonDirPath + "\n" +
+                msgBox.setText(QString(tr("Game already installed") + "\n" + gameDirPath + "\n" +
                                        tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);

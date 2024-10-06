@@ -21,7 +21,7 @@ public:
     explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
-    bool eventFilter(QObject* obj, QEvent* event);
+    bool override(QObject* obj, QEvent* event);
     void updateNoteTextEdit(const QString& groupName);
 
     int exec() override;

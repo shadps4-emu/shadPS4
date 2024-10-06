@@ -260,9 +260,8 @@ bool Instance::CreateDevice() {
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
-    const bool topology_restart =
-        add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
-    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
+    maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -272,6 +271,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
@@ -322,6 +322,7 @@ bool Instance::CreateDevice() {
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
                 .depthBiasClamp = features.depthBiasClamp,
+                .fillModeNonSolid = features.fillModeNonSolid,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
@@ -365,6 +366,9 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceColorWriteEnableFeaturesEXT{
             .colorWriteEnable = true,
+        },
+        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{
+            .extendedDynamicState = true,
         },
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
             .extendedDynamicState3ColorWriteMask = true,
@@ -414,7 +418,7 @@ bool Instance::CreateDevice() {
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
     }
-    if (!topology_restart) {
+    if (!list_restart) {
         device_chain.unlink<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     }
     if (robustness) {

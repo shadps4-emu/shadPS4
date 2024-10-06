@@ -166,10 +166,14 @@ public:
     Id input_s32{};
     Id output_u32{};
     Id output_f32{};
+    Id output_s32{};
+
+    Id gl_in{};
 
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
     Id push_data_block{};
@@ -177,8 +181,6 @@ public:
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
-    std::array<Id, 8> frag_color{};
-    std::array<u32, 8> frag_num_comp{};
     Id clip_distances{};
     Id cull_distances{};
 
@@ -237,11 +239,13 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        bool is_integer{};
         bool is_default{};
         s32 buffer_handle{-1};
     };
-    std::array<SpirvAttribute, 32> input_params{};
-    std::array<SpirvAttribute, 32> output_params{};
+    std::array<SpirvAttribute, IR::NumParams> input_params{};
+    std::array<SpirvAttribute, IR::NumParams> output_params{};
+    std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
 private:
     void DefineArithmeticTypes();
@@ -254,7 +258,8 @@ private:
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
 
-    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
+    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
+                                    bool output);
 };
 
 } // namespace Shader::Backend::SPIRV

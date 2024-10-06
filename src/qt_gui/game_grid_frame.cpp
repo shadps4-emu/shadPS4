@@ -53,7 +53,7 @@ void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameGridFrame::PlayBackgroundMusic(QString path) {
-    if (path.isEmpty()) {
+    if (path.isEmpty() || !Config::getPlayBGM()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
@@ -102,7 +102,9 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
 
         name_label->setGraphicsEffect(shadowEffect);
         widget->setLayout(layout);
-        QString tooltipText = QString::fromStdString(m_games_[gameCounter].name);
+        QString tooltipText = QString::fromStdString(m_games_[gameCounter].name + " (" +
+                                                     m_games_[gameCounter].version + ", " +
+                                                     m_games_[gameCounter].region + ")");
         widget->setToolTip(tooltipText);
         QString tooltipStyle = QString("QToolTip {"
                                        "background-color: #ffffff;"

@@ -27,7 +27,6 @@ Id EmitConditionRef(EmitContext& ctx, const IR::Value& value);
 void EmitReference(EmitContext&);
 void EmitPhiMove(EmitContext&);
 void EmitJoin(EmitContext& ctx);
-void EmitBarrier(EmitContext& ctx);
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx);
 void EmitDeviceMemoryBarrier(EmitContext& ctx);
 void EmitGetScc(EmitContext& ctx);
@@ -85,7 +84,7 @@ Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp);
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
 void EmitSetFragColor(EmitContext& ctx, u32 index, u32 component, Id value);
@@ -408,5 +407,8 @@ Id EmitReadLane(EmitContext& ctx, Id value, u32 lane);
 Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane);
 Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding);
 Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding);
+
+void EmitEmitVertex(EmitContext& ctx);
+void EmitEmitPrimitive(EmitContext& ctx);
 
 } // namespace Shader::Backend::SPIRV

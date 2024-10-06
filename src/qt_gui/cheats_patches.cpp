@@ -456,10 +456,9 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
     if (source == "GoldHEN") {
         url = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
     } else if (source == "wolf2022") {
-        url = "https://wolf2022.ir/trainer/" + gameSerial + "_" + gameVersion + ".json";
+        url = "https://wolf2022.ir/trainer/list.json";
     } else if (source == "shadPS4") {
-        url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/"
-              "CHEATS_JSON.txt";
+        url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/CHEATS_JSON.txt";
     } else {
         QMessageBox::warning(this, tr("Invalid Source"),
                              QString(tr("The selected source is invalid.") + "\n%1").arg(source));
@@ -474,44 +473,32 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
             QByteArray jsonData = reply->readAll();
             bool foundFiles = false;
 
-            if (source == "GoldHEN" || source == "shadPS4") {
-                QString textContent(jsonData);
-                QRegularExpression regex(
-                    QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
-                QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
-                QString baseUrl;
+            if (source == "wolf2022") {
+                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+                QJsonArray gamesArray = jsonDoc.object().value("games").toArray();
 
-                if (source == "GoldHEN") {
-                    baseUrl = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/"
-                              "main/json/";
-                } else {
-                    baseUrl = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/"
-                              "main/CHEATS/";
-                }
+                foreach (const QJsonValue& value, gamesArray) {
+                    QJsonObject gameObject = value.toObject();
+                    QString title = gameObject.value("title").toString();
+                    QString version = gameObject.value("version").toString();
 
-                while (matches.hasNext()) {
-                    QRegularExpressionMatch match = matches.next();
-                    QString fileName = match.captured(0);
+                    if (title == gameSerial &&
+                        (version == gameVersion || version == gameVersion.mid(1))) {
+                        QString fileUrl =
+                            "https://wolf2022.ir/trainer/" + gameObject.value("url").toString();
 
-                    if (!fileName.isEmpty()) {
-                        QString newFileName = fileName;
-                        int dotIndex = newFileName.lastIndexOf('.');
-                        if (dotIndex != -1) {
+                        QString localFileName = gameObject.value("url").toString();
+                        localFileName =
+                            localFileName.left(localFileName.lastIndexOf('.')) + "_wolf2022.json";
 
-                            if (source == "GoldHEN") {
-                                newFileName.insert(dotIndex, "_GoldHEN");
-                            } else {
-                                newFileName.insert(dotIndex, "_shadPS4");
-                            }
-                        }
-                        QString fileUrl = baseUrl + fileName;
-                        QString localFilePath = dir.filePath(newFileName);
+                        QString localFilePath = dir.filePath(localFileName);
 
                         if (QFile::exists(localFilePath) && showMessageBox) {
                             QMessageBox::StandardButton reply;
                             reply = QMessageBox::question(
                                 this, tr("File Exists"),
-                                tr("File already exists. Do you want to replace it?"),
+                                tr("File already exists. Do you want to replace it?") + "\n" +
+                                    localFileName,
                                 QMessageBox::Yes | QMessageBox::No);
                             if (reply == QMessageBox::No) {
                                 continue;
@@ -549,38 +536,81 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
                 if (!foundFiles && showMessageBox) {
                     QMessageBox::warning(this, tr("Cheats Not Found"), tr("CheatsNotFound_MSG"));
                 }
-            } else if (source == "wolf2022") {
-                QString fileName = QFileInfo(QUrl(url).path()).fileName();
-                QString baseFileName = fileName;
-                int dotIndex = baseFileName.lastIndexOf('.');
-                if (dotIndex != -1) {
-                    baseFileName.insert(dotIndex, "_wolf2022");
+            } else if (source == "GoldHEN" || source == "shadPS4") {
+                QString textContent(jsonData);
+                QRegularExpression regex(
+                    QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
+                QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
+                QString baseUrl;
+
+                if (source == "GoldHEN") {
+                    baseUrl = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/"
+                              "main/json/";
+                } else {
+                    baseUrl = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/"
+                              "main/CHEATS/";
                 }
-                QString filePath;
-                Common::FS::PathToQString(filePath,
-                                          Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
-                filePath += "/" + baseFileName;
-                if (QFile::exists(filePath) && showMessageBox) {
-                    QMessageBox::StandardButton reply2;
-                    reply2 =
-                        QMessageBox::question(this, tr("File Exists"),
-                                              tr("File already exists. Do you want to replace it?"),
-                                              QMessageBox::Yes | QMessageBox::No);
-                    if (reply2 == QMessageBox::No) {
-                        reply->deleteLater();
-                        return;
+
+                while (matches.hasNext()) {
+                    QRegularExpressionMatch match = matches.next();
+                    QString fileName = match.captured(0);
+
+                    if (!fileName.isEmpty()) {
+                        QString newFileName = fileName;
+                        int dotIndex = newFileName.lastIndexOf('.');
+                        if (dotIndex != -1) {
+
+                            if (source == "GoldHEN") {
+                                newFileName.insert(dotIndex, "_GoldHEN");
+                            } else {
+                                newFileName.insert(dotIndex, "_shadPS4");
+                            }
+                        }
+                        QString fileUrl = baseUrl + fileName;
+                        QString localFilePath = dir.filePath(newFileName);
+
+                        if (QFile::exists(localFilePath) && showMessageBox) {
+                            QMessageBox::StandardButton reply;
+                            reply = QMessageBox::question(
+                                this, tr("File Exists"),
+                                tr("File already exists. Do you want to replace it?") + "\n" +
+                                    newFileName,
+                                QMessageBox::Yes | QMessageBox::No);
+                            if (reply == QMessageBox::No) {
+                                continue;
+                            }
+                        }
+                        QNetworkRequest fileRequest(fileUrl);
+                        QNetworkReply* fileReply = manager->get(fileRequest);
+
+                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
+                            if (fileReply->error() == QNetworkReply::NoError) {
+                                QByteArray fileData = fileReply->readAll();
+                                QFile localFile(localFilePath);
+                                if (localFile.open(QIODevice::WriteOnly)) {
+                                    localFile.write(fileData);
+                                    localFile.close();
+                                } else {
+                                    QMessageBox::warning(
+                                        this, tr("Error"),
+                                        QString(tr("Failed to save file:") + "\n%1")
+                                            .arg(localFilePath));
+                                }
+                            } else {
+                                QMessageBox::warning(this, tr("Error"),
+                                                     QString(tr("Failed to download file:") +
+                                                             "%1\n\n" + tr("Error:") + "%2")
+                                                         .arg(fileUrl)
+                                                         .arg(fileReply->errorString()));
+                            }
+                            fileReply->deleteLater();
+                        });
+
+                        foundFiles = true;
                     }
                 }
-                QFile cheatFile(filePath);
-                if (cheatFile.open(QIODevice::WriteOnly)) {
-                    cheatFile.write(jsonData);
-                    cheatFile.close();
-                    foundFiles = true;
-                    populateFileListCheats();
-                } else {
-                    QMessageBox::warning(
-                        this, tr("Error"),
-                        QString(tr("Failed to save file:") + "\n%1").arg(filePath));
+                if (!foundFiles && showMessageBox) {
+                    QMessageBox::warning(this, tr("Cheats Not Found"), tr("CheatsNotFound_MSG"));
                 }
             }
             if (foundFiles && showMessageBox) {
@@ -910,11 +940,16 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
 void CheatsPatches::populateFileListCheats() {
     QString cheatsDir;
     Common::FS::PathToQString(cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
-    QString pattern = m_gameSerial + "_" + m_gameVersion + "*.json";
+
+    QString fullGameVersion = m_gameVersion;
+    QString modifiedGameVersion = m_gameVersion.mid(1);
+
+    QString patternWithFirstChar = m_gameSerial + "_" + fullGameVersion + "*.json";
+    QString patternWithoutFirstChar = m_gameSerial + "_" + modifiedGameVersion + "*.json";
 
     QDir dir(cheatsDir);
     QStringList filters;
-    filters << pattern;
+    filters << patternWithFirstChar << patternWithoutFirstChar;
     dir.setNameFilters(filters);
 
     QFileInfoList fileList = dir.entryInfoList(QDir::Files);

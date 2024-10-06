@@ -3,11 +3,11 @@
 
 name: Build and Release
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "*" ]
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 env:
   BUILD_TYPE: Release
@@ -287,7 +287,7 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential libasound2-dev libpulse-dev libopenal-dev
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -343,7 +343,7 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -382,7 +382,7 @@ jobs:
         path: Shadps4-qt.AppImage
 
   pre-release:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4' && github.event_name == 'push'
     needs: [get-info, windows-sdl, windows-qt, macos-sdl, macos-qt, linux-sdl, linux-qt]
     runs-on: ubuntu-latest
     steps:

@@ -11,6 +11,10 @@ namespace Libraries::AudioOut {
 
 constexpr int SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
 
+// main up to 8 ports, BGM 1 port, voice up to 4 ports,
+// personal up to 4 ports, padspk up to 5 ports, aux 1 port
+constexpr int SCE_AUDIO_OUT_NUM_PORTS = 22;
+
 enum OrbisAudioOutPort {
     ORBIS_AUDIO_OUT_PORT_TYPE_MAIN = 0,
     ORBIS_AUDIO_OUT_PORT_TYPE_BGM = 1,

@@ -14,6 +14,9 @@
 
 #include <vk_mem_alloc.h>
 
+#include "core/debug_state.h"
+#include "core/devtools/layer.h"
+
 namespace Vulkan {
 
 bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format format) {
@@ -96,7 +99,7 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
-      texture_cache{rasterizer->GetTextureCache()}, video_info_ui{this} {
+      texture_cache{rasterizer->GetTextureCache()} {
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 
@@ -114,11 +117,11 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
 
     // Setup ImGui
     ImGui::Core::Initialize(instance, window, num_images, swapchain.GetSurfaceFormat().format);
-    ImGui::Layer::AddLayer(&video_info_ui);
+    ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }
 
 RendererVulkan::~RendererVulkan() {
-    ImGui::Layer::RemoveLayer(&video_info_ui);
+    ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
     draw_scheduler.Finish();
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
@@ -416,6 +419,8 @@ void RendererVulkan::Present(Frame* frame) {
     std::scoped_lock fl{free_mutex};
     free_queue.push(frame);
     free_cv.notify_one();
+
+    DebugState.IncFlipFrameNum();
 }
 
 Frame* RendererVulkan::GetRenderFrame() {

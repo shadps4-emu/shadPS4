@@ -29,7 +29,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     QDir dir(trophyDirQt);
     if (!dir.exists()) {
         std::filesystem::path path = Common::FS::PathFromQString(gameTrpPath_);
-        if (!trp.Extract(path))
+        if (!trp.Extract(path, title.toStdString()))
             return;
     }
     QFileInfoList dirList = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -76,7 +76,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 trpType.append(reader.attributes().value("ttype").toString());
                 trpPid.append(reader.attributes().value("pid").toString());
                 if (reader.attributes().hasAttribute("unlockstate")) {
-                    if (reader.attributes().value("unlockstate").toString() == "unlocked") {
+                    if (reader.attributes().value("unlockstate").toString() == "true") {
                         trpUnlocked.append("unlocked");
                     } else {
                         trpUnlocked.append("locked");

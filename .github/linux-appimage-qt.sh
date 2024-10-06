@@ -14,12 +14,10 @@ export PATH="$Qt6_DIR/bin:$PATH"
 wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
 wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
 wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-checkrt/releases/download/continuous/linuxdeploy-plugin-checkrt-x86_64.sh
-wget -q https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh
 
 chmod a+x linuxdeploy-x86_64.AppImage
 chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
-chmod a+x linuxdeploy-plugin-gstreamer.sh
 
 # Build AppImage
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
@@ -27,5 +25,7 @@ chmod a+x linuxdeploy-plugin-gstreamer.sh
 
 cp -a "$GITHUB_WORKSPACE/build/translations" AppDir/usr/bin
 
-./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/.github/shadps4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/.github/shadps4.png --plugin qt --plugin gstreamer --output appimage
+./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/.github/shadps4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/.github/shadps4.png --plugin qt 
+rm AppDir/usr/plugins/multimedia/libgstreamermediaplugin.so
+./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
 mv Shadps4-x86_64.AppImage Shadps4-qt.AppImage

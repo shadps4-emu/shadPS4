@@ -249,8 +249,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -1402,6 +1402,15 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         switch (value.Type()) {
         case Type::F16:
             return Inst<F32>(Opcode::ConvertF32F16, value);
+        case Type::F64:
+            return Inst<F32>(Opcode::ConvertF32F64, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::F32:
+            return Inst<F64>(Opcode::ConvertF64F32, value);
         default:
             break;
         }
@@ -1542,6 +1551,14 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInst
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
                            TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+}
+
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EmitPrimitive() {
+    Inst(Opcode::EmitPrimitive);
 }
 
 } // namespace Shader::IR

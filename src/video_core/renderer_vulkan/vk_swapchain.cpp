@@ -197,6 +197,11 @@ void Swapchain::SetSurfaceProperties() {
 
 void Swapchain::Destroy() {
     vk::Device device = instance.GetDevice();
+    const auto wait_result = device.waitIdle();
+    if (wait_result != vk::Result::eSuccess) {
+        LOG_WARNING(Render_Vulkan, "Failed to wait for device to become idle: {}",
+                    vk::to_string(wait_result));
+    }
     if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }

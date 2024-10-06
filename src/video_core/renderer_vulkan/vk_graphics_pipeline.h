@@ -26,6 +26,7 @@ using Liverpool = AmdGpu::Liverpool;
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
+    std::array<AmdGpu::NumberFormat, Liverpool::NumColorBuffers> color_num_formats;
     std::array<Liverpool::ColorBuffer::SwapMode, Liverpool::NumColorBuffers> mrt_swizzles;
     vk::Format depth_format;
     vk::Format stencil_format;
@@ -35,7 +36,7 @@ struct GraphicsPipelineKey {
     u32 num_samples;
     u32 mrt_mask;
     Liverpool::StencilControl stencil;
-    Liverpool::PrimitiveType prim_type;
+    AmdGpu::PrimitiveType prim_type;
     u32 enable_primitive_restart;
     u32 primitive_restart_index;
     Liverpool::PolygonMode polygon_mode;
@@ -45,6 +46,7 @@ struct GraphicsPipelineKey {
     Liverpool::ColorBufferMask cb_shader_mask;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
+    std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;
@@ -81,6 +83,16 @@ public:
 
     bool IsDepthEnabled() const {
         return key.depth_stencil.depth_enable.Value();
+    }
+
+    [[nodiscard]] bool IsPrimitiveListTopology() const {
+        return key.prim_type == AmdGpu::PrimitiveType::PointList ||
+               key.prim_type == AmdGpu::PrimitiveType::LineList ||
+               key.prim_type == AmdGpu::PrimitiveType::TriangleList ||
+               key.prim_type == AmdGpu::PrimitiveType::AdjLineList ||
+               key.prim_type == AmdGpu::PrimitiveType::AdjTriangleList ||
+               key.prim_type == AmdGpu::PrimitiveType::RectList ||
+               key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
 
 private:

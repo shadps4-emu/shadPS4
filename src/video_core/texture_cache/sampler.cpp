@@ -16,7 +16,7 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         .addressModeU = LiverpoolToVK::ClampMode(sampler.clamp_x),
         .addressModeV = LiverpoolToVK::ClampMode(sampler.clamp_y),
         .addressModeW = LiverpoolToVK::ClampMode(sampler.clamp_z),
-        .mipLodBias = sampler.LodBias(),
+        .mipLodBias = std::min(sampler.LodBias(), instance.MaxSamplerLodBias()),
         .compareEnable = sampler.depth_compare_func != AmdGpu::DepthCompare::Never,
         .compareOp = LiverpoolToVK::DepthCompare(sampler.depth_compare_func),
         .minLod = sampler.MinLod(),

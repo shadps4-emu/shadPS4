@@ -16,13 +16,16 @@ public:
     ~GameInstallDialog();
 
 private slots:
-    void Browse();
+    void BrowseGamesDirectory();
+    void BrowseAddonsDirectory();
 
 private:
     QWidget* SetupGamesDirectory();
+    QWidget* SetupAddonsDirectory();
     QWidget* SetupDialogActions();
     void Save();
 
 private:
     QLineEdit* m_gamesDirectory;
+    QLineEdit* m_addonsDirectory;
 };
