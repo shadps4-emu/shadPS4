@@ -20,15 +20,18 @@ static ImeDialogState g_ime_dlg_state{};
 static ImeDialogUi g_ime_dlg_ui;
 
 static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
-    if (False(~option & (OrbisImeDialogOption::MULTILINE | OrbisImeDialogOption::NO_AUTO_COMPLETION))) {
+    if (False(~option &
+              (OrbisImeDialogOption::MULTILINE | OrbisImeDialogOption::NO_AUTO_COMPLETION))) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::MULTILINE) && type != OrbisImeType::DEFAULT && type != OrbisImeType::BASIC_LATIN) {
+    if (True(option & OrbisImeDialogOption::MULTILINE) && type != OrbisImeType::DEFAULT &&
+        type != OrbisImeType::BASIC_LATIN) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::NO_AUTO_COMPLETION) && type != OrbisImeType::NUMBER && type != OrbisImeType::BASIC_LATIN    ) {
+    if (True(option & OrbisImeDialogOption::NO_AUTO_COMPLETION) && type != OrbisImeType::NUMBER &&
+        type != OrbisImeType::BASIC_LATIN) {
         return false;
     }
 
@@ -36,7 +39,8 @@ static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
 }
 
 // static bool IsMemZero(const void* ptr, size_t size) {
-//     return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c) { return c == 0; });
+//     return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size, [](u8 c)
+//     { return c == 0; });
 // }
 
 Error PS4_SYSV_ABI sceImeDialogAbort() {
@@ -142,16 +146,20 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         LOG_INFO(Lib_ImeDialog, "Invalid param->type");
         return Error::INVALID_ADDRESS;
     }
-    
-    //TODO: do correct param->option validation
-    //TODO: do correct param->supportedLanguages validation
 
-    if (param->posx < 0.0f || param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
+    // TODO: do correct param->option validation
+    // TODO: do correct param->supportedLanguages validation
+
+    if (param->posx < 0.0f ||
+        param->posx >=
+            MAX_X_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->posx");
         return Error::INVALID_POSX;
     }
 
-    if (param->posy < 0.0f || param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
+    if (param->posy < 0.0f ||
+        param->posy >=
+            MAX_Y_POSITIONS[False(param->option & OrbisImeDialogOption::LARGE_RESOLUTION)]) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->posy");
         return Error::INVALID_POSY;
     }
@@ -171,7 +179,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         return Error::INVALID_PARAM;
     }
 
-    if (param->userId != 1) { //We only support user 1 for now
+    if (param->userId != 1) { // We only support user 1 for now
         LOG_INFO(Lib_ImeDialog, "Invalid param->userId");
         return Error::INVALID_USER_ID;
     }
@@ -192,7 +200,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
             return Error::INVALID_EXTENDED;
         }
 
-        //TODO: do correct extended->option validation
+        // TODO: do correct extended->option validation
 
         // if (IsMemZero(extended->reserved, 60)) {
         //     LOG_INFO(Lib_ImeDialog, "Invalid extended->reserved");

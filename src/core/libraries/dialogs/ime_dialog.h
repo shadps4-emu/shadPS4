@@ -56,32 +56,13 @@ enum class Error : u32 {
     DIALOG_NOT_IN_USE = 0x80bc0107
 };
 
-enum class OrbisImeDialogStatus : u32 {
-    NONE = 0,
-    RUNNING = 1,
-    FINISHED = 2
-};
+enum class OrbisImeDialogStatus : u32 { NONE = 0, RUNNING = 1, FINISHED = 2 };
 
-enum class OrbisImeDialogEndStatus : u32 {
-    OK = 0,
-    USER_CANCELED = 1,
-    ABORTED = 2
-};
+enum class OrbisImeDialogEndStatus : u32 { OK = 0, USER_CANCELED = 1, ABORTED = 2 };
 
-    enum class OrbisImeType : u32 {
-        DEFAULT = 0,
-        BASIC_LATIN = 1,
-        URL = 2,
-        MAIL = 3,
-        NUMBER = 4
-    };
+enum class OrbisImeType : u32 { DEFAULT = 0, BASIC_LATIN = 1, URL = 2, MAIL = 3, NUMBER = 4 };
 
-enum class OrbisImeEnterLabel : u32 {
-    DEFAULT = 0,
-    SEND = 1,
-    SEARCH = 2,
-    GO = 3
-};
+enum class OrbisImeEnterLabel : u32 { DEFAULT = 0, SEND = 1, SEARCH = 2, GO = 3 };
 
 enum class OrbisImeDialogOption : u32 {
     DEFAULT = 0,
@@ -94,28 +75,13 @@ enum class OrbisImeDialogOption : u32 {
 
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
 
-enum class OrbisImeInputMethod : u32 {
-    DEFAULT = 0
-};
+enum class OrbisImeInputMethod : u32 { DEFAULT = 0 };
 
-enum class OrbisImeHorizontalAlignment : u32 {
-    LEFT = 0,
-    CENTER = 1,
-    RIGHT = 2
-};
+enum class OrbisImeHorizontalAlignment : u32 { LEFT = 0, CENTER = 1, RIGHT = 2 };
 
-enum class OrbisImeVerticalAlignment : u32 {
-    TOP = 0,
-    CENTER = 1,
-    BOTTOM = 2
-};
+enum class OrbisImeVerticalAlignment : u32 { TOP = 0, CENTER = 1, BOTTOM = 2 };
 
-enum class OrbisImePanelPriority : u32 {
-    DEFAULT = 0,
-    ALPHABET = 1,
-    SYMBOL = 2,
-    ACCENT = 3
-};
+enum class OrbisImePanelPriority : u32 { DEFAULT = 0, ALPHABET = 1, SYMBOL = 2, ACCENT = 3 };
 
 enum class OrbisImeKeyboardType : u32 {
     NONE = 0,
@@ -180,11 +146,12 @@ struct OrbisImeKeycode {
     u64 timestamp;
 };
 
-typedef PS4_SYSV_ABI int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength, const char16_t* srcText,
-                                  u32 srcTextLength);
+typedef PS4_SYSV_ABI int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength,
+                                               const char16_t* srcText, u32 srcTextLength);
 
-typedef PS4_SYSV_ABI int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode, u16* outKeycode,
-                                         u32* outStatus, void* reserved);
+typedef PS4_SYSV_ABI int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode,
+                                                      u16* outKeycode, u32* outStatus,
+                                                      void* reserved);
 
 struct OrbisImeDialogParam {
     s32 userId;
@@ -206,7 +173,7 @@ struct OrbisImeDialogParam {
 };
 
 struct OrbisImeParamExtended {
-    u32 option; //OrbisImeDialogOptionExtended
+    u32 option; // OrbisImeDialogOptionExtended
     OrbisImeColor colorBase;
     OrbisImeColor colorLine;
     OrbisImeColor colorTextField;

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cwchar>
+#include <string>
 #include <imgui.h>
 #include <magic_enum.hpp>
-#include <string>
-#include <cwchar>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -27,8 +27,10 @@ static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
 namespace Libraries::ImeDialog {
 
-ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param, const OrbisImeParamExtended* extended) {
-    if (!param) return;
+ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
+                               const OrbisImeParamExtended* extended) {
+    if (!param)
+        return;
 
     userId = param->userId;
     is_multiLine = True(param->option & OrbisImeDialogOption::MULTILINE);
@@ -42,7 +44,7 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param, const OrbisImeP
 
 #ifndef _WIN32
     orbis_to_utf8 = iconv_open(IME_UTF8_ENCODING, IME_ORBIS_ENCODING);
-    utf8_to_orbis = iconv_open(IME_ORBIS_ENCODING , IME_UTF8_ENCODING);
+    utf8_to_orbis = iconv_open(IME_ORBIS_ENCODING, IME_UTF8_ENCODING);
 
     ASSERT_MSG(orbis_to_utf8 != (iconv_t)-1, "Failed to open iconv orbis_to_utf8");
     ASSERT_MSG(utf8_to_orbis != (iconv_t)-1, "Failed to open iconv utf8_to_orbis");
@@ -61,7 +63,8 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param, const OrbisImeP
         std::size_t placeholder_len = std::char_traits<char16_t>::length(param->placeholder);
         placeholder = new char[placeholder_len * 4 + 1];
 
-        if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, placeholder, placeholder_len)) {
+        if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, placeholder,
+                                placeholder_len)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert placeholder to utf8 encoding");
         }
     }
@@ -77,19 +80,12 @@ ImeDialogState::~ImeDialogState() {
 }
 
 ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
-    : userId(other.userId),
-      is_multiLine(other.is_multiLine),
-      is_numeric(other.is_numeric),
-      type(other.type),
-      enter_label(other.enter_label),
-      text_filter(other.text_filter),
-      keyboard_filter(other.keyboard_filter),
-      max_text_length(other.max_text_length),
-      text_buffer(other.text_buffer),
-      title(other.title),
-      placeholder(other.placeholder),
+    : userId(other.userId), is_multiLine(other.is_multiLine), is_numeric(other.is_numeric),
+      type(other.type), enter_label(other.enter_label), text_filter(other.text_filter),
+      keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
+      text_buffer(other.text_buffer), title(other.title), placeholder(other.placeholder),
       input_changed(other.input_changed) {
-    
+
     std::memcpy(current_text, other.current_text, sizeof(current_text));
 
 #ifndef _WIN32
@@ -131,7 +127,7 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
         other.orbis_to_utf8 = (iconv_t)-1;
         other.utf8_to_orbis = (iconv_t)-1;
 #endif
-    
+
         other.text_buffer = nullptr;
         other.title = nullptr;
         other.placeholder = nullptr;
@@ -161,19 +157,22 @@ bool ImeDialogState::CallTextFilter() {
     char16_t out_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH + 1] = {0};
     u32 out_text_length = ORBIS_IME_DIALOG_MAX_TEXT_LENGTH;
 
-    if (!ConvertUTF8ToOrbis(current_text, src_text_length, src_text, ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
+    if (!ConvertUTF8ToOrbis(current_text, src_text_length, src_text,
+                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to orbis encoding");
         return false;
     }
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    int ret = linker->ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
+    int ret =
+        linker->ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
 
     if (ret != 0) {
         return false;
     }
 
-    if (!ConvertOrbisToUTF8(out_text, out_text_length, current_text, ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
+    if (!ConvertOrbisToUTF8(out_text, out_text_length, current_text,
+                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
         return false;
     }
@@ -200,7 +199,8 @@ void ImeDialogState::Free() {
     }
 }
 
-bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status) {
+bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode,
+                                        u32* out_status) {
     if (!keyboard_filter) {
         return true;
     }
@@ -211,7 +211,8 @@ bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16*
     return ret == 0;
 }
 
-bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text, std::size_t utf8_text_len) {
+bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
+                                        char* utf8_text, std::size_t utf8_text_len) {
 #ifndef _WIN32
     std::size_t orbis_text_len_bytes = orbis_text_len * sizeof(char16_t);
     std::size_t utf8_text_len_bytes = utf8_text_len * sizeof(char);
@@ -219,7 +220,8 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
     char16_t* orbis_text_ptr = const_cast<char16_t*>(orbis_text);
     char* utf8_text_ptr = utf8_text;
 
-    std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_text_ptr, &orbis_text_len_bytes, (char**)&utf8_text_ptr, &utf8_text_len_bytes);
+    std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_text_ptr, &orbis_text_len_bytes,
+                               (char**)&utf8_text_ptr, &utf8_text_len_bytes);
 
     if (result == (std::size_t)-1) {
         return false;
@@ -228,24 +230,29 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
     *utf8_text_ptr = '\0'; // Null-terminate the string
     return true;
 #else
-    int required_size = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text), orbis_text_len, nullptr, 0, nullptr, nullptr);
+    int required_size =
+        WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text),
+                            orbis_text_len, nullptr, 0, nullptr, nullptr);
     if (required_size > utf8_text_len) {
         return false;
     }
 
-    int converted_size = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text), orbis_text_len, utf8_text, utf8_text_len, nullptr, nullptr);
-    
+    int converted_size =
+        WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(orbis_text),
+                            orbis_text_len, utf8_text, utf8_text_len, nullptr, nullptr);
+
     if (required_size == 0) {
         return false;
     }
-    
+
     utf8_text[converted_size] = '\0';
 
     return true;
 #endif
 }
 
-bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len, char16_t* orbis_text, std::size_t orbis_text_len) {
+bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len,
+                                        char16_t* orbis_text, std::size_t orbis_text_len) {
 #ifndef _WIN32
     std::size_t utf8_text_len_bytes = utf8_text_len * sizeof(char);
     std::size_t orbis_text_len_bytes = orbis_text_len * sizeof(char16_t);
@@ -253,7 +260,8 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
     char* utf8_text_ptr = const_cast<char*>(utf8_text);
     char16_t* orbis_text_ptr = orbis_text;
 
-    std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_text_ptr, &utf8_text_len_bytes, (char**)&orbis_text_ptr, &orbis_text_len_bytes);
+    std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_text_ptr, &utf8_text_len_bytes,
+                               (char**)&orbis_text_ptr, &orbis_text_len_bytes);
 
     if (result == (std::size_t)-1) {
         return false;
@@ -266,8 +274,10 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
     if (required_size > orbis_text_len) {
         return false;
     }
-    
-    int converted_size = MultiByteToWideChar(CP_UTF8, 0, utf8_text, utf8_text_len, reinterpret_cast<wchar_t*>(orbis_text), orbis_text_len);
+
+    int converted_size =
+        MultiByteToWideChar(CP_UTF8, 0, utf8_text, utf8_text_len,
+                            reinterpret_cast<wchar_t*>(orbis_text), orbis_text_len);
 
     if (required_size == 0) {
         return false;
@@ -279,7 +289,8 @@ bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_
 #endif
 }
 
-bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char, std::size_t& utf8_char_len) {
+bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char,
+                                            std::size_t& utf8_char_len) {
     std::fill(utf8_char, utf8_char + 4, '\0');
 #ifndef _WIN32
     std::size_t orbis_char_len_bytes = sizeof(char16_t);
@@ -288,7 +299,8 @@ bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf
     char16_t orbis_char_ptr = orbis_char;
     char* utf8_char_ptr = utf8_char;
 
-    std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_char_ptr, &orbis_char_len_bytes, (char**)&utf8_char_ptr, &utf8_char_len_bytes);
+    std::size_t result = iconv(orbis_to_utf8, (char**)&orbis_char_ptr, &orbis_char_len_bytes,
+                               (char**)&utf8_char_ptr, &utf8_char_len_bytes);
 
     if (result == (std::size_t)-1) {
         utf8_char_len = 0;
@@ -298,12 +310,14 @@ bool ImeDialogState::ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf
     utf8_char_len = 4 - utf8_char_len_bytes;
     return true;
 #else
-    int required_size = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, nullptr, 0, nullptr, nullptr);
+    int required_size = WideCharToMultiByte(
+        CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, nullptr, 0, nullptr, nullptr);
     if (required_size > 4) {
         UNREACHABLE_MSG("UTF-8 character is never more than 4 bytes");
     }
 
-    utf8_char_len = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char), 1, utf8_char, 4, nullptr, nullptr);
+    utf8_char_len = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t*>(&orbis_char),
+                                        1, utf8_char, 4, nullptr, nullptr);
 
     return utf8_char_len != 0;
 #endif
@@ -317,7 +331,8 @@ bool ImeDialogState::ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orb
     char* utf8_char_ptr = const_cast<char*>(utf8_char);
     char16_t* orbis_char_ptr = &orbis_char;
 
-    std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_char_ptr, &utf8_char_len_bytes, (char**)&orbis_char_ptr, &orbis_char_len_bytes);
+    std::size_t result = iconv(utf8_to_orbis, (char**)&utf8_char_ptr, &utf8_char_len_bytes,
+                               (char**)&orbis_char_ptr, &orbis_char_len_bytes);
 
     if (result == (std::size_t)-1) {
         return false;
@@ -325,14 +340,16 @@ bool ImeDialogState::ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orb
 
     return true;
 #else
-    int required_size = MultiByteToWideChar(CP_UTF8, 0, utf8_char, std::strlen(utf8_char), reinterpret_cast<wchar_t*>(&orbis_char), 1);
+    int required_size = MultiByteToWideChar(CP_UTF8, 0, utf8_char, std::strlen(utf8_char),
+                                            reinterpret_cast<wchar_t*>(&orbis_char), 1);
     return required_size != 0;
 #endif
 }
 
-ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status, OrbisImeDialogResult* result)
+ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
+                         OrbisImeDialogResult* result)
     : state(state), status(status), result(result) {
-    
+
     if (state && *status == OrbisImeDialogStatus::RUNNING) {
         AddLayer(this);
     }
@@ -345,8 +362,9 @@ ImeDialogUi::~ImeDialogUi() {
 }
 
 ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
-    : state(other.state), status(other.status), result(other.result), first_render(other.first_render) {
-    
+    : state(other.state), status(other.status), result(other.result),
+      first_render(other.first_render) {
+
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
     other.state = nullptr;
     other.status = nullptr;
@@ -410,7 +428,8 @@ void ImeDialogUi::Draw() {
         SetNextWindowFocus();
     }
 
-    if (Begin("IME Dialog##ImeDialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
+    if (Begin("IME Dialog##ImeDialog", nullptr,
+              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         DrawPrettyBackground();
 
         if (state->title) {
@@ -474,7 +493,9 @@ void ImeDialogUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter, InputTextCallback, this)) {
+    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text,
+                    state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter,
+                    InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
@@ -482,11 +503,13 @@ void ImeDialogUi::DrawInputText() {
 void ImeDialogUi::DrawMultiLineInputText() {
     ImVec2 input_size = {GetWindowWidth() - 40.0f, 200.0f};
     SetCursorPosX(20.0f);
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter | static_cast<ImGuiInputTextFlags>(ImGuiInputTextFlags_Multiline);
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter |
+                                static_cast<ImGuiInputTextFlags>(ImGuiInputTextFlags_Multiline);
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text, state->max_text_length, input_size, flags, InputTextCallback, this)) {
+    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text,
+                    state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
@@ -497,7 +520,8 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ASSERT(ui);
 
     // Should we filter punctuation?
-    if (ui->state->is_numeric && (data->EventChar < '0' || data->EventChar > '9') && data->EventChar != '\b' && data->EventChar != ',' && data->EventChar != '.') {
+    if (ui->state->is_numeric && (data->EventChar < '0' || data->EventChar > '9') &&
+        data->EventChar != '\b' && data->EventChar != ',' && data->EventChar != '.') {
         return 1;
     }
 
@@ -512,26 +536,26 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     OrbisImeKeycode src_keycode = {
         .keycode = 0,
         .character = 0,
-        .status = 1, // ??? 1 = key pressed, 0 = key released
-        .type = OrbisImeKeyboardType::ENGLISH_US, //TODO set this to the correct value (maybe use the current language?)
+        .status = 1,                              // ??? 1 = key pressed, 0 = key released
+        .type = OrbisImeKeyboardType::ENGLISH_US, // TODO set this to the correct value (maybe use
+                                                  // the current language?)
         .userId = ui->state->userId,
         .resourceId = 0,
-        .timestamp = 0
-    };
-    
+        .timestamp = 0};
+
     if (!ui->state->ConvertUTF8CharToOrbis(event_char, src_keycode.character)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert orbis char to utf8");
         return 0;
     }
-    src_keycode.keycode = src_keycode.character; //TODO set this to the correct value
+    src_keycode.keycode = src_keycode.character; // TODO set this to the correct value
 
     u16 out_keycode;
     u32 out_status;
 
     ui->state->CallKeyboardFilter(&src_keycode, &out_keycode, &out_status);
 
-    //TODO. set the keycode
-    
+    // TODO. set the keycode
+
     return 0;
 }
 

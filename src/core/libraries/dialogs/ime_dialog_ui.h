@@ -8,8 +8,8 @@
 #include <iconv.h>
 #endif
 #include <imgui.h>
-#include "core/libraries/dialogs/ime_dialog.h"
 #include "common/types.h"
+#include "core/libraries/dialogs/ime_dialog.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -40,22 +40,27 @@ class ImeDialogState final {
     iconv_t utf8_to_orbis = (iconv_t)-1;
 #endif
 public:
-    ImeDialogState(const OrbisImeDialogParam* param = nullptr, const OrbisImeParamExtended* extended = nullptr);
+    ImeDialogState(const OrbisImeDialogParam* param = nullptr,
+                   const OrbisImeParamExtended* extended = nullptr);
     ImeDialogState(const ImeDialogState& other) = delete;
     ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
     ~ImeDialogState();
-    
+
     bool CopyTextToOrbisBuffer();
     bool CallTextFilter();
+
 private:
     void Free();
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
 
-    bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text, std::size_t native_text_len);
-    bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len, char16_t* orbis_text, std::size_t orbis_text_len);
-    bool ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char, std::size_t& utf8_char_len);
+    bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,
+                            std::size_t native_text_len);
+    bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len,
+                            char16_t* orbis_text, std::size_t orbis_text_len);
+    bool ConvertOrbisCharToUTF8(const char16_t orbis_char, char* utf8_char,
+                                std::size_t& utf8_char_len);
     bool ConvertUTF8CharToOrbis(const char* utf8_char, char16_t& orbis_char);
 };
 
@@ -66,8 +71,10 @@ class ImeDialogUi final : public ImGui::Layer {
 
     bool first_render = true;
     std::mutex draw_mutex;
+
 public:
-    explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr, OrbisImeDialogResult* result = nullptr);
+    explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
+                         OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
     ImeDialogUi(const ImeDialogUi& other) = delete;
     ImeDialogUi(ImeDialogUi&& other) noexcept;
