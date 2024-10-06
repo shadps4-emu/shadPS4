@@ -58,6 +58,7 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
+    LOG_INFO(Config, "General Logtype: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
