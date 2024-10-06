@@ -518,6 +518,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/translate/data_share.cpp
                       src/shader_recompiler/frontend/translate/export.cpp
                       src/shader_recompiler/frontend/translate/scalar_alu.cpp
+                      src/shader_recompiler/frontend/translate/scalar_flow.cpp
                       src/shader_recompiler/frontend/translate/scalar_memory.cpp
                       src/shader_recompiler/frontend/translate/translate.cpp
                       src/shader_recompiler/frontend/translate/translate.h
@@ -526,6 +527,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/translate/vector_memory.cpp
                       src/shader_recompiler/frontend/control_flow_graph.cpp
                       src/shader_recompiler/frontend/control_flow_graph.h
+                      src/shader_recompiler/frontend/copy_shader.cpp
+                      src/shader_recompiler/frontend/copy_shader.h
                       src/shader_recompiler/frontend/decode.cpp
                       src/shader_recompiler/frontend/decode.h
                       src/shader_recompiler/frontend/fetch_shader.cpp
@@ -542,6 +545,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+                      src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
@@ -574,6 +578,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/types.h
                src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h

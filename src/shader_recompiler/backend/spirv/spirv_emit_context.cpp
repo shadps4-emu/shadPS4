@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "video_core/amdgpu/types.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -30,6 +32,22 @@ std::string_view StageName(Stage stage) {
         return "cs";
     }
     throw InvalidArgument("Invalid stage {}", u32(stage));
+}
+
+static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
+    switch (type) {
+    case AmdGpu::PrimitiveType::PointList:
+        return 1u;
+    case AmdGpu::PrimitiveType::LineList:
+        return 2u;
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleStrip:
+        return 3u;
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+        return 6u;
+    default:
+        UNREACHABLE();
+    }
 }
 
 template <typename... Args>
@@ -224,6 +242,7 @@ void EmitContext::DefineInputs() {
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
     switch (stage) {
+    case Stage::Export:
     case Stage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
@@ -292,6 +311,37 @@ void EmitContext::DefineInputs() {
         local_invocation_id =
             DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
         break;
+    case Stage::Geometry: {
+        primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
+        const auto gl_per_vertex =
+            Name(TypeStruct(TypeVector(F32[1], 4), F32[1], TypeArray(F32[1], ConstU32(1u))),
+                 "gl_PerVertex");
+        MemberName(gl_per_vertex, 0, "gl_Position");
+        MemberName(gl_per_vertex, 1, "gl_PointSize");
+        MemberName(gl_per_vertex, 2, "gl_ClipDistance");
+        MemberDecorate(gl_per_vertex, 0, spv::Decoration::BuiltIn,
+                       static_cast<std::uint32_t>(spv::BuiltIn::Position));
+        MemberDecorate(gl_per_vertex, 1, spv::Decoration::BuiltIn,
+                       static_cast<std::uint32_t>(spv::BuiltIn::PointSize));
+        MemberDecorate(gl_per_vertex, 2, spv::Decoration::BuiltIn,
+                       static_cast<std::uint32_t>(spv::BuiltIn::ClipDistance));
+        Decorate(gl_per_vertex, spv::Decoration::Block);
+        const auto num_verts_in = NumVertices(runtime_info.gs_info.in_primitive);
+        const auto vertices_in = TypeArray(gl_per_vertex, ConstU32(num_verts_in));
+        gl_in = Name(DefineVar(vertices_in, spv::StorageClass::Input), "gl_in");
+        interfaces.push_back(gl_in);
+
+        const auto num_params = runtime_info.gs_info.in_vertex_data_size / 4 - 1u;
+        for (int param_id = 0; param_id < num_params; ++param_id) {
+            const IR::Attribute param{IR::Attribute::Param0 + param_id};
+            const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
+            const Id id{DefineInput(type, param_id)};
+            Name(id, fmt::format("in_attr{}", param_id));
+            input_params[param_id] = {id, input_f32, F32[1], 4};
+            interfaces.push_back(id);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -299,6 +349,7 @@ void EmitContext::DefineInputs() {
 
 void EmitContext::DefineOutputs() {
     switch (stage) {
+    case Stage::Export:
     case Stage::Vertex: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
         const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
@@ -340,6 +391,18 @@ void EmitContext::DefineOutputs() {
             interfaces.push_back(id);
         }
         break;
+    case Stage::Geometry: {
+        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+
+        for (u32 attr_id = 0; attr_id < runtime_info.gs_info.copy_data.num_attrs; attr_id++) {
+            const IR::Attribute param{IR::Attribute::Param0 + attr_id};
+            const Id id{DefineOutput(F32[4], attr_id)};
+            Name(id, fmt::format("out_attr{}", attr_id));
+            output_params[attr_id] = {id, output_f32, F32[1], 4u};
+            interfaces.push_back(id);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -392,10 +455,11 @@ void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(sharp);
+        const u32 array_size = sharp.NumDwords() != 0 ? sharp.NumDwords() : MaxUboDwords;
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
         const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(sharp.NumDwords()))};
+                                              : TypeArray(data_type, ConstU32(array_size))};
         const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
 
         const auto storage_class =

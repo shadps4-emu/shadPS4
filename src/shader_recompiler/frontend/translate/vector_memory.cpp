@@ -160,9 +160,19 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
 void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
+    const bool is_ring = mtbuf.glc && mtbuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
+    const IR::Value soffset{GetSrc(inst.src[3])};
+    if (info.stage != Stage::Geometry) {
+        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
+                   "Non immediate offset not supported");
+    }
+
     const IR::Value address = [&] -> IR::Value {
+        if (is_ring) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
+        }
         if (mtbuf.idxen && mtbuf.offen) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
         }
@@ -171,13 +181,12 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
         }
         return {};
     }();
-    const IR::Value soffset{GetSrc(inst.src[3])};
-    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
-    IR::BufferInstInfo info{};
-    info.index_enable.Assign(mtbuf.idxen);
-    info.offset_enable.Assign(mtbuf.offen);
-    info.inst_offset.Assign(mtbuf.offset);
+    IR::BufferInstInfo buffer_info{};
+    buffer_info.index_enable.Assign(mtbuf.idxen);
+    buffer_info.offset_enable.Assign(mtbuf.offen);
+    buffer_info.inst_offset.Assign(mtbuf.offset);
+    buffer_info.ring_access.Assign(is_ring);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
@@ -190,7 +199,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, info);
+    const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, buffer_info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
         ir.SetVectorReg(dst_reg, IR::U32{value});
@@ -230,9 +239,20 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst) {
 
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
+    const bool is_ring = mtbuf.glc && mtbuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
-    const IR::Value address = [&] -> IR::Value {
+    const IR::Value soffset{GetSrc(inst.src[3])};
+
+    if (info.stage != Stage::Export && info.stage != Stage::Geometry) {
+        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
+                   "Non immediate offset not supported");
+    }
+
+    IR::Value address = [&] -> IR::Value {
+        if (is_ring) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
+        }
         if (mtbuf.idxen && mtbuf.offen) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
         }
@@ -241,13 +261,12 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
         }
         return {};
     }();
-    const IR::Value soffset{GetSrc(inst.src[3])};
-    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
-    IR::BufferInstInfo info{};
-    info.index_enable.Assign(mtbuf.idxen);
-    info.offset_enable.Assign(mtbuf.offen);
-    info.inst_offset.Assign(mtbuf.offset);
+    IR::BufferInstInfo buffer_info{};
+    buffer_info.index_enable.Assign(mtbuf.idxen);
+    buffer_info.offset_enable.Assign(mtbuf.offen);
+    buffer_info.inst_offset.Assign(mtbuf.offset);
+    buffer_info.ring_access.Assign(is_ring);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
@@ -278,7 +297,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    ir.StoreBuffer(num_dwords, handle, address, value, info);
+    ir.StoreBuffer(num_dwords, handle, address, value, buffer_info);
 }
 
 void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst) {
@@ -583,10 +602,6 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
 
 void Translator::IMAGE_GATHER(const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
-    if (mimg.da) {
-        LOG_WARNING(Render_Vulkan, "Image instruction declares an array");
-    }
-
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg dest_reg{inst.dst[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};

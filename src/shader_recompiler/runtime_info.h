@@ -8,6 +8,8 @@
 
 #include "common/assert.h"
 #include "common/types.h"
+#include "frontend/copy_shader.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Shader {
 
@@ -26,13 +28,11 @@ constexpr u32 MaxStageTypes = 6;
     return static_cast<Stage>(index);
 }
 
-enum class MrtSwizzle : u8 {
-    Identity = 0,
-    Alt = 1,
-    Reverse = 2,
-    ReverseAlt = 3,
+struct ExportRuntimeInfo {
+    u32 vertex_data_size;
+
+    auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
 };
-static constexpr u32 MaxColorBuffers = 8;
 
 enum class VsOutput : u8 {
     None,
@@ -69,6 +69,33 @@ struct VertexRuntimeInfo {
         return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one;
     }
 };
+
+static constexpr auto GsMaxOutputStreams = 4u;
+using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
+struct GeometryRuntimeInfo {
+    u32 num_invocations{};
+    u32 output_vertices{};
+    u32 in_vertex_data_size{};
+    u32 out_vertex_data_size{};
+    AmdGpu::PrimitiveType in_primitive;
+    GsOutputPrimTypes out_primitive;
+    CopyShaderData copy_data;
+
+    bool operator==(const GeometryRuntimeInfo& other) const noexcept {
+        return num_invocations && other.num_invocations &&
+               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
+               std::ranges::equal(out_primitive, other.out_primitive) &&
+               std::ranges::equal(copy_data.attr_map, other.copy_data.attr_map);
+    }
+};
+
+enum class MrtSwizzle : u8 {
+    Identity = 0,
+    Alt = 1,
+    Reverse = 2,
+    ReverseAlt = 3,
+};
+static constexpr u32 MaxColorBuffers = 8;
 
 struct FragmentRuntimeInfo {
     struct PsInput {
@@ -114,7 +141,9 @@ struct RuntimeInfo {
     u32 num_user_data;
     u32 num_input_vgprs;
     u32 num_allocated_vgprs;
+    ExportRuntimeInfo es_info;
     VertexRuntimeInfo vs_info;
+    GeometryRuntimeInfo gs_info;
     FragmentRuntimeInfo fs_info;
     ComputeRuntimeInfo cs_info;
 
@@ -128,6 +157,10 @@ struct RuntimeInfo {
             return vs_info == other.vs_info;
         case Stage::Compute:
             return cs_info == other.cs_info;
+        case Stage::Export:
+            return es_info == other.es_info;
+        case Stage::Geometry:
+            return gs_info == other.gs_info;
         default:
             return true;
         }

@@ -254,8 +254,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -1588,6 +1588,14 @@ void IREmitter::DebugPrint(const char* fmt, boost::container::small_vector<Value
     DebugPrintFlags flags;
     flags.num_args.Assign(format_args.size());
     Inst(Opcode::DebugPrint, Flags{flags}, fmt_val, args[0], args[1], args[2], args[3]);
+}
+
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EmitPrimitive() {
+    Inst(Opcode::EmitPrimitive);
 }
 
 } // namespace Shader::IR

@@ -36,6 +36,17 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     ASSERT(null_id.index == 0);
     const vk::Buffer& null_buffer = slot_buffers[null_id].buffer;
     Vulkan::SetObjectName(instance.GetDevice(), null_buffer, "Null Buffer");
+
+    const vk::BufferViewCreateInfo null_view_ci = {
+        .buffer = null_buffer,
+        .format = vk::Format::eR8Unorm,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE,
+    };
+    const auto [null_view_result, null_view] = instance.GetDevice().createBufferView(null_view_ci);
+    ASSERT_MSG(null_view_result == vk::Result::eSuccess, "Failed to create null buffer view.");
+    null_buffer_view = null_view;
+    Vulkan::SetObjectName(instance.GetDevice(), null_buffer_view, "Null Buffer View");
 }
 
 BufferCache::~BufferCache() = default;
@@ -224,7 +235,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::QuadList) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
         is_indexed = true;
 
         // Emit indices.

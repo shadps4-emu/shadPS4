@@ -15,5 +15,7 @@ void ConstantPropagationPass(IR::BlockList& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);
 void LowerSharedMemToRegisters(IR::Program& program);
+void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
+                           Stage stage);
 
 } // namespace Shader::Optimization

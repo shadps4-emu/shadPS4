@@ -352,7 +352,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
 
-bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
+bool SettingsDialog::override(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::Enter || event->type() == QEvent::Leave) {
         if (qobject_cast<QWidget*>(obj)) {
             bool hovered = (event->type() == QEvent::Enter);
