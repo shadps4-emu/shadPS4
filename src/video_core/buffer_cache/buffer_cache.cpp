@@ -290,6 +290,13 @@ void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
     cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
 }
 
+std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(VAddr host_addr, u32 size) {
+    static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
+    ASSERT(size <= StreamThreshold);
+    const u64 offset = stream_buffer.Copy(host_addr, size, instance.UniformMinAlignment());
+    return {&stream_buffer, offset};
+}
+
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
                                                   bool is_texel_buffer) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;

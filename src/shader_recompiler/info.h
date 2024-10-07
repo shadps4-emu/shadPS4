@@ -177,7 +177,7 @@ struct Info {
     ImageResourceList images;
     SamplerResourceList samplers;
 
-    PersistentSrtInfo srt_info; // TODO rename
+    PersistentSrtInfo srt_info;
 
     std::span<const u32> user_data;
     Stage stage;
@@ -198,6 +198,7 @@ struct Info {
     bool uses_fp64{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
+    bool has_readconst{};
     u8 mrt_mask{0u};
 
     // just for logging, TODO delete
@@ -232,7 +233,8 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers = buffers.size() + texture_buffers.size();
+        const auto total_buffers =
+            buffers.size() + texture_buffers.size() + (has_readconst ? 1 : 0);
         bnd.buffer += total_buffers;
         bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
@@ -251,15 +253,13 @@ struct Info {
     }
 
     void RunSrtWalker(FlatSharpBuffer& sharp_buf) const {
-        sharp_buf.buf.resize(srt_info.flattened_bufsize_dw);
+        sharp_buf.resize(srt_info.flattened_bufsize_dw);
         ASSERT(user_data.size() <= NumUserDataRegs);
-        std::memcpy(sharp_buf.buf.data(), user_data.data(), user_data.size_bytes());
-        // not necessary
-        std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
+        std::memcpy(sharp_buf.data(), user_data.data(), user_data.size_bytes());
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
         PFN_SrtWalker pfn = srt_info.walker.getCode<PFN_SrtWalker>();
         if (pfn) {
-            pfn(user_data.data(), sharp_buf.buf.data());
+            pfn(user_data.data(), sharp_buf.data());
         }
     }
 };

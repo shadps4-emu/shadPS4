@@ -26,7 +26,8 @@ namespace Shader {
 // runtime_info?
 struct Info;
 
-struct FlatSharpBuffer {
+class FlatSharpBuffer {
+public:
     FlatSharpBuffer(const Info& info);
 
     template <typename T>
@@ -34,7 +35,26 @@ struct FlatSharpBuffer {
         return *reinterpret_cast<const T*>(&buf[sharp_idx]);
     }
 
-    std::vector<u32> buf;
+    size_t num_dwords() const {
+        return buf.size();
+    }
+
+    size_t size_bytes() const {
+        return buf.size() * sizeof(u32);
+    }
+
+    u32* data() {
+        return buf.data();
+    }
+
+    void resize(size_t new_size_dw) {
+        buf.resize(new_size_dw);
+    }
+
+private:
+    // TODO aligned_alloc with ubo min alignment (dynamic)
+    // 256 for now to be conservative
+    boost::container::vector<u32, boost::alignment::aligned_allocator<u32, 256>> buf;
 };
 
 typedef void(__attribute__((sysv_abi)) * PFN_SrtWalker)(const u32* /*user_data*/,

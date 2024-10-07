@@ -328,6 +328,15 @@ void GraphicsPipeline::BuildDescSetLayout() {
             continue;
         }
         Shader::FlatSharpBuffer sharp_buf(*stage);
+
+        if (stage->has_readconst) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1,
+                .stageFlags = gp_stage_flags,
+            });
+        }
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(sharp_buf);
             bindings.push_back({
@@ -404,6 +413,25 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
         stage->PushUd(binding, push_data);
+
+        if (stage->has_readconst) {
+            // Bind the flattened user data buf as a UBO (TODO rename "sharp"_buf)
+            const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(
+                reinterpret_cast<VAddr>(sharp_buf.data()), sharp_buf.size_bytes());
+            // Should already be aligned to UBO min alignment
+            const u32 alignment = instance.UniformMinAlignment();
+            ASSERT(offset % alignment == 0);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset, sharp_buf.size_bytes());
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding.unified++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .pBufferInfo = &buffer_infos.back(),
+            });
+            ++binding.buffer;
+        }
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(sharp_buf);
             const bool is_storage = buffer.IsStorage(vsharp);

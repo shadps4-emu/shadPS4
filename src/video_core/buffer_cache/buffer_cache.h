@@ -83,6 +83,8 @@ public:
     /// Writes a value to GDS buffer.
     void InlineDataToGds(u32 gds_offset, u32 value);
 
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainHostUBO(VAddr host_addr, u32 size);
+
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
                                                        bool is_texel_buffer = false);

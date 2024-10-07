@@ -11,6 +11,7 @@
 #include <fmt/format.h>
 
 #include <numbers>
+#include <string_view>
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -437,14 +438,16 @@ void EmitContext::DefinePushDataBlock() {
 
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
-    const auto define_struct = [&](Id record_array_type, bool is_instance_data) {
+    const auto define_struct = [&](Id record_array_type, bool is_instance_data,
+                                   std::optional<std::string_view> explicit_name = {}) {
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
             return struct_type;
         }
         Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-        const auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
-                                           : fmt::format("{}_cbuf_block_f32", stage);
+        auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
+                                     : fmt::format("{}_cbuf_block_f32", stage);
+        name = explicit_name.value_or(name);
         Name(struct_type, name);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
@@ -452,6 +455,29 @@ void EmitContext::DefineBuffers() {
         type_ids.push_back(record_array_type);
         return struct_type;
     };
+
+    if (info.has_readconst) {
+        const Id data_type = U32[1];
+        const auto storage_class = spv::StorageClass::Uniform;
+        const Id pointer_type = TypePointer(storage_class, data_type);
+        const Id record_array_type{
+            TypeArray(U32[1], ConstU32(static_cast<u32>(sharp_buf.num_dwords())))};
+
+        const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
+
+        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, "srt_flatbuf_ubo");
+
+        srt_flatbuf = {
+            .id = id,
+            .binding = binding.buffer++,
+            .pointer_type = pointer_type,
+        };
+        interfaces.push_back(id);
+    }
 
     for (const auto& desc : info.buffers) {
         const auto sharp = desc.GetSharp(sharp_buf);

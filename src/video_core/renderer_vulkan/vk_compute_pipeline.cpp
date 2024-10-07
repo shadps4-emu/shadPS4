@@ -28,6 +28,15 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+
+    if (info->has_readconst) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     for (const auto& buffer : info->buffers) {
         const auto sharp = buffer.GetSharp(sharp_buf);
         bindings.push_back({
@@ -127,6 +136,26 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     Shader::FlatSharpBuffer sharp_buf(*info);
 
     info->PushUd(binding, push_data);
+
+    if (info->has_readconst) {
+        // Bind the flattened user data buf as a UBO (TODO rename "sharp"_buf)
+        const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(
+            reinterpret_cast<VAddr>(sharp_buf.data()), sharp_buf.size_bytes());
+        // Should already be aligned to UBO min alignment
+        const u32 alignment = instance.UniformMinAlignment();
+        ASSERT(offset % alignment == 0);
+        push_data.AddOffset(binding.buffer, 0); // not necessary I think
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset, sharp_buf.size_bytes());
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
+        ++binding.buffer;
+    }
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
         if (desc.is_gds_buffer) {
