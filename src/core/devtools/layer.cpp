@@ -10,6 +10,7 @@
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "layer.h"
+#include "options.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 
@@ -18,10 +19,9 @@ using namespace Core::Devtools;
 using L = Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
+
 static float fps_scale = 1.0f;
-
 static bool show_advanced_debug = false;
-
 static int dump_frame_count = 1;
 
 static Widget::FrameGraph frame_graph;
@@ -29,11 +29,15 @@ static std::vector<Widget::FrameDumpViewer> frame_viewers;
 
 static float debug_popup_timing = 3.0f;
 
+static bool just_opened_options = false;
+
 void L::DrawMenuBar() {
     const auto& ctx = *GImGui;
     const auto& io = ctx.IO;
 
     auto isSystemPaused = DebugState.IsGuestThreadsPaused();
+
+    bool open_popup_options = false;
 
     if (BeginMainMenuBar()) {
         if (BeginMenu("Options")) {
@@ -55,6 +59,7 @@ void L::DrawMenuBar() {
                 }
                 ImGui::EndMenu();
             }
+            open_popup_options = MenuItem("Options");
             ImGui::EndMenu();
         }
         EndMainMenuBar();
@@ -74,6 +79,11 @@ void L::DrawMenuBar() {
             }
         }
     }
+
+    if (open_popup_options) {
+        OpenPopup("GPU Tools Options");
+        just_opened_options = true;
+    }
 }
 
 void L::DrawAdvanced() {
@@ -91,7 +101,7 @@ void L::DrawAdvanced() {
             ->AddText({10.0f, io.DisplaySize.y - 40.0f}, IM_COL32_WHITE, "Emulator paused");
     }
 
-    if (DebugState.should_show_frame_dump) {
+    if (DebugState.should_show_frame_dump && DebugState.waiting_reg_dumps.empty()) {
         DebugState.should_show_frame_dump = false;
         std::unique_lock lock{DebugState.frame_dump_list_mutex};
         while (!DebugState.frame_dump_list.empty()) {
@@ -132,6 +142,30 @@ void L::DrawAdvanced() {
             DebugState.debug_message_popup.pop();
             debug_popup_timing = 3.0f;
         }
+    }
+
+    bool close_popup_options = true;
+    if (BeginPopupModal("GPU Tools Options", &close_popup_options,
+                        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
+        static char disassembly_cli[512];
+
+        if (just_opened_options) {
+            just_opened_options = false;
+            auto s = Options.disassembly_cli.copy(disassembly_cli, sizeof(disassembly_cli) - 1);
+            disassembly_cli[s] = '\0';
+        }
+
+        InputText("Shader disassembler: ", disassembly_cli, sizeof(disassembly_cli));
+        if (IsItemHovered()) {
+            SetTooltip(R"(Command to disassemble shaders. Example "dis.exe" --raw "{src}")");
+        }
+
+        if (Button("Save")) {
+            Options.disassembly_cli = disassembly_cli;
+            SaveIniSettingsToDisk(io.IniFilename);
+            CloseCurrentPopup();
+        }
+        EndPopup();
     }
 }
 
@@ -179,6 +213,10 @@ void L::SetupSettings() {
                 std::is_same_v<decltype(&Widget::CmdListViewer::LoadConfig), SettingLoader>);
             return (void*)&Widget::CmdListViewer::LoadConfig;
         }
+        if (std::string_view("Options") == name) {
+            static_assert(std::is_same_v<decltype(&LoadOptionsConfig), SettingLoader>);
+            return (void*)&LoadOptionsConfig;
+        }
         return (void*)nullptr;
     };
     handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* handle, const char* line) {
@@ -195,6 +233,9 @@ void L::SetupSettings() {
         buf->append("\n");
         buf->appendf("[%s][CmdList]\n", handler->TypeName);
         Widget::CmdListViewer::SerializeConfig(buf);
+        buf->append("\n");
+        buf->appendf("[%s][Options]\n", handler->TypeName);
+        SerializeOptionsConfig(buf);
         buf->append("\n");
     };
     AddSettingsHandler(&handler);

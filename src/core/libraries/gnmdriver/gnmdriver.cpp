@@ -505,11 +505,6 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
                                        : (asc_queue.ring_size_dw << 2u) - *asc_queue.read_addr;
     const std::span acb_span{acb_ptr, acb_size >> 2u};
 
-    liverpool->SubmitAsc(vqid, acb_span);
-
-    *asc_queue.read_addr += acb_size;
-    *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
-
     if (DebugState.DumpingCurrentFrame()) {
         static auto last_frame_num = -1LL;
         static u32 seq_num{};
@@ -542,6 +537,10 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
             .base_addr = base_addr,
         });
     }
+    liverpool->SubmitAsc(vqid, acb_span);
+
+    *asc_queue.read_addr += acb_size;
+    *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
 int PS4_SYSV_ABI sceGnmDingDongForWorkload() {
@@ -2165,7 +2164,6 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         const auto& dcb_span = std::span{dcb_gpu_addrs[cbpair], dcb_size_dw};
         const auto& ccb_span = std::span{ccb, ccb_size_dw};
 
-        liverpool->SubmitGfx(dcb_span, ccb_span);
         if (DebugState.DumpingCurrentFrame()) {
             static auto last_frame_num = -1LL;
             static u32 seq_num{};
@@ -2193,6 +2191,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
                 .base_addr = reinterpret_cast<uintptr_t>(ccb),
             });
         }
+        liverpool->SubmitGfx(dcb_span, ccb_span);
     }
 
     return ORBIS_OK;

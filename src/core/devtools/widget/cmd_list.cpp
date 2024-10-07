@@ -1246,7 +1246,7 @@ void CmdListViewer::Draw() {
                     if (group_batches) {
                         if (IsItemToggledOpen()) {
                             if (parent->frame_dump.regs.contains(batch.command_addr)) {
-                                batch_view.data = parent->frame_dump.regs.at(batch.command_addr);
+                                batch_view.SetData(parent->frame_dump.regs.at(batch.command_addr));
                                 batch_view.open = true;
                             }
                         }
@@ -1364,7 +1364,8 @@ void CmdListViewer::Draw() {
         cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);
         SetNextWindowSize({s.WindowWidth, s.WindowWidth * 0.6f}, ImGuiCond_FirstUseEver);
         SetNextWindowSizeConstraints({0.0f}, {s.WindowWidth, FLT_MAX});
-        if (Begin(cmdb_view_name.c_str(), &cmdb_view.Open, ImGuiWindowFlags_NoScrollbar)) {
+        if (Begin(cmdb_view_name.c_str(), &cmdb_view.Open,
+                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
             cmdb_view.DrawContents((void*)cmdb_addr, cmdb_size, base_addr);
             if (cmdb_view.ContentsWidthChanged) {
                 cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);

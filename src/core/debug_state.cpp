@@ -106,14 +106,57 @@ void DebugStateImpl::RequestFrameDump(s32 count) {
 void DebugStateImpl::PushQueueDump(QueueDump dump) {
     ASSERT(DumpingCurrentFrame());
     std::unique_lock lock{frame_dump_list_mutex};
-    GetFrameDump().queues.push_back(std::move(dump));
+    auto& frame = GetFrameDump();
+    { // Find draw calls
+        auto data = std::span{dump.data};
+        auto initial_data = data.data();
+        while (!data.empty()) {
+            const auto* header = reinterpret_cast<const AmdGpu::PM4Type3Header*>(data.data());
+            const auto type = header->type;
+            if (type == 2) {
+                data = data.subspan(1);
+            } else if (type != 3) {
+                UNREACHABLE();
+            }
+            const AmdGpu::PM4ItOpcode opcode = header->opcode;
+            switch (opcode) {
+            case AmdGpu::PM4ItOpcode::DrawIndex2:
+            case AmdGpu::PM4ItOpcode::DrawIndexOffset2:
+            case AmdGpu::PM4ItOpcode::DrawIndexAuto:
+            case AmdGpu::PM4ItOpcode::DrawIndirect:
+            case AmdGpu::PM4ItOpcode::DrawIndexIndirect:
+            case AmdGpu::PM4ItOpcode::DispatchDirect:
+            case AmdGpu::PM4ItOpcode::DispatchIndirect: {
+                const auto offset =
+                    reinterpret_cast<uintptr_t>(header) - reinterpret_cast<uintptr_t>(initial_data);
+                const auto addr = dump.base_addr + offset;
+                waiting_reg_dumps.emplace(addr, &frame);
+                waiting_reg_dumps_dbg.emplace(
+                    addr,
+                    fmt::format("#{} h({}) queue {} {} {}",
+                                frame_dump_list.size() - gnm_frame_dump_request_count, addr,
+                                magic_enum::enum_name(dump.type), dump.submit_num, dump.num2));
+            } break;
+            default:
+                break;
+            }
+            data = data.subspan(header->NumWords() + 1);
+        }
+    }
+    frame.queues.push_back(std::move(dump));
 }
 
-void DebugStateImpl::PushRegsDump(uintptr_t base_addr, const AmdGpu::Liverpool::Regs& regs) {
-    ASSERT(DumpingCurrentReg());
-    std::unique_lock lock{frame_dump_list_mutex};
-    auto& dump =
-        frame_dump_list[frame_dump_list.size() - liverpool_dump_request_count].regs[base_addr];
+void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
+                                  const AmdGpu::Liverpool::Regs& regs) {
+    std::scoped_lock lock{frame_dump_list_mutex};
+    const auto it = waiting_reg_dumps.find(header_addr);
+    if (it == waiting_reg_dumps.end()) {
+        return;
+    }
+    auto& frame = *it->second;
+    waiting_reg_dumps.erase(it);
+    waiting_reg_dumps_dbg.erase(waiting_reg_dumps_dbg.find(header_addr));
+    auto& dump = frame.regs[header_addr - base_addr];
     dump.regs = regs;
     for (int i = 0; i < RegDump::MaxShaderStages; i++) {
         if (regs.stage_enable.IsStageEnabled(i)) {

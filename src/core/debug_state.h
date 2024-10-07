@@ -5,6 +5,8 @@
 
 #include <atomic>
 #include <mutex>
+#include <shared_mutex>
+#include <unordered_map>
 #include <vector>
 #include <queue>
 
@@ -76,10 +78,12 @@ class DebugStateImpl {
     std::atomic_int32_t gnm_frame_count = 0;
 
     s32 gnm_frame_dump_request_count = -1;
+    std::unordered_map<size_t, FrameDump*> waiting_reg_dumps;
+    std::unordered_map<size_t, std::string> waiting_reg_dumps_dbg;
     bool waiting_submit_pause = false;
     bool should_show_frame_dump = false;
 
-    std::mutex frame_dump_list_mutex;
+    std::shared_mutex frame_dump_list_mutex;
     std::vector<FrameDump> frame_dump_list{};
 
     std::queue<std::string> debug_message_popup;
@@ -121,6 +125,11 @@ public:
         return gnm_frame_dump_request_count > 0;
     }
 
+    bool DumpingCurrentReg() {
+        std::shared_lock lock{frame_dump_list_mutex};
+        return !waiting_reg_dumps.empty();
+    }
+
     bool ShouldPauseInSubmit() const {
         return waiting_submit_pause && gnm_frame_dump_request_count == 0;
     }
@@ -133,7 +142,8 @@ public:
 
     void PushQueueDump(QueueDump dump);
 
-    void PushRegsDump(uintptr_t base_addr, const AmdGpu::Liverpool::Regs& regs);
+    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
+                      const AmdGpu::Liverpool::Regs& regs);
 };
 } // namespace DebugStateType
 

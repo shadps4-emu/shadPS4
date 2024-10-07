@@ -402,7 +402,7 @@ void SaveDialogUi::Draw() {
         };
     }
 
-    CentralizeWindow();
+    CentralizeNextWindow();
     SetNextWindowSize(window_size);
     SetNextWindowCollapsed(false);
     if (first_render || !io.NavActive) {
