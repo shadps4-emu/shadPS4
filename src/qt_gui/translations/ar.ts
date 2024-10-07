@@ -475,11 +475,6 @@
 			<translation>تمكين وحدة معالجة الرسومات الفارغة</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 تمكين تفريغ</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>تصحيح الأخطاء</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>تمكين GPU الافتراضية:\nلأغراض تصحيح الأخطاء التقنية، يقوم بتعطيل عرض اللعبة كما لو لم يكن هناك بطاقة رسومات.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>تمكين تفريغ PM4:\nلأغراض تصحيح الأخطاء التقنية، يحفظ بيانات تعليمات GPU الأولية في مجلد أثناء معالجتها.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
