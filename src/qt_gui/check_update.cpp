@@ -528,7 +528,7 @@ void CheckUpdate::Install() {
         out << scriptContent.arg(binaryStartingUpdate).arg(tempDirPath).arg(rootPath);
 #endif
 #if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
-        out << scriptContent.arg(StartingUpdate).arg(tempDirPath).arg(rootPath);
+        out << scriptContent.arg(startingUpdate).arg(tempDirPath).arg(rootPath);
 #endif
         scriptFile.close();
 
