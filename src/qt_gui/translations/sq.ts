@@ -417,7 +417,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
-			<translation>Nofka</translation>
+			<translation>Përdoruesi</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
@@ -512,7 +512,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="313"/>
 			<source>Update Channel</source>
-			<translation>Kanali i Përditësimit</translation>
+			<translation>Kanali i përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
@@ -522,7 +522,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
 			<source>GUI Settings</source>
-			<translation>Parametrat e GUI</translation>
+			<translation>Cilësimet e GUI</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -532,7 +532,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
-			<translation>Volumi</translation>
+			<translation>Vëllimi i zërit</translation>
 		</message>
 	</context>
 	<context>
@@ -971,12 +971,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
 			<source>Point your mouse at an option to display its description.</source>
-			<translation>Hidhni mouse-in mbi një opsion për të shfaqur përshkrimin e tij.</translation>
+			<translation>Vendos miun mbi një rregullim për të shfaqur përshkrimin e tij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nRrekomandohet të vendosni këtë në një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
+			<translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nKëshillohet të caktosh një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
@@ -986,17 +986,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Aktivizo ekranin e plotë:\nAutomatikisht vendos dritaren e lojës në modalitetin e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur çelësin F11.</translation>
+			<translation>Aktivizo ekranin e plotë:\nVendos automatikisht dritaren e lojës në mënyrën e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur tastin F11.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një imazh special) gjatë fillimit të lojës.</translation>
+			<translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një pamje e veçantë) gjatë fillimit të lojës.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, i cili mund të aktivizojë karakteristika speciale në lojrat që e mbështesin atë.</translation>
+			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, gjë që mund të aktivizojë veçori të veçanta në lojrat që e mbështesin.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1006,67 +1006,67 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Tipi i logut:\nPërcakton nëse të sinkronizoni daljen e dritares së logut për performancën. Mund të ketë efekte të këqija në emulim.</translation>
+			<translation>Lloji i ditarit:\nPërcakton nëse të sinkronizohet dalja e dritares së ditarit për performancë. Mund të ketë efekte të këqija në emulim.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtri i logut: Filtron logun për të printuar vetëm informacione specifike. Shembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas saj.</translation>
+			<translation>Filtri i ditarit: Filtron ditarin për të shfaqur vetëm informacione specifike. Shembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të testuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Lojë muzikë titulli:\nNëse një lojë e mbështet, aktivizoja luajtjen e muzikës speciale kur të zgjidhni lojën në GUI.</translation>
+			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Dispositivi grafik:\nNë sistemet me GPU të shumëfishta, zgjidhni GPU-në që do të përdorë emulatori nga lista e rënies,\nor zgjidhni "Auto Select" për ta përcaktuar automatikisht.</translation>
+			<translation>Pajisja grafike:\nNë sistemet me GPU të shumëfishta, zgjidh GPU-në që do të përdorë emulatori nga lista rënëse,\nose zgjidh "Auto Select" për ta përcaktuar automatikisht.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
 			<source>resolutionLayout</source>
-			<translation>Gjerësia/ Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
+			<translation>Gjerësia/Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Pjesëtari Vblank:\nShpejtësia e kuadrit me të cilën refreshohet emulatori është shumëzuar me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose shkatërrimi i funksionalitetit kritik të lojës që nuk e pret këtë të ndryshojë!</translation>
+			<translation>Ndarësi Vblank:\nFrekuenca pamore me të cilën rifreskohet emulatori shumëzohet me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose prishja e punimit thelbësor të lojës që nuk e pret këtë ndryshim!</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
 			<source>dumpShadersCheckBox</source>
-			<translation>Aktivizo dump-in e shaders:\nPër qëllime të debugimit teknik, ruan shaders e lojës në një folder ndërsa ato renditen.</translation>
+			<translation>Aktivizo zbrazjen e shaders-ave:\nPër qëllime të korrigjimit teknik, ruan shaders-at e lojës në një dosje ndërsa ato pasqyrohen.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
-			<translation>Aktivizo GPU Null:\nPër qëllime të debugimit teknik, deaktivizon renditjen e lojës sikur nuk do të kishte një kartë grafike.</translation>
+			<translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Aktivizo dump-in e debugimit:\nRuani simbolet e importit dhe eksportit dhe informacionin e titullit të skedarit për aplikacionin aktual PS4 që po punon në një katalog.</translation>
+			<translation>Aktivizo zbrazjen për korrigjim:\nRuan simbolet e importit dhe eksportit dhe informacionin e kreut të skedarit për aplikacionin PS4 që po ekzekutohet në një dosje.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktivizo stratet e validimit Vulkan:\nAktivizon një sistem që validon gjendjen e renderizuesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+			<translation>Aktivizo shtresat e vlefshmërisë Vulkan:\nAktivizon një sistem që vërteton gjendjen e pasqyruesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Aktivizo validimin e sinkronizimit Vulkan:\nAktivizon një sistem që validon kohën e detyrave të renderizimit Vulkan. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+			<translation>Aktivizo vërtetimin e sinkronizimit Vulkan:\nAktivizon një sistem që vërteton kohën e detyrave të pasqyrimit Vulkan. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
 			<source>rdocCheckBox</source>
-			<translation>Aktivizo debugimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e kornizës aktuale të renderizuar.</translation>
+			<translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
 		</message>
 	</context>
 	<context>
@@ -1162,7 +1162,7 @@
 		<message> 
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
-			<translation>Kanali i Përditësimit</translation>
+			<translation>Kanali i përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>
