@@ -475,11 +475,6 @@
 			<translation>Habilitar GPU NULL</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Habilitar volcado de PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Depuración</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Habilitar GPU Nula:\nPor el bien de la depuración técnica, desactiva el renderizado del juego como si no hubiera tarjeta gráfica.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Habilitar la Volcadura de PM4:\nPor el bien de la depuración técnica, guarda los datos de instrucciones crudas de GPU en una carpeta a medida que el emulador los procesa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

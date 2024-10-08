@@ -475,11 +475,6 @@
 			<translation>NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Dumper le PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Débogage</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Activer le GPU nul :\nPour le débogage technique, désactive le rendu du jeu comme s'il n'y avait pas de carte graphique.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Activer l'exportation PM4 :\nPour le débogage technique, enregistre les données brutes des instructions GPU dans un dossier pendant que l'émulateur les traite.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
