@@ -592,6 +592,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8)));
             break;
         case AmdGpu::ImageType::Color3D:
+        case AmdGpu::ImageType::Cube:
             inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8), read(16)));
             break;
         default:
