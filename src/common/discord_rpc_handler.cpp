@@ -10,7 +10,7 @@ namespace DiscordRPCHandler {
 void RPC::init() {
     DiscordEventHandlers handlers{};
 
-    Discord_Initialize("1138176975865909360", &handlers, 1, nullptr);
+    Discord_Initialize("1139939140494971051", &handlers, 1, nullptr);
     startTimestamp = time(nullptr);
     rpcEnabled = true;
 }
