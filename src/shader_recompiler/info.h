@@ -3,6 +3,7 @@
 #pragma once
 
 #include <span>
+#include <vector>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"

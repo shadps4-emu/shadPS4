@@ -18,6 +18,8 @@
 
 namespace Libraries::Net {
 
+static thread_local int32_t net_errno = 0;
+
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -563,9 +565,9 @@ int PS4_SYSV_ABI sceNetEpollWait() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetErrnoLoc() {
+int* PS4_SYSV_ABI sceNetErrnoLoc() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return &net_errno;
 }
 
 int PS4_SYSV_ABI sceNetEtherNtostr() {

@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -538,6 +533,16 @@
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Volume</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="455"/>
+			<source>Controller Settings</source>
+			<translation>Controller Settings</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="467"/>
+			<source>Back Button Behavior</source>
+			<translation>Back Button Behavior</translation>
 		</message>
 	</context>
 	<context>
@@ -1029,6 +1034,31 @@
 			<translation>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Left</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Right</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Touchpad Center</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>None</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
 			<translation>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select "Auto Select" to automatically determine it.</translation>
@@ -1052,11 +1082,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Enable PM4 Dumping:\nFor the sake of technical debugging, saves raw GPU instruction data to a folder as the emulator processes it.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

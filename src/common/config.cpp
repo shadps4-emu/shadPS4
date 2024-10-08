@@ -42,6 +42,7 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
@@ -57,6 +58,8 @@ static bool vkValidationGpu = false;
 static bool rdocEnable = false;
 static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
+static s16 cursorState = HideCursorState::Idle;
+static int cursorHideTimeout = 5; // 5 seconds (default)
 
 // Gui
 std::filesystem::path settings_install_dir = {};
@@ -99,6 +102,14 @@ int getBGMvolume() {
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
 }
+  
+s16 getCursorState() {
+    return cursorState;
+}
+
+int getCursorHideTimeout() {
+    return cursorHideTimeout;
+}
 
 u32 getScreenWidth() {
     return screenWidth;
@@ -126,6 +137,10 @@ std::string getUserName() {
 
 std::string getUpdateChannel() {
     return updateChannel;
+}
+
+std::string getBackButtonBehavior() {
+    return backButtonBehavior;
 }
 
 bool getUseSpecialPad() {
@@ -259,6 +274,14 @@ void setBGMvolume(int volume) {
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
+  
+void setCursorState(s16 newCursorState) {
+    cursorState = newCursorState;
+}
+
+void setCursorHideTimeout(int newcursorHideTimeout) {
+    cursorHideTimeout = newcursorHideTimeout;
+}
 
 void setLanguage(u32 language) {
     m_language = language;
@@ -282,6 +305,10 @@ void setUserName(const std::string& type) {
 
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
+}
+
+void setBackButtonBehavior(const std::string& type) {
+    backButtonBehavior = type;
 }
 
 void setUseSpecialPad(bool use) {
@@ -445,11 +472,14 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
+        backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "left");
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
+        cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
+        cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
     }
@@ -544,6 +574,9 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
+    data["Input"]["cursorState"] = cursorState;
+    data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
+    data["General"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -593,6 +626,8 @@ void setDefaultValues() {
     playBGM = false;
     BGMvolume = 50;
     enableDiscordRPC = true;
+    cursorState = HideCursorState::Idle;
+    cursorHideTimeout = 5;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";
@@ -603,6 +638,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    backButtonBehavior = "left";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;

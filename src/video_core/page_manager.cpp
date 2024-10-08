@@ -142,6 +142,9 @@ struct PageManager::Impl {
     }
 
     void Protect(VAddr address, size_t size, bool allow_write) {
+        ASSERT_MSG(owned_ranges.find(address) != owned_ranges.end(),
+                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", address,
+                   size);
 #ifdef _WIN32
         DWORD prot = allow_write ? PAGE_READWRITE : PAGE_READONLY;
         DWORD old_prot{};

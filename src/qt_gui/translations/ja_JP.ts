@@ -475,11 +475,6 @@
 			<translation>NULL GPUを有効にする</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4ダンプを有効にする</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>デバッグ</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPUを有効にする:\n技術的なデバッグの目的で、グラフィックスカードがないかのようにゲームのレンダリングを無効にします。</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4ダンプを有効にする:\n技術的なデバッグの目的で、エミュレーターが処理している間に生のGPU命令データをフォルダーに保存します。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

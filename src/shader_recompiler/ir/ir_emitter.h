@@ -6,6 +6,7 @@
 #include <cstring>
 #include <type_traits>
 
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
@@ -43,6 +44,7 @@ public:
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
+    void DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> args);
 
     void Barrier();
     void WorkgroupMemoryBarrier();
