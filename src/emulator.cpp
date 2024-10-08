@@ -11,6 +11,7 @@
 #include "common/memory_patcher.h"
 #endif
 #include "common/assert.h"
+#include "common/discord_rpc_handler.h"
 #include "common/elf_info.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -208,6 +209,15 @@ void Emulator::Run(const std::filesystem::path& file) {
             LOG_INFO(Loader, "Loading {}", fmt::UTF(entry.path().u8string()));
             linker->LoadModule(entry.path());
         }
+    }
+
+    // Discord RPC
+    if (Config::getEnableDiscordRPC()) {
+        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+        if (rpc->getRPCEnabled() == false) {
+            rpc->init();
+        }
+        rpc->setStatusPlaying(game_info.title, id);
     }
 
     // start execution

@@ -18,6 +18,7 @@ bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
+bool getEnableDiscordRPC();
 
 s16 getCursorState();
 int getCursorHideTimeout();
@@ -57,6 +58,7 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
+void setEnableDiscordRPC(bool enable);
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
 void setLanguage(u32 language);

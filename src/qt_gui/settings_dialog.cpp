@@ -165,6 +165,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
 
+        connect(ui->discordRPCCheckbox, &QCheckBox::stateChanged, this, [](int val) {
+            Config::setEnableDiscordRPC(val);
+            auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+            if (val == Qt::Checked) {
+                rpc->init();
+                rpc->setStatusIdling();
+            } else {
+                rpc->shutdown();
+            }
+        });
+
         connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                 this, [this](int index) {
                     if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
@@ -273,6 +284,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->nullGpuCheckBox->setChecked(Config::nullGpu());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
     ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
+    ui->discordRPCCheckbox->setChecked(Config::getEnableDiscordRPC());
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());
     ui->showSplashCheckBox->setChecked(Config::showSplash());
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());

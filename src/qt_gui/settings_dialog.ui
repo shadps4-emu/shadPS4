@@ -148,6 +148,13 @@
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QCheckBox" name="discordRPCCheckbox">
+                   <property name="text">
+                    <string>Enable Discord Rich Presence</string>
+                   </property>
+                  </widget>
+                 </item>
                 </layout>
                </item>
                <item>
