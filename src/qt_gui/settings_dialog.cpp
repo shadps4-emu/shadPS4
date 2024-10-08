@@ -102,6 +102,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
     ui->buttonBox->button(QDialogButtonBox::Close)->setText(tr("Close"));
 
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
+    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
+
+    QString currentBackButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
+    int index = ui->backButtonBehaviorComboBox->findData(currentBackButtonBehavior);
+    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+
     connect(ui->tabWidgetSettings, &QTabWidget::currentChanged, this,
             [this]() { ui->buttonBox->button(QDialogButtonBox::Close)->setFocus(); });
 
@@ -155,6 +164,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             Config::setBGMvolume(val);
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
+
+        connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
+                        QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
+                        Config::setBackButtonBehavior(data.toStdString());
+                    }
+                });
     }
 
     // Input TAB
@@ -220,6 +237,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->logFilter->installEventFilter(this);
         ui->updaterGroupBox->installEventFilter(this);
         ui->GUIgroupBox->installEventFilter(this);
+        ui->backButtonBehaviorGroupBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
@@ -277,6 +295,10 @@ void SettingsDialog::LoadValuesFromConfig() {
         }
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+
+    QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
+    int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
+    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -350,6 +372,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("updaterGroupBox");
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
+    } else if (elementName == "backButtonBehaviorGroupBox") {
+        text = tr("backButtonBehaviorGroupBox");
     }
 
     // Graphics
@@ -365,8 +389,6 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("dumpShadersCheckBox");
     } else if (elementName == "nullGpuCheckBox") {
         text = tr("nullGpuCheckBox");
-    } else if (elementName == "dumpPM4CheckBox") {
-        text = tr("dumpPM4CheckBox");
     }
 
     // Debug
@@ -383,7 +405,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
 
-bool SettingsDialog::override(QObject* obj, QEvent* event) {
+bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::Enter || event->type() == QEvent::Leave) {
         if (qobject_cast<QWidget*>(obj)) {
             bool hovered = (event->type() == QEvent::Enter);

@@ -475,11 +475,6 @@
 			<translation>NULL GPU'yu Etkinleştir</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 Kaydını Etkinleştir</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Hata Ayıklama</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPU'yu Etkinleştir:\nTeknik hata ayıklama amacıyla, oyunun render edilmesini grafik kartı yokmuş gibi devre dışı bırakır.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 Dışa Aktarmayı Etkinleştir:\nTeknik hata ayıklama amacıyla, emülatör bunları işlerken GPU komut verilerini bir klasöre kaydeder.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

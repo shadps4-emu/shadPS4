@@ -475,11 +475,6 @@
 			<translation>NULL GPU Engedélyezése</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 Dumpolás Engedélyezése</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debugolás</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPU engedélyezése:\nMűszaki hibaelhárítás céljából letiltja a játék renderelését, mintha nem lenne grafikus kártya.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 dumpolás engedélyezése:\nMűszaki hibaelhárítás céljából a nyers GPU utasítási adatokat elmenti egy mappába, ahogy az emulátor feldolgozza őket.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

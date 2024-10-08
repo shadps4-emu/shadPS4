@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPU inschakelen:\nVoor technische foutopsporing schakelt de game-rendering uit alsof er geen grafische kaart is.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 dumpen inschakelen:\nVoor technische foutopsporing slaat het ruwe GPU-instructiegegevens op in een map terwijl de emulator ze verwerkt.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

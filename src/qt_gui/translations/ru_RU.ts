@@ -475,11 +475,6 @@
 			<translation>Включить NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Включить дамп PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Отладка</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Включить NULL GPU:\nДля технической отладки отключает рендеринг игры так, как будто графической карты нет.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Включить дамп PM4:\nДля технической отладки сохраняет необработанные данные инструкций GPU в папку, пока эмулятор их обрабатывает.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

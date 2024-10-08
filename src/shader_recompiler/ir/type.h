@@ -36,6 +36,7 @@ enum class Type {
     F64x2 = 1 << 22,
     F64x3 = 1 << 23,
     F64x4 = 1 << 24,
+    StringLiteral = 1 << 25,
 };
 DECLARE_ENUM_FLAG_OPERATORS(Type)
 

@@ -34,14 +34,17 @@ std::string_view StageName(Stage stage) {
     throw InvalidArgument("Invalid stage {}", u32(stage));
 }
 
-static constexpr u32 NumVertices(AmdGpu::GsOutputPrimitiveType type) {
+static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
     switch (type) {
-    case AmdGpu::GsOutputPrimitiveType::PointList:
+    case AmdGpu::PrimitiveType::PointList:
         return 1u;
-    case AmdGpu::GsOutputPrimitiveType::LineStrip:
+    case AmdGpu::PrimitiveType::LineList:
         return 2u;
-    case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleStrip:
         return 3u;
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+        return 6u;
     default:
         UNREACHABLE();
     }
@@ -88,6 +91,8 @@ Id EmitContext::Def(const IR::Value& value) {
         return ConstF32(value.F32());
     case IR::Type::F64:
         return Constant(F64[1], value.F64());
+    case IR::Type::StringLiteral:
+        return String(value.StringLiteral());
     default:
         throw NotImplementedException("Immediate type {}", value.Type());
     }
@@ -321,16 +326,15 @@ void EmitContext::DefineInputs() {
         MemberDecorate(gl_per_vertex, 2, spv::Decoration::BuiltIn,
                        static_cast<std::uint32_t>(spv::BuiltIn::ClipDistance));
         Decorate(gl_per_vertex, spv::Decoration::Block);
-        const auto vertices_in =
-            TypeArray(gl_per_vertex, ConstU32(NumVertices(runtime_info.gs_info.out_primitive[0])));
+        const auto num_verts_in = NumVertices(runtime_info.gs_info.in_primitive);
+        const auto vertices_in = TypeArray(gl_per_vertex, ConstU32(num_verts_in));
         gl_in = Name(DefineVar(vertices_in, spv::StorageClass::Input), "gl_in");
         interfaces.push_back(gl_in);
 
         const auto num_params = runtime_info.gs_info.in_vertex_data_size / 4 - 1u;
         for (int param_id = 0; param_id < num_params; ++param_id) {
             const IR::Attribute param{IR::Attribute::Param0 + param_id};
-            const Id type{
-                TypeArray(F32[4], ConstU32(NumVertices(runtime_info.gs_info.out_primitive[0])))};
+            const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
             const Id id{DefineInput(type, param_id)};
             Name(id, fmt::format("in_attr{}", param_id));
             input_params[param_id] = {id, input_f32, F32[1], 4};

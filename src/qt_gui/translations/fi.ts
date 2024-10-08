@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten pelin renderöinti estetään niin, että ikään kuin grafiikkakorttia ei olisi.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Ota PM4 dumpaus käyttöön:\nTeknistä vianetsintää varten raakoja GPU-ohjeita tallennetaan kansioon emulaattorin käsitellessä sitä.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
