@@ -47,6 +47,8 @@ QStringList languageNames = {"Arabic",
 const QVector<int> languageIndexes = {21, 23, 14, 6,  18, 1,  12, 22, 2,  4, 25, 24, 29, 5,  0,
                                       9,  15, 16, 17, 7,  26, 8,  11, 20, 3, 13, 27, 10, 19, 28};
 
+QStringList hideCursorStates = {"Never", "Idle", "Always"};
+
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
@@ -66,6 +68,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     QCompleter* completer = new QCompleter(languageNames, this);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     ui->consoleLanguageComboBox->setCompleter(completer);
+
+    ui->hideCursorComboBox->addItems(hideCursorStates);
 
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
@@ -170,6 +174,18 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 });
     }
 
+    // Input TAB
+    {
+        connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                [this](s16 index) {
+                    Config::setCursorState(index);
+                    OnCursorStateChanged(index);
+                });
+
+        connect(ui->idleTimeoutSpinBox, &QSpinBox::valueChanged, this,
+                [](int index) { Config::setCursorHideTimeout(index); });
+    }
+
     // GPU TAB
     {
         // First options is auto selection -1, so gpuId on the GUI will always have to subtract 1
@@ -246,6 +262,9 @@ void SettingsDialog::LoadValuesFromConfig() {
             std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
         languageIndexes.size());
     ui->emulatorLanguageComboBox->setCurrentIndex(languages[Config::getEmulatorLanguage()]);
+    ui->hideCursorComboBox->setCurrentIndex(Config::getCursorState());
+    OnCursorStateChanged(Config::getCursorState());
+    ui->idleTimeoutSpinBox->setValue(Config::getCursorHideTimeout());
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
@@ -309,6 +328,18 @@ void SettingsDialog::OnLanguageChanged(int index) {
     ui->retranslateUi(this);
 
     emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString().toStdString());
+}
+
+void SettingsDialog::OnCursorStateChanged(s16 index) {
+    if (index == -1)
+        return;
+    if (index == Config::HideCursorState::Idle) {
+        ui->idleTimeoutGroupBox->show();
+    } else {
+        if (!ui->idleTimeoutGroupBox->isHidden()) {
+            ui->idleTimeoutGroupBox->hide();
+        }
+    }
 }
 
 int SettingsDialog::exec() {

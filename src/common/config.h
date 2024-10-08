@@ -8,6 +8,9 @@
 #include "types.h"
 
 namespace Config {
+
+enum HideCursorState : s16 { Never, Idle, Always };
+
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 
@@ -15,6 +18,9 @@ bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
+
+s16 getCursorState();
+int getCursorHideTimeout();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -51,6 +57,8 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
+void setCursorState(s16 cursorState);
+void setCursorHideTimeout(int newcursorHideTimeout);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);

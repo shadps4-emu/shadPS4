@@ -34,9 +34,18 @@
    <iconset>
     <normaloff>:/images/shadps4.ico</normaloff>:/images/shadps4.ico</iconset>
   </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
+  </property>
+  <property name="modal">
+   <bool>false</bool>
+  </property>
   <layout class="QVBoxLayout" name="settingsDialogLayout">
    <item>
     <widget class="QScrollArea" name="scrollArea">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="frameShape">
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
@@ -51,8 +60,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>836</width>
-        <height>446</height>
+        <width>832</width>
+        <height>431</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -62,7 +71,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="generalTab">
        <attribute name="title">
@@ -369,7 +378,7 @@
                  <x>10</x>
                  <y>30</y>
                  <width>241</width>
-                 <height>71</height>
+                 <height>92</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout">
@@ -480,6 +489,185 @@
              </widget>
             </item>
            </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="inputTab">
+       <attribute name="title">
+        <string>Input</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
+        <item>
+         <layout class="QHBoxLayout" name="inputTabHLayoutTop" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="cursorTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="HideCursor">
+              <property name="title">
+               <string>Cursor</string>
+              </property>
+              <layout class="QVBoxLayout" name="inputCursorLayout">
+               <item>
+                <widget class="QGroupBox" name="hideCursorGroupBox">
+                 <property name="title">
+                  <string>Hide Cursor</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="hideCursorLayout">
+                  <item>
+                   <widget class="QComboBox" name="hideCursorComboBox"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="idleTimeoutGroupBox">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>85</height>
+                  </size>
+                 </property>
+                 <property name="title">
+                  <string>Hide Cursor Idle Timeout</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="IdleTimeoutLayout" stretch="0,0">
+                  <property name="leftMargin">
+                   <number>70</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>11</number>
+                  </property>
+                  <item>
+                   <widget class="QSpinBox" name="idleTimeoutSpinBox">
+                    <property name="enabled">
+                     <bool>true</bool>
+                    </property>
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="layoutDirection">
+                     <enum>Qt::LayoutDirection::LeftToRight</enum>
+                    </property>
+                    <property name="wrapping">
+                     <bool>false</bool>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                    <property name="buttonSymbols">
+                     <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
+                    </property>
+                    <property name="suffix">
+                     <string notr="true"/>
+                    </property>
+                    <property name="maximum">
+                     <number>3600</number>
+                    </property>
+                    <property name="value">
+                     <number>5</number>
+                    </property>
+                    <property name="displayIntegerBase">
+                     <number>10</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="idleTimeoutDurationLabel">
+                    <property name="text">
+                     <string>s</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emptyTabLayoutMiddle">
+            <item>
+             <spacer name="emptyHorizontalSpacerMiddle">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emptyTabLayoutRight">
+            <item>
+             <spacer name="emptyHorizontalSpacerRight">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="inputTabHLayoutBottom">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <spacer name="emptyVerticalSpacerBottom">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
