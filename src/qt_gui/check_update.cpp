@@ -374,10 +374,16 @@ void CheckUpdate::Install() {
     QString userPath;
     Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 
-    QString startingUpdate = tr("Starting Update...");
-    QString tempDirPath = userPath + "/temp_download_update";
     QString rootPath;
     Common::FS::PathToQString(rootPath, std::filesystem::current_path());
+
+    QString tempDirPath = userPath + "/temp_download_update";
+    QString startingUpdate = tr("Starting Update...");
+
+    QString binaryStartingUpdate;
+    for (QChar c : startingUpdate) {
+        binaryStartingUpdate.append(QString::number(c.unicode(), 2).rightJustified(16, '0'));
+    }
 
     QString scriptContent;
     QString scriptFileName;
@@ -389,7 +395,13 @@ void CheckUpdate::Install() {
     scriptFileName = tempDirPath + "/update.ps1";
     scriptContent = QStringLiteral(
         "Set-ExecutionPolicy Bypass -Scope Process -Force\n"
-        "Write-Output '%1'\n"
+        "$binaryStartingUpdate = '%1'\n"
+        "$chars = @()\n"
+        "for ($i = 0; $i -lt $binaryStartingUpdate.Length; $i += 16) {\n"
+        "    $chars += [char]([convert]::ToInt32($binaryStartingUpdate.Substring($i, 16), 2))\n"
+        "}\n"
+        "$startingUpdate = -join $chars\n"
+        "Write-Output $startingUpdate\n"
         "Expand-Archive -Path '%2\\temp_download_update.zip' -DestinationPath '%2' -Force\n"
         "Start-Sleep -Seconds 3\n"
         "Copy-Item -Recurse -Force '%2\\*' '%3\\'\n"
@@ -512,7 +524,12 @@ void CheckUpdate::Install() {
     QFile scriptFile(scriptFileName);
     if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&scriptFile);
+#ifdef Q_OS_WIN
+        out << scriptContent.arg(binaryStartingUpdate).arg(tempDirPath).arg(rootPath);
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
         out << scriptContent.arg(startingUpdate).arg(tempDirPath).arg(rootPath);
+#endif
         scriptFile.close();
 
 // Make the script executable on Unix-like systems
