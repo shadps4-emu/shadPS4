@@ -175,7 +175,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 rpc->shutdown();
             }
         });
-      
+
         connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                 this, [this](int index) {
                     if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {

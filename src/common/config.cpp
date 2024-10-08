@@ -102,7 +102,7 @@ int getBGMvolume() {
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
 }
-  
+
 s16 getCursorState() {
     return cursorState;
 }
@@ -274,7 +274,7 @@ void setBGMvolume(int volume) {
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
-  
+
 void setCursorState(s16 newCursorState) {
     cursorState = newCursorState;
 }
