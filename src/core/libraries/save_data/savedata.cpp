@@ -445,7 +445,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;
 
-        auto requested_size = mount_info->blocks * OrbisSaveDataBlockSize;
+        auto requested_size = save_instance.GetMaxBlocks() * OrbisSaveDataBlockSize;
         if (requested_size > available) {
             mount_result->required_blocks = (requested_size - available) / OrbisSaveDataBlockSize;
             return Error::NO_SPACE_FS;
@@ -830,10 +830,11 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
             LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", fmt::UTF(sfo_path.u8string()));
             ASSERT_MSG(false, "Failed to read SFO");
         }
-        map_dir_sfo.emplace(dir_name, std::move(sfo));
 
         size_t size = Common::FS::GetDirectorySize(dir_path);
-        size_t total = SaveInstance::GetMaxBlocks(dir_path);
+        size_t total = SaveInstance::GetMaxBlockFromSFO(sfo);
+
+        map_dir_sfo.emplace(dir_name, std::move(sfo));
         map_free_size.emplace(dir_name, total - size / OrbisSaveDataBlockSize);
         map_max_blocks.emplace(dir_name, total);
     }

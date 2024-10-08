@@ -475,11 +475,6 @@
 			<translation>Aktivizo GPU-në NULL</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Aktivizo Zbrazjen PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Korrigjim</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Aktivizo zbrazjen PM4:\nPër qëllime të korrigjimit teknik, ruan të dhënat e instruksioneve të GPU-së në një dosje ndërsa emulatori i përpunon ato.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

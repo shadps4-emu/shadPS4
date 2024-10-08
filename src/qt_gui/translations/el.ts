@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Ενεργοποίηση Εικονικής GPU:\nΓια τεχνικό εντοπισμό σφαλμάτων, απενεργοποιεί την εμφάνιση του παιχνιδιού σαν να μην υπάρχει κάρτα γραφικών.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Ενεργοποίηση Καταγραφής PM4:\nΓια τεχνικό εντοπισμό σφαλμάτων, αποθηκεύει τις ακατέργαστες εντολές της GPU σε φάκελο κατά την επεξεργασία.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

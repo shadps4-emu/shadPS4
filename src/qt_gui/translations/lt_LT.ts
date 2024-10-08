@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1052,11 +1047,6 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Įjungti tuščią GPU:\nTechninio derinimo tikslais išjungia žaidimo renderiavimą, tarsi nebūtų grafikos plokštės.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Įjungti PM4 išmetimą:\nTechninio derinimo tikslais saugo žalius GPU nurodymų duomenis į aplanką, kai emuliatorius juos apdoroja.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
