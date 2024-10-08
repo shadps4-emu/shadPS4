@@ -7,7 +7,7 @@
 
 namespace Shader {
 
-CopyShaderData ParseCopyShader(const std::span<const u32>& code) {
+CopyShaderData ParseCopyShader(std::span<const u32> code) {
     Gcn::GcnCodeSlice code_slice{code.data(), code.data() + code.size()};
     Gcn::GcnDecodeContext decoder;
 

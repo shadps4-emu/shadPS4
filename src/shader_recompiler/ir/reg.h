@@ -10,20 +10,6 @@
 
 namespace Shader::IR {
 
-enum class FpRoundMode : u32 {
-    NearestEven = 0,
-    PlusInf = 1,
-    MinInf = 2,
-    ToZero = 3,
-};
-
-enum class FpDenormMode : u32 {
-    InOutFlush = 0,
-    InAllowOutFlush = 1,
-    InFlushOutAllow = 2,
-    InOutAllow = 3,
-};
-
 enum class FloatClassFunc : u32 {
     SignalingNan = 1 << 0,
     QuietNan = 1 << 1,
@@ -40,13 +26,6 @@ enum class FloatClassFunc : u32 {
     Infinity = PositiveInfinity | NegativeInfinity,
 };
 DECLARE_ENUM_FLAG_OPERATORS(FloatClassFunc)
-
-union Mode {
-    BitField<0, 4, FpRoundMode> fp_round;
-    BitField<4, 2, FpDenormMode> fp_denorm_single;
-    BitField<6, 2, FpDenormMode> fp_denorm_double;
-    BitField<8, 1, u32> dx10_clamp;
-};
 
 union TextureInstInfo {
     u32 raw;
