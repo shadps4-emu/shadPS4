@@ -34,7 +34,7 @@ std::string_view StageName(Stage stage) {
     case Stage::Compute:
         return "cs";
     }
-    throw InvalidArgument("Invalid stage {}", u32(stage));
+    UNREACHABLE_MSG("Invalid hw stage {}", u32(stage));
 }
 
 static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
@@ -65,7 +65,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
                          const Info& info_, Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
-      profile{profile_}, stage{info.stage}, binding{binding_} {
+      profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -268,9 +268,8 @@ void EmitContext::DefineInputs() {
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
-    switch (stage) {
-    case Stage::Export:
-    case Stage::Vertex: {
+    switch (l_stage) {
+    case LogicalStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
@@ -311,12 +310,11 @@ void EmitContext::DefineInputs() {
                 }
                 input_params[attrib.semantic] =
                     GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
-                interfaces.push_back(id);
             }
         }
         break;
     }
-    case Stage::Fragment:
+    case LogicalStage::Fragment:
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
@@ -351,15 +349,14 @@ void EmitContext::DefineInputs() {
             }
             input_params[semantic] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);
-            interfaces.push_back(attr_id);
         }
         break;
-    case Stage::Compute:
+    case LogicalStage::Compute:
         workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
         local_invocation_id =
             DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
         break;
-    case Stage::Geometry: {
+    case LogicalStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
         const auto gl_per_vertex =
             Name(TypeStruct(TypeVector(F32[1], 4), F32[1], TypeArray(F32[1], ConstU32(1u))),
@@ -389,15 +386,18 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
+    case LogicalStage::TessellationEval: {
+        tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
+        break;
+    }
     default:
         break;
     }
 }
 
 void EmitContext::DefineOutputs() {
-    switch (stage) {
-    case Stage::Export:
-    case Stage::Vertex: {
+    switch (l_stage) {
+    case LogicalStage::Vertex: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
         const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
                                           info.stores.Get(IR::Attribute::Position2) ||
@@ -419,11 +419,33 @@ void EmitContext::DefineOutputs() {
             Name(id, fmt::format("out_attr{}", i));
             output_params[i] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
-            interfaces.push_back(id);
         }
         break;
     }
-    case Stage::Fragment:
+    case LogicalStage::TessellationControl: {
+        if (info.stores_tess_level_outer) {
+            const Id type{TypeArray(F32[1], ConstU32(4U))};
+            output_tess_level_outer =
+                DefineOutput(type, std::nullopt, spv::BuiltIn::TessLevelOuter);
+            Decorate(output_tess_level_outer, spv::Decoration::Patch);
+        }
+        if (info.stores_tess_level_inner) {
+            const Id type{TypeArray(F32[1], ConstU32(2U))};
+            output_tess_level_inner =
+                DefineOutput(type, std::nullopt, spv::BuiltIn::TessLevelInner);
+            Decorate(output_tess_level_inner, spv::Decoration::Patch);
+        }
+        for (size_t index = 0; index < 30; ++index) {
+            if (!(info.uses_patches & (1U << index))) {
+                continue;
+            }
+            const Id id{DefineOutput(F32[4], index)};
+            Decorate(id, spv::Decoration::Patch);
+            patches[index] = id;
+        }
+        break;
+    }
+    case LogicalStage::Fragment:
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
             if (!info.stores.GetAny(mrt)) {
@@ -435,22 +457,22 @@ void EmitContext::DefineOutputs() {
             const Id id{DefineOutput(type, i)};
             Name(id, fmt::format("frag_color{}", i));
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
-            interfaces.push_back(id);
         }
         break;
-    case Stage::Geometry: {
+    case LogicalStage::Geometry: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
 
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
             Name(id, fmt::format("out_attr{}", attr_id));
             output_params[attr_id] = {id, output_f32, F32[1], 4u};
-            interfaces.push_back(id);
         }
         break;
     }
-    default:
+    case LogicalStage::Compute:
         break;
+    default:
+        UNREACHABLE();
     }
 }
 

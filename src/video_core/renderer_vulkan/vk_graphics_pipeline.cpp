@@ -52,7 +52,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
     if (fetch_shader && !instance.IsVertexInputDynamicState()) {
-        const auto& vs_info = GetStage(Shader::Stage::Vertex);
+        const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
         for (const auto& attrib : fetch_shader->attributes) {
             if (attrib.UsesStepRates()) {
                 // Skip attribute binding as the data will be pulled by shader
@@ -204,7 +204,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
-    auto stage = u32(Shader::Stage::Vertex);
+    auto stage = u32(LogicalStage::Vertex);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -212,7 +212,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(Shader::Stage::Geometry);
+    stage = u32(LogicalStage::Geometry);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eGeometry,
@@ -220,7 +220,23 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(Shader::Stage::Fragment);
+    stage = u32(LogicalStage::TessellationControl);
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationControl,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
+    stage = u32(LogicalStage::TessellationEval);
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
+    stage = u32(LogicalStage::Fragment);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,

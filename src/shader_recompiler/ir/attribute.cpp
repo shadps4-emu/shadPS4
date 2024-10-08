@@ -114,6 +114,10 @@ std::string NameOf(Attribute attribute) {
         return "LocalInvocationId";
     case Attribute::LocalInvocationIndex:
         return "LocalInvocationIndex";
+    case Attribute::TessellationEvaluationPointU:
+        return "TessellationEvaluationPointU";
+    case Attribute::TessellationEvaluationPointV:
+        return "TessellationEvaluationPointV";
     default:
         break;
     }

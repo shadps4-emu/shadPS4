@@ -163,6 +163,7 @@ struct Info {
     UserDataMask ud_mask{};
 
     CopyShaderData gs_copy_data;
+    u32 uses_patches{};
 
     BufferResourceList buffers;
     TextureBufferResourceList texture_buffers;
@@ -175,6 +176,7 @@ struct Info {
 
     std::span<const u32> user_data;
     Stage stage;
+    LogicalStage l_stage;
 
     u64 pgm_hash{};
     VAddr pgm_base;
@@ -190,14 +192,16 @@ struct Info {
     bool uses_shared{};
     bool uses_fp16{};
     bool uses_fp64{};
+    bool stores_tess_level_outer{};
+    bool stores_tess_level_inner{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
     bool has_readconst{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
 
-    explicit Info(Stage stage_, ShaderParams params)
-        : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
+    explicit Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
+        : stage{stage_}, l_stage{l_stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
           user_data{params.user_data} {}
 
     template <typename T>

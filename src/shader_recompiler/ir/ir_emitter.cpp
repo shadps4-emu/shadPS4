@@ -278,6 +278,14 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
     Inst(Opcode::SetAttribute, attribute, value, Imm32(comp));
 }
 
+F32 IREmitter::GetPatch(Patch patch) {
+    return Inst<F32>(Opcode::GetPatch, patch);
+}
+
+void IREmitter::SetPatch(Patch patch, const F32& value) {
+    Inst(Opcode::SetPatch, patch, value);
+}
+
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
     case 32:

@@ -11,6 +11,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
 #include "shader_recompiler/ir/value.h"
+#include "shader_recompiler/ir/patch.h"
 
 namespace Shader::IR {
 
@@ -83,6 +84,9 @@ public:
     [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
+
+    [[nodiscard]] F32 GetPatch(Patch patch);
+    void SetPatch(Patch patch, const F32& value);
 
     [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);

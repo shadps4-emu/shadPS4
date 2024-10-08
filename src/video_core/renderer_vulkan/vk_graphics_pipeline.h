@@ -73,7 +73,7 @@ public:
 
     bool IsEmbeddedVs() const noexcept {
         static constexpr size_t EmbeddedVsHash = 0x9b2da5cf47f8c29f;
-        return key.stage_hashes[u32(Shader::Stage::Vertex)] == EmbeddedVsHash;
+        return key.stage_hashes[u32(Shader::LogicalStage::Vertex)] == EmbeddedVsHash;
     }
 
     auto GetWriteMasks() const {

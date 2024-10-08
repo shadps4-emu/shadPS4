@@ -21,6 +21,26 @@ enum class FpDenormMode : u32 {
     InOutAllow = 3,
 };
 
+enum class TessellationType : u32 {
+    Isoline = 0,
+    Triangle = 1,
+    Quad = 2,
+};
+
+enum class TessellationPartitioning : u32 {
+    Integer = 0,
+    Pow2 = 1,
+    FracOdd = 2,
+    FracEven = 3,
+};
+
+enum class TessellationTopology : u32 {
+    Point = 0,
+    Line = 1,
+    TriangleCw = 2,
+    TriangleCcw = 3,
+};
+
 // See `VGT_PRIMITIVE_TYPE` description in [Radeon Sea Islands 3D/Compute Register Reference Guide]
 enum class PrimitiveType : u32 {
     None = 0,

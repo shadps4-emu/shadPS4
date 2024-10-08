@@ -956,6 +956,7 @@ struct Liverpool {
         enum VgtStages : u32 {
             Vs = 0u, // always enabled
             EsGs = 0xB0u,
+            LsHs = 0x45u,
         };
 
         VgtStages raw;
@@ -1057,6 +1058,20 @@ struct Liverpool {
             u32 stream_2_buf_en : 4;
             u32 stream_3_buf_en : 4;
         };
+    };
+
+    union LsHsConfig {
+        u32 raw;
+        BitField<0, 8, u32> num_patches;
+        BitField<8, 6, u32> hs_input_control_points;
+        BitField<14, 6, u32> hs_output_control_points;
+    };
+
+    union TessellationConfig {
+        u32 raw;
+        BitField<0, 2, TessellationType> type;
+        BitField<2, 3, TessellationPartitioning> partitioning;
+        BitField<5, 3, TessellationTopology> topology;
     };
 
     union Eqaa {
@@ -1200,9 +1215,10 @@ struct Liverpool {
             BitField<0, 11, u32> vgt_gs_max_vert_out;
             INSERT_PADDING_WORDS(0xA2D5 - 0xA2CE - 1);
             ShaderStageEnable stage_enable;
-            INSERT_PADDING_WORDS(1);
+            LsHsConfig ls_hs_config;
             u32 vgt_gs_vert_itemsize[4];
-            INSERT_PADDING_WORDS(4);
+            TessellationConfig tess_config;
+            INSERT_PADDING_WORDS(3);
             PolygonOffset poly_offset;
             GsInstances vgt_gs_instance_cnt;
             StreamOutConfig vgt_strmout_config;
@@ -1445,6 +1461,7 @@ static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_vert_itemsize[0]) == 0xA2D7);
+static_assert(GFX6_3D_REG_INDEX(tess_config) == 0xA2DB);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_instance_cnt) == 0xA2E4);
 static_assert(GFX6_3D_REG_INDEX(vgt_strmout_config) == 0xA2E5);

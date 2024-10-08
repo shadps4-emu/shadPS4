@@ -34,9 +34,8 @@ void Translator::EmitPrologue() {
     }
 
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
-    switch (info.stage) {
-    case Stage::Vertex:
-    case Stage::Export:
+    switch (info.l_stage) {
+    case LogicalStage::Vertex:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
         // v1: instance ID, step rate 0
@@ -122,7 +121,17 @@ void Translator::EmitPrologue() {
             }
         }
         break;
-    case Stage::Compute:
+    case LogicalStage::TessellationControl:
+        ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        break;
+    case LogicalStage::TessellationEval:
+        ir.SetVectorReg(IR::VectorReg::V0,
+                        ir.GetAttribute(IR::Attribute::TessellationEvaluationPointU));
+        ir.SetVectorReg(IR::VectorReg::V1,
+                        ir.GetAttribute(IR::Attribute::TessellationEvaluationPointV));
+        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        break;
+    case LogicalStage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 1));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 2));
@@ -137,7 +146,7 @@ void Translator::EmitPrologue() {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
         }
         break;
-    case Stage::Geometry:
+    case LogicalStage::Geometry:
         switch (runtime_info.gs_info.out_primitive[0]) {
         case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
             ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
@@ -152,7 +161,7 @@ void Translator::EmitPrologue() {
         ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     default:
-        throw NotImplementedException("Unknown shader stage");
+        UNREACHABLE_MSG("Unknown shader stage");
     }
 }
 
@@ -503,7 +512,8 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
 
         // Special case for emitting fetch shader.
         if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export);
+            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export ||
+                   info.stage == Stage::Local);
             translator.EmitFetch(inst);
             continue;
         }

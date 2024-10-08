@@ -187,7 +187,8 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     buffer_info.index_enable.Assign(mtbuf.idxen);
     buffer_info.offset_enable.Assign(mtbuf.offen);
     buffer_info.inst_offset.Assign(mtbuf.offset);
-    buffer_info.ring_access.Assign(is_ring);
+    buffer_info.globally_coherent.Assign(mtbuf.glc);
+    buffer_info.system_coherent.Assign(mtbuf.slc);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
@@ -245,7 +246,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
 
-    if (info.stage != Stage::Export && info.stage != Stage::Geometry) {
+    if (info.stage != Stage::Export && info.stage != Stage::Hull && info.stage != Stage::Geometry) {
         ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
                    "Non immediate offset not supported");
     }
@@ -267,7 +268,8 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     buffer_info.index_enable.Assign(mtbuf.idxen);
     buffer_info.offset_enable.Assign(mtbuf.offen);
     buffer_info.inst_offset.Assign(mtbuf.offset);
-    buffer_info.ring_access.Assign(is_ring);
+    buffer_info.globally_coherent.Assign(mtbuf.glc);
+    buffer_info.system_coherent.Assign(mtbuf.slc);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);

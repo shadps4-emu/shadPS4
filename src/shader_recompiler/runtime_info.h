@@ -23,6 +23,15 @@ enum class Stage : u32 {
 };
 constexpr u32 MaxStageTypes = 7;
 
+enum class LogicalStage : u32 {
+    Fragment,
+    Vertex,
+    TessellationControl,
+    TessellationEval,
+    Geometry,
+    Compute,
+};
+
 [[nodiscard]] constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
 }
@@ -64,10 +73,21 @@ struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
+    AmdGpu::TessellationType tess_type;
+    AmdGpu::TessellationTopology tess_topology;
+    AmdGpu::TessellationPartitioning tess_partitioning;
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
-        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one;
+        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
+               tess_type == other.tess_type && tess_topology == other.tess_topology &&
+               tess_partitioning == other.tess_partitioning;
     }
+};
+
+struct HullRuntimeInfo {
+    u32 output_control_points;
+
+    auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
 };
 
 static constexpr auto GsMaxOutputStreams = 4u;
@@ -152,6 +172,7 @@ struct RuntimeInfo {
     union {
         ExportRuntimeInfo es_info;
         VertexRuntimeInfo vs_info;
+        HullRuntimeInfo hs_info;
         GeometryRuntimeInfo gs_info;
         FragmentRuntimeInfo fs_info;
         ComputeRuntimeInfo cs_info;
@@ -174,6 +195,8 @@ struct RuntimeInfo {
             return es_info == other.es_info;
         case Stage::Geometry:
             return gs_info == other.gs_info;
+        case Stage::Hull:
+            return hs_info == other.hs_info;
         default:
             return true;
         }

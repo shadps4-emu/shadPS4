@@ -60,9 +60,14 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
     // Run optimization passes
+    const auto stage = program.info.stage;
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    if (stage == Stage::Hull) {
+        Shader::Optimization::HullShaderTransform(program);
+    }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    if (program.info.stage != Stage::Compute) {
+    Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
+    if (stage != Stage::Compute) {
         Shader::Optimization::LowerSharedMemToRegisters(program);
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info, program.info.stage);

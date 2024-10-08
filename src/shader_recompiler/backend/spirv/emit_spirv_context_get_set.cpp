@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/patch.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -242,8 +243,14 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         }
         return coord;
     }
+    case IR::Attribute::TessellationEvaluationPointU:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.u32_zero_value));
+    case IR::Attribute::TessellationEvaluationPointV:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     default:
-        throw NotImplementedException("Read attribute {}", attr);
+        UNREACHABLE_MSG("Read attribute {}", attr);
     }
 }
 
@@ -269,7 +276,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         ASSERT(ctx.info.stage == Stage::Geometry);
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     default:
-        throw NotImplementedException("Read U32 attribute {}", attr);
+        UNREACHABLE_MSG("Read U32 attribute {}", attr);
     }
 }
 
@@ -285,6 +292,42 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     } else {
         ctx.OpStore(pointer, value);
     }
+}
+
+Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {
+    const u32 index{IR::GenericPatchIndex(patch)};
+    const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
+    const Id type{ctx.stage == Stage::Hull ? ctx.output_f32 : ctx.input_f32};
+    const Id pointer{ctx.OpAccessChain(type, ctx.patches.at(index), element)};
+    return ctx.OpLoad(ctx.F32[1], pointer);
+}
+
+void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
+    const Id pointer{[&] {
+        if (IR::IsGeneric(patch)) {
+            const u32 index{IR::GenericPatchIndex(patch)};
+            const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
+            return ctx.OpAccessChain(ctx.output_f32, ctx.patches.at(index), element);
+        }
+        switch (patch) {
+        case IR::Patch::TessellationLodLeft:
+        case IR::Patch::TessellationLodRight:
+        case IR::Patch::TessellationLodTop:
+        case IR::Patch::TessellationLodBottom: {
+            const u32 index{static_cast<u32>(patch) - u32(IR::Patch::TessellationLodLeft)};
+            const Id index_id{ctx.ConstU32(index)};
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_outer, index_id);
+        }
+        case IR::Patch::TessellationLodInteriorU:
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner,
+                                     ctx.u32_zero_value);
+        case IR::Patch::TessellationLodInteriorV:
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner, ctx.ConstU32(1u));
+        default:
+            UNREACHABLE_MSG("Patch {}", u32(patch));
+        }
+    }()};
+    ctx.OpStore(pointer, value);
 }
 
 template <u32 N>

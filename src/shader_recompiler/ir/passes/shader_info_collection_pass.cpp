@@ -17,6 +17,22 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::GetUserData:
         info.ud_mask.Set(inst.Arg(0).ScalarReg());
         break;
+    case IR::Opcode::SetPatch: {
+        const auto patch = inst.Arg(0).Patch();
+        if (patch <= IR::Patch::TessellationLodBottom) {
+            info.stores_tess_level_outer = true;
+        } else if (patch <= IR::Patch::TessellationLodInteriorV) {
+            info.stores_tess_level_inner = true;
+        } else {
+            info.uses_patches |= 1U << IR::GenericPatchIndex(patch);
+        }
+        break;
+    }
+    case IR::Opcode::GetPatch: {
+        const auto patch = inst.Arg(0).Patch();
+        info.uses_patches |= 1U << IR::GenericPatchIndex(patch);
+        break;
+    }
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU32:

@@ -46,14 +46,18 @@ public:
     void DefineBufferOffsets();
     void DefineInterpolatedAttribs();
 
-    [[nodiscard]] Id DefineInput(Id type, u32 location) {
-        const Id input_id{DefineVar(type, spv::StorageClass::Input)};
-        Decorate(input_id, spv::Decoration::Location, location);
+    [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
+                                 std::optional<spv::BuiltIn> builtin = std::nullopt) {
+        const Id input_id{DefineVariable(type, builtin, spv::StorageClass::Input)};
+        if (location) {
+            Decorate(input_id, spv::Decoration::Location, *location);
+        }
         return input_id;
     }
 
-    [[nodiscard]] Id DefineOutput(Id type, std::optional<u32> location = std::nullopt) {
-        const Id output_id{DefineVar(type, spv::StorageClass::Output)};
+    [[nodiscard]] Id DefineOutput(Id type, std::optional<u32> location = std::nullopt,
+                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
+        const Id output_id{DefineVariable(type, builtin, spv::StorageClass::Output)};
         if (location) {
             Decorate(output_id, spv::Decoration::Location, *location);
         }
@@ -131,7 +135,8 @@ public:
     const Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    Stage stage{};
+    Stage stage;
+    LogicalStage l_stage{};
 
     Id void_id{};
     Id U8{};
@@ -187,6 +192,11 @@ public:
     Id frag_depth{};
     Id clip_distances{};
     Id cull_distances{};
+
+    Id output_tess_level_outer{};
+    Id output_tess_level_inner{};
+    Id tess_coord;
+    std::array<Id, 30> patches{};
 
     Id workgroup_id{};
     Id local_invocation_id{};
