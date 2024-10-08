@@ -277,20 +277,25 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
+    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
+                                       const Value& address2, const Value& address3,
+                                       const Value& address4, TextureInstInfo info);
+
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
-                                               const F32& bias, const U32& offset,
+                                               const F32& bias, const Value& offset,
                                                TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& body,
-                                               const U32& offset, TextureInstInfo info);
+                                               const F32& lod, const Value& offset,
+                                               TextureInstInfo info);
 
-    [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
-                                                 const F32& dref, const F32& bias,
-                                                 const U32& offset, TextureInstInfo info);
+    [[nodiscard]] Value ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
+                                                   const F32& dref, const F32& bias,
+                                                   const Value& offset, TextureInstInfo info);
 
-    [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
-                                                 const F32& dref, const U32& offset,
-                                                 TextureInstInfo info);
+    [[nodiscard]] Value ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
+                                                   const F32& dref, const F32& lod,
+                                                   const Value& offset, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
                                             const U1& skip_mips);
@@ -306,8 +311,9 @@ public:
     [[nodiscard]] Value ImageFetch(const Value& handle, const Value& coords, const Value& offset,
                                    const U32& lod, const U32& multisampling, TextureInstInfo info);
     [[nodiscard]] Value ImageGradient(const Value& handle, const Value& coords,
-                                      const Value& derivatives, const Value& offset,
-                                      const F32& lod_clamp, TextureInstInfo info);
+                                      const Value& derivatives_dx, const Value& derivatives_dy,
+                                      const Value& offset, const F32& lod_clamp,
+                                      TextureInstInfo info);
     [[nodiscard]] Value ImageRead(const Value& handle, const Value& coords, TextureInstInfo info);
     void ImageWrite(const Value& handle, const Value& coords, const Value& color,
                     TextureInstInfo info);
