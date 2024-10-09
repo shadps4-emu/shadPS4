@@ -8,9 +8,9 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
+#include <QtCore>
 #include "common/memory_patcher.h"
 #endif
-#include <QtCore>
 #include "common/assert.h"
 #include "common/discord_rpc_handler.h"
 #include "common/elf_info.h"
@@ -81,6 +81,7 @@ Emulator::Emulator() {
     // Load renderdoc module.
     VideoCore::LoadRenderDoc();
 
+#ifdef ENABLE_QT_GUI
     // Start the timer (Play Time)
     start_time = std::chrono::steady_clock::now();
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -89,6 +90,7 @@ Emulator::Emulator() {
     if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         LOG_INFO(Loader, "Error opening or creating play_time.txt");
     }
+#endif
 }
 
 Emulator::~Emulator() {
@@ -281,6 +283,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     }
 }
 
+#ifdef ENABLE_QT_GUI
 void Emulator::UpdatePlayTime(const std::string& serial) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
@@ -348,5 +351,6 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     }
     LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
 }
+#endif
 
 } // namespace Core
