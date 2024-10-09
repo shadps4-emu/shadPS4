@@ -72,7 +72,8 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     }
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
-    if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text, ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
+    if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text,
+                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
     }
 }
