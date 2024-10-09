@@ -693,6 +693,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
+           src/qt_gui/install_dir_select.cpp
+           src/qt_gui/install_dir_select.h
            src/qt_gui/pkg_viewer.cpp
            src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
