@@ -60,6 +60,9 @@ public:
             if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
                 game.version = *app_ver;
             }
+            if (const auto play_time = psf.GetString("PLAY_TIME"); play_time.has_value()) {
+                game.play_time = *play_time;
+            }
         }
         return game;
     }

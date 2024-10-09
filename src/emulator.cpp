@@ -81,8 +81,8 @@ Emulator::Emulator() {
     // Load renderdoc module.
     VideoCore::LoadRenderDoc();
 
-#ifdef ENABLE_QT_GUI
     // Start the timer (Play Time)
+#ifdef ENABLE_QT_GUI
     start_time = std::chrono::steady_clock::now();
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());

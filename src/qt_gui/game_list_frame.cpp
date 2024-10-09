@@ -32,7 +32,6 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->setColumnWidth(5, 90);  // Size
     this->setColumnWidth(6, 90);  // Version
     this->setColumnWidth(7, 100); // Play Time
-    this->setColumnWidth(8, 90);  // Path
     QStringList headers;
     headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
             << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
@@ -104,7 +103,30 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
 
         QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
-        SetTableItem(i, 7, playTime);
+        if (playTime.isEmpty()) {
+            m_game_info->m_games[i].play_time = "0:00:00";
+            SetTableItem(i, 7, "0");
+        } else {
+            QStringList timeParts = playTime.split(':');
+            int hours = timeParts[0].toInt();
+            int minutes = timeParts[1].toInt();
+            int seconds = timeParts[2].toInt();
+
+            QString formattedPlayTime;
+            if (hours > 0) {
+                formattedPlayTime += QString("%1h ").arg(hours);
+            }
+            if (minutes > 0) {
+                formattedPlayTime += QString("%1m ").arg(minutes);
+            }
+            if (seconds > 0 || formattedPlayTime.isEmpty()) {
+                formattedPlayTime += QString("%1s").arg(seconds);
+            }
+
+            formattedPlayTime = formattedPlayTime.trimmed();
+            m_game_info->m_games[i].play_time = playTime.toStdString();
+            SetTableItem(i, 7, formattedPlayTime);
+        }
 
         QString path;
         Common::FS::PathToQString(path, m_game_info->m_games[i].path);
