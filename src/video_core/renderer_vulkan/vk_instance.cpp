@@ -265,7 +265,7 @@ bool Instance::CreateDevice() {
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
-    if (Config ::vkValidationEnabled() || Config::isRdocEnabled()) {
+    if (Config::vkValidationEnabled() || Config::isRdocEnabled()) {
         tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     }
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
