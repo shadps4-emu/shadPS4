@@ -58,6 +58,7 @@ bool MainWindow::Init() {
     this->show();
     // load game list
     LoadGameLists();
+    // Check for update
     CheckUpdateMain(true);
 
     auto end = std::chrono::steady_clock::now();
