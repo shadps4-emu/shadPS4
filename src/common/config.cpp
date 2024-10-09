@@ -531,7 +531,8 @@ void load(const std::filesystem::path& path) {
             data.as_table().erase("installDir");
         }
 
-        const auto install_dir_array = toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+        const auto install_dir_array =
+            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
         for (const auto& dir : install_dir_array) {
             settings_install_dirs.emplace_back(std::filesystem::path{dir});
         }
