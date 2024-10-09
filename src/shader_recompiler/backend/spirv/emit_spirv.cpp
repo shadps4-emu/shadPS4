@@ -27,8 +27,10 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
     case AmdGpu::PrimitiveType::TriangleList:
     case AmdGpu::PrimitiveType::TriangleStrip:
         return spv::ExecutionMode::Triangles;
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+        return spv::ExecutionMode::InputTrianglesAdjacency;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown input primitive type {}", u32(type));
     }
 }
 
@@ -41,7 +43,7 @@ static constexpr spv::ExecutionMode GetOutputPrimitiveType(AmdGpu::GsOutputPrimi
     case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
         return spv::ExecutionMode::OutputTriangleStrip;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown output primitive type {}", u32(type));
     }
 }
 
@@ -68,6 +70,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg.ScalarReg();
     } else if constexpr (std::is_same_v<ArgType, IR::VectorReg>) {
         return arg.VectorReg();
+    } else if constexpr (std::is_same_v<ArgType, const char*>) {
+        return arg.StringLiteral();
     }
 }
 

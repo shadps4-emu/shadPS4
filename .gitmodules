@@ -95,3 +95,6 @@
 	path = externals/pugixml
 	url = https://github.com/zeux/pugixml.git
 	shallow = true
+[submodule "externals/discord-rpc"]
+	path = externals/discord-rpc
+	url = https://github.com/shadps4-emu/ext-discord-rpc

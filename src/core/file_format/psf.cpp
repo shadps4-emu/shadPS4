@@ -227,6 +227,12 @@ void PSF::AddBinary(std::string key, std::vector<u8> value, bool update) {
     map_binaries.emplace(entry_list.size() - 1, std::move(value));
 }
 
+void PSF::AddBinary(std::string key, uint64_t value, bool update) {
+    std::vector<u8> data(8);
+    std::memcpy(data.data(), &value, 8);
+    return AddBinary(std::move(key), std::move(data), update);
+}
+
 void PSF::AddString(std::string key, std::string value, bool update) {
     auto [it, index] = FindEntry(key);
     bool exist = it != entry_list.end();

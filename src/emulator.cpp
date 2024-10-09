@@ -11,6 +11,7 @@
 #include "common/memory_patcher.h"
 #endif
 #include "common/assert.h"
+#include "common/discord_rpc_handler.h"
 #include "common/elf_info.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -58,6 +59,7 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
+    LOG_INFO(Config, "General Logtype: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
@@ -207,6 +209,15 @@ void Emulator::Run(const std::filesystem::path& file) {
             LOG_INFO(Loader, "Loading {}", fmt::UTF(entry.path().u8string()));
             linker->LoadModule(entry.path());
         }
+    }
+
+    // Discord RPC
+    if (Config::getEnableDiscordRPC()) {
+        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+        if (rpc->getRPCEnabled() == false) {
+            rpc->init();
+        }
+        rpc->setStatusPlaying(game_info.title, id);
     }
 
     // start execution

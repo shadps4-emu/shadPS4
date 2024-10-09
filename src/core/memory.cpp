@@ -3,6 +3,7 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
@@ -39,8 +40,10 @@ MemoryManager::MemoryManager() {
 MemoryManager::~MemoryManager() = default;
 
 void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
+    const auto total_size =
+        Config::isNeoMode() ? SCE_KERNEL_MAIN_DMEM_SIZE_PRO : SCE_KERNEL_MAIN_DMEM_SIZE;
     total_flexible_size = flexible_size;
-    total_direct_size = SCE_KERNEL_MAIN_DMEM_SIZE - flexible_size;
+    total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers direct memory physical block.
     // Note that this should never be called after direct memory allocations have been made.

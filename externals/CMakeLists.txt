@@ -184,5 +184,10 @@ if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
 
+# Discord RPC
+set(BUILD_EXAMPLES OFF)
+add_subdirectory(discord-rpc/)
+target_include_directories(discord-rpc INTERFACE discord-rpc/include)
+
 # GCN Headers
 add_subdirectory(gcn)
