@@ -437,13 +437,13 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             int documentHeight = ui->descriptionText->document()->size().height();
             int visibleHeight = ui->descriptionText->viewport()->height();
             if (documentHeight > visibleHeight) {
+                ui->descriptionText->setMaximumSize(16777215, 110);
                 this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
                                   currentGeometry.height() + 40);
-                ui->descriptionText->setMaximumSize(16777215, 110);
             } else {
+                ui->descriptionText->setMaximumSize(16777215, 70);
                 this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
                                   initialHeight);
-                ui->descriptionText->setMaximumSize(16777215, 70);
             }
             return true;
         }
