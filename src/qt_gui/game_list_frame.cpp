@@ -119,9 +119,6 @@ void GameListFrame::PopulateGameList() {
             if (minutes > 0) {
                 formattedPlayTime += QString("%1m ").arg(minutes);
             }
-            if (seconds > 0 || formattedPlayTime.isEmpty()) {
-                formattedPlayTime += QString("%1s").arg(seconds);
-            }
 
             formattedPlayTime = formattedPlayTime.trimmed();
             m_game_info->m_games[i].play_time = playTime.toStdString();
