@@ -134,6 +134,11 @@ void Emulator::Run(const std::filesystem::path& file) {
                 }
 #ifdef ENABLE_QT_GUI
                 MemoryPatcher::g_game_serial = id;
+
+                // Timer for 'Play Time'
+                timer = new QTimer();
+                QObject::connect(timer, &QTimer::timeout, [this, id]() { UpdatePlayTime(id); });
+                timer->start(60000); // 60000 ms = 1 minute
 #endif
                 title = param_sfo->GetString("TITLE").value_or("Unknown title");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
