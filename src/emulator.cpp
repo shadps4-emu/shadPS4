@@ -136,7 +136,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 MemoryPatcher::g_game_serial = id;
 
                 // Timer for 'Play Time'
-                timer = new QTimer();
+                QTimer* timer = new QTimer();
                 QObject::connect(timer, &QTimer::timeout, [this, id]() { UpdatePlayTime(id); });
                 timer->start(60000); // 60000 ms = 1 minute
 #endif

@@ -5,7 +5,6 @@
 
 #include <filesystem>
 #include <thread>
-#include <QTimer>
 
 #include "common/singleton.h"
 #include "core/linker.h"
@@ -37,7 +36,6 @@ private:
     Core::Linker* linker;
     std::unique_ptr<Frontend::WindowSDL> window;
     std::chrono::steady_clock::time_point start_time;
-    QTimer* timer;
 };
 
 } // namespace Core
