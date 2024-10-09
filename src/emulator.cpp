@@ -240,7 +240,9 @@ void Emulator::Run(const std::filesystem::path& file) {
         window->waitEvent();
     }
 
+#ifdef ENABLE_QT_GUI
     UpdatePlayTime(id);
+#endif
 
     std::exit(0);
 }
