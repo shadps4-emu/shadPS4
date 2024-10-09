@@ -137,7 +137,10 @@ void Emulator::Run(const std::filesystem::path& file) {
 
                 // Timer for 'Play Time'
                 QTimer* timer = new QTimer();
-                QObject::connect(timer, &QTimer::timeout, [this, id]() { UpdatePlayTime(id); });
+                QObject::connect(timer, &QTimer::timeout, [this, id]() {
+                    UpdatePlayTime(id);
+                    start_time = std::chrono::steady_clock::now();
+                });
                 timer->start(60000); // 60000 ms = 1 minute
 #endif
                 title = param_sfo->GetString("TITLE").value_or("Unknown title");
