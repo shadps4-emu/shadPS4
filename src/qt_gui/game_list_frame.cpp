@@ -122,7 +122,11 @@ void GameListFrame::PopulateGameList() {
 
             formattedPlayTime = formattedPlayTime.trimmed();
             m_game_info->m_games[i].play_time = playTime.toStdString();
-            SetTableItem(i, 7, formattedPlayTime);
+            if (formattedPlayTime.isEmpty()) {
+                SetTableItem(i, 7, "0");
+            } else {
+                SetTableItem(i, 7, formattedPlayTime);
+            }
         }
 
         QString path;
