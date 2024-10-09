@@ -41,6 +41,7 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static std::string patchFile = "";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
@@ -121,6 +122,10 @@ std::string getUserName() {
 
 std::string getUpdateChannel() {
     return updateChannel;
+}
+
+std::string getPatchFile() {
+    return patchFile;
 }
 
 bool getUseSpecialPad() {
@@ -273,6 +278,10 @@ void setUserName(const std::string& type) {
 
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
+}
+
+void setPatchFile(const std::string& fileName) {
+    patchFile = fileName;
 }
 
 void setUseSpecialPad(bool use) {
@@ -435,6 +444,7 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
+        patchFile = toml::find_or<std::string>(general, "patchFile", "");
     }
 
     if (data.contains("Input")) {
@@ -502,6 +512,18 @@ void load(const std::filesystem::path& path) {
         m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
 }
+
+void loadArgs(int& argc, char* argv[]) {
+    for (int i = 0; i < argc; i++) {
+        const std::string arg = argv[i];
+        if (arg == "-p") {
+            patchFile = argv[i + 1];
+        } else if (arg == "-f") {
+            isFullscreen = true;
+        }
+    }
+}
+
 void save(const std::filesystem::path& path) {
     toml::value data;
 
@@ -533,6 +555,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
+    data["General"]["patchFile"] = patchFile;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -591,6 +614,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    patchFile = "";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;

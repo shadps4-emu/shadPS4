@@ -220,6 +220,14 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::exit(0);
 }
 
+void Emulator::Run(int& argc, char* argv[]) {
+    //Load config options from arguments
+    Config::loadArgs(argc, argv);
+    MemoryPatcher::patchFile = Config::getPatchFile();
+
+    this->Run(argv[1]);
+}
+
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     constexpr std::array<SysModules, 13> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},

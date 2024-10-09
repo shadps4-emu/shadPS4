@@ -26,6 +26,7 @@ public:
     ~Emulator();
 
     void Run(const std::filesystem::path& file);
+    void Run(int& argc, char* argv[]);
 
 private:
     void LoadSystemModules(const std::filesystem::path& file);
