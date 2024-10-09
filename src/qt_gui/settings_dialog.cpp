@@ -220,7 +220,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 [](int val) { Config::setNullGpu(val); });
     }
 
-// PATH TAB
+    // PATH TAB
     {
         for (const auto& dir : Config::getGameInstallDirs()) {
             QString path_string;
