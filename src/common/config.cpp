@@ -472,7 +472,6 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
-        backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "left");
     }
 
     if (data.contains("Input")) {
@@ -480,6 +479,7 @@ void load(const std::filesystem::path& path) {
 
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
+        backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
     }
@@ -576,7 +576,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
-    data["General"]["backButtonBehavior"] = backButtonBehavior;
+    data["Input"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -626,8 +626,6 @@ void setDefaultValues() {
     playBGM = false;
     BGMvolume = 50;
     enableDiscordRPC = true;
-    cursorState = HideCursorState::Idle;
-    cursorHideTimeout = 5;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";
@@ -638,6 +636,8 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    cursorState = HideCursorState::Idle;
+    cursorHideTimeout = 5;
     backButtonBehavior = "left";
     useSpecialPad = false;
     specialPadClass = 1;

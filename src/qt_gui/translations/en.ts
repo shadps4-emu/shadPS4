@@ -435,6 +435,41 @@
 			<translation>Log Filter</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Input</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Hide Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Hide Cursor Idle Timeout</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Input</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Controller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Back Button Behavior</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
@@ -533,16 +568,6 @@
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Volume</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="455"/>
-			<source>Controller Settings</source>
-			<translation>Controller Settings</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="467"/>
-			<source>Back Button Behavior</source>
-			<translation>Back Button Behavior</translation>
 		</message>
 	</context>
 	<context>
@@ -1032,6 +1057,41 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="392"/>
+			<source>cursorGroupBox</source>
+			<translation>Cursor:\nChange settings related to the cursor.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="394"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Hide Cursor:\nSet cursor hiding behavior.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="396"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Never</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Idle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Always</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="330"/>
