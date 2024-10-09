@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>854</width>
-    <height>570</height>
+    <height>605</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -71,7 +71,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="generalTab">
        <attribute name="title">

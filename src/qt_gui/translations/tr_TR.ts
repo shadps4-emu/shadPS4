@@ -1111,6 +1111,11 @@
 			<source>Path</source>
 			<translation>Yol</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Oynama Süresi</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
