@@ -40,4 +40,6 @@ private:
     std::map<std::string, int> languages;
 
     QString defaultTextEdit;
+
+    int initialHeight;
 };

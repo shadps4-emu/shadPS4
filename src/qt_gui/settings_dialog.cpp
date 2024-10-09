@@ -53,6 +53,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
+    initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
@@ -430,12 +431,19 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             }
 
             // if the text exceeds the size of the box, it will increase the size
+            QRect currentGeometry = this->geometry();
+            int newWidth = currentGeometry.width();
+
             int documentHeight = ui->descriptionText->document()->size().height();
             int visibleHeight = ui->descriptionText->viewport()->height();
             if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMinimumHeight(90);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  currentGeometry.height() + 40);
+                ui->descriptionText->setMaximumSize(16777215, 110);
             } else {
-                ui->descriptionText->setMinimumHeight(70);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  initialHeight);
+                ui->descriptionText->setMaximumSize(16777215, 70);
             }
             return true;
         }
