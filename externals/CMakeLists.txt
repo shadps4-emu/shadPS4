@@ -16,11 +16,8 @@ endif()
 # Boost
 if (NOT TARGET Boost::headers)
     set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
-    set(Boost_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
     set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "")
-    add_library(boost INTERFACE)
-    target_include_directories(boost INTERFACE ${Boost_INCLUDE_DIR})
-    add_library(Boost::headers ALIAS boost)
+    add_subdirectory(ext-boost)
 endif()
 
 # fmtlib
