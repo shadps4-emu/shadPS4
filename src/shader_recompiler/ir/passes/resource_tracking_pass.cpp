@@ -445,12 +445,38 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
     }
 }
 
-void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst,
-                                 const IR::TextureInstInfo& inst_info, const u32 image_binding,
-                                 const AmdGpu::Image& image) {
+void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+                                 Descriptors& descriptors, const IR::Inst* producer,
+                                 const u32 image_binding, const AmdGpu::Image& image) {
+    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
+    const u32 sampler_binding = [&] {
+        ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
+        const IR::Value& handle = producer->Arg(1);
+        // Inline sampler resource.
+        if (handle.IsImmediate()) {
+            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
+            return descriptors.Add(SamplerResource{
+                .sgpr_base = std::numeric_limits<u32>::max(),
+                .dword_offset = 0,
+                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
+            });
+        }
+        // Normal sampler resource.
+        const auto ssharp_handle = handle.InstRecursive();
+        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+        const auto ssharp = TrackSharp(ssharp_ud);
+        return descriptors.Add(SamplerResource{
+            .sgpr_base = ssharp.sgpr_base,
+            .dword_offset = ssharp.dword_offset,
+            .associated_image = image_binding,
+            .disable_aniso = disable_aniso,
+        });
+    }();
+
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
-    const IR::U32 handle = ir.Imm32(image_binding);
+    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const IR::U32 handle = ir.Imm32(image_binding | sampler_binding << 16);
 
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
@@ -629,44 +655,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
         .type = type,
-        .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
+        .nfmt = image.GetNumberFmt(),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
     });
 
-    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    const u32 sampler_binding = [&] {
-        if (!has_sampler) {
-            return 0U;
-        }
-        const IR::Value& handle = producer->Arg(1);
-        // Inline sampler resource.
-        if (handle.IsImmediate()) {
-            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-            return descriptors.Add(SamplerResource{
-                .sgpr_base = std::numeric_limits<u32>::max(),
-                .dword_offset = 0,
-                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
-            });
-        }
-        // Normal sampler resource.
-        const auto ssharp_handle = handle.InstRecursive();
-        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-        const auto ssharp = TrackSharp(ssharp_ud);
-        return descriptors.Add(SamplerResource{
-            .sgpr_base = ssharp.sgpr_base,
-            .dword_offset = ssharp.dword_offset,
-            .associated_image = image_binding,
-            .disable_aniso = disable_aniso,
-        });
-    }();
-    image_binding |= (sampler_binding << 16);
-
     // Sample instructions must be resolved into a new instruction using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        PatchImageSampleInstruction(block, inst, inst_info, image_binding, image);
+        PatchImageSampleInstruction(block, inst, info, descriptors, producer, image_binding, image);
         return;
     }
 
