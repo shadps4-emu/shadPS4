@@ -126,10 +126,7 @@ void GameInstallDialog::Save() {
             return;
         }
     }
-
-    std::vector<std::filesystem::path> install_dirs;
-    install_dirs.emplace_back(Common::FS::PathFromQString(gamesDirectory));
-    Config::setGameInstallDirs(install_dirs);
+    Config::addGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
     Config::setAddonInstallDir(Common::FS::PathFromQString(addonsDirectory));
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
