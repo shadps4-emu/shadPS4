@@ -115,7 +115,7 @@ This section will provide some preliminary steps to take and tips on what to do 
     - **Logs aren't always accurate in determining the reason for a crash.**\
       Some log entries are reported as errors but may not be fatal for the execution to stop. `Critical` entries are most likely to be the cause for crashes.
 
-    - Pinpoint the area of the emulator where the crash occured\
+    - Pinpoint the area of the emulator where the crash occurred\
       If the stack trace ends with functions that are relevant to rendering, it is safe to assume that the issue is with **rendering**.\
       Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.
 
