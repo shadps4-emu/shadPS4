@@ -14,8 +14,10 @@ int PS4_SYSV_ABI sceSharePlayCrashDaemon() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo() {
-    LOG_ERROR(Lib_SharePlay, "(STUBBED) called");
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo) {
+    memset(pInfo, 0, sizeof(*pInfo));
+    pInfo->status = ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT;
+    LOG_DEBUG(Lib_SharePlay, "(STUBBED) called");
     return ORBIS_OK;
 }
 

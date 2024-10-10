@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/np_manager/np_manager.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -11,8 +12,21 @@ class SymbolsResolver;
 
 namespace Libraries::SharePlay {
 
+constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT = 0x00;
+constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_READY = 0x01;
+constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_CONNECTED = 0x02;
+
+struct OrbisSharePlayConnectionInfo {
+    int status;
+    int mode;
+    Libraries::NpManager::OrbisNpOnlineId hostOnlineId;
+    Libraries::NpManager::OrbisNpOnlineId visitorOnlineId;
+    s32 hostUserId;
+    s32 visitorUserId;
+};
+
 int PS4_SYSV_ABI sceSharePlayCrashDaemon();
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo();
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo);
 int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA();
 int PS4_SYSV_ABI sceSharePlayGetCurrentInfo();
 int PS4_SYSV_ABI sceSharePlayGetEvent();
