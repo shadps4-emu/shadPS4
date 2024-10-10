@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include "common/logging/log.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
@@ -99,18 +100,32 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
 
     state.axes[axis_id] = value;
 
+    // Derive digital buttons from the analog trigger
+    // Scaled value is 0 .. 255
+    // Rest point for L2/R2 is ideally 0 but may drift
+    // Use some hysteresis to avoid glitches
+
+    const int ON_THRESHOLD = 31;  // 255 / 8
+    const int OFF_THRESHOLD = 16; // 255 / 16 + 1
+
     if (axis == Input::Axis::TriggerLeft) {
-        if (value > 0) {
+        LOG_TRACE(Input, "TriggerLeft {}", value);
+        if (value > ON_THRESHOLD) {
+            LOG_TRACE(Input, "L2 ON");
             state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
-        } else {
+        } else if (value < OFF_THRESHOLD) {
+            LOG_TRACE(Input, "L2 OFF");
             state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
         }
     }
 
     if (axis == Input::Axis::TriggerRight) {
-        if (value > 0) {
+        LOG_TRACE(Input, "TriggerRight {}", value);
+        if (value > ON_THRESHOLD) {
+            LOG_TRACE(Input, "R2 ON");
             state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
-        } else {
+        } else if (value < OFF_THRESHOLD) {
+            LOG_TRACE(Input, "R2 OFF");
             state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
         }
     }
