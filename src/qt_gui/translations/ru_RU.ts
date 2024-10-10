@@ -507,7 +507,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="286"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Проверка обновлений при запуске</translation>
+			<translation>Проверка при загрузке</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="313"/>
@@ -527,7 +527,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
-			<translation>Воспроизведение заглавной музыки</translation>
+			<translation>Музыка в меню</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
