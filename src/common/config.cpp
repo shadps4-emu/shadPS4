@@ -325,9 +325,17 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
-void setGameInstallDirs(const std::vector<std::filesystem::path>& dir) {
-    settings_install_dirs.resize(dir.size());
-    settings_install_dirs = dir;
+void addGameInstallDir(const std::filesystem::path& dir) {
+    if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) == 
+        settings_install_dirs.end()) {
+        settings_install_dirs.push_back(dir);
+    }
+}
+void removeGameInstallDir(const std::filesystem::path& dir) {
+    auto iterator = std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir);
+    if (iterator != settings_install_dirs.end()) {
+        settings_install_dirs.erase(iterator);
+    }
 }
 void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
@@ -385,7 +393,7 @@ u32 getMainWindowGeometryW() {
 u32 getMainWindowGeometryH() {
     return main_window_geometry_h;
 }
-std::vector<std::filesystem::path> getGameInstallDirs() {
+const std::vector<std::filesystem::path>& getGameInstallDirs() {
     return settings_install_dirs;
 }
 std::filesystem::path getAddonInstallDir() {
@@ -527,14 +535,14 @@ void load(const std::filesystem::path& path) {
 
         auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         if (!old_game_install_dir.empty()) {
-            settings_install_dirs.push_back(old_game_install_dir);
+            addGameInstallDir(old_game_install_dir);
             gui.as_table().erase("installDir");
         }
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
         for (const auto& dir : install_dir_array) {
-            settings_install_dirs.emplace_back(std::filesystem::path{dir});
+            addGameInstallDir(dir);
         }
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
