@@ -72,7 +72,7 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     }
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
-    if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text,
+    if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
                             ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
     }
@@ -83,13 +83,11 @@ ImeDialogState::~ImeDialogState() {
 }
 
 ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
-    : userId(other.userId), is_multiLine(other.is_multiLine), is_numeric(other.is_numeric),
+    : input_changed(other.input_changed), userId(other.userId), is_multiLine(other.is_multiLine), is_numeric(other.is_numeric),
       type(other.type), enter_label(other.enter_label), text_filter(other.text_filter),
       keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
       text_buffer(other.text_buffer), title(std::move(other.title)), placeholder(std::move(other.placeholder)),
-      input_changed(other.input_changed) {
-
-    std::memcpy(current_text, other.current_text, sizeof(current_text));
+      current_text(other.current_text) {
 
 #ifndef _WIN32
     orbis_to_utf8 = other.orbis_to_utf8;
@@ -106,6 +104,7 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
     if (this != &other) {
         Free();
 
+        input_changed = other.input_changed;
         userId = other.userId;
         is_multiLine = other.is_multiLine;
         is_numeric = other.is_numeric;
@@ -117,9 +116,7 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
         text_buffer = other.text_buffer;
         title = std::move(other.title);
         placeholder = std::move(other.placeholder);
-        input_changed = other.input_changed;
-
-        std::memcpy(current_text, other.current_text, sizeof(current_text));
+        current_text = other.current_text;
 
 #ifndef _WIN32
         orbis_to_utf8 = other.orbis_to_utf8;
@@ -140,8 +137,7 @@ bool ImeDialogState::CopyTextToOrbisBuffer() {
         return false;
     }
 
-    std::size_t text_len = std::char_traits<char>::length(current_text);
-    return ConvertUTF8ToOrbis(current_text, text_len, text_buffer, max_text_length);
+    return ConvertUTF8ToOrbis(current_text.begin(), current_text.capacity(), text_buffer, max_text_length);
 }
 
 bool ImeDialogState::CallTextFilter() {
@@ -152,11 +148,11 @@ bool ImeDialogState::CallTextFilter() {
     input_changed = false;
 
     char16_t src_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH + 1] = {0};
-    u32 src_text_length = std::strlen(current_text);
+    u32 src_text_length = current_text.size();
     char16_t out_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH + 1] = {0};
     u32 out_text_length = ORBIS_IME_DIALOG_MAX_TEXT_LENGTH;
 
-    if (!ConvertUTF8ToOrbis(current_text, src_text_length, src_text,
+    if (!ConvertUTF8ToOrbis(current_text.begin(), src_text_length, src_text,
                             ORBIS_IME_DIALOG_MAX_TEXT_LENGTH)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to orbis encoding");
         return false;
@@ -170,7 +166,7 @@ bool ImeDialogState::CallTextFilter() {
         return false;
     }
 
-    if (!ConvertOrbisToUTF8(out_text, out_text_length, current_text,
+    if (!ConvertOrbisToUTF8(out_text, out_text_length, current_text.begin(),
                             ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
         return false;
@@ -408,7 +404,7 @@ void ImeDialogUi::DrawInputText() {
         SetKeyboardFocusHere();
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
-    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text,
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
                     state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter,
                     InputTextCallback, this)) {
         state->input_changed = true;
@@ -424,7 +420,7 @@ void ImeDialogUi::DrawMultiLineInputText() {
         SetKeyboardFocusHere();
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
-    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text,
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
                     state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }

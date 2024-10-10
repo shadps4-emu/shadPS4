@@ -109,6 +109,14 @@ public:
         return data + N;
     }
 
+    constexpr std::size_t capacity() const {
+        return N;
+    }
+
+    std::size_t size() const {
+        return std::char_traits<T>::length(data);
+    }
+
     T& operator[](size_t idx) {
         return data[idx];
     }

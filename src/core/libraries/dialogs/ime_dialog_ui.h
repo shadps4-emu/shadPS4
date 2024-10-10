@@ -9,6 +9,7 @@
 #include <iconv.h>
 #endif
 #include <imgui.h>
+#include "common/cstring.h"
 #include "common/types.h"
 #include "core/libraries/dialogs/ime_dialog.h"
 #include "imgui/imgui_layer.h"
@@ -35,7 +36,7 @@ class ImeDialogState final {
     std::vector<char> placeholder;
 
     // A character can hold up to 4 bytes in UTF-8
-    char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1] = {0};
+    Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
 #ifndef _WIN32
     iconv_t orbis_to_utf8 = (iconv_t)-1;
     iconv_t utf8_to_orbis = (iconv_t)-1;
