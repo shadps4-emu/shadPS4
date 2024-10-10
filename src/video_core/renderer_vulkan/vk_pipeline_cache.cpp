@@ -7,7 +7,6 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
-#include "shader_recompiler/frontend/copy_shader.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
@@ -41,7 +40,7 @@ void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
         if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
             w != VsOutput::None) {
-            info.outputs.emplace_back(Shader::VsOutputMap{x, y, z, w});
+            info.outputs[info.num_outputs++] = Shader::VsOutputMap{x, y, z, w};
         }
     };
     // VS_OUT_MISC_VEC
@@ -84,18 +83,21 @@ void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
 Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     auto info = Shader::RuntimeInfo{stage};
     const auto& regs = liverpool->regs;
+    const auto BuildCommon = [&](const auto& program) {
+        info.num_user_data = program.settings.num_user_regs;
+        info.num_input_vgprs = program.settings.vgpr_comp_cnt;
+        info.num_allocated_vgprs = program.settings.num_vgprs * 4;
+        info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
+        info.fp_round_mode32 = program.settings.fp_round_mode32;
+    };
     switch (stage) {
     case Shader::Stage::Export: {
-        info.num_user_data = regs.es_program.settings.num_user_regs;
-        info.num_input_vgprs = regs.es_program.settings.vgpr_comp_cnt;
-        info.num_allocated_vgprs = regs.es_program.settings.num_vgprs * 4;
+        BuildCommon(regs.es_program);
         info.es_info.vertex_data_size = regs.vgt_esgs_ring_itemsize;
         break;
     }
     case Shader::Stage::Vertex: {
-        info.num_user_data = regs.vs_program.settings.num_user_regs;
-        info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
-        info.num_allocated_vgprs = regs.vs_program.settings.num_vgprs * 4;
+        BuildCommon(regs.vs_program);
         GatherVertexOutputs(info.vs_info, regs.vs_output_control);
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
@@ -103,39 +105,35 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
         break;
     }
     case Shader::Stage::Geometry: {
-        info.num_user_data = regs.gs_program.settings.num_user_regs;
-        info.num_input_vgprs = regs.gs_program.settings.vgpr_comp_cnt;
-        info.num_allocated_vgprs = regs.gs_program.settings.num_vgprs * 4;
-        info.gs_info.output_vertices = regs.vgt_gs_max_vert_out;
-        info.gs_info.num_invocations =
+        BuildCommon(regs.gs_program);
+        auto& gs_info = info.gs_info;
+        gs_info.output_vertices = regs.vgt_gs_max_vert_out;
+        gs_info.num_invocations =
             regs.vgt_gs_instance_cnt.IsEnabled() ? regs.vgt_gs_instance_cnt.count : 1;
-        info.gs_info.in_primitive = regs.primitive_type;
+        gs_info.in_primitive = regs.primitive_type;
         for (u32 stream_id = 0; stream_id < Shader::GsMaxOutputStreams; ++stream_id) {
-            info.gs_info.out_primitive[stream_id] =
+            gs_info.out_primitive[stream_id] =
                 regs.vgt_gs_out_prim_type.GetPrimitiveType(stream_id);
         }
-        info.gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
-        info.gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
-
-        // Extract semantics offsets from a copy shader
-        const auto vc_stage = Shader::Stage::Vertex;
-        const auto* pgm_vc = regs.ProgramForStage(static_cast<u32>(vc_stage));
-        const auto params_vc = Liverpool::GetParams(*pgm_vc);
-        DumpShader(params_vc.code, params_vc.hash, Shader::Stage::Vertex, 0, "copy.bin");
-        info.gs_info.copy_data = Shader::ParseCopyShader(params_vc.code);
+        gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
+        gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
+        const auto params_vc = Liverpool::GetParams(regs.vs_program);
+        gs_info.vs_copy = params_vc.code;
+        gs_info.vs_copy_hash = params_vc.hash;
+        DumpShader(gs_info.vs_copy, gs_info.vs_copy_hash, Shader::Stage::Vertex, 0, "copy.bin");
         break;
     }
     case Shader::Stage::Fragment: {
-        info.num_user_data = regs.ps_program.settings.num_user_regs;
-        info.num_allocated_vgprs = regs.ps_program.settings.num_vgprs * 4;
+        BuildCommon(regs.ps_program);
         const auto& ps_inputs = regs.ps_inputs;
+        info.fs_info.num_inputs = regs.num_interp;
         for (u32 i = 0; i < regs.num_interp; i++) {
-            info.fs_info.inputs.push_back({
+            info.fs_info.inputs[i] = {
                 .param_index = u8(ps_inputs[i].input_offset.Value()),
                 .is_default = bool(ps_inputs[i].use_default),
                 .is_flat = bool(ps_inputs[i].flat_shade),
                 .default_value = u8(ps_inputs[i].default_value),
-            });
+            };
         }
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = {
@@ -166,9 +164,12 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                              AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
+    const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
         .supported_spirv = instance.ApiVersion() >= VK_API_VERSION_1_3 ? 0x00010600U : 0x00010500U,
         .subgroup_size = instance.SubgroupSize(),
+        .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
+        .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});

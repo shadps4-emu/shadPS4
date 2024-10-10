@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
@@ -11,6 +11,8 @@ namespace Shader::Optimization {
 
 void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
                            Stage stage) {
+    auto& info = program.info;
+
     const auto& ForEachInstruction = [&](auto func) {
         for (IR::Block* block : program.blocks) {
             for (IR::Inst& inst : block->Instructions()) {
@@ -52,6 +54,9 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         break;
     }
     case Stage::Geometry: {
+        const auto& gs_info = runtime_info.gs_info;
+        info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
+
         ForEachInstruction([&](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -81,12 +86,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
-                const auto comp_ofs = runtime_info.gs_info.output_vertices * 4u;
-                const auto output_size = comp_ofs * runtime_info.gs_info.out_vertex_data_size;
+                const auto comp_ofs = gs_info.output_vertices * 4u;
+                const auto output_size = comp_ofs * gs_info.out_vertex_data_size;
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
-                const auto& it = runtime_info.gs_info.copy_data.attr_map.find(vc_read_ofs);
-                ASSERT(it != runtime_info.gs_info.copy_data.attr_map.cend());
+                const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);
+                ASSERT(it != info.gs_copy_data.attr_map.cend());
                 const auto& [attr, comp] = it->second;
 
                 inst.ReplaceOpcode(IR::Opcode::SetAttribute);

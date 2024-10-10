@@ -20,15 +20,14 @@ bool getPlayBGM();
 int getBGMvolume();
 bool getEnableDiscordRPC();
 
-s16 getCursorState();
-int getCursorHideTimeout();
-
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
-std::string getBackButtonBehavior();
 
+s16 getCursorState();
+int getCursorHideTimeout();
+std::string getBackButtonBehavior();
 bool getUseSpecialPad();
 int getSpecialPadClass();
 
@@ -59,14 +58,14 @@ void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
 void setEnableDiscordRPC(bool enable);
-void setCursorState(s16 cursorState);
-void setCursorHideTimeout(int newcursorHideTimeout);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
-void setBackButtonBehavior(const std::string& type);
 
+void setCursorState(s16 cursorState);
+void setCursorHideTimeout(int newcursorHideTimeout);
+void setBackButtonBehavior(const std::string& type);
 void setUseSpecialPad(bool use);
 void setSpecialPadClass(int type);
 

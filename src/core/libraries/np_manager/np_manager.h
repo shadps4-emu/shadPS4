@@ -218,7 +218,7 @@ int PS4_SYSV_ABI sceNpCheckNpReachability();
 int PS4_SYSV_ABI sceNpCheckPlus();
 int PS4_SYSV_ABI sceNpCreateAsyncRequest();
 int PS4_SYSV_ABI sceNpCreateRequest();
-int PS4_SYSV_ABI sceNpDeleteRequest();
+int PS4_SYSV_ABI sceNpDeleteRequest(int reqId);
 int PS4_SYSV_ABI sceNpGetAccountAge();
 int PS4_SYSV_ABI sceNpGetAccountCountry();
 int PS4_SYSV_ABI sceNpGetAccountCountryA();
