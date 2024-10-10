@@ -297,6 +297,8 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
 
 set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
                 src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog_ui.cpp
+                src/core/libraries/dialogs/ime_dialog_ui.h
                 src/core/libraries/dialogs/ime_dialog.cpp
                 src/core/libraries/dialogs/ime_dialog.h
                 src/core/libraries/dialogs/error_codes.h
