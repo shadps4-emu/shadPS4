@@ -5,9 +5,6 @@
 
 #include <mutex>
 #include <vector>
-#ifndef _WIN32
-#include <iconv.h>
-#endif
 #include <imgui.h>
 #include "common/cstring.h"
 #include "common/types.h"
@@ -37,10 +34,7 @@ class ImeDialogState final {
 
     // A character can hold up to 4 bytes in UTF-8
     Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
-#ifndef _WIN32
-    iconv_t orbis_to_utf8 = (iconv_t)-1;
-    iconv_t utf8_to_orbis = (iconv_t)-1;
-#endif
+
 public:
     ImeDialogState(const OrbisImeDialogParam* param = nullptr,
                    const OrbisImeParamExtended* extended = nullptr);
@@ -48,13 +42,10 @@ public:
     ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
-    ~ImeDialogState();
-
     bool CopyTextToOrbisBuffer();
     bool CallTextFilter();
 
 private:
-    void Free();
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
 
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,

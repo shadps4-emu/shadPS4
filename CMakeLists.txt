@@ -770,10 +770,6 @@ if (APPLE)
 
   # Half float conversions for F16C patches
   target_link_libraries(shadps4 PRIVATE half)
-
-  # Link against the iconv in macOS
-  find_package(Iconv REQUIRED)
-  target_link_libraries(shadps4 PRIVATE Iconv::Iconv)
 endif()
 
 if (NOT ENABLE_QT_GUI)
