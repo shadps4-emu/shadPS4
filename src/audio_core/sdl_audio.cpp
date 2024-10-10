@@ -13,6 +13,9 @@
 #include <mutex> // std::unique_lock
 
 namespace Audio {
+SDLAudio::~SDLAudio() {
+    std::unique_lock lock{m_mutex};
+}
 
 constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
 
