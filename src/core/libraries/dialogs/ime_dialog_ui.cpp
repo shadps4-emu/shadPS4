@@ -52,20 +52,20 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
 
     if (param->title) {
         std::size_t title_len = std::char_traits<char16_t>::length(param->title);
-        title = new char[title_len * 4 + 1];
+        title.resize(title_len * 4 + 1);
         title[title_len * 4] = '\0';
 
-        if (!ConvertOrbisToUTF8(param->title, title_len, title, title_len * 4)) {
+        if (!ConvertOrbisToUTF8(param->title, title_len, &title[0], title_len * 4)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert title to utf8 encoding");
         }
     }
 
     if (param->placeholder) {
         std::size_t placeholder_len = std::char_traits<char16_t>::length(param->placeholder);
-        placeholder = new char[placeholder_len * 4 + 1];
+        placeholder.resize(placeholder_len * 4 + 1);
         placeholder[placeholder_len * 4] = '\0';
 
-        if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, placeholder,
+        if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, &placeholder[0],
                                 placeholder_len * 4)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert placeholder to utf8 encoding");
         }
@@ -86,7 +86,7 @@ ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
     : userId(other.userId), is_multiLine(other.is_multiLine), is_numeric(other.is_numeric),
       type(other.type), enter_label(other.enter_label), text_filter(other.text_filter),
       keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
-      text_buffer(other.text_buffer), title(other.title), placeholder(other.placeholder),
+      text_buffer(other.text_buffer), title(std::move(other.title)), placeholder(std::move(other.placeholder)),
       input_changed(other.input_changed) {
 
     std::memcpy(current_text, other.current_text, sizeof(current_text));
@@ -100,8 +100,6 @@ ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
 #endif
 
     other.text_buffer = nullptr;
-    other.title = nullptr;
-    other.placeholder = nullptr;
 }
 
 ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
@@ -117,8 +115,8 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
         keyboard_filter = other.keyboard_filter;
         max_text_length = other.max_text_length;
         text_buffer = other.text_buffer;
-        title = other.title;
-        placeholder = other.placeholder;
+        title = std::move(other.title);
+        placeholder = std::move(other.placeholder);
         input_changed = other.input_changed;
 
         std::memcpy(current_text, other.current_text, sizeof(current_text));
@@ -132,8 +130,6 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
 #endif
 
         other.text_buffer = nullptr;
-        other.title = nullptr;
-        other.placeholder = nullptr;
     }
 
     return *this;
@@ -192,14 +188,6 @@ void ImeDialogState::Free() {
         iconv_close(utf8_to_orbis);
     }
 #endif
-
-    if (title) {
-        delete[] title;
-    }
-
-    if (placeholder) {
-        delete[] placeholder;
-    }
 }
 
 bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode,
@@ -358,9 +346,9 @@ void ImeDialogUi::Draw() {
               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         DrawPrettyBackground();
 
-        if (state->title) {
+        if (!state->title.empty()) {
             SetWindowFontScale(1.7f);
-            TextUnformatted(state->title);
+            TextUnformatted(state->title.data());
             SetWindowFontScale(1.0f);
         }
 
@@ -419,7 +407,8 @@ void ImeDialogUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text,
+    const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text,
                     state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter,
                     InputTextCallback, this)) {
         state->input_changed = true;
@@ -434,7 +423,8 @@ void ImeDialogUi::DrawMultiLineInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeDialogInput", state->placeholder, state->current_text,
+    const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text,
                     state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }

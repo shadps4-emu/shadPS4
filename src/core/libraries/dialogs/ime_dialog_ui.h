@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <vector>
 #ifndef _WIN32
 #include <iconv.h>
 #endif
@@ -30,8 +31,8 @@ class ImeDialogState final {
     OrbisImeExtKeyboardFilter keyboard_filter{};
     u32 max_text_length{};
     char16_t* text_buffer{};
-    char* title = nullptr;
-    char* placeholder = nullptr;
+    std::vector<char> title;
+    std::vector<char> placeholder;
 
     // A character can hold up to 4 bytes in UTF-8
     char current_text[ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1] = {0};
