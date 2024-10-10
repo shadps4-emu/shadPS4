@@ -8,6 +8,7 @@
 #include <winsock2.h>
 #else
 #include <arpa/inet.h>
+#include <netdb.h>
 #endif
 
 #include "common/logging/log.h"
