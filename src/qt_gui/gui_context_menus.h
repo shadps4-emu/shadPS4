@@ -68,6 +68,18 @@ public:
 
         menu.addMenu(copyMenu);
 
+        // "Delete" submenu.
+        QMenu* deleteMenu = new QMenu(tr("Delete..."), widget);
+        QAction* deleteGame = new QAction(tr("Delete Game"), widget);
+        QAction* deleteUpdate = new QAction(tr("Delete Update"), widget);
+        QAction* deleteDLC = new QAction(tr("Delete DLC"), widget);
+
+        deleteMenu->addAction(deleteGame);
+        deleteMenu->addAction(deleteUpdate);
+        deleteMenu->addAction(deleteDLC);
+
+        menu.addMenu(deleteMenu);
+
         // Show menu.
         auto selected = menu.exec(global_pos);
         if (!selected) {
@@ -82,7 +94,11 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            if (psf.Open(std::filesystem::path(m_games[itemID].path) / "sce_sys" / "param.sfo")) {
+            std::string game_folder_path = m_games[itemID].path;
+            if (std::filesystem::exists(game_folder_path + "-UPDATE")) {
+                game_folder_path += "-UPDATE";
+            }
+            if (psf.Open(std::filesystem::path(game_folder_path) / "sce_sys" / "param.sfo")) {
                 int rows = psf.GetEntries().size();
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
                 tableWidget->setAttribute(Qt::WA_DeleteOnClose);
@@ -268,6 +284,47 @@ public:
                                        .arg(QString::fromStdString(m_games[itemID].version))
                                        .arg(QString::fromStdString(m_games[itemID].size));
             clipboard->setText(combinedText);
+        }
+
+        if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC) {
+            bool error = false;
+            QString folder_path = QString::fromStdString(m_games[itemID].path);
+            QString message_type = tr("Game");
+            if (selected == deleteUpdate) {
+                if (!std::filesystem::exists(m_games[itemID].path + "-UPDATE")) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This game has no update to delete!")));
+                    error = true;
+                } else {
+                    folder_path = QString::fromStdString(m_games[itemID].path + "-UPDATE");
+                    message_type = tr("Update");
+                }
+            } else if (selected == deleteDLC) {
+                std::filesystem::path game_path = folder_path.toStdString();
+                std::filesystem::path addon_path =
+                    Config::getAddonInstallDir() / game_path.parent_path().filename();
+                if (!std::filesystem::exists(addon_path.string())) {
+                    QMessageBox::critical(nullptr, tr("Error"),
+                                          QString(tr("This game has no DLC to delete!")));
+                    error = true;
+                } else {
+                    folder_path = QString::fromStdString(addon_path.string());
+                    message_type = tr("DLC");
+                }
+            }
+            if (!error) {
+                QString gameName = QString::fromStdString(m_games[itemID].name);
+                QDir dir(folder_path);
+                QMessageBox::StandardButton reply = QMessageBox::question(
+                    nullptr, QString(tr("Delete %1")).arg(message_type),
+                    QString(tr("Are you sure you want to delete %1's %2 directory?"))
+                        .arg(gameName, message_type),
+                    QMessageBox::Yes | QMessageBox::No);
+                if (reply == QMessageBox::Yes) {
+                    dir.removeRecursively();
+                }
+            }
         }
     }
 
