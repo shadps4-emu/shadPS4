@@ -534,7 +534,12 @@ void load(const std::filesystem::path& path) {
         const auto install_dir_array =
             toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
         for (const auto& dir : install_dir_array) {
-            settings_install_dirs.emplace_back(std::filesystem::path{dir});
+            bool not_already_included =
+                std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) ==
+                settings_install_dirs.end();
+            if (not_already_included) {
+                settings_install_dirs.emplace_back(std::filesystem::path{dir});
+            }
         }
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
