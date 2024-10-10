@@ -481,7 +481,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
     IR::Inst* body3 = inst.Arg(3).InstRecursive();
-    IR::Inst* body4 = inst.Arg(4).InstRecursive();
+    IR::F32 body4 = IR::F32{inst.Arg(4)};
     const auto get_addr_reg = [&](u32 index) -> IR::F32 {
         if (index <= 3) {
             return IR::F32{body1->Arg(index)};
@@ -493,7 +493,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
             return IR::F32{body3->Arg(index - 8)};
         }
         if (index == 12) {
-            return IR::F32{body4};
+            return body4;
         }
         UNREACHABLE();
     };
