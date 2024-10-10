@@ -88,7 +88,7 @@ int PS4_SYSV_ABI scePadGetCapability() {
 }
 
 int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerInformation* pInfo) {
-    LOG_INFO(Lib_Pad, "called handle = {}", handle);
+    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
     if (handle < 0) {
         pInfo->touchPadInfo.pixelDensity = 1;
         pInfo->touchPadInfo.resolution.x = 1920;

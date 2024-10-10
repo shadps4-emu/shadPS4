@@ -26,3 +26,11 @@ constexpr int ORBIS_NET_CTL_STATE_IPOBTAINED = 3;
 constexpr int ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED = 1;
 constexpr int ORBIS_SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2;
 constexpr int ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED = 3;
+
+// get info codes
+// device
+constexpr int ORBIS_NET_CTL_DEVICE_WIRED = 0;
+constexpr int ORBIS_NET_CTL_DEVICE_WIRELESS = 1;
+// link
+constexpr int ORBIS_NET_CTL_LINK_DISCONNECTED = 0;
+constexpr int ORBIS_NET_CTL_LINK_CONNECTED = 1;

@@ -734,9 +734,16 @@ int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetInetPton() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
+#ifdef WIN32
+    int res = InetPtonA(af, src, dst);
+#else
+    int res = inet_pton(af, src, dst);
+#endif
+    if (res < 0) {
+        UNREACHABLE();
+    }
+    return res;
 }
 
 int PS4_SYSV_ABI sceNetInetPtonEx() {
