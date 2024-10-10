@@ -515,7 +515,7 @@ void load(const std::filesystem::path& path) {
     }
 
     if (data.contains("GUI")) {
-        const toml::value& gui = data.at("GUI");
+        toml::value& gui = data.at("GUI");
 
         m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
         m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
@@ -528,7 +528,7 @@ void load(const std::filesystem::path& path) {
         auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         if (!old_game_install_dir.empty()) {
             settings_install_dirs.push_back(old_game_install_dir);
-            data.as_table().erase("installDir");
+            gui.as_table().erase("installDir");
         }
 
         const auto install_dir_array =
