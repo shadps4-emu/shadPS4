@@ -53,16 +53,35 @@ enum class Error : u32 {
     DIALOG_INVALID_TITLE = 0x80bc0101,
     DIALOG_NOT_RUNNING = 0x80bc0105,
     DIALOG_NOT_FINISHED = 0x80bc0106,
-    DIALOG_NOT_IN_USE = 0x80bc0107
+    DIALOG_NOT_IN_USE = 0x80bc0107,
 };
 
-enum class OrbisImeDialogStatus : u32 { NONE = 0, RUNNING = 1, FINISHED = 2 };
+enum class OrbisImeDialogStatus : u32 {
+    NONE = 0,
+    RUNNING = 1,
+    FINISHED = 2,
+};
 
-enum class OrbisImeDialogEndStatus : u32 { OK = 0, USER_CANCELED = 1, ABORTED = 2 };
+enum class OrbisImeDialogEndStatus : u32 {
+    OK = 0,
+    USER_CANCELED = 1,
+    ABORTED = 2,
+};
 
-enum class OrbisImeType : u32 { DEFAULT = 0, BASIC_LATIN = 1, URL = 2, MAIL = 3, NUMBER = 4 };
+enum class OrbisImeType : u32 {
+    DEFAULT = 0,
+    BASIC_LATIN = 1,
+    URL = 2,
+    MAIL = 3,
+    NUMBER = 4,
+};
 
-enum class OrbisImeEnterLabel : u32 { DEFAULT = 0, SEND = 1, SEARCH = 2, GO = 3 };
+enum class OrbisImeEnterLabel : u32 {
+    DEFAULT = 0,
+    SEND = 1,
+    SEARCH = 2,
+    GO = 3,
+};
 
 enum class OrbisImeDialogOption : u32 {
     DEFAULT = 0,
@@ -70,18 +89,33 @@ enum class OrbisImeDialogOption : u32 {
     NO_AUTO_CORRECTION = 2,
     NO_AUTO_COMPLETION = 4,
     // TODO: Document missing options
-    LARGE_RESOLUTION = 1024
+    LARGE_RESOLUTION = 1024,
 };
 
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
 
-enum class OrbisImeInputMethod : u32 { DEFAULT = 0 };
+enum class OrbisImeInputMethod : u32 {
+    DEFAULT = 0,
+};
 
-enum class OrbisImeHorizontalAlignment : u32 { LEFT = 0, CENTER = 1, RIGHT = 2 };
+enum class OrbisImeHorizontalAlignment : u32 {
+    LEFT = 0,
+    CENTER = 1,
+    RIGHT = 2,
+};
 
-enum class OrbisImeVerticalAlignment : u32 { TOP = 0, CENTER = 1, BOTTOM = 2 };
+enum class OrbisImeVerticalAlignment : u32 {
+    TOP = 0,
+    CENTER = 1,
+    BOTTOM = 2,
+};
 
-enum class OrbisImePanelPriority : u32 { DEFAULT = 0, ALPHABET = 1, SYMBOL = 2, ACCENT = 3 };
+enum class OrbisImePanelPriority : u32 {
+    DEFAULT = 0,
+    ALPHABET = 1,
+    SYMBOL = 2,
+    ACCENT = 3,
+};
 
 enum class OrbisImeKeyboardType : u32 {
     NONE = 0,
@@ -121,7 +155,7 @@ enum class OrbisImeKeyboardType : u32 {
     INDONESIAN = 34,
     VIETNAMESE = 35,
     ROMANIAN = 36,
-    HUNGARIAN = 37
+    HUNGARIAN = 37,
 };
 
 struct OrbisImeColor {

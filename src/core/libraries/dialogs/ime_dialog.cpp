@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
+#include <array>
 #include <magic_enum.hpp>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -9,8 +9,8 @@
 #include "ime_dialog.h"
 #include "ime_dialog_ui.h"
 
-static constexpr float MAX_X_POSITIONS[] = {3840.0f, 1920.0f};
-static constexpr float MAX_Y_POSITIONS[] = {2160.0f, 1080.0f};
+static constexpr std::array<float, 2> MAX_X_POSITIONS = {3840.0f, 1920.0f};
+static constexpr std::array<float, 2> MAX_Y_POSITIONS = {2160.0f, 1080.0f};
 
 namespace Libraries::ImeDialog {
 
@@ -36,11 +36,6 @@ static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
     }
 
     return true;
-}
-
-static bool IsMemZero(const void* ptr, size_t size) {
-    return std::all_of(static_cast<const u8*>(ptr), static_cast<const u8*>(ptr) + size,
-                       [](u8 c) { return c == 0; });
 }
 
 Error PS4_SYSV_ABI sceImeDialogAbort() {
@@ -106,11 +101,6 @@ Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
     if (result == nullptr) {
         LOG_INFO(Lib_ImeDialog, "called with result (NULL)");
         return Error::INVALID_ADDRESS;
-    }
-
-    if (!IsMemZero(result->reserved, 12)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid result->reserved");
-        return Error::INVALID_RESERVED;
     }
 
     result->endstatus = g_ime_dlg_result.endstatus;
@@ -179,16 +169,6 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         return Error::INVALID_PARAM;
     }
 
-    if (param->userId != 1) { // We only support user 1 for now
-        LOG_INFO(Lib_ImeDialog, "Invalid param->userId");
-        return Error::INVALID_USER_ID;
-    }
-
-    if (!IsMemZero(param->reserved, 16)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->reserved");
-        return Error::INVALID_RESERVED;
-    }
-
     if (param->inputTextBuffer == nullptr) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->inputTextBuffer");
         return Error::INVALID_INPUT_TEXT_BUFFER;
@@ -201,11 +181,6 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         }
 
         // TODO: do correct extended->option validation
-
-        if (!IsMemZero(extended->reserved, 60)) {
-            LOG_INFO(Lib_ImeDialog, "Invalid extended->reserved");
-            return Error::INVALID_EXTENDED;
-        }
 
         if ((extended->extKeyboardMode & 0xe3fffffc) != 0) {
             LOG_INFO(Lib_ImeDialog, "Invalid extended->extKeyboardMode");

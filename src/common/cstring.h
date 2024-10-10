@@ -152,21 +152,9 @@ public:
 static_assert(sizeof(CString<13>) == sizeof(char[13])); // Ensure size still matches a simple array
 static_assert(std::weakly_incrementable<CString<13>::Iterator>);
 
-/**
- * @brief A null-terminated wide string with a fixed maximum length
- *        This class is not meant to be used as a general-purpose string class
- *        It is meant to be used as `char[N]` where memory layout is fixed
- * @tparam N Maximum length of the string
- */
 template <size_t N>
 using CWString = CString<N, wchar_t>;
 
-/**
- * @brief A null-terminated 16-bit char string with a fixed maximum length
- *        This class is not meant to be used as a general-purpose string class
- *        It is meant to be used as `char[N]` where memory layout is fixed
- * @tparam N Maximum length of the string
- */
 template <size_t N>
 using CU16String = CString<N, char16_t>;
 
