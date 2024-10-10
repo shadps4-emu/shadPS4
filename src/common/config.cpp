@@ -539,6 +539,9 @@ void load(const std::filesystem::path& path) {
         if (!old_game_install_dir.empty()) {
             addGameInstallDir(old_game_install_dir);
             gui.as_table().erase("installDir");
+            std::ofstream file(path, std::ios::out);
+            file << data;
+            file.close();
         }
 
         const auto install_dir_array =
