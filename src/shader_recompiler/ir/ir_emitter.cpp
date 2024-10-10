@@ -130,19 +130,23 @@ void IREmitter::DeviceMemoryBarrier() {
 }
 
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetUserData, reg);
 }
 
 U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U1>(Opcode::GetThreadBitScalarReg, reg);
 }
 
 void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     Inst(Opcode::SetThreadBitScalarReg, reg, value);
 }
 
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetScalarRegister, reg);
 }
 
@@ -153,6 +157,7 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 
 template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     return Inst<U32>(Opcode::GetVectorRegister, reg);
 }
 
@@ -162,11 +167,13 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 }
 
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
