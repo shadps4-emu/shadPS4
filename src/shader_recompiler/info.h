@@ -3,12 +3,12 @@
 #pragma once
 
 #include <span>
-#include <vector>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
+#include "shader_recompiler/frontend/copy_shader.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
@@ -169,6 +169,8 @@ struct Info {
         u32 mask;
     };
     UserDataMask ud_mask{};
+
+    CopyShaderData gs_copy_data;
 
     s8 vertex_offset_sgpr = -1;
     s8 instance_offset_sgpr = -1;

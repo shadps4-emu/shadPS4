@@ -7,6 +7,20 @@
 
 namespace AmdGpu {
 
+enum class FpRoundMode : u32 {
+    NearestEven = 0,
+    PlusInf = 1,
+    MinInf = 2,
+    ToZero = 3,
+};
+
+enum class FpDenormMode : u32 {
+    InOutFlush = 0,
+    InAllowOutFlush = 1,
+    InFlushOutAllow = 2,
+    InOutAllow = 3,
+};
+
 // See `VGT_PRIMITIVE_TYPE` description in [Radeon Sea Islands 3D/Compute Register Reference Guide]
 enum class PrimitiveType : u32 {
     None = 0,

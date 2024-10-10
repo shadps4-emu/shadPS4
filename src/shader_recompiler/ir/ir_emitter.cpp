@@ -1492,27 +1492,34 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
-                                        const U32& offset, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
+Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
+                                const Value& address3, const Value& address4,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
+                address4);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
-                                        TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
+Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, coords, bias, offset);
 }
 
-F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const F32& bias, const U32& offset,
-                                          TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
-                     offset);
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& coords, const F32& lod,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, coords, lod, offset);
 }
 
-F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const U32& offset, TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
-                     offset);
+Value IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& bias, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, coords, dref, bias,
+                offset);
+}
+
+Value IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& lod, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, coords, dref, lod, offset);
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
@@ -1544,9 +1551,11 @@ Value IREmitter::ImageQueryLod(const Value& handle, const Value& coords, Texture
     return Inst(Opcode::ImageQueryLod, Flags{info}, handle, coords);
 }
 
-Value IREmitter::ImageGradient(const Value& handle, const Value& coords, const Value& derivatives,
+Value IREmitter::ImageGradient(const Value& handle, const Value& coords,
+                               const Value& derivatives_dx, const Value& derivatives_dy,
                                const Value& offset, const F32& lod_clamp, TextureInstInfo info) {
-    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives, offset, lod_clamp);
+    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives_dx, derivatives_dy,
+                offset, lod_clamp);
 }
 
 Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInstInfo info) {

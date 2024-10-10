@@ -217,9 +217,10 @@ bool Instance::CreateDevice() {
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
         vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties,
-        vk::PhysicalDevicePushDescriptorPropertiesKHR>();
+        vk::PhysicalDevicePushDescriptorPropertiesKHR, vk::PhysicalDeviceVulkan12Properties>();
     subgroup_size = properties_chain.get<vk::PhysicalDeviceVulkan11Properties>().subgroupSize;
     push_descriptor_props = properties_chain.get<vk::PhysicalDevicePushDescriptorPropertiesKHR>();
+    vk12_props = properties_chain.get<vk::PhysicalDeviceVulkan12Properties>();
     LOG_INFO(Render_Vulkan, "Physical device subgroup size {}", subgroup_size);
 
     features = feature_chain.get().features;
@@ -265,7 +266,7 @@ bool Instance::CreateDevice() {
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
-    if (Config ::vkValidationEnabled() || Config::isRdocEnabled()) {
+    if (Config::vkValidationEnabled() || Config::isRdocEnabled()) {
         tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     }
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);

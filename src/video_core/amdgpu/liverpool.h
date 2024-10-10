@@ -92,6 +92,12 @@ struct Liverpool {
         union {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
+            BitField<10, 2, u64> priority;
+            BitField<12, 2, FpRoundMode> fp_round_mode32;
+            BitField<14, 2, FpRoundMode> fp_round_mode64;
+            BitField<16, 2, FpDenormMode> fp_denorm_mode32;
+            BitField<18, 2, FpDenormMode> fp_denorm_mode64;
+            BitField<12, 8, u64> float_mode;
             BitField<24, 2, u64> vgpr_comp_cnt; // SPI provided per-thread inputs
             BitField<33, 5, u64> num_user_regs;
         } settings;

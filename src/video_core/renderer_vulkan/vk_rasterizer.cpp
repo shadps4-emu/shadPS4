@@ -459,4 +459,17 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
     });
 }
 
+void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color) {
+    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+        return;
+    }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+        .pLabelName = str.data(),
+        .color = std::array<f32, 4>(
+            {(f32)((color >> 16) & 0xff) / 255.0f, (f32)((color >> 8) & 0xff) / 255.0f,
+             (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
+}
+
 } // namespace Vulkan
