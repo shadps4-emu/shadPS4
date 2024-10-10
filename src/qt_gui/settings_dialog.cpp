@@ -222,21 +222,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
     // PATH TAB
     {
-        for (const auto& dir : Config::getGameInstallDirs()) {
-            QString path_string;
-            Common::FS::PathToQString(path_string, dir);
-            QListWidgetItem* item = new QListWidgetItem(path_string);
-            ui->gameFoldersListWidget->addItem(item);
-        }
-
         ui->removeFolderButton->setEnabled(false);
 
         connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
+            const auto config_dir = Config::getGameInstallDirs();
             QString file_path_string =
                 QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
-            if (!file_path.empty()) {
-                std::vector<std::filesystem::path> install_dirs = Config::getGameInstallDirs();
+            bool not_already_included =
+                std::find(config_dir.begin(), config_dir.end(), file_path) == config_dir.end();
+            if (!file_path.empty() && not_already_included) {
+                std::vector<std::filesystem::path> install_dirs = config_dir;
                 install_dirs.push_back(file_path);
                 Config::setGameInstallDirs(install_dirs);
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
@@ -307,6 +303,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
 
+        // Paths
+        ui->gameFoldersGroupBox->installEventFilter(this);
+        ui->gameFoldersListWidget->installEventFilter(this);
+        ui->addFolderButton->installEventFilter(this);
+        ui->removeFolderButton->installEventFilter(this);
+
         // Debug
         ui->debugDump->installEventFilter(this);
         ui->vkValidationCheckBox->installEventFilter(this);
@@ -356,6 +358,13 @@ void SettingsDialog::LoadValuesFromConfig() {
         }
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+
+    for (const auto& dir : Config::getGameInstallDirs()) {
+        QString path_string;
+        Common::FS::PathToQString(path_string, dir);
+        QListWidgetItem* item = new QListWidgetItem(path_string);
+        ui->gameFoldersListWidget->addItem(item);
+    }
 
     QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
@@ -450,6 +459,15 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("dumpShadersCheckBox");
     } else if (elementName == "nullGpuCheckBox") {
         text = tr("nullGpuCheckBox");
+    }
+
+    // Path
+    if (elementName == "gameFoldersGroupBox" || elementName == "gameFoldersListWidget") {
+        text = tr("gameFoldersBox");
+    } else if (elementName == "addFolderButton") {
+        text = tr("addFolderButton");
+    } else if (elementName == "removeFolderButton") {
+        text = tr("removeFolderButton");
     }
 
     // Debug

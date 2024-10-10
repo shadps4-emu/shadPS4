@@ -1084,6 +1084,21 @@
 			<translation>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Game Folders: The list of folders to check for installed games.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Add: Add a folder to the list.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Remove: Remove a folder from the list.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
