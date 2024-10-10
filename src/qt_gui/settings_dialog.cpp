@@ -220,6 +220,55 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 [](int val) { Config::setNullGpu(val); });
     }
 
+    // PATH TAB
+    {
+        for (const auto& dir : Config::getGameInstallDirs()) {
+            QString path_string;
+            Common::FS::PathToQString(path_string, dir);
+            QListWidgetItem* item = new QListWidgetItem(path_string);
+            ui->gameFoldersListWidget->addItem(item);
+        }
+
+        ui->removeFolderButton->setEnabled(false);
+
+        connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
+            QString file_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
+            auto file_path = Common::FS::PathFromQString(file_path_string);
+            if (!file_path.empty()) {
+                std::vector<std::filesystem::path> install_dirs = Config::getGameInstallDirs();
+                install_dirs.push_back(file_path);
+                Config::setGameInstallDirs(install_dirs);
+                QListWidgetItem* item = new QListWidgetItem(file_path_string);
+                ui->gameFoldersListWidget->addItem(item);
+            }
+        });
+
+        connect(ui->gameFoldersListWidget, &QListWidget::itemSelectionChanged, this, [this]() {
+            ui->removeFolderButton->setEnabled(
+                !ui->gameFoldersListWidget->selectedItems().isEmpty());
+        });
+
+        connect(ui->removeFolderButton, &QPushButton::clicked, this, [this]() {
+            QListWidgetItem* selected_item = ui->gameFoldersListWidget->currentItem();
+            QString item_path_string = selected_item ? selected_item->text() : QString();
+            if (!item_path_string.isEmpty()) {
+                auto file_path = Common::FS::PathFromQString(item_path_string);
+                std::vector<std::filesystem::path> install_dirs = Config::getGameInstallDirs();
+
+                auto iterator = std::remove_if(
+                    install_dirs.begin(), install_dirs.end(),
+                    [&file_path](const std::filesystem::path& dir) { return file_path == dir; });
+
+                if (iterator != install_dirs.end()) {
+                    install_dirs.erase(iterator, install_dirs.end());
+                    delete selected_item;
+                }
+                Config::setGameInstallDirs(install_dirs);
+            }
+        });
+    }
+
     // DEBUG TAB
     {
         connect(ui->debugDump, &QCheckBox::stateChanged, this,

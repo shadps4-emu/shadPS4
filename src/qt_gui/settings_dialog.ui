@@ -918,6 +918,76 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="pathsTab">
+       <attribute name="title">
+        <string>Paths</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QGroupBox" name="gameFoldersGroupBox">
+            <property name="title">
+             <string>Game Folders</string>
+            </property>
+            <widget class="QListWidget" name="gameFoldersListWidget">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>20</y>
+               <width>401</width>
+               <height>331</height>
+              </rect>
+             </property>
+            </widget>
+            <widget class="QPushButton" name="addFolderButton">
+             <property name="geometry">
+              <rect>
+               <x>100</x>
+               <y>360</y>
+               <width>80</width>
+               <height>24</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Add...</string>
+             </property>
+            </widget>
+            <widget class="QPushButton" name="removeFolderButton">
+             <property name="geometry">
+              <rect>
+               <x>210</x>
+               <y>360</y>
+               <width>80</width>
+               <height>24</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Remove</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::Preferred</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="debugTab">
        <attribute name="title">
         <string>Debug</string>
