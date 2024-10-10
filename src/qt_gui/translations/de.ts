@@ -475,11 +475,6 @@
 			<translation>NULL GPU aktivieren</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4-Dumping aktivieren</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Virtuelle GPU aktivieren:\nFür das technische Debugging deaktiviert es die Spielanzeige, als ob keine Grafikkarte vorhanden wäre.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4-Dumping aktivieren:\nZum technischen Debuggen speichert es rohe GPU-Befehlsdaten in einem Ordner während der Verarbeitung.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Debug-Dump aktivieren:\nSpeichert Import-/Exportsymbole und Headerinformationen des aktuellen PS4-Programms in einem Verzeichnis.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Pfad</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Spielzeit</translation>
 		</message>
 	</context>
 	<context>

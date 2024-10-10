@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Įjungti tuščią GPU:\nTechninio derinimo tikslais išjungia žaidimo renderiavimą, tarsi nebūtų grafikos plokštės.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Įjungti PM4 išmetimą:\nTechninio derinimo tikslais saugo žalius GPU nurodymų duomenis į aplanką, kai emuliatorius juos apdoroja.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Įjungti derinimo išmetimą:\nIšsaugo importo ir eksporto simbolius bei failo antraštės informaciją apie šiuo metu vykdomą PS4 programą į katalogą.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Kelias</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Žaidimo laikas</translation>
 		</message>
 	</context>
 	<context>

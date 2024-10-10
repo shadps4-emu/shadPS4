@@ -3642,8 +3642,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
     // 95 = IMAGE_GATHER4_C_LZ_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 96 = IMAGE_GET_LOD
     {InstClass::VectorMemImgUt, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
      ScalarType::Float32},

@@ -136,7 +136,7 @@ int PS4_SYSV_ABI sceNetEpollControl();
 int PS4_SYSV_ABI sceNetEpollCreate();
 int PS4_SYSV_ABI sceNetEpollDestroy();
 int PS4_SYSV_ABI sceNetEpollWait();
-int PS4_SYSV_ABI sceNetErrnoLoc();
+int* PS4_SYSV_ABI sceNetErrnoLoc();
 int PS4_SYSV_ABI sceNetEtherNtostr();
 int PS4_SYSV_ABI sceNetEtherStrton();
 int PS4_SYSV_ABI sceNetEventCallbackCreate();

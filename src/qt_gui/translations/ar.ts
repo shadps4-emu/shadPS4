@@ -475,11 +475,6 @@
 			<translation>تمكين وحدة معالجة الرسومات الفارغة</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 تمكين تفريغ</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>تصحيح الأخطاء</translation>
@@ -1054,11 +1049,6 @@
 			<translation>تمكين GPU الافتراضية:\nلأغراض تصحيح الأخطاء التقنية، يقوم بتعطيل عرض اللعبة كما لو لم يكن هناك بطاقة رسومات.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>تمكين تفريغ PM4:\nلأغراض تصحيح الأخطاء التقنية، يحفظ بيانات تعليمات GPU الأولية في مجلد أثناء معالجتها.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>تمكين تفريغ التصحيح:\nيحفظ رموز الاستيراد والتصدير ومعلومات رأس الملف للبرنامج الحالي لجهاز PS4 إلى دليل.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>مسار</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>وقت اللعب</translation>
 		</message>
 	</context>
 	<context>

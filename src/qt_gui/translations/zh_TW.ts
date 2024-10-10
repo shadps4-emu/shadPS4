@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>啟用空GPU:\n為了技術調試，禁用遊戲渲染，彷彿沒有顯示卡。</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>啟用PM4轉儲:\n為了技術調試，將原始GPU指令數據在模擬器處理時保存到文件夾中。</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>啟用調試轉儲:\n將當前運行的PS4程序的輸入和輸出符號及文件頭信息保存到目錄中。</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>路徑</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>遊玩時間</translation>
 		</message>
 	</context>
 	<context>

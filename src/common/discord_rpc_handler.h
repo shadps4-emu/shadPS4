@@ -7,7 +7,7 @@
 #include <string>
 #include <discord_rpc.h>
 
-namespace Discord {
+namespace DiscordRPCHandler {
 
 enum class RPCStatus {
     Idling,
@@ -16,12 +16,15 @@ enum class RPCStatus {
 
 class RPC {
     std::uint64_t startTimestamp;
-    bool enabled = false;
+    bool rpcEnabled = false;
+    RPCStatus status;
 
 public:
     void init();
-    void update(RPCStatus status, const std::string& title);
-    void stop();
+    void setStatusIdling();
+    void setStatusPlaying(const std::string& game_name, const std::string& game_id);
+    void shutdown();
+    bool getRPCEnabled();
 };
 
-} // namespace Discord
+} // namespace DiscordRPCHandler

@@ -475,11 +475,6 @@
 			<translation>NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Dumper le PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Débogage</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Activer le GPU nul :\nPour le débogage technique, désactive le rendu du jeu comme s'il n'y avait pas de carte graphique.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Activer l'exportation PM4 :\nPour le débogage technique, enregistre les données brutes des instructions GPU dans un dossier pendant que l'émulateur les traite.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Activer l'exportation de débogage :\nEnregistre les symboles d'importation et d'exportation et les informations d'en-tête du fichier du programme PS4 actuel dans un répertoire.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Répertoire</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Temps de jeu</translation>
 		</message>
 	</context>
 	<context>

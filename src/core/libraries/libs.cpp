@@ -11,6 +11,7 @@
 #include "core/libraries/dialogs/error_dialog.h"
 #include "core/libraries/dialogs/ime_dialog.h"
 #include "core/libraries/disc_map/disc_map.h"
+#include "core/libraries/fiber/fiber.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"

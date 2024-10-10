@@ -27,8 +27,10 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
     case AmdGpu::PrimitiveType::TriangleList:
     case AmdGpu::PrimitiveType::TriangleStrip:
         return spv::ExecutionMode::Triangles;
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+        return spv::ExecutionMode::InputTrianglesAdjacency;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown input primitive type {}", u32(type));
     }
 }
 
@@ -41,7 +43,7 @@ static constexpr spv::ExecutionMode GetOutputPrimitiveType(AmdGpu::GsOutputPrimi
     case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
         return spv::ExecutionMode::OutputTriangleStrip;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown output primitive type {}", u32(type));
     }
 }
 
@@ -68,6 +70,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg.ScalarReg();
     } else if constexpr (std::is_same_v<ArgType, IR::VectorReg>) {
         return arg.VectorReg();
+    } else if constexpr (std::is_same_v<ArgType, const char*>) {
+        return arg.StringLiteral();
     }
 }
 
@@ -202,10 +206,7 @@ Id DefineMain(EmitContext& ctx, const IR::Program& program) {
     return main;
 }
 
-void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
-    const auto& info = program.info;
-    const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
-    spv::ExecutionModel execution_model{};
+void SetupCapabilities(const Info& info, EmitContext& ctx) {
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
     ctx.AddCapability(spv::Capability::ImageQuery);
@@ -243,6 +244,19 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     if (info.uses_group_ballot) {
         ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
     }
+    if (info.stage == Stage::Export || info.stage == Stage::Vertex) {
+        ctx.AddExtension("SPV_KHR_shader_draw_parameters");
+        ctx.AddCapability(spv::Capability::DrawParameters);
+    }
+    if (info.stage == Stage::Geometry) {
+        ctx.AddCapability(spv::Capability::Geometry);
+    }
+}
+
+void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
+    const auto& info = program.info;
+    const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
+    spv::ExecutionModel execution_model{};
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{ctx.runtime_info.cs_info.workgroup_size};
@@ -286,6 +300,24 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     ctx.AddEntryPoint(execution_model, main, "main", interfaces);
 }
 
+void SetupFloatMode(EmitContext& ctx, const Profile& profile, const RuntimeInfo& runtime_info,
+                    Id main_func) {
+    ctx.AddExtension("SPV_KHR_float_controls");
+    const auto fp_denorm_mode = runtime_info.fp_denorm_mode32;
+    if (fp_denorm_mode == AmdGpu::FpDenormMode::InOutFlush) {
+        if (profile.support_fp32_denorm_flush) {
+            ctx.AddCapability(spv::Capability::DenormFlushToZero);
+            ctx.AddExecutionMode(main_func, spv::ExecutionMode::DenormFlushToZero, 32U);
+        }
+    } else {
+        LOG_WARNING(Render_Vulkan, "Unknown FP denorm mode {}", u32(fp_denorm_mode));
+    }
+    const auto fp_round_mode = runtime_info.fp_round_mode32;
+    if (fp_round_mode != AmdGpu::FpRoundMode::NearestEven) {
+        LOG_WARNING(Render_Vulkan, "Unknown FP rounding mode {}", u32(fp_round_mode));
+    }
+}
+
 void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     auto inst{program.blocks.front()->begin()};
     size_t block_index{0};
@@ -310,18 +342,8 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    switch (program.info.stage) {
-    case Stage::Export:
-    case Stage::Vertex:
-        ctx.AddExtension("SPV_KHR_shader_draw_parameters");
-        ctx.AddCapability(spv::Capability::DrawParameters);
-        break;
-    case Stage::Geometry:
-        ctx.AddCapability(spv::Capability::Geometry);
-        break;
-    default:
-        break;
-    }
+    SetupCapabilities(program.info, ctx);
+    SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
     binding.user_data += program.info.ud_mask.NumRegs();
     return ctx.Assemble();

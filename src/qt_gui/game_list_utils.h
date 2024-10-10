@@ -19,6 +19,8 @@ struct GameInfo {
     std::string version = "Unknown";
     std::string region = "Unknown";
     std::string fw = "Unknown";
+
+    std::string play_time = "Unknown";
 };
 
 class GameListUtils {

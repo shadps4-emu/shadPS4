@@ -475,11 +475,6 @@
 			<translation>Wyłącz kartę graficzną</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Włącz zgrywanie PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debugowanie</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Włącz Null GPU:\nDla technicznego debugowania dezaktywuje renderowanie gry tak, jakby nie było karty graficznej.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Włącz zrzucanie PM4:\nDla technicznego debugowania zapisuje surowe dane instrukcji GPU w folderze, gdy emulator je przetwarza.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Włącz zrzut debugowania:\nZapisuje symbole importu i eksportu oraz informacje nagłówkowe pliku dla aktualnie działającej aplikacji PS4 w katalogu.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Ścieżka</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Czas gry</translation>
 		</message>
 	</context>
 	<context>

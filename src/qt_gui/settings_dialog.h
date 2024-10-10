@@ -21,7 +21,7 @@ public:
     explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
-    bool override(QObject* obj, QEvent* event);
+    bool eventFilter(QObject* obj, QEvent* event) override;
     void updateNoteTextEdit(const QString& groupName);
 
     int exec() override;
@@ -33,6 +33,7 @@ private:
     void LoadValuesFromConfig();
     void InitializeEmulatorLanguages();
     void OnLanguageChanged(int index);
+    void OnCursorStateChanged(s16 index);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 

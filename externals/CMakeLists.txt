@@ -3,7 +3,10 @@
 
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_TESTING OFF)
-set_property(DIRECTORY PROPERTY EXCLUDE_FROM_ALL ON)
+set_directory_properties(PROPERTIES
+    EXCLUDE_FROM_ALL ON
+    SYSTEM ON
+)
 
 if (MSVC)
     # Silence "deprecation" warnings
@@ -13,11 +16,8 @@ endif()
 # Boost
 if (NOT TARGET Boost::headers)
     set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
-    set(Boost_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
     set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "")
-    add_library(boost INTERFACE)
-    target_include_directories(boost SYSTEM INTERFACE ${Boost_INCLUDE_DIR})
-    add_library(Boost::headers ALIAS boost)
+    add_subdirectory(ext-boost)
 endif()
 
 # fmtlib
@@ -77,7 +77,7 @@ endif()
 # RenderDoc
 if (NOT TARGET RenderDoc::API)
     add_library(renderdoc INTERFACE)
-    target_include_directories(renderdoc SYSTEM INTERFACE ./renderdoc)
+    target_include_directories(renderdoc INTERFACE ./renderdoc)
     add_library(RenderDoc::API ALIAS renderdoc)
 endif()
 
@@ -183,6 +183,11 @@ add_subdirectory(tracy)
 if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
+
+# Discord RPC
+set(BUILD_EXAMPLES OFF)
+add_subdirectory(discord-rpc/)
+target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 
 # GCN Headers
 add_subdirectory(gcn)

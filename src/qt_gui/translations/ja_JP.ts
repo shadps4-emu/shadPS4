@@ -475,11 +475,6 @@
 			<translation>NULL GPUを有効にする</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4ダンプを有効にする</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>デバッグ</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Null GPUを有効にする:\n技術的なデバッグの目的で、グラフィックスカードがないかのようにゲームのレンダリングを無効にします。</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4ダンプを有効にする:\n技術的なデバッグの目的で、エミュレーターが処理している間に生のGPU命令データをフォルダーに保存します。</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>デバッグダンプを有効にする:\n現在実行中のPS4プログラムのインポートおよびエクスポートシンボルとファイルヘッダー情報をディレクトリに保存します。</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>パス</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>プレイ時間</translation>
 		</message>
 	</context>
 	<context>

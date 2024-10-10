@@ -475,11 +475,6 @@
 			<translation>Habilitar GPU NULL</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Habilitar volcado de PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Depuración</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Habilitar GPU Nula:\nPor el bien de la depuración técnica, desactiva el renderizado del juego como si no hubiera tarjeta gráfica.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Habilitar la Volcadura de PM4:\nPor el bien de la depuración técnica, guarda los datos de instrucciones crudas de GPU en una carpeta a medida que el emulador los procesa.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Habilitar la Volcadura de Depuración:\nGuarda los símbolos de importación y exportación y la información del encabezado del archivo del programa de PS4 que se está ejecutando actualmente en un directorio.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Ruta</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Tiempo de Juego</translation>
 		</message>
 	</context>
 	<context>

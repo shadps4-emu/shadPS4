@@ -475,11 +475,6 @@
 			<translation>Включить NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Включить дамп PM4</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Отладка</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Включить NULL GPU:\nДля технической отладки отключает рендеринг игры так, как будто графической карты нет.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Включить дамп PM4:\nДля технической отладки сохраняет необработанные данные инструкций GPU в папку, пока эмулятор их обрабатывает.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Включить отладочные дампы:\nСохраняет символы импорта, экспорта и информацию о заголовке файла текущей исполняемой программы PS4 в папку.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Путь</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Время Игры</translation>
 		</message>
 	</context>
 	<context>

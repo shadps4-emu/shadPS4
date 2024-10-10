@@ -81,6 +81,7 @@ enum class Class : u8 {
     Lib_AvPlayer,       ///< The LibSceAvPlayer implementation.
     Lib_Ngs2,           ///< The LibSceNgs2 implementation.
     Lib_Audio3d,        ///< The LibSceAudio3d implementation.
+    Lib_Fiber,          ///< The LibSceFiber implementation.
     Frontend,           ///< Emulator UI
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend

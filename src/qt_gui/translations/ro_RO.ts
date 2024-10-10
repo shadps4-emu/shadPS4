@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Activează GPU Null:\nÎn scopuri de depanare tehnică, dezactivează redarea jocului ca și cum nu ar exista o placă grafică.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Activează salvarea PM4:\nÎn scopuri de depanare tehnică, salvează datele brute ale instrucțiunilor GPU într-un folder pe măsură ce emulatorul le procesează.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Activează salvarea pentru depanare:\nSalvează simbolurile de import și export și informațiile din antetul fișierului pentru aplicația PS4 care rulează în prezent într-un director.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Drum</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Timp de Joacă</translation>
 		</message>
 	</context>
 	<context>

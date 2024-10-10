@@ -475,11 +475,6 @@
 			<translation>NULL GPU'yu Etkinleştir</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 Kaydını Etkinleştir</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Hata Ayıklama</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Null GPU'yu Etkinleştir:\nTeknik hata ayıklama amacıyla, oyunun render edilmesini grafik kartı yokmuş gibi devre dışı bırakır.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 Dışa Aktarmayı Etkinleştir:\nTeknik hata ayıklama amacıyla, emülatör bunları işlerken GPU komut verilerini bir klasöre kaydeder.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Hata Ayıklama için Dışa Aktarmayı Etkinleştir:\nŞu anda çalışan PS4 uygulaması için içe aktarılan ve dışa aktarılan sembolleri ve dosya başlık bilgilerini bir dizine kaydedin.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Yol</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Oynama Süresi</translation>
 		</message>
 	</context>
 	<context>

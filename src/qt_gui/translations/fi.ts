@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten pelin renderöinti estetään niin, että ikään kuin grafiikkakorttia ei olisi.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Ota PM4 dumpaus käyttöön:\nTeknistä vianetsintää varten raakoja GPU-ohjeita tallennetaan kansioon emulaattorin käsitellessä sitä.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Ota Debug Dumpaus käyttöön:\nTallentaa käynnissä olevan PS4-ohjelman tuonti- ja vientisymbolit ja tiedosto-otsikkotiedot hakemistoon.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Polku</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Peliaika</translation>
 		</message>
 	</context>
 	<context>

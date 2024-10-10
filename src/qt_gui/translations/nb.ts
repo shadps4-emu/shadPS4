@@ -475,11 +475,6 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
 			<source>Debug</source>
 			<translation>Debug</translation>
@@ -1054,11 +1049,6 @@
 			<translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillrendering som om det ikke var noe grafikkort.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Aktiver PM4 dumping:\nFor teknisk feilsøking lagrer rå GPU-instruksjonsdata i en mappe mens emulatoren behandler dem.</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
 			<translation>Aktiver feilsøking dumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
@@ -1120,6 +1110,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Sti</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Spilletid</translation>
 		</message>
 	</context>
 	<context>
