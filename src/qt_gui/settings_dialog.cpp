@@ -303,7 +303,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
 
-        //Paths
+        // Paths
         ui->gameFoldersGroupBox->installEventFilter(this);
         ui->gameFoldersListWidget->installEventFilter(this);
         ui->addFolderButton->installEventFilter(this);
@@ -461,7 +461,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("nullGpuCheckBox");
     }
 
-    //Path
+    // Path
     if (elementName == "gameFoldersGroupBox" || elementName == "gameFoldersListWidget") {
         text = tr("gameFoldersBox");
     } else if (elementName == "addFolderButton") {
