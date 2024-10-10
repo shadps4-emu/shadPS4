@@ -515,7 +515,9 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 
         const auto read = [&](u32 off) -> IR::U32 {
             if (arg.IsImmediate()) {
-                const u16 comp = (arg.U32() >> off) & 0x3F;
+                const u32 imm =
+                    arg.Type() == IR::Type::F32 ? std::bit_cast<u32>(arg.F32()) : arg.U32();
+                const u16 comp = (imm >> off) & 0x3F;
                 return ir.Imm32(s32(comp << 26) >> 26);
             }
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(off), ir.Imm32(6), true);
