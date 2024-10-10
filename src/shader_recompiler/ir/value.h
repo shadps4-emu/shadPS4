@@ -209,7 +209,7 @@ private:
     union {
         NonTriviallyDummy dummy{};
         boost::container::small_vector<std::pair<Block*, Value>, 2> phi_args;
-        std::array<Value, 5> args;
+        std::array<Value, 6> args;
     };
 };
 static_assert(sizeof(Inst) <= 128, "Inst size unintentionally increased");

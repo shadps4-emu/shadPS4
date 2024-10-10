@@ -33,11 +33,12 @@ union TextureInstInfo {
     BitField<1, 1, u32> has_bias;
     BitField<2, 1, u32> has_lod_clamp;
     BitField<3, 1, u32> force_level0;
-    BitField<4, 1, u32> explicit_lod;
+    BitField<4, 1, u32> has_lod;
     BitField<5, 1, u32> has_offset;
     BitField<6, 2, u32> gather_comp;
     BitField<8, 1, u32> has_derivatives;
     BitField<9, 1, u32> is_array;
+    BitField<10, 1, u32> is_gather;
 };
 
 union BufferInstInfo {
