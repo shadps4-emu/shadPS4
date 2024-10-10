@@ -153,7 +153,10 @@ struct RuntimeInfo {
         ComputeRuntimeInfo cs_info;
     };
 
-    RuntimeInfo(Stage stage_) : stage{stage_} {}
+    RuntimeInfo(Stage stage_) {
+        memset(this, 0, sizeof(*this));
+        stage = stage_;
+    }
 
     bool operator==(const RuntimeInfo& other) const noexcept {
         switch (stage) {
