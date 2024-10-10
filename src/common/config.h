@@ -19,6 +19,7 @@ bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
 bool getEnableDiscordRPC();
+bool getSeparateUpdateEnabled();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -62,6 +63,7 @@ void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
+void setSeparateUpdateEnabled(bool use);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
