@@ -59,8 +59,10 @@ int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentBroadcastScreenLayout() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentStatus() {
-    LOG_ERROR(Lib_GameLiveStreaming, "(STUBBED) called");
+int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentStatus(OrbisGameLiveStreamingStatus* status) {
+    status->isOnAir = false;
+    status->spectatorCounts = 0;
+    LOG_DEBUG(Lib_GameLiveStreaming, "(STUBBED) called userid = {}",status->userId);
     return ORBIS_OK;
 }
 

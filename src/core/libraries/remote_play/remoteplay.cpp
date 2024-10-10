@@ -54,8 +54,8 @@ int PS4_SYSV_ABI sceRemoteplayGetConnectHistory() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus() {
-    LOG_ERROR(Lib_Remoteplay, "(STUBBED) called");
+int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(s32 userId, int* pStatus) {
+    *pStatus = ORBIS_REMOTEPLAY_CONNECTION_STATUS_DISCONNECT;
     return ORBIS_OK;
 }
 

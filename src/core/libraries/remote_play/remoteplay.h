@@ -9,6 +9,10 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+// returning codes in sceRemoteplayGetConnectionStatus pstatus
+constexpr int ORBIS_REMOTEPLAY_CONNECTION_STATUS_DISCONNECT = 0;
+constexpr int ORBIS_REMOTEPLAY_CONNECTION_STATUS_CONNECT = 1;
+
 namespace Libraries::Remoteplay {
 
 int PS4_SYSV_ABI sceRemoteplayApprove();
@@ -20,7 +24,7 @@ int PS4_SYSV_ABI sceRemoteplayDisconnect();
 int PS4_SYSV_ABI sceRemoteplayGeneratePinCode();
 int PS4_SYSV_ABI sceRemoteplayGetApMode();
 int PS4_SYSV_ABI sceRemoteplayGetConnectHistory();
-int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus();
+int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(s32 userId, int* pStatus);
 int PS4_SYSV_ABI sceRemoteplayGetConnectUserId();
 int PS4_SYSV_ABI sceRemoteplayGetMbusDeviceInfo();
 int PS4_SYSV_ABI sceRemoteplayGetOperationStatus();

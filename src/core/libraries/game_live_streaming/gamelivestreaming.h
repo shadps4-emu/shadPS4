@@ -11,6 +11,24 @@ class SymbolsResolver;
 
 namespace Libraries::GameLiveStreaming {
 
+struct OrbisGameLiveStreamingStatus {
+    bool isOnAir;
+    u8 align[3];
+    u32 spectatorCounts;
+    s32 userId;
+    u8 reserved[60];
+};
+struct OrbisGameLiveStreamingStatus2 {
+    s32 userId;
+    bool isOnAir;
+    u8 align[3];
+    u32 spectatorCounts;
+    u32 textMessageCounts;
+    u32 commandMessageCounts;
+    u32 broadcastVideoResolution;
+    u8 reserved[48];
+};
+
 int PS4_SYSV_ABI sceGameLiveStreamingStartDebugBroadcast();
 int PS4_SYSV_ABI sceGameLiveStreamingStopDebugBroadcast();
 int PS4_SYSV_ABI sceGameLiveStreamingApplySocialFeedbackMessageFilter();
@@ -21,7 +39,7 @@ int PS4_SYSV_ABI sceGameLiveStreamingClearSpoilerTag();
 int PS4_SYSV_ABI sceGameLiveStreamingEnableLiveStreaming();
 int PS4_SYSV_ABI sceGameLiveStreamingEnableSocialFeedback();
 int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentBroadcastScreenLayout();
-int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentStatus();
+int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentStatus(OrbisGameLiveStreamingStatus* status);
 int PS4_SYSV_ABI sceGameLiveStreamingGetCurrentStatus2();
 int PS4_SYSV_ABI sceGameLiveStreamingGetProgramInfo();
 int PS4_SYSV_ABI sceGameLiveStreamingGetSocialFeedbackMessages();
