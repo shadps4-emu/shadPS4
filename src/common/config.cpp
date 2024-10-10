@@ -326,7 +326,7 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_h = h;
 }
 bool addGameInstallDir(const std::filesystem::path& dir) {
-    if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) == 
+    if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) ==
         settings_install_dirs.end()) {
         settings_install_dirs.push_back(dir);
         return true;

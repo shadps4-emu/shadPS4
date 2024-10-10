@@ -225,10 +225,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             QString file_path_string =
                 QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
-            if (!file_path.empty()) {
-                if (!Config::addGameInstallDir(file_path)) {
-                    return;
-                }
+            if (!file_path.empty() && Config::addGameInstallDir(file_path)) {
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
                 ui->gameFoldersListWidget->addItem(item);
             }
@@ -239,7 +236,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 !ui->gameFoldersListWidget->selectedItems().isEmpty());
         });
 
-        connect(ui->removeFolderButton, &QPushButton::clicked, this, [this]() {            
+        connect(ui->removeFolderButton, &QPushButton::clicked, this, [this]() {
             QListWidgetItem* selected_item = ui->gameFoldersListWidget->currentItem();
             QString item_path_string = selected_item ? selected_item->text() : QString();
             if (!item_path_string.isEmpty()) {
