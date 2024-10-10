@@ -34,7 +34,8 @@ public:
 
     using DescriptorWrites = boost::container::small_vector<vk::WriteDescriptorSet, 16>;
     void BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                      Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const;
+                      Shader::Backend::Bindings& binding, DescriptorWrites& set_writes,
+                      const Shader::FlatSharpBuffer& sharp_buf) const;
 
 protected:
     const Instance& instance;

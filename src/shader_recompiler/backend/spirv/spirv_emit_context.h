@@ -126,6 +126,10 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    const Shader::FlatSharpBuffer& getSharpBuf() const {
+        return sharp_buf;
+    }
+
     const Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
@@ -228,6 +232,7 @@ public:
     Bindings& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
+    BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 
@@ -260,6 +265,7 @@ private:
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+    Shader::FlatSharpBuffer sharp_buf;
 };
 
 } // namespace Shader::Backend::SPIRV

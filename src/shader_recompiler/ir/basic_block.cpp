@@ -37,6 +37,11 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
     return result_it;
 }
 
+void Block::MoveInst(iterator insertion_point, Inst& inst, IR::Block& original_parent) {
+    original_parent.instructions.erase(InstructionList::s_iterator_to(inst));
+    instructions.insert(insertion_point, inst);
+}
+
 void Block::AddBranch(Block* block) {
     if (std::ranges::find(imm_successors, block) != imm_successors.end()) {
         UNREACHABLE_MSG("Successor already inserted");

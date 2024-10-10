@@ -159,7 +159,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
             continue;
         }
 
-        const auto& buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto& buffer = vs_info.ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         if (buffer.GetSize() == 0) {
             continue;
         }
@@ -288,6 +288,13 @@ void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
         .pBufferMemoryBarriers = &buf_barrier,
     });
     cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
+}
+
+std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(VAddr host_addr, u32 size) {
+    static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
+    ASSERT(size <= StreamThreshold);
+    const u64 offset = stream_buffer.Copy(host_addr, size, instance.UniformMinAlignment());
+    return {&stream_buffer, offset};
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,

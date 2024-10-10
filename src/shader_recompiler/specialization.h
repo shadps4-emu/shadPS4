@@ -47,11 +47,15 @@ struct StageSpecialization {
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     Backend::Bindings start{};
+    FlatSharpBuffer sharp_buf;
 
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
                                  Backend::Bindings start_)
-        : info{&info_}, runtime_info{runtime_info_}, start{start_} {
+        : info{&info_}, runtime_info{runtime_info_}, start{start_}, sharp_buf(*info) {
         u32 binding{};
+        if (info->has_readconst) {
+            binding++;
+        }
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
@@ -72,7 +76,7 @@ struct StageSpecialization {
     void ForEachSharp(u32& binding, auto& spec_list, auto& desc_list, auto&& func) {
         for (const auto& desc : desc_list) {
             auto& spec = spec_list.emplace_back();
-            const auto sharp = desc.GetSharp(*info);
+            const auto sharp = desc.GetSharp(sharp_buf);
             if (!sharp) {
                 binding++;
                 continue;
@@ -90,6 +94,12 @@ struct StageSpecialization {
             return false;
         }
         u32 binding{};
+        if (info->has_readconst != other.info->has_readconst) {
+            return false;
+        }
+        if (info->has_readconst) {
+            binding++;
+        }
         for (u32 i = 0; i < buffers.size(); i++) {
             if (other.bitset[binding++] && buffers[i] != other.buffers[i]) {
                 return false;

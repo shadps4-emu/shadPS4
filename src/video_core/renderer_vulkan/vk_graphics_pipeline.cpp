@@ -60,7 +60,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             }
 
             const auto buffer =
-                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -327,8 +327,18 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
+        Shader::FlatSharpBuffer sharp_buf(*stage);
+
+        if (stage->has_readconst) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1,
+                .stageFlags = gp_stage_flags,
+            });
+        }
         for (const auto& buffer : stage->buffers) {
-            const auto sharp = buffer.GetSharp(*stage);
+            const auto sharp = buffer.GetSharp(sharp_buf);
             bindings.push_back({
                 .binding = binding++,
                 .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
@@ -397,13 +407,33 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         if (!stage) {
             continue;
         }
+        Shader::FlatSharpBuffer sharp_buf(*stage);
         if (stage->uses_step_rates) {
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
         stage->PushUd(binding, push_data);
+
+        if (stage->has_readconst) {
+            // Bind the flattened user data buf as a UBO (TODO rename "sharp"_buf)
+            const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(
+                reinterpret_cast<VAddr>(sharp_buf.data()), sharp_buf.size_bytes());
+            // Should already be aligned to UBO min alignment
+            const u32 alignment = instance.UniformMinAlignment();
+            ASSERT(offset % alignment == 0);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset, sharp_buf.size_bytes());
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding.unified++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .pBufferInfo = &buffer_infos.back(),
+            });
+            ++binding.buffer;
+        }
         for (const auto& buffer : stage->buffers) {
-            const auto vsharp = buffer.GetSharp(*stage);
+            const auto vsharp = buffer.GetSharp(sharp_buf);
             const bool is_storage = buffer.IsStorage(vsharp);
             if (vsharp && vsharp.GetSize() > 0) {
                 const VAddr address = vsharp.base_address;
@@ -441,7 +471,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         const auto null_buffer_view =
             instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
         for (const auto& desc : stage->texture_buffers) {
-            const auto vsharp = desc.GetSharp(*stage);
+            const auto vsharp = desc.GetSharp(sharp_buf);
             vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
             const u32 size = vsharp.GetSize();
             if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
@@ -480,15 +510,15 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             ++binding.buffer;
         }
 
-        BindTextures(texture_cache, *stage, binding, set_writes);
+        BindTextures(texture_cache, *stage, binding, set_writes, sharp_buf);
 
         for (const auto& sampler : stage->samplers) {
-            auto ssharp = sampler.GetSharp(*stage);
+            auto ssharp = sampler.GetSharp(sharp_buf);
             if (ssharp.force_degamma) {
                 LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
             }
             if (sampler.disable_aniso) {
-                const auto& tsharp = stage->images[sampler.associated_image].GetSharp(*stage);
+                const auto& tsharp = stage->images[sampler.associated_image].GetSharp(sharp_buf);
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {
                     ssharp.max_aniso.Assign(AmdGpu::AnisoRatio::One);
                 }

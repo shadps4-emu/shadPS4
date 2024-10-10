@@ -24,10 +24,21 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pName = "main",
     };
 
+    Shader::FlatSharpBuffer sharp_buf(*info);
+
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+
+    if (info->has_readconst) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     for (const auto& buffer : info->buffers) {
-        const auto sharp = buffer.GetSharp(*info);
+        const auto sharp = buffer.GetSharp(sharp_buf);
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
@@ -122,14 +133,36 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
 
     image_infos.clear();
 
+    Shader::FlatSharpBuffer sharp_buf(*info);
+
     info->PushUd(binding, push_data);
+
+    if (info->has_readconst) {
+        // Bind the flattened user data buf as a UBO (TODO rename "sharp"_buf)
+        const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(
+            reinterpret_cast<VAddr>(sharp_buf.data()), sharp_buf.size_bytes());
+        // Should already be aligned to UBO min alignment
+        const u32 alignment = instance.UniformMinAlignment();
+        ASSERT(offset % alignment == 0);
+        push_data.AddOffset(binding.buffer, 0); // not necessary I think
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset, sharp_buf.size_bytes());
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
+        ++binding.buffer;
+    }
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
         if (desc.is_gds_buffer) {
             auto* vk_buffer = buffer_cache.GetGdsBuffer();
             buffer_infos.emplace_back(vk_buffer->Handle(), 0, vk_buffer->SizeBytes());
         } else {
-            const auto vsharp = desc.GetSharp(*info);
+            const auto vsharp = desc.GetSharp(sharp_buf);
             is_storage = desc.IsStorage(vsharp);
             const VAddr address = vsharp.base_address;
             // Most of the time when a metadata is updated with a shader it gets cleared. It means
@@ -173,7 +206,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     const auto null_buffer_view =
         instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
     for (const auto& desc : info->texture_buffers) {
-        const auto vsharp = desc.GetSharp(*info);
+        const auto vsharp = desc.GetSharp(sharp_buf);
         vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         const u32 size = vsharp.GetSize();
         if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
@@ -222,10 +255,10 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         ++binding.buffer;
     }
 
-    BindTextures(texture_cache, *info, binding, set_writes);
+    BindTextures(texture_cache, *info, binding, set_writes, sharp_buf);
 
     for (const auto& sampler : info->samplers) {
-        const auto ssharp = sampler.GetSharp(*info);
+        const auto ssharp = sampler.GetSharp(sharp_buf);
         if (ssharp.force_degamma) {
             LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
         }
