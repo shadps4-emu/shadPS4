@@ -325,11 +325,13 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
-void addGameInstallDir(const std::filesystem::path& dir) {
+bool addGameInstallDir(const std::filesystem::path& dir) {
     if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) == 
         settings_install_dirs.end()) {
         settings_install_dirs.push_back(dir);
+        return true;
     }
+    return false;
 }
 void removeGameInstallDir(const std::filesystem::path& dir) {
     auto iterator = std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir);

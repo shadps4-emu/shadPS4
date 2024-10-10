@@ -236,7 +236,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
             if (!file_path.empty()) {
-                Config::addGameInstallDir(file_path);
+                if (!Config::addGameInstallDir(file_path)) {
+                    return;
+                }
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
                 ui->gameFoldersListWidget->addItem(item);
             }
