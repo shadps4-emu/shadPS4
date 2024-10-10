@@ -380,7 +380,7 @@ void ImeDialogUi::Draw() {
 
         SetCursorPosX(button_start_pos);
 
-        if (Button(button_text, BUTTON_SIZE)) {
+        if (Button(button_text, BUTTON_SIZE) || (!state->is_multiLine && IsKeyPressed(ImGuiKey_Enter))) {
             *status = OrbisImeDialogStatus::FINISHED;
             result->endstatus = OrbisImeDialogEndStatus::OK;
         }
