@@ -83,10 +83,11 @@ ImeDialogState::~ImeDialogState() {
 }
 
 ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
-    : input_changed(other.input_changed), userId(other.userId), is_multiLine(other.is_multiLine), is_numeric(other.is_numeric),
-      type(other.type), enter_label(other.enter_label), text_filter(other.text_filter),
-      keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
-      text_buffer(other.text_buffer), title(std::move(other.title)), placeholder(std::move(other.placeholder)),
+    : input_changed(other.input_changed), userId(other.userId), is_multiLine(other.is_multiLine),
+      is_numeric(other.is_numeric), type(other.type), enter_label(other.enter_label),
+      text_filter(other.text_filter), keyboard_filter(other.keyboard_filter),
+      max_text_length(other.max_text_length), text_buffer(other.text_buffer),
+      title(std::move(other.title)), placeholder(std::move(other.placeholder)),
       current_text(other.current_text) {
 
 #ifndef _WIN32
@@ -137,7 +138,8 @@ bool ImeDialogState::CopyTextToOrbisBuffer() {
         return false;
     }
 
-    return ConvertUTF8ToOrbis(current_text.begin(), current_text.capacity(), text_buffer, max_text_length);
+    return ConvertUTF8ToOrbis(current_text.begin(), current_text.capacity(), text_buffer,
+                              max_text_length);
 }
 
 bool ImeDialogState::CallTextFilter() {
@@ -380,7 +382,8 @@ void ImeDialogUi::Draw() {
 
         SetCursorPosX(button_start_pos);
 
-        if (Button(button_text, BUTTON_SIZE) || (!state->is_multiLine && IsKeyPressed(ImGuiKey_Enter))) {
+        if (Button(button_text, BUTTON_SIZE) ||
+            (!state->is_multiLine && IsKeyPressed(ImGuiKey_Enter))) {
             *status = OrbisImeDialogStatus::FINISHED;
             result->endstatus = OrbisImeDialogEndStatus::OK;
         }
