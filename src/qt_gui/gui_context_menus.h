@@ -295,7 +295,14 @@ public:
             Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             QString message_type = tr("Game");
             if (selected == deleteUpdate) {
-                if (!std::filesystem::exists(m_games[itemID].path.concat("-UPDATE"))) {
+                if (!Config::getSeparateUpdateEnabled()) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This feature requires the 'Enable Separate Update Folder' "
+                                   "config option "
+                                   "to work. If you want to use this feature, please enable it.")));
+                    error = true;
+                } else if (!std::filesystem::exists(m_games[itemID].path.concat("-UPDATE"))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update to delete!")));
                     error = true;

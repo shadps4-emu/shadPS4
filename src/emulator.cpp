@@ -115,9 +115,10 @@ void Emulator::Run(const std::filesystem::path& file) {
     u32 fw_version;
 
     std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
-    std::filesystem::path sce_sys_folder = std::filesystem::exists(game_patch_folder / "sce_sys")
-                                               ? game_patch_folder / "sce_sys"
-                                               : file.parent_path() / "sce_sys";
+    bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys") &&
+                          Config::getSeparateUpdateEnabled();
+    std::filesystem::path sce_sys_folder =
+        use_game_patch ? game_patch_folder / "sce_sys" : file.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
             if (entry.path().filename() == "param.sfo") {
