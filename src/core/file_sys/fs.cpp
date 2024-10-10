@@ -53,7 +53,14 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, b
     // Remove device (e.g /app0) from path to retrieve relative path.
     pos = mount->mount.size() + 1;
     const auto rel_path = std::string_view(corrected_path).substr(pos);
-    const auto host_path = mount->host_path / rel_path;
+    std::filesystem::path host_path = mount->host_path / rel_path;
+
+    //Use file in update directory instead if it's there (e.g. CUSAXXXXX-UPDATE)
+    std::filesystem::path patch_path = mount->host_path.string() + "-UPDATE";
+    if (std::filesystem::exists(patch_path / rel_path)) {
+        host_path = patch_path / rel_path;
+    }
+
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
     }

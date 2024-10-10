@@ -17,7 +17,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
         QDir parentFolder(installDir);
         QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
         for (const auto& fileInfo : fileList) {
-            if (fileInfo.isDir()) {
+            if (fileInfo.isDir() && !fileInfo.filePath().endsWith("-UPDATE")) {
                 filePaths.append(fileInfo.absoluteFilePath());
             }
         }
