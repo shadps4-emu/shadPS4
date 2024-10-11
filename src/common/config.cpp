@@ -492,7 +492,6 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
-        patchFile = toml::find_or<std::string>(general, "patchFile", "");
         backButtonBehavior = toml::find_or<std::string>(general, "backButtonBehavior", "left");
     }
 
@@ -582,7 +581,7 @@ void loadArgs(int& argc, char* argv[]) {
         const std::string arg = argv[i];
         if (arg == "-p") {
             patchFile = argv[i + 1];
-        } else if (arg == "-f") {
+        } else if (arg == "-f" || arg == "--fullscreen") {
             isFullscreen = true;
         }
     }
@@ -620,7 +619,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
-    data["General"]["patchFile"] = patchFile;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
