@@ -417,7 +417,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="154"/>
 			<source>Enable Discord Rich Presence</source>
-			<translation>Habilitar Discord Rich Presence</translation>
+			<translation>Ativar Discord Rich Presence</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -1041,12 +1041,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Ativar modo tela cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+			<translation>Ativar Tela Cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Mostrar tela inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
+			<translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
@@ -1066,12 +1066,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Tipo de log:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
+			<translation>Tipo de Registro:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtro de log:\nImprime apenas informações específicas.\nExemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical"\nNíveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
+			<translation>Filtro de Registro:\nImprime apenas informações específicas.\nExemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical"\nNíveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1239,7 +1239,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
-			<translation>Horas Jogadas</translation>
+			<translation>Tempo Jogado</translation>
 		</message>
 	</context>
 	<context>
