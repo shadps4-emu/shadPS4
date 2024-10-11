@@ -81,32 +81,40 @@ public:
         return std::basic_string_view<T>{data};
     }
 
-    char* begin() {
+    T* begin() {
         if (this == nullptr) {
             return nullptr;
         }
         return data;
     }
 
-    const char* begin() const {
+    const T* begin() const {
         if (this == nullptr) {
             return nullptr;
         }
         return data;
     }
 
-    char* end() {
+    T* end() {
         if (this == nullptr) {
             return nullptr;
         }
         return data + N;
     }
 
-    const char* end() const {
+    const T* end() const {
         if (this == nullptr) {
             return nullptr;
         }
         return data + N;
+    }
+
+    constexpr std::size_t capacity() const {
+        return N;
+    }
+
+    std::size_t size() const {
+        return std::char_traits<T>::length(data);
     }
 
     T& operator[](size_t idx) {
@@ -151,6 +159,12 @@ public:
 
 static_assert(sizeof(CString<13>) == sizeof(char[13])); // Ensure size still matches a simple array
 static_assert(std::weakly_incrementable<CString<13>::Iterator>);
+
+template <size_t N>
+using CWString = CString<N, wchar_t>;
+
+template <size_t N>
+using CU16String = CString<N, char16_t>;
 
 #pragma clang diagnostic pop
 

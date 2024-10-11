@@ -245,6 +245,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
 
+    rasterizer->MapMemory(mapped_addr, size);
     return ORBIS_OK;
 }
 
