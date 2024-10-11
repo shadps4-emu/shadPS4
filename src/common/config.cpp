@@ -535,16 +535,16 @@ void load(const std::filesystem::path& path) {
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
-        const auto install_dir_array =
-            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
-        for (const auto& dir : install_dir_array) {
-            settings_install_dirs.emplace_back(std::filesystem::path{dir});
-        }
-
         // TODO Migration code, after a major release this should be removed.
         auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         if (!old_game_install_dir.empty()) {
-            addGameInstallDir(old_game_install_dir);
+            settings_install_dirs.emplace_back(std::filesystem::path{old_game_install_dir});
+        } else {
+            const auto install_dir_array =
+                toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            for (const auto& dir : install_dir_array) {
+                settings_install_dirs.emplace_back(std::filesystem::path{dir});
+            }
         }
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});

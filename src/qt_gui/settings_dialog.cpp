@@ -354,7 +354,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
-    
+
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
 }
 
