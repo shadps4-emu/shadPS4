@@ -232,7 +232,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::Run(int& argc, char* argv[]) {
-    //Load config options from arguments
+    // Load config options from arguments
     Config::loadArgs(argc, argv);
     MemoryPatcher::patchFile = Config::getPatchFile();
 
