@@ -78,7 +78,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
     Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
     Libraries::Audio3d::RegisterlibSceAudio3d(sym);
-    Libraries::Fiber::RegisterlibSceFiber(sym);
 }
 
 } // namespace Libraries

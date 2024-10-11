@@ -132,35 +132,13 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
 
 bool IsImageInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageSampleExplicitLod:
-    case IR::Opcode::ImageSampleImplicitLod:
-    case IR::Opcode::ImageSampleDrefExplicitLod:
-    case IR::Opcode::ImageSampleDrefImplicitLod:
     case IR::Opcode::ImageFetch:
-    case IR::Opcode::ImageGather:
-    case IR::Opcode::ImageGatherDref:
     case IR::Opcode::ImageQueryDimensions:
     case IR::Opcode::ImageQueryLod:
-    case IR::Opcode::ImageGradient:
+    case IR::Opcode::ImageSampleRaw:
         return true;
     default:
         return IsImageStorageInstruction(inst);
-    }
-}
-
-u32 ImageOffsetArgumentPosition(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageGather:
-    case IR::Opcode::ImageGatherDref:
-        return 2;
-    case IR::Opcode::ImageSampleExplicitLod:
-    case IR::Opcode::ImageSampleImplicitLod:
-        return 3;
-    case IR::Opcode::ImageSampleDrefExplicitLod:
-    case IR::Opcode::ImageSampleDrefImplicitLod:
-        return 4;
-    default:
-        UNREACHABLE();
     }
 }
 
@@ -467,6 +445,191 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
     }
 }
 
+void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+                                 Descriptors& descriptors, const IR::Inst* producer,
+                                 const u32 image_binding, const AmdGpu::Image& image) {
+    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
+    const u32 sampler_binding = [&] {
+        ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
+        const IR::Value& handle = producer->Arg(1);
+        // Inline sampler resource.
+        if (handle.IsImmediate()) {
+            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
+            return descriptors.Add(SamplerResource{
+                .sgpr_base = std::numeric_limits<u32>::max(),
+                .dword_offset = 0,
+                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
+            });
+        }
+        // Normal sampler resource.
+        const auto ssharp_handle = handle.InstRecursive();
+        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+        const auto ssharp = TrackSharp(ssharp_ud);
+        return descriptors.Add(SamplerResource{
+            .sgpr_base = ssharp.sgpr_base,
+            .dword_offset = ssharp.dword_offset,
+            .associated_image = image_binding,
+            .disable_aniso = disable_aniso,
+        });
+    }();
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+
+    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const IR::U32 handle = ir.Imm32(image_binding | sampler_binding << 16);
+
+    IR::Inst* body1 = inst.Arg(1).InstRecursive();
+    IR::Inst* body2 = inst.Arg(2).InstRecursive();
+    IR::Inst* body3 = inst.Arg(3).InstRecursive();
+    IR::F32 body4 = IR::F32{inst.Arg(4)};
+    const auto get_addr_reg = [&](u32 index) -> IR::F32 {
+        if (index <= 3) {
+            return IR::F32{body1->Arg(index)};
+        }
+        if (index >= 4 && index <= 7) {
+            return IR::F32{body2->Arg(index - 4)};
+        }
+        if (index >= 8 && index <= 11) {
+            return IR::F32{body3->Arg(index - 8)};
+        }
+        if (index == 12) {
+            return body4;
+        }
+        UNREACHABLE();
+    };
+    u32 addr_reg = 0;
+
+    // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
+    // Set Architecture
+    const IR::Value offset = [&] -> IR::Value {
+        if (!inst_info.has_offset) {
+            return IR::U32{};
+        }
+
+        // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
+        IR::Value arg = get_addr_reg(addr_reg++);
+        if (const IR::Inst* offset_inst = arg.TryInstRecursive()) {
+            ASSERT(offset_inst->GetOpcode() == IR::Opcode::BitCastF32U32);
+            arg = offset_inst->Arg(0);
+        }
+
+        const auto read = [&](u32 off) -> IR::U32 {
+            if (arg.IsImmediate()) {
+                const u32 imm =
+                    arg.Type() == IR::Type::F32 ? std::bit_cast<u32>(arg.F32()) : arg.U32();
+                const u16 comp = (imm >> off) & 0x3F;
+                return ir.Imm32(s32(comp << 26) >> 26);
+            }
+            return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(off), ir.Imm32(6), true);
+        };
+
+        switch (image.GetType()) {
+        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color1DArray:
+            return read(0);
+        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color2DArray:
+        case AmdGpu::ImageType::Color2DMsaa:
+            return ir.CompositeConstruct(read(0), read(8));
+        case AmdGpu::ImageType::Color3D:
+        case AmdGpu::ImageType::Cube:
+            return ir.CompositeConstruct(read(0), read(8), read(16));
+        default:
+            UNREACHABLE();
+        }
+    }();
+    const IR::F32 bias = inst_info.has_bias ? get_addr_reg(addr_reg++) : IR::F32{};
+    const IR::F32 dref = inst_info.is_depth ? get_addr_reg(addr_reg++) : IR::F32{};
+    const auto [derivatives_dx, derivatives_dy] = [&] -> std::pair<IR::Value, IR::Value> {
+        if (!inst_info.has_derivatives) {
+            return {};
+        }
+        switch (image.GetType()) {
+        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color1DArray:
+            // du/dx, du/dy
+            addr_reg = addr_reg + 2;
+            return {get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1)};
+        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color2DArray:
+        case AmdGpu::ImageType::Color2DMsaa:
+            // (du/dx, dv/dx), (du/dy, dv/dy)
+            addr_reg = addr_reg + 4;
+            return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
+                    ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1))};
+        case AmdGpu::ImageType::Color3D:
+        case AmdGpu::ImageType::Cube:
+            // (du/dx, dv/dx, dw/dx), (du/dy, dv/dy, dw/dy)
+            addr_reg = addr_reg + 6;
+            return {ir.CompositeConstruct(get_addr_reg(addr_reg - 6), get_addr_reg(addr_reg - 5),
+                                          get_addr_reg(addr_reg - 4)),
+                    ir.CompositeConstruct(get_addr_reg(addr_reg - 3), get_addr_reg(addr_reg - 2),
+                                          get_addr_reg(addr_reg - 1))};
+        default:
+            UNREACHABLE();
+        }
+    }();
+
+    // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
+    const IR::Value coords = [&] -> IR::Value {
+        switch (image.GetType()) {
+        case AmdGpu::ImageType::Color1D: // x
+            addr_reg = addr_reg + 1;
+            return get_addr_reg(addr_reg - 1);
+        case AmdGpu::ImageType::Color1DArray: // x, slice
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2D: // x, y
+            addr_reg = addr_reg + 2;
+            return ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1));
+        case AmdGpu::ImageType::Color2DArray: // x, y, slice
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color3D: // x, y, z
+            addr_reg = addr_reg + 3;
+            return ir.CompositeConstruct(get_addr_reg(addr_reg - 3), get_addr_reg(addr_reg - 2),
+                                         get_addr_reg(addr_reg - 1));
+        case AmdGpu::ImageType::Cube: // x, y, face
+            addr_reg = addr_reg + 3;
+            return PatchCubeCoord(ir, get_addr_reg(addr_reg - 3), get_addr_reg(addr_reg - 2),
+                                  get_addr_reg(addr_reg - 1), false, inst_info.is_array);
+        default:
+            UNREACHABLE();
+        }
+    }();
+
+    ASSERT(!inst_info.has_lod || !inst_info.has_lod_clamp);
+    const bool explicit_lod = inst_info.has_lod || inst_info.force_level0;
+    const IR::F32 lod = inst_info.has_lod        ? get_addr_reg(addr_reg++)
+                        : inst_info.force_level0 ? ir.Imm32(0.0f)
+                                                 : IR::F32{};
+    const IR::F32 lod_clamp = inst_info.has_lod_clamp ? get_addr_reg(addr_reg++) : IR::F32{};
+
+    const auto new_inst = [&] -> IR::Value {
+        if (inst_info.is_gather) {
+            if (inst_info.is_depth) {
+                return ir.ImageGatherDref(handle, coords, offset, dref, inst_info);
+            }
+            return ir.ImageGather(handle, coords, offset, inst_info);
+        }
+        if (inst_info.has_derivatives) {
+            return ir.ImageGradient(handle, coords, derivatives_dx, derivatives_dy, offset,
+                                    lod_clamp, inst_info);
+        }
+        if (inst_info.is_depth) {
+            if (explicit_lod) {
+                return ir.ImageSampleDrefExplicitLod(handle, coords, dref, lod, offset, inst_info);
+            }
+            return ir.ImageSampleDrefImplicitLod(handle, coords, dref, bias, offset, inst_info);
+        }
+        if (explicit_lod) {
+            return ir.ImageSampleExplicitLod(handle, coords, lod, offset, inst_info);
+        }
+        return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
+    }();
+    inst.ReplaceUsesWith(new_inst);
+}
+
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
         const auto opcode = inst->GetOpcode();
@@ -498,40 +661,18 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
         .type = type,
-        .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
+        .nfmt = image.GetNumberFmt(),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
     });
 
-    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    const u32 sampler_binding = [&] {
-        if (!has_sampler) {
-            return 0U;
-        }
-        const IR::Value& handle = producer->Arg(1);
-        // Inline sampler resource.
-        if (handle.IsImmediate()) {
-            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-            return descriptors.Add(SamplerResource{
-                .sgpr_base = std::numeric_limits<u32>::max(),
-                .dword_offset = 0,
-                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
-            });
-        }
-        // Normal sampler resource.
-        const auto ssharp_handle = handle.InstRecursive();
-        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-        const auto ssharp = TrackSharp(ssharp_ud);
-        return descriptors.Add(SamplerResource{
-            .sgpr_base = ssharp.sgpr_base,
-            .dword_offset = ssharp.dword_offset,
-            .associated_image = image_binding,
-            .disable_aniso = disable_aniso,
-        });
-    }();
-    image_binding |= (sampler_binding << 16);
+    // Sample instructions must be resolved into a new instruction using address register data.
+    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
+        PatchImageSampleInstruction(block, inst, info, descriptors, producer, image_binding, image);
+        return;
+    }
 
     // Patch image handle
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -568,62 +709,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }();
     inst.SetArg(1, coords);
 
-    if (inst_info.has_offset) {
-        // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
-        const u32 arg_pos = ImageOffsetArgumentPosition(inst);
-        const IR::Value arg = inst.Arg(arg_pos);
-        ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
-
-        const auto read = [&](u32 offset) -> IR::U32 {
-            if (arg.IsImmediate()) {
-                const u16 comp = (arg.U32() >> offset) & 0x3F;
-                return ir.Imm32(s32(comp << 26) >> 26);
-            }
-            return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(offset), ir.Imm32(6), true);
-        };
-
-        switch (image.GetType()) {
-        case AmdGpu::ImageType::Color1D:
-        case AmdGpu::ImageType::Color1DArray:
-            inst.SetArg(arg_pos, read(0));
-            break;
-        case AmdGpu::ImageType::Color2D:
-        case AmdGpu::ImageType::Color2DArray:
-            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8)));
-            break;
-        case AmdGpu::ImageType::Color3D:
-            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8), read(16)));
-            break;
-        default:
-            UNREACHABLE();
-        }
-    }
-    if (inst_info.has_derivatives) {
-        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D ||
-                       image.GetType() == AmdGpu::ImageType::Color2DArray,
-                   "User derivatives only supported for 2D images");
-    }
-    if (inst_info.has_lod_clamp) {
-        const u32 arg_pos = [&]() -> u32 {
-            switch (inst.GetOpcode()) {
-            case IR::Opcode::ImageSampleImplicitLod:
-                return 2;
-            case IR::Opcode::ImageSampleDrefImplicitLod:
-                return 3;
-            default:
-                break;
-            }
-            return inst_info.is_depth ? 5 : 4;
-        }();
-        inst.SetArg(arg_pos, arg);
-    }
-    if (inst_info.explicit_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
-               inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ||
-               inst.GetOpcode() == IR::Opcode::ImageSampleDrefExplicitLod);
-        const u32 pos = inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ? 2 : 3;
-        const IR::Value value = inst_info.force_level0 ? ir.Imm32(0.f) : arg;
-        inst.SetArg(pos, value);
+    if (inst_info.has_lod) {
+        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
+        inst.SetArg(3, arg);
     }
 }
 
