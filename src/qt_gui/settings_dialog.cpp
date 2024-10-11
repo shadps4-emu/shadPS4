@@ -218,8 +218,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
     // PATH TAB
     {
-        ui->removeFolderButton->setEnabled(false);
-
         connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
             const auto config_dir = Config::getGameInstallDirs();
             QString file_path_string =
@@ -356,6 +354,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+    
+    ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
