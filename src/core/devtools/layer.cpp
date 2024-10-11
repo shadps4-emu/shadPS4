@@ -242,7 +242,8 @@ void L::SetupSettings() {
 
     const ImGuiID dock_id = ImHashStr("FrameDumpDock");
     DockBuilderAddNode(dock_id, 0);
-    DockBuilderSetNodePos(dock_id, ImVec2{50.0, 50.0});
+    DockBuilderSetNodePos(dock_id, ImVec2{450.0, 150.0});
+    DockBuilderSetNodeSize(dock_id, ImVec2{400.0, 500.0});
     DockBuilderFinish(dock_id);
 }
 

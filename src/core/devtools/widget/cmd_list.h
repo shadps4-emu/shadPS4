@@ -22,6 +22,18 @@ namespace Core::Devtools::Widget {
 
 class FrameDumpViewer;
 
+void ParsePolygonControl(u32 value, bool begin_table = true);
+void ParseAaConfig(u32 value, bool begin_table = true);
+void ParseViewportControl(u32 value, bool begin_table = true);
+void ParseColorControl(u32 value, bool begin_table = true);
+void ParseColor0Info(u32 value, bool begin_table = true);
+void ParseColor0Attrib(u32 value, bool begin_table = true);
+void ParseBlendControl(u32 value, bool begin_table = true);
+void ParseDepthRenderControl(u32 value, bool begin_table = true);
+void ParseDepthControl(u32 value, bool begin_table = true);
+void ParseEqaa(u32 value, bool begin_table = true);
+void ParseZInfo(u32 value, bool begin_table = true);
+
 class CmdListViewer {
 
     const FrameDumpViewer* parent;

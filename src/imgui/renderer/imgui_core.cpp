@@ -80,6 +80,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
                                              imgui_font_proggyvector_regular_compressed_size,
                                              16.0f);
 
+    GetCurrentContext()->DebugLogFlags |= ImGuiDebugLogFlags_EventDocking;
+
     StyleColorsDark();
 
     ::Core::Devtools::Layer::SetupSettings();

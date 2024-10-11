@@ -66,11 +66,11 @@ void FrameDumpViewer::Draw() {
 
     char name[32];
     snprintf(name, sizeof(name), "Frame #%d dump", id);
-    static ImGuiID dock_id = ImHashStr("FrameDumpDock");
-    SetNextWindowDockID(dock_id, ImGuiCond_Appearing);
     if (Begin(name, &is_open, ImGuiWindowFlags_NoSavedSettings)) {
         if (IsWindowAppearing()) {
             auto window = GetCurrentWindow();
+            static ImGuiID dock_id = ImHashStr("FrameDumpDock");
+            SetWindowDock(window, dock_id, ImGuiCond_Once | ImGuiCond_FirstUseEver);
             SetWindowSize(window, ImVec2{470.0f, 600.0f});
         }
         BeginGroup();

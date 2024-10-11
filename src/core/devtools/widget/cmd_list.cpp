@@ -32,8 +32,8 @@ const char* GetOpCodeName(u32 op);
 
 namespace Core::Devtools::Widget {
 
-static bool group_batches = false;
-static bool show_markers = true;
+static bool group_batches = true;
+static bool show_markers = false;
 
 void CmdListViewer::LoadConfig(const char* line) {
     int i;
@@ -63,10 +63,11 @@ static HdrType GetNext(HdrType this_pm4, uint32_t n) {
     return curr_pm4;
 }
 
-static void ParsePolygonControl(u32 value) {
+void ParsePolygonControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<AmdGpu::Liverpool::PolygonControl const&>(value);
 
-    if (BeginTable("PA_SU_SC_MODE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("PA_SU_SC_MODE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("CULL_FRONT");
@@ -146,14 +147,17 @@ static void ParsePolygonControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.multi_prim_ib_ena.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseAaConfig(u32 value) {
+void ParseAaConfig(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::AaConfig const&>(value);
 
-    if (BeginTable("PA_SC_AA_CONFIG", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("PA_SC_AA_CONFIG", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MSAA_NUM_SAMPLES");
@@ -184,14 +188,17 @@ static void ParseAaConfig(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.detail_to_exposed_mode.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseViewportControl(u32 value) {
+void ParseViewportControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::ViewportControl const&>(value);
 
-    if (BeginTable("PA_CL_VTE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("PA_CL_VTE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_X_SCALE_ENA");
@@ -252,14 +259,17 @@ static void ParseViewportControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.perfcounter_ref.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseColorControl(u32 value) {
+void ParseColorControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::ColorControl const&>(value);
 
-    if (BeginTable("CB_COLOR_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("CB_COLOR_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DISABLE_DUAL_QUAD__VI");
@@ -284,14 +294,17 @@ static void ParseColorControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.rop3.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseColor0Info(u32 value) {
+void ParseColor0Info(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::ColorBuffer::Color0Info const&>(value);
 
-    if (BeginTable("CB_COLOR_INFO", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("CB_COLOR_INFO", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ENDIAN");
@@ -400,14 +413,17 @@ static void ParseColor0Info(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.cmask_addr_type.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseColor0Attrib(u32 value) {
+void ParseColor0Attrib(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::ColorBuffer::Color0Attrib const&>(value);
 
-    if (BeginTable("CB_COLOR_ATTRIB", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("CB_COLOR_ATTRIB", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("TILE_MODE_INDEX");
@@ -444,14 +460,17 @@ static void ParseColor0Attrib(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.force_dst_alpha_1.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseBlendControl(u32 value) {
+void ParseBlendControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::BlendControl const&>(value);
 
-    if (BeginTable("CB_BLEND_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("CB_BLEND_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COLOR_SRCBLEND");
@@ -510,14 +529,17 @@ static void ParseBlendControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.disable_rop3.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseDepthRenderControl(u32 value) {
+void ParseDepthRenderControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::DepthRenderControl const&>(value);
 
-    if (BeginTable("DB_RENDER_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("DB_RENDER_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DEPTH_CLEAR_ENABLE");
@@ -578,14 +600,17 @@ static void ParseDepthRenderControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.decompress_enable.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseDepthControl(u32 value) {
+void ParseDepthControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::DepthControl const&>(value);
 
-    if (BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCIL_ENABLE");
@@ -648,14 +673,17 @@ static void ParseDepthControl(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.disable_color_writes_on_depth_pass.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseEqaa(u32 value) {
+void ParseEqaa(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::Eqaa const&>(value);
 
-    if (BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MAX_ANCHOR_SAMPLES");
@@ -728,14 +756,17 @@ static void ParseEqaa(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.enable_postz_overrasterization.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 
-static void ParseZInfo(u32 value) {
+void ParseZInfo(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<Liverpool::DepthBuffer::ZInfo const&>(value);
 
-    if (BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (!begin_table ||
+        BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FORMAT");
@@ -796,7 +827,9 @@ static void ParseZInfo(u32 value) {
         TableSetColumnIndex(1);
         Text("%X", reg.zrange_precision.Value());
 
-        EndTable();
+        if (begin_table) {
+            EndTable();
+        }
     }
 }
 

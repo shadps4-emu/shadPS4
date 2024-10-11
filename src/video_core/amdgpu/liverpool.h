@@ -772,6 +772,8 @@ struct Liverpool {
             BitField<27, 1, u32> fmask_compress_1frag_only;
             BitField<28, 1, u32> dcc_enable;
             BitField<29, 1, u32> cmask_addr_type;
+
+            u32 u32all;
         } info;
         union Color0Attrib {
             BitField<0, 5, TilingMode> tile_mode_index;
@@ -780,6 +782,8 @@ struct Liverpool {
             BitField<12, 3, u32> num_samples_log2;
             BitField<15, 2, u32> num_fragments_log2;
             BitField<17, 1, u32> force_dst_alpha_1;
+
+            u32 u32all;
         } attrib;
         INSERT_PADDING_WORDS(1);
         u32 cmask_base_address;
