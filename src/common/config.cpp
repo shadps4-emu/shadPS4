@@ -525,7 +525,7 @@ void load(const std::filesystem::path& path) {
     }
 
     if (data.contains("GUI")) {
-        toml::value& gui = data.at("GUI");
+        const toml::value& gui = data.at("GUI");
 
         m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
         m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
@@ -538,10 +538,6 @@ void load(const std::filesystem::path& path) {
         auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         if (!old_game_install_dir.empty()) {
             addGameInstallDir(old_game_install_dir);
-            gui.as_table().erase("installDir");
-            std::ofstream file(path, std::ios::out);
-            file << data;
-            file.close();
         }
 
         const auto install_dir_array =
@@ -646,6 +642,9 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["emulatorLanguage"] = emulator_language;
 
     data["Settings"]["consoleLanguage"] = m_language;
+
+    // TODO Migration code, after a major release this should be removed.
+    data.at("GUI").as_table().erase("installDir");
 
     std::ofstream file(path, std::ios::out);
     file << data;
