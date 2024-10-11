@@ -282,6 +282,14 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d_error.h
                 src/core/libraries/audio3d/audio3d_impl.cpp
                 src/core/libraries/audio3d/audio3d_impl.h
+                src/core/libraries/ime/ime.cpp
+                src/core/libraries/ime/ime.h
+                src/core/libraries/game_live_streaming/gamelivestreaming.cpp
+                src/core/libraries/game_live_streaming/gamelivestreaming.h
+                src/core/libraries/remote_play/remoteplay.cpp
+                src/core/libraries/remote_play/remoteplay.h
+                src/core/libraries/share_play/shareplay.cpp
+                src/core/libraries/share_play/shareplay.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -297,6 +305,8 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
 
 set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
                 src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog_ui.cpp
+                src/core/libraries/dialogs/ime_dialog_ui.h
                 src/core/libraries/dialogs/ime_dialog.cpp
                 src/core/libraries/dialogs/ime_dialog.h
                 src/core/libraries/dialogs/error_codes.h
@@ -322,6 +332,10 @@ set(RANDOM_LIB src/core/libraries/random/random.cpp
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
+)
+
+set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
+              src/core/libraries/fiber/fiber.h
 )
 
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
@@ -464,6 +478,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
+         ${FIBER_LIB}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
@@ -693,6 +708,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
+           src/qt_gui/install_dir_select.cpp
+           src/qt_gui/install_dir_select.h
            src/qt_gui/pkg_viewer.cpp
            src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
@@ -863,3 +880,11 @@ endif()
 
 # Discord RPC
 target_link_libraries(shadps4 PRIVATE discord-rpc)
+
+# Install rules
+install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    install(FILES ".github/shadps4.desktop" DESTINATION "share/applications")
+    install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps")
+endif()

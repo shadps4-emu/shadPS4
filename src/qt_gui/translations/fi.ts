@@ -1111,6 +1111,11 @@
 			<source>Path</source>
 			<translation>Polku</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Peliaika</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>

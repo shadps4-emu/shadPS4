@@ -105,7 +105,7 @@ int PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
 int PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
 s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size);
-int PS4_SYSV_ABI sceGnmInsertPushColorMarker();
+s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color);
 s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marker);
 int PS4_SYSV_ABI sceGnmInsertSetColorMarker();
 int PS4_SYSV_ABI sceGnmInsertSetMarker();

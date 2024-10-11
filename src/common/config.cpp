@@ -63,7 +63,7 @@ static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 
 // Gui
-std::filesystem::path settings_install_dir = {};
+std::vector<std::filesystem::path> settings_install_dirs = {};
 std::filesystem::path settings_addon_install_dir = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
@@ -334,8 +334,19 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
-void setGameInstallDir(const std::filesystem::path& dir) {
-    settings_install_dir = dir;
+bool addGameInstallDir(const std::filesystem::path& dir) {
+    if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) ==
+        settings_install_dirs.end()) {
+        settings_install_dirs.push_back(dir);
+        return true;
+    }
+    return false;
+}
+void removeGameInstallDir(const std::filesystem::path& dir) {
+    auto iterator = std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir);
+    if (iterator != settings_install_dirs.end()) {
+        settings_install_dirs.erase(iterator);
+    }
 }
 void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
@@ -393,8 +404,8 @@ u32 getMainWindowGeometryW() {
 u32 getMainWindowGeometryH() {
     return main_window_geometry_h;
 }
-std::filesystem::path getGameInstallDir() {
-    return settings_install_dir;
+const std::vector<std::filesystem::path>& getGameInstallDirs() {
+    return settings_install_dirs;
 }
 std::filesystem::path getAddonInstallDir() {
     if (settings_addon_install_dir.empty()) {
@@ -490,6 +501,7 @@ void load(const std::filesystem::path& path) {
 
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
+        backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
     }
@@ -533,7 +545,19 @@ void load(const std::filesystem::path& path) {
         mw_themes = toml::find_or<int>(gui, "theme", 0);
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
-        settings_install_dir = toml::find_fs_path_or(gui, "installDir", {});
+
+        // TODO Migration code, after a major release this should be removed.
+        auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
+        if (!old_game_install_dir.empty()) {
+            settings_install_dirs.emplace_back(std::filesystem::path{old_game_install_dir});
+        } else {
+            const auto install_dir_array =
+                toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            for (const auto& dir : install_dir_array) {
+                settings_install_dirs.emplace_back(std::filesystem::path{dir});
+            }
+        }
+
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
@@ -599,7 +623,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["patchFile"] = patchFile;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
-    data["General"]["backButtonBehavior"] = backButtonBehavior;
+    data["Input"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -624,7 +648,13 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["gameTableMode"] = m_table_mode;
     data["GUI"]["mw_width"] = m_window_size_W;
     data["GUI"]["mw_height"] = m_window_size_H;
-    data["GUI"]["installDir"] = std::string{fmt::UTF(settings_install_dir.u8string()).data};
+
+    std::vector<std::string> install_dirs;
+    for (const auto& dirString : settings_install_dirs) {
+        install_dirs.emplace_back(std::string{fmt::UTF(dirString.u8string()).data});
+    }
+    data["GUI"]["installDirs"] = install_dirs;
+
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["GUI"]["geometry_x"] = main_window_geometry_x;
@@ -638,6 +668,9 @@ void save(const std::filesystem::path& path) {
 
     data["Settings"]["consoleLanguage"] = m_language;
 
+    // TODO Migration code, after a major release this should be removed.
+    data.at("GUI").as_table().erase("installDir");
+
     std::ofstream file(path, std::ios::out);
     file << data;
     file.close();
@@ -649,8 +682,6 @@ void setDefaultValues() {
     playBGM = false;
     BGMvolume = 50;
     enableDiscordRPC = true;
-    cursorState = HideCursorState::Idle;
-    cursorHideTimeout = 5;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";
@@ -662,6 +693,8 @@ void setDefaultValues() {
         updateChannel = "Nightly";
     }
     patchFile = "";
+    cursorState = HideCursorState::Idle;
+    cursorHideTimeout = 5;
     backButtonBehavior = "left";
     useSpecialPad = false;
     specialPadClass = 1;
