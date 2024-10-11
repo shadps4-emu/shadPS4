@@ -218,19 +218,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
     // PATH TAB
     {
-        ui->removeFolderButton->setEnabled(false);
-
         connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
             const auto config_dir = Config::getGameInstallDirs();
             QString file_path_string =
                 QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
-            bool not_already_included =
-                std::find(config_dir.begin(), config_dir.end(), file_path) == config_dir.end();
-            if (!file_path.empty() && not_already_included) {
-                std::vector<std::filesystem::path> install_dirs = config_dir;
-                install_dirs.push_back(file_path);
-                Config::setGameInstallDirs(install_dirs);
+            if (!file_path.empty() && Config::addGameInstallDir(file_path)) {
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
                 ui->gameFoldersListWidget->addItem(item);
             }
@@ -246,17 +239,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             QString item_path_string = selected_item ? selected_item->text() : QString();
             if (!item_path_string.isEmpty()) {
                 auto file_path = Common::FS::PathFromQString(item_path_string);
-                std::vector<std::filesystem::path> install_dirs = Config::getGameInstallDirs();
-
-                auto iterator = std::remove_if(
-                    install_dirs.begin(), install_dirs.end(),
-                    [&file_path](const std::filesystem::path& dir) { return file_path == dir; });
-
-                if (iterator != install_dirs.end()) {
-                    install_dirs.erase(iterator, install_dirs.end());
-                    delete selected_item;
-                }
-                Config::setGameInstallDirs(install_dirs);
+                Config::removeGameInstallDir(file_path);
+                delete selected_item;
             }
         });
     }
@@ -370,6 +354,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+
+    ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {

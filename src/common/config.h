@@ -84,7 +84,8 @@ bool vkCrashDiagnosticEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& dir);
+bool addGameInstallDir(const std::filesystem::path& dir);
+void removeGameInstallDir(const std::filesystem::path& dir);
 void setAddonInstallDir(const std::filesystem::path& dir);
 void setMainWindowTheme(u32 theme);
 void setIconSize(u32 size);
@@ -103,7 +104,7 @@ u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();
 u32 getMainWindowGeometryW();
 u32 getMainWindowGeometryH();
-std::vector<std::filesystem::path> getGameInstallDirs();
+const std::vector<std::filesystem::path>& getGameInstallDirs();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 u32 getIconSize();
