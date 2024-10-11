@@ -986,9 +986,9 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetOnlineId() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId) {
+    LOG_DEBUG(Lib_NpManager, "called returned sign out");
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetParentalControlInfo() {
