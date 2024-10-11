@@ -415,6 +415,11 @@
 			<translation>Mode PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Activer Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Nom d'utilisateur</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtre</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Entrée</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Curseur</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Masquer le curseur</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Délai d'inactivité pour masquer le curseur</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Manette</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Comportement du bouton retour</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Chemins</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Dossiers de jeu</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Ajouter...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Supprimer</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -580,7 +635,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="549"/>
 			<source>Games: </source>
-			<translation>Jeux : </translation>
+			<translation>Jeux: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="575"/>
@@ -615,7 +670,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>PKG and Game versions match: </source>
-			<translation>Les versions PKG et jeu correspondent : </translation>
+			<translation>Les versions PKG et jeu correspondent: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="647"/>
@@ -625,17 +680,17 @@
 		<message>
 			<location filename="../main_window.cpp" line="639"/>
 			<source>PKG Version %1 is older than installed version: </source>
-			<translation>La version PKG %1 est plus ancienne que la version installée : </translation>
+			<translation>La version PKG %1 est plus ancienne que la version installée: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="660"/>
 			<source>Game is installed: </source>
-			<translation>Jeu installé : </translation>
+			<translation>Jeu installé: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="660"/>
 			<source>Would you like to install Patch: </source>
-			<translation>Souhaitez-vous installer le patch : </translation>
+			<translation>Souhaitez-vous installer le patch: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="673"/>
@@ -645,12 +700,12 @@
 		<message>
 			<location filename="../main_window.cpp" line="674"/>
 			<source>Would you like to install DLC: %1?</source>
-			<translation>Souhaitez-vous installer le DLC : %1 ?</translation>
+			<translation>Souhaitez-vous installer le DLC: %1 ?</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="688"/>
 			<source>DLC already installed:</source>
-			<translation>DLC déjà installé :</translation>
+			<translation>DLC déjà installé:</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="701"/>
@@ -698,7 +753,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>Les Cheats/Patchs sont expérimentaux.\nUtilisez-les avec précaution.\n\nTéléchargez les Cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patchs, vous pouvez télécharger tous les patchs en une seule fois, choisir lesquels vous souhaitez utiliser et enregistrer votre sélection.\n\nComme nous ne développons pas les Cheats/Patches,\nmerci de signaler les problèmes à l'auteur du Cheat.\n\nVous avez créé un nouveau cheat ? Visitez :\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>Les Cheats/Patchs sont expérimentaux.\nUtilisez-les avec précaution.\n\nTéléchargez les Cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patchs, vous pouvez télécharger tous les patchs en une seule fois, choisir lesquels vous souhaitez utiliser et enregistrer votre sélection.\n\nComme nous ne développons pas les Cheats/Patches,\nmerci de signaler les problèmes à l'auteur du Cheat.\n\nVous avez créé un nouveau cheat ? Visitez:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
@@ -708,27 +763,27 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="79"/>
 			<source>Serial: </source>
-			<translation>Série : </translation>
+			<translation>Série: </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="83"/>
 			<source>Version: </source>
-			<translation>Version : </translation>
+			<translation>Version: </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="87"/>
 			<source>Size: </source>
-			<translation>Taille : </translation>
+			<translation>Taille: </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="126"/>
 			<source>Select Cheat File:</source>
-			<translation>Sélectionner le fichier de Cheat :</translation>
+			<translation>Sélectionner le fichier de Cheat:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="133"/>
 			<source>Repository:</source>
-			<translation>Dépôt :</translation>
+			<translation>Dépôt:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="149"/>
@@ -758,7 +813,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="213"/>
 			<source>Select Patch File:</source>
-			<translation>Sélectionner le fichier de patch :</translation>
+			<translation>Sélectionner le fichier de patch:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="241"/>
@@ -813,7 +868,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="432"/>
 			<source>Failed to parse XML: </source>
-			<translation>Échec de l'analyse XML : </translation>
+			<translation>Échec de l'analyse XML: </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="434"/>
@@ -848,12 +903,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="539"/>
 			<source>Failed to save file:</source>
-			<translation>Échec de l'enregistrement du fichier :</translation>
+			<translation>Échec de l'enregistrement du fichier:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="545"/>
 			<source>Failed to download file:</source>
-			<translation>Échec du téléchargement du fichier :</translation>
+			<translation>Échec du téléchargement du fichier:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
@@ -878,12 +933,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="747"/>
 			<source>Failed to save:</source>
-			<translation>Échec de l'enregistrement :</translation>
+			<translation>Échec de l'enregistrement:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="754"/>
 			<source>Failed to download:</source>
-			<translation>Échec du téléchargement :</translation>
+			<translation>Échec du téléchargement:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="762"/>
@@ -908,12 +963,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
-			<translation>Échec de l'ouverture du fichier :</translation>
+			<translation>Échec de l'ouverture du fichier:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="819"/>
 			<source>XML ERROR:</source>
-			<translation>Erreur XML :</translation>
+			<translation>Erreur XML:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="826"/>
@@ -923,12 +978,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="925"/>
 			<source>Author: </source>
-			<translation>Auteur : </translation>
+			<translation>Auteur: </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="997"/>
 			<source>Directory does not exist:</source>
-			<translation>Répertoire n'existe pas :</translation>
+			<translation>Répertoire n'existe pas:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="1006"/>
@@ -938,7 +993,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1006"/>
 			<source>Name:</source>
-			<translation>Nom :</translation>
+			<translation>Nom:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
@@ -976,97 +1031,167 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>Langue de la console :\nDéfinit la langue utilisée par le jeu PS4.\nIl est recommandé de le définir sur une langue que le jeu prend en charge, ce qui variera selon la région.</translation>
+			<translation>Langue de la console:\nDéfinit la langue utilisée par le jeu PS4.\nIl est recommandé de le définir sur une langue que le jeu prend en charge, ce qui variera selon la région.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
 			<source>emulatorLanguageGroupBox</source>
-			<translation>Langue de l'émulateur :\nDéfinit la langue de l'interface utilisateur de l'émulateur.</translation>
+			<translation>Langue de l'émulateur:\nDéfinit la langue de l'interface utilisateur de l'émulateur.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Activer le mode plein écran :\nMet automatiquement la fenêtre du jeu en mode plein écran.\nCela peut être activé en appuyant sur la touche F11.</translation>
+			<translation>Activer le mode plein écran:\nMet automatiquement la fenêtre du jeu en mode plein écran.\nCela peut être activé en appuyant sur la touche F11.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Afficher l'écran de démarrage :\nAffiche l'écran de démarrage du jeu (une image spéciale) lors du démarrage du jeu.</translation>
+			<translation>Afficher l'écran de démarrage:\nAffiche l'écran de démarrage du jeu (une image spéciale) lors du démarrage du jeu.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>Est-ce un PS4 Pro :\nFait en sorte que l'émulateur se comporte comme un PS4 PRO, ce qui peut activer des fonctionnalités spéciales dans les jeux qui le prennent en charge.</translation>
+			<translation>Est-ce un PS4 Pro:\nFait en sorte que l'émulateur se comporte comme un PS4 PRO, ce qui peut activer des fonctionnalités spéciales dans les jeux qui le prennent en charge.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Activer Discord Rich Presence:\nAffiche l'icône de l'émulateur et les informations pertinentes sur votre profil Discord.</translation>
 		</message>
 		<message>
 				<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
-			<translation>Nom d'utilisateur :\nDéfinit le nom d'utilisateur du compte PS4, qui peut être affiché par certains jeux.</translation>
+			<translation>Nom d'utilisateur:\nDéfinit le nom d'utilisateur du compte PS4, qui peut être affiché par certains jeux.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Type de journal :\nDétermine si la sortie de la fenêtre de journalisation est synchronisée pour des raisons de performance. Cela peut avoir un impact négatif sur l'émulation.</translation>
+			<translation>Type de journal:\nDétermine si la sortie de la fenêtre de journalisation est synchronisée pour des raisons de performance. Cela peut avoir un impact négatif sur l'émulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtre de journal : n'imprime que des informations spécifiques. Exemples : "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveaux : Trace, Debug, Info, Avertissement, Erreur, Critique - dans cet ordre, un niveau particulier désactive tous les niveaux précédents de la liste et enregistre tous les niveaux suivants.</translation>
+			<translation>Filtre de journal:\n n'imprime que des informations spécifiques.\nExemples: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveaux: Trace, Debug, Info, Avertissement, Erreur, Critique - dans cet ordre, un niveau particulier désactive tous les niveaux précédents de la liste et enregistre tous les niveaux suivants.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Mise à jour :\nRelease: versions officielles publiées chaque mois qui peuvent être très anciennes, mais plus fiables et testées.\nNightly: versions de développement avec toutes les dernières fonctionnalités et correctifs, mais pouvant avoir des bogues et être moins stables.</translation>
+			<translation>Mise à jour:\nRelease: versions officielles publiées chaque mois qui peuvent être très anciennes, mais plus fiables et testées.\nNightly: versions de développement avec toutes les dernières fonctionnalités et correctifs, mais pouvant avoir des bogues et être moins stables.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Jouer de la musique de titre :\nSi le jeu le prend en charge, cela active la musique spéciale lorsque vous sélectionnez le jeu dans l'interface utilisateur.</translation>
+			<translation>Jouer de la musique de titre:\nSi le jeu le prend en charge, cela active la musique spéciale lorsque vous sélectionnez le jeu dans l'interface utilisateur.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Masquer le curseur:\nChoisissez quand le curseur disparaîtra:\nJamais: Vous verrez toujours la souris.\nInactif: Définissez un temps pour qu'il disparaisse après inactivité.\nToujours: vous ne verrez jamais la souris.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Définissez un temps pour que la souris disparaisse après être inactif.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Comportement du bouton retour:\nDéfinit le bouton de retour de la manette pour imiter le toucher de la position spécifiée sur le pavé tactile PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Jamais</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Inactif</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Toujours</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Pavé Tactile Gauche</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Pavé Tactile Droit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Centre du Pavé Tactile</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Aucun</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Adaptateur graphique :\nSélectionnez le GPU que l'émulateur utilisera dans les systèmes multi-GPU à partir de la liste déroulante,\nou choisissez "Auto Select" pour le déterminer automatiquement.</translation>
+			<translation>Adaptateur graphique:\nSélectionnez le GPU que l'émulateur utilisera dans les systèmes multi-GPU à partir de la liste déroulante,\nou choisissez "Auto Select" pour le déterminer automatiquement.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
 			<source>resolutionLayout</source>
-			<translation>Largeur/Hauteur :\nDéfinit la taille de la fenêtre de l'émulateur au démarrage, qui peut être redimensionnée pendant le jeu.\nCela diffère de la résolution interne du jeu.</translation>
+			<translation>Largeur/Hauteur:\nDéfinit la taille de la fenêtre de l'émulateur au démarrage, qui peut être redimensionnée pendant le jeu.\nCela diffère de la résolution interne du jeu.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Diviseur Vblank :\nLe taux de rafraîchissement de l'émulateur est multiplié par ce nombre. Changer cela peut avoir des effets négatifs, tels qu'une augmentation de la vitesse du jeu ou la rupture de fonctionnalités critiques du jeu qui ne s'attendent pas à ce changement !</translation>
+			<translation>Diviseur Vblank:\nLe taux de rafraîchissement de l'émulateur est multiplié par ce nombre. Changer cela peut avoir des effets négatifs, tels qu'une augmentation de la vitesse du jeu ou la rupture de fonctionnalités critiques du jeu qui ne s'attendent pas à ce changement !</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
 			<source>dumpShadersCheckBox</source>
-			<translation>Activer l'exportation de shaders :\nPour le débogage technique, les shaders du jeu sont enregistrés dans un dossier lors du rendu.</translation>
+			<translation>Activer l'exportation de shaders:\nPour le débogage technique, les shaders du jeu sont enregistrés dans un dossier lors du rendu.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
-			<translation>Activer le GPU nul :\nPour le débogage technique, désactive le rendu du jeu comme s'il n'y avait pas de carte graphique.</translation>
+			<translation>Activer le GPU nul:\nPour le débogage technique, désactive le rendu du jeu comme s'il n'y avait pas de carte graphique.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Dossiers de jeux:\nLa liste des dossiers à vérifier pour les jeux installés.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Ajouter:\nAjouter un dossier à la liste.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Supprimer:\nSupprimer un dossier de la liste.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Activer l'exportation de débogage :\nEnregistre les symboles d'importation et d'exportation et les informations d'en-tête du fichier du programme PS4 actuel dans un répertoire.</translation>
+			<translation>Activer l'exportation de débogage:\nEnregistre les symboles d'importation et d'exportation et les informations d'en-tête du fichier du programme PS4 actuel dans un répertoire.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Activer les couches de validation Vulkan :\nActive un système qui valide l'état du rendu Vulkan et enregistre des informations sur son état interne. Cela réduit les performances et peut changer le comportement de l'émulation.</translation>
+			<translation>Activer les couches de validation Vulkan:\nActive un système qui valide l'état du rendu Vulkan et enregistre des informations sur son état interne. Cela réduit les performances et peut changer le comportement de l'émulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Activer la validation de synchronisation Vulkan :\nActive un système qui valide la planification des tâches de rendu Vulkan. Cela réduit les performances et peut changer le comportement de l'émulation.</translation>
+			<translation>Activer la validation de synchronisation Vulkan:\nActive un système qui valide la planification des tâches de rendu Vulkan. Cela réduit les performances et peut changer le comportement de l'émulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
 			<source>rdocCheckBox</source>
-			<translation>Activer le débogage RenderDoc :\nS'il est activé, l'émulateur fournit une compatibilité avec Renderdoc, permettant d'enregistrer et d'analyser la trame rendue actuelle.</translation>
+			<translation>Activer le débogage RenderDoc:\nS'il est activé, l'émulateur fournit une compatibilité avec Renderdoc, permettant d'enregistrer et d'analyser la trame rendue actuelle.</translation>
 		</message>
 	</context>
 	<context>
@@ -1132,7 +1257,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
-			<translation>Erreur réseau :</translation>
+			<translation>Erreur réseau:</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="73"/>

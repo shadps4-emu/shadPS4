@@ -285,6 +285,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->fullscreenCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->ps4proCheckBox->installEventFilter(this);
+        ui->discordRPCCheckbox->installEventFilter(this);
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
@@ -292,7 +293,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->GUIgroupBox->installEventFilter(this);
 
         // Input
-        ui->cursorGroupBox->installEventFilter(this);
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
         ui->backButtonBehaviorGroupBox->installEventFilter(this);
@@ -434,6 +434,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("showSplashCheckBox");
     } else if (elementName == "ps4proCheckBox") {
         text = tr("ps4proCheckBox");
+    } else if (elementName == "discordRPCCheckbox") {
+        text = tr("discordRPCCheckbox");
     } else if (elementName == "userName") {
         text = tr("userName");
     } else if (elementName == "logTypeGroupBox") {
@@ -447,9 +449,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     }
 
     // Input
-    if (elementName == "cursorGroupBox") {
-        text = tr("cursorGroupBox");
-    } else if (elementName == "hideCursorGroupBox") {
+    if (elementName == "hideCursorGroupBox") {
         text = tr("hideCursorGroupBox");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("idleTimeoutGroupBox");

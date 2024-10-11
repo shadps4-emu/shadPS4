@@ -415,6 +415,11 @@
 			<translation>PS4 Pro هل هو</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>تفعيل حالة الثراء في ديسكورد</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>اسم المستخدم</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>مرشح السجل</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>إدخال</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>مؤشر</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>إخفاء المؤشر</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>مهلة إخفاء المؤشر عند الخمول</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>التحكم</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>سلوك زر العودة</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>تمكين وحدة معالجة الرسومات الفارغة</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>المسارات</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>مجلدات اللعبة</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>إضافة...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>إزالة</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>هل هو PS4 Pro:\nيجعل المحاكي يعمل كـ PS4 PRO، مما قد يتيح ميزات خاصة في الألعاب التي تدعمه.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>تفعيل حالة الثراء في ديسكورد:\nيعرض أيقونة المحاكي ومعلومات ذات صلة على ملفك الشخصي في ديسكورد.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>اسم المستخدم:\nيضبط اسم حساب PS4، الذي قد يتم عرضه في بعض الألعاب.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>فلتر السجل: يقوم بتصفية السجل لطباعة معلومات محددة فقط. أمثلة: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" المستويات: Trace, Debug, Info, Warning, Error, Critical - بالترتيب، مستوى محدد يخفي جميع المستويات التي تسبقه ويعرض جميع المستويات بعده.</translation>
+			<translation>فلتر السجل:\nيقوم بتصفية السجل لطباعة معلومات محددة فقط.\nأمثلة: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" المستويات: Trace, Debug, Info, Warning, Error, Critical - بالترتيب، مستوى محدد يخفي جميع المستويات التي تسبقه ويعرض جميع المستويات بعده.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>تشغيل موسيقى العنوان:\nإذا كانت اللعبة تدعم ذلك، قم بتمكين تشغيل موسيقى خاصة عند اختيار اللعبة في واجهة المستخدم.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>إخفاء المؤشر:\nاختر متى سيختفي المؤشر:\nأبداً: سترى الفأرة دائماً.\nعاطل: حدد وقتاً لاختفائه بعد أن يكون غير مستخدم.\nدائماً: لن ترى الفأرة أبداً.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>حدد وقتاً لاختفاء الفأرة بعد أن تكون غير مستخدم.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>سلوك زر العودة:\nيضبط زر العودة في وحدة التحكم ليحاكي الضغط على الموضع المحدد على لوحة اللمس في PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>أبداً</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>خامل</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>دائماً</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>لوحة اللمس اليسرى</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>لوحة اللمس اليمنى</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>وسط لوحة اللمس</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>لا شيء</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>تمكين GPU الافتراضية:\nلأغراض تصحيح الأخطاء التقنية، يقوم بتعطيل عرض اللعبة كما لو لم يكن هناك بطاقة رسومات.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>مجلدات اللعبة:\nقائمة بالمجلدات للتحقق من الألعاب المثبتة.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>إضافة:\nأضف مجلداً إلى القائمة.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>إزالة:\nأزل مجلداً من القائمة.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

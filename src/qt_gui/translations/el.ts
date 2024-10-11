@@ -415,6 +415,11 @@
 			<translation>Is PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Ενεργοποίηση Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Username</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Είσοδος</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Δείκτης</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Απόκρυψη δείκτη</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Χρόνος αδράνειας απόκρυψης δείκτη</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Controller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Συμπεριφορά κουμπιού επιστροφής</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Enable NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Διαδρομές</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Φάκελοι παιχνιδιών</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Προσθήκη...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Αφαίρεση</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>Είναι PS4 Pro:\nΕπιτρέπει στον εξομοιωτή να λειτουργεί σαν PS4 PRO, κάτι που μπορεί να ενεργοποιήσει συγκεκριμένες λειτουργίες σε παιχνίδια που το υποστηρίζουν.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Ενεργοποίηση Discord Rich Presence:\nΕμφανίζει το εικονίδιο του emulator και σχετικές πληροφορίες στο προφίλ σας στο Discord.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Όνομα Χρήστη:\nΟρίζει το όνομα του λογαριασμού PS4, το οποίο μπορεί να εμφανιστεί σε ορισμένα παιχνίδια.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Φίλτρο Καταγραφής: Φιλτράρει τις καταγραφές ώστε να εκτυπώνονται μόνο συγκεκριμένες πληροφορίες. Παραδείγματα: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Επίπεδα: Trace, Debug, Info, Warning, Error, Critical - με τη σειρά αυτή, κάθε επίπεδο που επιλέγεται αποκλείει τα προηγούμενα και εμφανίζει τα επόμενα επίπεδα.</translation>
+			<translation>Φίλτρο Καταγραφής:\nΦιλτράρει τις καταγραφές ώστε να εκτυπώνονται μόνο συγκεκριμένες πληροφορίες.\nΠαραδείγματα: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Επίπεδα: Trace, Debug, Info, Warning, Error, Critical - με τη σειρά αυτή, κάθε επίπεδο που επιλέγεται αποκλείει τα προηγούμενα και εμφανίζει τα επόμενα επίπεδα.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Αναπαραγωγή Μουσικής Τίτλων:\nΕάν το παιχνίδι το υποστηρίζει, ενεργοποιεί ειδική μουσική κατά την επιλογή του παιχνιδιού από τη διεπαφή χρήστη.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Απόκρυψη Κέρσορα:\nΕπιλέξτε πότε θα εξαφανιστεί ο κέρσορας:\nΠοτέ: θα βλέπετε πάντα το ποντίκι.\nΑδρανές: ορίστε έναν χρόνο για να εξαφανιστεί μετά από αδράνεια.\nΠάντα: δεν θα δείτε ποτέ το ποντίκι.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Ορίστε έναν χρόνο για να εξαφανιστεί το ποντίκι μετά από αδράνεια.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Συμπεριφορά Κουμπιού Επιστροφής:\nΟρίζει το κουμπί επιστροφής του ελεγκτή να προσομοιώνει το πάτημα της καθορισμένης θέσης στην οθόνη αφής PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Ποτέ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Αδρανής</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Πάντα</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Αριστερά</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Δεξιά</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Κέντρο Touchpad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Κανένα</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Ενεργοποίηση Εικονικής GPU:\nΓια τεχνικό εντοπισμό σφαλμάτων, απενεργοποιεί την εμφάνιση του παιχνιδιού σαν να μην υπάρχει κάρτα γραφικών.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Φάκελοι Παιχνιδιών:\nΗ λίστα των φακέλων για έλεγχο των εγκατεστημένων παιχνιδιών.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Προσθήκη:\nΠροσθέστε έναν φάκελο στη λίστα.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Αφαίρεση:\nΑφαιρέστε έναν φάκελο από τη λίστα.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
