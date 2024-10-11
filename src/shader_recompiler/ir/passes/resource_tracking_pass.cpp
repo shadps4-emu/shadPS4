@@ -420,18 +420,16 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         if (handle.IsImmediate()) {
             LOG_WARNING(Render_Vulkan, "Inline sampler detected");
             return descriptors.Add(SamplerResource{
-                .sgpr_base = std::numeric_limits<u32>::max(),
-                .dword_offset = 0,
+                .sharp_idx = std::numeric_limits<u32>::max(),
                 .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
             });
         }
         // Normal sampler resource.
         const auto ssharp_handle = handle.InstRecursive();
         const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-        const auto ssharp = TrackSharp(ssharp_ud);
+        const auto ssharp = TrackSharp(ssharp_ud, info);
         return descriptors.Add(SamplerResource{
-            .sgpr_base = ssharp.sgpr_base,
-            .dword_offset = ssharp.dword_offset,
+            .sharp_idx = ssharp,
             .associated_image = image_binding,
             .disable_aniso = disable_aniso,
         });
@@ -594,8 +592,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     inst.ReplaceUsesWith(new_inst);
 }
 
-void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
-                           Shader::FlatSharpBuffer sharp_buf) {
+void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
         const auto opcode = inst->GetOpcode();
         if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
