@@ -242,6 +242,11 @@ public:
         return push_descriptor_props.maxPushDescriptors;
     }
 
+    /// Returns the vulkan 1.2 physical device properties.
+    const vk::PhysicalDeviceVulkan12Properties& GetVk12Properties() const noexcept {
+        return vk12_props;
+    }
+
     /// Returns true if shaders can declare the ClipDistance attribute
     bool IsShaderClipDistanceSupported() const {
         return features.shaderClipDistance;
@@ -279,6 +284,7 @@ private:
     vk::UniqueDevice device;
     vk::PhysicalDeviceProperties properties;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
+    vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDeviceFeatures features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};

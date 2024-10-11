@@ -1076,9 +1076,27 @@ s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size) {
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmInsertPushColorMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && marker) {
+        const auto len = std::strlen(marker);
+        const u32 packet_size = ((len + 0xc) >> 2) + ((len + 0x10) >> 3) * 2;
+        if (packet_size + 2 == size) {
+            auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
+            nop->header =
+                PM4Type3Header{PM4ItOpcode::Nop, packet_size, PM4ShaderType::ShaderGraphics};
+            nop->data_block[0] = PM4CmdNop::PayloadType::DebugColorMarkerPush;
+            const auto marker_len = len + 1;
+            std::memcpy(&nop->data_block[1], marker, marker_len);
+            *reinterpret_cast<u32*>(reinterpret_cast<u8*>(&nop->data_block[1]) + marker_len + 8) =
+                color;
+            std::memset(reinterpret_cast<u8*>(&nop->data_block[1]) + marker_len + 8 + sizeof(u32),
+                        0, packet_size * 4 - marker_len - 8 - sizeof(u32));
+            return ORBIS_OK;
+        }
+    }
+    return -1;
 }
 
 s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marker) {

@@ -902,12 +902,13 @@ int PS4_SYSV_ABI sceNpCreateAsyncRequest() {
 }
 
 int PS4_SYSV_ABI sceNpCreateRequest() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called");
+    static int id = 0;
+    return ++id;
 }
 
-int PS4_SYSV_ABI sceNpDeleteRequest() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpDeleteRequest(int reqId) {
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called reqId = {}", reqId);
     return ORBIS_OK;
 }
 

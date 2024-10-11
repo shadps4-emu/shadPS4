@@ -16,6 +16,7 @@
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
+#include "install_dir_select.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -672,7 +673,10 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
             return;
         }
-        auto extract_path = Config::getGameInstallDir() / pkg.GetTitleID();
+        InstallDirSelect ids;
+        ids.exec();
+        auto game_install_dir = ids.getSelectedDirectory();
+        auto extract_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         QString gameDirPath;
         Common::FS::PathToQString(gameDirPath, extract_path);
@@ -821,7 +825,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
                     if (pkgNum == nPkg) {
                         QString path;
-                        Common::FS::PathToQString(path, Config::getGameInstallDir());
+                        Common::FS::PathToQString(path, game_install_dir);
                         QMessageBox extractMsgBox(this);
                         extractMsgBox.setWindowTitle(tr("Extraction Finished"));
                         extractMsgBox.setText(

@@ -411,7 +411,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
                               ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
 
     IR::TextureInstInfo info{};
-    info.explicit_lod.Assign(has_mip);
+    info.has_lod.Assign(has_mip);
     const IR::Value texel = ir.ImageFetch(handle, body, {}, {}, {}, info);
 
     for (u32 i = 0; i < 4; i++) {
@@ -513,6 +513,76 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
     }
 }
 
+IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::ScalarReg tsharp_reg,
+                          const IR::ScalarReg sampler_reg, const IR::VectorReg addr_reg,
+                          bool gather) {
+    const auto& mimg = inst.control.mimg;
+    const auto flags = MimgModifierFlags(mimg.mod);
+
+    IR::TextureInstInfo info{};
+    info.is_depth.Assign(flags.test(MimgModifier::Pcf));
+    info.has_bias.Assign(flags.test(MimgModifier::LodBias));
+    info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
+    info.force_level0.Assign(flags.test(MimgModifier::Level0));
+    info.has_offset.Assign(flags.test(MimgModifier::Offset));
+    info.has_lod.Assign(flags.any(MimgModifier::Lod));
+    info.is_array.Assign(mimg.da);
+
+    if (gather) {
+        info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
+        info.is_gather.Assign(true);
+    } else {
+        info.has_derivatives.Assign(flags.test(MimgModifier::Derivative));
+    }
+
+    // Load first dword of T# and S#. We will use them as the handle that will guide resource
+    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
+    // binding index.
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
+
+    // Determine how many address registers need to be passed.
+    // The image type is unknown, so add all 4 possible base registers and resolve later.
+    int num_addr_regs = 4;
+    if (info.has_offset) {
+        ++num_addr_regs;
+    }
+    if (info.has_bias) {
+        ++num_addr_regs;
+    }
+    if (info.is_depth) {
+        ++num_addr_regs;
+    }
+    if (info.has_derivatives) {
+        // The image type is unknown, so add all 6 possible derivative registers and resolve later.
+        num_addr_regs += 6;
+    }
+
+    // Fetch all the address registers to pass in the IR instruction. There can be up to 13
+    // registers.
+    const auto get_addr_reg = [&](int index) -> IR::F32 {
+        if (index >= num_addr_regs) {
+            return ir.Imm32(0.f);
+        }
+        return ir.GetVectorReg<IR::F32>(addr_reg + index);
+    };
+    const IR::Value address1 =
+        ir.CompositeConstruct(get_addr_reg(0), get_addr_reg(1), get_addr_reg(2), get_addr_reg(3));
+    const IR::Value address2 =
+        ir.CompositeConstruct(get_addr_reg(4), get_addr_reg(5), get_addr_reg(6), get_addr_reg(7));
+    const IR::Value address3 =
+        ir.CompositeConstruct(get_addr_reg(8), get_addr_reg(9), get_addr_reg(10), get_addr_reg(11));
+    const IR::Value address4 = get_addr_reg(12);
+
+    // Issue the placeholder IR instruction.
+    IR::Value texel = ir.ImageSampleRaw(handle, address1, address2, address3, address4, info);
+    if (info.is_depth && !gather) {
+        // For non-gather depth sampling, only return a single value.
+        texel = ir.CompositeExtract(texel, 0);
+    }
+    return texel;
+}
+
 void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
     IR::VectorReg addr_reg{inst.src[0].code};
@@ -521,72 +591,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
     const auto flags = MimgModifierFlags(mimg.mod);
 
-    // Load first dword of T# and S#. We will use them as the handle that will guide resource
-    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
-    // binding index.
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
-
-    // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
-    // Set Architecture
-    const IR::U32 offset =
-        flags.test(MimgModifier::Offset) ? ir.GetVectorReg<IR::U32>(addr_reg++) : IR::U32{};
-    const IR::F32 bias =
-        flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-    const IR::F32 dref =
-        flags.test(MimgModifier::Pcf) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-    const IR::Value derivatives = [&] -> IR::Value {
-        if (!flags.test(MimgModifier::Derivative)) {
-            return {};
-        }
-        addr_reg = addr_reg + 4;
-        return ir.CompositeConstruct(
-            ir.GetVectorReg<IR::F32>(addr_reg - 4), ir.GetVectorReg<IR::F32>(addr_reg - 3),
-            ir.GetVectorReg<IR::F32>(addr_reg - 2), ir.GetVectorReg<IR::F32>(addr_reg - 1));
-    }();
-
-    // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
-    // Since these are at most 4 dwords, we load them into a single uvec4 and place them
-    // in coords field of the instruction. Then the resource tracking pass will patch the
-    // IR instruction to fill in lod_clamp field.
-    const IR::Value body = ir.CompositeConstruct(
-        ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
-        ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
-
-    // Derivatives are tricky because their number depends on the texture type which is located in
-    // T#. We don't have access to T# though until resource tracking pass. For now assume if
-    // derivatives are present, that a 2D image is bound.
-    const bool has_derivatives = flags.test(MimgModifier::Derivative);
-    const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
-
-    IR::TextureInstInfo info{};
-    info.is_depth.Assign(flags.test(MimgModifier::Pcf));
-    info.has_bias.Assign(flags.test(MimgModifier::LodBias));
-    info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
-    info.force_level0.Assign(flags.test(MimgModifier::Level0));
-    info.has_offset.Assign(flags.test(MimgModifier::Offset));
-    info.explicit_lod.Assign(explicit_lod);
-    info.has_derivatives.Assign(has_derivatives);
-    info.is_array.Assign(mimg.da);
-
-    // Issue IR instruction, leaving unknown fields blank to patch later.
-    const IR::Value texel = [&]() -> IR::Value {
-        if (has_derivatives) {
-            return ir.ImageGradient(handle, body, derivatives, offset, {}, info);
-        }
-        if (!flags.test(MimgModifier::Pcf)) {
-            if (explicit_lod) {
-                return ir.ImageSampleExplicitLod(handle, body, offset, info);
-            } else {
-                return ir.ImageSampleImplicitLod(handle, body, bias, offset, info);
-            }
-        }
-        if (explicit_lod) {
-            return ir.ImageSampleDrefExplicitLod(handle, body, dref, offset, info);
-        }
-        return ir.ImageSampleDrefImplicitLod(handle, body, dref, bias, offset, info);
-    }();
-
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false);
     for (u32 i = 0; i < 4; i++) {
         if (((mimg.dmask >> i) & 1) == 0) {
             continue;
@@ -609,60 +614,13 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
     const auto flags = MimgModifierFlags(mimg.mod);
 
-    // Load first dword of T# and S#. We will use them as the handle that will guide resource
-    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
-    // binding index.
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
-
-    // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
-    // Set Architecture
-    const IR::Value offset =
-        flags.test(MimgModifier::Offset) ? ir.GetVectorReg(addr_reg++) : IR::Value{};
-    const IR::F32 bias =
-        flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-    const IR::F32 dref =
-        flags.test(MimgModifier::Pcf) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-
-    // Derivatives are tricky because their number depends on the texture type which is located in
-    // T#. We don't have access to T# though until resource tracking pass. For now assume no
-    // derivatives are present, otherwise we don't know where coordinates are placed in the address
-    // stream.
-    ASSERT_MSG(!flags.test(MimgModifier::Derivative), "Derivative image instruction");
-
-    // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
-    // Since these are at most 4 dwords, we load them into a single uvec4 and place them
-    // in coords field of the instruction. Then the resource tracking pass will patch the
-    // IR instruction to fill in lod_clamp field.
-    const IR::Value body = ir.CompositeConstruct(
-        ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
-        ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
-
-    const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
-
-    IR::TextureInstInfo info{};
-    info.is_depth.Assign(flags.test(MimgModifier::Pcf));
-    info.has_bias.Assign(flags.test(MimgModifier::LodBias));
-    info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
-    info.force_level0.Assign(flags.test(MimgModifier::Level0));
-    info.has_offset.Assign(flags.test(MimgModifier::Offset));
-    // info.explicit_lod.Assign(explicit_lod);
-    info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
-    info.is_array.Assign(mimg.da);
-
-    // Issue IR instruction, leaving unknown fields blank to patch later.
-    const IR::Value texel = [&]() -> IR::Value {
-        const IR::F32 lod = flags.test(MimgModifier::Level0) ? ir.Imm32(0.f) : IR::F32{};
-        if (!flags.test(MimgModifier::Pcf)) {
-            return ir.ImageGather(handle, body, offset, info);
-        }
-        ASSERT(mimg.dmask & 1); // should be always 1st (R) component
-        return ir.ImageGatherDref(handle, body, offset, dref, info);
-    }();
-
     // For gather4 instructions dmask selects which component to read and must have
     // only one bit set to 1
     ASSERT_MSG(std::popcount(mimg.dmask) == 1, "Unexpected bits in gather dmask");
+    // should be always 1st (R) component for depth
+    ASSERT(!flags.test(MimgModifier::Pcf) || mimg.dmask & 1);
+
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, true);
     for (u32 i = 0; i < 4; i++) {
         const IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
         ir.SetVectorReg(dest_reg++, value);

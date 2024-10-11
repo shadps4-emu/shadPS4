@@ -4,11 +4,9 @@
 #pragma once
 
 #include <algorithm>
+#include <span>
 #include <boost/container/static_vector.hpp>
-
-#include "common/assert.h"
 #include "common/types.h"
-#include "frontend/copy_shader.h"
 #include "video_core/amdgpu/types.h"
 
 namespace Shader {
@@ -62,7 +60,8 @@ enum class VsOutput : u8 {
 using VsOutputMap = std::array<VsOutput, 4>;
 
 struct VertexRuntimeInfo {
-    boost::container::static_vector<VsOutputMap, 3> outputs;
+    u32 num_outputs;
+    std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
@@ -79,13 +78,13 @@ struct GeometryRuntimeInfo {
     u32 out_vertex_data_size{};
     AmdGpu::PrimitiveType in_primitive;
     GsOutputPrimTypes out_primitive;
-    CopyShaderData copy_data;
+    std::span<const u32> vs_copy;
+    u64 vs_copy_hash;
 
     bool operator==(const GeometryRuntimeInfo& other) const noexcept {
         return num_invocations && other.num_invocations &&
                output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
-               std::ranges::equal(out_primitive, other.out_primitive) &&
-               std::ranges::equal(copy_data.attr_map, other.copy_data.attr_map);
+               std::ranges::equal(out_primitive, other.out_primitive);
     }
 };
 
@@ -106,7 +105,8 @@ struct FragmentRuntimeInfo {
 
         auto operator<=>(const PsInput&) const noexcept = default;
     };
-    boost::container::static_vector<PsInput, 32> inputs;
+    u32 num_inputs;
+    std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
         AmdGpu::NumberFormat num_format;
         MrtSwizzle mrt_swizzle;
@@ -117,7 +117,9 @@ struct FragmentRuntimeInfo {
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
-               std::ranges::equal(inputs, other.inputs);
+               num_inputs == other.num_inputs &&
+               std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
+                                  other.inputs.begin() + num_inputs);
     }
 };
 
@@ -141,13 +143,20 @@ struct RuntimeInfo {
     u32 num_user_data;
     u32 num_input_vgprs;
     u32 num_allocated_vgprs;
-    ExportRuntimeInfo es_info;
-    VertexRuntimeInfo vs_info;
-    GeometryRuntimeInfo gs_info;
-    FragmentRuntimeInfo fs_info;
-    ComputeRuntimeInfo cs_info;
+    AmdGpu::FpDenormMode fp_denorm_mode32;
+    AmdGpu::FpRoundMode fp_round_mode32;
+    union {
+        ExportRuntimeInfo es_info;
+        VertexRuntimeInfo vs_info;
+        GeometryRuntimeInfo gs_info;
+        FragmentRuntimeInfo fs_info;
+        ComputeRuntimeInfo cs_info;
+    };
 
-    RuntimeInfo(Stage stage_) : stage{stage_} {}
+    RuntimeInfo(Stage stage_) {
+        memset(this, 0, sizeof(*this));
+        stage = stage_;
+    }
 
     bool operator==(const RuntimeInfo& other) const noexcept {
         switch (stage) {

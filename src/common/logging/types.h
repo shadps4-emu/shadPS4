@@ -85,6 +85,7 @@ enum class Class : u8 {
     Lib_GameLiveStreaming, ///< The LibSceGameLiveStreaming implementation
     Lib_Remoteplay,        ///< The LibSceRemotePlay implementation
     Lib_SharePlay,         ///< The LibSceSharePlay implemenation
+    Lib_Fiber,             ///< The LibSceFiber implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

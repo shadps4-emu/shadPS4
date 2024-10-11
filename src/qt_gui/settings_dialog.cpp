@@ -47,8 +47,6 @@ QStringList languageNames = {"Arabic",
 const QVector<int> languageIndexes = {21, 23, 14, 6,  18, 1,  12, 22, 2,  4, 25, 24, 29, 5,  0,
                                       9,  15, 16, 17, 7,  26, 8,  11, 20, 3, 13, 27, 10, 19, 28};
 
-QStringList hideCursorStates = {"Never", "Idle", "Always"};
-
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
@@ -69,7 +67,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     ui->consoleLanguageComboBox->setCompleter(completer);
 
-    ui->hideCursorComboBox->addItems(hideCursorStates);
+    ui->hideCursorComboBox->addItem(tr("Never"));
+    ui->hideCursorComboBox->addItem(tr("Idle"));
+    ui->hideCursorComboBox->addItem(tr("Always"));
+
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
+    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
 
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
@@ -101,15 +106,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
     ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
     ui->buttonBox->button(QDialogButtonBox::Close)->setText(tr("Close"));
-
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
-    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
-
-    QString currentBackButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
-    int index = ui->backButtonBehaviorComboBox->findData(currentBackButtonBehavior);
-    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 
     connect(ui->tabWidgetSettings, &QTabWidget::currentChanged, this,
             [this]() { ui->buttonBox->button(QDialogButtonBox::Close)->setFocus(); });
@@ -175,14 +171,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 rpc->shutdown();
             }
         });
-
-        connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                this, [this](int index) {
-                    if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
-                        QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
-                        Config::setBackButtonBehavior(data.toStdString());
-                    }
-                });
     }
 
     // Input TAB
@@ -195,6 +183,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->idleTimeoutSpinBox, &QSpinBox::valueChanged, this,
                 [](int index) { Config::setCursorHideTimeout(index); });
+
+        connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
+                        QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
+                        Config::setBackButtonBehavior(data.toStdString());
+                    }
+                });
     }
 
     // GPU TAB
@@ -218,6 +214,35 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->nullGpuCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setNullGpu(val); });
+    }
+
+    // PATH TAB
+    {
+        connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
+            const auto config_dir = Config::getGameInstallDirs();
+            QString file_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
+            auto file_path = Common::FS::PathFromQString(file_path_string);
+            if (!file_path.empty() && Config::addGameInstallDir(file_path)) {
+                QListWidgetItem* item = new QListWidgetItem(file_path_string);
+                ui->gameFoldersListWidget->addItem(item);
+            }
+        });
+
+        connect(ui->gameFoldersListWidget, &QListWidget::itemSelectionChanged, this, [this]() {
+            ui->removeFolderButton->setEnabled(
+                !ui->gameFoldersListWidget->selectedItems().isEmpty());
+        });
+
+        connect(ui->removeFolderButton, &QPushButton::clicked, this, [this]() {
+            QListWidgetItem* selected_item = ui->gameFoldersListWidget->currentItem();
+            QString item_path_string = selected_item ? selected_item->text() : QString();
+            if (!item_path_string.isEmpty()) {
+                auto file_path = Common::FS::PathFromQString(item_path_string);
+                Config::removeGameInstallDir(file_path);
+                delete selected_item;
+            }
+        });
     }
 
     // DEBUG TAB
@@ -248,6 +273,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->logFilter->installEventFilter(this);
         ui->updaterGroupBox->installEventFilter(this);
         ui->GUIgroupBox->installEventFilter(this);
+
+        // Input
+        ui->cursorGroupBox->installEventFilter(this);
+        ui->hideCursorGroupBox->installEventFilter(this);
+        ui->idleTimeoutGroupBox->installEventFilter(this);
         ui->backButtonBehaviorGroupBox->installEventFilter(this);
 
         // Graphics
@@ -257,6 +287,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
+
+        // Paths
+        ui->gameFoldersGroupBox->installEventFilter(this);
+        ui->gameFoldersListWidget->installEventFilter(this);
+        ui->addFolderButton->installEventFilter(this);
+        ui->removeFolderButton->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -308,9 +344,18 @@ void SettingsDialog::LoadValuesFromConfig() {
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
 
+    for (const auto& dir : Config::getGameInstallDirs()) {
+        QString path_string;
+        Common::FS::PathToQString(path_string, dir);
+        QListWidgetItem* item = new QListWidgetItem(path_string);
+        ui->gameFoldersListWidget->addItem(item);
+    }
+
     QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+
+    ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -384,6 +429,15 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("updaterGroupBox");
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
+    }
+
+    // Input
+    if (elementName == "cursorGroupBox") {
+        text = tr("cursorGroupBox");
+    } else if (elementName == "hideCursorGroupBox") {
+        text = tr("hideCursorGroupBox");
+    } else if (elementName == "idleTimeoutGroupBox") {
+        text = tr("idleTimeoutGroupBox");
     } else if (elementName == "backButtonBehaviorGroupBox") {
         text = tr("backButtonBehaviorGroupBox");
     }
@@ -401,6 +455,15 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("dumpShadersCheckBox");
     } else if (elementName == "nullGpuCheckBox") {
         text = tr("nullGpuCheckBox");
+    }
+
+    // Path
+    if (elementName == "gameFoldersGroupBox" || elementName == "gameFoldersListWidget") {
+        text = tr("gameFoldersBox");
+    } else if (elementName == "addFolderButton") {
+        text = tr("addFolderButton");
+    } else if (elementName == "removeFolderButton") {
+        text = tr("removeFolderButton");
     }
 
     // Debug

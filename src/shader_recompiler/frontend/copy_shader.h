@@ -16,6 +16,6 @@ struct CopyShaderData {
     u32 num_attrs{0};
 };
 
-CopyShaderData ParseCopyShader(const std::span<const u32>& code);
+CopyShaderData ParseCopyShader(std::span<const u32> code);
 
 } // namespace Shader
