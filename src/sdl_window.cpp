@@ -242,7 +242,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-    
+
     button_map.clear();
     axis_map.clear();
     int lineCount = 0;
@@ -687,8 +687,6 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         int ax = Input::GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
     }
-
-    
 }
 
 // if we don't do this, then if we activate a mod keyed input and let go of the mod key first,
@@ -700,7 +698,7 @@ void WindowSDL::updateModKeyedInputsManually(Frontend::KeyBinding& binding) {
         if (input.first.modifier != SDL_KMOD_NONE) {
             if ((input.first.modifier & binding.modifier) == 0) {
                 WindowSDL::updateButton(binding, input.second, false);
-            } else {
+            } else if(input.first.key == binding.key) {
                 mod_keyed_input_found = true;
             }
         }
@@ -709,14 +707,13 @@ void WindowSDL::updateModKeyedInputsManually(Frontend::KeyBinding& binding) {
         if (input.first.modifier != SDL_KMOD_NONE) {
             if((input.first.modifier & binding.modifier) == 0) {
                 controller->Axis(0, input.second.axis, Input::GetAxis(-0x80, 0x80, 0));
-            } else {
+            } else if(input.first.key == binding.key) {
                 mod_keyed_input_found = true;
             }
         }
     }
     // if both non mod keyed and mod keyed inputs are used and you press the key and then the mod key in a single frame,
     // both will activate but the simple one will not deactivate, unless i use this stupid looking workaround
-    //return; 
     if(!mod_keyed_input_found) return; // in this case the fix for the fix for the wrong update order is not needed
     for(auto input : button_map) {
         if(input.first.modifier == SDL_KMOD_NONE) {
