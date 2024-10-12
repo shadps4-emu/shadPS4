@@ -538,12 +538,12 @@ void load(const std::filesystem::path& path) {
         // TODO Migration code, after a major release this should be removed.
         auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         if (!old_game_install_dir.empty()) {
-            settings_install_dirs.emplace_back(std::filesystem::path{old_game_install_dir});
+            addGameInstallDir(std::filesystem::path{old_game_install_dir});
         } else {
             const auto install_dir_array =
                 toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
             for (const auto& dir : install_dir_array) {
-                settings_install_dirs.emplace_back(std::filesystem::path{dir});
+                addGameInstallDir(std::filesystem::path{dir});
             }
         }
 
