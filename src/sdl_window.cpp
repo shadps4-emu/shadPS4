@@ -261,6 +261,8 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
             std::cerr << "Invalid line format: " << line << std::endl;
             continue;
         }
+        // strip the ; that we put there so that the braindead clang-format is happy
+        line = line.substr(0, line.length() - 1);
 
         std::string controller_input = line.substr(0, equal_pos);
         std::string kbm_input = line.substr(equal_pos + 1);
