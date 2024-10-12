@@ -441,9 +441,9 @@ void WindowSDL::waitEvent() {
         break;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer); // this is intentional passthrough
     case SDL_EVENT_MOUSE_BUTTON_UP:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer); // this is intentional passthrough
         onKeyPress(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
