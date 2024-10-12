@@ -10,10 +10,10 @@
 #ifdef ENABLE_QT_GUI
 #include <QtCore>
 #endif
-#include "common/memory_patcher.h"
 #include "common/assert.h"
 #include "common/discord_rpc_handler.h"
 #include "common/elf_info.h"
+#include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -37,7 +37,6 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
-
 
 Frontend::WindowSDL* g_window = nullptr;
 
