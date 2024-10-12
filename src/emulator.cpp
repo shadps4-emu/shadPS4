@@ -9,8 +9,8 @@
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
 #include <QtCore>
-#include "common/memory_patcher.h"
 #endif
+#include "common/memory_patcher.h"
 #include "common/assert.h"
 #include "common/discord_rpc_handler.h"
 #include "common/elf_info.h"
@@ -37,6 +37,7 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+
 
 Frontend::WindowSDL* g_window = nullptr;
 
