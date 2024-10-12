@@ -362,15 +362,30 @@ void SettingsDialog::LoadValuesFromConfig() {
 void SettingsDialog::InitializeEmulatorLanguages() {
     QDirIterator it(QStringLiteral(":/translations"), QDirIterator::NoIteratorFlags);
 
-    int idx = 0;
+    QVector<QPair<QString, QString>> languagesList;
+
     while (it.hasNext()) {
         QString locale = it.next();
         locale.truncate(locale.lastIndexOf(QLatin1Char{'.'}));
         locale.remove(0, locale.lastIndexOf(QLatin1Char{'/'}) + 1);
         const QString lang = QLocale::languageToString(QLocale(locale).language());
         const QString country = QLocale::territoryToString(QLocale(locale).territory());
-        ui->emulatorLanguageComboBox->addItem(QStringLiteral("%1 (%2)").arg(lang, country), locale);
 
+        QString displayName = QStringLiteral("%1 (%2)").arg(lang, country);
+        languagesList.append(qMakePair(locale, displayName));
+    }
+
+    std::sort(languagesList.begin(), languagesList.end(),
+              [](const QPair<QString, QString>& a, const QPair<QString, QString>& b) {
+                  return a.second < b.second;
+              });
+
+    int idx = 0;
+    for (const auto& pair : languagesList) {
+        const QString& locale = pair.first;
+        const QString& displayName = pair.second;
+
+        ui->emulatorLanguageComboBox->addItem(displayName, locale);
         languages[locale.toStdString()] = idx;
         idx++;
     }
