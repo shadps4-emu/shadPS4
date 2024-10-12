@@ -22,6 +22,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 - A processor with at least 4 cores and 6 threads
 - Above 2.5 GHz frequency
+- required support AVX2 extension or Rosetta 2 on ARM
 
 ### GPU
 
