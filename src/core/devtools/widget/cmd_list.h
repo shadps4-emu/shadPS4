@@ -5,13 +5,14 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <imgui.h>
 
+#include "common.h"
 #include "common/types.h"
 #include "imgui_memory_editor.h"
 #include "reg_view.h"
-#include "types.h"
 
 namespace AmdGpu {
 union PM4Type3Header;
@@ -36,7 +37,7 @@ void ParseZInfo(u32 value, bool begin_table = true);
 
 class CmdListViewer {
 
-    const FrameDumpViewer* parent;
+    DebugStateType::FrameDump* frame_dump;
 
     uintptr_t base_addr;
     std::string name;
@@ -49,22 +50,22 @@ class CmdListViewer {
 
     int batch_bp{-1};
     int vqid{255};
-    s32 highlight_batch{-1};
+    u32 highlight_batch{~0u};
 
     RegView batch_view;
     std::vector<RegView> extra_batch_view;
 
-    void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetContextReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetShReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetContextReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetShReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* body);
 
 public:
     static void LoadConfig(const char* line);
     static void SerializeConfig(ImGuiTextBuffer* buf);
 
-    explicit CmdListViewer(const FrameDumpViewer* parent, const std::vector<u32>& cmd_list,
+    explicit CmdListViewer(DebugStateType::FrameDump* frame_dump, const std::vector<u32>& cmd_list,
                            uintptr_t base_addr = 0, std::string name = "");
 
     void Draw();

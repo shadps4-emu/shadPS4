@@ -8,7 +8,7 @@
 #include <magic_enum.hpp>
 #include <stdio.h>
 
-#include "cmd_list.h"
+#include "common.h"
 #include "common/io_file.h"
 #include "core/devtools/options.h"
 #include "imgui_internal.h"
@@ -19,40 +19,8 @@
 #define pclose _pclose
 #endif
 
-#include <iostream>
-
 using namespace ImGui;
 using magic_enum::enum_name;
-
-template <typename... Args>
-void DrawRow(const char* text, const char* fmt, Args... args) {
-    TableNextColumn();
-    TextUnformatted(text);
-    TableNextColumn();
-    char buf[128];
-    snprintf(buf, sizeof(buf), fmt, args...);
-    TextUnformatted(buf);
-}
-
-template <typename V, typename... Extra>
-void DrawMultipleRow(const char* text, const char* fmt, V arg, Extra&&... extra_args) {
-    DrawRow(text, fmt, arg);
-    if constexpr (sizeof...(extra_args) > 0) {
-        DrawMultipleRow(std::forward<Extra>(extra_args)...);
-    }
-}
-
-// Must end with EndTable
-template <typename... Args>
-static void DoTooltip(const char* str_id, Args&&... args) {
-    if (BeginTooltip()) {
-        if (BeginTable(str_id, 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            DrawMultipleRow(std::forward<Args>(args)...);
-            EndTable();
-        }
-        EndTooltip();
-    }
-}
 
 static std::optional<std::string> exec_cli(const char* cli) {
     std::array<char, 64> buffer{};
@@ -132,9 +100,9 @@ void RegView::DrawRegs() {
 
     if (BeginTable("REGS", 2, ImGuiTableFlags_Borders)) {
 
-        auto& scissor = regs.screen_scissor;
-        DrawRow("Scissor", "(%d, %d, %d, %d)", scissor.top_left_x, scissor.top_left_y,
-                scissor.bottom_right_x, scissor.bottom_right_y);
+        auto& s = regs.screen_scissor;
+        DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
+                s.bottom_right_y);
 
         auto cc_mode = regs.color_control.mode.Value();
         DrawRow("Color control", "%X (%s)", cc_mode, enum_name(cc_mode).data());
@@ -147,77 +115,40 @@ void RegView::DrawRegs() {
 
             const auto& buffer = regs.color_buffers[cb];
 
-            bool open = opened_cb[cb];
+            const auto open_new_popup = [&] {
+                auto& pop = extra_reg_popup.emplace_back();
+                pop.SetData(buffer, batch_id, cb);
+                pop.open = true;
+            };
+
+            Text("Color buffer %d", cb);
+            TableNextColumn();
             if (!buffer || !regs.color_target_mask.GetMask(cb)) {
-                Text("Color buffer %d", cb);
-                TableNextColumn();
                 TextUnformatted("N/A");
+            } else if (last_selected_cb == cb && default_reg_popup.open) {
+                if (SmallButton("x")) {
+                    if (GetIO().KeyShift) {
+                        open_new_popup();
+                    } else {
+                        default_reg_popup.open = false;
+                    }
+                }
             } else {
-                SetNextItemOpen(open);
-                bool keep_open = TreeNode("cb", "Color buffer %d", cb);
-                open = opened_cb[cb] = keep_open;
-            }
-
-            if (open) {
-                TableNextRow();
-
-                // clang-format off
-
-                DrawMultipleRow(
-                    "BASE_ADDR",            "%X", buffer.base_address,
-                    "PITCH.TILE_MAX",       "%X", buffer.pitch.tile_max,
-                    "PITCH.FMASK_TILE_MAX", "%X", buffer.pitch.fmask_tile_max,
-                    "SLICE.TILE_MAX",       "%X", buffer.slice.tile_max,
-                    "VIEW.SLICE_START",     "%X", buffer.view.slice_start,
-                    "VIEW.SLICE_MAX",       "%X", buffer.view.slice_max
-                );
-
-                TableNextRow();
-                TableNextColumn();
-                if (TreeNode("Color0Info")) {
-                    TableNextRow();
-                    TableNextColumn();
-                    ParseColor0Info(buffer.info.u32all, false);
-                    TreePop();
+                if (SmallButton("->")) {
+                    if (GetIO().KeyShift) {
+                        open_new_popup();
+                    } else {
+                        last_selected_cb = cb;
+                        default_reg_popup.SetData(buffer, batch_id, cb);
+                        if (!default_reg_popup.open) {
+                            default_reg_popup.open = true;
+                            auto popup_pos =
+                                GetCurrentContext()->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
+                            SetNextWindowPos(popup_pos, ImGuiCond_Always);
+                            default_reg_popup.Draw();
+                        }
+                    }
                 }
-
-                TableNextRow();
-                TableNextColumn();
-                if (TreeNode("Color0Attrib")) {
-                    TableNextRow();
-                    TableNextColumn();
-                    ParseColor0Attrib(buffer.attrib.u32all, false);
-                    TreePop();
-                }
-
-                DrawMultipleRow(
-                    "CMASK_BASE_EXT",       "%X", buffer.cmask_base_address,
-                    "FMASK_BASE_EXT",       "%X", buffer.fmask_base_address,
-                    "FMASK_SLICE.TILE_MAX", "%X", buffer.fmask_slice.tile_max,
-                    "CLEAR_WORD0",          "%X", buffer.clear_word0,
-                    "CLEAR_WORD1",          "%X", buffer.clear_word1
-                );
-
-                DrawMultipleRow(
-                    "Pitch()",             "%X", buffer.Pitch(),
-                    "Height()",            "%X", buffer.Height(),
-                    "Address()",           "%X", buffer.Address(),
-                    "CmaskAddress",        "%X", buffer.CmaskAddress(),
-                    "FmaskAddress",        "%X", buffer.FmaskAddress(),
-                    "NumSamples()",        "%X", buffer.NumSamples(),
-                    "NumSlices()",         "%X", buffer.NumSlices(),
-                    "GetColorSliceSize()", "%X", buffer.GetColorSliceSize()
-                );
-
-                auto tiling_mode = buffer.GetTilingMode();
-                auto num_format = buffer.NumFormat();
-                DrawRow("GetTilingMode()", "%X (%s)", tiling_mode, enum_name(tiling_mode).data());
-                DrawRow("IsTiled()",       "%X",      buffer.IsTiled());
-                DrawRow("NumFormat()",     "%X (%s)", num_format, enum_name(num_format).data());
-
-                // clang-format on
-
-                TreePop();
             }
 
             PopID();
@@ -262,18 +193,20 @@ RegView::RegView() {
     DockBuilderFinish(root_dock_id);
 }
 
-void RegView::SetData(DebugStateType::RegDump data) {
+void RegView::SetData(DebugStateType::RegDump data, u32 batch_id) {
     this->data = std::move(data);
+    this->batch_id = batch_id;
     // clear cache
     selected_shader = -1;
-    opened_cb.fill(false);
     shader_decomp.clear();
+    default_reg_popup.open = false;
+    extra_reg_popup.clear();
 }
 
 void RegView::Draw() {
 
     char name[128];
-    snprintf(name, sizeof(name), "BatchView###reg_dump_%d", id);
+    snprintf(name, sizeof(name), "BatchView %u###reg_dump_%d", batch_id, id);
     if (Begin(name, &open, ImGuiWindowFlags_MenuBar)) {
         const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
 
@@ -345,6 +278,18 @@ void RegView::Draw() {
             DrawRegs();
         }
         End();
+    }
+
+    if (default_reg_popup.open) {
+        default_reg_popup.Draw();
+    }
+    for (auto it = extra_reg_popup.begin(); it != extra_reg_popup.end();) {
+        if (!it->open) {
+            it = extra_reg_popup.erase(it);
+            continue;
+        }
+        it->Draw();
+        ++it;
     }
 }
 

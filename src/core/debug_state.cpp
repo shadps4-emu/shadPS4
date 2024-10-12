@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <imgui.h>
+
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "common/singleton.h"
 #include "debug_state.h"
-#include "devtools/widget/types.h"
+#include "devtools/widget/common.h"
 #include "libraries/kernel/time_management.h"
 #include "libraries/system/msgdialog.h"
 #include "video_core/amdgpu/pm4_cmds.h"

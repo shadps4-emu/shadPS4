@@ -4,6 +4,7 @@
 #pragma once
 #include "core/debug_state.h"
 #include "imgui_memory_editor.h"
+#include "reg_popup.h"
 #include "text_editor.h"
 
 namespace Core::Devtools::Widget {
@@ -16,13 +17,15 @@ struct ShaderCache {
 
 class RegView {
     int id;
-    bool first_render = true;
 
     DebugStateType::RegDump data;
+    u32 batch_id{~0u};
 
     std::unordered_map<int, ShaderCache> shader_decomp;
     int selected_shader{-1};
-    std::array<bool, AmdGpu::Liverpool::NumColorBuffers> opened_cb{};
+    RegPopup default_reg_popup;
+    int last_selected_cb{-1};
+    std::vector<RegPopup> extra_reg_popup;
 
     bool show_registers{true};
     bool show_user_data{true};
@@ -39,7 +42,7 @@ public:
 
     RegView();
 
-    void SetData(DebugStateType::RegDump data);
+    void SetData(DebugStateType::RegDump data, u32 batch_id);
 
     void Draw();
 };

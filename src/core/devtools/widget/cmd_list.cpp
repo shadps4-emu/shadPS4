@@ -63,6 +63,21 @@ static HdrType GetNext(HdrType this_pm4, uint32_t n) {
     return curr_pm4;
 }
 
+static bool IsDrawCall(AmdGpu::PM4ItOpcode opcode) {
+    using AmdGpu::PM4ItOpcode;
+    switch (opcode) {
+    case PM4ItOpcode::DispatchDirect:
+    case PM4ItOpcode::DispatchIndirect:
+    case PM4ItOpcode::DrawIndex2:
+    case PM4ItOpcode::DrawIndexAuto:
+    case PM4ItOpcode::DrawIndexOffset2:
+    case PM4ItOpcode::DrawIndexIndirect:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void ParsePolygonControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<AmdGpu::Liverpool::PolygonControl const&>(value);
 
@@ -888,7 +903,7 @@ void CmdListViewer::OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* b
     Separator();
     BeginGroup();
 
-    auto const* pkt = reinterpret_cast<AmdGpu::PM4CmdSetBase const*>(header);
+    // auto const* pkt = reinterpret_cast<AmdGpu::PM4CmdSetBase const*>(header);
     Text("BASE_INDEX: %08X", body[0]);
     Text("ADDRESS0  : %08X", body[1]);
     Text("ADDRESS1  : %08X", body[2]);
@@ -1077,9 +1092,10 @@ void CmdListViewer::OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* 
     EndGroup();
 }
 
-CmdListViewer::CmdListViewer(const FrameDumpViewer* parent, const std::vector<u32>& cmd_list,
-                             uintptr_t base_addr, std::string name)
-    : parent(parent), base_addr(base_addr), name(std::move(name)) {
+CmdListViewer::CmdListViewer(DebugStateType::FrameDump* _frame_dump,
+                             const std::vector<u32>& cmd_list, uintptr_t _base_addr,
+                             std::string _name)
+    : frame_dump(_frame_dump), base_addr(_base_addr), name(std::move(_name)) {
     using namespace AmdGpu;
 
     cmdb_addr = (uintptr_t)cmd_list.data();
@@ -1131,11 +1147,7 @@ CmdListViewer::CmdListViewer(const FrameDumpViewer* parent, const std::vector<u3
                 }
             }
 
-            if (opcode == PM4ItOpcode::DispatchDirect || opcode == PM4ItOpcode::DispatchIndirect ||
-                opcode == PM4ItOpcode::DrawIndex2 || opcode == PM4ItOpcode::DrawIndexAuto ||
-                opcode == PM4ItOpcode::DrawIndexOffset2 || opcode == PM4ItOpcode::DrawIndexIndirect
-                // ...
-            ) {
+            if (IsDrawCall(opcode)) {
                 // All these commands are terminated by NOP at the end, so
                 // it is safe to skip it to be even with CP
                 // next_pm4_hdr = get_next(next_pm4_hdr, 1);
@@ -1179,6 +1191,34 @@ CmdListViewer::CmdListViewer(const FrameDumpViewer* parent, const std::vector<u3
 void CmdListViewer::Draw() {
     const auto& ctx = *GetCurrentContext();
 
+    if (batch_view.open) {
+        batch_view.Draw();
+    }
+    for (auto it = extra_batch_view.begin(); it != extra_batch_view.end();) {
+        if (!it->open) {
+            it = extra_batch_view.erase(it);
+            continue;
+        }
+        it->Draw();
+        ++it;
+    }
+
+    if (cmdb_view.Open) {
+        MemoryEditor::Sizes s;
+        cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);
+        SetNextWindowSize({s.WindowWidth, s.WindowWidth * 0.6f}, ImGuiCond_FirstUseEver);
+        SetNextWindowSizeConstraints({0.0f}, {s.WindowWidth, FLT_MAX});
+        if (Begin(cmdb_view_name.c_str(), &cmdb_view.Open,
+                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
+            cmdb_view.DrawContents((void*)cmdb_addr, cmdb_size, base_addr);
+            if (cmdb_view.ContentsWidthChanged) {
+                cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);
+                SetWindowSize({s.WindowWidth, s.WindowWidth * 0.6f});
+            }
+        }
+        End();
+    }
+
     PushID(name.c_str());
     if (BeginChild("cmd_queue", {})) {
 
@@ -1213,10 +1253,17 @@ void CmdListViewer::Draw() {
             }
 
             u32 batch_id = ~0u;
-            s32 current_highlight_batch = -1;
+            u32 current_highlight_batch = ~0u;
 
+            int id = 0;
+            PushID(0);
             for (const auto& event : events) {
-                auto processed_size = 0ull;
+                PopID();
+                PushID(id++);
+
+                if (std::holds_alternative<BatchBegin>(event)) {
+                    batch_id = std::get<BatchBegin>(event).id;
+                }
 
                 if (show_markers) {
                     if (std::holds_alternative<PushMarker>(event)) {
@@ -1241,11 +1288,6 @@ void CmdListViewer::Draw() {
                     if (tree_depth_show < tree_depth) {
                         continue;
                     }
-                }
-
-                if (std::holds_alternative<BatchBegin>(event)) {
-                    batch_id = std::get<BatchBegin>(event).id;
-                    continue;
                 }
 
                 if (!std::holds_alternative<BatchInfo>(event)) {
@@ -1274,15 +1316,35 @@ void CmdListViewer::Draw() {
                     PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 0.7f, 0.7f, 1.0f});
                 }
 
-                if (!group_batches || CollapsingHeader(batch_hdr)) {
+                const auto open_batch_view = [&, this] {
+                    if (frame_dump->regs.contains(batch.command_addr)) {
+                        auto data = frame_dump->regs.at(batch.command_addr);
+                        if (GetIO().KeyShift) {
+                            auto& pop = extra_batch_view.emplace_back();
+                            pop.SetData(data, batch_id);
+                            pop.open = true;
+                        } else {
+                            batch_view.SetData(data, batch_id);
+                            batch_view.open = true;
+                        }
+                    }
+                };
+
+                bool show_batch_content = true;
+
+                if (group_batches) {
+                    show_batch_content =
+                        CollapsingHeader(batch_hdr, ImGuiTreeNodeFlags_AllowOverlap);
+                    SameLine(GetContentRegionAvail().x - 40.0f);
+                    if (Button("->", {40.0f, 0.0f})) {
+                        open_batch_view();
+                    }
+                }
+
+                if (show_batch_content) {
+                    auto processed_size = 0ull;
                     auto bb = ctx.LastItemData.Rect;
                     if (group_batches) {
-                        if (IsItemToggledOpen()) {
-                            if (parent->frame_dump.regs.contains(batch.command_addr)) {
-                                batch_view.SetData(parent->frame_dump.regs.at(batch.command_addr));
-                                batch_view.open = true;
-                            }
-                        }
                         Indent();
                     }
                     auto const batch_sz = batch.end_addr - batch.start_addr;
@@ -1300,9 +1362,23 @@ void CmdListViewer::Draw() {
                                     cmdb_addr + batch.start_addr + processed_size,
                                     Gcn::GetOpCodeName((u32)op));
 
-                            if (TreeNode(header_name)) {
-                                const bool just_opened = IsItemToggledOpen();
-                                if (just_opened) {
+                            bool open_pm4 = TreeNode(header_name);
+                            if (!group_batches) {
+                                if (IsDrawCall(op)) {
+                                    SameLine(GetContentRegionAvail().x - 40.0f);
+                                    if (Button("->", {40.0f, 0.0f})) {
+                                        open_batch_view();
+                                    }
+                                }
+                                if (IsItemHovered() && ctx.IO.KeyShift) {
+                                    if (BeginTooltip()) {
+                                        Text("Batch %d", batch_id);
+                                        EndTooltip();
+                                    }
+                                }
+                            }
+                            if (open_pm4) {
+                                if (IsItemToggledOpen()) {
                                     // Editor
                                     cmdb_view.GotoAddrAndHighlight(
                                         reinterpret_cast<size_t>(pm4_hdr) - cmdb_addr,
@@ -1383,6 +1459,7 @@ void CmdListViewer::Draw() {
                     Separator();
                 }
             }
+            PopID();
 
             highlight_batch = current_highlight_batch;
 
@@ -1391,34 +1468,6 @@ void CmdListViewer::Draw() {
     }
     EndChild();
     PopID();
-
-    if (cmdb_view.Open) {
-        MemoryEditor::Sizes s;
-        cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);
-        SetNextWindowSize({s.WindowWidth, s.WindowWidth * 0.6f}, ImGuiCond_FirstUseEver);
-        SetNextWindowSizeConstraints({0.0f}, {s.WindowWidth, FLT_MAX});
-        if (Begin(cmdb_view_name.c_str(), &cmdb_view.Open,
-                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
-            cmdb_view.DrawContents((void*)cmdb_addr, cmdb_size, base_addr);
-            if (cmdb_view.ContentsWidthChanged) {
-                cmdb_view.CalcSizes(s, cmdb_size, cmdb_addr);
-                SetWindowSize({s.WindowWidth, s.WindowWidth * 0.6f});
-            }
-        }
-        End();
-    }
-
-    if (batch_view.open) {
-        batch_view.Draw();
-    }
-    for (auto it = extra_batch_view.begin(); it != extra_batch_view.end(); ++it) {
-        if (!it->open) {
-            it = extra_batch_view.erase(it);
-            continue;
-        }
-        it->Draw();
-        ++it;
-    }
 }
 
 } // namespace Core::Devtools::Widget

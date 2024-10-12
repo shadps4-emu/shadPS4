@@ -36,7 +36,8 @@ static std::array<char, 3> small_int_to_str(const s32 i) {
 
 namespace Core::Devtools::Widget {
 
-FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_frame_dump)) {
+FrameDumpViewer::FrameDumpViewer(const FrameDump& _frame_dump)
+    : frame_dump(std::make_shared<FrameDump>(_frame_dump)) {
     static int unique_id = 0;
     id = unique_id++;
 
@@ -44,15 +45,14 @@ FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_
     selected_submit_num = 0;
     selected_queue_num2 = 0;
 
-    cmd_list_viewer.reserve(frame_dump.queues.size());
-    for (const auto& cmd : frame_dump.queues) {
+    cmd_list_viewer.reserve(frame_dump->queues.size());
+    for (const auto& cmd : frame_dump->queues) {
         const auto fname =
             fmt::format("{}_{}_{:02}_{:02}", id, magic_enum::enum_name(selected_queue_type),
                         selected_submit_num, selected_queue_num2);
-        cmd_list_viewer.emplace_back(this, cmd.data, cmd.base_addr, fname);
-        if (cmd.type == QueueType::dcb && cmd.submit_num == selected_submit_num &&
-            cmd.num2 == selected_queue_num2) {
-            selected_cmd = cmd_list_viewer.size() - 1;
+        cmd_list_viewer.emplace_back(frame_dump.get(), cmd.data, cmd.base_addr, fname);
+        if (cmd.type == QueueType::dcb && cmd.submit_num == 0 && cmd.num2 == 0) {
+            selected_cmd = static_cast<s32>(cmd_list_viewer.size() - 1);
         }
     }
 }
@@ -96,7 +96,7 @@ void FrameDumpViewer::Draw() {
                                            magic_enum::enum_name(selected_queue_type),
                                            selected_submit_num, selected_queue_num2);
             Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Write);
-            auto& data = frame_dump.queues[selected_cmd].data;
+            const auto& data = frame_dump->queues[selected_cmd].data;
             if (file.IsOpen()) {
                 DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
                 file.Write(data);
@@ -112,7 +112,7 @@ void FrameDumpViewer::Draw() {
         if (BeginCombo("##select_submit_num", small_int_to_str(selected_submit_num).data(),
                        ImGuiComboFlags_WidthFitPreview)) {
             std::array<bool, 32> available_submits{};
-            for (const auto& cmd : frame_dump.queues) {
+            for (const auto& cmd : frame_dump->queues) {
                 if (cmd.type == selected_queue_type) {
                     available_submits[cmd.submit_num] = true;
                 }
@@ -137,7 +137,7 @@ void FrameDumpViewer::Draw() {
         if (BeginCombo("##select_queue_num2", small_int_to_str(selected_queue_num2).data(),
                        ImGuiComboFlags_WidthFitPreview)) {
             std::array<bool, 32> available_queues{};
-            for (const auto& cmd : frame_dump.queues) {
+            for (const auto& cmd : frame_dump->queues) {
                 if (cmd.type == selected_queue_type && cmd.submit_num == selected_submit_num) {
                     available_queues[cmd.num2] = true;
                 }
@@ -152,12 +152,12 @@ void FrameDumpViewer::Draw() {
                 }
             }
             if (selected) {
-                const auto it = std::ranges::find_if(frame_dump.queues, [&](const auto& cmd) {
+                const auto it = std::ranges::find_if(frame_dump->queues, [&](const auto& cmd) {
                     return cmd.type == selected_queue_type &&
                            cmd.submit_num == selected_submit_num && cmd.num2 == selected_queue_num2;
                 });
-                if (it != frame_dump.queues.end()) {
-                    selected_cmd = std::distance(frame_dump.queues.begin(), it);
+                if (it != frame_dump->queues.end()) {
+                    selected_cmd = static_cast<s32>(std::distance(frame_dump->queues.begin(), it));
                 }
             }
             EndCombo();
