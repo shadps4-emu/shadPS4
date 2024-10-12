@@ -18,7 +18,6 @@ class GameController;
 
 namespace Frontend {
 
-
 class KeyBinding {
 public:
     Uint32 key;
@@ -52,8 +51,6 @@ struct WindowSystemInfo {
     WindowSystemType type = WindowSystemType::Headless;
 };
 
-
-
 class WindowSDL {
 public:
     explicit WindowSDL(s32 width, s32 height, Input::GameController* controller,
@@ -84,7 +81,6 @@ public:
     void updateMouse();
 
 private:
-
     void onResize();
     void onKeyPress(const SDL_Event* event);
     void onGamepadEvent(const SDL_Event* event);
