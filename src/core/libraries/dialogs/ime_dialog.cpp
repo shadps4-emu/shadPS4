@@ -175,7 +175,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     }
 
     if (extended) {
-        if (magic_enum::enum_contains(extended->priority)) {
+        if (!magic_enum::enum_contains(extended->priority)) {
             LOG_INFO(Lib_ImeDialog, "Invalid extended->priority");
             return Error::INVALID_EXTENDED;
         }
