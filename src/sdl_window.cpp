@@ -1,10 +1,21 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+// new includes
+#include <map>
+//#include <unordered_map>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
+#include <SDL3/SDL_timer.h>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/version.h"
@@ -19,6 +30,7 @@
 #endif
 
 namespace Frontend {
+using Libraries::Pad::OrbisPadButtonDataOffset;
 
 bool KeyBinding::operator<(const KeyBinding& other) const {
     return std::tie(key, modifier) < std::tie(other.key, other.modifier);
@@ -390,19 +402,20 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.type = WindowSystemType::Metal;
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
-<<<<<<< HEAD
-=======
     // initialize kbm controls
     parseInputConfig("user/keyboardInputConfig.ini");
->>>>>>> f031c7e1 (added support for loading keyboard config from file)
 }
 
 WindowSDL::~WindowSDL() = default;
-
+Uint32 mouse_polling_id = 0;
 void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event;
-
+    if(mouse_polling_id == 0) {
+        // mouse polling
+        //std::cout << "Why are we adding new timers?\n\n";
+        mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
+    }
     if (!SDL_WaitEvent(&event)) {
         return;
     }
@@ -410,6 +423,10 @@ void WindowSDL::waitEvent() {
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
+    SDL_Event* event_copy = new SDL_Event();
+    *event_copy = event;
+    std::pair<WindowSDL*, SDL_Event*>* payload_to_timer = 
+                            new std::pair<WindowSDL*, SDL_Event*>(this, event_copy);
 
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
@@ -424,6 +441,9 @@ void WindowSDL::waitEvent() {
         break;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
+        SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer); // this is intentional passthrough
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
         onKeyPress(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
@@ -443,203 +463,50 @@ void WindowSDL::waitEvent() {
         break;
     }
 }
-
 void WindowSDL::onResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();
 }
 
-void WindowSDL::onKeyPress(const SDL_Event* event) {
-    using Libraries::Pad::OrbisPadButtonDataOffset;
+void WindowSDL::updateButton(KeyBinding& binding, u32 button, bool is_pressed) {
+    float x;
+    Input::Axis axis;
+    switch(button) {
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2:
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2:
+        axis = (button == OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2) ? 
+                        Input::Axis::TriggerRight : Input::Axis::TriggerLeft;
+        //int axis_value = is_pressed ? 255 : 0;
+        //int ax = Input::GetAxis(0, 0x80, is_pressed ? 255 : 0);
+        controller->Axis(0, axis, Input::GetAxis(0, 0x80, is_pressed ? 255 : 0));
+        break;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD:
+        x = Config::getBackButtonBehavior() == "left" ? 0.25f
+                : Config::getBackButtonBehavior() == "right" ? 0.75f : 0.5f;
+        controller->SetTouchpadState(0, true, x, 0.5f);
+        //button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+        controller->CheckButton(0, button, is_pressed);
+        break;
+    default: // is a normal key
+        controller->CheckButton(0, button, is_pressed);
+        break;
+    }
+}
 
-#ifdef __APPLE__
-    // Use keys that are more friendly for keyboards without a keypad.
-    // Once there are key binding options this won't be necessary.
-    constexpr SDL_Keycode CrossKey = SDLK_N;
-    constexpr SDL_Keycode CircleKey = SDLK_B;
-    constexpr SDL_Keycode SquareKey = SDLK_V;
-    constexpr SDL_Keycode TriangleKey = SDLK_C;
-#else
-    constexpr SDL_Keycode CrossKey = SDLK_KP_2;
-    constexpr SDL_Keycode CircleKey = SDLK_KP_6;
-    constexpr SDL_Keycode SquareKey = SDLK_KP_4;
-    constexpr SDL_Keycode TriangleKey = SDLK_KP_8;
-#endif
+void WindowSDL::onKeyPress(const SDL_Event* event) {
+    // Extract key and modifier
+    KeyBinding binding = {0, SDL_GetModState()};
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+        binding.key = event->key.key;  // For keyboard events
+    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        binding.key = event->button.button;    // For mouse button events
+    } else {
+        std::cout << "Bro something is very wrong with the waitevent switch case as this is the only 4 possible cases\n";
+        return;
+    }
 
     u32 button = 0;
     Input::Axis axis = Input::Axis::AxisMax;
-<<<<<<< HEAD
-    int axisvalue = 0;
-    int ax = 0;
-    std::string backButtonBehavior = Config::getBackButtonBehavior();
-    switch (event->key.key) {
-    case SDLK_UP:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
-        break;
-    case SDLK_DOWN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
-        break;
-    case SDLK_LEFT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
-        break;
-    case SDLK_RIGHT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
-        break;
-    case TriangleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
-        break;
-    case CircleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
-        break;
-    case CrossKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
-        break;
-    case SquareKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
-        break;
-    case SDLK_RETURN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
-        break;
-    case SDLK_A:
-        axis = Input::Axis::LeftX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_D:
-        axis = Input::Axis::LeftX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_W:
-        axis = Input::Axis::LeftY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_S:
-        axis = Input::Axis::LeftY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_J:
-        axis = Input::Axis::RightX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_L:
-        axis = Input::Axis::RightX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_I:
-        axis = Input::Axis::RightY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_K:
-        axis = Input::Axis::RightY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_X:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
-        break;
-    case SDLK_M:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
-        break;
-    case SDLK_Q:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
-        break;
-    case SDLK_U:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
-        break;
-    case SDLK_E:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
-        axis = Input::Axis::TriggerLeft;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 255;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(0, 0x80, axisvalue);
-        break;
-    case SDLK_O:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
-        axis = Input::Axis::TriggerRight;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 255;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(0, 0x80, axisvalue);
-        break;
-    case SDLK_SPACE:
-        if (backButtonBehavior != "none") {
-            float x = backButtonBehavior == "left" ? 0.25f
-                                                   : (backButtonBehavior == "right" ? 0.75f : 0.5f);
-            // trigger a touchpad event so that the touchpad emulation for back button works
-            controller->SetTouchpadState(0, true, x, 0.5f);
-            button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
-        } else {
-            button = 0;
-        }
-        break;
-    case SDLK_F11:
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            {
-                SDL_WindowFlags flag = SDL_GetWindowFlags(window);
-                bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
-                SDL_SetWindowFullscreen(window, !is_fullscreen);
-            }
-        }
-        break;
-    case SDLK_F12:
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            // Trigger rdoc capture
-            VideoCore::TriggerCapture();
-        }
-        break;
-    default:
-        break;
-    }
-    if (button != 0) {
-        controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
-    }
-    if (axis != Input::Axis::AxisMax) {
-        controller->Axis(0, axis, ax);
-    }
-=======
     int axis_value = 0;
 
     // Handle window controls outside of the input maps
@@ -727,7 +594,6 @@ void WindowSDL::updateModKeyedInputsManually(Frontend::KeyBinding& binding) {
     }
     // also this sometimes leads to janky inputs but whoever decides to intentionally create a state where this is needed
     // should not deserve a smooth experience anyway
->>>>>>> f031c7e1 (added support for loading keyboard config from file)
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {

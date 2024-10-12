@@ -6,6 +6,8 @@
 #include <string>
 #include "common/types.h"
 
+#include <SDL3/SDL_events.h>
+
 struct SDL_Window;
 struct SDL_Gamepad;
 union SDL_Event;
@@ -15,6 +17,16 @@ class GameController;
 }
 
 namespace Frontend {
+
+
+class KeyBinding {
+public:
+    Uint32 key;
+    SDL_Keymod modifier;
+    KeyBinding(SDL_Keycode k, SDL_Keymod m) : key(k), modifier(m){};
+    bool operator<(const KeyBinding& other) const;
+    ~KeyBinding(){};
+};
 
 enum class WindowSystemType : u8 {
     Headless,
@@ -39,6 +51,8 @@ struct WindowSystemInfo {
     // Window system type. Determines which GL context or Vulkan WSI is used.
     WindowSystemType type = WindowSystemType::Headless;
 };
+
+
 
 class WindowSDL {
 public:
@@ -67,13 +81,19 @@ public:
     }
 
     void waitEvent();
+    void updateMouse();
 
 private:
+
     void onResize();
     void onKeyPress(const SDL_Event* event);
     void onGamepadEvent(const SDL_Event* event);
-
     int sdlGamepadToOrbisButton(u8 button);
+
+    void updateModKeyedInputsManually(KeyBinding& binding);
+    void updateButton(KeyBinding& binding, u32 button, bool isPressed);
+    static Uint32 keyRepeatCallback(void* param, Uint32 id, Uint32 interval);
+    static Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
 
     void parseInputConfig(const std::string& filename);
 
