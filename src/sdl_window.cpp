@@ -17,7 +17,9 @@
 #include <SDL3/SDL_video.h>
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/io_file.h"
 #include "common/version.h"
+#include "common/path_util.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
@@ -239,11 +241,15 @@ std::map<KeyBinding, AxisMapping> axis_map = {
 };
 
 void WindowSDL::parseInputConfig(const std::string& filename) {
-    std::ifstream file(filename);
+    // Read configuration file.
+    std::cout << "Reading keyboard config...\n";
+    const std::filesystem::__cxx11::path user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    std::ifstream file(user_dir / filename);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
+    std::cout << "File opened at " << user_dir.c_str() << "\n";
 
     button_map.clear();
     axis_map.clear();
@@ -255,14 +261,16 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         if (line.empty() || line[0] == '#') {
             continue;
         }
+        // strip the ; and whitespace that we put there so that the braindead clang-format is happy
+        line = line.substr(0, line.length() - 1);
+        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
             std::cerr << "Invalid line format: " << line << std::endl;
             continue;
         }
-        // strip the ; that we put there so that the braindead clang-format is happy
-        line = line.substr(0, line.length() - 1);
 
         std::string controller_input = line.substr(0, equal_pos);
         std::string kbm_input = line.substr(equal_pos + 1);
@@ -283,7 +291,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
                 binding.key = key_it->second;
                 binding.modifier = mod_it->second;
             } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << "\n";
+                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
                 continue; // skip
             }
         } else {
@@ -292,7 +300,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
             if (key_it != string_to_keyboard_key_map.end()) {
                 binding.key = key_it->second;
             } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << "\n";
+                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
                 continue; // skip
             }
         }
@@ -305,8 +313,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         } else if (button_it != string_to_cbutton_map.end()) {
             button_map[binding] = button_it->second;
         } else {
-            std::cerr << "Syntax error while parsing controller inputs at line " << lineCount
-                      << "\n";
+            std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
             continue; // skip
         }
     }
@@ -396,7 +403,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
     // initialize kbm controls
-    parseInputConfig("user/keyboardInputConfig.ini");
+    parseInputConfig("keyboardInputConfig.ini");
 }
 
 WindowSDL::~WindowSDL() = default;
@@ -514,7 +521,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         }
         // Reparse kbm inputs
         if (binding.key == SDLK_F8) {
-            parseInputConfig("user/keyboardInputConfig.ini");
+            parseInputConfig("keyboardInputConfig.ini");
         }
         // Toggle fullscreen
         if (binding.key == SDLK_F11) {
