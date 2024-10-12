@@ -1096,7 +1096,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="330"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.translation>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="101"/>
