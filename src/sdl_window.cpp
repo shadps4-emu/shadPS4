@@ -184,7 +184,7 @@ int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = true;
 void WindowSDL::parseInputConfig(const std::string& filename) {
-    
+
     // Read configuration file.
     // std::cout << "Reading keyboard config...\n";
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -298,7 +298,8 @@ Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
 }
 
 void WindowSDL::updateMouse() {
-    if(!mouse_enabled) return;
+    if (!mouse_enabled)
+        return;
     Input::Axis axis_x, axis_y;
     switch (mouse_joystick_binding) {
     case 1:
@@ -391,7 +392,7 @@ void WindowSDL::waitEvent() {
     if (mouse_polling_id == 0) {
         mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
     }
-    
+
     if (!SDL_WaitEvent(&event)) {
         return;
     }
