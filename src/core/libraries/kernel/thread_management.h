@@ -13,6 +13,8 @@
 
 #include "common/types.h"
 
+#define ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER (reinterpret_cast<ScePthreadMutex>(1))
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
@@ -134,6 +136,12 @@ public:
     void setDefaultMutexattr(ScePthreadMutexattr attr) {
         m_default_mutexattr = attr;
     }
+    ScePthreadMutexattr* getAdaptiveMutexattr() {
+        return &m_adaptive_mutexattr;
+    }
+    void setAdaptiveMutexattr(ScePthreadMutexattr attr) {
+        m_adaptive_mutexattr = attr;
+    }
     ScePthreadCondattr* getDefaultCondattr() {
         return &m_default_condattr;
     }
@@ -161,6 +169,7 @@ public:
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
+    ScePthreadMutexattr m_adaptive_mutexattr = nullptr;
     ScePthreadCondattr m_default_condattr = nullptr;
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
