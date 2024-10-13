@@ -7,16 +7,16 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ## Summary
 
-- [PC Requirements](#pc-requirements)
-   - [CPU](#cpu)
-   - [GPU](#gpu)
-   - [RAM](#ram)
-   - [OS](#os)
-- [Have the latest WIP version](#have-the-latest-wip-version)
-- [Install PKG files (Games and Updates)](#install-pkg-files)
-- [Configure the emulator](#configure-the-emulator)
+- [**PC Requirements**](#minimum-pc-requirements)
+   - [**CPU**](#cpu)
+   - [**GPU**](#gpu)
+   - [**RAM**](#ram)
+   - [**OS**](#os)
+- [**Have the latest WIP version**](#how-to-run-the-latest-work-in-progress-builds-of-shadps4)
+- [**Install PKG files (Games and Updates)**](#install-pkg-files)
+- [**Configure the emulator**](#configure-the-emulator)
 
-## PC Requirements
+## Minimum PC requirements
 
 ### CPU
 
@@ -38,41 +38,25 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 - Windows 10 or Ubuntu 22.04
 
-## How to run the latest Work-in-Progress builds of ShadPS4
+## How to run the latest Work-in-Progress builds of shadPS4
 
 1. Go to <https://github.com/shadps4-emu/shadPS4/releases> In the release identified as 'pre-release' click on the down arrow(Assets), select your operating system of choice (the "**qt**" versions have a user interface, which is probably the one you want. The others are SDL versions, which can only be run via command line).
 ![image](https://github.com/user-attachments/assets/af520c77-797c-41a0-8f67-d87f5de3e3df)
 
-2. Once downloaded, extract to its own folder, and run ShadPS4's executable from the extracted folder.
+2. Once downloaded, extract to its own folder, and run shadPS4's executable from the extracted folder.
 
-3. Upon first launch, ShadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that ShadPS4 can use to install your PKG files to.
+3. Upon first launch, shadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that shadPS4 can use to install your PKG files to.
 
 ## Install PKG files
 
 To install PKG files (game and updates), you will need the Qt application (with UI). You will have to go to "File" then to "Install Packages (PKG)", a window will open then you will have to select the files. You can install multiple PKG files at once. Once finished, the game should appear in the application.
 
-<img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/2.png" width="800"></a>
+<img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/2.png" width="800">
 
 ## Configure the emulator
 
-You can configure the emulator by editing the `config.toml` file found in the `user` folder created after starting the application.\
-Some settings may be related to more technical development and debugging. For more information on those, see [Debugging](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#configuration).
+To configure the emulator, you can go through the interface and go to "settings".
 
-Here's a list of configuration entries that are worth changing:
-
-- `[General]`
-
-  - `Fullscreen`: Display the game in a full screen borderless window.
-  
-  - `logType`: Configures logging synchronization (`sync`/`async`)
-    - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
-    - Use when sending logs to developers. See more about [reporting issues](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#reporting-and-communicating-about-issues).
-  - `logFilter`: Sets the logging category for various logging classes.
-    - Format: `<class>:<level> ...`, `<class.*>:<level> <*:level> ...`
-    - Valid log levels: `Trace, Debug, Info, Warning, Error, Critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
-    - Examples:
-      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
-      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Error Render.Vulkan:Info`
-    
-- `[GPU]`
-  - `screenWidth` and `screenHeight`: Configures the game window width and height.
+You can also configure the emulator by editing the `config.toml` file located in the `user` folder created after the application is started (Mostly useful if you are using the SDL version).
+Some settings may be related to more technical development and debugging.\
+For more information on this, see [**Debugging**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#configuration).
