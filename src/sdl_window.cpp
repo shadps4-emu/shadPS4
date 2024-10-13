@@ -191,7 +191,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-    std::cout << "File opened at " << user_dir.c_str() << "\n";
+    std::cout << "File opened.\n";
 
     button_map.clear();
     axis_map.clear();
