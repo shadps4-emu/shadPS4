@@ -179,71 +179,13 @@ std::map<std::string, u32> string_to_keyboard_mod_key_map = {
 };
 
 // Button map: maps key+modifier to controller button
-std::map<KeyBinding, u32> button_map = {
-    /*
-    //Taken keys:
-    //F11: fullscreen
-    //F10: Fps counter
-    //F9: toggle mouse capture
-    // use an other item (healing), change status in inv
-    {{SDLK_F, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE},
-    // dodge, back in inv
-    {{SDLK_SPACE, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE},
-    // interact, select item in inv
-    {{SDLK_E, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS},
-    // use quick item, remove equipped item of change item desc in inv
-    {{SDLK_R, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE},
-
-    // arrow keys, but triggers normal wasd too (pls fix)
-    // emergency extra bullets
-    {{SDLK_W, SDL_KMOD_LALT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP},
-    // change quick item
-    {{SDLK_S, SDL_KMOD_LALT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN},
-    // change weapon in left
-    {{SDLK_a, SDL_KMOD_LALT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT},
-    // change weapon in right
-    {{SDLK_D, SDL_KMOD_LALT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT},
-
-    // menu
-    {{SDLK_ESCAPE, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS},
-    // gestures
-    {{SDLK_G, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD},
-
-    // transform
-    {{SDL_BUTTON_RIGHT, SDL_KMOD_LSHIFT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1},
-    // light attack
-    {{SDL_BUTTON_LEFT, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1},
-    // shoot
-    {{SDL_BUTTON_RIGHT, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2},
-    // heavy attack
-    {{SDL_BUTTON_LEFT, SDL_KMOD_LSHIFT}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2},
-
-    // does nothing
-    {{SDLK_X, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3},
-    // center cam, lock on enemy
-    {{SDLK_Q, SDL_KMOD_NONE}, OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3},
-*/
-};
-std::map<KeyBinding, AxisMapping> axis_map = {
-    /*
-    // move
-    {{SDLK_A, SDL_KMOD_NONE}, {Input::Axis::LeftX, -127}},
-    {{SDLK_D, SDL_KMOD_NONE}, {Input::Axis::LeftX, 127}},
-    {{SDLK_W, SDL_KMOD_NONE}, {Input::Axis::LeftY, -127}},
-    {{SDLK_S, SDL_KMOD_NONE}, {Input::Axis::LeftY, 127}},
-
-    //this is now using the mouse
-    {{SDLK_J, SDL_KMOD_NONE}, {Input::Axis::RightX, -127}},
-    {{SDLK_L, SDL_KMOD_NONE}, {Input::Axis::RightX, 127}},
-    {{SDLK_I, SDL_KMOD_NONE}, {Input::Axis::RightY, -127}},
-    {{SDLK_K, SDL_KMOD_NONE}, {Input::Axis::RightY, 127}},
-    */
-};
+std::map<KeyBinding, u32> button_map = {};
+std::map<KeyBinding, AxisMapping> axis_map = {};
 
 void WindowSDL::parseInputConfig(const std::string& filename) {
     // Read configuration file.
     std::cout << "Reading keyboard config...\n";
-    const std::filesystem::__cxx11::path user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     std::ifstream file(user_dir / filename);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
