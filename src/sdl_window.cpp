@@ -182,6 +182,7 @@ std::map<KeyBinding, AxisMapping> axis_map = {};
 
 int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
+bool mouse_enabled = true;
 void WindowSDL::parseInputConfig(const std::string& filename) {
     
     // Read configuration file.
@@ -297,7 +298,7 @@ Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
 }
 
 void WindowSDL::updateMouse() {
-
+    if(!mouse_enabled) return;
     Input::Axis axis_x, axis_y;
     switch (mouse_joystick_binding) {
     case 1:
@@ -496,6 +497,10 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         // Reparse kbm inputs
         if (binding.key == SDLK_F8) {
             parseInputConfig("keyboardInputConfig.ini");
+        }
+        // Toggle mouse movement input
+        if (binding.key == SDLK_F7) {
+            mouse_enabled = !mouse_enabled;
         }
         // Toggle fullscreen
         if (binding.key == SDLK_F11) {
