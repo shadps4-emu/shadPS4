@@ -30,14 +30,13 @@ static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE_PRO;
 #ifdef _WIN32
 
 [[nodiscard]] constexpr u64 ToWindowsProt(Core::MemoryProt prot) {
-    switch (prot) {
-    case Core::MemoryProt::NoAccess:
-    default:
-        return PAGE_NOACCESS;
-    case Core::MemoryProt::CpuRead:
-        return PAGE_READONLY;
-    case Core::MemoryProt::CpuReadWrite:
+    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
+        True(prot & Core::MemoryProt::GpuReadWrite)) {
         return PAGE_READWRITE;
+    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
+        return PAGE_READONLY;
+    } else {
+        return PAGE_NOACCESS;
     }
 }
 
@@ -290,14 +289,13 @@ enum PosixPageProtection {
 };
 
 [[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
-    switch (prot) {
-    case Core::MemoryProt::NoAccess:
-    default:
-        return PAGE_NOACCESS;
-    case Core::MemoryProt::CpuRead:
-        return PAGE_READONLY;
-    case Core::MemoryProt::CpuReadWrite:
+    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
+        True(prot & Core::MemoryProt::GpuReadWrite)) {
         return PAGE_READWRITE;
+    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
+        return PAGE_READONLY;
+    } else {
+        return PAGE_NOACCESS;
     }
 }
 
