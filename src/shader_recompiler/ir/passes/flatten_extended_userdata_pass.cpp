@@ -8,6 +8,7 @@
 #include <xbyak/xbyak_util.h>
 #include "common/config.h"
 #include "common/io_file.h"
+#include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "shader_recompiler/info.h"
@@ -98,15 +99,6 @@ struct PassInfo {
 namespace Shader::Optimization {
 
 namespace {
-static IR::Value GetReadConstOff(const IR::Inst* inst) {
-    ASSERT(inst->GetOpcode() == IR::Opcode::ReadConst);
-    return inst->Arg(1);
-}
-
-static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
-    ASSERT(inst->GetOpcode() == IR::Opcode::GetUserData);
-    return inst->Arg(0).ScalarReg();
-}
 
 static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
     c.push(rdi);
@@ -158,14 +150,13 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     pass_info.dst_off_dw = NumUserDataRegs;
 
     // Special case for V# step rate buffers in fetch shader
-    for (auto i = 0; i < info.srt_info.srt_reservations.size(); i++) {
-        PersistentSrtInfo::SrtSharpReservation res = info.srt_info.srt_reservations[i];
+    for (const auto [sgpr_base, dword_offset, num_dwords] : info.srt_info.srt_reservations) {
         // get pointer to V#
-        c.mov(r10d, ptr[rdi + (res.sgpr_base << 2)]);
+        c.mov(r10d, ptr[rdi + (sgpr_base << 2)]);
 
-        u32 src_off = res.dword_offset << 2;
+        u32 src_off = dword_offset << 2;
 
-        for (auto j = 0; j < res.num_dwords; j++) {
+        for (auto j = 0; j < num_dwords; j++) {
             c.mov(r11d, ptr[r10d + src_off]);
             c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r11d);
 
@@ -210,7 +201,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         IR::Block* block = *r_it;
         for (IR::Inst& inst : *block) {
             if (inst.GetOpcode() == IR::Opcode::ReadConst) {
-                if (!GetReadConstOff(&inst).IsImmediate()) {
+                if (!inst.Arg(1).IsImmediate()) {
+                    LOG_WARNING(Render_Recompiler, "ReadConst has non-immediate offset");
                     continue;
                 }
 
@@ -233,8 +225,6 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
                 ASSERT_MSG(base0 && base1 && "ReadConst not from constant memory");
 
-                // TODO this probably requires some template magic to fix. BFS needs non-const
-                // variant. Needs to be non-const to change flags
                 IR::Inst* ptr_lo = base0.value();
                 ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
 
@@ -242,10 +232,10 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
                 PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
-                user_list[GetReadConstOff(&inst).U32()] = &inst;
+                user_list[inst.Arg(1).U32()] = &inst;
 
                 if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
-                    IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr_lo);
+                    IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
                     pass_info.srt_roots[ud_reg] = ptr_lo;
                 }
             }

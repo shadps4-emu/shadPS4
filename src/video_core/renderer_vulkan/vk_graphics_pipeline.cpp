@@ -413,11 +413,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         stage->PushUd(binding, push_data);
 
         if (stage->has_readconst) {
-            const auto [vk_buffer, offset] =
-                buffer_cache.ObtainHostUBO(reinterpret_cast<VAddr>(stage->flattened_ud_buf.data()),
-                                           stage->flattened_ud_buf.size_bytes());
+            const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(stage->flattened_ud_buf);
             buffer_infos.emplace_back(vk_buffer->Handle(), offset,
-                                      stage->flattened_ud_buf.size_bytes());
+                                      stage->flattened_ud_buf.size() * sizeof(u32));
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding.unified++,

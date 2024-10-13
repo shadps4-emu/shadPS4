@@ -132,12 +132,10 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     image_infos.clear();
 
     info->PushUd(binding, push_data);
-
     if (info->has_readconst) {
-        const auto [vk_buffer, offset] =
-            buffer_cache.ObtainHostUBO(reinterpret_cast<VAddr>(info->flattened_ud_buf.data()),
-                                       info->flattened_ud_buf.size_bytes());
-        buffer_infos.emplace_back(vk_buffer->Handle(), offset, info->flattened_ud_buf.size_bytes());
+        const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(info->flattened_ud_buf);
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset,
+                                  info->flattened_ud_buf.size() * sizeof(u32));
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = binding.unified++,

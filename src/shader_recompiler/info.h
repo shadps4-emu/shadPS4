@@ -180,7 +180,7 @@ struct Info {
     SamplerResourceList samplers;
 
     PersistentSrtInfo srt_info;
-    FlattenedUserDataBuffer flattened_ud_buf;
+    std::vector<u32> flattened_ud_buf;
 
     std::span<const u32> user_data;
     Stage stage;
@@ -213,7 +213,7 @@ struct Info {
 
     template <typename T>
     inline T ReadUdSharp(u32 sharp_idx) const noexcept {
-        return flattened_ud_buf.ReadUdSharp<T>(sharp_idx);
+        return *reinterpret_cast<const T*>(&flattened_ud_buf[sharp_idx]);
     }
 
     template <typename T>
