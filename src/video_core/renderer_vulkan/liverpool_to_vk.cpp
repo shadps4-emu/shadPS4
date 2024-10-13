@@ -5,10 +5,13 @@
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
+#include <half.hpp>
 #include <magic_enum.hpp>
 
 namespace Vulkan::LiverpoolToVK {
 
+using half_float::half;
+using half_float::half_cast;
 using DepthBuffer = Liverpool::DepthBuffer;
 
 vk::StencilOp StencilOp(Liverpool::StencilFunc op) {
@@ -730,6 +733,10 @@ static constexpr float U8ToUnorm(u8 v) {
     return float(v * c);
 }
 
+static float F16BitsToFloat(u16 v) {
+    return half_cast<float>(*(reinterpret_cast<half*>(&v)));
+}
+
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
     const auto comp_swap = color_buffer.info.comp_swap.Value();
     ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
@@ -762,7 +769,25 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             break;
         }
         default: {
-            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for bits {}", num_bits);
+            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for uint and bits {}", num_bits);
+            break;
+        }
+        }
+        break;
+    }
+    case AmdGpu::NumberFormat::Float: {
+        switch (num_bits) {
+        case 64: {
+            color.float32 = std::array{
+                F16BitsToFloat((comp_swap_alt ? c1 : c0) & 0xffff),
+                F16BitsToFloat((c0 >> 16) & 0xffff),
+                F16BitsToFloat((comp_swap_alt ? c0 : c1) & 0xffff),
+                F16BitsToFloat((c1 >> 16) & 0xffff),
+            };
+            break;
+        }
+        default: {
+            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for float and bits {}", num_bits);
             break;
         }
         }
