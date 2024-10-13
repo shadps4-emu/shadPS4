@@ -418,7 +418,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         if (step_rate == Info::VsInput::OverStepRate0 ||
             step_rate == Info::VsInput::OverStepRate1) {
             info.buffers.push_back({
-                .sharp_idx = info.srt_info.reserve_sharp(attrib.sgpr_base, attrib.dword_offset, 4),
+                .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
                 .used_types = IR::Type::F32,
                 .is_instance_data = true,
             });

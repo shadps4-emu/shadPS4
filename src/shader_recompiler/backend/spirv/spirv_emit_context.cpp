@@ -460,7 +460,7 @@ void EmitContext::DefineBuffers() {
         const auto storage_class = spv::StorageClass::Uniform;
         const Id pointer_type = TypePointer(storage_class, data_type);
         const Id record_array_type{
-            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.num_dwords())))};
+            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.size())))};
 
         const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
 

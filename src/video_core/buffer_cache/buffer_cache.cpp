@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/scope_exit.h"
+#include "common/types.h"
 #include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -301,10 +302,11 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
     cmdbuf.updateBuffer(buffer->Handle(), buf_barrier.offset, num_bytes, value);
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(VAddr host_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(std::span<const u32> data) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
-    ASSERT(size <= StreamThreshold);
-    const u64 offset = stream_buffer.Copy(host_addr, size, instance.UniformMinAlignment());
+    ASSERT(data.size_bytes() <= StreamThreshold);
+    const u64 offset = stream_buffer.Copy(reinterpret_cast<VAddr>(data.data()), data.size_bytes(),
+                                          instance.UniformMinAlignment());
     return {&stream_buffer, offset};
 }
 

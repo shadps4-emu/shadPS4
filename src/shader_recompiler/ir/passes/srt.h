@@ -18,39 +18,7 @@
 
 namespace Shader {
 
-class FlattenedUserDataBuffer {
-public:
-    template <typename T>
-    T ReadUdSharp(u32 sharp_idx) const noexcept {
-        return *reinterpret_cast<const T*>(&buf[sharp_idx]);
-    }
-
-    size_t num_dwords() const {
-        return buf.size();
-    }
-
-    size_t size_bytes() const {
-        return buf.size() * sizeof(u32);
-    }
-
-    u32* data() {
-        return buf.data();
-    }
-
-    const u32* data() const {
-        return buf.data();
-    }
-
-    void resize(size_t new_size_dw) {
-        buf.resize(new_size_dw);
-    }
-
-private:
-    std::vector<u32> buf;
-};
-
-typedef void(__attribute__((sysv_abi)) * PFN_SrtWalker)(const u32* /*user_data*/,
-                                                        u32* /*flat_dst*/);
+using PFN_SrtWalker = void PS4_SYSV_ABI (*)(const u32* /*user_data*/, u32* /*flat_dst*/);
 
 // Utility for copying a simple relocatable function from a Xbyak code generator to manage memory
 // separately
@@ -99,8 +67,6 @@ private:
 };
 
 struct PersistentSrtInfo {
-    PersistentSrtInfo() : flattened_bufsize_dw(/*NumUserDataRegs*/ 16) {}
-
     // Special case when fetch shader uses step rates.
     struct SrtSharpReservation {
         u32 sgpr_base;
@@ -110,12 +76,12 @@ struct PersistentSrtInfo {
 
     SmallCodeArray walker;
     boost::container::small_vector<SrtSharpReservation, 2> srt_reservations;
-    u32 flattened_bufsize_dw;
+    u32 flattened_bufsize_dw = 16; // NumUserDataRegs
 
     // Special case for fetch shaders because we don't generate IR to read from step rate buffers,
     // so we won't see usage with GetUserData/ReadConst.
     // Reserve space in the flattened buffer for a sharp ahead of time
-    u32 reserve_sharp(u32 sgpr_base, u32 dword_offset, u32 num_dwords) {
+    u32 ReserveSharp(u32 sgpr_base, u32 dword_offset, u32 num_dwords) {
         u32 rv = flattened_bufsize_dw;
         srt_reservations.emplace_back(sgpr_base, dword_offset, num_dwords);
         flattened_bufsize_dw += num_dwords;
