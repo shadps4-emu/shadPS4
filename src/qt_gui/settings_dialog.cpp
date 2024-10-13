@@ -51,6 +51,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
+    initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
@@ -268,6 +269,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->fullscreenCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->ps4proCheckBox->installEventFilter(this);
+        ui->discordRPCCheckbox->installEventFilter(this);
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
@@ -275,7 +277,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->GUIgroupBox->installEventFilter(this);
 
         // Input
-        ui->cursorGroupBox->installEventFilter(this);
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
         ui->backButtonBehaviorGroupBox->installEventFilter(this);
@@ -361,15 +362,30 @@ void SettingsDialog::LoadValuesFromConfig() {
 void SettingsDialog::InitializeEmulatorLanguages() {
     QDirIterator it(QStringLiteral(":/translations"), QDirIterator::NoIteratorFlags);
 
-    int idx = 0;
+    QVector<QPair<QString, QString>> languagesList;
+
     while (it.hasNext()) {
         QString locale = it.next();
         locale.truncate(locale.lastIndexOf(QLatin1Char{'.'}));
         locale.remove(0, locale.lastIndexOf(QLatin1Char{'/'}) + 1);
         const QString lang = QLocale::languageToString(QLocale(locale).language());
         const QString country = QLocale::territoryToString(QLocale(locale).territory());
-        ui->emulatorLanguageComboBox->addItem(QStringLiteral("%1 (%2)").arg(lang, country), locale);
 
+        QString displayName = QStringLiteral("%1 (%2)").arg(lang, country);
+        languagesList.append(qMakePair(locale, displayName));
+    }
+
+    std::sort(languagesList.begin(), languagesList.end(),
+              [](const QPair<QString, QString>& a, const QPair<QString, QString>& b) {
+                  return a.second < b.second;
+              });
+
+    int idx = 0;
+    for (const auto& pair : languagesList) {
+        const QString& locale = pair.first;
+        const QString& displayName = pair.second;
+
+        ui->emulatorLanguageComboBox->addItem(displayName, locale);
         languages[locale.toStdString()] = idx;
         idx++;
     }
@@ -419,6 +435,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("showSplashCheckBox");
     } else if (elementName == "ps4proCheckBox") {
         text = tr("ps4proCheckBox");
+    } else if (elementName == "discordRPCCheckbox") {
+        text = tr("discordRPCCheckbox");
     } else if (elementName == "userName") {
         text = tr("userName");
     } else if (elementName == "logTypeGroupBox") {
@@ -432,9 +450,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     }
 
     // Input
-    if (elementName == "cursorGroupBox") {
-        text = tr("cursorGroupBox");
-    } else if (elementName == "hideCursorGroupBox") {
+    if (elementName == "hideCursorGroupBox") {
         text = tr("hideCursorGroupBox");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("idleTimeoutGroupBox");
@@ -493,12 +509,19 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             }
 
             // if the text exceeds the size of the box, it will increase the size
+            QRect currentGeometry = this->geometry();
+            int newWidth = currentGeometry.width();
+
             int documentHeight = ui->descriptionText->document()->size().height();
             int visibleHeight = ui->descriptionText->viewport()->height();
             if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMinimumHeight(90);
+                ui->descriptionText->setMaximumSize(16777215, 110);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  currentGeometry.height() + 40);
             } else {
-                ui->descriptionText->setMinimumHeight(70);
+                ui->descriptionText->setMaximumSize(16777215, 70);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  initialHeight);
             }
             return true;
         }

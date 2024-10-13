@@ -415,6 +415,11 @@
 			<translation>Is PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Bật Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Username</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Đầu vào</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Con trỏ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Ẩn con trỏ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Thời gian chờ ẩn con trỏ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Điều khiển</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Hành vi nút quay lại</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Enable NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Đường dẫn</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Thư mục trò chơi</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Thêm...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Xóa</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>Là PS4 Pro:\nKhiến trình giả lập hoạt động như một PS4 PRO, điều này có thể kích hoạt các tính năng đặc biệt trong các trò chơi hỗ trợ điều này.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Bật Discord Rich Presence:\nHiển thị biểu tượng trình giả lập và thông tin liên quan trên hồ sơ Discord của bạn.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Tên người dùng:\nChọn tên người dùng của tài khoản PS4, có thể được một số trò chơi hiển thị.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Bộ lọc nhật ký: Lọc nhật ký để in chỉ thông tin cụ thể. Ví dụ: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Các mức: Trace, Debug, Info, Warning, Error, Critical - theo thứ tự này, một mức cụ thể làm tắt tất cả các mức trước trong danh sách và ghi lại tất cả các mức sau đó.</translation>
+			<translation>Bộ lọc nhật ký:\nLọc nhật ký để in chỉ thông tin cụ thể.\nVí dụ: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Các mức: Trace, Debug, Info, Warning, Error, Critical - theo thứ tự này, một mức cụ thể làm tắt tất cả các mức trước trong danh sách và ghi lại tất cả các mức sau đó.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Phát nhạc tiêu đề trò chơi:\nNếu một trò chơi hỗ trợ điều này, hãy kích hoạt phát nhạc đặc biệt khi bạn chọn trò chơi trong GUI.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Ẩn con trỏ:\nChọn khi nào con trỏ sẽ biến mất:\nKhông bao giờ: Bạn sẽ luôn thấy chuột.\nKhông hoạt động: Đặt một khoảng thời gian để nó biến mất sau khi không hoạt động.\nLuôn luôn: bạn sẽ không bao giờ thấy chuột.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Đặt thời gian để chuột biến mất sau khi không hoạt động.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Hành vi nút quay lại:\nĐặt nút quay lại của tay cầm để mô phỏng việc chạm vào vị trí đã chỉ định trên touchpad của PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Không bao giờ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Nhàn rỗi</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Luôn luôn</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Trái</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Phải</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Giữa Touchpad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Không có</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Bật GPU Null:\nĐể mục đích gỡ lỗi kỹ thuật, vô hiệu hóa việc kết xuất trò chơi như thể không có card đồ họa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Thư mục trò chơi:\nDanh sách các thư mục để kiểm tra các trò chơi đã cài đặt.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Thêm:\nThêm một thư mục vào danh sách.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Xóa:\nXóa một thư mục khỏi danh sách.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
