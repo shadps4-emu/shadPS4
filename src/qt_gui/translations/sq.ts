@@ -435,6 +435,41 @@
 			<translation>Filtri i Ditarit</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Fshih kursorin</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Koha për fshehjen e kursorit joaktiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Dorezë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Sjellja e butonit mbrapa</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
 			<source>Graphics</source>
 			<translation>Grafika</translation>
@@ -1024,6 +1059,66 @@
 			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="392"/>
+			<source>cursorGroupBox</source>
+			<translation>Kursori:\nNdrysho cilësimet në lidhje me kursorin.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="394"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Fshih kursorin:\nCakto sjelljen e fshehjes së kursorit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="396"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Kurrë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Pa vepruar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Gjithmonë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Tastiera prekëse majtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Tastiera prekëse djathtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Tastiera prekëse në qendër</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Asnjë</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
 			<translation>Pajisja grafike:\nNë sistemet me GPU të shumëfishta, zgjidh GPU-në që do të përdorë emulatori nga lista rënëse,\nose zgjidh "Auto Select" për ta përcaktuar automatikisht.</translation>
@@ -1047,6 +1142,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Dosjet e lojërave: Lista e dosjeve për t'u kontrolluar për lojëra të instaluara.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Shto: Shto një dosje në listë.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Hiq: Hiq një dosje nga lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1114,7 +1224,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
-			<translation>Kohë Lojë</translation>
+			<translation>Koha e luajtjes</translation>
 		</message>
 	</context>
 	<context>
