@@ -121,14 +121,7 @@ void DebugStateImpl::PushQueueDump(QueueDump dump) {
                 UNREACHABLE();
             }
             const AmdGpu::PM4ItOpcode opcode = header->opcode;
-            switch (opcode) {
-            case AmdGpu::PM4ItOpcode::DrawIndex2:
-            case AmdGpu::PM4ItOpcode::DrawIndexOffset2:
-            case AmdGpu::PM4ItOpcode::DrawIndexAuto:
-            case AmdGpu::PM4ItOpcode::DrawIndirect:
-            case AmdGpu::PM4ItOpcode::DrawIndexIndirect:
-            case AmdGpu::PM4ItOpcode::DispatchDirect:
-            case AmdGpu::PM4ItOpcode::DispatchIndirect: {
+            if (Core::Devtools::Widget::IsDrawCall(opcode)) {
                 const auto offset =
                     reinterpret_cast<uintptr_t>(header) - reinterpret_cast<uintptr_t>(initial_data);
                 const auto addr = dump.base_addr + offset;
@@ -138,9 +131,6 @@ void DebugStateImpl::PushQueueDump(QueueDump dump) {
                     fmt::format("#{} h({}) queue {} {} {}",
                                 frame_dump_list.size() - gnm_frame_dump_request_count, addr,
                                 magic_enum::enum_name(dump.type), dump.submit_num, dump.num2));
-            } break;
-            default:
-                break;
             }
             data = data.subspan(header->NumWords() + 1);
         }

@@ -70,10 +70,77 @@ void RegPopup::DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer) {
 
         auto tiling_mode = buffer.GetTilingMode();
         auto num_format = buffer.NumFormat();
-        DrawRow("GetTilingMode()", "%X (%s)", tiling_mode, enum_name(tiling_mode).data());
-        DrawRow("IsTiled()",       "%X",      buffer.IsTiled());
-        DrawRow("NumFormat()",     "%X (%s)", num_format, enum_name(num_format).data());
+        DrawEnumRow("GetTilingMode()", tiling_mode);
+        DrawRow("IsTiled()", "%X",     buffer.IsTiled());
+        DrawEnumRow("NumFormat()",     num_format);
 
+        // clang-format on
+
+        EndTable();
+    }
+}
+
+void RegPopup::DrawDepthBuffer(const DepthBuffer& depth_data) {
+    const auto& [depth_buffer, depth_control] = depth_data;
+
+    SeparatorText("Depth buffer");
+
+    if (BeginTable("DEPTH_BUFFER", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
+
+        // clang-format off
+        DrawEnumRow("Z_INFO.FORMAT", depth_buffer.z_info.format.Value());
+        DrawMultipleRow(
+            "Z_INFO.NUM_SAMPLES",             "%X", depth_buffer.z_info.num_samples,
+            "Z_INFO.TILE_SPLIT",              "%X", depth_buffer.z_info.tile_split,
+            "Z_INFO.TILE_MODE_INDEX",         "%X", depth_buffer.z_info.tile_mode_index,
+            "Z_INFO.DECOMPRESS_ON_N_ZPLANES", "%X", depth_buffer.z_info.decompress_on_n_zplanes,
+            "Z_INFO.ALLOW_EXPCLEAR",          "%X", depth_buffer.z_info.allow_expclear,
+            "Z_INFO.READ_SIZE",               "%X", depth_buffer.z_info.read_size,
+            "Z_INFO.TILE_SURFACE_EN",         "%X", depth_buffer.z_info.tile_surface_en,
+            "Z_INFO.CLEAR_DISALLOWED",        "%X", depth_buffer.z_info.clear_disallowed,
+            "Z_INFO.ZRANGE_PRECISION",        "%X", depth_buffer.z_info.zrange_precision
+        );
+
+        DrawEnumRow("STENCIL_INFO.FORMAT", depth_buffer.stencil_info.format.Value());
+
+        DrawMultipleRow(
+            "Z_READ_BASE",                "%X", depth_buffer.z_read_base,
+            "STENCIL_READ_BASE",          "%X", depth_buffer.stencil_read_base,
+            "Z_WRITE_BASE",               "%X", depth_buffer.z_write_base,
+            "STENCIL_WRITE_BASE",         "%X", depth_buffer.stencil_write_base,
+            "DEPTH_SIZE.PITCH_TILE_MAX",  "%X", depth_buffer.depth_size.pitch_tile_max,
+            "DEPTH_SIZE.HEIGHT_TILE_MAX", "%X", depth_buffer.depth_size.height_tile_max,
+            "DEPTH_SLICE.TILE_MAX",       "%X", depth_buffer.depth_slice.tile_max,
+            "Pitch()",                    "%X", depth_buffer.Pitch(),
+            "Height()",                   "%X", depth_buffer.Height(),
+            "Address()",                  "%X", depth_buffer.Address(),
+            "NumSamples()",               "%X", depth_buffer.NumSamples(),
+            "NumBits()",                  "%X", depth_buffer.NumBits(),
+            "GetDepthSliceSize()",        "%X", depth_buffer.GetDepthSliceSize()
+        );
+        // clang-format on
+        EndTable();
+    }
+    SeparatorText("Depth control");
+    if (BeginTable("DEPTH_CONTROL", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
+
+        // clang-format off
+        DrawMultipleRow(
+            "STENCIL_ENABLE",      "%X", depth_control.stencil_enable,
+            "DEPTH_ENABLE",        "%X", depth_control.depth_enable,
+            "DEPTH_WRITE_ENABLE",  "%X", depth_control.depth_write_enable,
+            "DEPTH_BOUNDS_ENABLE", "%X", depth_control.depth_bounds_enable
+        );
+        DrawEnumRow("DEPTH_FUNC", depth_control.depth_func.Value());
+        DrawRow("BACKFACE_ENABLE", "%X", depth_control.backface_enable);
+        DrawEnumRow("STENCIL_FUNC", depth_control.stencil_ref_func.Value());
+        DrawEnumRow("STENCIL_FUNC_BF", depth_control.stencil_bf_func.Value());
+        DrawMultipleRow(
+            "ENABLE_COLOR_WRITES_ON_DEPTH_FAIL", "%X", depth_control.enable_color_writes_on_depth_fail,
+            "DISABLE_COLOR_WRITES_ON_DEPTH_PASS", "%X", depth_control.disable_color_writes_on_depth_pass
+        );
         // clang-format on
 
         EndTable();
@@ -90,6 +157,12 @@ void RegPopup::SetData(AmdGpu::Liverpool::ColorBuffer color_buffer, u32 batch_id
     this->title = fmt::format("Batch #{} CB #{}", batch_id, cb_id);
 }
 
+void RegPopup::SetData(AmdGpu::Liverpool::DepthBuffer depth_buffer,
+                       AmdGpu::Liverpool::DepthControl depth_control, u32 batch_id) {
+    this->data = std::make_tuple(depth_buffer, depth_control);
+    this->title = fmt::format("Batch #{} Depth", batch_id);
+}
+
 void RegPopup::Draw() {
 
     char name[128];
@@ -99,6 +172,8 @@ void RegPopup::Draw() {
     if (Begin(name, &open, ImGuiWindowFlags_NoSavedSettings)) {
         if (const auto* buffer = std::get_if<AmdGpu::Liverpool::ColorBuffer>(&data)) {
             DrawColorBuffer(*buffer);
+        } else if (const auto* depth_data = std::get_if<DepthBuffer>(&data)) {
+            DrawDepthBuffer(*depth_data);
         }
     }
     End();

@@ -13,10 +13,14 @@ namespace Core::Devtools::Widget {
 class RegPopup {
     int id;
 
-    std::variant<AmdGpu::Liverpool::ColorBuffer> data;
+    using DepthBuffer = std::tuple<AmdGpu::Liverpool::DepthBuffer, AmdGpu::Liverpool::DepthControl>;
+
+    std::variant<AmdGpu::Liverpool::ColorBuffer, DepthBuffer> data;
     std::string title{};
 
     void DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer);
+
+    void DrawDepthBuffer(const DepthBuffer& depth_data);
 
 public:
     bool open = false;
@@ -24,6 +28,9 @@ public:
     RegPopup();
 
     void SetData(AmdGpu::Liverpool::ColorBuffer color_buffer, u32 batch_id, u32 cb_id);
+
+    void SetData(AmdGpu::Liverpool::DepthBuffer depth_buffer,
+                 AmdGpu::Liverpool::DepthControl depth_control, u32 batch_id);
 
     void Draw();
 };

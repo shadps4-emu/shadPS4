@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include <magic_enum.hpp>
+
 #include "common/types.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
@@ -55,6 +57,11 @@ void DrawRow(const char* text, const char* fmt, Args... args) {
     ImGui::TextUnformatted(buf);
 }
 
+template <typename T, typename V = u32>
+void DrawEnumRow(const char* text, T value) {
+    DrawRow(text, "%X (%s)", V(value), magic_enum::enum_name(value).data());
+}
+
 template <typename V, typename... Extra>
 void DrawMultipleRow(const char* text, const char* fmt, V arg, Extra&&... extra_args) {
     DrawRow(text, fmt, arg);
@@ -71,6 +78,22 @@ static void DoTooltip(const char* str_id, Args&&... args) {
             ImGui::EndTable();
         }
         ImGui::EndTooltip();
+    }
+}
+
+static bool IsDrawCall(AmdGpu::PM4ItOpcode opcode) {
+    using AmdGpu::PM4ItOpcode;
+    switch (opcode) {
+    case PM4ItOpcode::DrawIndex2:
+    case PM4ItOpcode::DrawIndexOffset2:
+    case PM4ItOpcode::DrawIndexAuto:
+    case PM4ItOpcode::DrawIndirect:
+    case PM4ItOpcode::DrawIndexIndirect:
+    case PM4ItOpcode::DispatchDirect:
+    case PM4ItOpcode::DispatchIndirect:
+        return true;
+    default:
+        return false;
     }
 }
 

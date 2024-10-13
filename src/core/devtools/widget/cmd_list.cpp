@@ -63,21 +63,6 @@ static HdrType GetNext(HdrType this_pm4, uint32_t n) {
     return curr_pm4;
 }
 
-static bool IsDrawCall(AmdGpu::PM4ItOpcode opcode) {
-    using AmdGpu::PM4ItOpcode;
-    switch (opcode) {
-    case PM4ItOpcode::DispatchDirect:
-    case PM4ItOpcode::DispatchIndirect:
-    case PM4ItOpcode::DrawIndex2:
-    case PM4ItOpcode::DrawIndexAuto:
-    case PM4ItOpcode::DrawIndexOffset2:
-    case PM4ItOpcode::DrawIndexIndirect:
-        return true;
-    default:
-        return false;
-    }
-}
-
 void ParsePolygonControl(u32 value, bool begin_table) {
     auto const reg = reinterpret_cast<AmdGpu::Liverpool::PolygonControl const&>(value);
 
@@ -1302,11 +1287,14 @@ void CmdListViewer::Draw() {
                 if (batch.type == static_cast<AmdGpu::PM4ItOpcode>(0xFF)) {
                     snprintf(batch_hdr, sizeof(batch_hdr), "State batch");
                 } else if (!batch.marker.empty()) {
-                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d | %s",
-                             cmdb_addr + batch.start_addr, batch.id, batch.marker.c_str());
+                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s | %s",
+                             cmdb_addr + batch.start_addr, batch.id,
+                             Gcn::GetOpCodeName(static_cast<u32>(batch.type)),
+                             batch.marker.c_str());
                 } else {
-                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d",
-                             cmdb_addr + batch.start_addr, batch.id);
+                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s",
+                             cmdb_addr + batch.start_addr, batch.id,
+                             Gcn::GetOpCodeName(static_cast<u32>(batch.type)));
                 }
 
                 if (batch.id == batch_bp) { // highlight batch at breakpoint

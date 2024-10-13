@@ -107,6 +107,26 @@ void RegView::DrawRegs() {
         auto cc_mode = regs.color_control.mode.Value();
         DrawRow("Color control", "%X (%s)", cc_mode, enum_name(cc_mode).data());
 
+        const auto open_new_popup = [&](int cb, auto... args) {
+            if (GetIO().KeyShift) {
+                auto& pop = extra_reg_popup.emplace_back();
+                pop.SetData(args...);
+                pop.open = true;
+            } else if (last_selected_cb == cb && default_reg_popup.open) {
+                default_reg_popup.open = false;
+            } else {
+                last_selected_cb = cb;
+                default_reg_popup.SetData(args...);
+                if (!default_reg_popup.open) {
+                    default_reg_popup.open = true;
+                    auto popup_pos =
+                        GetCurrentContext()->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
+                    SetNextWindowPos(popup_pos, ImGuiCond_Always);
+                    default_reg_popup.Draw();
+                }
+            }
+        };
+
         for (int cb = 0; cb < AmdGpu::Liverpool::NumColorBuffers; ++cb) {
             PushID(cb);
 
@@ -115,43 +135,32 @@ void RegView::DrawRegs() {
 
             const auto& buffer = regs.color_buffers[cb];
 
-            const auto open_new_popup = [&] {
-                auto& pop = extra_reg_popup.emplace_back();
-                pop.SetData(buffer, batch_id, cb);
-                pop.open = true;
-            };
-
             Text("Color buffer %d", cb);
             TableNextColumn();
             if (!buffer || !regs.color_target_mask.GetMask(cb)) {
                 TextUnformatted("N/A");
-            } else if (last_selected_cb == cb && default_reg_popup.open) {
-                if (SmallButton("x")) {
-                    if (GetIO().KeyShift) {
-                        open_new_popup();
-                    } else {
-                        default_reg_popup.open = false;
-                    }
-                }
             } else {
-                if (SmallButton("->")) {
-                    if (GetIO().KeyShift) {
-                        open_new_popup();
-                    } else {
-                        last_selected_cb = cb;
-                        default_reg_popup.SetData(buffer, batch_id, cb);
-                        if (!default_reg_popup.open) {
-                            default_reg_popup.open = true;
-                            auto popup_pos =
-                                GetCurrentContext()->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
-                            SetNextWindowPos(popup_pos, ImGuiCond_Always);
-                            default_reg_popup.Draw();
-                        }
-                    }
+                const char* text = last_selected_cb == cb && default_reg_popup.open ? "x" : "->";
+                if (SmallButton(text)) {
+                    open_new_popup(cb, buffer, batch_id, cb);
                 }
             }
 
             PopID();
+        }
+
+        TableNextRow();
+        TableNextColumn();
+        TextUnformatted("Depth buffer");
+        TableNextColumn();
+        if (regs.depth_buffer.Address() == 0 || !regs.depth_control.depth_enable) {
+            TextUnformatted("N/A");
+        } else {
+            constexpr auto depth_id = 0xF3;
+            const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
+            if (SmallButton(text)) {
+                open_new_popup(depth_id, regs.depth_buffer, regs.depth_control, batch_id);
+            }
         }
 
         EndTable();
