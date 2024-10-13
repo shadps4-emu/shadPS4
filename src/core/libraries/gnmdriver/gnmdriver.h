@@ -108,7 +108,7 @@ s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color);
 s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marker);
 int PS4_SYSV_ABI sceGnmInsertSetColorMarker();
-int PS4_SYSV_ABI sceGnmInsertSetMarker();
+s32 PS4_SYSV_ABI sceGnmInsertSetMarker(u32* cmdbuf, u32 size, const char* marker);
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker();
 s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, u32 buf_idx);
 int PS4_SYSV_ABI sceGnmIsCoredumpValid();
