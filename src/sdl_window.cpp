@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// new includes
-#include <map>
-// #include <unordered_map>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -18,8 +16,8 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/io_file.h"
-#include "common/version.h"
 #include "common/path_util.h"
+#include "common/version.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
@@ -182,16 +180,18 @@ std::map<std::string, u32> string_to_keyboard_mod_key_map = {
 std::map<KeyBinding, u32> button_map = {};
 std::map<KeyBinding, AxisMapping> axis_map = {};
 
+int mouse_joystick_binding = 0;
+Uint32 mouse_polling_id = 0;
 void WindowSDL::parseInputConfig(const std::string& filename) {
+    
     // Read configuration file.
-    std::cout << "Reading keyboard config...\n";
+    // std::cout << "Reading keyboard config...\n";
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     std::ifstream file(user_dir / filename);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-    std::cout << "File opened.\n";
 
     button_map.clear();
     axis_map.clear();
@@ -218,6 +218,22 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         std::string kbm_input = line.substr(equal_pos + 1);
         KeyBinding binding = {0, SDL_KMOD_NONE}; // Initialize KeyBinding
 
+        // quick hack to configure the mouse
+        if (controller_input == "mouse_to_joystick") {
+            switch (kbm_input[0]) {
+            case 'l':
+                mouse_joystick_binding = 1;
+                break;
+            case 'r':
+                mouse_joystick_binding = 2;
+                break;
+            case 'n':
+            default:
+                mouse_joystick_binding = 0;
+                break;
+            }
+            continue;
+        }
         // first we parse the binding, and if its wrong, we skip to the next line
         std::size_t comma_pos = kbm_input.find(',');
         if (comma_pos != std::string::npos) {
@@ -233,7 +249,8 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
                 binding.key = key_it->second;
                 binding.modifier = mod_it->second;
             } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
+                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
+                          << " line data: " << line << "\n";
                 continue; // skip
             }
         } else {
@@ -242,7 +259,8 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
             if (key_it != string_to_keyboard_key_map.end()) {
                 binding.key = key_it->second;
             } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
+                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
+                          << " line data: " << line << "\n";
                 continue; // skip
             }
         }
@@ -255,7 +273,8 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         } else if (button_it != string_to_cbutton_map.end()) {
             button_map[binding] = button_it->second;
         } else {
-            std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount << " line data: " << line << "\n";
+            std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
+                      << " line data: " << line << "\n";
             continue; // skip
         }
     }
@@ -278,9 +297,24 @@ Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
 }
 
 void WindowSDL::updateMouse() {
+
+    Input::Axis axis_x, axis_y;
+    switch (mouse_joystick_binding) {
+    case 1:
+        axis_x = Input::Axis::LeftX;
+        axis_y = Input::Axis::LeftY;
+        break;
+    case 2:
+        axis_x = Input::Axis::RightX;
+        axis_y = Input::Axis::RightY;
+        break;
+    case 0:
+    default:
+        return; // no update needed
+    }
+
     float d_x = 0, d_y = 0;
     SDL_GetRelativeMouseState(&d_x, &d_y);
-    // std::cout << "mouse polling yay!\n" << d_x << " " << d_y <<"\n";
 
     float angle = atan2(d_y, d_x);
     float a_x = cos(angle) * 128.0, a_y = sin(angle) * 128.0;
@@ -349,15 +383,14 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 }
 
 WindowSDL::~WindowSDL() = default;
-Uint32 mouse_polling_id = 0;
+
 void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event;
     if (mouse_polling_id == 0) {
-        // mouse polling
-        // std::cout << "Why are we adding new timers?\n\n";
         mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
     }
+    
     if (!SDL_WaitEvent(&event)) {
         return;
     }
@@ -427,7 +460,6 @@ void WindowSDL::updateButton(KeyBinding& binding, u32 button, bool is_pressed) {
             : Config::getBackButtonBehavior() == "right" ? 0.75f
                                                          : 0.5f;
         controller->SetTouchpadState(0, true, x, 0.5f);
-        // button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
         controller->CheckButton(0, button, is_pressed);
         break;
     default: // is a normal key
