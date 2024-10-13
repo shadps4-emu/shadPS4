@@ -739,11 +739,6 @@ static float F16BitsToFloat(u16 v) {
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
     const auto comp_swap = color_buffer.info.comp_swap.Value();
-    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
-                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
-               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
-
-    const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
 
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
@@ -761,9 +756,9 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
         switch (num_bits) {
         case 32: {
             color.float32 = std::array{
-                U8ToUnorm((c0 >> (comp_swap_alt ? 16 : 0)) & 0xff),
+                U8ToUnorm(c0 & 0xff),
                 U8ToUnorm((c0 >> 8) & 0xff),
-                U8ToUnorm((c0 >> (comp_swap_alt ? 0 : 16)) & 0xff),
+                U8ToUnorm((c0 >> 16) & 0xff),
                 U8ToUnorm((c0 >> 24) & 0xff),
             };
             break;
@@ -780,9 +775,9 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
         switch (num_bits) {
         case 64: {
             color.float32 = std::array{
-                F16BitsToFloat((comp_swap_alt ? c1 : c0) & 0xffff),
+                F16BitsToFloat(c0 & 0xffff),
                 F16BitsToFloat((c0 >> 16) & 0xffff),
-                F16BitsToFloat((comp_swap_alt ? c0 : c1) & 0xffff),
+                F16BitsToFloat(c1 & 0xffff),
                 F16BitsToFloat((c1 >> 16) & 0xffff),
             };
             break;
@@ -801,6 +796,25 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
         break;
     }
     }
+
+    // We assume 4 components here.
+    switch (comp_swap) {
+    case AmdGpu::Liverpool::ColorBuffer::SwapMode::Standard:
+        break;
+    case AmdGpu::Liverpool::ColorBuffer::SwapMode::Alternate:
+        std::swap(color.float32[0], color.float32[2]);
+        break;
+    case AmdGpu::Liverpool::ColorBuffer::SwapMode::StandardReverse:
+        std::reverse(color.float32.begin(), color.float32.end());
+        break;
+    case AmdGpu::Liverpool::ColorBuffer::SwapMode::AlternateReverse:
+        std::swap(color.float32[0], color.float32[2]);
+        std::reverse(color.float32.begin(), color.float32.end());
+        break;
+    default:
+        UNREACHABLE_MSG("Unknown comp_swap {}", static_cast<u32>(comp_swap));
+    }
+
     return {.color = color};
 }
 
