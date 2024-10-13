@@ -769,7 +769,8 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             break;
         }
         default: {
-            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for uint and bits {}", num_bits);
+            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for uint and bits {}",
+                      num_bits);
             break;
         }
         }
@@ -787,7 +788,8 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             break;
         }
         default: {
-            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for float and bits {}", num_bits);
+            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for float and bits {}",
+                      num_bits);
             break;
         }
         }
