@@ -213,6 +213,7 @@ struct PM4CmdNop {
     enum PayloadType : u32 {
         DebugMarkerPush = 0x68750001u,      ///< Begin of GPU event scope
         DebugMarkerPop = 0x68750002u,       ///< End of GPU event scope
+        DebugSetMarker = 0x68750003u,       ///< Set GPU event marker
         SetVsharpInUdata = 0x68750004u,     ///< Indicates that V# will be set in the next packet
         SetTsharpInUdata = 0x68750005u,     ///< Indicates that T# will be set in the next packet
         SetSsharpInUdata = 0x68750006u,     ///< Indicates that S# will be set in the next packet
