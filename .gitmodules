@@ -97,4 +97,5 @@
 	shallow = true
 [submodule "externals/discord-rpc"]
 	path = externals/discord-rpc
-	url = https://github.com/shadps4-emu/ext-discord-rpc
+	url = https://github.com/shadps4-emu/ext-discord-rpc.git
+	shallow = true
