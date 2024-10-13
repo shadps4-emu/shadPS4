@@ -415,6 +415,11 @@
 			<translation>是否是 PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>启用 Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>用户名</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>日志过滤</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>输入</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>光标</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>隐藏光标</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>光标空闲超时隐藏</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>控制器</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>返回按钮行为</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>启用 NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>路径</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>游戏文件夹</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>添加...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>删除</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>这是 PS4 Pro:\n使模拟器作为 PS4 PRO 运行，可以在支持的游戏中激活特殊功能。</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>启用 Discord Rich Presence:\n在您的 Discord 个人资料上显示仿真器图标和相关信息。</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>用户名:\n设置 PS4 帐户的用户名。某些游戏中可能会显示此名称。</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>日志过滤器: 过滤日志，仅打印特定信息。例如："Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
+			<translation>日志过滤器:\n过滤日志，仅打印特定信息。\n例如："Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>播放标题音乐:\n如果游戏支持，在图形界面选择游戏时启用播放特殊音乐。</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>隐藏光标:\n选择光标何时消失:\n从不: 您将始终看到鼠标。\n空闲: 设置光标在空闲后消失的时间。\n始终: 您将永远看不到鼠标。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>设置鼠标在空闲后消失的时间。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>返回按钮行为:\n设置控制器的返回按钮以模拟在 PS4 触控板上指定位置的点击。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>从不</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>空闲</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>始终</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>触控板左侧</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>触控板右侧</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>触控板中间</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>无</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>启用空 GPU:\n为了技术调试，将游戏渲染禁用，仿佛没有图形卡。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>游戏文件夹:\n检查已安装游戏的文件夹列表。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>添加:\n将文件夹添加到列表。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>移除:\n从列表中移除文件夹。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

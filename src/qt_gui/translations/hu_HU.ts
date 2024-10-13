@@ -415,6 +415,11 @@
 			<translation>PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Engedélyezze a Discord Rich Presence-t</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Felhasználónév</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Naplózási Filter</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Bemenet</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kurzor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Kurzor elrejtése</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Kurzor inaktivitási időtúllépés</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontroller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Vissza gomb viselkedése</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>NULL GPU Engedélyezése</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Útvonalak</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Játékmappák</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Hozzáadás...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Eltávolítás</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>PS4 Pro:\nAz emulátort PS4 PRO-ként kezeli, ami engedélyezheti a speciális funkciókat olyan játékokban, amelyek támogatják.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Engedélyezze a Discord Rich Presence-t:\nMegjeleníti az emulator ikonját és a kapcsolódó információkat a Discord profilján.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Felhasználónév:\nBeállítja a PS4 fiók felhasználónevét, amelyet egyes játékok megjeleníthetnek.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Napló szűrő: Csak bizonyos információk megjelenítésére szűri a naplót. Példák: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Szintek: Trace, Debug, Info, Warning, Error, Critical - ebben a sorrendben, egy konkrét szint elnémítja az előtte lévő összes szintet, és naplózza az utána következő szinteket.</translation>
+			<translation>Napló szűrő:\nCsak bizonyos információk megjelenítésére szűri a naplót.\nPéldák: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Szintek: Trace, Debug, Info, Warning, Error, Critical - ebben a sorrendben, egy konkrét szint elnémítja az előtte lévő összes szintet, és naplózza az utána következő szinteket.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Játék címzene lejátszása:\nHa a játék támogatja, engedélyezze a speciális zene lejátszását, amikor a játékot kiválasztja a GUI-ban.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Akurátor elrejtése:\nVálassza ki, mikor tűnjön el az egérkurzor:\nSoha: Az egér mindig látható.\nInaktív: Állítson be egy időt, amikor inaktív állapotban eltűnik.\nMindig: soha nem látja az egeret.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Állítson be egy időt, ameddig az egér inaktív állapot után eltűnik.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Vissza gomb viselkedés:\nBeállítja a vezérlő vissza gombját, hogy utánozza a PS4 érintőpadján megadott pozíció megérintését.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Soha</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Inaktív</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Mindig</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Érintőpad Balra</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Érintőpad Jobbra</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Érintőpad Középen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Semmi</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPU engedélyezése:\nMűszaki hibaelhárítás céljából letiltja a játék renderelését, mintha nem lenne grafikus kártya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Játék mappák:\nA mappák listája az telepített játékok ellenőrzésére.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Hozzáadás:\nHozzon létre egy mappát a listában.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Eltávolítás:\nTávolítson el egy mappát a listából.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
