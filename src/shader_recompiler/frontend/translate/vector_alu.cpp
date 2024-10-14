@@ -87,6 +87,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_SUBREV_I32(inst);
     case Opcode::V_ADDC_U32:
         return V_ADDC_U32(inst);
+    case Opcode::V_SUBB_U32:
+        return V_SUBB_U32(inst);
+    case Opcode::V_SUBBREV_U32:
+        return V_SUBBREV_U32(inst);
     case Opcode::V_LDEXP_F32:
         return V_LDEXP_F32(inst);
     case Opcode::V_CVT_PKNORM_U16_F32:
@@ -546,51 +550,71 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
+    // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    SetDst(inst.dst[0], ir.IAdd(src0, src1));
-    // TODO: Carry
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    // TODO: Carry-out with signed or unsigned components
 }
 
 void Translator::V_SUB_I32(const GcnInst& inst) {
+    // Unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.ISub(src0, src1));
+    const IR::U32 result{ir.ISub(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    const IR::U1 did_underflow{ir.IGreaterThan(src1, src0, false)};
+    SetCarryOut(inst, did_underflow);
 }
 
 void Translator::V_SUBREV_I32(const GcnInst& inst) {
+    // Unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.ISub(src1, src0));
-    // TODO: Carry-out
+    const IR::U32 result{ir.ISub(src1, src0)};
+    SetDst(inst.dst[0], result);
+
+    const IR::U1 did_underflow{ir.IGreaterThan(src0, src1, false)};
+    SetCarryOut(inst, did_underflow);
 }
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
-    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
-    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
-
-    IR::U1 carry;
-    if (inst.src_count == 3) { // VOP3
-        if (inst.src[2].field == OperandField::VccLo) {
-            carry = ir.GetVcc();
-        } else if (inst.src[2].field == OperandField::ScalarGPR) {
-            carry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
-        } else {
-            UNREACHABLE();
-        }
-    } else { // VOP2
-        carry = ir.GetVcc();
-    }
-
-    const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
-    const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
-
+    // Unsigned components
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 carry{GetCarryIn(inst)};
+    const IR::U32 result{ir.IAdd(ir.IAdd(src0, src1), carry)};
     SetDst(inst.dst[0], result);
 
-    const IR::U1 less_src0 = ir.ILessThan(result, src0, false);
-    const IR::U1 less_src1 = ir.ILessThan(result, src1, false);
-    const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
-    ir.SetVcc(did_overflow);
+    const IR::U1 less_src0{ir.ILessThan(result, src0, false)};
+    const IR::U1 less_src1{ir.ILessThan(result, src1, false)};
+    const IR::U1 did_overflow{ir.LogicalOr(less_src0, less_src1)};
+    SetCarryOut(inst, did_overflow);
+}
+
+void Translator::V_SUBB_U32(const GcnInst& inst) {
+    // Signed or unsigned components
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 carry{GetCarryIn(inst)};
+    const IR::U32 result{ir.ISub(ir.ISub(src0, src1), carry)};
+    SetDst(inst.dst[0], result);
+
+    // TODO: Carry-out with signed or unsigned components
+}
+
+void Translator::V_SUBBREV_U32(const GcnInst& inst) {
+    // Signed or unsigned components
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 carry{GetCarryIn(inst)};
+    const IR::U32 result{ir.ISub(ir.ISub(src1, src0), carry)};
+    SetDst(inst.dst[0], result);
+
+    // TODO: Carry-out with signed or unsigned components
 }
 
 void Translator::V_LDEXP_F32(const GcnInst& inst) {
@@ -1150,6 +1174,37 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
     const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
     ir.SetVcc(did_overflow);
+}
+
+IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
+    IR::U1 carry;
+    if (inst.src_count == 3) { // VOP3
+        if (inst.src[2].field == OperandField::VccLo) {
+            carry = ir.GetVcc();
+        } else if (inst.src[2].field == OperandField::ScalarGPR) {
+            carry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
+        } else {
+            UNREACHABLE();
+        }
+    } else { // VOP2
+        carry = ir.GetVcc();
+    }
+
+    return IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
+}
+
+void Translator::SetCarryOut(const GcnInst& inst, const IR::U1& carry) {
+    if (inst.dst_count == 2) { // VOP3
+        if (inst.dst[1].field == OperandField::VccLo) {
+            ir.SetVcc(carry);
+        } else if (inst.dst[1].field == OperandField::ScalarGPR) {
+            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), carry);
+        } else {
+            UNREACHABLE();
+        }
+    } else { // VOP2
+        ir.SetVcc(carry);
+    }
 }
 
 // TODO: add range analysis pass to hopefully put an upper bound on m0, and only select one of

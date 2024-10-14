@@ -6,7 +6,7 @@ v0.3.0 23/09/2024 - codename broamic
 - New translations support (26 languages)
 - Support for unlocking trophies
 - Support for more controllers (Dualshock and Xbox)
-- Many GUI imporovements
+- Many GUI improvements
 - AVplayer
 
 v0.2.0 15/08/2024 - codename validptr

@@ -168,9 +168,12 @@ public:
     Id output_f32{};
     Id output_s32{};
 
+    Id gl_in{};
+
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
     Id push_data_block{};

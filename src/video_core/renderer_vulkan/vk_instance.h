@@ -147,6 +147,16 @@ public:
         return list_restart;
     }
 
+    /// Returns true when geometry shaders are supported by the device
+    bool IsGeometryStageSupported() const {
+        return features.geometryShader;
+    }
+
+    /// Returns true when tessellation is supported by the device
+    bool IsTessellationSupported() const {
+        return features.tessellationShader;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -222,9 +232,19 @@ public:
         return properties.limits.maxTexelBufferElements;
     }
 
+    /// Returns the maximum sampler LOD bias.
+    float MaxSamplerLodBias() const {
+        return properties.limits.maxSamplerLodBias;
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;
+    }
+
+    /// Returns the vulkan 1.2 physical device properties.
+    const vk::PhysicalDeviceVulkan12Properties& GetVk12Properties() const noexcept {
+        return vk12_props;
     }
 
     /// Returns true if shaders can declare the ClipDistance attribute
@@ -264,6 +284,7 @@ private:
     vk::UniqueDevice device;
     vk::PhysicalDeviceProperties properties;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
+    vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDeviceFeatures features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};

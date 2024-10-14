@@ -28,7 +28,7 @@ enum class MemoryProt : u32 {
     CpuReadWrite = 2,
     GpuRead = 16,
     GpuWrite = 32,
-    GpuReadWrite = 38,
+    GpuReadWrite = 48,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 

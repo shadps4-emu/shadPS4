@@ -18,6 +18,8 @@
 
 namespace Libraries::Net {
 
+static thread_local int32_t net_errno = 0;
+
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -563,9 +565,9 @@ int PS4_SYSV_ABI sceNetEpollWait() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetErrnoLoc() {
+int* PS4_SYSV_ABI sceNetErrnoLoc() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return &net_errno;
 }
 
 int PS4_SYSV_ABI sceNetEtherNtostr() {
@@ -732,9 +734,16 @@ int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetInetPton() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
+#ifdef WIN32
+    int res = InetPtonA(af, src, dst);
+#else
+    int res = inet_pton(af, src, dst);
+#endif
+    if (res < 0) {
+        UNREACHABLE();
+    }
+    return res;
 }
 
 int PS4_SYSV_ABI sceNetInetPtonEx() {

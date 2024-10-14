@@ -415,9 +415,14 @@
 			<translation>Mënyra PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Aktivizo Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
-			<translation>Nofka</translation>
+			<translation>Përdoruesi</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
@@ -433,6 +438,71 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtri i Ditarit</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrje</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Fshih kursorin</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Koha e pritjes për fshehjen e kursorit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontrollues</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Sjellja e butonit të kthimit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Fshih kursorin</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Koha për fshehjen e kursorit joaktiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Dorezë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Sjellja e butonit mbrapa</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -474,10 +544,25 @@
 			<source>Enable NULL GPU</source>
 			<translation>Aktivizo GPU-në NULL</translation>
 		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Rrugët</translation>
+		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Aktivizo Zbrazjen PM4</translation>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Dosjet e lojës</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Shtoni...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Hiqni</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -517,7 +602,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="313"/>
 			<source>Update Channel</source>
-			<translation>Kanali i Përditësimit</translation>
+			<translation>Kanali i përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
@@ -527,7 +612,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
 			<source>GUI Settings</source>
-			<translation>Parametrat e GUI</translation>
+			<translation>Cilësimet e GUI</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -537,7 +622,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
-			<translation>Volumi</translation>
+			<translation>Vëllimi i zërit</translation>
 		</message>
 	</context>
 	<context>
@@ -976,12 +1061,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
 			<source>Point your mouse at an option to display its description.</source>
-			<translation>Hidhni mouse-in mbi një opsion për të shfaqur përshkrimin e tij.</translation>
+			<translation>Vendos miun mbi një rregullim për të shfaqur përshkrimin e tij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nRrekomandohet të vendosni këtë në një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
+			<translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nKëshillohet të caktosh një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
@@ -991,17 +1076,22 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Aktivizo ekranin e plotë:\nAutomatikisht vendos dritaren e lojës në modalitetin e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur çelësin F11.</translation>
+			<translation>Aktivizo ekranin e plotë:\nVendos automatikisht dritaren e lojës në mënyrën e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur tastin F11.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një imazh special) gjatë fillimit të lojës.</translation>
+			<translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një pamje e veçantë) gjatë fillimit të lojës.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, i cili mund të aktivizojë karakteristika speciale në lojrat që e mbështesin atë.</translation>
+			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, gjë që mund të aktivizojë veçori të veçanta në lojrat që e mbështesin.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tuaj në Discord.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1011,72 +1101,192 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Tipi i logut:\nPërcakton nëse të sinkronizoni daljen e dritares së logut për performancën. Mund të ketë efekte të këqija në emulim.</translation>
+			<translation>Lloji i ditarit:\nPërcakton nëse të sinkronizohet dalja e dritares së ditarit për performancë. Mund të ketë efekte të këqija në emulim.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtri i logut: Filtron logun për të printuar vetëm informacione specifike. Shembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas saj.</translation>
+			<translation>Filtri i ditarit:\nFiltron ditarin për të shfaqur vetëm informacione specifike.\nShembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të testuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Lojë muzikë titulli:\nNëse një lojë e mbështet, aktivizoja luajtjen e muzikës speciale kur të zgjidhni lojën në GUI.</translation>
+			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Fsheh kursori:\nZgjidhni kur do të zhduket kursori:\nKurrë: Do ta shihni gjithmonë maus.\nInaktiv: Vendosni një kohë për të zhdukur pas inaktivitetit.\nGjithmonë: nuk do ta shihni kurrë maus.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Vendosni një kohë për të zhdukur maus pas inaktivitetit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Sjellja e butonit mbrapa:\nVendos butonin mbrapa të kontrollorit për të imituar prekjen në pozicionin e caktuar në touchpad-in PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Kurrë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Pasiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Gjithmonë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Majtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Djathtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Qendra e Touchpad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Asnjë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="392"/>
+			<source>cursorGroupBox</source>
+			<translation>Kursori:\nNdrysho cilësimet në lidhje me kursorin.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="394"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Fshih kursorin:\nCakto sjelljen e fshehjes së kursorit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="396"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Kurrë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Pa vepruar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Gjithmonë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Tastiera prekëse majtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Tastiera prekëse djathtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Tastiera prekëse në qendër</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Asnjë</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Dispositivi grafik:\nNë sistemet me GPU të shumëfishta, zgjidhni GPU-në që do të përdorë emulatori nga lista e rënies,\nor zgjidhni "Auto Select" për ta përcaktuar automatikisht.</translation>
+			<translation>Pajisja grafike:\nNë sistemet me GPU të shumëfishta, zgjidh GPU-në që do të përdorë emulatori nga lista rënëse,\nose zgjidh "Auto Select" për ta përcaktuar automatikisht.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
 			<source>resolutionLayout</source>
-			<translation>Gjerësia/ Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
+			<translation>Gjerësia/Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Pjesëtari Vblank:\nShpejtësia e kuadrit me të cilën refreshohet emulatori është shumëzuar me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose shkatërrimi i funksionalitetit kritik të lojës që nuk e pret këtë të ndryshojë!</translation>
+			<translation>Ndarësi Vblank:\nFrekuenca pamore me të cilën rifreskohet emulatori shumëzohet me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose prishja e punimit thelbësor të lojës që nuk e pret këtë ndryshim!</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
 			<source>dumpShadersCheckBox</source>
-			<translation>Aktivizo dump-in e shaders:\nPër qëllime të debugimit teknik, ruan shaders e lojës në një folder ndërsa ato renditen.</translation>
+			<translation>Aktivizo zbrazjen e shaders-ave:\nPër qëllime të korrigjimit teknik, ruan shaders-at e lojës në një dosje ndërsa ato pasqyrohen.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
-			<translation>Aktivizo GPU Null:\nPër qëllime të debugimit teknik, deaktivizon renditjen e lojës sikur nuk do të kishte një kartë grafike.</translation>
+			<translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Aktivizo dump-in e PM4:\nPër qëllime të debugimit teknik, ruan të dhënat e instruksioneve të GPU-së në një folder ndërsa emulatori i përpunon ato.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Folderët e lojërave:\nLista e folderëve për të kontrolluar lojërat e instaluara.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Shto:\nShto një folder në listë.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Hiq:\nHiq një folder nga lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Aktivizo dump-in e debugimit:\nRuani simbolet e importit dhe eksportit dhe informacionin e titullit të skedarit për aplikacionin aktual PS4 që po punon në një katalog.</translation>
+			<translation>Aktivizo zbrazjen për korrigjim:\nRuan simbolet e importit dhe eksportit dhe informacionin e kreut të skedarit për aplikacionin PS4 që po ekzekutohet në një dosje.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktivizo stratet e validimit Vulkan:\nAktivizon një sistem që validon gjendjen e renderizuesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+			<translation>Aktivizo shtresat e vlefshmërisë Vulkan:\nAktivizon një sistem që vërteton gjendjen e pasqyruesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Aktivizo validimin e sinkronizimit Vulkan:\nAktivizon një sistem që validon kohën e detyrave të renderizimit Vulkan. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+			<translation>Aktivizo vërtetimin e sinkronizimit Vulkan:\nAktivizon një sistem që vërteton kohën e detyrave të pasqyrimit Vulkan. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
 			<source>rdocCheckBox</source>
-			<translation>Aktivizo debugimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e kornizës aktuale të renderizuar.</translation>
+			<translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
 		</message>
 	</context>
 	<context>
@@ -1120,6 +1330,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Shtegu</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Koha e luajtjes</translation>
 		</message>
 	</context>
 	<context>
@@ -1172,7 +1387,7 @@
 		<message> 
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
-			<translation>Kanali i Përditësimit</translation>
+			<translation>Kanali i përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

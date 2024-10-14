@@ -282,6 +282,14 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d_error.h
                 src/core/libraries/audio3d/audio3d_impl.cpp
                 src/core/libraries/audio3d/audio3d_impl.h
+                src/core/libraries/ime/ime.cpp
+                src/core/libraries/ime/ime.h
+                src/core/libraries/game_live_streaming/gamelivestreaming.cpp
+                src/core/libraries/game_live_streaming/gamelivestreaming.h
+                src/core/libraries/remote_play/remoteplay.cpp
+                src/core/libraries/remote_play/remoteplay.h
+                src/core/libraries/share_play/shareplay.cpp
+                src/core/libraries/share_play/shareplay.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -297,6 +305,8 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
 
 set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
                 src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog_ui.cpp
+                src/core/libraries/dialogs/ime_dialog_ui.h
                 src/core/libraries/dialogs/ime_dialog.cpp
                 src/core/libraries/dialogs/ime_dialog.h
                 src/core/libraries/dialogs/error_codes.h
@@ -324,6 +334,10 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
 )
 
+set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
+              src/core/libraries/fiber/fiber.h
+)
+
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
@@ -340,15 +354,25 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
+              src/core/devtools/options.cpp
+              src/core/devtools/options.h
               src/core/devtools/gcn/gcn_context_regs.cpp
               src/core/devtools/gcn/gcn_op_names.cpp
               src/core/devtools/gcn/gcn_shader_regs.cpp
               src/core/devtools/widget/cmd_list.cpp
               src/core/devtools/widget/cmd_list.h
+              src/core/devtools/widget/common.h
               src/core/devtools/widget/frame_dump.cpp
               src/core/devtools/widget/frame_dump.h
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
+              src/core/devtools/widget/imgui_memory_editor.h
+              src/core/devtools/widget/reg_popup.cpp
+              src/core/devtools/widget/reg_popup.h
+              src/core/devtools/widget/reg_view.cpp
+              src/core/devtools/widget/reg_view.h
+              src/core/devtools/widget/text_editor.cpp
+              src/core/devtools/widget/text_editor.h
 )
 
 set(COMMON src/common/logging/backend.cpp
@@ -374,6 +398,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/decoder.cpp
            src/common/decoder.h
+           src/common/discord_rpc_handler.cpp
+           src/common/discord_rpc_handler.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
@@ -462,6 +488,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
+         ${FIBER_LIB}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
@@ -518,6 +545,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/translate/data_share.cpp
                       src/shader_recompiler/frontend/translate/export.cpp
                       src/shader_recompiler/frontend/translate/scalar_alu.cpp
+                      src/shader_recompiler/frontend/translate/scalar_flow.cpp
                       src/shader_recompiler/frontend/translate/scalar_memory.cpp
                       src/shader_recompiler/frontend/translate/translate.cpp
                       src/shader_recompiler/frontend/translate/translate.h
@@ -526,6 +554,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/translate/vector_memory.cpp
                       src/shader_recompiler/frontend/control_flow_graph.cpp
                       src/shader_recompiler/frontend/control_flow_graph.h
+                      src/shader_recompiler/frontend/copy_shader.cpp
+                      src/shader_recompiler/frontend/copy_shader.h
                       src/shader_recompiler/frontend/decode.cpp
                       src/shader_recompiler/frontend/decode.h
                       src/shader_recompiler/frontend/fetch_shader.cpp
@@ -542,6 +572,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+                      src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
@@ -574,6 +605,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/types.h
                src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
@@ -686,6 +718,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
+           src/qt_gui/install_dir_select.cpp
+           src/qt_gui/install_dir_select.h
            src/qt_gui/pkg_viewer.cpp
            src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
@@ -852,4 +886,15 @@ if (UNIX AND NOT APPLE)
         find_package(OpenSSL REQUIRED)
         target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
     endif()
+endif()
+
+# Discord RPC
+target_link_libraries(shadps4 PRIVATE discord-rpc)
+
+# Install rules
+install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    install(FILES ".github/shadps4.desktop" DESTINATION "share/applications")
+    install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps")
 endif()

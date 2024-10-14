@@ -11,7 +11,9 @@
 #include "core/libraries/dialogs/error_dialog.h"
 #include "core/libraries/dialogs/ime_dialog.h"
 #include "core/libraries/disc_map/disc_map.h"
+#include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/ime/ime.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
@@ -26,10 +28,12 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/random/random.h"
+#include "core/libraries/remote_play/remoteplay.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
+#include "core/libraries/share_play/shareplay.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
@@ -77,6 +81,10 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
     Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
     Libraries::Audio3d::RegisterlibSceAudio3d(sym);
+    Libraries::Ime::RegisterlibSceIme(sym);
+    Libraries::GameLiveStreaming::RegisterlibSceGameLiveStreaming(sym);
+    Libraries::SharePlay::RegisterlibSceSharePlay(sym);
+    Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
 }
 
 } // namespace Libraries

@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
 #include <bit>
 #include <source_location>
+#include <boost/container/small_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/exception.h"
+#include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -125,19 +130,23 @@ void IREmitter::DeviceMemoryBarrier() {
 }
 
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetUserData, reg);
 }
 
 U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U1>(Opcode::GetThreadBitScalarReg, reg);
 }
 
 void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     Inst(Opcode::SetThreadBitScalarReg, reg, value);
 }
 
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetScalarRegister, reg);
 }
 
@@ -148,6 +157,7 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 
 template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     return Inst<U32>(Opcode::GetVectorRegister, reg);
 }
 
@@ -157,11 +167,13 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 }
 
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
@@ -249,8 +261,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -1487,27 +1499,34 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
-                                        const U32& offset, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
+Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
+                                const Value& address3, const Value& address4,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
+                address4);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
-                                        TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
+Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, coords, bias, offset);
 }
 
-F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const F32& bias, const U32& offset,
-                                          TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
-                     offset);
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& coords, const F32& lod,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, coords, lod, offset);
 }
 
-F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const U32& offset, TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
-                     offset);
+Value IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& bias, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, coords, dref, bias,
+                offset);
+}
+
+Value IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& lod, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, coords, dref, lod, offset);
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
@@ -1539,9 +1558,11 @@ Value IREmitter::ImageQueryLod(const Value& handle, const Value& coords, Texture
     return Inst(Opcode::ImageQueryLod, Flags{info}, handle, coords);
 }
 
-Value IREmitter::ImageGradient(const Value& handle, const Value& coords, const Value& derivatives,
+Value IREmitter::ImageGradient(const Value& handle, const Value& coords,
+                               const Value& derivatives_dx, const Value& derivatives_dy,
                                const Value& offset, const F32& lod_clamp, TextureInstInfo info) {
-    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives, offset, lod_clamp);
+    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives_dx, derivatives_dy,
+                offset, lod_clamp);
 }
 
 Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInstInfo info) {
@@ -1551,6 +1572,46 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInst
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
                            TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+}
+
+// Debug print maps to SPIRV's NonSemantic DebugPrintf instruction
+// Renderdoc will hook in its own implementation of the SPIRV instruction
+// Renderdoc accepts format specifiers, e.g. %u, listed here:
+// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
+//
+// fmt must be a string literal (pointer is shallow copied into a Value)
+// Example usage:
+//         ir.DebugPrint("invocation xyz: (%u, %u, %u)",
+//                      {ir.GetVectorReg(IR::VectorReg::V0),
+//                       ir.GetVectorReg(IR::VectorReg::V1),
+//                       ir.GetVectorReg(IR::VectorReg::V2)});
+void IREmitter::DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> format_args) {
+    std::array<Value, DEBUGPRINT_NUM_FORMAT_ARGS> args;
+
+    ASSERT_MSG(format_args.size() < DEBUGPRINT_NUM_FORMAT_ARGS,
+               "DebugPrint only supports up to {} format args", DEBUGPRINT_NUM_FORMAT_ARGS);
+
+    for (int i = 0; i < format_args.size(); i++) {
+        args[i] = format_args[i];
+    }
+
+    for (int i = format_args.size(); i < DEBUGPRINT_NUM_FORMAT_ARGS; i++) {
+        args[i] = Inst(Opcode::Void);
+    }
+
+    IR::Value fmt_val{fmt};
+
+    DebugPrintFlags flags;
+    flags.num_args.Assign(format_args.size());
+    Inst(Opcode::DebugPrint, Flags{flags}, fmt_val, args[0], args[1], args[2], args[3]);
+}
+
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EmitPrimitive() {
+    Inst(Opcode::EmitPrimitive);
 }
 
 } // namespace Shader::IR

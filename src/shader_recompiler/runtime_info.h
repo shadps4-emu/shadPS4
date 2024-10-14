@@ -4,10 +4,10 @@
 #pragma once
 
 #include <algorithm>
+#include <span>
 #include <boost/container/static_vector.hpp>
-
-#include "common/assert.h"
 #include "common/types.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Shader {
 
@@ -26,13 +26,11 @@ constexpr u32 MaxStageTypes = 6;
     return static_cast<Stage>(index);
 }
 
-enum class MrtSwizzle : u8 {
-    Identity = 0,
-    Alt = 1,
-    Reverse = 2,
-    ReverseAlt = 3,
+struct ExportRuntimeInfo {
+    u32 vertex_data_size;
+
+    auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
 };
-static constexpr u32 MaxColorBuffers = 8;
 
 enum class VsOutput : u8 {
     None,
@@ -62,13 +60,41 @@ enum class VsOutput : u8 {
 using VsOutputMap = std::array<VsOutput, 4>;
 
 struct VertexRuntimeInfo {
-    boost::container::static_vector<VsOutputMap, 3> outputs;
+    u32 num_outputs;
+    std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
         return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one;
     }
 };
+
+static constexpr auto GsMaxOutputStreams = 4u;
+using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
+struct GeometryRuntimeInfo {
+    u32 num_invocations{};
+    u32 output_vertices{};
+    u32 in_vertex_data_size{};
+    u32 out_vertex_data_size{};
+    AmdGpu::PrimitiveType in_primitive;
+    GsOutputPrimTypes out_primitive;
+    std::span<const u32> vs_copy;
+    u64 vs_copy_hash;
+
+    bool operator==(const GeometryRuntimeInfo& other) const noexcept {
+        return num_invocations && other.num_invocations &&
+               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
+               std::ranges::equal(out_primitive, other.out_primitive);
+    }
+};
+
+enum class MrtSwizzle : u8 {
+    Identity = 0,
+    Alt = 1,
+    Reverse = 2,
+    ReverseAlt = 3,
+};
+static constexpr u32 MaxColorBuffers = 8;
 
 struct FragmentRuntimeInfo {
     struct PsInput {
@@ -79,7 +105,8 @@ struct FragmentRuntimeInfo {
 
         auto operator<=>(const PsInput&) const noexcept = default;
     };
-    boost::container::static_vector<PsInput, 32> inputs;
+    u32 num_inputs;
+    std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
         AmdGpu::NumberFormat num_format;
         MrtSwizzle mrt_swizzle;
@@ -90,7 +117,9 @@ struct FragmentRuntimeInfo {
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
-               std::ranges::equal(inputs, other.inputs);
+               num_inputs == other.num_inputs &&
+               std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
+                                  other.inputs.begin() + num_inputs);
     }
 };
 
@@ -114,11 +143,20 @@ struct RuntimeInfo {
     u32 num_user_data;
     u32 num_input_vgprs;
     u32 num_allocated_vgprs;
-    VertexRuntimeInfo vs_info;
-    FragmentRuntimeInfo fs_info;
-    ComputeRuntimeInfo cs_info;
+    AmdGpu::FpDenormMode fp_denorm_mode32;
+    AmdGpu::FpRoundMode fp_round_mode32;
+    union {
+        ExportRuntimeInfo es_info;
+        VertexRuntimeInfo vs_info;
+        GeometryRuntimeInfo gs_info;
+        FragmentRuntimeInfo fs_info;
+        ComputeRuntimeInfo cs_info;
+    };
 
-    RuntimeInfo(Stage stage_) : stage{stage_} {}
+    RuntimeInfo(Stage stage_) {
+        memset(this, 0, sizeof(*this));
+        stage = stage_;
+    }
 
     bool operator==(const RuntimeInfo& other) const noexcept {
         switch (stage) {
@@ -128,6 +166,10 @@ struct RuntimeInfo {
             return vs_info == other.vs_info;
         case Stage::Compute:
             return cs_info == other.cs_info;
+        case Stage::Export:
+            return es_info == other.es_info;
+        case Stage::Geometry:
+            return gs_info == other.gs_info;
         default:
             return true;
         }

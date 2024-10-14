@@ -12,9 +12,9 @@
 #include "core/file_sys/fs.h"
 #include "save_instance.h"
 
-constexpr u32 OrbisSaveDataBlocksMax = 32768;   // 1 GiB
+constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
+constexpr auto OrbisSaveDataBlocksMax = 32768;  // 1 GiB
 constexpr std::string_view sce_sys = "sce_sys"; // system folder inside save
-constexpr std::string_view max_block_file_name = "max_block.txt";
 
 static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -58,18 +58,13 @@ std::filesystem::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_
            game_serial / dir_name;
 }
 
-int SaveInstance::GetMaxBlocks(const std::filesystem::path& save_path) {
-    Common::FS::IOFile max_blocks_file{save_path / sce_sys / max_block_file_name,
-                                       Common::FS::FileAccessMode::Read};
-    int max_blocks = 0;
-    if (max_blocks_file.IsOpen()) {
-        max_blocks = std::atoi(max_blocks_file.ReadString(16).c_str());
+uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {
+    const auto vec = psf.GetBinary(std::string{SaveParams::SAVEDATA_BLOCKS});
+    if (!vec.has_value()) {
+        return OrbisSaveDataBlocksMax;
     }
-    if (max_blocks <= 0) {
-        max_blocks = OrbisSaveDataBlocksMax;
-    }
-
-    return max_blocks;
+    auto value = vec.value();
+    return *(uint64_t*)value.data();
 }
 
 std::filesystem::path SaveInstance::GetParamSFOPath(const std::filesystem::path& dir_path) {
@@ -92,13 +87,15 @@ void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
     P(String, SaveParams::SAVEDATA_DIRECTORY, std::move(dir_name));
     P(Integer, SaveParams::SAVEDATA_LIST_PARAM, 0);
     P(String, SaveParams::TITLE_ID, std::move(game_serial));
+    P(Binary, SaveParams::SAVEDATA_BLOCKS, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
 #undef P
 }
 
 SaveInstance::SaveInstance(int slot_num, OrbisUserServiceUserId user_id, std::string _game_serial,
                            std::string_view _dir_name, int max_blocks)
     : slot_num(slot_num), user_id(user_id), game_serial(std::move(_game_serial)),
-      dir_name(_dir_name), max_blocks(max_blocks) {
+      dir_name(_dir_name),
+      max_blocks(std::clamp(max_blocks, OrbisSaveDataBlocksMin2, OrbisSaveDataBlocksMax)) {
     ASSERT(slot_num >= 0 && slot_num < 16);
 
     save_path = MakeDirSavePath(user_id, game_serial, dir_name);
@@ -187,7 +184,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         }
     }
 
-    max_blocks = GetMaxBlocks(save_path);
+    max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
 
     g_mnt->Mount(save_path, mount_point, read_only);
     mounted = true;
@@ -217,16 +214,13 @@ void SaveInstance::CreateFiles() {
     fs::create_directories(sce_sys_dir);
 
     SetupDefaultParamSFO(param_sfo, dir_name, game_serial);
+    param_sfo.AddBinary(std::string{SaveParams::SAVEDATA_BLOCKS}, max_blocks, true);
 
     const bool ok = param_sfo.Encode(param_sfo_path);
     if (!ok) {
         throw std::filesystem::filesystem_error("Failed to write param.sfo", param_sfo_path,
                                                 std::make_error_code(std::errc::permission_denied));
     }
-
-    Common::FS::IOFile max_block{sce_sys_dir / max_block_file_name,
-                                 Common::FS::FileAccessMode::Write};
-    max_block.WriteString(std::to_string(max_blocks == 0 ? OrbisSaveDataBlocksMax : max_blocks));
 }
 
 } // namespace Libraries::SaveData
