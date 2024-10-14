@@ -748,6 +748,16 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
     vk::ClearColorValue color{};
 
+    switch (number_type) {
+    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberFormat::Sint:
+        color.uint32[3] = 1;
+        break;
+    default:
+        color.float32[3] = 1.0f;
+        break;
+    }
+
     switch (format) {
     case AmdGpu::DataFormat::Format8:
         switch (number_type) {
@@ -1060,6 +1070,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
         if (comp_swap_alt && num_components != 4) {
             std::swap(color.float32[num_components - 1], color.float32[3]);
+            color.float32[num_components - 1] = 0.0f;
         }
     }
 
