@@ -34,6 +34,9 @@
 #define SDL_EVENT_MOUSE_WHEEL_LEFT SDL_EVENT_MOUSE_WHEEL + 5
 #define SDL_EVENT_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 6
 
+#define LEFTJOYSTICK_HALFMODE 0x00010000
+#define RIGHTJOYSTICK_HALFMODE 0x00020000
+
 Uint32 getMouseWheelEvent(const SDL_Event* event) {
     if (event->type != SDL_EVENT_MOUSE_WHEEL)
         return 0;
@@ -119,7 +122,10 @@ std::map<std::string, u32> string_to_cbutton_map = {
     {"up", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP},
     {"down", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN},
     {"left", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT},
-    {"right", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT}};
+    {"right", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT},
+    {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
+    {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
+};
 std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
     {"axis_left_x_minus", {Input::Axis::LeftX, -127}},
@@ -241,9 +247,12 @@ std::map<KeyBinding, AxisMapping> axis_map = {};
 
 int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
-bool mouse_enabled = true;
-const std::string default_config =
-    R"(## SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+bool mouse_enabled = true, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
+
+// i wrapped it in a function so I can collapse it
+std::string getDefaultConfig() {
+    std::string default_config =
+        R"(## SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 ## SPDX-License-Identifier: GPL-2.0-or-later
  
 #Default controller button mappings
@@ -259,7 +268,7 @@ const std::string default_config =
 #This is a mapping for Bloodborne, inspired by other Souls titles on PC.
 
 #This is a quick and dirty implementation of binding the mouse to a user-specified joystick
-mouse_to_joystick = left;
+mouse_to_joystick = right;
 
 #Use another item(healing), change status in inventory
 triangle = f;
@@ -304,6 +313,8 @@ axis_left_x_plus = d;
 axis_left_y_minus = w;
 axis_left_y_plus = s;
 )";
+    return default_config;
+}
 
 void WindowSDL::parseInputConfig(const std::string& filename) {
 
@@ -315,7 +326,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         std::ofstream file;
         file.open(config_file, std::ios::out);
         if (file.is_open()) {
-            file << default_config;
+            file << getDefaultConfig();
             file.close();
             std::cout << "Config file generated.\n";
         } else {
@@ -464,11 +475,11 @@ void WindowSDL::updateMouse() {
     float a_x = cos(angle) * 128.0, a_y = sin(angle) * 128.0;
 
     if (d_x != 0 && d_y != 0) {
-        controller->Axis(0, Input::Axis::RightX, Input::GetAxis(-0x80, 0x80, a_x));
-        controller->Axis(0, Input::Axis::RightY, Input::GetAxis(-0x80, 0x80, a_y));
+        controller->Axis(0, axis_x, Input::GetAxis(-0x80, 0x80, a_x));
+        controller->Axis(0, axis_y, Input::GetAxis(-0x80, 0x80, a_y));
     } else {
-        controller->Axis(0, Input::Axis::RightX, Input::GetAxis(-0x80, 0x80, 0));
-        controller->Axis(0, Input::Axis::RightY, Input::GetAxis(-0x80, 0x80, 0));
+        controller->Axis(0, axis_x, Input::GetAxis(-0x80, 0x80, 0));
+        controller->Axis(0, axis_y, Input::GetAxis(-0x80, 0x80, 0));
     }
 }
 
@@ -622,10 +633,6 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
                       event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                       event->type == SDL_EVENT_MOUSE_WHEEL;
 
-    u32 button = 0;
-    Input::Axis axis = Input::Axis::AxisMax;
-    int axis_value = 0;
-
     // Handle window controls outside of the input maps
     if (event->type == SDL_EVENT_KEY_DOWN) {
         // Toggle capture of the mouse
@@ -634,21 +641,21 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
                                            !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
         }
         // Reparse kbm inputs
-        if (binding.key == SDLK_F8) {
+        else if (binding.key == SDLK_F8) {
             parseInputConfig("keyboardInputConfig.ini");
         }
         // Toggle mouse movement input
-        if (binding.key == SDLK_F7) {
+        else if (binding.key == SDLK_F7) {
             mouse_enabled = !mouse_enabled;
         }
         // Toggle fullscreen
-        if (binding.key == SDLK_F11) {
+        else if (binding.key == SDLK_F11) {
             SDL_WindowFlags flag = SDL_GetWindowFlags(window);
             bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
             SDL_SetWindowFullscreen(window, !is_fullscreen);
         }
         // Trigger rdoc capture
-        if (binding.key == SDLK_F12) {
+        else if (binding.key == SDLK_F12) {
             VideoCore::TriggerCapture();
         }
     }
@@ -664,13 +671,37 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     if (axis_it == axis_map.end() && button_it == button_map.end()) {
         axis_it = FindKeyAllowingOnlyNoModifiers(axis_map, binding);
     }
+
     if (button_it != button_map.end()) {
-        button = button_it->second;
-        WindowSDL::updateButton(binding, button, input_down);
+        // test
+        if (button_it->second == LEFTJOYSTICK_HALFMODE) {
+            leftjoystick_halfmode = input_down;
+            // std::cout << "walk mode is " << (joystick_halfmode ? "on" : "off") << "\n";
+        } else if (button_it->second == RIGHTJOYSTICK_HALFMODE) {
+            rightjoystick_halfmode = input_down;
+        } else {
+            WindowSDL::updateButton(binding, button_it->second, input_down);
+        }
     }
     if (axis_it != axis_map.end()) {
+        Input::Axis axis = Input::Axis::AxisMax;
+        int axis_value = 0;
         axis = axis_it->second.axis;
-        axis_value = (input_down) ? axis_it->second.value : 0;
+        float multiplier = 1.0;
+        switch (axis) {
+        case Input::Axis::LeftX:
+        case Input::Axis::LeftY:
+            multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
+            break;
+        case Input::Axis::RightX:
+        case Input::Axis::RightY:
+            multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
+            break;
+        default:
+            break;
+        }
+        multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
+        axis_value = (input_down ? axis_it->second.value : 0) * multiplier;
         int ax = Input::GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
     }
