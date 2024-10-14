@@ -213,7 +213,7 @@ static constexpr std::array component_offset = {
     std::array{0, 4, 8, 12},    // 19 Format4_4_4_4
     std::array{0, 24, -1, -1},  // 20 Format8_24
     std::array{0, 8, -1, -1},   // 21 Format24_8
-    std::array{0, 8, -1, -1},  // 22 FormatX24_8_32
+    std::array{0, 8, -1, -1},   // 22 FormatX24_8_32
     std::array{-1, -1, -1, -1}, // 23
     std::array{-1, -1, -1, -1}, // 24
     std::array{-1, -1, -1, -1}, // 25
