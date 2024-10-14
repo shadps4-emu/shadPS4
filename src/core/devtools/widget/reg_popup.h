@@ -20,7 +20,9 @@ class RegPopup {
 
     void DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer);
 
-    void DrawDepthBuffer(const DepthBuffer& depth_data);
+    static void DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer);
+
+    static void DrawDepthBuffer(const DepthBuffer& depth_data);
 
 public:
     bool open = false;

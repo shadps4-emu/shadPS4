@@ -81,7 +81,9 @@
 #pragma pack(1)
 template <std::size_t Position, std::size_t Bits, typename T>
 struct BitField {
-private:
+
+    using Type = T;
+
     // UnderlyingType is T for non-enum types and the underlying type of T if
     // T is an enumeration. Note that T is wrapped within an enable_if in the
     // former case to workaround compile errors which arise when using
@@ -92,7 +94,6 @@ private:
     // We store the value as the unsigned type to avoid undefined behaviour on value shifting
     using StorageType = std::make_unsigned_t<UnderlyingType>;
 
-public:
     /// Constants to allow limited introspection of fields if needed
     static constexpr std::size_t position = Position;
     static constexpr std::size_t bits = Bits;
