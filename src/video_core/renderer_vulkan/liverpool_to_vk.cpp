@@ -4,8 +4,11 @@
 #include "common/assert.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/number_utils.h"
 
 #include <magic_enum.hpp>
+
+#define INVALID_NUMBER_FORMAT_COMBO LOG_ERROR(Render_Vulkan, "Unsupported number type {} for format {}", number_type, format);
 
 namespace Vulkan::LiverpoolToVK {
 
@@ -725,55 +728,287 @@ void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
     }
 }
 
-static constexpr float U8ToUnorm(u8 v) {
-    static constexpr auto c = 1.0f / 255.0f;
-    return float(v * c);
-}
-
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
     const auto comp_swap = color_buffer.info.comp_swap.Value();
-    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
-                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
-               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
-
-    const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
+    const auto format = color_buffer.info.format.Value();
+    const auto number_type = color_buffer.info.number_type.Value();
 
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
     const auto num_bits = AmdGpu::NumBits(color_buffer.info.format);
 
     vk::ClearColorValue color{};
-    switch (color_buffer.info.number_type) {
-    case AmdGpu::NumberFormat::Snorm:
-        [[fallthrough]];
-    case AmdGpu::NumberFormat::SnormNz:
-        [[fallthrough]];
-    case AmdGpu::NumberFormat::Unorm:
-        [[fallthrough]];
-    case AmdGpu::NumberFormat::Srgb: {
-        switch (num_bits) {
-        case 32: {
-            color.float32 = std::array{
-                U8ToUnorm((c0 >> (comp_swap_alt ? 16 : 0)) & 0xff),
-                U8ToUnorm((c0 >> 8) & 0xff),
-                U8ToUnorm((c0 >> (comp_swap_alt ? 0 : 16)) & 0xff),
-                U8ToUnorm((c0 >> 24) & 0xff),
-            };
+
+    switch (format) {
+    case AmdGpu::DataFormat::Format8:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+        case AmdGpu::NumberFormat::Srgb: // Should we handle gamma correction here?
+            color.float32[0] = NumberUtils::U8ToUnorm(c0 & 0xff);
+            break;
+        break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S8ToSnorm(c0 & 0xff);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] = c0;
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
             break;
         }
-        default: {
-            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for bits {}", num_bits);
+        break;
+    case AmdGpu::DataFormat::Format16:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+            color.float32[0] = NumberUtils::U16ToUnorm(c0 & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S16ToSnorm(c0 & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] = c0;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = NumberUtils::Uf16ToF32(c0 & 0xffff);
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
             break;
         }
+        break;
+    case AmdGpu::DataFormat::Format8_8:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+        case AmdGpu::NumberFormat::Srgb: // Should we handle gamma correction here?
+            color.float32[0] = NumberUtils::U8ToUnorm( c0       & 0xff);
+            color.float32[1] = NumberUtils::U8ToUnorm((c0 >> 8) & 0xff);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S8ToSnorm( c0       & 0xff);
+            color.float32[1] = NumberUtils::S8ToSnorm((c0 >> 8) & 0xff);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0       & 0xff;
+            color.uint32[1] = (c0 >> 8) & 0xff;
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format32:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] = c0;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = *(reinterpret_cast<const float*>(&c0));
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format16_16:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+            color.float32[0] = NumberUtils::U16ToUnorm( c0        & 0xffff);
+            color.float32[1] = NumberUtils::U16ToUnorm((c0 >> 16) & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S16ToSnorm( c0        & 0xffff);
+            color.float32[1] = NumberUtils::S16ToSnorm((c0 >> 16) & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0        & 0xffff;
+            color.uint32[1] = (c0 >> 16) & 0xffff;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = NumberUtils::Uf16ToF32( c0        & 0xffff);
+            color.float32[1] = NumberUtils::Uf16ToF32((c0 >> 16) & 0xffff);
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format10_11_11:
+        color.float32[0] = NumberUtils::Uf11ToF32( c0        & 0x7ff);
+        color.float32[1] = NumberUtils::Uf11ToF32((c0 >> 11) & 0x7ff);
+        color.float32[2] = NumberUtils::Uf10ToF32((c0 >> 22) & 0x3ff);
+        break;
+    case AmdGpu::DataFormat::Format11_11_10:
+        color.float32[0] = NumberUtils::Uf10ToF32( c0        & 0x3ff);
+        color.float32[1] = NumberUtils::Uf11ToF32((c0 >> 10) & 0x7ff);
+        color.float32[2] = NumberUtils::Uf11ToF32((c0 >> 21) & 0x7ff);
+        break;
+    case AmdGpu::DataFormat::Format5_9_9_9: {
+        int exponent;
+        union { float f; u32 u; } scale;
+
+        exponent = (c0 >> 27) - 10;
+        scale.u = (exponent + 127) << 23;
+
+        color.float32[0] = ( c0        & 0x1ff) * scale.f;
+        color.float32[1] = ((c0 >> 9)  & 0x1ff) * scale.f;
+        color.float32[2] = ((c0 >> 18) & 0x1ff) * scale.f;
+        break;
+    }
+    case AmdGpu::DataFormat::Format10_10_10_2:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+            color.float32[0] = NumberUtils::U2ToUnorm(  c0        & 0x3);
+            color.float32[1] = NumberUtils::U10ToUnorm((c0 >> 2)  & 0x3ff);
+            color.float32[2] = NumberUtils::U10ToUnorm((c0 >> 12) & 0x3ff);
+            color.float32[3] = NumberUtils::U10ToUnorm( c0 >> 22);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S2ToSnorm(  c0        & 0x3);
+            color.float32[1] = NumberUtils::S10ToSnorm((c0 >> 2)  & 0x3ff);
+            color.float32[2] = NumberUtils::S10ToSnorm((c0 >> 12) & 0x3ff);
+            color.float32[3] = NumberUtils::S2ToSnorm(  c0 >> 22);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0        & 0x3;
+            color.uint32[1] = (c0 >> 2)  & 0x3ff;
+            color.uint32[2] = (c0 >> 12) & 0x3ff;
+            color.uint32[3] =  c0 >> 22;
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format2_10_10_10:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+            color.float32[0] = NumberUtils::U10ToUnorm( c0        & 0x3ff);
+            color.float32[1] = NumberUtils::U10ToUnorm((c0 >> 10) & 0x3ff);
+            color.float32[2] = NumberUtils::U10ToUnorm((c0 >> 20) & 0x3ff);
+            color.float32[3] = NumberUtils::U2ToUnorm(  c0 >> 30);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S10ToSnorm( c0        & 0x3ff);
+            color.float32[1] = NumberUtils::S10ToSnorm((c0 >> 10) & 0x3ff);
+            color.float32[2] = NumberUtils::S10ToSnorm((c0 >> 20) & 0x3ff);
+            color.float32[3] = NumberUtils::S2ToSnorm(  c0 >> 30);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0        & 0x3ff;
+            color.uint32[1] = (c0 >> 10) & 0x3ff;
+            color.uint32[2] = (c0 >> 20) & 0x3ff;
+            color.uint32[3] =  c0 >> 30;
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format8_8_8_8:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+        case AmdGpu::NumberFormat::Srgb: // Should we handle gamma correction here?
+            color.float32[0] = NumberUtils::U8ToUnorm( c0        & 0xff);
+            color.float32[1] = NumberUtils::U8ToUnorm((c0 >> 8)  & 0xff);
+            color.float32[2] = NumberUtils::U8ToUnorm((c0 >> 16) & 0xff);
+            color.float32[3] = NumberUtils::U8ToUnorm( c0 >> 24);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S8ToSnorm( c0        & 0xff);
+            color.float32[1] = NumberUtils::S8ToSnorm((c0 >> 8)  & 0xff);
+            color.float32[2] = NumberUtils::S8ToSnorm((c0 >> 16) & 0xff);
+            color.float32[3] = NumberUtils::S8ToSnorm( c0 >> 24);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0        & 0xff;
+            color.uint32[1] = (c0 >> 8)  & 0xff;
+            color.uint32[2] = (c0 >> 16) & 0xff;
+            color.uint32[3] =  c0 >> 24;
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format32_32:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] = c0;
+            color.uint32[1] = c1;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = *(reinterpret_cast<const float*>(&c0));
+            color.float32[1] = *(reinterpret_cast<const float*>(&c1));
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format16_16_16_16:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Unorm:
+            color.float32[0] = NumberUtils::U16ToUnorm( c0        & 0xffff);
+            color.float32[1] = NumberUtils::U16ToUnorm((c0 >> 16) & 0xffff);
+            color.float32[2] = NumberUtils::U16ToUnorm( c1        & 0xffff);
+            color.float32[3] = NumberUtils::U16ToUnorm((c1 >> 16) & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Snorm:
+            color.float32[0] = NumberUtils::S16ToSnorm( c0        & 0xffff);
+            color.float32[1] = NumberUtils::S16ToSnorm((c0 >> 16) & 0xffff);
+            color.float32[2] = NumberUtils::S16ToSnorm( c1        & 0xffff);
+            color.float32[3] = NumberUtils::S16ToSnorm((c1 >> 16) & 0xffff);
+            break;
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] =  c0        & 0xffff;
+            color.uint32[1] = (c0 >> 16) & 0xffff;
+            color.uint32[2] =  c1        & 0xffff;
+            color.uint32[3] = (c1 >> 16) & 0xffff;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = NumberUtils::Uf16ToF32( c0        & 0xffff);
+            color.float32[1] = NumberUtils::Uf16ToF32((c0 >> 16) & 0xffff);
+            color.float32[2] = NumberUtils::Uf16ToF32( c1        & 0xffff);
+            color.float32[3] = NumberUtils::Uf16ToF32((c1 >> 16) & 0xffff);
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
+        }
+        break;
+    case AmdGpu::DataFormat::Format32_32_32_32:
+        switch (number_type) {
+        case AmdGpu::NumberFormat::Uint:
+        case AmdGpu::NumberFormat::Sint:
+            color.uint32[0] = c0;
+            color.uint32[1] = c0;
+            color.uint32[2] = c0;
+            color.uint32[3] = c1;
+            break;
+        case AmdGpu::NumberFormat::Float:
+            color.float32[0] = *(reinterpret_cast<const float*>(&c0));
+            color.float32[1] = *(reinterpret_cast<const float*>(&c0));
+            color.float32[2] = *(reinterpret_cast<const float*>(&c0));
+            color.float32[3] = *(reinterpret_cast<const float*>(&c1));
+            break;
+        default:
+            INVALID_NUMBER_FORMAT_COMBO;
+            break;
         }
         break;
     }
-    default: {
-        LOG_ERROR(Render_Vulkan, "Missing clear color conversion for type {}",
-                  color_buffer.info.number_type.Value());
-        break;
-    }
-    }
+
     return {.color = color};
 }
 
