@@ -737,7 +737,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
     const auto num_bits = AmdGpu::NumBits(color_buffer.info.format);
-    auto num_components = AmdGpu::NumComponents(format);
+    const auto num_components = AmdGpu::NumComponents(format);
 
     const bool comp_swap_alt =
         comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::Alternate ||
