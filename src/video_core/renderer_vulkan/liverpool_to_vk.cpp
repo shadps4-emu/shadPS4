@@ -736,6 +736,12 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
     const auto num_bits = AmdGpu::NumBits(color_buffer.info.format);
+    auto num_components = AmdGpu::NumComponents(format);
+
+    const bool comp_swap_alt = comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::Alternate ||
+                               comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::AlternateReverse;
+    const bool comp_swap_reverse = comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::StandardReverse ||
+                                   comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::AlternateReverse;
 
     vk::ClearColorValue color{};
 
@@ -1033,6 +1039,22 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     default:
         LOG_ERROR(Render_Vulkan, "Unsupported color buffer format: {}", format);
         break;
+    }
+
+    if (num_components == 1) {
+        color.float32[static_cast<int>(comp_swap)] = color.float32[0];
+    } else {
+        if (comp_swap_alt && num_components == 4) {
+            std::swap(color.float32[0], color.float32[2]);
+        }
+
+        if (comp_swap_reverse) {
+            std::reverse(std::begin(color.float32), std::begin(color.float32) + num_components);
+        }
+
+        if (comp_swap_alt && num_components != 4) {
+            std::swap(color.float32[num_components - 1], color.float32[3]);
+        }
     }
 
     return {.color = color};
