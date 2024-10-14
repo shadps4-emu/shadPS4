@@ -1228,7 +1228,7 @@ void CmdListViewer::Draw() {
         Text("size     : %04llX", cmdb_size);
         Separator();
 
-        if (TreeNode("Batches")) {
+        {
             int tree_depth = 0;
             int tree_depth_show = 0;
 
@@ -1283,9 +1283,10 @@ void CmdListViewer::Draw() {
                 auto const* pm4_hdr =
                     reinterpret_cast<PM4Header const*>(cmdb_addr + batch.start_addr);
 
+                bool ignore_header = false;
                 char batch_hdr[128];
                 if (batch.type == static_cast<AmdGpu::PM4ItOpcode>(0xFF)) {
-                    snprintf(batch_hdr, sizeof(batch_hdr), "State batch");
+                    ignore_header = true;
                 } else if (!batch.marker.empty()) {
                     snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s | %s",
                              cmdb_addr + batch.start_addr, batch.id,
@@ -1320,7 +1321,7 @@ void CmdListViewer::Draw() {
 
                 bool show_batch_content = true;
 
-                if (group_batches) {
+                if (group_batches && !ignore_header) {
                     show_batch_content =
                         CollapsingHeader(batch_hdr, ImGuiTreeNodeFlags_AllowOverlap);
                     SameLine(GetContentRegionAvail().x - 40.0f);
@@ -1332,7 +1333,7 @@ void CmdListViewer::Draw() {
                 if (show_batch_content) {
                     auto processed_size = 0ull;
                     auto bb = ctx.LastItemData.Rect;
-                    if (group_batches) {
+                    if (group_batches && !ignore_header) {
                         Indent();
                     }
                     auto const batch_sz = batch.end_addr - batch.start_addr;
@@ -1426,7 +1427,7 @@ void CmdListViewer::Draw() {
                         processed_size += processed_len;
                     }
 
-                    if (group_batches) {
+                    if (group_batches && !ignore_header) {
                         Unindent();
                     };
                     bb = {{0.0f, bb.Max.y}, ctx.LastItemData.Rect.Max};
@@ -1450,8 +1451,6 @@ void CmdListViewer::Draw() {
             PopID();
 
             highlight_batch = current_highlight_batch;
-
-            TreePop();
         }
     }
     EndChild();
