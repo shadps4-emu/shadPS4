@@ -91,15 +91,15 @@ void RegPopup::DrawDepthBuffer(const DepthBuffer& depth_data) {
         // clang-format off
         DrawEnumRow("Z_INFO.FORMAT", depth_buffer.z_info.format.Value());
         DrawMultipleRow(
-            "Z_INFO.NUM_SAMPLES",             "%X", depth_buffer.z_info.num_samples,
-            "Z_INFO.TILE_SPLIT",              "%X", depth_buffer.z_info.tile_split,
-            "Z_INFO.TILE_MODE_INDEX",         "%X", depth_buffer.z_info.tile_mode_index,
-            "Z_INFO.DECOMPRESS_ON_N_ZPLANES", "%X", depth_buffer.z_info.decompress_on_n_zplanes,
-            "Z_INFO.ALLOW_EXPCLEAR",          "%X", depth_buffer.z_info.allow_expclear,
-            "Z_INFO.READ_SIZE",               "%X", depth_buffer.z_info.read_size,
-            "Z_INFO.TILE_SURFACE_EN",         "%X", depth_buffer.z_info.tile_surface_en,
-            "Z_INFO.CLEAR_DISALLOWED",        "%X", depth_buffer.z_info.clear_disallowed,
-            "Z_INFO.ZRANGE_PRECISION",        "%X", depth_buffer.z_info.zrange_precision
+            "Z_INFO.NUM_SAMPLES",             "%X", depth_buffer.z_info.num_samples.Value(),
+            "Z_INFO.TILE_SPLIT",              "%X", depth_buffer.z_info.tile_split.Value(),
+            "Z_INFO.TILE_MODE_INDEX",         "%X", depth_buffer.z_info.tile_mode_index.Value(),
+            "Z_INFO.DECOMPRESS_ON_N_ZPLANES", "%X", depth_buffer.z_info.decompress_on_n_zplanes.Value(),
+            "Z_INFO.ALLOW_EXPCLEAR",          "%X", depth_buffer.z_info.allow_expclear.Value(),
+            "Z_INFO.READ_SIZE",               "%X", depth_buffer.z_info.read_size.Value(),
+            "Z_INFO.TILE_SURFACE_EN",         "%X", depth_buffer.z_info.tile_surface_en.Value(),
+            "Z_INFO.CLEAR_DISALLOWED",        "%X", depth_buffer.z_info.clear_disallowed.Value(),
+            "Z_INFO.ZRANGE_PRECISION",        "%X", depth_buffer.z_info.zrange_precision.Value()
         );
 
         DrawEnumRow("STENCIL_INFO.FORMAT", depth_buffer.stencil_info.format.Value());
@@ -109,9 +109,9 @@ void RegPopup::DrawDepthBuffer(const DepthBuffer& depth_data) {
             "STENCIL_READ_BASE",          "%X", depth_buffer.stencil_read_base,
             "Z_WRITE_BASE",               "%X", depth_buffer.z_write_base,
             "STENCIL_WRITE_BASE",         "%X", depth_buffer.stencil_write_base,
-            "DEPTH_SIZE.PITCH_TILE_MAX",  "%X", depth_buffer.depth_size.pitch_tile_max,
-            "DEPTH_SIZE.HEIGHT_TILE_MAX", "%X", depth_buffer.depth_size.height_tile_max,
-            "DEPTH_SLICE.TILE_MAX",       "%X", depth_buffer.depth_slice.tile_max,
+            "DEPTH_SIZE.PITCH_TILE_MAX",  "%X", depth_buffer.depth_size.pitch_tile_max.Value(),
+            "DEPTH_SIZE.HEIGHT_TILE_MAX", "%X", depth_buffer.depth_size.height_tile_max.Value(),
+            "DEPTH_SLICE.TILE_MAX",       "%X", depth_buffer.depth_slice.tile_max.Value(),
             "Pitch()",                    "%X", depth_buffer.Pitch(),
             "Height()",                   "%X", depth_buffer.Height(),
             "Address()",                  "%X", depth_buffer.Address(),
@@ -128,18 +128,18 @@ void RegPopup::DrawDepthBuffer(const DepthBuffer& depth_data) {
 
         // clang-format off
         DrawMultipleRow(
-            "STENCIL_ENABLE",      "%X", depth_control.stencil_enable,
-            "DEPTH_ENABLE",        "%X", depth_control.depth_enable,
-            "DEPTH_WRITE_ENABLE",  "%X", depth_control.depth_write_enable,
-            "DEPTH_BOUNDS_ENABLE", "%X", depth_control.depth_bounds_enable
+            "STENCIL_ENABLE",      "%X", depth_control.stencil_enable.Value(),
+            "DEPTH_ENABLE",        "%X", depth_control.depth_enable.Value(),
+            "DEPTH_WRITE_ENABLE",  "%X", depth_control.depth_write_enable.Value(),
+            "DEPTH_BOUNDS_ENABLE", "%X", depth_control.depth_bounds_enable.Value()
         );
         DrawEnumRow("DEPTH_FUNC", depth_control.depth_func.Value());
-        DrawRow("BACKFACE_ENABLE", "%X", depth_control.backface_enable);
+        DrawRow("BACKFACE_ENABLE", "%X", depth_control.backface_enable.Value());
         DrawEnumRow("STENCIL_FUNC", depth_control.stencil_ref_func.Value());
         DrawEnumRow("STENCIL_FUNC_BF", depth_control.stencil_bf_func.Value());
         DrawMultipleRow(
-            "ENABLE_COLOR_WRITES_ON_DEPTH_FAIL", "%X", depth_control.enable_color_writes_on_depth_fail,
-            "DISABLE_COLOR_WRITES_ON_DEPTH_PASS", "%X", depth_control.disable_color_writes_on_depth_pass
+            "ENABLE_COLOR_WRITES_ON_DEPTH_FAIL", "%X", depth_control.enable_color_writes_on_depth_fail.Value(),
+            "DISABLE_COLOR_WRITES_ON_DEPTH_PASS", "%X", depth_control.disable_color_writes_on_depth_pass.Value()
         );
         // clang-format on
 
