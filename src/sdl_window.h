@@ -23,6 +23,7 @@ public:
     Uint32 key;
     SDL_Keymod modifier;
     KeyBinding(SDL_Keycode k, SDL_Keymod m) : key(k), modifier(m){};
+    KeyBinding(const SDL_Event* event);
     bool operator<(const KeyBinding& other) const;
     ~KeyBinding(){};
 };

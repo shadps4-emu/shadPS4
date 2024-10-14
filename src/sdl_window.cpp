@@ -28,9 +28,45 @@
 #include <SDL3/SDL_metal.h>
 #endif
 
+// +1 and +2 is taken
+#define SDL_EVENT_MOUSE_WHEEL_UP SDL_EVENT_MOUSE_WHEEL + 3
+#define SDL_EVENT_MOUSE_WHEEL_DOWN SDL_EVENT_MOUSE_WHEEL + 4
+#define SDL_EVENT_MOUSE_WHEEL_LEFT SDL_EVENT_MOUSE_WHEEL + 5
+#define SDL_EVENT_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 6
+
+Uint32 getMouseWheelEvent(const SDL_Event* event) {
+    if(event->type != SDL_EVENT_MOUSE_WHEEL) return 0;
+    // std::cout << "We got a wheel event! ";
+    if(event->wheel.y > 0) {
+        return SDL_EVENT_MOUSE_WHEEL_UP;
+    } else if(event->wheel.y < 0) {
+        return SDL_EVENT_MOUSE_WHEEL_DOWN;
+    } else if(event->wheel.x > 0) {
+        return SDL_EVENT_MOUSE_WHEEL_RIGHT;
+    } else if(event->wheel.x < 0) {
+        return SDL_EVENT_MOUSE_WHEEL_LEFT;
+    }
+    return 0;
+}
+
 namespace Frontend {
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
+KeyBinding::KeyBinding(const SDL_Event* event) {
+    modifier = SDL_GetModState();
+    key = 0;
+    // std::cout << "Someone called the new binding ctor!\n";
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+        key = event->key.key;
+    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+               event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        key = event->button.button;
+    } else if(event->type == SDL_EVENT_MOUSE_WHEEL) {
+        key = getMouseWheelEvent(event);
+    } else {
+        std::cout << "We don't support this event type!\n";
+    }
+}
 bool KeyBinding::operator<(const KeyBinding& other) const {
     return std::tie(key, modifier) < std::tie(other.key, other.modifier);
 }
@@ -166,6 +202,10 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"leftbutton", SDL_BUTTON_LEFT},
     {"rightbutton", SDL_BUTTON_RIGHT},
     {"middlebutton", SDL_BUTTON_MIDDLE},
+    {"mousewheelup", SDL_EVENT_MOUSE_WHEEL_UP},
+    {"mousewheeldown", SDL_EVENT_MOUSE_WHEEL_DOWN},
+    {"mousewheelleft", SDL_EVENT_MOUSE_WHEEL_LEFT},
+    {"mousewheelright", SDL_EVENT_MOUSE_WHEEL_RIGHT},
     {"kp0", SDLK_KP_0},
     {"kp1", SDLK_KP_1},
     {"kp2", SDLK_KP_2},
@@ -202,7 +242,7 @@ int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = true;
 void WindowSDL::parseInputConfig(const std::string& filename) {
-
+    
     // Read configuration file.
     // std::cout << "Reading keyboard config...\n";
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -302,13 +342,23 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
 
 Uint32 WindowSDL::keyRepeatCallback(void* param, Uint32 id, Uint32 interval) {
     auto* data = (std::pair<WindowSDL*, SDL_Event*>*)param;
-    KeyBinding binding = {data->second->key.key, SDL_GetModState()};
+    KeyBinding binding(data->second);
+    if(data->second->type == SDL_EVENT_MOUSE_WHEEL) {
+        auto button_it = button_map.find(binding);
+        auto axis_it = axis_map.find(binding);
+        if(button_it != button_map.end()) {
+            data->first->updateButton(binding, button_it->second, false);
+        } else if(axis_it != axis_map.end()) {
+            data->first->controller->Axis(0, axis_it->second.axis, Input::GetAxis(-0x80, 0x80, 0));
+        }
+        
+    }
     data->first->updateModKeyedInputsManually(binding);
-    // data->first->onKeyPress(data->second);
-    delete data->second;
+    delete data->second; 
     delete data;
     return 0; // Return 0 to stop the timer after firing once
 }
+
 Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
     auto* data = (WindowSDL*)param;
     data->updateMouse();
@@ -316,8 +366,7 @@ Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
 }
 
 void WindowSDL::updateMouse() {
-    if (!mouse_enabled)
-        return;
+    if(!mouse_enabled) return;
     Input::Axis axis_x, axis_y;
     switch (mouse_joystick_binding) {
     case 1:
@@ -410,7 +459,7 @@ void WindowSDL::waitEvent() {
     if (mouse_polling_id == 0) {
         mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
     }
-
+    
     if (!SDL_WaitEvent(&event)) {
         return;
     }
@@ -434,10 +483,13 @@ void WindowSDL::waitEvent() {
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
         onResize();
         break;
-    case SDL_EVENT_KEY_DOWN:
-    case SDL_EVENT_KEY_UP:
+    case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_BUTTON_UP:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        // native mouse update function goes here
+        // as seen in pr #633
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP:
         SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer);
         onKeyPress(&event);
         break;
@@ -490,17 +542,10 @@ void WindowSDL::updateButton(KeyBinding& binding, u32 button, bool is_pressed) {
 
 void WindowSDL::onKeyPress(const SDL_Event* event) {
     // Extract key and modifier
-    KeyBinding binding = {0, SDL_GetModState()};
-    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
-        binding.key = event->key.key; // For keyboard events
-    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-               event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
-        binding.key = event->button.button; // For mouse button events
-    } else {
-        std::cout << "Bro something is very wrong with the waitevent switch case as this is the "
-                     "only 4 possible cases\n";
-        return;
-    }
+    KeyBinding binding(event);
+    bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
+                        event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || 
+                        event->type == SDL_EVENT_MOUSE_WHEEL;
 
     u32 button = 0;
     Input::Axis axis = Input::Axis::AxisMax;
@@ -533,28 +578,24 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         }
     }
 
-    // Check if the current key+modifier is a button mapping
-    bool button_found = false;
+    // Check if the current key+modifier is a button or axis mapping
+    // first only exact matches
     auto button_it = FindKeyAllowingPartialModifiers(button_map, binding);
-    if (button_it == button_map.end()) {
+    auto axis_it = FindKeyAllowingPartialModifiers(axis_map, binding);
+    // then no mod key matches if we didn't find it in the previous pass
+    if (button_it == button_map.end() && axis_it == axis_map.end() ) {
         button_it = FindKeyAllowingOnlyNoModifiers(button_map, binding);
     }
-    if (button_it != button_map.end()) {
-        button_found = true;
-        button = button_it->second;
-        WindowSDL::updateButton(binding, button,
-                                event->type == SDL_EVENT_KEY_DOWN ||
-                                    event->type == SDL_EVENT_MOUSE_BUTTON_DOWN);
-    }
-    // Check if the current key+modifier is an axis mapping
-    auto axis_it = FindKeyAllowingPartialModifiers(axis_map, binding);
-    if (axis_it == axis_map.end() && !button_found) {
+    if (axis_it == axis_map.end() && button_it == button_map.end()) {
         axis_it = FindKeyAllowingOnlyNoModifiers(axis_map, binding);
+    }
+    if (button_it != button_map.end()) {
+        button = button_it->second;
+        WindowSDL::updateButton(binding, button, input_down);
     }
     if (axis_it != axis_map.end()) {
         axis = axis_it->second.axis;
-        axis_value =
-            (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+        axis_value = (input_down)
                 ? axis_it->second.value
                 : 0;
         int ax = Input::GetAxis(-0x80, 0x80, axis_value);
