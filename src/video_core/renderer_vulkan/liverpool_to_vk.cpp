@@ -767,6 +767,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             break;
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S8ToSnorm(c0 & 0xff);
             break;
         case AmdGpu::NumberFormat::Uint:
@@ -784,6 +785,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[0] = NumberUtils::U16ToUnorm(c0 & 0xffff);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S16ToSnorm(c0 & 0xffff);
             break;
         case AmdGpu::NumberFormat::Uint:
@@ -806,6 +808,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[1] = NumberUtils::U8ToUnorm((c0 >> 8) & 0xff);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S8ToSnorm(c0 & 0xff);
             color.float32[1] = NumberUtils::S8ToSnorm((c0 >> 8) & 0xff);
             break;
@@ -840,6 +843,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[1] = NumberUtils::U16ToUnorm((c0 >> 16) & 0xffff);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S16ToSnorm(c0 & 0xffff);
             color.float32[1] = NumberUtils::S16ToSnorm((c0 >> 16) & 0xffff);
             break;
@@ -891,6 +895,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[3] = NumberUtils::U10ToUnorm(c0 >> 22);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S2ToSnorm(c0 & 0x3);
             color.float32[1] = NumberUtils::S10ToSnorm((c0 >> 2) & 0x3ff);
             color.float32[2] = NumberUtils::S10ToSnorm((c0 >> 12) & 0x3ff);
@@ -917,6 +922,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[3] = NumberUtils::U2ToUnorm(c0 >> 30);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S10ToSnorm(c0 & 0x3ff);
             color.float32[1] = NumberUtils::S10ToSnorm((c0 >> 10) & 0x3ff);
             color.float32[2] = NumberUtils::S10ToSnorm((c0 >> 20) & 0x3ff);
@@ -944,6 +950,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[3] = NumberUtils::U8ToUnorm(c0 >> 24);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S8ToSnorm(c0 & 0xff);
             color.float32[1] = NumberUtils::S8ToSnorm((c0 >> 8) & 0xff);
             color.float32[2] = NumberUtils::S8ToSnorm((c0 >> 16) & 0xff);
@@ -986,6 +993,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
             color.float32[3] = NumberUtils::U16ToUnorm((c1 >> 16) & 0xffff);
             break;
         case AmdGpu::NumberFormat::Snorm:
+        case AmdGpu::NumberFormat::SnormNz:
             color.float32[0] = NumberUtils::S16ToSnorm(c0 & 0xffff);
             color.float32[1] = NumberUtils::S16ToSnorm((c0 >> 16) & 0xffff);
             color.float32[2] = NumberUtils::S16ToSnorm(c1 & 0xffff);
