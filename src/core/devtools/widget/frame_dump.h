@@ -8,6 +8,7 @@
 
 #include "cmd_list.h"
 #include "core/debug_state.h"
+#include "imgui_memory_editor.h"
 
 namespace Core::Devtools::Widget {
 
@@ -16,10 +17,11 @@ class CmdListViewer;
 class FrameDumpViewer {
     friend class CmdListViewer;
 
-    std::shared_ptr<DebugStateType::FrameDump> frame_dump;
+    DebugStateType::FrameDump frame_dump;
     int id;
 
     std::vector<CmdListViewer> cmd_list_viewer;
+    MemoryEditor cmdb_view;
 
     DebugStateType::QueueType selected_queue_type;
     s32 selected_submit_num;
@@ -29,7 +31,7 @@ class FrameDumpViewer {
 public:
     bool is_open = true;
 
-    explicit FrameDumpViewer(const DebugStateType::FrameDump& frame_dump);
+    explicit FrameDumpViewer(DebugStateType::FrameDump frame_dump);
 
     ~FrameDumpViewer();
 

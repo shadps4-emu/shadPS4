@@ -25,14 +25,9 @@ inline float FastInFastOutCubic(float x) {
 
 } // namespace Easing
 
-inline void CentralizeNextWindow() {
-    const auto display_size = GetIO().DisplaySize;
-    SetNextWindowPos(display_size / 2.0f, ImGuiCond_Always, {0.5f});
-}
-
 inline void CentralizeWindow() {
     const auto display_size = GetIO().DisplaySize;
-    SetWindowPos(display_size / 2.0f);
+    SetNextWindowPos(display_size / 2.0f, ImGuiCond_Always, {0.5f});
 }
 
 inline void KeepWindowInside(ImVec2 display_size = GetIO().DisplaySize) {

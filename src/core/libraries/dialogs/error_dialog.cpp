@@ -75,7 +75,7 @@ public:
             std::min(io.DisplaySize.y, 300.0f),
         };
 
-        CentralizeNextWindow();
+        CentralizeWindow();
         SetNextWindowSize(window_size);
         SetNextWindowCollapsed(false);
         if (first_render || !io.NavActive) {
