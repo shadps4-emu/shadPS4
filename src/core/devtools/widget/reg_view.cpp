@@ -75,6 +75,7 @@ void RegView::ProcessShader(int shader_id) {
     hex_view.ReadOnly = true;
     hex_view.Cols = 16;
     hex_view.OptShowAscii = false;
+    hex_view.OptShowOptions = false;
 
     TextEditor dis_view;
     dis_view.SetPalette(TextEditor::GetDarkPalette());
@@ -188,7 +189,7 @@ RegView::RegView() {
     ImGuiID up1, down1;
 
     DockBuilderRemoveNodeChildNodes(root_dock_id);
-    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.2f, &up1, &down1);
+    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.13f, &up1, &down1);
 
     snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
     DockBuilderDockWindow(name, up1);
@@ -220,17 +221,6 @@ void RegView::Draw() {
         const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
 
         if (BeginMenuBar()) {
-            if (BeginMenu("Stage")) {
-                for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; i++) {
-                    if (data.regs.stage_enable.IsStageEnabled(i)) {
-                        bool selected = selected_shader == i;
-                        if (Selectable(names[i], &selected)) {
-                            SelectShader(i);
-                        }
-                    }
-                }
-                ImGui::EndMenu();
-            }
             if (BeginMenu("Windows")) {
                 Checkbox("Registers", &show_registers);
                 Checkbox("User data", &show_user_data);
@@ -240,11 +230,30 @@ void RegView::Draw() {
             EndMenuBar();
         }
 
-        char dock_name[64];
-        snprintf(dock_name, sizeof(dock_name), "BatchView###reg_dump_%d/dock_space", id);
-        auto root_dock_id = ImHashStr(dock_name);
-        DockSpace(root_dock_id);
+        if (BeginChild("STAGES", {},
+                       ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY)) {
+            for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; i++) {
+                if (data.regs.stage_enable.IsStageEnabled(i)) {
+                    const bool selected = selected_shader == i;
+                    if (selected) {
+                        PushStyleColor(ImGuiCol_Button, ImVec4{1.0f, 0.7f, 0.7f, 1.0f});
+                    }
+                    if (Button(names[i], {40.0f, 40.0f})) {
+                        SelectShader(i);
+                    }
+                    if (selected) {
+                        PopStyleColor();
+                    }
+                }
+                SameLine();
+            }
+            EndChild();
+        }
     }
+    char dock_name[64];
+    snprintf(dock_name, sizeof(dock_name), "BatchView###reg_dump_%d/dock_space", id);
+    auto root_dock_id = ImHashStr(dock_name);
+    DockSpace(root_dock_id);
     End();
 
     auto get_shader = [&]() -> ShaderCache* {
@@ -257,6 +266,7 @@ void RegView::Draw() {
 
     if (show_user_data) {
         snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
+
         if (Begin(name, &show_user_data)) {
             auto shader = get_shader();
             if (!shader) {
