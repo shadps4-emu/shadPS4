@@ -35,15 +35,16 @@
 #define SDL_EVENT_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 6
 
 Uint32 getMouseWheelEvent(const SDL_Event* event) {
-    if(event->type != SDL_EVENT_MOUSE_WHEEL) return 0;
+    if (event->type != SDL_EVENT_MOUSE_WHEEL)
+        return 0;
     // std::cout << "We got a wheel event! ";
-    if(event->wheel.y > 0) {
+    if (event->wheel.y > 0) {
         return SDL_EVENT_MOUSE_WHEEL_UP;
-    } else if(event->wheel.y < 0) {
+    } else if (event->wheel.y < 0) {
         return SDL_EVENT_MOUSE_WHEEL_DOWN;
-    } else if(event->wheel.x > 0) {
+    } else if (event->wheel.x > 0) {
         return SDL_EVENT_MOUSE_WHEEL_RIGHT;
-    } else if(event->wheel.x < 0) {
+    } else if (event->wheel.x < 0) {
         return SDL_EVENT_MOUSE_WHEEL_LEFT;
     }
     return 0;
@@ -61,7 +62,7 @@ KeyBinding::KeyBinding(const SDL_Event* event) {
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
         key = event->button.button;
-    } else if(event->type == SDL_EVENT_MOUSE_WHEEL) {
+    } else if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         key = getMouseWheelEvent(event);
     } else {
         std::cout << "We don't support this event type!\n";
@@ -241,12 +242,87 @@ std::map<KeyBinding, AxisMapping> axis_map = {};
 int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = true;
+const std::string default_config =
+    R"(## SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+## SPDX-License-Identifier: GPL-2.0-or-later
+ 
+#Default controller button mappings
+
+#Taken keys:
+#F11 : fullscreen
+#F10 : FPS counter
+#F9  : toggle mouse capture
+#F8  : reparse keyboard input(this)
+#F7  : toggle mouse-to-joystick input 
+#      (it overwrites everything else to that joystick, so this is required)
+
+#This is a mapping for Bloodborne, inspired by other Souls titles on PC.
+
+#This is a quick and dirty implementation of binding the mouse to a user-specified joystick
+mouse_to_joystick = left;
+
+#Use another item(healing), change status in inventory
+triangle = f;
+#Dodge, back in inventory
+circle = space;
+#Interact, select item in inventory
+cross = e;
+#Use quick item, remove item in inventory
+square = r;
+
+#Emergency extra bullets
+up = w, lalt;
+#Change quick item
+down = s, lalt;
+#Change weapon in left hand
+left = a, lalt;
+#Change weapon in right hand
+right = d, lalt;
+
+#Menu
+options = escape;
+#Gestures
+touchpad = g;
+
+#Transform
+l1 = rightbutton, lshift;
+#Shoot
+r1 = leftbutton;
+#Light attack
+l2 = rightbutton;
+#Heavy attack
+r2 = leftbutton, lshift;
+#Does nothing
+l3 = x;
+#Center cam, lock on
+r3 = q;
+
+#Axis mappings
+#Move
+axis_left_x_minus = a;
+axis_left_x_plus = d;
+axis_left_y_minus = w;
+axis_left_y_plus = s;
+)";
+
 void WindowSDL::parseInputConfig(const std::string& filename) {
-    
+
     // Read configuration file.
     // std::cout << "Reading keyboard config...\n";
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    std::ifstream file(user_dir / filename);
+    const auto config_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / filename;
+    if (!std::filesystem::exists(config_file)) {
+        // create it
+        std::ofstream file;
+        file.open(config_file, std::ios::out);
+        if (file.is_open()) {
+            file << default_config;
+            file.close();
+            std::cout << "Config file generated.\n";
+        } else {
+            std::cerr << "Error creating file!\n";
+        }
+    }
+    std::ifstream file(config_file);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
@@ -258,38 +334,35 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
     std::string line;
     while (std::getline(file, line)) {
         lineCount++;
+        // strip the ; and whitespace
+        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+        if (line[line.length() - 1] == ';') {
+            line = line.substr(0, line.length() - 1);
+        }
         // Ignore comment lines
         if (line.empty() || line[0] == '#') {
             continue;
         }
-        // strip the ; and whitespace that we put there so that the braindead clang-format is happy
-        line = line.substr(0, line.length() - 1);
-        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
-
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
-            std::cerr << "Invalid line format: " << line << std::endl;
+            std::cerr << "Invalid line format at line: " << lineCount << " data: " << line
+                      << std::endl;
             continue;
         }
 
         std::string controller_input = line.substr(0, equal_pos);
         std::string kbm_input = line.substr(equal_pos + 1);
-        KeyBinding binding = {0, SDL_KMOD_NONE}; // Initialize KeyBinding
+        KeyBinding binding = {0, SDL_KMOD_NONE};
 
-        // quick hack to configure the mouse
+        // special check for mouse to joystick input
         if (controller_input == "mouse_to_joystick") {
-            switch (kbm_input[0]) {
-            case 'l':
+            if (kbm_input == "left") {
                 mouse_joystick_binding = 1;
-                break;
-            case 'r':
+            } else if (kbm_input == "right") {
                 mouse_joystick_binding = 2;
-                break;
-            case 'n':
-            default:
-                mouse_joystick_binding = 0;
-                break;
+            } else {
+                mouse_joystick_binding = 0; // default to 'none' or invalid
             }
             continue;
         }
@@ -343,18 +416,19 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
 Uint32 WindowSDL::keyRepeatCallback(void* param, Uint32 id, Uint32 interval) {
     auto* data = (std::pair<WindowSDL*, SDL_Event*>*)param;
     KeyBinding binding(data->second);
-    if(data->second->type == SDL_EVENT_MOUSE_WHEEL) {
+    if (data->second->type == SDL_EVENT_MOUSE_WHEEL) {
+        // send an off signal a frame later
         auto button_it = button_map.find(binding);
         auto axis_it = axis_map.find(binding);
-        if(button_it != button_map.end()) {
+        if (button_it != button_map.end()) {
             data->first->updateButton(binding, button_it->second, false);
-        } else if(axis_it != axis_map.end()) {
+        } else if (axis_it != axis_map.end()) {
             data->first->controller->Axis(0, axis_it->second.axis, Input::GetAxis(-0x80, 0x80, 0));
         }
-        
+        return 0;
     }
     data->first->updateModKeyedInputsManually(binding);
-    delete data->second; 
+    delete data->second;
     delete data;
     return 0; // Return 0 to stop the timer after firing once
 }
@@ -366,7 +440,8 @@ Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
 }
 
 void WindowSDL::updateMouse() {
-    if(!mouse_enabled) return;
+    if (!mouse_enabled)
+        return;
     Input::Axis axis_x, axis_y;
     switch (mouse_joystick_binding) {
     case 1:
@@ -459,7 +534,7 @@ void WindowSDL::waitEvent() {
     if (mouse_polling_id == 0) {
         mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
     }
-    
+
     if (!SDL_WaitEvent(&event)) {
         return;
     }
@@ -544,8 +619,8 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     // Extract key and modifier
     KeyBinding binding(event);
     bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
-                        event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || 
-                        event->type == SDL_EVENT_MOUSE_WHEEL;
+                      event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+                      event->type == SDL_EVENT_MOUSE_WHEEL;
 
     u32 button = 0;
     Input::Axis axis = Input::Axis::AxisMax;
@@ -583,7 +658,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     auto button_it = FindKeyAllowingPartialModifiers(button_map, binding);
     auto axis_it = FindKeyAllowingPartialModifiers(axis_map, binding);
     // then no mod key matches if we didn't find it in the previous pass
-    if (button_it == button_map.end() && axis_it == axis_map.end() ) {
+    if (button_it == button_map.end() && axis_it == axis_map.end()) {
         button_it = FindKeyAllowingOnlyNoModifiers(button_map, binding);
     }
     if (axis_it == axis_map.end() && button_it == button_map.end()) {
@@ -595,9 +670,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     }
     if (axis_it != axis_map.end()) {
         axis = axis_it->second.axis;
-        axis_value = (input_down)
-                ? axis_it->second.value
-                : 0;
+        axis_value = (input_down) ? axis_it->second.value : 0;
         int ax = Input::GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
     }
