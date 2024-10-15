@@ -290,10 +290,14 @@ public:
 
         if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC) {
             bool error = false;
-            QString folder_path, game_update_path;
+            QString folder_path, game_update_path, dlc_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
+            Common::FS::PathToQString(
+                dlc_path, Config::getAddonInstallDir() /
+                              Common::FS::PathFromQString(folder_path).parent_path().filename());
             QString message_type = tr("Game");
+
             if (selected == deleteUpdate) {
                 if (!Config::getSeparateUpdateEnabled()) {
                     QMessageBox::critical(
@@ -302,7 +306,8 @@ public:
                                    "config option "
                                    "to work. If you want to use this feature, please enable it.")));
                     error = true;
-                } else if (!std::filesystem::exists(m_games[itemID].path.concat("-UPDATE"))) {
+                } else if (!std::filesystem::exists(
+                               Common::FS::PathFromQString(game_update_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update to delete!")));
                     error = true;
@@ -311,15 +316,12 @@ public:
                     message_type = tr("Update");
                 }
             } else if (selected == deleteDLC) {
-                std::filesystem::path addon_path =
-                    Config::getAddonInstallDir() /
-                    Common::FS::PathFromQString(folder_path).parent_path().filename();
-                if (!std::filesystem::exists(addon_path)) {
+                if (!std::filesystem::exists(Common::FS::PathFromQString(dlc_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no DLC to delete!")));
                     error = true;
                 } else {
-                    folder_path = QString::fromStdString(addon_path.string());
+                    folder_path = dlc_path;
                     message_type = tr("DLC");
                 }
             }
