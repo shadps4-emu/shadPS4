@@ -9,6 +9,7 @@
 
 #include "cmd_list.h"
 #include "common.h"
+#include "imgui/imgui_std.h"
 
 using namespace ImGui;
 using magic_enum::enum_name;
@@ -143,29 +144,31 @@ RegPopup::RegPopup() {
 
 void RegPopup::SetData(AmdGpu::Liverpool::ColorBuffer color_buffer, u32 batch_id, u32 cb_id) {
     this->data = color_buffer;
-    this->title = fmt::format("Batch #{} CB #{}", batch_id, cb_id);
+    this->title = fmt::format("Batch #{} CB #{}###reg_popup_%d", batch_id, cb_id, id);
 }
 
 void RegPopup::SetData(AmdGpu::Liverpool::DepthBuffer depth_buffer,
                        AmdGpu::Liverpool::DepthControl depth_control, u32 batch_id) {
     this->data = std::make_tuple(depth_buffer, depth_control);
-    this->title = fmt::format("Batch #{} Depth", batch_id);
+    this->title = fmt::format("Batch #{} Depth###reg_popup_%d", batch_id, id);
 }
 
-void RegPopup::Draw() {
-
-    char name[128];
-    snprintf(name, sizeof(name), "%s###reg_popup_%d", title.c_str(), id);
-
-    SetNextWindowSize({250.0f, 300.0f}, ImGuiCond_FirstUseEver);
-    if (Begin(name, &open, ImGuiWindowFlags_NoSavedSettings)) {
+void RegPopup::Draw(bool auto_resize) {
+    if (Begin(title.c_str(), &open, flags)) {
         if (const auto* buffer = std::get_if<AmdGpu::Liverpool::ColorBuffer>(&data)) {
+            if (auto_resize) {
+                SetWindowSize({589.0f, 522.0f});
+                KeepWindowInside();
+            }
             DrawColorBuffer(*buffer);
         } else if (const auto* depth_data = std::get_if<DepthBuffer>(&data)) {
+            if (auto_resize) {
+                SetWindowSize({404.0f, 543.0f});
+                KeepWindowInside();
+            }
             DrawDepthBuffer(*depth_data);
         }
     }
     End();
 }
-
 } // namespace Core::Devtools::Widget

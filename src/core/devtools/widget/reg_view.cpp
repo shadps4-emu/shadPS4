@@ -113,6 +113,7 @@ void RegView::DrawRegs() {
                 auto& pop = extra_reg_popup.emplace_back();
                 pop.SetData(args...);
                 pop.open = true;
+                pop.Draw(true);
             } else if (last_selected_cb == cb && default_reg_popup.open) {
                 default_reg_popup.open = false;
             } else {
@@ -120,10 +121,9 @@ void RegView::DrawRegs() {
                 default_reg_popup.SetData(args...);
                 if (!default_reg_popup.open) {
                     default_reg_popup.open = true;
-                    auto popup_pos =
-                        GetCurrentContext()->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
-                    SetNextWindowPos(popup_pos, ImGuiCond_Always);
-                    default_reg_popup.Draw();
+                    const auto pos = GImGui->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
+                    SetNextWindowPos(pos, ImGuiCond_Always);
+                    default_reg_popup.Draw(true);
                 }
             }
         };
