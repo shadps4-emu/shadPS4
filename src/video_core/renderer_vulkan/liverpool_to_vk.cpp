@@ -1066,7 +1066,10 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     }
 
     if (num_components == 1) {
-        color.float32[static_cast<int>(comp_swap)] = color.float32[0];
+        if (comp_swap != Liverpool::ColorBuffer::SwapMode::Standard) {
+            color.float32[static_cast<int>(comp_swap)] = color.float32[0];
+            color.float32[0] = 0.0f;
+        }
     } else {
         if (comp_swap_alt && num_components == 4) {
             std::swap(color.float32[0], color.float32[2]);
@@ -1077,7 +1080,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
         }
 
         if (comp_swap_alt && num_components != 4) {
-            std::swap(color.float32[num_components - 1], color.float32[3]);
+            color.float32[3] = color.float32[num_components - 1];
             color.float32[num_components - 1] = 0.0f;
         }
     }
