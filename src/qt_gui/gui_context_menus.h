@@ -295,7 +295,7 @@ public:
             Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             Common::FS::PathToQString(
                 dlc_path, Config::getAddonInstallDir() /
-                                Common::FS::PathFromQString(folder_path).parent_path().filename());
+                              Common::FS::PathFromQString(folder_path).parent_path().filename());
             QString message_type = tr("Game");
 
             if (selected == deleteUpdate) {
