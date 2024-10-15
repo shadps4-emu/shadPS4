@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - ディレクトリを選択</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -439,12 +452,12 @@
 			<source>Log Filter</source>
 			<translation>ログフィルター</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
 			<source>Input</source>
 			<translation>入力</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="611"/>
 			<source>Cursor</source>
 			<translation>カーソル</translation>
@@ -509,7 +522,7 @@
 			<source>Enable NULL GPU</source>
 			<translation>NULL GPUを有効にする</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
 			<translation>パス</translation>
@@ -1083,7 +1096,7 @@
 			<source>GUIgroupBox</source>
 			<translation>タイトルミュージックを再生:\nゲームがそれをサポートしている場合、GUIでゲームを選択したときに特別な音楽を再生することを有効にします。</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>カーソルを隠す:\nカーソルが消えるタイミングを選択してください:\n決して: いつでもマウスが見えます。\nアイドル: アイダルの後に消えるまでの時間を設定します。\n常に: マウスは決して見えません。</translation>
@@ -1289,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>アップデートがあります</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>アップデートチャネル</translation>

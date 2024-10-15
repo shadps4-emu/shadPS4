@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Wähle Ordner</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -439,12 +452,12 @@
 			<source>Log Filter</source>
 			<translation>Log-Filter</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
 			<source>Input</source>
 			<translation>Eingabe</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="611"/>
 			<source>Cursor</source>
 			<translation>Cursor</translation>
@@ -509,7 +522,7 @@
 			<source>Enable NULL GPU</source>
 			<translation>NULL GPU aktivieren</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
 			<translation>Pfad</translation>
@@ -1083,7 +1096,7 @@
 			<source>GUIgroupBox</source>
 			<translation>Wiedergabe der Titelmusik:\nWenn das Spiel dies unterstützt, wird beim Auswählen des Spiels in der Benutzeroberfläche spezielle Musik abgespielt.</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Maus ausblenden:\nWählen Sie, wann der Cursor verschwinden soll:\nNie: Sie sehen die Maus immer.\nInaktiv: Legen Sie eine Zeit fest, nach der sie nach Inaktivität verschwindet.\nImmer: Sie sehen die Maus niemals.</translation>
@@ -1289,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>Aktualisierung verfügbar</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Update-Kanal</translation>

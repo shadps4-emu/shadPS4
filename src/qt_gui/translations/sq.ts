@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Përzgjidh dosjen</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -439,36 +452,6 @@
 			<source>Log Filter</source>
 			<translation>Filtri i Ditarit</translation>
 		</message>
-		<message> 
-			<location filename="../settings_dialog.ui" line="595"/>
-			<source>Input</source>
-			<translation>Hyrje</translation>
-		</message>
-		<message> 
-			<location filename="../settings_dialog.ui" line="611"/>
-			<source>Cursor</source>
-			<translation>Kursori</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="635"/>
-			<source>Hide Cursor</source>
-			<translation>Fshih kursorin</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="668"/>
-			<source>Hide Cursor Idle Timeout</source>
-			<translation>Koha e pritjes për fshehjen e kursorit</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="767"/>
-			<source>Controller</source>
-			<translation>Kontrollues</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="797"/>
-			<source>Back Button Behavior</source>
-			<translation>Sjellja e butonit të kthimit</translation>
-		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
 			<source>Input</source>
@@ -488,11 +471,6 @@
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
 			<translation>Koha për fshehjen e kursorit joaktiv</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="595"/>
-			<source>Input</source>
-			<translation>Hyrja</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -544,7 +522,7 @@
 			<source>Enable NULL GPU</source>
 			<translation>Aktivizo GPU-në NULL</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
 			<translation>Rrugët</translation>
@@ -1118,7 +1096,7 @@
 			<source>GUIgroupBox</source>
 			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Fsheh kursori:\nZgjidhni kur do të zhduket kursori:\nKurrë: Do ta shihni gjithmonë maus.\nInaktiv: Vendosni një kohë për të zhdukur pas inaktivitetit.\nGjithmonë: nuk do ta shihni kurrë maus.</translation>
@@ -1126,62 +1104,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
 			<source>idleTimeoutGroupBox</source>
-			<translation>Vendosni një kohë për të zhdukur maus pas inaktivitetit.</translation>
+			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nVendos butonin mbrapa të kontrollorit për të imituar prekjen në pozicionin e caktuar në touchpad-in PS4.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="70"/>
-			<source>Never</source>
-			<translation>Kurrë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="71"/>
-			<source>Idle</source>
-			<translation>Pasiv</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Always</source>
-			<translation>Gjithmonë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="101"/>
-			<source>Touchpad Left</source>
-			<translation>Touchpad Majtas</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="102"/>
-			<source>Touchpad Right</source>
-			<translation>Touchpad Djathtas</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="103"/>
-			<source>Touchpad Center</source>
-			<translation>Qendra e Touchpad</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="104"/>
-			<source>None</source>
-			<translation>Asnjë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="392"/>
-			<source>cursorGroupBox</source>
-			<translation>Kursori:\nNdrysho cilësimet në lidhje me kursorin.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="394"/>
-			<source>hideCursorGroupBox</source>
-			<translation>Fshih kursorin:\nCakto sjelljen e fshehjes së kursorit.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="396"/>
-			<source>idleTimeoutGroupBox</source>
-			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1197,16 +1125,6 @@
 			<location filename="../settings_dialog.cpp" line="72"/>
 			<source>Always</source>
 			<translation>Gjithmonë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="330"/>
-			<source>backButtonBehaviorGroupBox</source>
-			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="330"/>
-			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="101"/>
@@ -1384,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>Ofrohet një përditësim</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Kanali i përditësimit</translation>

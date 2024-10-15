@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Choose directory</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -439,12 +452,12 @@
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
 			<source>Input</source>
 			<translation>Įvestis</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="611"/>
 			<source>Cursor</source>
 			<translation>Žymeklis</translation>
@@ -509,7 +522,7 @@
 			<source>Enable NULL GPU</source>
 			<translation>Enable NULL GPU</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
 			<translation>Keliai</translation>
@@ -1083,7 +1096,7 @@
 			<source>GUIgroupBox</source>
 			<translation>Groti antraščių muziką:\nJei žaidimas tai palaiko, įjungia specialios muzikos grojimą, kai pasirinkite žaidimą GUI.</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Slėpti žymeklį:\nPasirinkite, kada žymeklis dings:\nNiekuomet: Visada matysite pelę.\nNeaktyvus: Nustatykite laiką, po kurio ji dings, kai bus neaktyvi.\nVisada: niekada nematysite pelės.</translation>
@@ -1289,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>Prieinama atnaujinimas</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Atnaujinimo Kanalas</translation>

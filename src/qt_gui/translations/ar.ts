@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - اختر المجلد</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -439,12 +452,12 @@
 			<source>Log Filter</source>
 			<translation>مرشح السجل</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
 			<source>Input</source>
 			<translation>إدخال</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="611"/>
 			<source>Cursor</source>
 			<translation>مؤشر</translation>
@@ -509,7 +522,7 @@
 			<source>Enable NULL GPU</source>
 			<translation>تمكين وحدة معالجة الرسومات الفارغة</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
 			<translation>المسارات</translation>
@@ -1083,7 +1096,7 @@
 			<source>GUIgroupBox</source>
 			<translation>تشغيل موسيقى العنوان:\nإذا كانت اللعبة تدعم ذلك، قم بتمكين تشغيل موسيقى خاصة عند اختيار اللعبة في واجهة المستخدم.</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>إخفاء المؤشر:\nاختر متى سيختفي المؤشر:\nأبداً: سترى الفأرة دائماً.\nعاطل: حدد وقتاً لاختفائه بعد أن يكون غير مستخدم.\nدائماً: لن ترى الفأرة أبداً.</translation>
@@ -1289,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>تحديث متاح</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>قناة التحديث</translation>
