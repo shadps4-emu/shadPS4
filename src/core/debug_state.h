@@ -61,6 +61,7 @@ struct RegDump {
 };
 
 struct FrameDump {
+    u32 frame_id;
     std::vector<QueueDump> queues;
     std::unordered_map<uintptr_t, RegDump> regs; // address -> reg dump
 };

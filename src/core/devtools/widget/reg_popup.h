@@ -30,10 +30,11 @@ public:
 
     RegPopup();
 
-    void SetData(AmdGpu::Liverpool::ColorBuffer color_buffer, u32 batch_id, u32 cb_id);
+    void SetData(const std::string& base_title, AmdGpu::Liverpool::ColorBuffer color_buffer,
+                 u32 cb_id);
 
-    void SetData(AmdGpu::Liverpool::DepthBuffer depth_buffer,
-                 AmdGpu::Liverpool::DepthControl depth_control, u32 batch_id);
+    void SetData(const std::string& base_title, AmdGpu::Liverpool::DepthBuffer depth_buffer,
+                 AmdGpu::Liverpool::DepthControl depth_control);
 
     void Draw(bool auto_resize = false);
 };

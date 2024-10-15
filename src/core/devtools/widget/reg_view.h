@@ -18,6 +18,7 @@ struct ShaderCache {
 class RegView {
     int id;
 
+    std::string title;
     DebugStateType::RegDump data;
     u32 batch_id{~0u};
 
@@ -42,7 +43,7 @@ public:
 
     RegView();
 
-    void SetData(DebugStateType::RegDump data, u32 batch_id);
+    void SetData(DebugStateType::RegDump data, const std::string& base_title, u32 batch_id);
 
     void Draw();
 };

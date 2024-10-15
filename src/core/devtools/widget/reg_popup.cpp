@@ -142,22 +142,25 @@ RegPopup::RegPopup() {
     id = unique_id++;
 }
 
-void RegPopup::SetData(AmdGpu::Liverpool::ColorBuffer color_buffer, u32 batch_id, u32 cb_id) {
+void RegPopup::SetData(const std::string& base_title, AmdGpu::Liverpool::ColorBuffer color_buffer,
+                       u32 cb_id) {
     this->data = color_buffer;
-    this->title = fmt::format("Batch #{} CB #{}###reg_popup_%d", batch_id, cb_id, id);
+    this->title = fmt::format("{}/CB #{}", base_title, cb_id);
 }
 
-void RegPopup::SetData(AmdGpu::Liverpool::DepthBuffer depth_buffer,
-                       AmdGpu::Liverpool::DepthControl depth_control, u32 batch_id) {
+void RegPopup::SetData(const std::string& base_title, AmdGpu::Liverpool::DepthBuffer depth_buffer,
+                       AmdGpu::Liverpool::DepthControl depth_control) {
     this->data = std::make_tuple(depth_buffer, depth_control);
-    this->title = fmt::format("Batch #{} Depth###reg_popup_%d", batch_id, id);
+    this->title = fmt::format("{}/Depth", base_title);
 }
 
 void RegPopup::Draw(bool auto_resize) {
+    char name[128];
+    snprintf(name, sizeof(name), "%s###reg_popup_%d", title.c_str(), id);
     if (Begin(title.c_str(), &open, flags)) {
         if (const auto* buffer = std::get_if<AmdGpu::Liverpool::ColorBuffer>(&data)) {
             if (auto_resize) {
-                SetWindowSize({589.0f, 522.0f});
+                SetWindowSize({365.0f, 520.0f});
                 KeepWindowInside();
             }
             DrawColorBuffer(*buffer);

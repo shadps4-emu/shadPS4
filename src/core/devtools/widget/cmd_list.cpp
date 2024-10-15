@@ -1310,10 +1310,10 @@ void CmdListViewer::Draw() {
                         auto data = frame_dump->regs.at(batch.command_addr);
                         if (GetIO().KeyShift) {
                             auto& pop = extra_batch_view.emplace_back();
-                            pop.SetData(data, batch_id);
+                            pop.SetData(data, name, batch_id);
                             pop.open = true;
                         } else {
-                            batch_view.SetData(data, batch_id);
+                            batch_view.SetData(data, name, batch_id);
                             batch_view.open = true;
                         }
                     }

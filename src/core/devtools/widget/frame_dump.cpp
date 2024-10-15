@@ -47,9 +47,9 @@ FrameDumpViewer::FrameDumpViewer(const FrameDump& _frame_dump)
 
     cmd_list_viewer.reserve(frame_dump->queues.size());
     for (const auto& cmd : frame_dump->queues) {
-        const auto fname =
-            fmt::format("{}_{}_{:02}_{:02}", id, magic_enum::enum_name(selected_queue_type),
-                        selected_submit_num, selected_queue_num2);
+        const auto fname = fmt::format("F{} {}_{:02}_{:02}", frame_dump->frame_id,
+                                       magic_enum::enum_name(selected_queue_type),
+                                       selected_submit_num, selected_queue_num2);
         cmd_list_viewer.emplace_back(frame_dump.get(), cmd.data, cmd.base_addr, fname);
         if (cmd.type == QueueType::dcb && cmd.submit_num == 0 && cmd.num2 == 0) {
             selected_cmd = static_cast<s32>(cmd_list_viewer.size() - 1);
@@ -65,7 +65,7 @@ void FrameDumpViewer::Draw() {
     }
 
     char name[32];
-    snprintf(name, sizeof(name), "Frame #%d dump", id);
+    snprintf(name, sizeof(name), "Frame #%d dump", frame_dump->frame_id);
     if (Begin(name, &is_open, ImGuiWindowFlags_NoSavedSettings)) {
         if (IsWindowAppearing()) {
             auto window = GetCurrentWindow();

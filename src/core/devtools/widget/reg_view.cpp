@@ -111,14 +111,14 @@ void RegView::DrawRegs() {
         const auto open_new_popup = [&](int cb, auto... args) {
             if (GetIO().KeyShift) {
                 auto& pop = extra_reg_popup.emplace_back();
-                pop.SetData(args...);
+                pop.SetData(title, args...);
                 pop.open = true;
                 pop.Draw(true);
             } else if (last_selected_cb == cb && default_reg_popup.open) {
                 default_reg_popup.open = false;
             } else {
                 last_selected_cb = cb;
-                default_reg_popup.SetData(args...);
+                default_reg_popup.SetData(title, args...);
                 if (!default_reg_popup.open) {
                     default_reg_popup.open = true;
                     const auto pos = GImGui->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
@@ -143,7 +143,7 @@ void RegView::DrawRegs() {
             } else {
                 const char* text = last_selected_cb == cb && default_reg_popup.open ? "x" : "->";
                 if (SmallButton(text)) {
-                    open_new_popup(cb, buffer, batch_id, cb);
+                    open_new_popup(cb, buffer, cb);
                 }
             }
 
@@ -160,7 +160,7 @@ void RegView::DrawRegs() {
             constexpr auto depth_id = 0xF3;
             const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
             if (SmallButton(text)) {
-                open_new_popup(depth_id, regs.depth_buffer, regs.depth_control, batch_id);
+                open_new_popup(depth_id, regs.depth_buffer, regs.depth_control);
             }
         }
 
@@ -173,7 +173,7 @@ RegView::RegView() {
     id = unique_id++;
 
     char name[128];
-    snprintf(name, sizeof(name), "BatchView###reg_dump_%d", id);
+    snprintf(name, sizeof(name), "###reg_dump_%d", id);
     SetNextWindowPos({400.0f, 200.0f});
     SetNextWindowSize({450.0f, 500.0f});
     ImGuiID root_dock_id;
@@ -203,9 +203,10 @@ RegView::RegView() {
     DockBuilderFinish(root_dock_id);
 }
 
-void RegView::SetData(DebugStateType::RegDump data, u32 batch_id) {
+void RegView::SetData(DebugStateType::RegDump data, const std::string& base_title, u32 batch_id) {
     this->data = std::move(data);
     this->batch_id = batch_id;
+    this->title = fmt::format("{}/Batch {}", base_title, batch_id);
     // clear cache
     selected_shader = -1;
     shader_decomp.clear();
@@ -214,9 +215,9 @@ void RegView::SetData(DebugStateType::RegDump data, u32 batch_id) {
 }
 
 void RegView::Draw() {
-
     char name[128];
-    snprintf(name, sizeof(name), "BatchView %u###reg_dump_%d", batch_id, id);
+    snprintf(name, sizeof(name), "%s###reg_dump_%d", title.c_str(), id);
+
     if (Begin(name, &open, ImGuiWindowFlags_MenuBar)) {
         const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
 
@@ -270,7 +271,7 @@ void RegView::Draw() {
         if (Begin(name, &show_user_data)) {
             auto shader = get_shader();
             if (!shader) {
-                Text("Select a stage");
+                Text("Stage not selected");
             } else {
                 shader->hex_view.DrawContents(shader->user_data.data(), shader->user_data.size());
             }
@@ -283,7 +284,7 @@ void RegView::Draw() {
         if (Begin(name, &show_disassembly)) {
             auto shader = get_shader();
             if (!shader) {
-                Text("Select a stage");
+                Text("Stage not selected");
             } else {
                 shader->dis_view.Render("Disassembly", GetContentRegionAvail());
             }

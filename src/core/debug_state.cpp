@@ -102,6 +102,10 @@ void DebugStateImpl::RequestFrameDump(s32 count) {
     gnm_frame_dump_request_count = count;
     frame_dump_list.clear();
     frame_dump_list.resize(count);
+    const auto f = gnm_frame_count.load() + 1;
+    for (size_t i = 0; i < count; ++i) {
+        frame_dump_list[i].frame_id = f + i;
+    }
     waiting_submit_pause = true;
 }
 
