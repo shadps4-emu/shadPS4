@@ -11,6 +11,7 @@
 #include "common.h"
 #include "common/io_file.h"
 #include "core/devtools/options.h"
+#include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "reg_view.h"
 
@@ -73,7 +74,7 @@ void RegView::ProcessShader(int shader_id) {
     MemoryEditor hex_view;
     hex_view.Open = true;
     hex_view.ReadOnly = true;
-    hex_view.Cols = 16;
+    hex_view.Cols = 8;
     hex_view.OptShowAscii = false;
     hex_view.OptShowOptions = false;
 
@@ -175,7 +176,7 @@ RegView::RegView() {
     char name[128];
     snprintf(name, sizeof(name), "###reg_dump_%d", id);
     SetNextWindowPos({400.0f, 200.0f});
-    SetNextWindowSize({450.0f, 500.0f});
+    SetNextWindowSize({290.0f, 425.0f});
     ImGuiID root_dock_id;
     Begin(name);
     {
@@ -189,7 +190,7 @@ RegView::RegView() {
     ImGuiID up1, down1;
 
     DockBuilderRemoveNodeChildNodes(root_dock_id);
-    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.13f, &up1, &down1);
+    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.19f, &up1, &down1);
 
     snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
     DockBuilderDockWindow(name, up1);
@@ -220,6 +221,8 @@ void RegView::Draw() {
 
     if (Begin(name, &open, ImGuiWindowFlags_MenuBar)) {
         const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
+
+        KeepWindowInside();
 
         if (BeginMenuBar()) {
             if (BeginMenu("Windows")) {
@@ -268,7 +271,7 @@ void RegView::Draw() {
     if (show_user_data) {
         snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
 
-        if (Begin(name, &show_user_data)) {
+        if (Begin(name, &show_user_data, ImGuiWindowFlags_NoScrollbar)) {
             auto shader = get_shader();
             if (!shader) {
                 Text("Stage not selected");

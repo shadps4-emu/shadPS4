@@ -1314,7 +1314,12 @@ void CmdListViewer::Draw() {
                             pop.open = true;
                         } else {
                             batch_view.SetData(data, name, batch_id);
-                            batch_view.open = true;
+                            if (!batch_view.open) {
+                                batch_view.open = true;
+                                const auto pos = GImGui->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
+                                SetNextWindowPos(pos, ImGuiCond_Always);
+                                batch_view.Draw();
+                            }
                         }
                     }
                 };
