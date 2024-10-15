@@ -321,26 +321,26 @@ int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
 
     if (dir_name.empty()) {
-        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, permission denied",
-                 fmt::UTF(dir_name.u8string()));
+        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, permission denied",
+                  fmt::UTF(dir_name.u8string()));
         return SCE_KERNEL_ERROR_EACCES;
     }
 
     if (ro) {
-        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, directory is read only",
-                 fmt::UTF(dir_name.u8string()));
+        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, directory is read only",
+                  fmt::UTF(dir_name.u8string()));
         return SCE_KERNEL_ERROR_EROFS;
     }
 
     if (!std::filesystem::is_directory(dir_name)) {
-        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, path is not a directory",
-                 fmt::UTF(dir_name.u8string()));
+        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, path is not a directory",
+                  fmt::UTF(dir_name.u8string()));
         return ORBIS_KERNEL_ERROR_ENOTDIR;
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, no such file or directory",
-                 fmt::UTF(dir_name.u8string()));
+        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, no such file or directory",
+                  fmt::UTF(dir_name.u8string()));
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
@@ -348,7 +348,7 @@ int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     int result = std::filesystem::remove_all(dir_name, ec);
 
     if (!ec) {
-        LOG_DEBUG(Kernel_Fs, "Removed directory: {}", fmt::UTF(dir_name.u8string()));
+        LOG_INFO(Kernel_Fs, "Removed directory: {}", fmt::UTF(dir_name.u8string()));
         return ORBIS_OK;
     }
     LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, error_code={}",

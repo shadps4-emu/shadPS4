@@ -8,6 +8,9 @@
 #include "types.h"
 
 namespace Config {
+
+enum HideCursorState : s16 { Never, Idle, Always };
+
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 
@@ -15,12 +18,17 @@ bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
+bool getEnableDiscordRPC();
+bool getSeparateUpdateEnabled();
 
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
 
+s16 getCursorState();
+int getCursorHideTimeout();
+std::string getBackButtonBehavior();
 bool getUseSpecialPad();
 int getSpecialPadClass();
 
@@ -50,11 +58,16 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
+void setEnableDiscordRPC(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
+void setSeparateUpdateEnabled(bool use);
 
+void setCursorState(s16 cursorState);
+void setCursorHideTimeout(int newcursorHideTimeout);
+void setBackButtonBehavior(const std::string& type);
 void setUseSpecialPad(bool use);
 void setSpecialPadClass(int type);
 
@@ -73,7 +86,8 @@ bool vkCrashDiagnosticEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
-void setGameInstallDir(const std::filesystem::path& dir);
+bool addGameInstallDir(const std::filesystem::path& dir);
+void removeGameInstallDir(const std::filesystem::path& dir);
 void setAddonInstallDir(const std::filesystem::path& dir);
 void setMainWindowTheme(u32 theme);
 void setIconSize(u32 size);
@@ -92,7 +106,7 @@ u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();
 u32 getMainWindowGeometryW();
 u32 getMainWindowGeometryH();
-std::filesystem::path getGameInstallDir();
+const std::vector<std::filesystem::path>& getGameInstallDirs();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 u32 getIconSize();

@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     bool has_command_line_argument = argc > 1;
 
     // Check if the game install directory is set
-    if (Config::getGameInstallDir().empty() && !has_command_line_argument) {
+    if (Config::getGameInstallDirs().empty() && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }

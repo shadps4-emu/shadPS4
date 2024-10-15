@@ -157,6 +157,7 @@ void SetPosixErrno(int e) {
         g_posix_errno = e;
     }
 }
+
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
                                void** res) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",

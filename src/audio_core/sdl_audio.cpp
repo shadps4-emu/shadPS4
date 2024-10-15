@@ -103,7 +103,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
 
     const size_t data_size = port.samples_num * port.sample_size * port.channels_num;
 
-    SDL_bool result = SDL_PutAudioStreamData(port.stream, ptr, data_size);
+    bool result = SDL_PutAudioStreamData(port.stream, ptr, data_size);
 
     lock.unlock(); // Unlock only after necessary operations
 

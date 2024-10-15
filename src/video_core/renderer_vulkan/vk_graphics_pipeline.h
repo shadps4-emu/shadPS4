@@ -36,7 +36,7 @@ struct GraphicsPipelineKey {
     u32 num_samples;
     u32 mrt_mask;
     Liverpool::StencilControl stencil;
-    Liverpool::PrimitiveType prim_type;
+    AmdGpu::PrimitiveType prim_type;
     u32 enable_primitive_restart;
     u32 primitive_restart_index;
     Liverpool::PolygonMode polygon_mode;
@@ -86,13 +86,13 @@ public:
     }
 
     [[nodiscard]] bool IsPrimitiveListTopology() const {
-        return key.prim_type == Liverpool::PrimitiveType::PointList ||
-               key.prim_type == Liverpool::PrimitiveType::LineList ||
-               key.prim_type == Liverpool::PrimitiveType::TriangleList ||
-               key.prim_type == Liverpool::PrimitiveType::AdjLineList ||
-               key.prim_type == Liverpool::PrimitiveType::AdjTriangleList ||
-               key.prim_type == Liverpool::PrimitiveType::RectList ||
-               key.prim_type == Liverpool::PrimitiveType::QuadList;
+        return key.prim_type == AmdGpu::PrimitiveType::PointList ||
+               key.prim_type == AmdGpu::PrimitiveType::LineList ||
+               key.prim_type == AmdGpu::PrimitiveType::TriangleList ||
+               key.prim_type == AmdGpu::PrimitiveType::AdjLineList ||
+               key.prim_type == AmdGpu::PrimitiveType::AdjTriangleList ||
+               key.prim_type == AmdGpu::PrimitiveType::RectList ||
+               key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
 
 private:

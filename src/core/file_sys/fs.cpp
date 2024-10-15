@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/config.h"
 #include "common/string_util.h"
 #include "core/file_sys/fs.h"
 
@@ -53,7 +54,14 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, b
     // Remove device (e.g /app0) from path to retrieve relative path.
     pos = mount->mount.size() + 1;
     const auto rel_path = std::string_view(corrected_path).substr(pos);
-    const auto host_path = mount->host_path / rel_path;
+    std::filesystem::path host_path = mount->host_path / rel_path;
+
+    std::filesystem::path patch_path = mount->host_path;
+    patch_path += "-UPDATE";
+    if (corrected_path.starts_with("/app0/") && std::filesystem::exists(patch_path / rel_path)) {
+        host_path = patch_path / rel_path;
+    }
+
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
     }

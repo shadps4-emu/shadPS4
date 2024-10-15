@@ -24,16 +24,17 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
-    this->setColumnCount(8);
+    this->setColumnCount(9);
     this->setColumnWidth(1, 300); // Name
     this->setColumnWidth(2, 120); // Serial
     this->setColumnWidth(3, 90);  // Region
     this->setColumnWidth(4, 90);  // Firmware
     this->setColumnWidth(5, 90);  // Size
     this->setColumnWidth(6, 90);  // Version
+    this->setColumnWidth(7, 100); // Play Time
     QStringList headers;
     headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
-            << tr("Size") << tr("Version") << tr("Path");
+            << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -100,9 +101,37 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
+
+        QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
+        if (playTime.isEmpty()) {
+            m_game_info->m_games[i].play_time = "0:00:00";
+            SetTableItem(i, 7, "0");
+        } else {
+            QStringList timeParts = playTime.split(':');
+            int hours = timeParts[0].toInt();
+            int minutes = timeParts[1].toInt();
+            int seconds = timeParts[2].toInt();
+
+            QString formattedPlayTime;
+            if (hours > 0) {
+                formattedPlayTime += QString("%1h ").arg(hours);
+            }
+            if (minutes > 0) {
+                formattedPlayTime += QString("%1m ").arg(minutes);
+            }
+
+            formattedPlayTime = formattedPlayTime.trimmed();
+            m_game_info->m_games[i].play_time = playTime.toStdString();
+            if (formattedPlayTime.isEmpty()) {
+                SetTableItem(i, 7, "0");
+            } else {
+                SetTableItem(i, 7, formattedPlayTime);
+            }
+        }
+
         QString path;
         Common::FS::PathToQString(path, m_game_info->m_games[i].path);
-        SetTableItem(i, 7, path);
+        SetTableItem(i, 8, path);
     }
 }
 
@@ -171,7 +200,7 @@ void GameListFrame::ResizeIcons(int iconSize) {
         this->setItem(index, 0, iconItem);
         index++;
     }
-    this->horizontalHeader()->setSectionResizeMode(7, QHeaderView::ResizeToContents);
+    this->horizontalHeader()->setSectionResizeMode(8, QHeaderView::ResizeToContents);
 }
 
 void GameListFrame::SetTableItem(int row, int column, QString itemStr) {
@@ -223,4 +252,34 @@ void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
     widget->setLayout(layout);
     this->setItem(row, column, item);
     this->setCellWidget(row, column, widget);
+}
+
+QString GameListFrame::GetPlayTime(const std::string& serial) {
+    QString playTime;
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return playTime;
+    }
+
+    while (!file.atEnd()) {
+        QByteArray line = file.readLine();
+        QString lineStr = QString::fromUtf8(line).trimmed();
+
+        QStringList parts = lineStr.split(' ');
+        if (parts.size() >= 2) {
+            QString fileSerial = parts[0];
+            QString time = parts[1];
+
+            if (fileSerial == QString::fromStdString(serial)) {
+                playTime = time;
+                break;
+            }
+        }
+    }
+
+    file.close();
+    return playTime;
 }

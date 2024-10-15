@@ -51,6 +51,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
+    initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
@@ -66,6 +67,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     QCompleter* completer = new QCompleter(languageNames, this);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     ui->consoleLanguageComboBox->setCompleter(completer);
+
+    ui->hideCursorComboBox->addItem(tr("Never"));
+    ui->hideCursorComboBox->addItem(tr("Idle"));
+    ui->hideCursorComboBox->addItem(tr("Always"));
+
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
+    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
+    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
 
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
@@ -123,6 +133,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->ps4proCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setNeoMode(val); });
 
+        connect(ui->separateUpdatesCheckBox, &QCheckBox::stateChanged, this,
+                [](int val) { Config::setSeparateUpdateEnabled(val); });
+
         connect(ui->logTypeComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& text) { Config::setLogType(text.toStdString()); });
 
@@ -151,6 +164,37 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             Config::setBGMvolume(val);
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
+
+        connect(ui->discordRPCCheckbox, &QCheckBox::stateChanged, this, [](int val) {
+            Config::setEnableDiscordRPC(val);
+            auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+            if (val == Qt::Checked) {
+                rpc->init();
+                rpc->setStatusIdling();
+            } else {
+                rpc->shutdown();
+            }
+        });
+    }
+
+    // Input TAB
+    {
+        connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                [this](s16 index) {
+                    Config::setCursorState(index);
+                    OnCursorStateChanged(index);
+                });
+
+        connect(ui->idleTimeoutSpinBox, &QSpinBox::valueChanged, this,
+                [](int index) { Config::setCursorHideTimeout(index); });
+
+        connect(ui->backButtonBehaviorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < ui->backButtonBehaviorComboBox->count()) {
+                        QString data = ui->backButtonBehaviorComboBox->itemData(index).toString();
+                        Config::setBackButtonBehavior(data.toStdString());
+                    }
+                });
     }
 
     // GPU TAB
@@ -176,6 +220,35 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 [](int val) { Config::setNullGpu(val); });
     }
 
+    // PATH TAB
+    {
+        connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
+            const auto config_dir = Config::getGameInstallDirs();
+            QString file_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
+            auto file_path = Common::FS::PathFromQString(file_path_string);
+            if (!file_path.empty() && Config::addGameInstallDir(file_path)) {
+                QListWidgetItem* item = new QListWidgetItem(file_path_string);
+                ui->gameFoldersListWidget->addItem(item);
+            }
+        });
+
+        connect(ui->gameFoldersListWidget, &QListWidget::itemSelectionChanged, this, [this]() {
+            ui->removeFolderButton->setEnabled(
+                !ui->gameFoldersListWidget->selectedItems().isEmpty());
+        });
+
+        connect(ui->removeFolderButton, &QPushButton::clicked, this, [this]() {
+            QListWidgetItem* selected_item = ui->gameFoldersListWidget->currentItem();
+            QString item_path_string = selected_item ? selected_item->text() : QString();
+            if (!item_path_string.isEmpty()) {
+                auto file_path = Common::FS::PathFromQString(item_path_string);
+                Config::removeGameInstallDir(file_path);
+                delete selected_item;
+            }
+        });
+    }
+
     // DEBUG TAB
     {
         connect(ui->debugDump, &QCheckBox::stateChanged, this,
@@ -199,11 +272,18 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->fullscreenCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->ps4proCheckBox->installEventFilter(this);
+        ui->discordRPCCheckbox->installEventFilter(this);
+        ui->separateUpdatesCheckBox->installEventFilter(this);
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
         ui->updaterGroupBox->installEventFilter(this);
         ui->GUIgroupBox->installEventFilter(this);
+
+        // Input
+        ui->hideCursorGroupBox->installEventFilter(this);
+        ui->idleTimeoutGroupBox->installEventFilter(this);
+        ui->backButtonBehaviorGroupBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
@@ -212,6 +292,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
+
+        // Paths
+        ui->gameFoldersGroupBox->installEventFilter(this);
+        ui->gameFoldersListWidget->installEventFilter(this);
+        ui->addFolderButton->installEventFilter(this);
+        ui->removeFolderButton->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -228,6 +314,9 @@ void SettingsDialog::LoadValuesFromConfig() {
             std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
         languageIndexes.size());
     ui->emulatorLanguageComboBox->setCurrentIndex(languages[Config::getEmulatorLanguage()]);
+    ui->hideCursorComboBox->setCurrentIndex(Config::getCursorState());
+    OnCursorStateChanged(Config::getCursorState());
+    ui->idleTimeoutSpinBox->setValue(Config::getCursorHideTimeout());
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
@@ -236,12 +325,14 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->nullGpuCheckBox->setChecked(Config::nullGpu());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
     ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
+    ui->discordRPCCheckbox->setChecked(Config::getEnableDiscordRPC());
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());
     ui->showSplashCheckBox->setChecked(Config::showSplash());
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());
     ui->logTypeComboBox->setCurrentText(QString::fromStdString(Config::getLogType()));
     ui->logFilterLineEdit->setText(QString::fromStdString(Config::getLogFilter()));
     ui->userNameLineEdit->setText(QString::fromStdString(Config::getUserName()));
+    ui->separateUpdatesCheckBox->setChecked(Config::getSeparateUpdateEnabled());
 
     ui->debugDump->setChecked(Config::debugDump());
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());
@@ -258,20 +349,48 @@ void SettingsDialog::LoadValuesFromConfig() {
         }
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+
+    for (const auto& dir : Config::getGameInstallDirs()) {
+        QString path_string;
+        Common::FS::PathToQString(path_string, dir);
+        QListWidgetItem* item = new QListWidgetItem(path_string);
+        ui->gameFoldersListWidget->addItem(item);
+    }
+
+    QString backButtonBehavior = QString::fromStdString(Config::getBackButtonBehavior());
+    int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
+    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+
+    ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
     QDirIterator it(QStringLiteral(":/translations"), QDirIterator::NoIteratorFlags);
 
-    int idx = 0;
+    QVector<QPair<QString, QString>> languagesList;
+
     while (it.hasNext()) {
         QString locale = it.next();
         locale.truncate(locale.lastIndexOf(QLatin1Char{'.'}));
         locale.remove(0, locale.lastIndexOf(QLatin1Char{'/'}) + 1);
         const QString lang = QLocale::languageToString(QLocale(locale).language());
         const QString country = QLocale::territoryToString(QLocale(locale).territory());
-        ui->emulatorLanguageComboBox->addItem(QStringLiteral("%1 (%2)").arg(lang, country), locale);
 
+        QString displayName = QStringLiteral("%1 (%2)").arg(lang, country);
+        languagesList.append(qMakePair(locale, displayName));
+    }
+
+    std::sort(languagesList.begin(), languagesList.end(),
+              [](const QPair<QString, QString>& a, const QPair<QString, QString>& b) {
+                  return a.second < b.second;
+              });
+
+    int idx = 0;
+    for (const auto& pair : languagesList) {
+        const QString& locale = pair.first;
+        const QString& displayName = pair.second;
+
+        ui->emulatorLanguageComboBox->addItem(displayName, locale);
         languages[locale.toStdString()] = idx;
         idx++;
     }
@@ -287,6 +406,18 @@ void SettingsDialog::OnLanguageChanged(int index) {
     ui->retranslateUi(this);
 
     emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString().toStdString());
+}
+
+void SettingsDialog::OnCursorStateChanged(s16 index) {
+    if (index == -1)
+        return;
+    if (index == Config::HideCursorState::Idle) {
+        ui->idleTimeoutGroupBox->show();
+    } else {
+        if (!ui->idleTimeoutGroupBox->isHidden()) {
+            ui->idleTimeoutGroupBox->hide();
+        }
+    }
 }
 
 int SettingsDialog::exec() {
@@ -309,6 +440,10 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("showSplashCheckBox");
     } else if (elementName == "ps4proCheckBox") {
         text = tr("ps4proCheckBox");
+    } else if (elementName == "discordRPCCheckbox") {
+        text = tr("discordRPCCheckbox");
+    } else if (elementName == "separateUpdatesCheckBox") {
+        text = tr("separateUpdatesCheckBox");
     } else if (elementName == "userName") {
         text = tr("userName");
     } else if (elementName == "logTypeGroupBox") {
@@ -319,6 +454,15 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("updaterGroupBox");
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
+    }
+
+    // Input
+    if (elementName == "hideCursorGroupBox") {
+        text = tr("hideCursorGroupBox");
+    } else if (elementName == "idleTimeoutGroupBox") {
+        text = tr("idleTimeoutGroupBox");
+    } else if (elementName == "backButtonBehaviorGroupBox") {
+        text = tr("backButtonBehaviorGroupBox");
     }
 
     // Graphics
@@ -334,8 +478,15 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("dumpShadersCheckBox");
     } else if (elementName == "nullGpuCheckBox") {
         text = tr("nullGpuCheckBox");
-    } else if (elementName == "dumpPM4CheckBox") {
-        text = tr("dumpPM4CheckBox");
+    }
+
+    // Path
+    if (elementName == "gameFoldersGroupBox" || elementName == "gameFoldersListWidget") {
+        text = tr("gameFoldersBox");
+    } else if (elementName == "addFolderButton") {
+        text = tr("addFolderButton");
+    } else if (elementName == "removeFolderButton") {
+        text = tr("removeFolderButton");
     }
 
     // Debug
@@ -365,12 +516,19 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             }
 
             // if the text exceeds the size of the box, it will increase the size
+            QRect currentGeometry = this->geometry();
+            int newWidth = currentGeometry.width();
+
             int documentHeight = ui->descriptionText->document()->size().height();
             int visibleHeight = ui->descriptionText->viewport()->height();
             if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMinimumHeight(90);
+                ui->descriptionText->setMaximumSize(16777215, 110);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  currentGeometry.height() + 40);
             } else {
-                ui->descriptionText->setMinimumHeight(70);
+                ui->descriptionText->setMaximumSize(16777215, 70);
+                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
+                                  initialHeight);
             }
             return true;
         }

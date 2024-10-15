@@ -51,7 +51,9 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     // Input.
     m_gamesDirectory = new QLineEdit();
     QString install_dir;
-    Common::FS::PathToQString(install_dir, Config::getGameInstallDir());
+    std::filesystem::path install_path =
+        Config::getGameInstallDirs().empty() ? "" : Config::getGameInstallDirs().front();
+    Common::FS::PathToQString(install_dir, install_path);
     m_gamesDirectory->setText(install_dir);
     m_gamesDirectory->setMinimumWidth(400);
 
@@ -124,8 +126,7 @@ void GameInstallDialog::Save() {
             return;
         }
     }
-
-    Config::setGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
+    Config::addGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
     Config::setAddonInstallDir(Common::FS::PathFromQString(addonsDirectory));
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");

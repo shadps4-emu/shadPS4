@@ -18,7 +18,7 @@ vk::StencilOp StencilOp(Liverpool::StencilFunc op);
 
 vk::CompareOp CompareOp(Liverpool::CompareFunc func);
 
-vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type);
+vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type);
 
 vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode);
 

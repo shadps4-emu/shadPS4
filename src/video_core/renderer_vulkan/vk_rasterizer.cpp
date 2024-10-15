@@ -70,9 +70,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
                            instance_offset);
     } else {
-        const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
-                                     ? 4
-                                     : regs.num_indices;
+        const u32 num_vertices =
+            regs.primitive_type == AmdGpu::PrimitiveType::RectList ? 4 : regs.num_indices;
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
@@ -88,7 +87,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
         return;
     }
 
-    ASSERT_MSG(regs.primitive_type != AmdGpu::Liverpool::PrimitiveType::RectList,
+    ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
                "Unsupported primitive type for indirect draw");
 
     try {
@@ -101,11 +100,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    BeginRendering(*pipeline);
-    UpdateDynamicState(*pipeline);
-
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
     const auto total_offset = base + offset;
+
+    BeginRendering(*pipeline);
+    UpdateDynamicState(*pipeline);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
@@ -458,6 +457,19 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
     cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
         .pLabelName = str.data(),
     });
+}
+
+void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color) {
+    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+        return;
+    }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+        .pLabelName = str.data(),
+        .color = std::array<f32, 4>(
+            {(f32)((color >> 16) & 0xff) / 255.0f, (f32)((color >> 8) & 0xff) / 255.0f,
+             (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
 }
 
 } // namespace Vulkan

@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="tr_TR">
 	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
@@ -50,6 +50,19 @@
 			<location filename="../game_info.cpp" line="27"/>
 			<source>Loading...</source>
 			<translation>Yükleniyor...</translation>
+		</message>
+	</context>
+	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Klasörü Seç</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
 		</message>
 	</context>
 	<context>
@@ -415,6 +428,11 @@
 			<translation>PS4 Pro mu</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Discord Rich Presence'i etkinleştir</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Kullanıcı Adı</translation>
@@ -433,6 +451,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Kayıt Filtresi</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Girdi</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>İmleç</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>İmleci gizle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>İmleç için hareketsizlik zaman aşımı</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontrolcü</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Geri Dön Butonu Davranışı</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +523,24 @@
 			<translation>NULL GPU'yu Etkinleştir</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 Kaydını Etkinleştir</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Yollar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Oyun Klasörleri</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Ekle...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Kaldır</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -1004,6 +1067,11 @@
 			<translation>PS4 Pro Mu:\nEmülatörü bir PS4 PRO gibi çalıştırır; bu, bunu destekleyen oyunlarda özel özellikleri etkinleştirebilir.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Discord Rich Presence'i etkinleştir:\nEmülatör simgesini ve Discord profilinizdeki ilgili bilgileri gösterir.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Kullanıcı Adı:\nBazı oyunlar tarafından gösterilebilen PS4 hesabının kullanıcı adını ayarlar.</translation>
@@ -1016,7 +1084,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Günlük Filtre: Sadece belirli bilgileri yazdırmak için günlüğü filtreler. Örnekler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Düzeyler: Trace, Debug, Info, Warning, Error, Critical - bu sırada, belirli bir seviye listede önceki tüm seviyeleri susturur ve sonraki tüm seviyeleri kaydeder.</translation>
+			<translation>Günlük Filtre:\nSadece belirli bilgileri yazdırmak için günlüğü filtreler.\nÖrnekler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Düzeyler: Trace, Debug, Info, Warning, Error, Critical - bu sırada, belirli bir seviye listede önceki tüm seviyeleri susturur ve sonraki tüm seviyeleri kaydeder.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1095,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI'de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>İmleci gizle:\nİmlecin ne zaman kaybolacağını seçin:\nAsla: Fareyi her zaman göreceksiniz.\nPasif: Hareketsiz kaldıktan sonra kaybolması için bir süre belirleyin.\nHer zaman: fareyi asla göremeyeceksiniz.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Hareket etmeden sonra imlecin kaybolacağı süreyi ayarlayın.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Geri düğmesi davranışı:\nKontrol cihazındaki geri düğmesini, PS4'ün dokunmatik panelindeki belirlenen noktaya dokunmak için ayarlar.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Asla</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Boşta</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Her zaman</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Dokunmatik Yüzey Sol</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Dokunmatik Yüzey Sağ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Dokunmatik Yüzey Orta</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Yok</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1172,19 @@
 			<translation>Null GPU'yu Etkinleştir:\nTeknik hata ayıklama amacıyla, oyunun render edilmesini grafik kartı yokmuş gibi devre dışı bırakır.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 Dışa Aktarmayı Etkinleştir:\nTeknik hata ayıklama amacıyla, emülatör bunları işlerken GPU komut verilerini bir klasöre kaydeder.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Oyun klasörleri:\nYüklenmiş oyunları kontrol etmek için klasörlerin listesi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Ekle:\nListeye bir klasör ekle.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Kaldır:\nListeden bir klasörü kaldır.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1121,6 +1249,11 @@
 			<source>Path</source>
 			<translation>Yol</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Oynama Süresi</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1169,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>Güncelleme Mevcut</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Güncelleme Kanalı</translation>
