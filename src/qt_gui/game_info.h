@@ -28,8 +28,7 @@ public:
         std::filesystem::path sce_folder_path = filePath / "sce_sys" / "param.sfo";
         std::filesystem::path game_update_path =
             std::filesystem::path(filePath.string() + "-UPDATE");
-        if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo") &&
-            Config::getSeparateUpdateEnabled()) {
+        if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
             sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
         }
 

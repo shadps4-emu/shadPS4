@@ -97,7 +97,7 @@ public:
             QString game_update_path;
             Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             std::filesystem::path game_folder_path = m_games[itemID].path;
-            if (std::filesystem::exists(m_games[itemID].path)) {
+            if (std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
                 game_folder_path = Common::FS::PathFromQString(game_update_path);
             }
             if (psf.Open(game_folder_path / "sce_sys" / "param.sfo")) {
@@ -291,7 +291,7 @@ public:
         if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC) {
             bool error = false;
             QString folder_path, game_update_path;
-            Common::FS::PathToQString(folder_path, m_games[itemID].path.concat("-UPDATE"));
+            Common::FS::PathToQString(folder_path, m_games[itemID].path);
             Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             QString message_type = tr("Game");
             if (selected == deleteUpdate) {
