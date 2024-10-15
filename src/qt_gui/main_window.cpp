@@ -682,9 +682,6 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         auto game_update_path = use_game_update
                                     ? game_install_dir / (std::string(pkg.GetTitleID()) + "-UPDATE")
                                     : game_folder_path;
-        if (!std::filesystem::exists(game_update_path)) {
-            std::filesystem::create_directory(game_update_path);
-        }
         QString gameDirPath;
         Common::FS::PathToQString(gameDirPath, game_folder_path);
         QDir game_dir(gameDirPath);
