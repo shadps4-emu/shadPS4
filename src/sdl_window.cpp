@@ -247,7 +247,7 @@ std::map<KeyBinding, AxisMapping> axis_map = {};
 
 int mouse_joystick_binding = 0;
 Uint32 mouse_polling_id = 0;
-bool mouse_enabled = true, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
+bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
 // i wrapped it in a function so I can collapse it
 std::string getDefaultConfig() {
