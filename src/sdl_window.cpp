@@ -173,20 +173,20 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"7", SDLK_7},
     {"8", SDLK_8},
     {"9", SDLK_9},
-    {",", SDLK_COMMA},
-    {".", SDLK_PERIOD},
-    {"?", SDLK_QUESTION},
-    {";", SDLK_SEMICOLON},
-    {"-", SDLK_MINUS},
-    {"_", SDLK_UNDERSCORE},
-    {"(", SDLK_LEFTPAREN},
-    {")", SDLK_RIGHTPAREN},
-    {"[", SDLK_LEFTBRACKET},
-    {"]", SDLK_RIGHTBRACKET},
-    {"{", SDLK_LEFTBRACE},
-    {"}", SDLK_RIGHTBRACE},
-    {"\\", SDLK_BACKSLASH},
-    {"/", SDLK_SLASH},
+    {"comma", SDLK_COMMA},
+    {"period", SDLK_PERIOD},
+    {"question", SDLK_QUESTION},
+    {"semicolon", SDLK_SEMICOLON},
+    {"minus", SDLK_MINUS},
+    {"underscore", SDLK_UNDERSCORE},
+    {"lparenthesis", SDLK_LEFTPAREN},
+    {"rparenthesis", SDLK_RIGHTPAREN},
+    {"lbracket", SDLK_LEFTBRACKET},
+    {"rbracket", SDLK_RIGHTBRACKET},
+    {"lbrace", SDLK_LEFTBRACE},
+    {"rbrace", SDLK_RIGHTBRACE},
+    {"backslash", SDLK_BACKSLASH},
+    {"dash", SDLK_SLASH},
     {"enter", SDLK_RETURN},
     {"space", SDLK_SPACE},
     {"tab", SDLK_TAB},
@@ -649,6 +649,12 @@ void WindowSDL::onKeyboardMouseEvent(const SDL_Event* event) {
         // Toggle mouse movement input
         else if (binding.key == SDLK_F7) {
             mouse_enabled = !mouse_enabled;
+        }
+        // F7 + F9
+        else if (binding.key == SDLK_F6) {
+            mouse_enabled = !mouse_enabled;
+            SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
+                                           !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
         }
         // Toggle fullscreen
         else if (binding.key == SDLK_F11) {
