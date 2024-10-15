@@ -62,7 +62,7 @@
 		<message>
 			<location filename="../install_dir_select.cpp" line="37"/>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Përzgjidh në cilën dosje do që të instalosh.</translation>
 		</message>
 	</context>
 	<context>
@@ -440,7 +440,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
 			<source>Logger</source>
-			<translation>Regjistruesi i të dhënave</translation>
+			<translation>Regjistruesi i ditarit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="199"/>
@@ -525,7 +525,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
-			<translation>Rrugët</translation>
+			<translation>Shtigjet</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="1119"/>
@@ -535,12 +535,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="1141"/>
 			<source>Add...</source>
-			<translation>Shtoni...</translation>
+			<translation>Shto...</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="1141"/>
 			<source>Remove</source>
-			<translation>Hiqni</translation>
+			<translation>Hiq</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -1069,7 +1069,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>
 			<source>discordRPCCheckbox</source>
-			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tuaj në Discord.</translation>
+			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tënd në Discord.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1089,7 +1089,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1099,17 +1099,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
-			<translation>Fsheh kursori:\nZgjidhni kur do të zhduket kursori:\nKurrë: Do ta shihni gjithmonë maus.\nInaktiv: Vendosni një kohë për të zhdukur pas inaktivitetit.\nGjithmonë: nuk do ta shihni kurrë maus.</translation>
+			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nInaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
 			<source>idleTimeoutGroupBox</source>
-			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
+			<translation>Koha për fshehjen e kursorit joaktiv:\nKohëzgjatja (në sekonda) pas së cilës kursori që nuk ka qënë në veprim fshihet.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni mprapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1119,7 +1119,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="71"/>
 			<source>Idle</source>
-			<translation>Pa vepruar</translation>
+			<translation>Joaktiv</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
@@ -1174,17 +1174,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>gameFoldersBox</source>
-			<translation>Folderët e lojërave:\nLista e folderëve për të kontrolluar lojërat e instaluara.</translation>
+			<translation>Dosjet e lojërave:\nLista e dosjeve për të kontrolluar lojërat e instaluara.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>addFolderButton</source>
-			<translation>Shto:\nShto një folder në listë.</translation>
+			<translation>Shto:\nShto një dosje në listë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>removeFolderButton</source>
-			<translation>Hiq:\nHiq një folder nga lista.</translation>
+			<translation>Hiq:\nHiq një dosje nga lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
