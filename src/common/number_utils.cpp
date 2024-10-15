@@ -4,9 +4,9 @@
 #include <array>
 #include <half.hpp>
 
+#include "common/number_utils.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/types.h"
-#include "video_core/renderer_vulkan/number_utils.h"
 
 #define UF11_EXPONENT_SHIFT 6
 #define UF10_EXPONENT_SHIFT 5
@@ -16,7 +16,7 @@
 
 #define F32_INFINITY 0x7f800000
 
-namespace Vulkan::NumberUtils {
+namespace NumberUtils {
 
 float Uf11ToF32(u16 val) {
     union {
@@ -158,4 +158,4 @@ float S16ToSnorm(s16 val) {
     return float(val * c);
 }
 
-} // namespace Vulkan::NumberUtils
+} // namespace NumberUtils

@@ -5,7 +5,7 @@
 
 #include "common/types.h"
 
-namespace Vulkan::NumberUtils {
+namespace NumberUtils {
 
 float Uf11ToF32(u16 val);
 float Uf10ToF32(u16 val);
@@ -25,4 +25,4 @@ float S10ToSnorm(s16 val);
 float U16ToUnorm(u16 val);
 float S16ToSnorm(s16 val);
 
-} // namespace Vulkan::NumberUtils
+} // namespace NumberUtils
