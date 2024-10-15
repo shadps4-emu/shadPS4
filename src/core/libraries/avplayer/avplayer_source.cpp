@@ -37,7 +37,8 @@ namespace Libraries::AvPlayer {
 
 using namespace Kernel;
 
-AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state) : m_state(state) {}
+AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2)
+    : m_state(state), m_use_vdec2(use_vdec2) {}
 
 AvPlayerSource::~AvPlayerSource() {
     Stop();
@@ -129,18 +130,25 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
-    case SCE_AVPLAYER_VIDEO:
+    case SCE_AVPLAYER_VIDEO: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
-        info.details.video.width = Common::AlignUp(u32(p_stream->codecpar->width), 16);
-        info.details.video.height = Common::AlignUp(u32(p_stream->codecpar->height), 16);
+        auto width = u32(p_stream->codecpar->width);
+        auto height = u32(p_stream->codecpar->height);
+        if (!m_use_vdec2) {
+            width = Common::AlignUp(width, 16);
+            height = Common::AlignUp(height, 16);
+        }
+        info.details.video.width = width;
+        info.details.video.height = height;
         if (p_lang_node != nullptr) {
             std::memcpy(info.details.video.language_code, p_lang_node->value,
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    case SCE_AVPLAYER_AUDIO:
+    }
+    case SCE_AVPLAYER_AUDIO: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
@@ -150,7 +158,8 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    case SCE_AVPLAYER_TIMEDTEXT:
+    }
+    case SCE_AVPLAYER_TIMEDTEXT: {
         LOG_WARNING(Lib_AvPlayer, "Stream {} is a timedtext stream.", stream_index);
         info.details.subs.font_size = 12;
         info.details.subs.text_size = 12;
@@ -159,9 +168,11 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    default:
+    }
+    default: {
         LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index, info.type);
         return false;
+    }
     }
     return true;
 }
@@ -189,8 +200,12 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
             LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for video stream {}.", stream_index);
             return false;
         }
-        const auto width = Common::AlignUp(u32(m_video_codec_context->width), 16);
-        const auto height = Common::AlignUp(u32(m_video_codec_context->height), 16);
+        auto width = u32(m_video_codec_context->width);
+        auto height = u32(m_video_codec_context->height);
+        if (!m_use_vdec2) {
+            width = Common::AlignUp(width, 16);
+            height = Common::AlignUp(height, 16);
+        }
         const auto size = (width * height * 3) / 2;
         for (u64 index = 0; index < m_num_output_video_framebuffers; ++index) {
             m_video_buffers.Push(FrameBuffer(m_memory_replacement, 0x100, size));
@@ -316,7 +331,7 @@ bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
 
     auto frame = m_video_frames.Pop();
     if (!frame.has_value()) {
-        LOG_WARNING(Lib_AvPlayer, "Could get video frame. EOF reached.");
+        LOG_TRACE(Lib_AvPlayer, "Could get video frame. EOF reached.");
         return false;
     }
 
@@ -351,7 +366,7 @@ bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
 
     auto frame = m_audio_frames.Pop();
     if (!frame.has_value()) {
-        LOG_WARNING(Lib_AvPlayer, "Could get audio frame. EOF reached.");
+        LOG_TRACE(Lib_AvPlayer, "Could get audio frame. EOF reached.");
         return false;
     }
 
@@ -537,9 +552,13 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
     return nv12_frame;
 }
 
-static void CopyNV12Data(u8* dst, const AVFrame& src) {
-    const auto width = Common::AlignUp(u32(src.width), 16);
-    const auto height = Common::AlignUp(u32(src.height), 16);
+static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
+    auto width = u32(src.width);
+    auto height = u32(src.height);
+    if (!use_vdec2) {
+        width = Common::AlignUp(width, 16);
+        height = Common::AlignUp(height, 16);
+    }
 
     if (src.width == width) {
         std::memcpy(dst, src.data[0], src.width * src.height);
@@ -561,7 +580,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     ASSERT(frame.format == AV_PIX_FMT_NV12);
 
     auto p_buffer = buffer.GetBuffer();
-    CopyNV12Data(p_buffer, frame);
+    CopyNV12Data(p_buffer, frame, m_use_vdec2);
 
     const auto pkt_dts = u64(frame.pkt_dts) * 1000;
     const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
@@ -570,8 +589,12 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     const auto num = time_base.num;
     const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
 
-    const auto width = Common::AlignUp(u32(frame.width), 16);
-    const auto height = Common::AlignUp(u32(frame.height), 16);
+    auto width = u32(frame.width);
+    auto height = u32(frame.height);
+    if (!m_use_vdec2) {
+        width = Common::AlignUp(width, 16);
+        height = Common::AlignUp(height, 16);
+    }
 
     return Frame{
         .buffer = std::move(buffer),
@@ -583,8 +606,8 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                     {
                         .video =
                             {
-                                .width = u32(width),
-                                .height = u32(height),
+                                .width = width,
+                                .height = height,
                                 .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
                                 .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
