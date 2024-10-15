@@ -100,11 +100,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    BeginRendering(*pipeline);
-    UpdateDynamicState(*pipeline);
-
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
     const auto total_offset = base + offset;
+
+    BeginRendering(*pipeline);
+    UpdateDynamicState(*pipeline);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.

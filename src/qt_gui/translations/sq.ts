@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Përzgjidh dosjen</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Përzgjidh në cilën dosje do që të instalosh.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -427,7 +440,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
 			<source>Logger</source>
-			<translation>Regjistruesi i të dhënave</translation>
+			<translation>Regjistruesi i ditarit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="199"/>
@@ -438,36 +451,6 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtri i Ditarit</translation>
-		</message>
-		<message> 
-			<location filename="../settings_dialog.ui" line="595"/>
-			<source>Input</source>
-			<translation>Hyrje</translation>
-		</message>
-		<message> 
-			<location filename="../settings_dialog.ui" line="611"/>
-			<source>Cursor</source>
-			<translation>Kursori</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="635"/>
-			<source>Hide Cursor</source>
-			<translation>Fshih kursorin</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="668"/>
-			<source>Hide Cursor Idle Timeout</source>
-			<translation>Koha e pritjes për fshehjen e kursorit</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="767"/>
-			<source>Controller</source>
-			<translation>Kontrollues</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="797"/>
-			<source>Back Button Behavior</source>
-			<translation>Sjellja e butonit të kthimit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
@@ -488,11 +471,6 @@
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
 			<translation>Koha për fshehjen e kursorit joaktiv</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.ui" line="595"/>
-			<source>Input</source>
-			<translation>Hyrja</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -544,10 +522,10 @@
 			<source>Enable NULL GPU</source>
 			<translation>Aktivizo GPU-në NULL</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.ui" line="1111"/>
 			<source>Paths</source>
-			<translation>Rrugët</translation>
+			<translation>Shtigjet</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="1119"/>
@@ -557,12 +535,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="1141"/>
 			<source>Add...</source>
-			<translation>Shtoni...</translation>
+			<translation>Shto...</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="1141"/>
 			<source>Remove</source>
-			<translation>Hiqni</translation>
+			<translation>Hiq</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -1091,7 +1069,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>
 			<source>discordRPCCheckbox</source>
-			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tuaj në Discord.</translation>
+			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tënd në Discord.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1111,27 +1089,27 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aktualizimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
-			<translation>Fsheh kursori:\nZgjidhni kur do të zhduket kursori:\nKurrë: Do ta shihni gjithmonë maus.\nInaktiv: Vendosni një kohë për të zhdukur pas inaktivitetit.\nGjithmonë: nuk do ta shihni kurrë maus.</translation>
+			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nInaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
 			<source>idleTimeoutGroupBox</source>
-			<translation>Vendosni një kohë për të zhdukur maus pas inaktivitetit.</translation>
+			<translation>Koha për fshehjen e kursorit joaktiv:\nKohëzgjatja (në sekonda) pas së cilës kursori që nuk ka qënë në veprim fshihet.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nVendos butonin mbrapa të kontrollorit për të imituar prekjen në pozicionin e caktuar në touchpad-in PS4.</translation>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni mprapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1141,72 +1119,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="71"/>
 			<source>Idle</source>
-			<translation>Pasiv</translation>
+			<translation>Joaktiv</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
 			<source>Always</source>
 			<translation>Gjithmonë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="101"/>
-			<source>Touchpad Left</source>
-			<translation>Touchpad Majtas</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="102"/>
-			<source>Touchpad Right</source>
-			<translation>Touchpad Djathtas</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="103"/>
-			<source>Touchpad Center</source>
-			<translation>Qendra e Touchpad</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="104"/>
-			<source>None</source>
-			<translation>Asnjë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="392"/>
-			<source>cursorGroupBox</source>
-			<translation>Kursori:\nNdrysho cilësimet në lidhje me kursorin.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="394"/>
-			<source>hideCursorGroupBox</source>
-			<translation>Fshih kursorin:\nCakto sjelljen e fshehjes së kursorit.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="396"/>
-			<source>idleTimeoutGroupBox</source>
-			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="70"/>
-			<source>Never</source>
-			<translation>Kurrë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="71"/>
-			<source>Idle</source>
-			<translation>Pa vepruar</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Always</source>
-			<translation>Gjithmonë</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="330"/>
-			<source>backButtonBehaviorGroupBox</source>
-			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
-		</message>
-		<message>
-			<location filename="../settings_dialog.cpp" line="330"/>
-			<source>backButtonBehaviorGroupBox</source>
-			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="101"/>
@@ -1256,17 +1174,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>gameFoldersBox</source>
-			<translation>Folderët e lojërave:\nLista e folderëve për të kontrolluar lojërat e instaluara.</translation>
+			<translation>Dosjet e lojërave:\nLista e dosjeve për të kontrolluar lojërat e instaluara.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>addFolderButton</source>
-			<translation>Shto:\nShto një folder në listë.</translation>
+			<translation>Shto:\nShto një dosje në listë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>removeFolderButton</source>
-			<translation>Hiq:\nHiq një folder nga lista.</translation>
+			<translation>Hiq:\nHiq një dosje nga lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1384,7 +1302,7 @@
 			<source>Update Available</source>
 			<translation>Ofrohet një përditësim</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Kanali i përditësimit</translation>
