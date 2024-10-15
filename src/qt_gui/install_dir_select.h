@@ -12,6 +12,8 @@
 class QLineEdit;
 
 class InstallDirSelect final : public QDialog {
+    Q_OBJECT
+
 public:
     InstallDirSelect();
     ~InstallDirSelect();
@@ -19,9 +21,6 @@ public:
     std::filesystem::path getSelectedDirectory() {
         return selected_dir;
     }
-
-private slots:
-    void BrowseGamesDirectory();
 
 private:
     QWidget* SetupInstallDirList();

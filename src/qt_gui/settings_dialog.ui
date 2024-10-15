@@ -135,6 +135,13 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QCheckBox" name="separateUpdatesCheckBox">
+                   <property name="text">
+                    <string>Enable Separate Update Folder</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QCheckBox" name="showSplashCheckBox">
                    <property name="text">
                     <string>Show Splash</string>
