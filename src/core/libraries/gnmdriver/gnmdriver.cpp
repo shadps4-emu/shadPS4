@@ -519,10 +519,12 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         // Dumping them using the current ring pointer would result in files containing only the
         // `IndirectBuffer` command. To access the actual command stream, we need to unwrap the IB.
         auto acb = acb_span;
+        auto base_addr = reinterpret_cast<uintptr_t>(acb_ptr);
         const auto* indirect_buffer =
             reinterpret_cast<const PM4CmdIndirectBuffer*>(acb_span.data());
         if (indirect_buffer->header.opcode == PM4ItOpcode::IndirectBuffer) {
-            acb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size};
+            base_addr = reinterpret_cast<uintptr_t>(indirect_buffer->Address<const u32>());
+            acb = {reinterpret_cast<const u32*>(base_addr), indirect_buffer->ib_size};
         }
 
         using namespace DebugStateType;
@@ -532,9 +534,9 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
             .submit_num = seq_num,
             .num2 = gnm_vqid,
             .data = {acb.begin(), acb.end()},
+            .base_addr = base_addr,
         });
     }
-
     liverpool->SubmitAsc(vqid, acb_span);
 
     *asc_queue.read_addr += acb_size;
@@ -1125,9 +1127,25 @@ int PS4_SYSV_ABI sceGnmInsertSetColorMarker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmInsertSetMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmInsertSetMarker(u32* cmdbuf, u32 size, const char* marker) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && marker) {
+        const auto len = std::strlen(marker);
+        const u32 packet_size = ((len + 8) >> 2) + ((len + 0xc) >> 3) * 2;
+        if (packet_size + 2 == size) {
+            auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
+            nop->header =
+                PM4Type3Header{PM4ItOpcode::Nop, packet_size, PM4ShaderType::ShaderGraphics};
+            nop->data_block[0] = PM4CmdNop::PayloadType::DebugSetMarker;
+            const auto marker_len = len + 1;
+            std::memcpy(&nop->data_block[1], marker, marker_len);
+            std::memset(reinterpret_cast<u8*>(&nop->data_block[1]) + marker_len, 0,
+                        packet_size * 4 - marker_len);
+            return ORBIS_OK;
+        }
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker() {
@@ -2163,15 +2181,16 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
                 .submit_num = seq_num,
                 .num2 = cbpair,
                 .data = {dcb_span.begin(), dcb_span.end()},
+                .base_addr = reinterpret_cast<uintptr_t>(dcb_gpu_addrs[cbpair]),
             });
             DebugState.PushQueueDump({
                 .type = QueueType::ccb,
                 .submit_num = seq_num,
                 .num2 = cbpair,
                 .data = {ccb_span.begin(), ccb_span.end()},
+                .base_addr = reinterpret_cast<uintptr_t>(ccb),
             });
         }
-
         liverpool->SubmitGfx(dcb_span, ccb_span);
     }
 

@@ -415,6 +415,11 @@
 			<translation>Is PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Discord Rich Presence inschakelen</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Username</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Invoer</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Cursor verbergen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Inactiviteit timeout voor het verbergen van de cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Controller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Achterknop gedrag</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Enable NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Pad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Spelmappen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Toevoegen...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Verwijderen</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>Is PS4 Pro:\nLaat de emulator zich gedragen als een PS4 PRO, wat speciale functies kan inschakelen in games die dit ondersteunen.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Discord Rich Presence inschakelen:\nToont het emulatoricoon en relevante informatie op je Discord-profiel.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Gebruikersnaam:\nStelt de gebruikersnaam van het PS4-account in, die door sommige games kan worden weergegeven.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Logfilter: Filtert het logboek om alleen specifieke informatie af te drukken. Voorbeelden: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveaus: Trace, Debug, Info, Waarschuwing, Fout, Kritiek - in deze volgorde, een specifiek niveau dempt alle voorgaande niveaus in de lijst en logt alle niveaus daarna.</translation>
+			<translation>Logfilter:\nFiltert het logboek om alleen specifieke informatie af te drukken.\nVoorbeelden: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveaus: Trace, Debug, Info, Waarschuwing, Fout, Kritiek - in deze volgorde, een specifiek niveau dempt alle voorgaande niveaus in de lijst en logt alle niveaus daarna.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Speel titelsong:\nAls een game dit ondersteunt, wordt speciale muziek afgespeeld wanneer je het spel in de GUI selecteert.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Verberg cursor:\nKies wanneer de cursor verdwijnt:\nNooit: Je ziet altijd de muis.\nInactief: Stel een tijd in waarna deze verdwijnt na inactiviteit.\nAltijd: je ziet de muis nooit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Stel een tijd in voor wanneer de muis verdwijnt na inactiviteit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Gedrag van de terugknop:\nStelt de terugknop van de controller in om een aanraking op de opgegeven positie op de PS4-touchpad na te bootsen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Nooit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Inactief</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Altijd</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Links</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Rechts</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Touchpad Midden</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Geen</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Null GPU inschakelen:\nVoor technische foutopsporing schakelt de game-rendering uit alsof er geen grafische kaart is.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Spelmap:\nDe lijst met mappen om te controleren op geïnstalleerde spellen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Toevoegen:\nVoeg een map toe aan de lijst.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Verwijderen:\nVerwijder een map uit de lijst.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

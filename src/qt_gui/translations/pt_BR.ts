@@ -415,6 +415,11 @@
 			<translation>Modo PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Ativar Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Nome de usuário</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtro do Registro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Entradas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Ocultar Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Tempo de Inatividade para Ocultar Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Controle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Comportamento do botão Voltar</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Ativar GPU NULA</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Pastas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Pastas dos Jogos</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Adicionar...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Remover</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -986,17 +1041,22 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Ativar modo tela cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+			<translation>Ativar Tela Cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Mostrar tela inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
+			<translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>É um PS4 Pro:\nFaz o emulador agir como um PS4 PRO, o que pode ativar recursos especiais em jogos que o suportam.</translation>
+			<translation>Modo PS4 Pro:\nFaz o emulador agir como um PS4 PRO, o que pode ativar recursos especiais em jogos que o suportam.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Ativar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1006,12 +1066,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Tipo de log:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
+			<translation>Tipo de Registro:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtro de log: Imprime apenas informações específicas. Exemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Níveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
+			<translation>Filtro de Registro:\nImprime apenas informações específicas.\nExemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical"\nNíveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Ocultar Cursor:\nEscolha quando o cursor desaparecerá:\nNunca: Você sempre verá o mouse.\nParado: Defina um tempo para ele desaparecer após ficar inativo.\nSempre: Você nunca verá o mouse.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Defina um tempo em segundos para o mouse desaparecer após ficar inativo.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Comportamento do botão Voltar:\nDefine o botão Voltar do controle para emular o toque na posição especificada no touchpad do PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Nunca</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Parado</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Sempre</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Esquerdo</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Direito</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Touchpad Centro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Nenhum</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Ativar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse nenhuma placa gráfica.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Pastas dos jogos:\nA lista de pastas para verificar se há jogos instalados.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Adicionar:\nAdicione uma pasta à lista.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Remover:\nRemove uma pasta da lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1114,7 +1239,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
-			<translation>Horas Jogadas</translation>
+			<translation>Tempo Jogado</translation>
 		</message>
 	</context>
 	<context>

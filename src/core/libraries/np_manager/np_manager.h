@@ -233,7 +233,7 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatus();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatusA();
 int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId);
 int PS4_SYSV_ABI sceNpGetNpReachabilityState();
-int PS4_SYSV_ABI sceNpGetOnlineId();
+int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId);
 int PS4_SYSV_ABI sceNpGetParentalControlInfo();
 int PS4_SYSV_ABI sceNpGetParentalControlInfoA();
 int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state);

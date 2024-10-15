@@ -415,6 +415,11 @@
 			<translation>Is PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Ota käyttöön Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Username</translation>
@@ -433,6 +438,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Syöttö</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Piilota kursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Inaktiivisuuden aikaraja kursorin piilottamiselle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Ohjain</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Takaisin-painikkeen käyttäytyminen</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +508,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Enable NULL GPU</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Polut</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Pelihakemistot</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+				<translation>Lisää...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Poista</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1054,11 @@
 			<translation>Onko PS4 Pro:\nAsettaa emulaattorin toimimaan PS4 PRO:na, mikä voi mahdollistaa erityisiä ominaisuuksia peleissä, jotka tukevat sitä.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Ota käyttöön Discord Rich Presence:\nNäyttää emulaattorin kuvakkeen ja asiaankuuluvat tiedot Discord-profiilissasi.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Käyttäjänimi:\nAsettaa PS4-tilin käyttäjänimen, joka voi näkyä joissakin peleissä.</translation>
@@ -1011,7 +1071,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Lokifiltteri: Suodattaa lokia tulostamaan vain erityistä tietoa. Esimerkkejä: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Tasot: Jälki, Virheenkorjaus, Tieto, Varoitus, Virhe, Kriittinen - tällä järjestyksellä, tietty taso vaientaa kaikki edeltävät tasot luettelossa ja kirjaa kaikki tasot sen jälkeen.</translation>
+			<translation>Lokifiltteri:\nSuodattaa lokia tulostamaan vain erityistä tietoa.\nEsimerkkejä: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Tasot: Jälki, Virheenkorjaus, Tieto, Varoitus, Virhe, Kriittinen - tällä järjestyksellä, tietty taso vaientaa kaikki edeltävät tasot luettelossa ja kirjaa kaikki tasot sen jälkeen.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1082,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Soita Otsikkomusiikkia:\nJos peli tukee sitä, ota käyttöön erityisen musiikin soittaminen pelin valinnan yhteydessä käyttöliittymässä.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Piilota kursori:\nValitse, milloin kursori häviää:\nEi koskaan: Näet hiiren aina.\nAktiivinen: Aseta aika, jolloin se häviää oltuaan aktiivinen.\nAina: et koskaan näe hiirtä.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Aseta aika, jolloin hiiri häviää oltuaan aktiivinen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Ei koskaan</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Odotustila</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation> aina</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Kosketuslevy Vasemmalla</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Kosketuslevy Oikealla</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Kosketuslevy Keskellä</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Ei mitään</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1157,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten pelin renderöinti estetään niin, että ikään kuin grafiikkakorttia ei olisi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Pelihakemistot:\nLuettelo hakemistoista asennettujen pelien tarkistamiseksi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Lisää:\nLisää hakemisto luetteloon.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Poista:\nPoista hakemisto luettelosta.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>

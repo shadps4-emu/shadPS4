@@ -415,6 +415,11 @@
 			<translation>Mënyra PS4 Pro</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Aktivizo Discord Rich Presence</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
 			<source>Username</source>
 			<translation>Përdoruesi</translation>
@@ -433,6 +438,71 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtri i Ditarit</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrje</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Fshih kursorin</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Koha e pritjes për fshehjen e kursorit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontrollues</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Sjellja e butonit të kthimit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Fshih kursorin</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Koha për fshehjen e kursorit joaktiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Hyrja</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Dorezë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Sjellja e butonit mbrapa</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -473,6 +543,26 @@
 			<location filename="../settings_dialog.ui" line="469"/>
 			<source>Enable NULL GPU</source>
 			<translation>Aktivizo GPU-në NULL</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Rrugët</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Dosjet e lojës</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Shtoni...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Hiqni</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -999,6 +1089,11 @@
 			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, gjë që mund të aktivizojë veçori të veçanta në lojrat që e mbështesin.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tuaj në Discord.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Përdoruesi:\nPërcakton emrin e përdoruesit të llogarisë PS4, i cili mund të shfaqet nga disa lojra.</translation>
@@ -1011,7 +1106,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtri i ditarit: Filtron ditarin për të shfaqur vetëm informacione specifike. Shembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
+			<translation>Filtri i ditarit:\nFiltron ditarin për të shfaqur vetëm informacione specifike.\nShembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1022,6 +1117,116 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
+		</message>
+		<message> 
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Fsheh kursori:\nZgjidhni kur do të zhduket kursori:\nKurrë: Do ta shihni gjithmonë maus.\nInaktiv: Vendosni një kohë për të zhdukur pas inaktivitetit.\nGjithmonë: nuk do ta shihni kurrë maus.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Vendosni një kohë për të zhdukur maus pas inaktivitetit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Sjellja e butonit mbrapa:\nVendos butonin mbrapa të kontrollorit për të imituar prekjen në pozicionin e caktuar në touchpad-in PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Kurrë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Pasiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Gjithmonë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Majtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Djathtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Qendra e Touchpad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Asnjë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="392"/>
+			<source>cursorGroupBox</source>
+			<translation>Kursori:\nNdrysho cilësimet në lidhje me kursorin.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="394"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Fshih kursorin:\nCakto sjelljen e fshehjes së kursorit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="396"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Koha për fshehjen e kursorit joaktiv:\Kohëzgjatja (në sekonda) pas së cilës kursori që ka nuk ka qënë në veprim fshihet.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Kurrë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Pa vepruar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Gjithmonë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Back Button Behavior:\nAllows setting which part of the touchpad the back button will emulate a touch on.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="330"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni prapa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Tastiera prekëse majtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Tastiera prekëse djathtas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Tastiera prekëse në qendër</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Asnjë</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1047,6 +1252,21 @@
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
 			<translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Folderët e lojërave:\nLista e folderëve për të kontrolluar lojërat e instaluara.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Shto:\nShto një folder në listë.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Hiq:\nHiq një folder nga lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1114,7 +1334,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
-			<translation>Kohë Lojë</translation>
+			<translation>Koha e luajtjes</translation>
 		</message>
 	</context>
 	<context>
