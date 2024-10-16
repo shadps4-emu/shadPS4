@@ -186,6 +186,7 @@ endif()
 
 # Discord RPC
 set(BUILD_EXAMPLES OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 add_subdirectory(discord-rpc/)
 target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 
