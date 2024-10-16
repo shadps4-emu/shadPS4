@@ -300,9 +300,8 @@ public:
 
             if (selected == deleteUpdate) {
                 if (!Config::getSeparateUpdateEnabled()) {
-                    QMessageBox::critical(
-                        nullptr, tr("Error"),
-                        QString(tr("requiresEnableSeparateUpdateFolder_MSG")));
+                    QMessageBox::critical(nullptr, tr("Error"),
+                                          QString(tr("requiresEnableSeparateUpdateFolder_MSG")));
                     error = true;
                 } else if (!std::filesystem::exists(
                                Common::FS::PathFromQString(game_update_path))) {
