@@ -302,9 +302,7 @@ public:
                 if (!Config::getSeparateUpdateEnabled()) {
                     QMessageBox::critical(
                         nullptr, tr("Error"),
-                        QString(tr("This feature requires the 'Enable Separate Update Folder' "
-                                   "config option "
-                                   "to work. If you want to use this feature, please enable it.")));
+                        QString(tr("requiresEnableSeparateUpdateFolder_MSG")));
                     error = true;
                 } else if (!std::filesystem::exists(
                                Common::FS::PathFromQString(game_update_path))) {
