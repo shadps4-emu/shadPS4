@@ -54,10 +54,17 @@ struct ShaderDump {
     std::vector<u32> code{};
 };
 
+struct ComputerShaderDump {
+    Vulkan::Liverpool::ComputeProgram cs_program{};
+    std::vector<u32> code{};
+};
+
 struct RegDump {
+    bool is_compute{false};
     static constexpr size_t MaxShaderStages = 5;
     Vulkan::Liverpool::Regs regs{};
     std::array<ShaderDump, MaxShaderStages> stages{};
+    ComputerShaderDump cs_data{};
 };
 
 struct FrameDump {
@@ -144,7 +151,7 @@ public:
     void PushQueueDump(QueueDump dump);
 
     void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs);
+                      const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
 };
 } // namespace DebugStateType
 

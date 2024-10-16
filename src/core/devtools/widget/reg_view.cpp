@@ -43,7 +43,16 @@ static std::optional<std::string> exec_cli(const char* cli) {
 namespace Core::Devtools::Widget {
 
 void RegView::ProcessShader(int shader_id) {
-    auto shader = data.stages[shader_id];
+    std::vector<u32> shader_code;
+    Vulkan::Liverpool::UserData user_data;
+    if (data.is_compute) {
+        shader_code = data.cs_data.code;
+        user_data = data.cs_data.cs_program.user_data;
+    } else {
+        const auto& s = data.stages[shader_id];
+        shader_code = s.code;
+        user_data = s.user_data.user_data;
+    }
 
     std::string shader_dis;
 
@@ -60,7 +69,7 @@ void RegView::ProcessShader(int shader_id) {
         } else {
             cli.replace(pos, src_arg.size(), "\"" + bin_path.string() + "\"");
             Common::FS::IOFile file(bin_path, Common::FS::FileAccessMode::Write);
-            file.Write(shader.code);
+            file.Write(shader_code);
             file.Close();
 
             auto result = exec_cli(cli.c_str());
@@ -88,7 +97,7 @@ void RegView::ProcessShader(int shader_id) {
     ShaderCache cache{
         .hex_view = hex_view,
         .dis_view = dis_view,
-        .user_data = shader.user_data.user_data,
+        .user_data = user_data,
     };
     shader_decomp.emplace(shader_id, std::move(cache));
 }
@@ -99,11 +108,48 @@ void RegView::SelectShader(int id) {
     }
 }
 
-void RegView::DrawRegs() {
+void RegView::DrawComputeRegs() {
+    const auto& cs = data.cs_data.cs_program;
+
+    if (BeginTable("CREGS", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
+
+        // clang-format off
+        DrawValueRowList(
+            "DISPATCH_INITIATOR",     cs.dispatch_initiator,
+            "DIM_X",                  cs.dim_x,
+            "DIM_Y",                  cs.dim_y,
+            "DIM_Z",                  cs.dim_z,
+            "START_X",                cs.start_x,
+            "START_Y",                cs.start_y,
+            "START_Z",                cs.start_z,
+            "NUM_THREAD_X.FULL",      cs.num_thread_x.full,
+            "NUM_THREAD_X.PARTIAL",   cs.num_thread_x.partial,
+            "NUM_THREAD_Y.FULL",      cs.num_thread_y.full,
+            "NUM_THREAD_Y.PARTIAL",   cs.num_thread_y.partial,
+            "NUM_THREAD_Z.FULL",      cs.num_thread_z.full,
+            "NUM_THREAD_Z.PARTIAL",   cs.num_thread_z.partial,
+            "MAX_WAVE_ID",            cs.max_wave_id,
+            "SETTINGS.NUM_VGPRS",     cs.settings.num_vgprs,
+            "SETTINGS.NUM_SGPRS",     cs.settings.num_sgprs,
+            "SETTINGS.NUM_USER_REGS", cs.settings.num_user_regs,
+            "SETTINGS.TGID_ENABLE",   cs.settings.tgid_enable,
+            "SETTINGS.LDS_DWORDS",    cs.settings.lds_dwords,
+            "RESOURCE_LIMITS",        cs.resource_limits
+        );
+        // clang-format on
+
+        EndTable();
+    }
+}
+
+void RegView::DrawGraphicsRegs() {
     const auto& regs = data.regs;
 
     if (BeginTable("REGS", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
 
+        DrawValueRow("Primitive type", regs.primitive_type);
         auto& s = regs.screen_scissor;
         DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
                 s.bottom_right_y);
@@ -165,6 +211,18 @@ void RegView::DrawRegs() {
             }
         }
 
+        DrawRow("Primitive restart", "%X (IDX: %X)", regs.enable_primitive_restart & 1,
+                regs.primitive_restart_index);
+        // clang-format off
+        DrawValueRowList(
+            "Polygon mode", regs.polygon_control.PolyMode(),
+            "Cull mode",    regs.polygon_control.CullingMode(),
+            "Clip Space",   regs.clipper_control.clip_space,
+            "Front face",   regs.polygon_control.front_face,
+            "Num Samples",  regs.aa_config.NumSamples()
+        );
+        // clang-format on
+
         EndTable();
     }
 }
@@ -210,25 +268,33 @@ void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_tit
     this->title = fmt::format("{}/Batch {}", base_title, batch_id);
     // clear cache
     shader_decomp.clear();
-    const auto& regs = data.regs;
-    if (selected_shader >= 0 && !regs.stage_enable.IsStageEnabled(selected_shader)) {
-        selected_shader = -1;
-    }
-    if (default_reg_popup.open) {
+    if (data.is_compute) {
+        selected_shader = -2;
+        last_selected_cb = -1;
         default_reg_popup.open = false;
-        if (last_selected_cb == depth_id) {
-            const auto& has_depth =
-                regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
-            if (has_depth) {
-                default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
-                default_reg_popup.open = true;
-            }
-        } else if (last_selected_cb >= 0 && last_selected_cb < AmdGpu::Liverpool::NumColorBuffers) {
-            const auto& buffer = regs.color_buffers[last_selected_cb];
-            const bool has_cb = buffer && regs.color_target_mask.GetMask(last_selected_cb);
-            if (has_cb) {
-                default_reg_popup.SetData(title, buffer, last_selected_cb);
-                default_reg_popup.open = true;
+        ProcessShader(-2);
+    } else {
+        const auto& regs = data.regs;
+        if (selected_shader >= 0 && !regs.stage_enable.IsStageEnabled(selected_shader)) {
+            selected_shader = -1;
+        }
+        if (default_reg_popup.open) {
+            default_reg_popup.open = false;
+            if (last_selected_cb == depth_id) {
+                const auto& has_depth =
+                    regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
+                if (has_depth) {
+                    default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
+                    default_reg_popup.open = true;
+                }
+            } else if (last_selected_cb >= 0 &&
+                       last_selected_cb < AmdGpu::Liverpool::NumColorBuffers) {
+                const auto& buffer = regs.color_buffers[last_selected_cb];
+                const bool has_cb = buffer && regs.color_target_mask.GetMask(last_selected_cb);
+                if (has_cb) {
+                    default_reg_popup.SetData(title, buffer, last_selected_cb);
+                    default_reg_popup.open = true;
+                }
             }
         }
     }
@@ -267,7 +333,8 @@ void RegView::Draw() {
             EndMenuBar();
         }
 
-        if (BeginChild("STAGES", {},
+        if (!data.is_compute &&
+            BeginChild("STAGES", {},
                        ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY)) {
             for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; i++) {
                 if (data.regs.stage_enable.IsStageEnabled(i)) {
@@ -331,7 +398,11 @@ void RegView::Draw() {
     if (show_registers) {
         snprintf(name, sizeof(name), "Regs###reg_dump_%d/regs", id);
         if (Begin(name, &show_registers)) {
-            DrawRegs();
+            if (data.is_compute) {
+                DrawComputeRegs();
+            } else {
+                DrawGraphicsRegs();
+            }
         }
         End();
     }

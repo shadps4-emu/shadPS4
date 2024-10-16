@@ -37,7 +37,9 @@ class RegView {
 
     void SelectShader(int shader_id);
 
-    void DrawRegs();
+    void DrawComputeRegs();
+
+    void DrawGraphicsRegs();
 
 public:
     bool open = false;
