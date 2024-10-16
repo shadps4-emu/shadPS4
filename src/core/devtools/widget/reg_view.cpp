@@ -11,6 +11,7 @@
 #include "common.h"
 #include "common/io_file.h"
 #include "core/devtools/options.h"
+#include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "reg_view.h"
 
@@ -21,6 +22,8 @@
 
 using namespace ImGui;
 using magic_enum::enum_name;
+
+constexpr auto depth_id = 0xF3;
 
 static std::optional<std::string> exec_cli(const char* cli) {
     std::array<char, 64> buffer{};
@@ -40,7 +43,16 @@ static std::optional<std::string> exec_cli(const char* cli) {
 namespace Core::Devtools::Widget {
 
 void RegView::ProcessShader(int shader_id) {
-    auto shader = data.stages[shader_id];
+    std::vector<u32> shader_code;
+    Vulkan::Liverpool::UserData user_data;
+    if (data.is_compute) {
+        shader_code = data.cs_data.code;
+        user_data = data.cs_data.cs_program.user_data;
+    } else {
+        const auto& s = data.stages[shader_id];
+        shader_code = s.code;
+        user_data = s.user_data.user_data;
+    }
 
     std::string shader_dis;
 
@@ -57,7 +69,7 @@ void RegView::ProcessShader(int shader_id) {
         } else {
             cli.replace(pos, src_arg.size(), "\"" + bin_path.string() + "\"");
             Common::FS::IOFile file(bin_path, Common::FS::FileAccessMode::Write);
-            file.Write(shader.code);
+            file.Write(shader_code);
             file.Close();
 
             auto result = exec_cli(cli.c_str());
@@ -73,8 +85,9 @@ void RegView::ProcessShader(int shader_id) {
     MemoryEditor hex_view;
     hex_view.Open = true;
     hex_view.ReadOnly = true;
-    hex_view.Cols = 16;
+    hex_view.Cols = 8;
     hex_view.OptShowAscii = false;
+    hex_view.OptShowOptions = false;
 
     TextEditor dis_view;
     dis_view.SetPalette(TextEditor::GetDarkPalette());
@@ -84,7 +97,7 @@ void RegView::ProcessShader(int shader_id) {
     ShaderCache cache{
         .hex_view = hex_view,
         .dis_view = dis_view,
-        .user_data = shader.user_data.user_data,
+        .user_data = user_data,
     };
     shader_decomp.emplace(shader_id, std::move(cache));
 }
@@ -95,34 +108,64 @@ void RegView::SelectShader(int id) {
     }
 }
 
-void RegView::DrawRegs() {
+void RegView::DrawComputeRegs() {
+    const auto& cs = data.cs_data.cs_program;
+
+    if (BeginTable("CREGS", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
+
+        // clang-format off
+        DrawValueRowList(
+            "DISPATCH_INITIATOR",     cs.dispatch_initiator,
+            "DIM_X",                  cs.dim_x,
+            "DIM_Y",                  cs.dim_y,
+            "DIM_Z",                  cs.dim_z,
+            "START_X",                cs.start_x,
+            "START_Y",                cs.start_y,
+            "START_Z",                cs.start_z,
+            "NUM_THREAD_X.FULL",      cs.num_thread_x.full,
+            "NUM_THREAD_X.PARTIAL",   cs.num_thread_x.partial,
+            "NUM_THREAD_Y.FULL",      cs.num_thread_y.full,
+            "NUM_THREAD_Y.PARTIAL",   cs.num_thread_y.partial,
+            "NUM_THREAD_Z.FULL",      cs.num_thread_z.full,
+            "NUM_THREAD_Z.PARTIAL",   cs.num_thread_z.partial,
+            "MAX_WAVE_ID",            cs.max_wave_id,
+            "SETTINGS.NUM_VGPRS",     cs.settings.num_vgprs,
+            "SETTINGS.NUM_SGPRS",     cs.settings.num_sgprs,
+            "SETTINGS.NUM_USER_REGS", cs.settings.num_user_regs,
+            "SETTINGS.TGID_ENABLE",   cs.settings.tgid_enable,
+            "SETTINGS.LDS_DWORDS",    cs.settings.lds_dwords,
+            "RESOURCE_LIMITS",        cs.resource_limits
+        );
+        // clang-format on
+
+        EndTable();
+    }
+}
+
+void RegView::DrawGraphicsRegs() {
     const auto& regs = data.regs;
 
     if (BeginTable("REGS", 2, ImGuiTableFlags_Borders)) {
+        TableNextRow();
 
-        auto& s = regs.screen_scissor;
-        DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
-                s.bottom_right_y);
-
-        auto cc_mode = regs.color_control.mode.Value();
-        DrawRow("Color control", "%X (%s)", cc_mode, enum_name(cc_mode).data());
+        DrawValueRow("Primitive type", regs.primitive_type);
 
         const auto open_new_popup = [&](int cb, auto... args) {
+            const auto pos = GetItemRectMax() + ImVec2(5.0f, 0.0f);
             if (GetIO().KeyShift) {
                 auto& pop = extra_reg_popup.emplace_back();
-                pop.SetData(args...);
+                pop.SetData(title, args...);
                 pop.open = true;
+                pop.SetPos(pos, true);
             } else if (last_selected_cb == cb && default_reg_popup.open) {
                 default_reg_popup.open = false;
             } else {
                 last_selected_cb = cb;
-                default_reg_popup.SetData(args...);
-                if (!default_reg_popup.open) {
+                default_reg_popup.SetData(title, args...);
+                if (!default_reg_popup.open || !default_reg_popup.moved) {
                     default_reg_popup.open = true;
-                    auto popup_pos =
-                        GetCurrentContext()->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
-                    SetNextWindowPos(popup_pos, ImGuiCond_Always);
-                    default_reg_popup.Draw();
+                    default_reg_popup.SetPos(pos, true);
                 }
             }
         };
@@ -142,7 +185,7 @@ void RegView::DrawRegs() {
             } else {
                 const char* text = last_selected_cb == cb && default_reg_popup.open ? "x" : "->";
                 if (SmallButton(text)) {
-                    open_new_popup(cb, buffer, batch_id, cb);
+                    open_new_popup(cb, buffer, cb);
                 }
             }
 
@@ -156,12 +199,29 @@ void RegView::DrawRegs() {
         if (regs.depth_buffer.Address() == 0 || !regs.depth_control.depth_enable) {
             TextUnformatted("N/A");
         } else {
-            constexpr auto depth_id = 0xF3;
             const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
             if (SmallButton(text)) {
-                open_new_popup(depth_id, regs.depth_buffer, regs.depth_control, batch_id);
+                open_new_popup(depth_id, regs.depth_buffer, regs.depth_control);
             }
         }
+
+        auto& s = regs.screen_scissor;
+        DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
+                s.bottom_right_y);
+
+        DrawValueRow("Color control", regs.color_control.mode);
+
+        DrawRow("Primitive restart", "%X (IDX: %X)", regs.enable_primitive_restart & 1,
+                regs.primitive_restart_index);
+        // clang-format off
+        DrawValueRowList(
+            "Polygon mode", regs.polygon_control.PolyMode(),
+            "Cull mode",    regs.polygon_control.CullingMode(),
+            "Clip Space",   regs.clipper_control.clip_space,
+            "Front face",   regs.polygon_control.front_face,
+            "Num Samples",  regs.aa_config.NumSamples()
+        );
+        // clang-format on
 
         EndTable();
     }
@@ -172,9 +232,9 @@ RegView::RegView() {
     id = unique_id++;
 
     char name[128];
-    snprintf(name, sizeof(name), "BatchView###reg_dump_%d", id);
+    snprintf(name, sizeof(name), "###reg_dump_%d", id);
     SetNextWindowPos({400.0f, 200.0f});
-    SetNextWindowSize({450.0f, 500.0f});
+    SetNextWindowSize({290.0f, 435.0f});
     ImGuiID root_dock_id;
     Begin(name);
     {
@@ -188,7 +248,7 @@ RegView::RegView() {
     ImGuiID up1, down1;
 
     DockBuilderRemoveNodeChildNodes(root_dock_id);
-    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.2f, &up1, &down1);
+    DockBuilderSplitNode(root_dock_id, ImGuiDir_Up, 0.19f, &up1, &down1);
 
     snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
     DockBuilderDockWindow(name, up1);
@@ -202,35 +262,68 @@ RegView::RegView() {
     DockBuilderFinish(root_dock_id);
 }
 
-void RegView::SetData(DebugStateType::RegDump data, u32 batch_id) {
-    this->data = std::move(data);
+void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_title, u32 batch_id) {
+    this->data = std::move(_data);
     this->batch_id = batch_id;
+    this->title = fmt::format("{}/Batch {}", base_title, batch_id);
     // clear cache
-    selected_shader = -1;
     shader_decomp.clear();
-    default_reg_popup.open = false;
+    if (data.is_compute) {
+        selected_shader = -2;
+        last_selected_cb = -1;
+        default_reg_popup.open = false;
+        ProcessShader(-2);
+    } else {
+        const auto& regs = data.regs;
+        if (selected_shader >= 0 && !regs.stage_enable.IsStageEnabled(selected_shader)) {
+            selected_shader = -1;
+        }
+        if (default_reg_popup.open) {
+            default_reg_popup.open = false;
+            if (last_selected_cb == depth_id) {
+                const auto& has_depth =
+                    regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
+                if (has_depth) {
+                    default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
+                    default_reg_popup.open = true;
+                }
+            } else if (last_selected_cb >= 0 &&
+                       last_selected_cb < AmdGpu::Liverpool::NumColorBuffers) {
+                const auto& buffer = regs.color_buffers[last_selected_cb];
+                const bool has_cb = buffer && regs.color_target_mask.GetMask(last_selected_cb);
+                if (has_cb) {
+                    default_reg_popup.SetData(title, buffer, last_selected_cb);
+                    default_reg_popup.open = true;
+                }
+            }
+        }
+    }
     extra_reg_popup.clear();
 }
 
-void RegView::Draw() {
-
+void RegView::SetPos(ImVec2 pos) {
     char name[128];
-    snprintf(name, sizeof(name), "BatchView %u###reg_dump_%d", batch_id, id);
+    snprintf(name, sizeof(name), "%s###reg_dump_%d", title.c_str(), id);
+    Begin(name, &open, ImGuiWindowFlags_MenuBar);
+    SetWindowPos(pos);
+    KeepWindowInside();
+    last_pos = GetWindowPos();
+    moved = false;
+    End();
+}
+
+void RegView::Draw() {
+    char name[128];
+    snprintf(name, sizeof(name), "%s###reg_dump_%d", title.c_str(), id);
+
     if (Begin(name, &open, ImGuiWindowFlags_MenuBar)) {
+        if (GetWindowPos() != last_pos) {
+            moved = true;
+        }
+
         const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
 
         if (BeginMenuBar()) {
-            if (BeginMenu("Stage")) {
-                for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; i++) {
-                    if (data.regs.stage_enable.IsStageEnabled(i)) {
-                        bool selected = selected_shader == i;
-                        if (Selectable(names[i], &selected)) {
-                            SelectShader(i);
-                        }
-                    }
-                }
-                ImGui::EndMenu();
-            }
             if (BeginMenu("Windows")) {
                 Checkbox("Registers", &show_registers);
                 Checkbox("User data", &show_user_data);
@@ -240,11 +333,31 @@ void RegView::Draw() {
             EndMenuBar();
         }
 
-        char dock_name[64];
-        snprintf(dock_name, sizeof(dock_name), "BatchView###reg_dump_%d/dock_space", id);
-        auto root_dock_id = ImHashStr(dock_name);
-        DockSpace(root_dock_id);
+        if (!data.is_compute &&
+            BeginChild("STAGES", {},
+                       ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY)) {
+            for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; i++) {
+                if (data.regs.stage_enable.IsStageEnabled(i)) {
+                    const bool selected = selected_shader == i;
+                    if (selected) {
+                        PushStyleColor(ImGuiCol_Button, ImVec4{1.0f, 0.7f, 0.7f, 1.0f});
+                    }
+                    if (Button(names[i], {40.0f, 40.0f})) {
+                        SelectShader(i);
+                    }
+                    if (selected) {
+                        PopStyleColor();
+                    }
+                }
+                SameLine();
+            }
+            EndChild();
+        }
     }
+    char dock_name[64];
+    snprintf(dock_name, sizeof(dock_name), "BatchView###reg_dump_%d/dock_space", id);
+    auto root_dock_id = ImHashStr(dock_name);
+    DockSpace(root_dock_id);
     End();
 
     auto get_shader = [&]() -> ShaderCache* {
@@ -257,10 +370,11 @@ void RegView::Draw() {
 
     if (show_user_data) {
         snprintf(name, sizeof(name), "User data###reg_dump_%d/user_data", id);
-        if (Begin(name, &show_user_data)) {
+
+        if (Begin(name, &show_user_data, ImGuiWindowFlags_NoScrollbar)) {
             auto shader = get_shader();
             if (!shader) {
-                Text("Select a stage");
+                Text("Stage not selected");
             } else {
                 shader->hex_view.DrawContents(shader->user_data.data(), shader->user_data.size());
             }
@@ -273,7 +387,7 @@ void RegView::Draw() {
         if (Begin(name, &show_disassembly)) {
             auto shader = get_shader();
             if (!shader) {
-                Text("Select a stage");
+                Text("Stage not selected");
             } else {
                 shader->dis_view.Render("Disassembly", GetContentRegionAvail());
             }
@@ -284,7 +398,11 @@ void RegView::Draw() {
     if (show_registers) {
         snprintf(name, sizeof(name), "Regs###reg_dump_%d/regs", id);
         if (Begin(name, &show_registers)) {
-            DrawRegs();
+            if (data.is_compute) {
+                DrawComputeRegs();
+            } else {
+                DrawGraphicsRegs();
+            }
         }
         End();
     }
