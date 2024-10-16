@@ -304,7 +304,8 @@ public:
                         nullptr, tr("Error"),
                         QString(tr("This feature requires the 'Enable Separate Update Folder' "
                                    "config option "
-                                   "to work. If you want to use this feature, please enable it.")));
+                                   "to work. If you want to use this feature, please enable it and "
+                                   "make sure a separated update is installed.")));
                     error = true;
                 } else if (!std::filesystem::exists(
                                Common::FS::PathFromQString(game_update_path))) {
