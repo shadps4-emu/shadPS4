@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
@@ -61,12 +64,45 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
 
     // Run optimization passes
     const auto stage = program.info.stage;
+
+    bool dump_ir = true;
+    bool extra_id_removal = true; // TODO remove all this stuff
+    auto dumpMatchingIR = [&](std::string phase) {
+        if (dump_ir) {
+            if (Config::dumpShaders()) {
+                std::string s = IR::DumpProgram(program);
+                using namespace Common::FS;
+                const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+                if (!std::filesystem::exists(dump_dir)) {
+                    std::filesystem::create_directories(dump_dir);
+                }
+                const auto filename =
+                    fmt::format("{}_{:#018x}.{}.ir.txt", info.stage, info.pgm_hash, phase);
+                const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+                file.WriteString(s);
+            }
+        }
+    };
+
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    if (extra_id_removal) {
+        Shader::Optimization::IdentityRemovalPass(program.blocks);
+    }
     if (stage == Stage::Hull) {
-        Shader::Optimization::HullShaderTransform(program);
+        dumpMatchingIR("pre_hull");
+        Shader::Optimization::HullShaderTransform(program, runtime_info);
+        dumpMatchingIR("post_hull");
     }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
+    if (extra_id_removal) {
+        Shader::Optimization::IdentityRemovalPass(program.blocks);
+    }
+    dumpMatchingIR("pre_ring");
+    Shader::Optimization::RingAccessElimination(program, runtime_info);
+    if (extra_id_removal) {
+        Shader::Optimization::IdentityRemovalPass(program.blocks);
+    }
+    dumpMatchingIR("post_ring");
     if (stage != Stage::Compute) {
         Shader::Optimization::LowerSharedMemToRegisters(program);
     }

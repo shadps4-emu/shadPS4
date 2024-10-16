@@ -386,6 +386,13 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
+    case LogicalStage::TessellationControl: {
+        invocation_id =
+            DefineVariable(U32[3], spv::BuiltIn::InvocationId, spv::StorageClass::Input);
+        patch_vertices =
+            DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
+        break;
+    }
     case LogicalStage::TessellationEval: {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         break;

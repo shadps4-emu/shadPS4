@@ -106,6 +106,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
+    const vk::PipelineTessellationStateCreateInfo tessellation_state = {
+        // TODO how to handle optional member of graphics key when dynamic state not supported?
+        //.patchControlPoints = key.
+    };
+
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
@@ -167,6 +172,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
     } else {
         dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
+    }
+    ASSERT(instance.IsPatchControlPointsDynamicState()); // TODO remove
+    if (instance.IsPatchControlPointsDynamicState()) {
+        dynamic_states.push_back(vk::DynamicState::ePatchControlPointsEXT);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -317,6 +326,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pStages = shader_stages.data(),
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
+        .pTessellationState =
+            !instance.IsPatchControlPointsDynamicState() ? &tessellation_state : nullptr,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,

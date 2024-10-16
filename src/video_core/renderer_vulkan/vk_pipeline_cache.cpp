@@ -98,6 +98,14 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
     case Stage::Hull: {
         BuildCommon(regs.hs_program);
         info.hs_info.output_control_points = regs.ls_hs_config.hs_output_control_points.Value();
+        info.hs_info.input_control_points = regs.ls_hs_config.hs_input_control_points;
+        info.hs_info.num_patches = regs.ls_hs_config.num_patches;
+        // Suspicious about this in apparently "passthrough" hull shader. Probably not releva
+        info.hs_info.num_instances = regs.num_instances.NumInstances();
+        info.hs_info.tess_factor_memory_base = regs.vgt_tf_memory_base.MemoryBase();
+        info.hs_info.tess_type = regs.tess_config.type;
+        info.hs_info.tess_topology = regs.tess_config.topology;
+        info.hs_info.tess_partitioning = regs.tess_config.partitioning;
         break;
     }
     case Stage::Export: {
@@ -236,6 +244,27 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     return it->second.get();
 }
 
+bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
+    static std::vector<u64> skip_hashes = {
+        0xbc234799 /* passthrough */,
+        0x8453cd1c /* passthrough */,
+        0xd67db0ef /* passthrough */,
+        0x34121ac6 /* passthrough*/,
+        0xa26750c1 /* passthrough, warp */,
+        0xbb88db5f /* passthrough */,
+        0x90c6fb05 /* passthrough */,
+        0x9fd272d7 /* forbidden woods (not PS) */,
+        0x2807dd6c /* forbidden woods, down elevator (not PS) */,
+        0x627ac5b9 /* ayyylmao*, passthrough */,
+        0xb5fb5174 /* rom (not PS) */,
+    };
+    if (std::ranges::contains(skip_hashes, shader_hash)) {
+        LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
+        return true;
+    }
+    return false;
+}
+
 bool PipelineCache::RefreshGraphicsKey() {
     std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
 
@@ -341,6 +370,10 @@ bool PipelineCache::RefreshGraphicsKey() {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
             key.stage_hashes[stage_out_idx] = 0;
             infos[stage_out_idx] = nullptr;
+            return false;
+        }
+
+        if (ShouldSkipShader(bininfo->shader_hash, "graphics")) {
             return false;
         }
 
@@ -453,7 +486,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.num_samples = num_samples;
 
     return true;
-}
+} // namespace Vulkan
 
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};

@@ -591,6 +591,16 @@ struct Liverpool {
         BitField<2, 2, IndexSwapMode> swap_mode;
     };
 
+    union MultiVgtParam {
+        u32 raw;
+        BitField<0, 16, u32> primgroup_size;
+        BitField<16, 1, u32> partial_vs_wave_on;
+        BitField<17, 1, u32> switch_on_eop;
+        BitField<18, 1, u32> partial_es_wave_on;
+        BitField<19, 1, u32> switch_on_eoi;
+        BitField<20, 1, u32> wd_switch_on_eop;
+    };
+
     union VgtNumInstances {
         u32 num_instances;
 
@@ -1074,6 +1084,17 @@ struct Liverpool {
         BitField<5, 3, TessellationTopology> topology;
     };
 
+    union TessFactorMemoryBase {
+        // TODO: was going to use this to check against UD used in tcs shader
+        // but only seen set to 0
+        // Remove this and other added regs if they end up unused
+        u32 base;
+
+        u64 MemoryBase() const {
+            return static_cast<u64>(base) << 8;
+        }
+    };
+
     union Eqaa {
         u32 raw;
         BitField<0, 1, u32> max_anchor_samples;
@@ -1208,7 +1229,7 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A5 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2AB - 0xA2A9 - 1);
+            MultiVgtParam ia_multi_vgt_param;
             u32 vgt_esgs_ring_itemsize;
             u32 vgt_gsvs_ring_itemsize;
             INSERT_PADDING_WORDS(0xA2CE - 0xA2AC - 1);
@@ -1232,6 +1253,8 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xC24C - 0xC243);
             u32 num_indices;
             VgtNumInstances num_instances;
+            INSERT_PADDING_WORDS(0xC250 - 0xC24D - 1);
+            TessFactorMemoryBase vgt_tf_memory_base;
         };
         std::array<u32, NumRegs> reg_array{};
 
@@ -1456,6 +1479,7 @@ static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_restart) == 0xA2A5);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(ia_multi_vgt_param) == 0xA2AA);
 static_assert(GFX6_3D_REG_INDEX(vgt_esgs_ring_itemsize) == 0xA2AB);
 static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);
@@ -1473,6 +1497,7 @@ static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[7].base_address) == 0xA381);
 static_assert(GFX6_3D_REG_INDEX(primitive_type) == 0xC242);
 static_assert(GFX6_3D_REG_INDEX(num_instances) == 0xC24D);
+static_assert(GFX6_3D_REG_INDEX(vgt_tf_memory_base) == 0xc250);
 
 #undef GFX6_3D_REG_INDEX
 

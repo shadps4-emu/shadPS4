@@ -8,6 +8,8 @@
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/types.h"
@@ -51,7 +53,7 @@ void Translator::EmitPrologue() {
             ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
         }
         break;
-    case Stage::Fragment:
+    case LogicalStage::Fragment:
         dst_vreg = IR::VectorReg::V0;
         if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
             ++dst_vreg; // I
@@ -121,15 +123,28 @@ void Translator::EmitPrologue() {
             }
         }
         break;
-    case LogicalStage::TessellationControl:
-        ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+    case LogicalStage::TessellationControl: {
+        ir.SetVectorReg(IR::VectorReg::V1,
+                        ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
+        // Test
+        // ir.SetPatch(IR::Patch::TessellationLodLeft, ir.Imm32(1.0f));
+        // ir.SetPatch(IR::Patch::TessellationLodTop, ir.Imm32(1.0f));
+        // ir.SetPatch(IR::Patch::TessellationLodRight, ir.Imm32(1.0f));
+        // ir.SetPatch(IR::Patch::TessellationLodBottom, ir.Imm32(1.0f));
+        // ir.SetPatch(IR::Patch::TessellationLodInteriorU, ir.Imm32(1.0f));
+        // ir.SetPatch(IR::Patch::TessellationLodInteriorV, ir.Imm32(1.0f));
         break;
+    }
     case LogicalStage::TessellationEval:
         ir.SetVectorReg(IR::VectorReg::V0,
                         ir.GetAttribute(IR::Attribute::TessellationEvaluationPointU));
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttribute(IR::Attribute::TessellationEvaluationPointV));
-        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        // I think V2 is actually the patch id within the patches running on the local CU, used in
+        // compiler generated address calcs,
+        // and V3 is the patch id within the draw
+        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::TessPatchIdInVgt));
+        ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     case LogicalStage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));

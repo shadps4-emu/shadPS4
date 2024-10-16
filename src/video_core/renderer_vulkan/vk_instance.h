@@ -133,6 +133,10 @@ public:
         return vertex_input_dynamic_state;
     }
 
+    bool IsPatchControlPointsDynamicState() const {
+        return extended_dynamic_state_2;
+    }
+
     /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
     bool IsNullDescriptorSupported() const {
         return null_descriptor;
@@ -333,6 +337,7 @@ private:
     bool debug_utils_supported{};
     bool has_nsight_graphics{};
     bool has_renderdoc{};
+    bool extended_dynamic_state_2{};
 };
 
 } // namespace Vulkan

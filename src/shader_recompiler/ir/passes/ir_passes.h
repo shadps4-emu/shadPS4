@@ -16,8 +16,7 @@ void FlattenExtendedUserdataPass(IR::Program& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);
 void LowerSharedMemToRegisters(IR::Program& program);
-void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
-                           Stage stage);
-void HullShaderTransform(const IR::Program& program);
+void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info);
+void HullShaderTransform(const IR::Program& program, const RuntimeInfo& runtime_info);
 
 } // namespace Shader::Optimization

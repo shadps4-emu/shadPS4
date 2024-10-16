@@ -134,6 +134,10 @@ void IREmitter::DeviceMemoryBarrier() {
     Inst(Opcode::DeviceMemoryBarrier);
 }
 
+void IREmitter::TcsOutputBarrier() {
+    Inst(Opcode::TcsOutputBarrier);
+}
+
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetUserData, reg);

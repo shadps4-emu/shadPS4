@@ -10,8 +10,8 @@
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
-#include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/ir/patch.h"
+#include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
 
@@ -50,6 +50,7 @@ public:
     void Barrier();
     void WorkgroupMemoryBarrier();
     void DeviceMemoryBarrier();
+    void TcsOutputBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);

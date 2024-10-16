@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
 
@@ -60,9 +59,14 @@ namespace Shader::Optimization {
  * NOTE: This pass must be run before constant propagation as it relies on relatively specific
  * pattern matching that might be mutated that that optimization pass.
  *
+ * TODO: need to be careful about reading from output arrays at idx other than InvocationID
+ * Need SPIRV OpControlBarrier
+ * "Wait for all active invocations within the specified Scope to reach the current point of
+ * execution."
+ * Must be placed in uniform control flow
  */
 
-void HullShaderTransform(const IR::Program& program) {
+void HullShaderTransform(const IR::Program& program, const RuntimeInfo& runtime_info) {
     LOG_INFO(Render_Vulkan, "{}", IR::DumpProgram(program));
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {

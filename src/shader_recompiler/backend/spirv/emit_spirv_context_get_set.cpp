@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/runtime_info.h"
+#pragma clang optimize off
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/patch.h"
@@ -273,8 +276,21 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
     case IR::Attribute::PrimitiveId:
-        ASSERT(ctx.info.stage == Stage::Geometry);
+        ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
+               ctx.info.l_stage == LogicalStage::TessellationControl ||
+               ctx.info.l_stage == LogicalStage::TessellationEval);
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
+    case IR::Attribute::InvocationId:
+        ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
+               ctx.info.l_stage == LogicalStage::TessellationControl);
+        return ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+    case IR::Attribute::PatchVertices:
+        ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
+        return ctx.OpLoad(ctx.U32[1], ctx.patch_vertices);
+    case IR::Attribute::PackedHullInvocationInfo:
+        // TODO figure out what to do with this
+        // should be dead code, but otherwise return 0 or concat PrimitiveId and InvocationId
+        return ctx.u32_zero_value;
     default:
         UNREACHABLE_MSG("Read U32 attribute {}", attr);
     }
