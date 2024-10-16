@@ -187,6 +187,7 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"kpdivide", SDLK_KP_DIVIDE}, {"kpmultiply", SDLK_KP_MULTIPLY},
     {"kpminus", SDLK_KP_MINUS},   {"kpplus", SDLK_KP_PLUS},
     {"kpenter", SDLK_KP_ENTER},   {"kpequals", SDLK_KP_EQUALS},
+    {"capslock", SDLK_CAPSLOCK},
 };
 std::map<std::string, u32> string_to_keyboard_mod_key_map = {
     {"lshift", SDL_KMOD_LSHIFT}, {"rshift", SDL_KMOD_RSHIFT}, {"lctrl", SDL_KMOD_LCTRL},
@@ -194,6 +195,7 @@ std::map<std::string, u32> string_to_keyboard_mod_key_map = {
     {"shift", SDL_KMOD_SHIFT},   {"ctrl", SDL_KMOD_CTRL},     {"alt", SDL_KMOD_ALT},
     {"l_meta", SDL_KMOD_LGUI},   {"r_meta", SDL_KMOD_RGUI},   {"meta", SDL_KMOD_GUI},
     {"lwin", SDL_KMOD_LGUI},     {"rwin", SDL_KMOD_RGUI},     {"win", SDL_KMOD_GUI},
+    {"capslock", SDL_KMOD_CAPS},
     {"none", SDL_KMOD_NONE}, // if you want to be fancy
 };
 
