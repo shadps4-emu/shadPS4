@@ -154,21 +154,36 @@ void RegPopup::SetData(const std::string& base_title, AmdGpu::Liverpool::DepthBu
     this->title = fmt::format("{}/Depth", base_title);
 }
 
-void RegPopup::Draw(bool auto_resize) {
+void RegPopup::SetPos(ImVec2 pos, bool auto_resize) {
     char name[128];
     snprintf(name, sizeof(name), "%s###reg_popup_%d", title.c_str(), id);
-    if (Begin(title.c_str(), &open, flags)) {
+    Begin(name, &open, flags);
+    SetWindowPos(pos);
+    if (auto_resize) {
+        if (std::holds_alternative<AmdGpu::Liverpool::ColorBuffer>(data)) {
+            SetWindowSize({365.0f, 520.0f});
+            KeepWindowInside();
+        } else if (std::holds_alternative<DepthBuffer>(data)) {
+            SetWindowSize({404.0f, 543.0f});
+            KeepWindowInside();
+        }
+    }
+    last_pos = GetWindowPos();
+    moved = false;
+    End();
+}
+
+void RegPopup::Draw() {
+    char name[128];
+    snprintf(name, sizeof(name), "%s###reg_popup_%d", title.c_str(), id);
+    if (Begin(name, &open, flags)) {
+        if (GetWindowPos() != last_pos) {
+            moved = true;
+        }
+
         if (const auto* buffer = std::get_if<AmdGpu::Liverpool::ColorBuffer>(&data)) {
-            if (auto_resize) {
-                SetWindowSize({365.0f, 520.0f});
-                KeepWindowInside();
-            }
             DrawColorBuffer(*buffer);
         } else if (const auto* depth_data = std::get_if<DepthBuffer>(&data)) {
-            if (auto_resize) {
-                SetWindowSize({404.0f, 543.0f});
-                KeepWindowInside();
-            }
             DrawDepthBuffer(*depth_data);
         }
     }

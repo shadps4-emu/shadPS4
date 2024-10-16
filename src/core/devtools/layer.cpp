@@ -154,20 +154,28 @@ void L::DrawAdvanced() {
     if (BeginPopupModal("GPU Tools Options", &close_popup_options,
                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
         static char disassembly_cli[512];
+        static bool frame_dump_render_on_collapse;
 
         if (just_opened_options) {
             just_opened_options = false;
             auto s = Options.disassembly_cli.copy(disassembly_cli, sizeof(disassembly_cli) - 1);
             disassembly_cli[s] = '\0';
+            frame_dump_render_on_collapse = Options.frame_dump_render_on_collapse;
         }
 
         InputText("Shader disassembler: ", disassembly_cli, sizeof(disassembly_cli));
         if (IsItemHovered()) {
             SetTooltip(R"(Command to disassemble shaders. Example "dis.exe" --raw "{src}")");
         }
+        Checkbox("Show frame dump popups even when collapsed", &frame_dump_render_on_collapse);
+        if (IsItemHovered()) {
+            SetTooltip("When a frame dump is collapsed, it will keep\n"
+                       "showing all opened popups related to it");
+        }
 
         if (Button("Save")) {
             Options.disassembly_cli = disassembly_cli;
+            Options.frame_dump_render_on_collapse = frame_dump_render_on_collapse;
             SaveIniSettingsToDisk(io.IniFilename);
             CloseCurrentPopup();
         }

@@ -36,9 +36,9 @@ class FrameGraph;
 namespace DebugStateType {
 
 enum class QueueType {
-    acb,
-    dcb,
-    ccb,
+    dcb = 0,
+    ccb = 1,
+    acb = 2,
 };
 
 struct QueueDump {

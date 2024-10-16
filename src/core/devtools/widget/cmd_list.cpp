@@ -1173,7 +1173,7 @@ CmdListViewer::CmdListViewer(DebugStateType::FrameDump* _frame_dump,
     }
 }
 
-void CmdListViewer::Draw() {
+void CmdListViewer::Draw(bool only_batches_view) {
     const auto& ctx = *GetCurrentContext();
 
     if (batch_view.open) {
@@ -1186,6 +1186,10 @@ void CmdListViewer::Draw() {
         }
         it->Draw();
         ++it;
+    }
+
+    if (only_batches_view) {
+        return;
     }
 
     if (cmdb_view.Open) {
@@ -1313,12 +1317,17 @@ void CmdListViewer::Draw() {
                             pop.SetData(data, name, batch_id);
                             pop.open = true;
                         } else {
-                            batch_view.SetData(data, name, batch_id);
-                            if (!batch_view.open) {
-                                batch_view.open = true;
-                                const auto pos = GImGui->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
-                                SetNextWindowPos(pos, ImGuiCond_Always);
-                                batch_view.Draw();
+                            if (batch_view.open &&
+                                this->last_selected_batch == static_cast<int>(batch_id)) {
+                                batch_view.open = false;
+                            } else {
+                                this->last_selected_batch = static_cast<int>(batch_id);
+                                batch_view.SetData(data, name, batch_id);
+                                if (!batch_view.open || !batch_view.moved) {
+                                    batch_view.open = true;
+                                    const auto pos = GetItemRectMax() + ImVec2{5.0f, 0.0f};
+                                    batch_view.SetPos(pos);
+                                }
                             }
                         }
                     }
@@ -1330,7 +1339,10 @@ void CmdListViewer::Draw() {
                     show_batch_content =
                         CollapsingHeader(batch_hdr, ImGuiTreeNodeFlags_AllowOverlap);
                     SameLine(GetContentRegionAvail().x - 40.0f);
-                    if (Button("->", {40.0f, 0.0f})) {
+                    const char* text =
+                        last_selected_batch == static_cast<int>(batch_id) && batch_view.open ? "X"
+                                                                                             : "->";
+                    if (Button(text, {40.0f, 0.0f})) {
                         open_batch_view();
                     }
                 }
@@ -1360,7 +1372,12 @@ void CmdListViewer::Draw() {
                             if (!group_batches) {
                                 if (IsDrawCall(op)) {
                                     SameLine(GetContentRegionAvail().x - 40.0f);
-                                    if (Button("->", {40.0f, 0.0f})) {
+                                    const char* text =
+                                        last_selected_batch == static_cast<int>(batch_id) &&
+                                                batch_view.open
+                                            ? "X"
+                                            : "->";
+                                    if (Button(text, {40.0f, 0.0f})) {
                                         open_batch_view();
                                     }
                                 }

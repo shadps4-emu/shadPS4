@@ -23,6 +23,8 @@
 using namespace ImGui;
 using magic_enum::enum_name;
 
+constexpr auto depth_id = 0xF3;
+
 static std::optional<std::string> exec_cli(const char* cli) {
     std::array<char, 64> buffer{};
     std::string output;
@@ -110,21 +112,20 @@ void RegView::DrawRegs() {
         DrawRow("Color control", "%X (%s)", cc_mode, enum_name(cc_mode).data());
 
         const auto open_new_popup = [&](int cb, auto... args) {
+            const auto pos = GetItemRectMax() + ImVec2(5.0f, 0.0f);
             if (GetIO().KeyShift) {
                 auto& pop = extra_reg_popup.emplace_back();
                 pop.SetData(title, args...);
                 pop.open = true;
-                pop.Draw(true);
+                pop.SetPos(pos, true);
             } else if (last_selected_cb == cb && default_reg_popup.open) {
                 default_reg_popup.open = false;
             } else {
                 last_selected_cb = cb;
                 default_reg_popup.SetData(title, args...);
-                if (!default_reg_popup.open) {
+                if (!default_reg_popup.open || !default_reg_popup.moved) {
                     default_reg_popup.open = true;
-                    const auto pos = GImGui->LastItemData.Rect.Max + ImVec2(5.0f, 0.0f);
-                    SetNextWindowPos(pos, ImGuiCond_Always);
-                    default_reg_popup.Draw(true);
+                    default_reg_popup.SetPos(pos, true);
                 }
             }
         };
@@ -158,7 +159,6 @@ void RegView::DrawRegs() {
         if (regs.depth_buffer.Address() == 0 || !regs.depth_control.depth_enable) {
             TextUnformatted("N/A");
         } else {
-            constexpr auto depth_id = 0xF3;
             const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
             if (SmallButton(text)) {
                 open_new_popup(depth_id, regs.depth_buffer, regs.depth_control);
@@ -176,7 +176,7 @@ RegView::RegView() {
     char name[128];
     snprintf(name, sizeof(name), "###reg_dump_%d", id);
     SetNextWindowPos({400.0f, 200.0f});
-    SetNextWindowSize({290.0f, 425.0f});
+    SetNextWindowSize({290.0f, 435.0f});
     ImGuiID root_dock_id;
     Begin(name);
     {
@@ -204,15 +204,46 @@ RegView::RegView() {
     DockBuilderFinish(root_dock_id);
 }
 
-void RegView::SetData(DebugStateType::RegDump data, const std::string& base_title, u32 batch_id) {
-    this->data = std::move(data);
+void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_title, u32 batch_id) {
+    this->data = std::move(_data);
     this->batch_id = batch_id;
     this->title = fmt::format("{}/Batch {}", base_title, batch_id);
     // clear cache
-    selected_shader = -1;
     shader_decomp.clear();
-    default_reg_popup.open = false;
+    const auto& regs = data.regs;
+    if (selected_shader >= 0 && !regs.stage_enable.IsStageEnabled(selected_shader)) {
+        selected_shader = -1;
+    }
+    if (default_reg_popup.open) {
+        default_reg_popup.open = false;
+        if (last_selected_cb == depth_id) {
+            const auto& has_depth =
+                regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
+            if (has_depth) {
+                default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
+                default_reg_popup.open = true;
+            }
+        } else if (last_selected_cb >= 0 && last_selected_cb < AmdGpu::Liverpool::NumColorBuffers) {
+            const auto& buffer = regs.color_buffers[last_selected_cb];
+            const bool has_cb = buffer && regs.color_target_mask.GetMask(last_selected_cb);
+            if (has_cb) {
+                default_reg_popup.SetData(title, buffer, last_selected_cb);
+                default_reg_popup.open = true;
+            }
+        }
+    }
     extra_reg_popup.clear();
+}
+
+void RegView::SetPos(ImVec2 pos) {
+    char name[128];
+    snprintf(name, sizeof(name), "%s###reg_dump_%d", title.c_str(), id);
+    Begin(name, &open, ImGuiWindowFlags_MenuBar);
+    SetWindowPos(pos);
+    KeepWindowInside();
+    last_pos = GetWindowPos();
+    moved = false;
+    End();
 }
 
 void RegView::Draw() {
@@ -220,9 +251,11 @@ void RegView::Draw() {
     snprintf(name, sizeof(name), "%s###reg_dump_%d", title.c_str(), id);
 
     if (Begin(name, &open, ImGuiWindowFlags_MenuBar)) {
-        const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
+        if (GetWindowPos() != last_pos) {
+            moved = true;
+        }
 
-        KeepWindowInside();
+        const char* names[] = {"vs", "ps", "gs", "es", "hs", "ls"};
 
         if (BeginMenuBar()) {
             if (BeginMenu("Windows")) {

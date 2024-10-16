@@ -18,6 +18,7 @@ class RegPopup {
 
     using DepthBuffer = std::tuple<AmdGpu::Liverpool::DepthBuffer, AmdGpu::Liverpool::DepthControl>;
 
+    ImVec2 last_pos;
     std::variant<AmdGpu::Liverpool::ColorBuffer, DepthBuffer> data;
     std::string title{};
 
@@ -27,6 +28,7 @@ class RegPopup {
 
 public:
     bool open = false;
+    bool moved = false;
 
     RegPopup();
 
@@ -36,7 +38,9 @@ public:
     void SetData(const std::string& base_title, AmdGpu::Liverpool::DepthBuffer depth_buffer,
                  AmdGpu::Liverpool::DepthControl depth_control);
 
-    void Draw(bool auto_resize = false);
+    void SetPos(ImVec2 pos, bool auto_resize = false);
+
+    void Draw();
 };
 
 } // namespace Core::Devtools::Widget
