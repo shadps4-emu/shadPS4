@@ -432,6 +432,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
+           src/common/number_utils.h
+           src/common/number_utils.cpp
            src/common/memory_patcher.h
            src/common/memory_patcher.cpp
            src/common/scm_rev.cpp
@@ -771,7 +773,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
@@ -794,9 +796,6 @@ if (APPLE)
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
-
-  # Half float conversions for F16C patches
-  target_link_libraries(shadps4 PRIVATE half)
 endif()
 
 if (NOT ENABLE_QT_GUI)
