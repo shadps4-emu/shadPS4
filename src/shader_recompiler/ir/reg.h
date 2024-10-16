@@ -24,6 +24,8 @@ enum class FloatClassFunc : u32 {
 
     NaN = SignalingNan | QuietNan,
     Infinity = PositiveInfinity | NegativeInfinity,
+    Finite = NegativeNormal | NegativeDenorm | NegativeZero | PositiveNormal | PositiveDenorm |
+             PositiveZero,
 };
 DECLARE_ENUM_FLAG_OPERATORS(FloatClassFunc)
 
