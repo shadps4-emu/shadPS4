@@ -245,7 +245,7 @@ void ImeDialogUi::Draw() {
         window_size = {500.0f, 150.0f};
     }
 
-    CentralizeWindow();
+    CentralizeNextWindow();
     SetNextWindowSize(window_size);
     SetNextWindowCollapsed(false);
 

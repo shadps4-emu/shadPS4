@@ -31,6 +31,12 @@ static float debug_popup_timing = 3.0f;
 
 static bool just_opened_options = false;
 
+// clang-format off
+static std::string help_text =
+#include "help.txt"
+    ;
+// clang-format on
+
 void L::DrawMenuBar() {
     const auto& ctx = *GImGui;
     const auto& io = ctx.IO;
@@ -38,6 +44,7 @@ void L::DrawMenuBar() {
     auto isSystemPaused = DebugState.IsGuestThreadsPaused();
 
     bool open_popup_options = false;
+    bool open_popup_help = false;
 
     if (BeginMainMenuBar()) {
         if (BeginMenu("Options")) {
@@ -60,6 +67,7 @@ void L::DrawMenuBar() {
                 ImGui::EndMenu();
             }
             open_popup_options = MenuItem("Options");
+            open_popup_help = MenuItem("Help & Tips");
             ImGui::EndMenu();
         }
         EndMainMenuBar();
@@ -83,6 +91,9 @@ void L::DrawMenuBar() {
     if (open_popup_options) {
         OpenPopup("GPU Tools Options");
         just_opened_options = true;
+    }
+    if (open_popup_help) {
+        OpenPopup("HelpTips");
     }
 }
 
@@ -179,6 +190,22 @@ void L::DrawAdvanced() {
             SaveIniSettingsToDisk(io.IniFilename);
             CloseCurrentPopup();
         }
+        EndPopup();
+    }
+
+    if (BeginPopup("HelpTips", ImGuiWindowFlags_AlwaysAutoResize |
+                                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove)) {
+        CentralizeWindow();
+
+        PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{10.0f});
+        PushTextWrapPos(600.0f);
+
+        const char* begin = help_text.data();
+        TextUnformatted(begin, begin + help_text.size());
+
+        PopTextWrapPos();
+        PopStyleVar();
+
         EndPopup();
     }
 }

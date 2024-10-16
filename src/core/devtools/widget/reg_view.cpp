@@ -150,12 +150,6 @@ void RegView::DrawGraphicsRegs() {
         TableNextRow();
 
         DrawValueRow("Primitive type", regs.primitive_type);
-        auto& s = regs.screen_scissor;
-        DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
-                s.bottom_right_y);
-
-        auto cc_mode = regs.color_control.mode.Value();
-        DrawRow("Color control", "%X (%s)", cc_mode, enum_name(cc_mode).data());
 
         const auto open_new_popup = [&](int cb, auto... args) {
             const auto pos = GetItemRectMax() + ImVec2(5.0f, 0.0f);
@@ -210,6 +204,12 @@ void RegView::DrawGraphicsRegs() {
                 open_new_popup(depth_id, regs.depth_buffer, regs.depth_control);
             }
         }
+
+        auto& s = regs.screen_scissor;
+        DrawRow("Scissor", "(%d, %d, %d, %d)", s.top_left_x, s.top_left_y, s.bottom_right_x,
+                s.bottom_right_y);
+
+        DrawValueRow("Color control", regs.color_control.mode);
 
         DrawRow("Primitive restart", "%X (IDX: %X)", regs.enable_primitive_restart & 1,
                 regs.primitive_restart_index);

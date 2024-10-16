@@ -31,7 +31,7 @@ inline void CentralizeNextWindow() {
 }
 
 inline void CentralizeWindow() {
-    const auto display_size = GetIO().DisplaySize;
+    const auto display_size = GetIO().DisplaySize - GetCurrentWindowRead()->SizeFull;
     SetWindowPos(display_size / 2.0f);
 }
 
