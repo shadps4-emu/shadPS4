@@ -130,10 +130,6 @@ AvPlayerState::~AvPlayerState() {
     m_event_queue.Clear();
 }
 
-void AvPlayerState::PostInit(const SceAvPlayerPostInitData& post_init_data) {
-    m_post_init_data = post_init_data;
-}
-
 // Called inside GAME thread
 bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source_type) {
     if (path.empty()) {
@@ -148,9 +144,7 @@ bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType sourc
             return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(
-            *this, m_post_init_data.video_decoder_init.decoderType.video_type ==
-                       SCE_AVPLAYER_VIDEO_DECODER_TYPE_SOFTWARE2);
+        m_up_source = std::make_unique<AvPlayerSource>(*this);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();

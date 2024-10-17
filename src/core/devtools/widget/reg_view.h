@@ -18,10 +18,8 @@ struct ShaderCache {
 class RegView {
     int id;
 
-    std::string title;
     DebugStateType::RegDump data;
     u32 batch_id{~0u};
-    ImVec2 last_pos;
 
     std::unordered_map<int, ShaderCache> shader_decomp;
     int selected_shader{-1};
@@ -37,19 +35,14 @@ class RegView {
 
     void SelectShader(int shader_id);
 
-    void DrawComputeRegs();
-
-    void DrawGraphicsRegs();
+    void DrawRegs();
 
 public:
     bool open = false;
-    bool moved = false;
 
     RegView();
 
-    void SetData(DebugStateType::RegDump data, const std::string& base_title, u32 batch_id);
-
-    void SetPos(ImVec2 pos);
+    void SetData(DebugStateType::RegDump data, u32 batch_id);
 
     void Draw();
 };

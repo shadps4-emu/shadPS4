@@ -446,8 +446,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.cs_program.dim_z = dispatch_direct->dim_z;
                 regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs,
-                                            true);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -464,8 +463,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs,
-                                            true);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -647,7 +645,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (DebugState.DumpingCurrentReg()) {
-                DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs, true);
+                DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
             }
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
