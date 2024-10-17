@@ -47,9 +47,15 @@ else()
     message(FATAL_ERROR "Unsupported CPU architecture: ${BASE_ARCHITECTURE}")
 endif()
 
-if (APPLE AND ARCHITECTURE STREQUAL "x86_64")
+if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
     # Exclude ARM homebrew path to avoid conflicts when cross compiling.
     list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
+
+    # Need to reconfigure pkg-config to use the right architecture library paths.
+    # It's not ideal to override these but otherwise the build breaks just by having pkg-config installed.
+    set(ENV{PKG_CONFIG_DIR} "")
+    set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig:${CMAKE_SYSROOT}/usr/local/lib/pkgconfig:${CMAKE_SYSROOT}/usr/local/share/pkgconfig")
+    set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
 endif()
 
 # This function should be passed a list of all files in a target. It will automatically generate file groups
