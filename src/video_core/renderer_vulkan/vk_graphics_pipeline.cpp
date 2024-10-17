@@ -60,7 +60,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             }
 
             const auto buffer =
-                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -327,6 +327,15 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
+
+        if (stage->has_readconst) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1,
+                .stageFlags = gp_stage_flags,
+            });
+        }
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
@@ -402,6 +411,21 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
         stage->PushUd(binding, push_data);
+
+        if (stage->has_readconst) {
+            const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(stage->flattened_ud_buf);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset,
+                                      stage->flattened_ud_buf.size() * sizeof(u32));
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding.unified++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .pBufferInfo = &buffer_infos.back(),
+            });
+            ++binding.buffer;
+        }
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
