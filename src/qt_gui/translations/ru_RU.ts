@@ -62,7 +62,7 @@
 		<message>
 			<location filename="../install_dir_select.cpp" line="37"/>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Выберите папку, в которую вы хотите установить.</translation>
 		</message>
 	</context>
 	<context>
@@ -143,22 +143,22 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="72"/>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Удаление...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="73"/>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Удалить игру</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="74"/>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>Удалить обновление</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Удалить DLC</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
@@ -188,27 +188,27 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="299"/>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Игры</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Эта функция требует включения настройки 'Отдельная папка обновлений'. Если вы хотите использовать эту функцию, пожалуйста включите её.</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>У этой игры нет обновлений для удаления!</translation>
 		</message>
 			<message>
 			<location filename="../gui_context_menus.h" line="316"/>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Обновления</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="321"/>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>У этой игры нет DLC для удаления!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="325"/>
@@ -218,12 +218,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="332"/>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Удалить %1</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="333"/>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Вы уверены, что хотите удалить папку %2 %1?</translation>
 		</message>
 	</context>
 	<context>
@@ -480,7 +480,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Отдельная папка обновлений</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -525,17 +525,17 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="611"/>
 			<source>Cursor</source>
-			<translation>Курсор</translation>
+			<translation>Курсор мыши</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="635"/>
 			<source>Hide Cursor</source>
-			<translation>Скрыть курсор</translation>
+			<translation>Скрывать курсор</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>Тайм-аут скрытия курсора при неактивности</translation>
+			<translation>Тайм-аут скрытия курсора при бездействии</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -640,7 +640,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="286"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Проверка обновлений при запуске</translation>
+			<translation>Проверка при запуске</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="313"/>
@@ -655,12 +655,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
 			<source>GUI Settings</source>
-			<translation>Настройки интерфейса</translation>
+			<translation>Интерфейс</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
-			<translation>Воспроизведение заглавной музыки</translation>
+			<translation>Играть заглавную музыку</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
@@ -1124,7 +1124,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Отдельная папка обновлений:\nПозволяет устанавливать обновления игры в отдельную папку для удобства.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
@@ -1164,22 +1164,22 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Воспроизведение заглавной музыки:\nЕсли игра это поддерживает, включает воспроизведение специальной музыки при выборе игры в интерфейсе.</translation>
+			<translation>Играть заглавную музыку:\nВключает воспроизведение специальной музыки при выборе игры в списке, если она это поддерживает.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
-			<translation>Скрыть курсор:\nВыберите, когда курсор исчезнет:\nНикогда: Вы всегда будете видеть мышь.\nНеактивный: Yстановите время, через которое она исчезнет после бездействия.\nВсегда: вы никогда не увидите мышь.</translation>
+			<translation>Скрывать курсор:\nВыберите, когда курсор исчезнет:\nНикогда: Вы всегда будете видеть мышь.\nПри бездействии: Установите время, через которое курсор исчезнет при бездействии.\nВсегда: Вы никогда не будете видеть мышь.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
 			<source>idleTimeoutGroupBox</source>
-			<translation>Установите время, через которое курсор исчезнет после бездействия.</translation>
+			<translation>Установите время, через которое курсор исчезнет при бездействии.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Поведение кнопки «Назад»:\nУстанавливает кнопку «Назад» на контроллере для имитации нажатия в указанной позиции на сенсорной панели PS4.</translation>
+			<translation>Поведение кнопки «Назад»:\nНастраивает кнопку «Назад» контроллера на эмуляцию нажатия на указанную область на сенсорной панели контроллера PS4.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1189,7 +1189,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="71"/>
 			<source>Idle</source>
-			<translation>Неактивный</translation>
+			<translation>При бездействии</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
@@ -1199,17 +1199,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="101"/>
 			<source>Touchpad Left</source>
-			<translation>Тачпад Слева</translation>
+			<translation>Тачпад слева</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="102"/>
 			<source>Touchpad Right</source>
-			<translation>Тачпад Справа</translation>
+			<translation>Тачпад справа</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="103"/>
 			<source>Touchpad Center</source>
-			<translation>Центр Тачпада</translation>
+			<translation>Центр тачпада</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="104"/>
@@ -1322,7 +1322,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
-			<translation>Время Игры</translation>
+			<translation>Времени в игре</translation>
 		</message>
 	</context>
 	<context>
@@ -1400,7 +1400,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="198"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Проверка обновлений при запуске</translation>
+			<translation>Проверка при запуске</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="199"/>
