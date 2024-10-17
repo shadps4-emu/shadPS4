@@ -1173,7 +1173,7 @@ CmdListViewer::CmdListViewer(DebugStateType::FrameDump* _frame_dump,
     }
 }
 
-void CmdListViewer::Draw(bool only_batches_view) {
+void CmdListViewer::Draw() {
     const auto& ctx = *GetCurrentContext();
 
     if (batch_view.open) {
@@ -1186,10 +1186,6 @@ void CmdListViewer::Draw(bool only_batches_view) {
         }
         it->Draw();
         ++it;
-    }
-
-    if (only_batches_view) {
-        return;
     }
 
     if (cmdb_view.Open) {
@@ -1232,7 +1228,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
         Text("size     : %04llX", cmdb_size);
         Separator();
 
-        {
+        if (TreeNode("Batches")) {
             int tree_depth = 0;
             int tree_depth_show = 0;
 
@@ -1287,10 +1283,9 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 auto const* pm4_hdr =
                     reinterpret_cast<PM4Header const*>(cmdb_addr + batch.start_addr);
 
-                bool ignore_header = false;
                 char batch_hdr[128];
                 if (batch.type == static_cast<AmdGpu::PM4ItOpcode>(0xFF)) {
-                    ignore_header = true;
+                    snprintf(batch_hdr, sizeof(batch_hdr), "State batch");
                 } else if (!batch.marker.empty()) {
                     snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s | %s",
                              cmdb_addr + batch.start_addr, batch.id,
@@ -1314,35 +1309,22 @@ void CmdListViewer::Draw(bool only_batches_view) {
                         auto data = frame_dump->regs.at(batch.command_addr);
                         if (GetIO().KeyShift) {
                             auto& pop = extra_batch_view.emplace_back();
-                            pop.SetData(data, name, batch_id);
+                            pop.SetData(data, batch_id);
                             pop.open = true;
                         } else {
-                            if (batch_view.open &&
-                                this->last_selected_batch == static_cast<int>(batch_id)) {
-                                batch_view.open = false;
-                            } else {
-                                this->last_selected_batch = static_cast<int>(batch_id);
-                                batch_view.SetData(data, name, batch_id);
-                                if (!batch_view.open || !batch_view.moved) {
-                                    batch_view.open = true;
-                                    const auto pos = GetItemRectMax() + ImVec2{5.0f, 0.0f};
-                                    batch_view.SetPos(pos);
-                                }
-                            }
+                            batch_view.SetData(data, batch_id);
+                            batch_view.open = true;
                         }
                     }
                 };
 
                 bool show_batch_content = true;
 
-                if (group_batches && !ignore_header) {
+                if (group_batches) {
                     show_batch_content =
                         CollapsingHeader(batch_hdr, ImGuiTreeNodeFlags_AllowOverlap);
                     SameLine(GetContentRegionAvail().x - 40.0f);
-                    const char* text =
-                        last_selected_batch == static_cast<int>(batch_id) && batch_view.open ? "X"
-                                                                                             : "->";
-                    if (Button(text, {40.0f, 0.0f})) {
+                    if (Button("->", {40.0f, 0.0f})) {
                         open_batch_view();
                     }
                 }
@@ -1350,7 +1332,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 if (show_batch_content) {
                     auto processed_size = 0ull;
                     auto bb = ctx.LastItemData.Rect;
-                    if (group_batches && !ignore_header) {
+                    if (group_batches) {
                         Indent();
                     }
                     auto const batch_sz = batch.end_addr - batch.start_addr;
@@ -1372,12 +1354,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                             if (!group_batches) {
                                 if (IsDrawCall(op)) {
                                     SameLine(GetContentRegionAvail().x - 40.0f);
-                                    const char* text =
-                                        last_selected_batch == static_cast<int>(batch_id) &&
-                                                batch_view.open
-                                            ? "X"
-                                            : "->";
-                                    if (Button(text, {40.0f, 0.0f})) {
+                                    if (Button("->", {40.0f, 0.0f})) {
                                         open_batch_view();
                                     }
                                 }
@@ -1449,7 +1426,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                         processed_size += processed_len;
                     }
 
-                    if (group_batches && !ignore_header) {
+                    if (group_batches) {
                         Unindent();
                     };
                     bb = {{0.0f, bb.Max.y}, ctx.LastItemData.Rect.Max};
@@ -1473,6 +1450,8 @@ void CmdListViewer::Draw(bool only_batches_view) {
             PopID();
 
             highlight_batch = current_highlight_batch;
+
+            TreePop();
         }
     }
     EndChild();

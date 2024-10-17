@@ -42,7 +42,6 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videoout/video_out.h"
-#include "src/core/libraries/mouse/mouse.h"
 
 namespace Libraries {
 
@@ -86,7 +85,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::GameLiveStreaming::RegisterlibSceGameLiveStreaming(sym);
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
-    Libraries::Mouse::RegisterlibSceMouse(sym);
 }
 
 } // namespace Libraries

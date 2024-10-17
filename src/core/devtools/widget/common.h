@@ -4,16 +4,15 @@
 #pragma once
 
 #include <string>
-#include <type_traits>
 #include <variant>
 
 #include <magic_enum.hpp>
 
-#include "common/bit_field.h"
 #include "common/types.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
 namespace Core::Devtools::Widget {
+
 /*
  * Generic PM4 header
  */
@@ -58,24 +57,16 @@ void DrawRow(const char* text, const char* fmt, Args... args) {
     ImGui::TextUnformatted(buf);
 }
 
-template <typename T>
-void DrawValueRow(const char* text, T value) {
-    if constexpr (std::is_enum_v<T>) {
-        return DrawRow(text, "%X (%s)", value, magic_enum::enum_name(value).data());
-    } else if constexpr (std::is_integral_v<T>) {
-        return DrawRow(text, "%X", value);
-    } else if constexpr (std::is_base_of_v<BitField<T::position, T::bits, typename T::Type>, T>) {
-        return DrawValueRow(text, value.Value());
-    } else {
-        static_assert(false, "Unsupported type");
-    }
+template <typename T, typename V = u32>
+void DrawEnumRow(const char* text, T value) {
+    DrawRow(text, "%X (%s)", V(value), magic_enum::enum_name(value).data());
 }
 
 template <typename V, typename... Extra>
-void DrawValueRowList(const char* text, V arg, Extra&&... extra_args) {
-    DrawValueRow(text, arg);
+void DrawMultipleRow(const char* text, const char* fmt, V arg, Extra&&... extra_args) {
+    DrawRow(text, fmt, arg);
     if constexpr (sizeof...(extra_args) > 0) {
-        DrawValueRowList(std::forward<Extra>(extra_args)...);
+        DrawMultipleRow(std::forward<Extra>(extra_args)...);
     }
 }
 

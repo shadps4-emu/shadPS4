@@ -36,9 +36,9 @@ class FrameGraph;
 namespace DebugStateType {
 
 enum class QueueType {
-    dcb = 0,
-    ccb = 1,
-    acb = 2,
+    acb,
+    dcb,
+    ccb,
 };
 
 struct QueueDump {
@@ -54,21 +54,13 @@ struct ShaderDump {
     std::vector<u32> code{};
 };
 
-struct ComputerShaderDump {
-    Vulkan::Liverpool::ComputeProgram cs_program{};
-    std::vector<u32> code{};
-};
-
 struct RegDump {
-    bool is_compute{false};
     static constexpr size_t MaxShaderStages = 5;
     Vulkan::Liverpool::Regs regs{};
     std::array<ShaderDump, MaxShaderStages> stages{};
-    ComputerShaderDump cs_data{};
 };
 
 struct FrameDump {
-    u32 frame_id;
     std::vector<QueueDump> queues;
     std::unordered_map<uintptr_t, RegDump> regs; // address -> reg dump
 };
@@ -151,7 +143,7 @@ public:
     void PushQueueDump(QueueDump dump);
 
     void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
+                      const AmdGpu::Liverpool::Regs& regs);
 };
 } // namespace DebugStateType
 
