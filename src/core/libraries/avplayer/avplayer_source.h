@@ -120,7 +120,7 @@ private:
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state);
+    AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2);
     ~AvPlayerSource();
 
     bool Init(const SceAvPlayerInitData& init_data, std::string_view path);
@@ -168,6 +168,7 @@ private:
     Frame PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
+    bool m_use_vdec2 = false;
 
     SceAvPlayerMemAllocator m_memory_replacement{};
     u32 m_num_output_video_framebuffers{};

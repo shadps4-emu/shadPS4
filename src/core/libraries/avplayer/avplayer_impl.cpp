@@ -112,7 +112,7 @@ AvPlayer::AvPlayer(const SceAvPlayerInitData& data)
       m_state(std::make_unique<AvPlayerState>(m_init_data)) {}
 
 s32 AvPlayer::PostInit(const SceAvPlayerPostInitData& data) {
-    m_post_init_data = data;
+    m_state->PostInit(data);
     return ORBIS_OK;
 }
 

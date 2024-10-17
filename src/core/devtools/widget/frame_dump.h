@@ -20,6 +20,7 @@ class FrameDumpViewer {
     int id;
 
     std::vector<CmdListViewer> cmd_list_viewer;
+    std::array<bool, 3> has_queue_type;
 
     DebugStateType::QueueType selected_queue_type;
     s32 selected_submit_num;

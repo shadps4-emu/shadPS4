@@ -102,6 +102,10 @@ void DebugStateImpl::RequestFrameDump(s32 count) {
     gnm_frame_dump_request_count = count;
     frame_dump_list.clear();
     frame_dump_list.resize(count);
+    const auto f = gnm_frame_count.load() + 1;
+    for (size_t i = 0; i < count; ++i) {
+        frame_dump_list[i].frame_id = f + i;
+    }
     waiting_submit_pause = true;
 }
 
@@ -139,7 +143,7 @@ void DebugStateImpl::PushQueueDump(QueueDump dump) {
 }
 
 void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                                  const AmdGpu::Liverpool::Regs& regs) {
+                                  const AmdGpu::Liverpool::Regs& regs, bool is_compute) {
     std::scoped_lock lock{frame_dump_list_mutex};
     const auto it = waiting_reg_dumps.find(header_addr);
     if (it == waiting_reg_dumps.end()) {
@@ -150,15 +154,24 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
     waiting_reg_dumps_dbg.erase(waiting_reg_dumps_dbg.find(header_addr));
     auto& dump = frame.regs[header_addr - base_addr];
     dump.regs = regs;
-    for (int i = 0; i < RegDump::MaxShaderStages; i++) {
-        if (regs.stage_enable.IsStageEnabled(i)) {
-            auto stage = regs.ProgramForStage(i);
-            if (stage->address_lo != 0) {
-                auto code = stage->Code();
-                dump.stages[i] = ShaderDump{
-                    .user_data = *stage,
-                    .code = std::vector<u32>{code.begin(), code.end()},
-                };
+    if (is_compute) {
+        dump.is_compute = true;
+        const auto& cs = dump.regs.cs_program;
+        dump.cs_data = ComputerShaderDump{
+            .cs_program = cs,
+            .code = std::vector<u32>{cs.Code().begin(), cs.Code().end()},
+        };
+    } else {
+        for (int i = 0; i < RegDump::MaxShaderStages; i++) {
+            if (regs.stage_enable.IsStageEnabled(i)) {
+                auto stage = regs.ProgramForStage(i);
+                if (stage->address_lo != 0) {
+                    auto code = stage->Code();
+                    dump.stages[i] = ShaderDump{
+                        .user_data = *stage,
+                        .code = std::vector<u32>{code.begin(), code.end()},
+                    };
+                }
             }
         }
     }

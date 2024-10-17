@@ -10,7 +10,8 @@ struct ImGuiTextBuffer;
 namespace Core::Devtools {
 
 struct TOptions {
-    std::string disassembly_cli;
+    std::string disassembly_cli{};
+    bool frame_dump_render_on_collapse{false};
 };
 
 extern TOptions Options;

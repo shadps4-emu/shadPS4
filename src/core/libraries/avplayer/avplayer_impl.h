@@ -56,7 +56,6 @@ private:
 
     SceAvPlayerInitData m_init_data{};
     SceAvPlayerInitData m_init_data_original{};
-    SceAvPlayerPostInitData m_post_init_data{};
     std::mutex m_file_io_mutex{};
 
     std::atomic_bool m_has_source{};

@@ -1942,9 +1942,12 @@ int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceReceiveEvent() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event) {
+    LOG_ERROR(Lib_SystemService, "(STUBBED) called, event type = {:#x}", (int)event->eventType);
+    if (event == nullptr) {
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
+    return ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT;
 }
 
 int PS4_SYSV_ABI sceSystemServiceReenableMusicPlayer() {

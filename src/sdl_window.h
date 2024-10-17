@@ -85,6 +85,7 @@ private:
     void onResize();
     void onKeyboardMouseEvent(const SDL_Event* event);
     void onGamepadEvent(const SDL_Event* event);
+    void onMouseAction(const SDL_Event* event);
     int sdlGamepadToOrbisButton(u8 button);
 
     void updateModKeyedInputsManually(KeyBinding& binding);

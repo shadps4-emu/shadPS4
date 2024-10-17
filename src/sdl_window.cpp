@@ -27,6 +27,9 @@
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
 #endif
+#include <common/singleton.h>
+#include <core/libraries/mouse/mouse.h>
+#include <input/mouse.h>
 
 // +1 and +2 is taken
 #define SDL_EVENT_MOUSE_WHEEL_UP SDL_EVENT_MOUSE_WHEEL + 3
@@ -597,11 +600,11 @@ void WindowSDL::waitEvent() {
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
         onResize();
         break;
-    case SDL_EVENT_MOUSE_WHEEL:
-    case SDL_EVENT_MOUSE_BUTTON_UP:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        // native mouse update function goes here
-        // as seen in pr #633
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+        onMouseAction(&event);
+        // passthrough, because it is required for both functions to work
+    case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer);
@@ -620,8 +623,26 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+
+    
     default:
         break;
+    }
+}
+void WindowSDL::onMouseAction(const SDL_Event* event) {
+    auto* mouse = Common::Singleton<Input::GameMouse>::Instance();
+    using Libraries::Mouse::OrbisMouseButtonDataOffset;
+    u32 button = 0;
+    switch (event->button.button) {
+    case SDL_BUTTON_LEFT:
+        button = OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_PRIMARY;
+        break;
+    case SDL_BUTTON_RIGHT:
+        button = OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_SECONDARY;
+        break;
+    }
+    if (button != 0) {
+        mouse->CheckButton(0, button, event->type == SDL_EVENT_MOUSE_BUTTON_DOWN);
     }
 }
 void WindowSDL::onResize() {
