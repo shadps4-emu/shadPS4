@@ -291,7 +291,7 @@ void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
-                                                  bool is_texel_buffer) {
+                                                  bool is_texel_buffer, BufferId buffer_id) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
     const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
     if (!is_written && size <= StreamThreshold && !is_gpu_dirty) {
@@ -301,16 +301,19 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         return {&stream_buffer, offset};
     }
 
-    const BufferId buffer_id = FindBuffer(device_addr, size);
+    if (!buffer_id || slot_buffers[buffer_id].is_deleted) {
+        buffer_id = FindBuffer(device_addr, size);
+    }
     Buffer& buffer = slot_buffers[buffer_id];
     SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
     if (is_written) {
         memory_tracker.MarkRegionAsGpuModified(device_addr, size);
+        gpu_regions.Add(device_addr, size);
     }
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size) {
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
@@ -539,6 +542,8 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         largest_copy = std::max(largest_copy, range_size);
     };
     memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+        bool has_gpu = false;
+        gpu_regions.ForEachInRange(device_addr_out, range_size, [&](VAddr, VAddr) { has_gpu = true; });
         add_copy(device_addr_out, range_size);
         // Prevent uploading to gpu modified regions.
         // gpu_modified_ranges.ForEachNotInRange(device_addr_out, range_size, add_copy);
@@ -656,12 +661,13 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
 
 void BufferCache::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
     // Mark the whole buffer as CPU written to stop tracking CPU writes
+    Buffer& buffer = slot_buffers[buffer_id];
     if (!do_not_mark) {
-        Buffer& buffer = slot_buffers[buffer_id];
         memory_tracker.MarkRegionAsCpuModified(buffer.CpuAddr(), buffer.SizeBytes());
     }
     Unregister(buffer_id);
     scheduler.DeferOperation([this, buffer_id] { slot_buffers.erase(buffer_id); });
+    buffer.is_deleted = true;
 }
 
 } // namespace VideoCore
