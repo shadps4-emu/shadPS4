@@ -137,45 +137,85 @@ std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_right_y_minus", {Input::Axis::RightY, -127}},
 };
 std::map<std::string, u32> string_to_keyboard_key_map = {
-    {"a", SDLK_A}, {"b", SDLK_B}, {"c", SDLK_C}, {"d", SDLK_D},
-    {"e", SDLK_E}, {"f", SDLK_F}, {"g", SDLK_G}, {"h", SDLK_H},
-    {"i", SDLK_I}, {"j", SDLK_J}, {"k", SDLK_K}, {"l", SDLK_L}, 
-    {"m", SDLK_M}, {"n", SDLK_N}, {"o", SDLK_O}, {"p", SDLK_P},
-    {"q", SDLK_Q}, {"r", SDLK_R}, {"s", SDLK_S}, {"t", SDLK_T},
-    {"u", SDLK_U}, {"v", SDLK_V}, {"w", SDLK_W}, {"x", SDLK_X},
-    {"y", SDLK_Y}, {"z", SDLK_Z},
-    {"0", SDLK_0}, {"1", SDLK_1}, {"2", SDLK_2}, {"3", SDLK_3},
-    {"4", SDLK_4}, {"5", SDLK_5}, {"6", SDLK_6}, {"7", SDLK_7},
-    {"8", SDLK_8}, {"9", SDLK_9},
-    {"kp0", SDLK_KP_0}, {"kp1", SDLK_KP_1}, {"kp2", SDLK_KP_2}, {"kp3", SDLK_KP_3},
-    {"kp4", SDLK_KP_4}, {"kp5", SDLK_KP_5}, {"kp6", SDLK_KP_6}, {"kp7", SDLK_KP_7},
-    {"kp8", SDLK_KP_8}, {"kp9", SDLK_KP_9},
-    {",", SDLK_COMMA},
-    {".", SDLK_PERIOD},
-    {"?", SDLK_QUESTION},
-    {";", SDLK_SEMICOLON},
-    {"-", SDLK_MINUS},
-    {"_", SDLK_UNDERSCORE},
-    {"(", SDLK_LEFTPAREN},
-    {")", SDLK_RIGHTPAREN},
-    {"[", SDLK_LEFTBRACKET},
-    {"]", SDLK_RIGHTBRACKET},
-    {"{", SDLK_LEFTBRACE},
-    {"}", SDLK_RIGHTBRACE},
-    {"\\", SDLK_BACKSLASH},
-    {"/", SDLK_SLASH},
+    {"a", SDLK_A},
+    {"b", SDLK_B},
+    {"c", SDLK_C},
+    {"d", SDLK_D},
+    {"e", SDLK_E},
+    {"f", SDLK_F},
+    {"g", SDLK_G},
+    {"h", SDLK_H},
+    {"i", SDLK_I},
+    {"j", SDLK_J},
+    {"k", SDLK_K},
+    {"l", SDLK_L},
+    {"m", SDLK_M},
+    {"n", SDLK_N},
+    {"o", SDLK_O},
+    {"p", SDLK_P},
+    {"q", SDLK_Q},
+    {"r", SDLK_R},
+    {"s", SDLK_S},
+    {"t", SDLK_T},
+    {"u", SDLK_U},
+    {"v", SDLK_V},
+    {"w", SDLK_W},
+    {"x", SDLK_X},
+    {"y", SDLK_Y},
+    {"z", SDLK_Z},
+    {"0", SDLK_0},
+    {"1", SDLK_1},
+    {"2", SDLK_2},
+    {"3", SDLK_3},
+    {"4", SDLK_4},
+    {"5", SDLK_5},
+    {"6", SDLK_6},
+    {"7", SDLK_7},
+    {"8", SDLK_8},
+    {"9", SDLK_9},
+    {"kp0", SDLK_KP_0},
+    {"kp1", SDLK_KP_1},
+    {"kp2", SDLK_KP_2},
+    {"kp3", SDLK_KP_3},
+    {"kp4", SDLK_KP_4},
+    {"kp5", SDLK_KP_5},
+    {"kp6", SDLK_KP_6},
+    {"kp7", SDLK_KP_7},
+    {"kp8", SDLK_KP_8},
+    {"kp9", SDLK_KP_9},
+    {"comma", SDLK_COMMA},
+    {"period", SDLK_PERIOD},
+    {"question", SDLK_QUESTION},
+    {"semicolon", SDLK_SEMICOLON},
+    {"minus", SDLK_MINUS},
+    {"underscore", SDLK_UNDERSCORE},
+    {"lparenthesis", SDLK_LEFTPAREN},
+    {"rparenthesis", SDLK_RIGHTPAREN},
+    {"lbracket", SDLK_LEFTBRACKET},
+    {"rbracket", SDLK_RIGHTBRACKET},
+    {"lbrace", SDLK_LEFTBRACE},
+    {"rbrace", SDLK_RIGHTBRACE},
+    {"backslash", SDLK_BACKSLASH},
+    {"dash", SDLK_SLASH},
     {"enter", SDLK_RETURN},
     {"space", SDLK_SPACE},
     {"tab", SDLK_TAB},
     {"backspace", SDLK_BACKSPACE},
     {"escape", SDLK_ESCAPE},
-    {"left", SDLK_LEFT},     {"right", SDLK_RIGHT},
-    {"up", SDLK_UP},         {"down", SDLK_DOWN},
-    {"lctrl", SDLK_LCTRL},   {"rctrl", SDLK_RCTRL},
-    {"lshift", SDLK_LSHIFT}, {"rshift", SDLK_RSHIFT},
-    {"lalt", SDLK_LALT},     {"ralt", SDLK_RALT},
-    {"lmeta", SDLK_LGUI},    {"rmeta", SDLK_RGUI},
-    {"lwin", SDLK_LGUI},     {"rwin", SDLK_RGUI},
+    {"left", SDLK_LEFT},
+    {"right", SDLK_RIGHT},
+    {"up", SDLK_UP},
+    {"down", SDLK_DOWN},
+    {"lctrl", SDLK_LCTRL},
+    {"rctrl", SDLK_RCTRL},
+    {"lshift", SDLK_LSHIFT},
+    {"rshift", SDLK_RSHIFT},
+    {"lalt", SDLK_LALT},
+    {"ralt", SDLK_RALT},
+    {"lmeta", SDLK_LGUI},
+    {"rmeta", SDLK_RGUI},
+    {"lwin", SDLK_LGUI},
+    {"rwin", SDLK_RGUI},
     {"leftbutton", SDL_BUTTON_LEFT},
     {"rightbutton", SDL_BUTTON_RIGHT},
     {"middlebutton", SDL_BUTTON_MIDDLE},
@@ -183,10 +223,14 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"mousewheeldown", SDL_EVENT_MOUSE_WHEEL_DOWN},
     {"mousewheelleft", SDL_EVENT_MOUSE_WHEEL_LEFT},
     {"mousewheelright", SDL_EVENT_MOUSE_WHEEL_RIGHT},
-    {"kpperiod", SDLK_KP_PERIOD}, {"kpcomma", SDLK_KP_COMMA},
-    {"kpdivide", SDLK_KP_DIVIDE}, {"kpmultiply", SDLK_KP_MULTIPLY},
-    {"kpminus", SDLK_KP_MINUS},   {"kpplus", SDLK_KP_PLUS},
-    {"kpenter", SDLK_KP_ENTER},   {"kpequals", SDLK_KP_EQUALS},
+    {"kpperiod", SDLK_KP_PERIOD},
+    {"kpcomma", SDLK_KP_COMMA},
+    {"kpdivide", SDLK_KP_DIVIDE},
+    {"kpmultiply", SDLK_KP_MULTIPLY},
+    {"kpminus", SDLK_KP_MINUS},
+    {"kpplus", SDLK_KP_PLUS},
+    {"kpenter", SDLK_KP_ENTER},
+    {"kpequals", SDLK_KP_EQUALS},
     {"capslock", SDLK_CAPSLOCK},
 };
 std::map<std::string, u32> string_to_keyboard_mod_key_map = {
@@ -195,8 +239,7 @@ std::map<std::string, u32> string_to_keyboard_mod_key_map = {
     {"shift", SDL_KMOD_SHIFT},   {"ctrl", SDL_KMOD_CTRL},     {"alt", SDL_KMOD_ALT},
     {"l_meta", SDL_KMOD_LGUI},   {"r_meta", SDL_KMOD_RGUI},   {"meta", SDL_KMOD_GUI},
     {"lwin", SDL_KMOD_LGUI},     {"rwin", SDL_KMOD_RGUI},     {"win", SDL_KMOD_GUI},
-    {"capslock", SDL_KMOD_CAPS},
-    {"none", SDL_KMOD_NONE}, // if you want to be fancy
+    {"capslock", SDL_KMOD_CAPS}, {"none", SDL_KMOD_NONE}, // if you want to be fancy
 };
 
 // Button map: maps key+modifier to controller button
@@ -352,11 +395,11 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
                 mod_it != string_to_keyboard_mod_key_map.end()) {
                 binding.key = key_it->second;
                 binding.modifier = mod_it->second;
-            } else if (controller_input == "mouse_movement_params") { 
+            } else if (controller_input == "mouse_movement_params") {
                 // handle mouse movement params
                 float p1 = 0.5, p2 = 1, p3 = 0.125;
                 std::size_t second_comma_pos = kbm_input.find(',');
-                try{
+                try {
                     p1 = std::stof(key);
                     p2 = std::stof(mod.substr(0, second_comma_pos));
                     p3 = std::stof(mod.substr(second_comma_pos + 1));
@@ -451,9 +494,11 @@ void WindowSDL::updateMouse() {
     float d_x = 0, d_y = 0;
     SDL_GetRelativeMouseState(&d_x, &d_y);
 
-    float output_speed = SDL_clamp((sqrt(d_x*d_x + d_y*d_y) + mouse_speed_offset * 128) * mouse_speed, mouse_deadzone_offset * 128, 128.0);
-    //std::cout << "speed: " << mouse_speed << "\n";
-    
+    float output_speed =
+        SDL_clamp((sqrt(d_x * d_x + d_y * d_y) + mouse_speed_offset * 128) * mouse_speed,
+                  mouse_deadzone_offset * 128, 128.0);
+    // std::cout << "speed: " << mouse_speed << "\n";
+
     float angle = atan2(d_y, d_x);
     float a_x = cos(angle) * output_speed, a_y = sin(angle) * output_speed;
 
@@ -529,8 +574,6 @@ WindowSDL::~WindowSDL() = default;
 void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event{};
-
-    
 
     if (!SDL_WaitEvent(&event)) {
         return;
