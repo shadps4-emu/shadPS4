@@ -53,6 +53,8 @@ class CmdListViewer {
     u32 highlight_batch{~0u};
 
     RegView batch_view;
+    int last_selected_batch{-1};
+
     std::vector<RegView> extra_batch_view;
 
     static void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
@@ -68,7 +70,7 @@ public:
     explicit CmdListViewer(DebugStateType::FrameDump* frame_dump, const std::vector<u32>& cmd_list,
                            uintptr_t base_addr = 0, std::string name = "");
 
-    void Draw();
+    void Draw(bool only_batches_view = false);
 };
 
 } // namespace Core::Devtools::Widget

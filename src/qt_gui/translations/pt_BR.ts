@@ -141,6 +141,26 @@
 			<translation>Copiar Tudo</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Deletar...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Deletar Jogo</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Deletar Atualização</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Deletar DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Criação de atalho</translation>
@@ -165,6 +185,46 @@
 			<source>Install PKG</source>
 			<translation>Instalar PKG</translation>
 		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Jogo</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>Este recurso requer a opção de configuração 'Habilitar Pasta de Atualização Separada' para funcionar. Se você quiser usar este recurso, habilite-o.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>Este jogo não tem atualização para excluir!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Atualização</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>Este jogo não tem DLC para excluir!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Deletar %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Tem certeza de que deseja excluir o diretório %2 de %1 ?</translation>
+		</message>		
 	</context>
 	<context>
 		<name>MainWindow</name>
@@ -416,6 +476,11 @@
 			<location filename="../settings_dialog.ui" line="122"/>
 			<source>Enable Fullscreen</source>
 			<translation>Ativar Tela Cheia</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Habilitar pasta de atualização separada</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -1055,6 +1120,11 @@
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
 			<translation>Ativar Tela Cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Habilitar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>

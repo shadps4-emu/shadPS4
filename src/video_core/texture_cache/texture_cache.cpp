@@ -237,6 +237,16 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
         }
     }
 
+    if (image_id) {
+        Image& image_resoved = slot_images[image_id];
+
+        if (image_resoved.info.resources < info.resources) {
+            // The image was clearly picked up wrong.
+            FreeImage(image_id);
+            image_id = {};
+            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
+        }
+    }
     // Create and register a new image
     if (!image_id) {
         image_id = slot_images.insert(instance, scheduler, info);
