@@ -100,6 +100,12 @@ Emulator::~Emulator() {
 }
 
 void Emulator::Run(const std::filesystem::path& file) {
+
+    // Use the eboot from the separated updates folder if it's there
+    std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
+    bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys");
+    std::filesystem::path eboot_path = use_game_patch ? game_patch_folder / file.filename() : file;
+
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(file.parent_path(), "/app0");
@@ -114,10 +120,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::string app_version;
     u32 fw_version;
 
-    std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
-    bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys");
-    std::filesystem::path sce_sys_folder =
-        use_game_patch ? game_patch_folder / "sce_sys" : file.parent_path() / "sce_sys";
+    std::filesystem::path sce_sys_folder = eboot_path.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
             if (entry.path().filename() == "param.sfo") {
@@ -132,7 +135,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                     Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
                 if (!std::filesystem::exists(trophyDir)) {
                     TRP trp;
-                    if (!trp.Extract(file.parent_path(), id)) {
+                    if (!trp.Extract(eboot_path.parent_path(), id)) {
                         LOG_ERROR(Loader, "Couldn't extract trophies");
                     }
                 }
@@ -221,17 +224,23 @@ void Emulator::Run(const std::filesystem::path& file) {
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    linker->LoadModule(file);
+    linker->LoadModule(eboot_path);
 
     // check if we have system modules to load
-    LoadSystemModules(file);
+    LoadSystemModules(eboot_path);
 
     // Load all prx from game's sce_module folder
     std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
     if (std::filesystem::is_directory(sce_module_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(entry.path().u8string()));
-            linker->LoadModule(entry.path());
+            std::filesystem::path module_path = entry.path();
+            std::filesystem::path update_module_path =
+                eboot_path.parent_path() / "sce_module" / entry.path().filename();
+            if (std::filesystem::exists(update_module_path) && use_game_patch) {
+                module_path = update_module_path;
+            }
+            LOG_INFO(Loader, "Loading {}", fmt::UTF(module_path.u8string()));
+            linker->LoadModule(module_path);
         }
     }
 
