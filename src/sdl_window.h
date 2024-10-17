@@ -26,6 +26,7 @@ public:
     KeyBinding(const SDL_Event* event);
     bool operator<(const KeyBinding& other) const;
     ~KeyBinding(){};
+    static SDL_Keymod getCustomModState();
 };
 
 enum class WindowSystemType : u8 {

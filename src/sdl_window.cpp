@@ -57,7 +57,7 @@ namespace Frontend {
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
 KeyBinding::KeyBinding(const SDL_Event* event) {
-    modifier = SDL_GetModState();
+    modifier = getCustomModState();
     key = 0;
     // std::cout << "Someone called the new binding ctor!\n";
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
@@ -71,6 +71,7 @@ KeyBinding::KeyBinding(const SDL_Event* event) {
         std::cout << "We don't support this event type!\n";
     }
 }
+
 bool KeyBinding::operator<(const KeyBinding& other) const {
     return std::tie(key, modifier) < std::tie(other.key, other.modifier);
 }
@@ -234,17 +235,31 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"capslock", SDLK_CAPSLOCK},
 };
 std::map<std::string, u32> string_to_keyboard_mod_key_map = {
-    {"lshift", SDL_KMOD_LSHIFT}, {"rshift", SDL_KMOD_RSHIFT}, {"lctrl", SDL_KMOD_LCTRL},
-    {"rctrl", SDL_KMOD_RCTRL},   {"lalt", SDL_KMOD_LALT},     {"ralt", SDL_KMOD_RALT},
-    {"shift", SDL_KMOD_SHIFT},   {"ctrl", SDL_KMOD_CTRL},     {"alt", SDL_KMOD_ALT},
-    {"l_meta", SDL_KMOD_LGUI},   {"r_meta", SDL_KMOD_RGUI},   {"meta", SDL_KMOD_GUI},
-    {"lwin", SDL_KMOD_LGUI},     {"rwin", SDL_KMOD_RGUI},     {"win", SDL_KMOD_GUI},
-    {"capslock", SDL_KMOD_CAPS}, {"none", SDL_KMOD_NONE}, // if you want to be fancy
+    {"lshift", SDL_KMOD_LSHIFT}, {"rshift", SDL_KMOD_RSHIFT},
+    {"lctrl", SDL_KMOD_LCTRL},   {"rctrl", SDL_KMOD_RCTRL},
+    {"lalt", SDL_KMOD_LALT},     {"ralt", SDL_KMOD_RALT},
+    {"shift", SDL_KMOD_SHIFT},   {"ctrl", SDL_KMOD_CTRL},
+    {"alt", SDL_KMOD_ALT},       {"l_meta", SDL_KMOD_LGUI},
+    {"r_meta", SDL_KMOD_RGUI},   {"meta", SDL_KMOD_GUI},
+    {"lwin", SDL_KMOD_LGUI},     {"rwin", SDL_KMOD_RGUI},
+    {"win", SDL_KMOD_GUI},       {"capslock", SDL_KMOD_CAPS},
+    {"numlock", SDL_KMOD_NUM},   {"none", SDL_KMOD_NONE}, // if you want to be fancy
 };
 
 // Button map: maps key+modifier to controller button
 std::map<KeyBinding, u32> button_map = {};
 std::map<KeyBinding, AxisMapping> axis_map = {};
+std::map<SDL_Keycode, std::pair<SDL_Keymod, bool>> key_to_modkey_toggle_map = {};
+
+SDL_Keymod KeyBinding::getCustomModState() {
+    SDL_Keymod state = SDL_GetModState();
+    for (auto mod_flag : key_to_modkey_toggle_map) {
+        if (mod_flag.second.second) {
+            state |= mod_flag.second.first;
+        }
+    }
+    return state;
+}
 
 // Flags and values for varying purposes
 int mouse_joystick_binding = 0;
@@ -339,12 +354,15 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-    // we reset this here so in case the user fucks up we can fall back to default
+
+    // we reset these here so in case the user fucks up or doesn't include this we can fall back to
+    // default
     mouse_deadzone_offset = 0.5;
     mouse_speed = 1;
     mouse_speed_offset = 0.125;
     button_map.clear();
     axis_map.clear();
+    key_to_modkey_toggle_map.clear();
     int lineCount = 0;
     std::string line = "";
     while (std::getline(file, line)) {
@@ -366,27 +384,42 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
             continue;
         }
 
-        std::string controller_input = line.substr(0, equal_pos);
-        std::string kbm_input = line.substr(equal_pos + 1);
+        std::string before_equals = line.substr(0, equal_pos);
+        std::string after_equals = line.substr(equal_pos + 1);
+        std::size_t comma_pos = after_equals.find(',');
         KeyBinding binding = {0, SDL_KMOD_NONE};
 
         // special check for mouse to joystick input
-        if (controller_input == "mouse_to_joystick") {
-            if (kbm_input == "left") {
+        if (before_equals == "mouse_to_joystick") {
+            if (after_equals == "left") {
                 mouse_joystick_binding = 1;
-            } else if (kbm_input == "right") {
+            } else if (after_equals == "right") {
                 mouse_joystick_binding = 2;
             } else {
                 mouse_joystick_binding = 0; // default to 'none' or invalid
             }
             continue;
         }
+        // mod key toggle
+        if (before_equals == "modkey_toggle") {
+            if (comma_pos != std::string::npos) {
+                auto k = string_to_keyboard_key_map.find(after_equals.substr(0, comma_pos));
+                auto m = string_to_keyboard_mod_key_map.find(after_equals.substr(comma_pos + 1));
+                if (k != string_to_keyboard_key_map.end() &&
+                    m != string_to_keyboard_mod_key_map.end()) {
+                    key_to_modkey_toggle_map[k->second] = {m->second, false};
+                    continue;
+                }
+            }
+            std::cerr << "Invalid line format at line: " << lineCount << " data: " << line
+                      << std::endl;
+            continue;
+        }
         // first we parse the binding, and if its wrong, we skip to the next line
-        std::size_t comma_pos = kbm_input.find(',');
         if (comma_pos != std::string::npos) {
             // Handle key + modifier
-            std::string key = kbm_input.substr(0, comma_pos);
-            std::string mod = kbm_input.substr(comma_pos + 1);
+            std::string key = after_equals.substr(0, comma_pos);
+            std::string mod = after_equals.substr(comma_pos + 1);
 
             auto key_it = string_to_keyboard_key_map.find(key);
             auto mod_it = string_to_keyboard_mod_key_map.find(mod);
@@ -395,10 +428,10 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
                 mod_it != string_to_keyboard_mod_key_map.end()) {
                 binding.key = key_it->second;
                 binding.modifier = mod_it->second;
-            } else if (controller_input == "mouse_movement_params") {
+            } else if (before_equals == "mouse_movement_params") {
                 // handle mouse movement params
                 float p1 = 0.5, p2 = 1, p3 = 0.125;
-                std::size_t second_comma_pos = kbm_input.find(',');
+                std::size_t second_comma_pos = after_equals.find(',');
                 try {
                     p1 = std::stof(key);
                     p2 = std::stof(mod.substr(0, second_comma_pos));
@@ -422,7 +455,7 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
             }
         } else {
             // Just a key without modifier
-            auto key_it = string_to_keyboard_key_map.find(kbm_input);
+            auto key_it = string_to_keyboard_key_map.find(after_equals);
             if (key_it != string_to_keyboard_key_map.end()) {
                 binding.key = key_it->second;
             } else {
@@ -433,8 +466,8 @@ void WindowSDL::parseInputConfig(const std::string& filename) {
         }
 
         // Check for axis mapping (example: axis_left_x_plus)
-        auto axis_it = string_to_axis_map.find(controller_input);
-        auto button_it = string_to_cbutton_map.find(controller_input);
+        auto axis_it = string_to_axis_map.find(before_equals);
+        auto button_it = string_to_cbutton_map.find(before_equals);
         if (axis_it != string_to_axis_map.end()) {
             axis_map[binding] = axis_it->second;
         } else if (button_it != string_to_cbutton_map.end()) {
@@ -666,21 +699,12 @@ void WindowSDL::onKeyboardMouseEvent(const SDL_Event* event) {
 
     // Handle window controls outside of the input maps
     if (event->type == SDL_EVENT_KEY_DOWN) {
-        // Toggle capture of the mouse
-        if (binding.key == SDLK_F9) {
-            SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
-                                           !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
-        }
         // Reparse kbm inputs
-        else if (binding.key == SDLK_F8) {
+        if (binding.key == SDLK_F8) {
             parseInputConfig("keyboardInputConfig.ini");
         }
-        // Toggle mouse movement input
-        else if (binding.key == SDLK_F7) {
-            mouse_enabled = !mouse_enabled;
-        }
-        // F7 + F9
-        else if (binding.key == SDLK_F6) {
+        // Toggle mouse capture and movement input
+        else if (binding.key == SDLK_F9) {
             mouse_enabled = !mouse_enabled;
             SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
                                            !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
@@ -696,6 +720,12 @@ void WindowSDL::onKeyboardMouseEvent(const SDL_Event* event) {
             VideoCore::TriggerCapture();
         }
     }
+
+    // Check for modifier toggle
+    auto modkey_toggle_it = key_to_modkey_toggle_map.find(binding.key);
+    modkey_toggle_it->second.second ^=
+        (modkey_toggle_it != key_to_modkey_toggle_map.end() &&
+         (binding.modifier & (~modkey_toggle_it->second.first)) == SDL_KMOD_NONE && input_down);
 
     // Check if the current key+modifier is a button or axis mapping
     // first only exact matches
