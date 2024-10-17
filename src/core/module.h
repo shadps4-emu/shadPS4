@@ -165,14 +165,7 @@ public:
         return elf.IsSharedLib();
     }
 
-    void* FindByName(std::string_view name) {
-        const auto symbols = export_sym.GetSymbols();
-        const auto it = std::ranges::find(symbols, name, &Loader::SymbolRecord::nid_name);
-        if (it != symbols.end()) {
-            return reinterpret_cast<void*>(it->virtual_address);
-        }
-        return nullptr;
-    }
+    void* FindByName(std::string_view name);
 
     template <typename T = VAddr>
     T GetProcParam() const noexcept {

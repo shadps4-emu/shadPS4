@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "common/types.h"
+#include "core/module.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -36,6 +37,7 @@ int* PS4_SYSV_ABI __Error();
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
                                                 struct OrbisTimesec* st, unsigned long* dst_sec);
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+int PS4_SYSV_ABI sceKernelGetModuleList(Core::Module** pArray, size_t numArray, size_t* pActualNum);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);
 
