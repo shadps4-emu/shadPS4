@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <iostream>
 #include <string>
+#include <boost/program_options.hpp>
 #include <common/version.h>
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
@@ -28,7 +30,12 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 }
 } // namespace toml
 
+namespace po = boost::program_options;
+
 namespace Config {
+
+// Program options map
+static po::variables_map optionMap;
 
 static bool isNeo = false;
 static bool isFullscreen = false;
@@ -42,7 +49,6 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
-static std::string patchFile = "";
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
@@ -89,6 +95,10 @@ bool isNeoMode() {
 }
 
 bool isFullscreenMode() {
+    if (optionMap.count("fullscreen")) {
+        return true;
+    }
+
     return isFullscreen;
 }
 
@@ -141,7 +151,11 @@ std::string getUpdateChannel() {
 }
 
 std::string getPatchFile() {
-    return patchFile;
+    if (optionMap.contains("patch-file")) {
+        return optionMap["patch-file"].as<std::string>();
+    }
+
+    return "";
 }
 
 std::string getBackButtonBehavior() {
@@ -310,10 +324,6 @@ void setUserName(const std::string& type) {
 
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
-}
-
-void setPatchFile(const std::string& fileName) {
-    patchFile = fileName;
 }
 
 void setBackButtonBehavior(const std::string& type) {
@@ -576,15 +586,24 @@ void load(const std::filesystem::path& path) {
     }
 }
 
-void loadArgs(int& argc, char* argv[]) {
-    for (int i = 0; i < argc; i++) {
-        const std::string arg = argv[i];
-        if (arg == "-p") {
-            patchFile = argv[i + 1];
-        } else if (arg == "-f" || arg == "--fullscreen") {
-            isFullscreen = true;
-        }
+bool loadArgs(int argc, char* argv[]) {
+    // Declare the supported options.
+    std::string description = fmt::format("Usage: {} [options] <elf or eboot.bin path>", argv[0]);
+    po::options_description desc(description);
+    auto options = desc.add_options();
+    options("help", "Shows this help message");
+    options("patch-file,p", po::value<std::string>(), "Specifies the patch file");
+    options("fullscreen,f", "Switches the emulator to fullscreen mode");
+
+    po::store(po::parse_command_line(argc, argv, desc), optionMap);
+    po::notify(optionMap);
+
+    if (argc == 1 || optionMap.count("help")) {
+        std::cout << desc << "\n";
+        return false;
     }
+
+    return true;
 }
 
 void save(const std::filesystem::path& path) {
@@ -690,7 +709,6 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
-    patchFile = "";
     cursorState = HideCursorState::Idle;
     cursorHideTimeout = 5;
     backButtonBehavior = "left";

@@ -13,7 +13,7 @@ enum HideCursorState : s16 { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
-void loadArgs(int& argc, char* argv[]);
+bool loadArgs(int argc, char* argv[]);
 
 bool isNeoMode();
 bool isFullscreenMode();
