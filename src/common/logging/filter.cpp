@@ -119,6 +119,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Remoteplay)                                                                           \
     SUB(Lib, SharePlay)                                                                            \
     SUB(Lib, Fiber)                                                                                \
+    SUB(Lib, Vdec2)                                                                                \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
