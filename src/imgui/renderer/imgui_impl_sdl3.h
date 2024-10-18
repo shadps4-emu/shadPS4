@@ -10,9 +10,13 @@ struct SDL_Renderer;
 struct SDL_Gamepad;
 typedef union SDL_Event SDL_Event;
 
+namespace Frontend {
+class WindowSDL;
+}
+
 namespace ImGui::Sdl {
 
-bool Init(SDL_Window* window);
+bool Init(const Frontend::WindowSDL* window);
 void Shutdown();
 void NewFrame();
 bool ProcessEvent(const SDL_Event* event);
