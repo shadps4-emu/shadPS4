@@ -439,4 +439,8 @@ void Linker::DebugDump() {
     }
 }
 
+int Linker::GetNumberModules() const {
+    return m_modules.size();
+}
+
 } // namespace Core
