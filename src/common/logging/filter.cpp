@@ -113,10 +113,17 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, ImeDialog)                                                                            \
     SUB(Lib, AvPlayer)                                                                             \
     SUB(Lib, Ngs2)                                                                                 \
+    SUB(Lib, Audio3d)                                                                              \
+    SUB(Lib, Ime)                                                                                  \
+    SUB(Lib, GameLiveStreaming)                                                                    \
+    SUB(Lib, Remoteplay)                                                                           \
+    SUB(Lib, SharePlay)                                                                            \
+    SUB(Lib, Fiber)                                                                                \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
     SUB(Render, Recompiler)                                                                        \
+    CLS(ImGui)                                                                                     \
     CLS(Input)                                                                                     \
     CLS(Tty)                                                                                       \
     CLS(Loader)

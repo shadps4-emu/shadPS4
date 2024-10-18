@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
 #include <bit>
 #include <source_location>
+#include <boost/container/small_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/exception.h"
+#include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -125,19 +130,23 @@ void IREmitter::DeviceMemoryBarrier() {
 }
 
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetUserData, reg);
 }
 
 U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U1>(Opcode::GetThreadBitScalarReg, reg);
 }
 
 void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     Inst(Opcode::SetThreadBitScalarReg, reg, value);
 }
 
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetScalarRegister, reg);
 }
 
@@ -148,6 +157,7 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 
 template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     return Inst<U32>(Opcode::GetVectorRegister, reg);
 }
 
@@ -157,11 +167,13 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 }
 
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
+    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
@@ -209,16 +221,16 @@ U1 IREmitter::GetVcc() {
     return Inst<U1>(Opcode::GetVcc);
 }
 
-U32 IREmitter::GetSccLo() {
-    return Inst<U32>(Opcode::GetSccLo);
-}
-
 U32 IREmitter::GetVccLo() {
     return Inst<U32>(Opcode::GetVccLo);
 }
 
 U32 IREmitter::GetVccHi() {
     return Inst<U32>(Opcode::GetVccHi);
+}
+
+U32 IREmitter::GetM0() {
+    return Inst<U32>(Opcode::GetM0);
 }
 
 void IREmitter::SetScc(const U1& value) {
@@ -245,8 +257,12 @@ void IREmitter::SetVccHi(const U32& value) {
     Inst(Opcode::SetVccHi, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
+void IREmitter::SetM0(const U32& value) {
+    Inst(Opcode::SetM0, value);
+}
+
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -309,57 +325,44 @@ U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
 
-F32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
-    return Inst<F32>(Opcode::ReadConstBuffer, handle, index);
+U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
+    return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
 }
 
 Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                             BufferInstInfo info) {
     switch (num_dwords) {
     case 1:
-        return Inst(Opcode::LoadBufferF32, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32, Flags{info}, handle, address);
     case 2:
-        return Inst(Opcode::LoadBufferF32x2, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x2, Flags{info}, handle, address);
     case 3:
-        return Inst(Opcode::LoadBufferF32x3, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x3, Flags{info}, handle, address);
     case 4:
-        return Inst(Opcode::LoadBufferF32x4, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x4, Flags{info}, handle, address);
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
 }
 
-Value IREmitter::LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                                  BufferInstInfo info) {
-    switch (num_dwords) {
-    case 1:
-        return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
-    case 2:
-        return Inst(Opcode::LoadBufferFormatF32x2, Flags{info}, handle, address);
-    case 3:
-        return Inst(Opcode::LoadBufferFormatF32x3, Flags{info}, handle, address);
-    case 4:
-        return Inst(Opcode::LoadBufferFormatF32x4, Flags{info}, handle, address);
-    default:
-        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
-    }
+Value IREmitter::LoadBufferFormat(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
 }
 
 void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& address,
                             const Value& data, BufferInstInfo info) {
     switch (num_dwords) {
     case 1:
-        Inst(data.Type() == Type::F32 ? Opcode::StoreBufferF32 : Opcode::StoreBufferU32,
-             Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32, Flags{info}, handle, address, data);
         break;
     case 2:
-        Inst(Opcode::StoreBufferF32x2, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x2, Flags{info}, handle, address, data);
         break;
     case 3:
-        Inst(Opcode::StoreBufferF32x3, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x3, Flags{info}, handle, address, data);
         break;
     case 4:
-        Inst(Opcode::StoreBufferF32x4, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x4, Flags{info}, handle, address, data);
         break;
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
@@ -408,29 +411,22 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
     return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& address, const Value& value,
-                                      BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
 }
 
-void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                                  const Value& data, BufferInstInfo info) {
-    switch (num_dwords) {
-    case 1:
-        Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
-        break;
-    case 2:
-        Inst(Opcode::StoreBufferFormatF32x2, Flags{info}, handle, address, data);
-        break;
-    case 3:
-        Inst(Opcode::StoreBufferFormatF32x3, Flags{info}, handle, address, data);
-        break;
-    case 4:
-        Inst(Opcode::StoreBufferFormatF32x4, Flags{info}, handle, address, data);
-        break;
-    default:
-        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
-    }
+void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
+                                  BufferInstInfo info) {
+    Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
+}
+
+U32 IREmitter::DataAppend(const U32& counter) {
+    return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
+}
+
+U32 IREmitter::DataConsume(const U32& counter) {
+    return Inst<U32>(Opcode::DataConsume, counter, Imm32(0));
 }
 
 U32 IREmitter::LaneId() {
@@ -443,6 +439,18 @@ U32 IREmitter::WarpId() {
 
 U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
     return Inst<U32>(Opcode::QuadShuffle, value, index);
+}
+
+U32 IREmitter::ReadFirstLane(const U32& value) {
+    return Inst<U32>(Opcode::ReadFirstLane, value);
+}
+
+U32 IREmitter::ReadLane(const U32& value, const U32& lane) {
+    return Inst<U32>(Opcode::ReadLane, value, lane);
+}
+
+U32 IREmitter::WriteLane(const U32& value, const U32& write_value, const U32& lane) {
+    return Inst<U32>(Opcode::WriteLane, value, write_value, lane);
 }
 
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
@@ -631,6 +639,10 @@ U64 IREmitter::PackUint2x32(const Value& vector) {
 
 Value IREmitter::UnpackUint2x32(const U64& value) {
     return Inst<Value>(Opcode::UnpackUint2x32, value);
+}
+
+F64 IREmitter::PackFloat2x32(const Value& vector) {
+    return Inst<F64>(Opcode::PackFloat2x32, vector);
 }
 
 U32 IREmitter::PackFloat2x16(const Value& vector) {
@@ -1059,6 +1071,10 @@ U32 IREmitter::IDiv(const U32& a, const U32& b, bool is_signed) {
     return Inst<U32>(is_signed ? Opcode::SDiv32 : Opcode::UDiv32, a, b);
 }
 
+U32 IREmitter::IMod(const U32& a, const U32& b, bool is_signed) {
+    return Inst<U32>(is_signed ? Opcode::SMod32 : Opcode::UMod32, a, b);
+}
+
 U32U64 IREmitter::INeg(const U32U64& value) {
     switch (value.Type()) {
     case Type::U32:
@@ -1075,6 +1091,10 @@ U32 IREmitter::IAbs(const U32& value) {
 }
 
 U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftLeftLogical32, base, shift);
@@ -1086,6 +1106,10 @@ U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightLogical32, base, shift);
@@ -1097,6 +1121,10 @@ U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightArithmetic32, base, shift);
@@ -1107,8 +1135,18 @@ U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
     }
 }
 
-U32 IREmitter::BitwiseAnd(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::BitwiseAnd32, a, b);
+U32U64 IREmitter::BitwiseAnd(const U32U64& a, const U32U64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::BitwiseAnd32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::BitwiseAnd64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
 }
 
 U32U64 IREmitter::BitwiseOr(const U32U64& a, const U32U64& b) {
@@ -1354,6 +1392,8 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         switch (value.Type()) {
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
+        default:
+            break;
         }
     default:
         break;
@@ -1374,6 +1414,15 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         switch (value.Type()) {
         case Type::F16:
             return Inst<F32>(Opcode::ConvertF32F16, value);
+        case Type::F64:
+            return Inst<F32>(Opcode::ConvertF32F64, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::F32:
+            return Inst<F64>(Opcode::ConvertF64F32, value);
         default:
             break;
         }
@@ -1450,27 +1499,34 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
-                                        const U32& offset, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
+Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
+                                const Value& address3, const Value& address4,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
+                address4);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
-                                        TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
+Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, coords, bias, offset);
 }
 
-F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const F32& bias, const U32& offset,
-                                          TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
-                     offset);
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& coords, const F32& lod,
+                                        const Value& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, coords, lod, offset);
 }
 
-F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const U32& offset, TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
-                     offset);
+Value IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& bias, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, coords, dref, bias,
+                offset);
+}
+
+Value IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& coords,
+                                            const F32& dref, const F32& lod, const Value& offset,
+                                            TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, coords, dref, lod, offset);
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
@@ -1502,9 +1558,11 @@ Value IREmitter::ImageQueryLod(const Value& handle, const Value& coords, Texture
     return Inst(Opcode::ImageQueryLod, Flags{info}, handle, coords);
 }
 
-Value IREmitter::ImageGradient(const Value& handle, const Value& coords, const Value& derivatives,
+Value IREmitter::ImageGradient(const Value& handle, const Value& coords,
+                               const Value& derivatives_dx, const Value& derivatives_dy,
                                const Value& offset, const F32& lod_clamp, TextureInstInfo info) {
-    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives, offset, lod_clamp);
+    return Inst(Opcode::ImageGradient, Flags{info}, handle, coords, derivatives_dx, derivatives_dy,
+                offset, lod_clamp);
 }
 
 Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInstInfo info) {
@@ -1514,6 +1572,46 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInst
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
                            TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+}
+
+// Debug print maps to SPIRV's NonSemantic DebugPrintf instruction
+// Renderdoc will hook in its own implementation of the SPIRV instruction
+// Renderdoc accepts format specifiers, e.g. %u, listed here:
+// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
+//
+// fmt must be a string literal (pointer is shallow copied into a Value)
+// Example usage:
+//         ir.DebugPrint("invocation xyz: (%u, %u, %u)",
+//                      {ir.GetVectorReg(IR::VectorReg::V0),
+//                       ir.GetVectorReg(IR::VectorReg::V1),
+//                       ir.GetVectorReg(IR::VectorReg::V2)});
+void IREmitter::DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> format_args) {
+    std::array<Value, DEBUGPRINT_NUM_FORMAT_ARGS> args;
+
+    ASSERT_MSG(format_args.size() < DEBUGPRINT_NUM_FORMAT_ARGS,
+               "DebugPrint only supports up to {} format args", DEBUGPRINT_NUM_FORMAT_ARGS);
+
+    for (int i = 0; i < format_args.size(); i++) {
+        args[i] = format_args[i];
+    }
+
+    for (int i = format_args.size(); i < DEBUGPRINT_NUM_FORMAT_ARGS; i++) {
+        args[i] = Inst(Opcode::Void);
+    }
+
+    IR::Value fmt_val{fmt};
+
+    DebugPrintFlags flags;
+    flags.num_args.Assign(format_args.size());
+    Inst(Opcode::DebugPrint, Flags{flags}, fmt_val, args[0], args[1], args[2], args[3]);
+}
+
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EmitPrimitive() {
+    Inst(Opcode::EmitPrimitive);
 }
 
 } // namespace Shader::IR

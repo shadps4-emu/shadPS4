@@ -3,15 +3,13 @@
 
 #pragma once
 
-#include <QAbstractButton>
 #include <QActionGroup>
 #include <QDragEnterEvent>
-#include <QMainWindow>
-#include <QMimeData>
-#include <QScopedPointer>
-#include <fmt/core.h>
+#include <QTranslator>
 
+#include "background_music_player.h"
 #include "common/config.h"
+#include "common/discord_rpc_handler.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -48,6 +46,7 @@ private Q_SLOTS:
     void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
+    void OnLanguageChanged(const std::string& locale);
 
 private:
     Ui_MainWindow* ui;
@@ -57,6 +56,7 @@ private:
     void CreateDockWindows();
     void GetPhysicalDevices();
     void LoadGameLists();
+    void CheckUpdateMain(bool checkSave);
     void CreateConnects();
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
@@ -64,9 +64,12 @@ private:
     void InstallPkg();
     void BootGame();
     void AddRecentFiles(QString filePath);
+    void LoadTranslation();
+    void PlayBackgroundMusic();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;
     bool isTableList = true;
+    bool isGameRunning = false;
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
     QActionGroup* m_theme_act_group = nullptr;
@@ -89,7 +92,11 @@ private:
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
 
+    QTranslator* translator;
+
 protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
     void dragEnterEvent(QDragEnterEvent* event1) override {
         if (event1->mimeData()->hasUrls()) {
             event1->acceptProposedAction();
@@ -104,10 +111,7 @@ protected:
             int nPkg = urlList.size();
             for (const QUrl& url : urlList) {
                 pkgNum++;
-                std::filesystem::path path(url.toLocalFile().toStdString());
-#ifdef _WIN64
-                path = std::filesystem::path(url.toLocalFile().toStdWString());
-#endif
+                std::filesystem::path path = Common::FS::PathFromQString(url.toLocalFile());
                 InstallDragDropPkg(path, pkgNum, nPkg);
             }
         }

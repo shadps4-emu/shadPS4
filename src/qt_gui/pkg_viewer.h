@@ -3,18 +3,9 @@
 
 #pragma once
 
-#include <filesystem>
-#include <string>
-#include <unordered_map>
-#include <vector>
 #include <QFileDialog>
-#include <QMainWindow>
-#include <QMenu>
 #include <QMenuBar>
 #include <QStatusBar>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
-#include <QtConcurrent/QtConcurrent>
 
 #include "common/io_file.h"
 #include "core/file_format/pkg.h"
@@ -42,7 +33,6 @@ private:
     PKGHeader pkgheader;
     PKGEntry entry;
     PSFHeader header;
-    PSFEntry psfentry;
     char pkgTitleID[9];
     std::vector<u8> pkg;
     u64 pkgSize = 0;

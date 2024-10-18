@@ -3,7 +3,13 @@
 
 #pragma once
 
+#include <sys/types.h>
+
 #include "common/types.h"
+
+namespace Common {
+class NativeClock;
+}
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -45,12 +51,21 @@ constexpr int ORBIS_CLOCK_EXT_DEBUG_NETWORK = 17;
 constexpr int ORBIS_CLOCK_EXT_AD_NETWORK = 18;
 constexpr int ORBIS_CLOCK_EXT_RAW_NETWORK = 19;
 
+namespace Dev {
+u64& GetInitialPtc();
+
+Common::NativeClock* GetClock();
+} // namespace Dev
+
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency();
 u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency();
 u64 PS4_SYSV_ABI sceKernelReadTsc();
-
+int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp);
+s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz);
+int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
+                                                OrbisKernelTimezone* timezone, int* dst_seconds);
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

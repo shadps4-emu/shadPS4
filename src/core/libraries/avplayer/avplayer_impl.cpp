@@ -6,8 +6,10 @@
 #include "avplayer_impl.h"
 
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
+#include "core/linker.h"
 
 using namespace Libraries::Kernel;
 
@@ -17,28 +19,32 @@ void* PS4_SYSV_ABI AvPlayer::Allocate(void* handle, u32 alignment, u32 size) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto allocate = self->m_init_data_original.memory_replacement.allocate;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return allocate(ptr, alignment, size);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(allocate, ptr, alignment, size);
 }
 
 void PS4_SYSV_ABI AvPlayer::Deallocate(void* handle, void* memory) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto deallocate = self->m_init_data_original.memory_replacement.deallocate;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return deallocate(ptr, memory);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(deallocate, ptr, memory);
 }
 
 void* PS4_SYSV_ABI AvPlayer::AllocateTexture(void* handle, u32 alignment, u32 size) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto allocate = self->m_init_data_original.memory_replacement.allocate_texture;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return allocate(ptr, alignment, size);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(allocate, ptr, alignment, size);
 }
 
 void PS4_SYSV_ABI AvPlayer::DeallocateTexture(void* handle, void* memory) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto deallocate = self->m_init_data_original.memory_replacement.deallocate_texture;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return deallocate(ptr, memory);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(deallocate, ptr, memory);
 }
 
 int PS4_SYSV_ABI AvPlayer::OpenFile(void* handle, const char* filename) {
@@ -47,7 +53,8 @@ int PS4_SYSV_ABI AvPlayer::OpenFile(void* handle, const char* filename) {
 
     const auto open = self->m_init_data_original.file_replacement.open;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return open(ptr, filename);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(open, ptr, filename);
 }
 
 int PS4_SYSV_ABI AvPlayer::CloseFile(void* handle) {
@@ -56,7 +63,8 @@ int PS4_SYSV_ABI AvPlayer::CloseFile(void* handle) {
 
     const auto close = self->m_init_data_original.file_replacement.close;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return close(ptr);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(close, ptr);
 }
 
 int PS4_SYSV_ABI AvPlayer::ReadOffsetFile(void* handle, u8* buffer, u64 position, u32 length) {
@@ -65,7 +73,8 @@ int PS4_SYSV_ABI AvPlayer::ReadOffsetFile(void* handle, u8* buffer, u64 position
 
     const auto read_offset = self->m_init_data_original.file_replacement.readOffset;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return read_offset(ptr, buffer, position, length);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(read_offset, ptr, buffer, position, length);
 }
 
 u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
@@ -74,7 +83,8 @@ u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
 
     const auto size = self->m_init_data_original.file_replacement.size;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return size(ptr);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->ExecuteGuest(size, ptr);
 }
 
 SceAvPlayerInitData AvPlayer::StubInitData(const SceAvPlayerInitData& data) {
@@ -102,7 +112,7 @@ AvPlayer::AvPlayer(const SceAvPlayerInitData& data)
       m_state(std::make_unique<AvPlayerState>(m_init_data)) {}
 
 s32 AvPlayer::PostInit(const SceAvPlayerPostInitData& data) {
-    m_post_init_data = data;
+    m_state->PostInit(data);
     return ORBIS_OK;
 }
 
@@ -110,7 +120,7 @@ s32 AvPlayer::AddSource(std::string_view path) {
     if (path.empty()) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    if (AVPLAYER_IS_ERROR(m_state->AddSource(path, GetSourceType(path)))) {
+    if (!m_state->AddSource(path, GetSourceType(path))) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
     return ORBIS_OK;
@@ -128,7 +138,7 @@ s32 AvPlayer::GetStreamCount() {
 }
 
 s32 AvPlayer::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
-    if (AVPLAYER_IS_ERROR(m_state->GetStreamInfo(stream_index, info))) {
+    if (!m_state->GetStreamInfo(stream_index, info)) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
     return ORBIS_OK;
@@ -145,7 +155,10 @@ s32 AvPlayer::EnableStream(u32 stream_index) {
 }
 
 s32 AvPlayer::Start() {
-    return m_state->Start();
+    if (!m_state->Start()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
 }
 
 bool AvPlayer::GetVideoData(SceAvPlayerFrameInfo& video_info) {

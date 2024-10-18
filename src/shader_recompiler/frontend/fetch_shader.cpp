@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <boost/container/static_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 
@@ -33,8 +34,8 @@ namespace Shader::Gcn {
  * We take the reverse way, extract the original input semantics from these instructions.
  **/
 
-std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
-    std::vector<VertexAttribute> attributes;
+FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
+    FetchShaderData data{};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
 
@@ -59,6 +60,21 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
             continue;
         }
 
+        if (inst.opcode == Opcode::V_ADD_I32) {
+            const auto vgpr = inst.dst[0].code;
+            const auto sgpr = s8(inst.src[0].code);
+            switch (vgpr) {
+            case 0: // V0 is always the vertex offset
+                data.vertex_offset_sgpr = sgpr;
+                break;
+            case 3: // V3 is always the instance offset
+                data.instance_offset_sgpr = sgpr;
+                break;
+            default:
+                UNREACHABLE();
+            }
+        }
+
         if (inst.inst_class == InstClass::VectorMemBufFmt) {
             // SRSRC is in units of 4 SPGRs while SBASE is in pairs of SGPRs
             const u32 base_sgpr = inst.src[2].code * 4;
@@ -68,7 +84,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
             const auto it = std::ranges::find_if(
                 loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
 
-            auto& attrib = attributes.emplace_back();
+            auto& attrib = data.attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
             attrib.num_elements = inst.control.mubuf.count;
@@ -83,7 +99,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
         }
     }
 
-    return attributes;
+    return data;
 }
 
 } // namespace Shader::Gcn

@@ -23,12 +23,22 @@ namespace VideoCore {
 class BufferCache;
 class PageManager;
 
+enum class FindFlags {
+    NoCreate = 1 << 0,  ///< Do not create an image if searching for one fails.
+    RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
+    RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
+    RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
+};
+DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
+
+static constexpr u32 MaxInvalidateDist = 12_MB;
+
 class TextureCache {
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
         static constexpr size_t AddressSpaceBits = 39;
         static constexpr size_t FirstLevelBits = 9;
-        static constexpr size_t PageBits = 22;
+        static constexpr size_t PageBits = 20;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 
@@ -38,17 +48,19 @@ public:
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr address, size_t size, bool from_compute = false);
+    void InvalidateMemory(VAddr address, size_t size);
+
+    /// Marks an image as dirty if it exists at the provided address.
+    void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info);
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info, FindFlags flags = {});
 
-    /// Retrieves an image view with the properties of the specified image descriptor.
-    [[nodiscard]] ImageView& FindTexture(const ImageInfo& image_info,
-                                         const ImageViewInfo& view_info);
+    /// Retrieves an image view with the properties of the specified image id.
+    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& FindRenderTarget(const ImageInfo& image_info,
@@ -61,12 +73,18 @@ public:
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
         Image& image = slot_images[image_id];
-        if (False(image.flags & ImageFlagBits::CpuModified)) {
-            return;
-        }
+        TrackImage(image_id);
         RefreshImage(image, custom_scheduler);
-        TrackImage(image, image_id);
     }
+
+    [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
+                                         ImageId merged_image_id);
+
+    /// Resolves depth overlap and either re-creates the image or returns existing one
+    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info,
+                                              ImageId cache_img_id);
+
+    [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
@@ -77,6 +95,11 @@ public:
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
         return slot_images[id];
+    }
+
+    /// Retrieves the image view with the specified id.
+    [[nodiscard]] ImageView& GetImageView(ImageId id) {
+        return slot_image_views[id];
     }
 
     bool IsMeta(VAddr address) const {
@@ -100,25 +123,6 @@ public:
         return false;
     }
 
-private:
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
-
-    /// Iterate over all page indices in a range
-    template <typename Func>
-    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
-        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
-        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
-        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
-            if constexpr (RETURNS_BOOL) {
-                if (func(page)) {
-                    break;
-                }
-            } else {
-                func(page);
-            }
-        }
-    }
-
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
@@ -136,6 +140,9 @@ private:
             for (const ImageId image_id : *it) {
                 Image& image = slot_images[image_id];
                 if (image.flags & ImageFlagBits::Picked) {
+                    continue;
+                }
+                if (!image.Overlaps(cpu_addr, size)) {
                     continue;
                 }
                 image.flags |= ImageFlagBits::Picked;
@@ -157,6 +164,26 @@ private:
         }
     }
 
+private:
+    /// Iterate over all page indices in a range
+    template <typename Func>
+    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
+        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
+        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
+        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
+            if constexpr (RETURNS_BOOL) {
+                if (func(page)) {
+                    break;
+                }
+            } else {
+                func(page);
+            }
+        }
+    }
+
+    /// Registers an image view for provided image
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
+
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -167,13 +194,19 @@ private:
     void UnregisterImage(ImageId image);
 
     /// Track CPU reads and writes for image
-    void TrackImage(Image& image, ImageId image_id);
+    void TrackImage(ImageId image_id);
 
     /// Stop tracking CPU reads and writes for image
-    void UntrackImage(Image& image, ImageId image_id);
+    void UntrackImage(ImageId image_id);
 
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
+
+    void FreeImage(ImageId image_id) {
+        UntrackImage(image_id);
+        UnregisterImage(image_id);
+        DeleteImage(image_id);
+    }
 
 private:
     const Vulkan::Instance& instance;

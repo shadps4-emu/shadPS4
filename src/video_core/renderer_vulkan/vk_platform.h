@@ -7,6 +7,7 @@
 #include <variant>
 #include <fmt/format.h>
 
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -21,8 +22,8 @@ constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_2;
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& emu_window);
 
-vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemType window_type,
-                                  bool enable_validation, bool dump_command_buffers);
+vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
+                                  bool enable_crash_diagnostic);
 
 vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance);
 
@@ -36,7 +37,10 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
         .objectHandle = reinterpret_cast<u64>(static_cast<typename HandleType::NativeType>(handle)),
         .pObjectName = debug_name.data(),
     };
-    device.setDebugUtilsObjectNameEXT(name_info);
+    auto result = device.setDebugUtilsObjectNameEXT(name_info);
+    if (result != vk::Result::eSuccess) {
+        LOG_DEBUG(Render_Vulkan, "Could not set object debug name: {}", vk::to_string(result));
+    }
 }
 
 template <VulkanHandleType HandleType, typename... Args>

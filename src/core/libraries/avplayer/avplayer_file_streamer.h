@@ -15,8 +15,10 @@ namespace Libraries::AvPlayer {
 
 class AvPlayerFileStreamer : public IDataStreamer {
 public:
-    AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement, std::string_view path);
+    AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement);
     ~AvPlayerFileStreamer();
+
+    bool Init(std::string_view path) override;
 
     AVIOContext* GetContext() override {
         return m_avio_context;

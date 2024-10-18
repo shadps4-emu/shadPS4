@@ -45,7 +45,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr
                                  u32 flags, u32 type);
 s32 PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32 flags);
 s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
-                                         u32 vertex_sgpr_offset, u32 instance_vgpr_offset,
+                                         u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
                                          u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti();
@@ -53,7 +53,7 @@ int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced();
 s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, u32 index_count,
                                        u32 flags);
 s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
-                                    u32 vertex_sgpr_offset, u32 instance_vgpr_offset, u32 flags);
+                                    u32 vertex_sgpr_offset, u32 instance_sgpr_offset, u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndirectMulti();
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size);
@@ -105,10 +105,10 @@ int PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
 int PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
 s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size);
-int PS4_SYSV_ABI sceGnmInsertPushColorMarker();
+s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color);
 s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marker);
 int PS4_SYSV_ABI sceGnmInsertSetColorMarker();
-int PS4_SYSV_ABI sceGnmInsertSetMarker();
+s32 PS4_SYSV_ABI sceGnmInsertSetMarker(u32* cmdbuf, u32 size, const char* marker);
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker();
 s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, u32 buf_idx);
 int PS4_SYSV_ABI sceGnmIsCoredumpValid();
@@ -134,7 +134,7 @@ s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, co
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone();
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload();
 int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset();
-int PS4_SYSV_ABI sceGnmResetVgtControl();
+s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmSdmaClose();
 int PS4_SYSV_ABI sceGnmSdmaConstFill();
 int PS4_SYSV_ABI sceGnmSdmaCopyLinear();
@@ -223,7 +223,7 @@ s32 PS4_SYSV_ABI sceGnmUpdatePsShader(u32* cmdbuf, u32 size, const u32* ps_regs)
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader350(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
                                       u32 shader_modifier);
-int PS4_SYSV_ABI sceGnmValidateCommandBuffers();
+s32 PS4_SYSV_ABI sceGnmValidateCommandBuffers();
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics();
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics2();
 int PS4_SYSV_ABI sceGnmValidateDispatchCommandBuffers();

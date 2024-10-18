@@ -140,8 +140,8 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         return ORBIS_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
 
-    LOG_INFO(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
-             flipArg);
+    LOG_DEBUG(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
+              flipArg);
 
     if (!driver->SubmitFlip(port, bufferIndex, flipArg)) {
         LOG_ERROR(Lib_VideoOut, "Flip queue is full");
@@ -185,14 +185,16 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    std::unique_lock lock{port->port_mutex};
-    *status = port->flip_status;
+    {
+        std::unique_lock lock{port->port_mutex};
+        *status = port->flip_status;
+    }
 
-    LOG_INFO(Lib_VideoOut,
-             "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
-             "{}, flipPendingNum = {}, currentBuffer = {}",
-             status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
-             status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
+    LOG_TRACE(Lib_VideoOut,
+              "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
+              "{}, flipPendingNum = {}, currentBuffer = {}",
+              status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
+              status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
 
     return ORBIS_OK;
 }

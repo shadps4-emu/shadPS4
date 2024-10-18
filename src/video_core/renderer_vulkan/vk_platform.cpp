@@ -17,13 +17,23 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
+
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
+static vk::DynamicLoader dl;
+#else
+extern "C" {
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,
+                                                               const char* pName);
+}
+#endif
 
 namespace Vulkan {
 
 static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
-static const char* const API_DUMP_LAYER_NAME = "VK_LAYER_LUNARG_api_dump";
+static const char* const CRASH_DIAGNOSTIC_LAYER_NAME = "VK_LAYER_LUNARG_crash_diagnostic";
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
@@ -32,7 +42,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     switch (static_cast<u32>(callback_data->messageIdNumber)) {
     case 0x609a13b: // Vertex attribute at location not consumed by shader
     case 0xc81ad50e:
-    case 0x92d66fc1: // `pMultisampleState is NULL` for depth only passes (confirmed VL error)
+    case 0xb7c39078:
+    case 0x32868fde: // vkCreateBufferView(): pCreateInfo->range does not equal VK_WHOLE_SIZE
         return VK_FALSE;
     default:
         break;
@@ -123,9 +134,10 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
 
 std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window_type,
                                                bool enable_debug_utils) {
-    const auto properties = vk::enumerateInstanceExtensionProperties();
-    if (properties.empty()) {
-        LOG_ERROR(Render_Vulkan, "Failed to query extension properties");
+    const auto [properties_result, properties] = vk::enumerateInstanceExtensionProperties();
+    if (properties_result != vk::Result::eSuccess || properties.empty()) {
+        LOG_ERROR(Render_Vulkan, "Failed to query extension properties: {}",
+                  vk::to_string(properties_result));
         return {};
     }
 
@@ -186,18 +198,22 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     return extensions;
 }
 
-vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemType window_type,
-                                  bool enable_validation, bool dump_command_buffers) {
+vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
+                                  bool enable_crash_diagnostic) {
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
     auto vkGetInstanceProcAddr =
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+#endif
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-    const u32 available_version = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
-                                      ? vk::enumerateInstanceVersion()
-                                      : VK_API_VERSION_1_0;
-
+    const auto [available_version_result, available_version] =
+        VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
+            ? vk::enumerateInstanceVersion()
+            : vk::ResultValue(vk::Result::eSuccess, VK_API_VERSION_1_0);
+    ASSERT_MSG(available_version_result == vk::Result::eSuccess,
+               "Failed to query Vulkan API version: {}", vk::to_string(available_version_result));
     ASSERT_MSG(available_version >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by instance!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
@@ -216,12 +232,27 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
     u32 num_layers = 0;
     std::array<const char*, 2> layers;
 
+    vk::Bool32 enable_force_barriers = vk::False;
+    const char* log_path{};
+
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
     if (enable_validation) {
         layers[num_layers++] = VALIDATION_LAYER_NAME;
     }
-    if (dump_command_buffers) {
-        layers[num_layers++] = API_DUMP_LAYER_NAME;
+
+    if (enable_crash_diagnostic) {
+        layers[num_layers++] = CRASH_DIAGNOSTIC_LAYER_NAME;
+        static const auto crash_diagnostic_path =
+            Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
+        log_path = crash_diagnostic_path.c_str();
+        enable_force_barriers = vk::True;
     }
+#else
+    if (enable_validation || enable_crash_diagnostic) {
+        LOG_WARNING(Render_Vulkan,
+                    "Skipping loading Vulkan layers as dynamic loading is not enabled.");
+    }
+#endif
 
     vk::Bool32 enable_sync =
         enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
@@ -240,7 +271,7 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
         },
         vk::LayerSettingEXT{
             .pLayerName = VALIDATION_LAYER_NAME,
-            .pSettingName = "sync_queue_submit",
+            .pSettingName = "syncval_submit_time_validation",
             .type = vk::LayerSettingTypeEXT::eBool32,
             .valueCount = 1,
             .pValues = &enable_sync,
@@ -280,6 +311,20 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
             .valueCount = 1,
             .pValues = &enable_gpuav,
         },
+        vk::LayerSettingEXT{
+            .pLayerName = "lunarg_crash_diagnostic",
+            .pSettingName = "output_path",
+            .type = vk::LayerSettingTypeEXT::eString,
+            .valueCount = 1,
+            .pValues = &log_path,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = "lunarg_crash_diagnostic",
+            .pSettingName = "sync_after_commands",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_force_barriers,
+        },
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
@@ -299,11 +344,13 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
         },
     };
 
-    auto instance = vk::createInstanceUnique(instance_ci_chain.get());
+    auto [instance_result, instance] = vk::createInstanceUnique(instance_ci_chain.get());
+    ASSERT_MSG(instance_result == vk::Result::eSuccess, "Failed to create instance: {}",
+               vk::to_string(instance_result));
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 
-    return instance;
+    return std::move(instance);
 }
 
 vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
@@ -317,7 +364,10 @@ vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
                        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
         .pfnUserCallback = DebugUtilsCallback,
     };
-    return instance.createDebugUtilsMessengerEXTUnique(msg_ci);
+    auto [messenger_result, messenger] = instance.createDebugUtilsMessengerEXTUnique(msg_ci);
+    ASSERT_MSG(messenger_result == vk::Result::eSuccess, "Failed to create debug callback: {}",
+               vk::to_string(messenger_result));
+    return std::move(messenger);
 }
 
 } // namespace Vulkan

@@ -96,6 +96,14 @@ Id EmitUDiv32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpUDiv(ctx.U32[1], a, b);
 }
 
+Id EmitSMod32(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpSMod(ctx.U32[1], a, b);
+}
+
+Id EmitUMod32(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpUMod(ctx.U32[1], a, b);
+}
+
 Id EmitINeg32(EmitContext& ctx, Id value) {
     return ctx.OpSNegate(ctx.U32[1], value);
 }
@@ -134,6 +142,13 @@ Id EmitShiftRightArithmetic64(EmitContext& ctx, Id base, Id shift) {
 
 Id EmitBitwiseAnd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     const Id result{ctx.OpBitwiseAnd(ctx.U32[1], a, b)};
+    SetZeroFlag(ctx, inst, result);
+    SetSignFlag(ctx, inst, result);
+    return result;
+}
+
+Id EmitBitwiseAnd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    const Id result{ctx.OpBitwiseAnd(ctx.U64, a, b)};
     SetZeroFlag(ctx, inst, result);
     SetSignFlag(ctx, inst, result);
     return result;

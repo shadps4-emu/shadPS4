@@ -4,26 +4,49 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/scope_exit.h"
-#include "shader_recompiler/runtime_info.h"
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/texture_cache/texture_cache.h"
 
 namespace VideoCore {
 
-static constexpr size_t StagingBufferSize = 512_MB;
+static constexpr size_t NumVertexBuffers = 32;
+static constexpr size_t GdsBufferSize = 64_KB;
+static constexpr size_t StagingBufferSize = 1_GB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                         const AmdGpu::Liverpool* liverpool_, PageManager& tracker_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_}, tracker{tracker_},
+                         const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
+                         PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
+      gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, GdsBufferSize},
       memory_tracker{&tracker} {
+    Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
+
     // Ensure the first slot is used for the null buffer
-    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, 1));
+    const auto null_id =
+        slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 1);
+    ASSERT(null_id.index == 0);
+    const vk::Buffer& null_buffer = slot_buffers[null_id].buffer;
+    Vulkan::SetObjectName(instance.GetDevice(), null_buffer, "Null Buffer");
+
+    const vk::BufferViewCreateInfo null_view_ci = {
+        .buffer = null_buffer,
+        .format = vk::Format::eR8Unorm,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE,
+    };
+    const auto [null_view_result, null_view] = instance.GetDevice().createBufferView(null_view_ci);
+    ASSERT_MSG(null_view_result == vk::Result::eSuccess, "Failed to create null buffer view.");
+    null_buffer_view = null_view;
+    Vulkan::SetObjectName(instance.GetDevice(), null_buffer_view, "Null Buffer View");
 }
 
 BufferCache::~BufferCache() = default;
@@ -93,6 +116,15 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         if (instance.IsVertexInputDynamicState()) {
             const auto cmdbuf = scheduler.CommandBuffer();
             cmdbuf.setVertexInputEXT(bindings, attributes);
+        } else if (bindings.empty()) {
+            // Required to call bindVertexBuffers2EXT at least once in the current command buffer
+            // with non-null strides without a non-dynamic stride pipeline in between. Thus even
+            // when nothing is bound we still need to make a dummy call. Non-null strides in turn
+            // requires a count greater than 0.
+            const auto cmdbuf = scheduler.CommandBuffer();
+            const std::array null_buffers = {GetBuffer(NULL_BUFFER_ID).buffer.buffer};
+            constexpr std::array null_offsets = {static_cast<vk::DeviceSize>(0)};
+            cmdbuf.bindVertexBuffers2EXT(0, null_buffers, null_offsets, null_offsets, null_offsets);
         }
     };
 
@@ -100,9 +132,11 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         return false;
     }
 
-    std::array<vk::Buffer, NUM_VERTEX_BUFFERS> host_buffers;
-    std::array<vk::DeviceSize, NUM_VERTEX_BUFFERS> host_offsets;
-    boost::container::static_vector<AmdGpu::Buffer, NUM_VERTEX_BUFFERS> guest_buffers;
+    std::array<vk::Buffer, NumVertexBuffers> host_buffers;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_offsets;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_sizes;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_strides;
+    boost::container::static_vector<AmdGpu::Buffer, NumVertexBuffers> guest_buffers;
 
     struct BufferRange {
         VAddr base_address;
@@ -117,7 +151,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
     // Calculate buffers memory overlaps
     bool has_step_rate = false;
-    boost::container::static_vector<BufferRange, NUM_VERTEX_BUFFERS> ranges{};
+    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges{};
     for (const auto& input : vs_info.vs_inputs) {
         if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
             input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
@@ -152,7 +186,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         return lhv.base_address < rhv.base_address;
     });
 
-    boost::container::static_vector<BufferRange, NUM_VERTEX_BUFFERS> ranges_merged{ranges[0]};
+    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges_merged{ranges[0]};
     for (auto range : ranges) {
         auto& prev_range = ranges_merged.back();
         if (prev_range.end_address < range.base_address) {
@@ -181,11 +215,18 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
         host_buffers[i] = host_buffer->vk_buffer;
         host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
+        host_sizes[i] = buffer.GetSize();
+        host_strides[i] = buffer.GetStride();
     }
 
     if (num_buffers > 0) {
         const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        if (instance.IsVertexInputDynamicState()) {
+            cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+        } else {
+            cmdbuf.bindVertexBuffers2EXT(0, num_buffers, host_buffers.data(), host_offsets.data(),
+                                         host_sizes.data(), host_strides.data());
+        }
     }
 
     return has_step_rate;
@@ -194,7 +235,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::QuadList) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
         is_indexed = true;
 
         // Emit indices.
@@ -228,11 +269,32 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     return regs.num_indices;
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written) {
-    std::scoped_lock lk{mutex};
+void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
+    ASSERT_MSG(gds_offset % 4 == 0, "GDS offset must be dword aligned");
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const vk::BufferMemoryBarrier2 buf_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .buffer = gds_buffer.Handle(),
+        .offset = gds_offset,
+        .size = sizeof(u32),
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &buf_barrier,
+    });
+    cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
+}
+
+std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
+                                                  bool is_texel_buffer) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
     const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
-    if (!is_written && size < StreamThreshold && !is_gpu_dirty) {
+    if (!is_written && size <= StreamThreshold && !is_gpu_dirty) {
         // For small uniform buffers that have not been modified by gpu
         // use device local stream buffer to reduce renderpass breaks.
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
@@ -241,19 +303,20 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
 
     const BufferId buffer_id = FindBuffer(device_addr, size);
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size);
+    SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
     if (is_written) {
         memory_tracker.MarkRegionAsGpuModified(device_addr, size);
     }
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<const Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
-        const Buffer& buffer = slot_buffers[buffer_id];
+        Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
+            SynchronizeBuffer(buffer, gpu_addr, size, false);
             return {&buffer, buffer.Offset(gpu_addr)};
         }
     }
@@ -420,8 +483,8 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     wanted_size = static_cast<u32>(device_addr_end - device_addr);
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
-    const BufferId new_buffer_id =
-        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, size);
+    const BufferId new_buffer_id = slot_buffers.insert(
+        instance, scheduler, MemoryUsage::DeviceLocal, overlap.begin, AllFlags, size);
     auto& new_buffer = slot_buffers[new_buffer_id];
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -459,7 +522,9 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     }
 }
 
-bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size) {
+void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
+                                    bool is_texel_buffer) {
+    std::scoped_lock lk{mutex};
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;
@@ -478,8 +543,13 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
         // Prevent uploading to gpu modified regions.
         // gpu_modified_ranges.ForEachNotInRange(device_addr_out, range_size, add_copy);
     });
+    SCOPE_EXIT {
+        if (is_texel_buffer) {
+            SynchronizeBufferFromImage(buffer, device_addr, size);
+        }
+    };
     if (total_size_bytes == 0) {
-        return true;
+        return;
     }
     vk::Buffer src_buffer = staging_buffer.Handle();
     if (total_size_bytes < StagingBufferSize) {
@@ -495,7 +565,12 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     } else {
         // For large one time transfers use a temporary host buffer.
         // RenderDoc can lag quite a bit if the stream buffer is too large.
-        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, total_size_bytes};
+        Buffer temp_buffer{instance,
+                           scheduler,
+                           MemoryUsage::Upload,
+                           0,
+                           vk::BufferUsageFlagBits::eTransferSrc,
+                           total_size_bytes};
         src_buffer = temp_buffer.Handle();
         u8* const staging = temp_buffer.mapped_data.data();
         for (auto& copy : copies) {
@@ -522,7 +597,61 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eAllCommands,
                            vk::DependencyFlagBits::eByRegion, WRITE_BARRIER, {}, {});
-    return false;
+}
+
+bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
+    static constexpr FindFlags find_flags =
+        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    ImageInfo info{};
+    info.guest_address = device_addr;
+    info.guest_size_bytes = size;
+    const ImageId image_id = texture_cache.FindImage(info, find_flags);
+    if (!image_id) {
+        return false;
+    }
+    Image& image = texture_cache.GetImage(image_id);
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return false;
+    }
+    ASSERT_MSG(device_addr == image.info.guest_address,
+               "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
+               image.info.guest_address);
+    boost::container::small_vector<vk::BufferImageCopy, 8> copies;
+    u32 offset = buffer.Offset(image.cpu_addr);
+    const u32 num_layers = image.info.resources.layers;
+    const u32 max_offset = offset + size;
+    for (u32 m = 0; m < image.info.resources.levels; m++) {
+        const u32 width = std::max(image.info.size.width >> m, 1u);
+        const u32 height = std::max(image.info.size.height >> m, 1u);
+        const u32 depth =
+            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
+        offset += mip_ofs * num_layers;
+        if (offset + (mip_size * num_layers) > max_offset) {
+            break;
+        }
+        copies.push_back({
+            .bufferOffset = offset,
+            .bufferRowLength = static_cast<u32>(mip_pitch),
+            .bufferImageHeight = static_cast<u32>(mip_height),
+            .imageSubresource{
+                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = num_layers,
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, depth},
+        });
+    }
+    if (!copies.empty()) {
+        scheduler.EndRendering();
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
+                                 copies);
+    }
+    return true;
 }
 
 void BufferCache::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {

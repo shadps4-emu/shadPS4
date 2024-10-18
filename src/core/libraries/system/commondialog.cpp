@@ -8,6 +8,9 @@
 
 namespace Libraries::CommonDialog {
 
+bool g_isInitialized = false;
+bool g_isUsed = false;
+
 int PS4_SYSV_ABI _ZN3sce16CommonDialogUtil12getSelfAppIdEv() {
     LOG_ERROR(Lib_CommonDlg, "(STUBBED) called");
     return ORBIS_OK;
@@ -83,14 +86,19 @@ int PS4_SYSV_ABI _ZTVN3sce16CommonDialogUtil6ClientE() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceCommonDialogInitialize() {
-    LOG_ERROR(Lib_CommonDlg, "(DUMMY) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceCommonDialogInitialize() {
+    if (g_isInitialized) {
+        LOG_INFO(Lib_CommonDlg, "already initialized");
+        return Error::ALREADY_SYSTEM_INITIALIZED;
+    }
+    LOG_DEBUG(Lib_CommonDlg, "initialized");
+    g_isInitialized = true;
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceCommonDialogIsUsed() {
-    LOG_ERROR(Lib_CommonDlg, "(STUBBED) called");
-    return ORBIS_OK;
+bool PS4_SYSV_ABI sceCommonDialogIsUsed() {
+    LOG_TRACE(Lib_CommonDlg, "called");
+    return g_isUsed;
 }
 
 int PS4_SYSV_ABI Func_0FF577E4E8457883() {

@@ -102,7 +102,7 @@ Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicXor);
 }
 
-Id EmitBufferAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicExchange);
 }
 
@@ -150,6 +150,22 @@ Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicExchange);
+}
+
+Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
+    auto& buffer = ctx.buffers[binding];
+    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value,
+                                     ctx.ConstU32(gds_addr));
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicIIncrement(ctx.U32[1], ptr, scope, semantics);
+}
+
+Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
+    auto& buffer = ctx.buffers[binding];
+    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value,
+                                     ctx.ConstU32(gds_addr));
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicIDecrement(ctx.U32[1], ptr, scope, semantics);
 }
 
 } // namespace Shader::Backend::SPIRV

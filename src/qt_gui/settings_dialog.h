@@ -5,6 +5,7 @@
 
 #include <span>
 #include <QDialog>
+#include <QGroupBox>
 #include <QPushButton>
 
 #include "common/config.h"
@@ -20,10 +21,25 @@ public:
     explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void updateNoteTextEdit(const QString& groupName);
+
     int exec() override;
+
+signals:
+    void LanguageChanged(const std::string& locale);
 
 private:
     void LoadValuesFromConfig();
+    void InitializeEmulatorLanguages();
+    void OnLanguageChanged(int index);
+    void OnCursorStateChanged(s16 index);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
+
+    std::map<std::string, int> languages;
+
+    QString defaultTextEdit;
+
+    int initialHeight;
 };

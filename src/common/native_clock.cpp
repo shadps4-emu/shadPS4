@@ -18,16 +18,16 @@ NativeClock::NativeClock()
       us_rdtsc_factor{GetFixedPoint64Factor(std::micro::den, rdtsc_frequency)},
       ms_rdtsc_factor{GetFixedPoint64Factor(std::milli::den, rdtsc_frequency)} {}
 
-u64 NativeClock::GetTimeNS() const {
-    return MultiplyHigh(GetUptime(), ns_rdtsc_factor);
+u64 NativeClock::GetTimeNS(u64 base_ptc /*= 0*/) const {
+    return MultiplyHigh(GetUptime() - base_ptc, ns_rdtsc_factor);
 }
 
-u64 NativeClock::GetTimeUS() const {
-    return MultiplyHigh(GetUptime(), us_rdtsc_factor);
+u64 NativeClock::GetTimeUS(u64 base_ptc /*= 0*/) const {
+    return MultiplyHigh(GetUptime() - base_ptc, us_rdtsc_factor);
 }
 
-u64 NativeClock::GetTimeMS() const {
-    return MultiplyHigh(GetUptime(), ms_rdtsc_factor);
+u64 NativeClock::GetTimeMS(u64 base_ptc /*= 0*/) const {
+    return MultiplyHigh(GetUptime() - base_ptc, ms_rdtsc_factor);
 }
 
 u64 NativeClock::GetUptime() const {

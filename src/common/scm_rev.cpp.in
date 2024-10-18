@@ -6,12 +6,14 @@
 #define GIT_REV      "@GIT_REV@"
 #define GIT_BRANCH   "@GIT_BRANCH@"
 #define GIT_DESC     "@GIT_DESC@"
+#define BUILD_DATE   "@BUILD_DATE@"
 
 namespace Common {
 
 const char g_scm_rev[]      = GIT_REV;
 const char g_scm_branch[]   = GIT_BRANCH;
 const char g_scm_desc[]     = GIT_DESC;
+const char g_scm_date[]     = BUILD_DATE;
 
 } // namespace
 

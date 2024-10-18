@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/path_util.h"
+#include "common/string_util.h"
 #include "game_list_frame.h"
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -24,23 +25,16 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
     this->setColumnCount(9);
-    this->setColumnWidth(1, 250);
-    this->setColumnWidth(2, 110);
-    this->setColumnWidth(3, 80);
-    this->setColumnWidth(4, 90);
-    this->setColumnWidth(5, 80);
-    this->setColumnWidth(6, 80);
-    this->setColumnWidth(7, 80);
+    this->setColumnWidth(1, 300); // Name
+    this->setColumnWidth(2, 120); // Serial
+    this->setColumnWidth(3, 90);  // Region
+    this->setColumnWidth(4, 90);  // Firmware
+    this->setColumnWidth(5, 90);  // Size
+    this->setColumnWidth(6, 90);  // Version
+    this->setColumnWidth(7, 100); // Play Time
     QStringList headers;
-    headers << "Icon"
-            << "Name"
-            << "Serial"
-            << "Region"
-            << "Firmware"
-            << "Size"
-            << "Version"
-            << "Category"
-            << "Path";
+    headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
+            << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -48,7 +42,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
     PopulateGameList();
 
-    connect(this, &QTableWidget::itemClicked, this, &GameListFrame::SetListBackgroundImage);
+    connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this,
             &GameListFrame::RefreshListBackgroundImage);
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
@@ -76,6 +70,26 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     });
 }
 
+void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                                         int previousColumn) {
+    QTableWidgetItem* item = this->item(currentRow, currentColumn);
+    if (!item) {
+        return;
+    }
+    SetListBackgroundImage(item);
+    PlayBackgroundMusic(item);
+}
+
+void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
+    if (!item || !Config::getPlayBGM()) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    QString snd0path;
+    Common::FS::PathToQString(snd0path, m_game_info->m_games[item->row()].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
+}
+
 void GameListFrame::PopulateGameList() {
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
@@ -87,8 +101,37 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
-        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].category));
-        SetTableItem(i, 8, QString::fromStdString(m_game_info->m_games[i].path));
+
+        QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
+        if (playTime.isEmpty()) {
+            m_game_info->m_games[i].play_time = "0:00:00";
+            SetTableItem(i, 7, "0");
+        } else {
+            QStringList timeParts = playTime.split(':');
+            int hours = timeParts[0].toInt();
+            int minutes = timeParts[1].toInt();
+            int seconds = timeParts[2].toInt();
+
+            QString formattedPlayTime;
+            if (hours > 0) {
+                formattedPlayTime += QString("%1h ").arg(hours);
+            }
+            if (minutes > 0) {
+                formattedPlayTime += QString("%1m ").arg(minutes);
+            }
+
+            formattedPlayTime = formattedPlayTime.trimmed();
+            m_game_info->m_games[i].play_time = playTime.toStdString();
+            if (formattedPlayTime.isEmpty()) {
+                SetTableItem(i, 7, "0");
+            } else {
+                SetTableItem(i, 7, formattedPlayTime);
+            }
+        }
+
+        QString path;
+        Common::FS::PathToQString(path, m_game_info->m_games[i].path);
+        SetTableItem(i, 8, path);
     }
 }
 
@@ -98,15 +141,12 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path = QString::fromStdString(m_game_info->m_games[item->row()].pic_path);
-    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                 "game_data" / m_game_info->m_games[item->row()].serial /
-                                 "pic1.png";
-#ifdef _WIN32
-    const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
-#else
-    const auto blurredPic1PathQt = QString::fromStdString(blurredPic1Path.string());
-#endif
+    QString pic1Path;
+    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
+    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                                 m_game_info->m_games[item->row()].serial / "pic1.png";
+    QString blurredPic1PathQt;
+    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
 
     backgroundImage = QImage(blurredPic1PathQt);
     if (backgroundImage.isNull()) {
@@ -114,7 +154,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
 
         std::filesystem::path img_path =
-            std::filesystem::path("user/game_data/") / m_game_info->m_games[item->row()].serial;
+            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+            m_game_info->m_games[item->row()].serial;
         std::filesystem::create_directories(img_path);
         if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
             // qDebug() << "Error: Unable to save image.";
@@ -159,7 +200,7 @@ void GameListFrame::ResizeIcons(int iconSize) {
         this->setItem(index, 0, iconItem);
         index++;
     }
-    this->horizontalHeader()->setSectionResizeMode(7, QHeaderView::ResizeToContents);
+    this->horizontalHeader()->setSectionResizeMode(8, QHeaderView::ResizeToContents);
 }
 
 void GameListFrame::SetTableItem(int row, int column, QString itemStr) {
@@ -168,7 +209,7 @@ void GameListFrame::SetTableItem(int row, int column, QString itemStr) {
     QVBoxLayout* layout = new QVBoxLayout(widget);
     QLabel* label = new QLabel(itemStr, widget);
 
-    label->setStyleSheet("color: white; font-size: 15px; font-weight: bold;");
+    label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
     // Create shadow effect
     QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
@@ -211,4 +252,34 @@ void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
     widget->setLayout(layout);
     this->setItem(row, column, item);
     this->setCellWidget(row, column, widget);
+}
+
+QString GameListFrame::GetPlayTime(const std::string& serial) {
+    QString playTime;
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return playTime;
+    }
+
+    while (!file.atEnd()) {
+        QByteArray line = file.readLine();
+        QString lineStr = QString::fromUtf8(line).trimmed();
+
+        QStringList parts = lineStr.split(' ');
+        if (parts.size() >= 2) {
+            QString fileSerial = parts[0];
+            QString time = parts[1];
+
+            if (fileSerial == QString::fromStdString(serial)) {
+                playTime = time;
+                break;
+            }
+        }
+    }
+
+    file.close();
+    return playTime;
 }

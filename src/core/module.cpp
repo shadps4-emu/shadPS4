@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <xbyak/xbyak.h>
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/memory_patcher.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
+#include "core/linker.h"
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
@@ -68,8 +70,9 @@ Module::~Module() = default;
 
 s32 Module::Start(size_t args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
-    return reinterpret_cast<EntryFunc>(addr)(args, argp, param);
+    return linker->ExecuteGuest(reinterpret_cast<EntryFunc>(addr), args, argp, param);
 }
 
 void Module::LoadModuleToMemory(u32& max_tls_index) {
@@ -90,9 +93,11 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
+#ifdef ARCH_X86_64
     // Initialize trampoline generator.
     void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);
-    Xbyak::CodeGenerator c(TrampolineSize, trampoline_addr);
+    RegisterPatchModule(*out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
+#endif
 
     LOG_INFO(Core_Linker, "======== Load Module to Memory ========");
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", base_virtual_addr);
@@ -131,9 +136,11 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
             add_segment(elf_pheader[i]);
+#ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
-                PatchInstructions(segment_addr, segment_file_size, c);
+                PrePatchInstructions(segment_addr, segment_file_size);
             }
+#endif
             break;
         }
         case PT_DYNAMIC:
@@ -192,6 +199,14 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
+
+    if (MemoryPatcher::g_eboot_address == 0) {
+        if (name == "eboot") {
+            MemoryPatcher::g_eboot_address = base_virtual_addr;
+            MemoryPatcher::g_eboot_image_size = base_size;
+            MemoryPatcher::OnGameLoaded();
+        }
+    }
 }
 
 void Module::LoadDynamicInfo() {

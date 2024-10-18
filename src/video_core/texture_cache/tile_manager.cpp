@@ -187,6 +187,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
     case vk::Format::eR16G16Unorm:
+    case vk::Format::eB10G11R11UfloatPack32:
         return vk::Format::eR32Uint;
     case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
@@ -202,6 +203,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc3SrgbBlock:
     case vk::Format::eBc3UnormBlock:
     case vk::Format::eBc5UnormBlock:
+    case vk::Format::eBc5SnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
     case vk::Format::eBc6HUfloatBlock:
@@ -249,15 +251,44 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
-static constexpr size_t StreamBufferSize = 1_GB;
-
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
-    : instance{instance}, scheduler{scheduler},
-      stream_buffer{instance, scheduler, MemoryUsage::Upload, StreamBufferSize} {
+    : instance{instance}, scheduler{scheduler} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
         HostShaders::DETILE_M32X4_COMP,
+    };
+
+    boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
+        {
+            .binding = 0,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        },
+        {
+            .binding = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        },
+    };
+
+    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = static_cast<u32>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+    auto desc_layout_result = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
+               "Failed to create descriptor set layout: {}",
+               vk::to_string(desc_layout_result.result));
+    desc_layout = std::move(desc_layout_result.value);
+
+    const vk::PushConstantRange push_constants = {
+        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        .offset = 0,
+        .size = sizeof(DetilerParams),
     };
 
     for (int pl_id = 0; pl_id < DetilerType::Max; ++pl_id) {
@@ -276,35 +307,6 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .pName = "main",
         };
 
-        boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
-            {
-                .binding = 0,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            },
-            {
-                .binding = 1,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            },
-        };
-
-        const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-            .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
-            .bindingCount = static_cast<u32>(bindings.size()),
-            .pBindings = bindings.data(),
-        };
-        static auto desc_layout =
-            instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-
-        const vk::PushConstantRange push_constants = {
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            .offset = 0,
-            .size = sizeof(DetilerParams),
-        };
-
         const vk::DescriptorSetLayout set_layout = *desc_layout;
         const vk::PipelineLayoutCreateInfo layout_info = {
             .setLayoutCount = 1U,
@@ -312,7 +314,10 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .pushConstantRangeCount = 1,
             .pPushConstantRanges = &push_constants,
         };
-        ctx.pl_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+        auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+        ASSERT_MSG(layout_result == vk::Result::eSuccess, "Failed to create pipeline layout: {}",
+                   vk::to_string(layout_result));
+        ctx.pl_layout = std::move(layout);
 
         const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
             .stage = shader_ci,
@@ -342,12 +347,6 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .usage = usage,
     };
 
-#ifdef __APPLE__
-    // Fix for detiler artifacts on macOS
-    const bool is_large_buffer = true;
-#else
-    const bool is_large_buffer = size > 128_MB;
-#endif
     VmaAllocationCreateInfo alloc_info{
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -381,35 +380,23 @@ void TileManager::FreeBuffer(ScratchBuffer buffer) {
     vmaDestroyBuffer(instance.GetAllocator(), buffer.first, buffer.second);
 }
 
-std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
+std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_offset,
+                                                  Image& image) {
     if (!image.info.props.is_tiled) {
-        return std::nullopt;
+        return {in_buffer, in_offset};
     }
 
     const auto* detiler = GetDetiler(image);
     if (!detiler) {
-        if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled) {
+        if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled &&
+            image.info.tiling_mode != AmdGpu::TilingMode::Display_MacroTiled) {
             LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
                       vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
         }
-        return std::nullopt;
+        return {in_buffer, in_offset};
     }
 
-    // Prepare input buffer
     const u32 image_size = image.info.guest_size_bytes;
-    const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
-        // Use stream buffer for smaller textures.
-        if (image_size <= stream_buffer.GetFreeSize()) {
-            u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
-            return {stream_buffer.Handle(), offset};
-        }
-        // Request temporary host buffer for larger sizes.
-        auto in_buffer = AllocBuffer(image_size);
-        const auto addr = reinterpret_cast<const void*>(image.info.guest_address);
-        Upload(in_buffer, addr, image_size);
-        scheduler.DeferOperation([=, this]() { FreeBuffer(in_buffer); });
-        return {in_buffer.first, 0};
-    }();
 
     // Prepare output buffer
     auto out_buffer = AllocBuffer(image_size, true);
@@ -462,7 +449,6 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
                           (m > 0 ? params.sizes[m - 1] : 0);
     }
 
-    auto pitch = image.info.pitch;
     cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
                          &params);
 
@@ -481,7 +467,7 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, post_barrier, {});
 
-    return {out_buffer.first};
+    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore

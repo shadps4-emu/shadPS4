@@ -10,8 +10,12 @@ class SymbolsResolver;
 }
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
+#ifndef HTONLL
 #define HTONLL(x) (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
+#endif
+#ifndef NTOHLL
 #define NTOHLL(x) (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
+#endif
 
 namespace Libraries::Net {
 
@@ -132,7 +136,7 @@ int PS4_SYSV_ABI sceNetEpollControl();
 int PS4_SYSV_ABI sceNetEpollCreate();
 int PS4_SYSV_ABI sceNetEpollDestroy();
 int PS4_SYSV_ABI sceNetEpollWait();
-int PS4_SYSV_ABI sceNetErrnoLoc();
+int* PS4_SYSV_ABI sceNetErrnoLoc();
 int PS4_SYSV_ABI sceNetEtherNtostr();
 int PS4_SYSV_ABI sceNetEtherStrton();
 int PS4_SYSV_ABI sceNetEventCallbackCreate();
@@ -165,7 +169,7 @@ u64 PS4_SYSV_ABI sceNetHtonll(u64 host64);
 u16 PS4_SYSV_ABI sceNetHtons(u16 host16);
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size);
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId();
-int PS4_SYSV_ABI sceNetInetPton();
+int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst);
 int PS4_SYSV_ABI sceNetInetPtonEx();
 int PS4_SYSV_ABI sceNetInetPtonWithScopeId();
 int PS4_SYSV_ABI sceNetInfoDumpStart();

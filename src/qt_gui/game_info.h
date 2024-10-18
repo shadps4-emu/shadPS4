@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include <QFuture>
-#include <QObject>
-#include <QPixmap>
-#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 #include "common/config.h"
 #include "core/file_format/psf.h"
@@ -24,26 +22,53 @@ public:
         return a.name < b.name;
     }
 
-    static GameInfo readGameInfo(const std::string& filePath) {
+    static GameInfo readGameInfo(const std::filesystem::path& filePath) {
         GameInfo game;
         game.path = filePath;
+        std::filesystem::path sce_folder_path = filePath / "sce_sys" / "param.sfo";
+        std::filesystem::path game_update_path = filePath;
+        game_update_path += "-UPDATE";
+        if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
+            sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
+        }
 
         PSF psf;
-        if (psf.open(game.path + "/sce_sys/param.sfo", {})) {
-            game.icon_path = game.path + "/sce_sys/icon0.png";
-            QString iconpath = QString::fromStdString(game.icon_path);
+        if (psf.Open(sce_folder_path)) {
+            game.icon_path = game.path / "sce_sys" / "icon0.png";
+            QString iconpath;
+            Common::FS::PathToQString(iconpath, game.icon_path);
             game.icon = QImage(iconpath);
-            game.pic_path = game.path + "/sce_sys/pic1.png";
-            game.name = psf.GetString("TITLE");
-            game.serial = psf.GetString("TITLE_ID");
-            game.region = GameListUtils::GetRegion(psf.GetString("CONTENT_ID").at(0)).toStdString();
-            u32 fw_int = psf.GetInteger("SYSTEM_VER");
-            QString fw = QString::number(fw_int, 16);
-            QString fw_ = fw.length() > 7 ? QString::number(fw_int, 16).left(3).insert(2, '.')
-                                          : fw.left(3).insert(1, '.');
-            game.fw = (fw_int == 0) ? "0.00" : fw_.toStdString();
-            game.version = psf.GetString("APP_VER");
-            game.category = psf.GetString("CATEGORY");
+            game.pic_path = game.path / "sce_sys" / "pic1.png";
+            game.snd0_path = game.path / "sce_sys" / "snd0.at9";
+
+            if (const auto title = psf.GetString("TITLE"); title.has_value()) {
+                game.name = *title;
+            }
+            if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
+                game.serial = *title_id;
+            }
+            if (const auto content_id = psf.GetString("CONTENT_ID");
+                content_id.has_value() && !content_id->empty()) {
+                game.region = GameListUtils::GetRegion(content_id->at(0)).toStdString();
+            }
+            if (const auto fw_int_opt = psf.GetInteger("SYSTEM_VER"); fw_int_opt.has_value()) {
+                auto fw_int = *fw_int_opt;
+                if (fw_int == 0) {
+                    game.fw = "0.00";
+                } else {
+                    QString fw = QString::number(fw_int, 16);
+                    QString fw_ = fw.length() > 7
+                                      ? QString::number(fw_int, 16).left(3).insert(2, '.')
+                                      : fw.left(3).insert(1, '.');
+                    game.fw = fw_.toStdString();
+                }
+            }
+            if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                game.version = *app_ver;
+            }
+            if (const auto play_time = psf.GetString("PLAY_TIME"); play_time.has_value()) {
+                game.play_time = *play_time;
+            }
         }
         return game;
     }

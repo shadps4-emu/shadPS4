@@ -1,9 +1,22 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <Ws2tcpip.h>
+#include <iphlpapi.h>
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#endif
+
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
 
 namespace Libraries::NetCtl {
@@ -79,7 +92,8 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackV6() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallback() {
-    LOG_TRACE(Lib_NetCtl, "(STUBBED) called");
+    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
+    netctl->checkCallback();
     return ORBIS_OK;
 }
 
@@ -143,8 +157,35 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetInfo() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
+    switch (code) {
+    case ORBIS_NET_CTL_INFO_DEVICE:
+        info->device = ORBIS_NET_CTL_DEVICE_WIRED;
+        break;
+    case ORBIS_NET_CTL_INFO_LINK:
+        info->link = ORBIS_NET_CTL_LINK_DISCONNECTED;
+        break;
+    case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
+        strcpy(info->ip_address,
+               "127.0.0.1"); // placeholder in case gethostbyname can't find another ip
+        char devname[80];
+        gethostname(devname, 80);
+        struct hostent* resolved = gethostbyname(devname);
+        for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
+            struct in_addr addrIn;
+            memcpy(&addrIn, resolved->h_addr_list[i], sizeof(u32));
+            char* addr = inet_ntoa(addrIn);
+            if (strcmp(addr, "127.0.0.1") != 0) {
+                strcpy(info->ip_address, addr);
+                break;
+            }
+        }
+        break;
+    }
+    default:
+        LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
+    }
+    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
     return ORBIS_OK;
 }
 
@@ -173,8 +214,12 @@ int PS4_SYSV_ABI sceNetCtlGetNetEvConfigInfoIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetResult() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetResult(int eventType, int* errorCode) {
+    if (!errorCode) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called eventType = {} ", eventType);
+    *errorCode = 0;
     return ORBIS_OK;
 }
 
@@ -213,8 +258,8 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetState() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetState(int* state) {
+    *state = ORBIS_NET_CTL_STATE_DISCONNECTED;
     return ORBIS_OK;
 }
 
@@ -248,8 +293,17 @@ int PS4_SYSV_ABI sceNetCtlIsBandwidthManagementEnabledIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlRegisterCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid) {
+    if (!func || !cid) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
+    s32 result = netctl->registerCallback(func, arg);
+    if (result < 0) {
+        return result;
+    } else {
+        *cid = result;
+    }
     return ORBIS_OK;
 }
 
@@ -319,7 +373,8 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
+    netctl->checkNpToolkitCallback();
     return ORBIS_OK;
 }
 
@@ -328,8 +383,18 @@ int PS4_SYSV_ABI sceNetCtlClearEventForNpToolkit() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func,
+                                                       void* arg, int* cid) {
+    if (!func || !cid) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
+    s32 result = netctl->registerNpToolkitCallback(func, arg);
+    if (result < 0) {
+        return result;
+    } else {
+        *cid = result;
+    }
     return ORBIS_OK;
 }
 

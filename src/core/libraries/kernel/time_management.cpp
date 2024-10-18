@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/native_clock.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
@@ -30,7 +32,8 @@ u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    return clock->GetProcessTimeUS();
+    // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
+    return clock->GetTimeUS(initial_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
@@ -144,13 +147,20 @@ int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
     }
 
 #ifdef _WIN64
-    auto now = std::chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    auto microsecs = std::chrono::duration_cast<std::chrono::microseconds>(duration - seconds);
+    FILETIME filetime;
+    GetSystemTimePreciseAsFileTime(&filetime);
 
-    tp->tv_sec = seconds.count();
-    tp->tv_usec = microsecs.count();
+    constexpr u64 UNIX_TIME_START = 0x295E9648864000;
+    constexpr u64 TICKS_PER_SECOND = 1000000;
+
+    u64 ticks = filetime.dwHighDateTime;
+    ticks <<= 32;
+    ticks |= filetime.dwLowDateTime;
+    ticks /= 10;
+    ticks -= UNIX_TIME_START;
+
+    tp->tv_sec = ticks / TICKS_PER_SECOND;
+    tp->tv_usec = ticks % TICKS_PER_SECOND;
 #else
     timeval tv;
     gettimeofday(&tv, nullptr);
@@ -236,6 +246,17 @@ int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
     }
     return SCE_OK;
 }
+
+namespace Dev {
+u64& GetInitialPtc() {
+    return initial_ptc;
+}
+
+Common::NativeClock* GetClock() {
+    return clock.get();
+}
+
+} // namespace Dev
 
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();

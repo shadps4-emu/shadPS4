@@ -103,7 +103,7 @@ public:
     PKG();
     ~PKG();
 
-    bool Open(const std::filesystem::path& filepath);
+    bool Open(const std::filesystem::path& filepath, std::string& failreason);
     void ExtractFiles(const int index);
     bool Extract(const std::filesystem::path& filepath, const std::filesystem::path& extract,
                  std::string& failreason);
@@ -149,7 +149,6 @@ public:
 private:
     Crypto crypto;
     TRP trp;
-    std::vector<u8> pkg;
     u64 pkgSize = 0;
     char pkgTitleID[9];
     PKGHeader pkgheader;

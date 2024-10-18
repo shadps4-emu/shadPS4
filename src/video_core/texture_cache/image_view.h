@@ -3,12 +3,11 @@
 
 #pragma once
 
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
-
-#include <optional>
 
 namespace Vulkan {
 class Instance;
@@ -19,7 +18,7 @@ namespace VideoCore {
 
 struct ImageViewInfo {
     ImageViewInfo() = default;
-    ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
+    ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
     ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer, bool is_vo_surface) noexcept;
     ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
                   AmdGpu::Liverpool::DepthView view, AmdGpu::Liverpool::DepthControl ctl);
@@ -28,7 +27,7 @@ struct ImageViewInfo {
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
-    bool is_storage;
+    bool is_storage = false;
 
     auto operator<=>(const ImageViewInfo&) const = default;
 };
@@ -38,8 +37,8 @@ struct Image;
 constexpr Common::SlotId NULL_IMAGE_VIEW_ID{0};
 
 struct ImageView {
-    explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
-                       ImageId image_id, std::optional<vk::ImageUsageFlags> usage_override = {});
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
+              ImageId image_id);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;

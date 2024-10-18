@@ -1,26 +1,29 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QDir>
 #include <QDockWidget>
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QKeyEvent>
 #include <QProgressDialog>
-#include <QStatusBar>
-#include <QtConcurrent>
 
 #include "about_dialog.h"
+#include "cheats_patches.h"
+#include "check_update.h"
 #include "common/io_file.h"
+#include "common/path_util.h"
+#include "common/scm_rev.h"
+#include "common/string_util.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
+#include "install_dir_select.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    installEventFilter(this);
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
@@ -37,6 +40,7 @@ bool MainWindow::Init() {
     CreateActions();
     CreateRecentGameActions();
     ConfigureGuiFromSettings();
+    LoadTranslation();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
@@ -44,10 +48,19 @@ bool MainWindow::Init() {
     GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
-    setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
+    std::string window_title = "";
+    if (Common::isRelease) {
+        window_title = fmt::format("shadPS4 v{}", Common::VERSION);
+    } else {
+        window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
+                                   Common::g_scm_desc);
+    }
+    setWindowTitle(QString::fromStdString(window_title));
     this->show();
     // load game list
     LoadGameLists();
+    // Check for update
+    CheckUpdateMain(true);
 
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -58,6 +71,14 @@ bool MainWindow::Init() {
     QString statusMessage =
         "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
+
+    // Initialize Discord RPC
+    if (Config::getEnableDiscordRPC()) {
+        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+        rpc->init();
+        rpc->setStatusIdling();
+    }
+
     return true;
 }
 
@@ -90,6 +111,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
     ui->toolBar->addWidget(ui->stopButton);
+    ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
     QFrame* line = new QFrame(this);
@@ -105,7 +127,7 @@ void MainWindow::CreateDockWindows() {
     QWidget* phCentralWidget = new QWidget(this);
     setCentralWidget(phCentralWidget);
 
-    m_dock_widget.reset(new QDockWidget("Game List", this));
+    m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
     m_game_list_frame.reset(new GameListFrame(m_game_info, this));
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));
@@ -120,7 +142,7 @@ void MainWindow::CreateDockWindows() {
         m_elf_viewer->hide();
         m_game_list_frame->show();
         m_dock_widget->setWidget(m_game_list_frame.data());
-        slider_pos = Config::getSliderPositon();
+        slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = true;
     } else if (table_mode == 1) { // Grid
@@ -128,7 +150,7 @@ void MainWindow::CreateDockWindows() {
         m_elf_viewer->hide();
         m_game_grid_frame->show();
         m_dock_widget->setWidget(m_game_grid_frame.data());
-        slider_pos = Config::getSliderPositonGrid();
+        slider_pos = Config::getSliderPositionGrid();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = false;
     } else {
@@ -161,6 +183,16 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::CheckUpdateMain(bool checkSave) {
+    if (checkSave) {
+        if (!Config::autoUpdate()) {
+            return;
+        }
+    }
+    auto checkUpdate = new CheckUpdate(false);
+    checkUpdate->exec();
+}
+
 void MainWindow::GetPhysicalDevices() {
     Vulkan::Instance instance(false, false);
     auto physical_devices = instance.GetPhysicalDevices();
@@ -168,7 +200,7 @@ void MainWindow::GetPhysicalDevices() {
         auto prop = physical_device.getProperties();
         QString name = QString::fromUtf8(prop.deviceName, -1);
         if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
-            name += " * Unsupported Vulkan Version";
+            name += tr(" * Unsupported Vulkan Version");
         }
         m_physical_devices.push_back(name);
     }
@@ -179,6 +211,7 @@ void MainWindow::CreateConnects() {
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
@@ -188,12 +221,12 @@ void MainWindow::CreateConnects() {
                 36 + value; // 36 is the minimum icon size to use due to text disappearing.
             m_game_list_frame->ResizeIcons(36 + value);
             Config::setIconSize(36 + value);
-            Config::setSliderPositon(value);
+            Config::setSliderPosition(value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
             Config::setIconSizeGrid(69 + value);
-            Config::setSliderPositonGrid(value);
+            Config::setSliderPositionGrid(value);
         }
     });
 
@@ -205,12 +238,25 @@ void MainWindow::CreateConnects() {
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+
+        connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
+                &MainWindow::OnLanguageChanged);
+
         settingsDialog->exec();
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+
+        connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
+                &MainWindow::OnLanguageChanged);
+
         settingsDialog->exec();
+    });
+
+    connect(ui->updaterAct, &QAction::triggered, this, [this]() {
+        auto checkUpdate = new CheckUpdate(true);
+        checkUpdate->exec();
     });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
@@ -224,11 +270,11 @@ void MainWindow::CreateConnects() {
                 36; // 36 is the minimum icon size to use due to text disappearing.
             ui->sizeSlider->setValue(0); // icone_size - 36
             Config::setIconSize(36);
-            Config::setSliderPositon(0);
+            Config::setSliderPosition(0);
         } else {
             ui->sizeSlider->setValue(0); // icone_size - 36
             Config::setIconSizeGrid(69);
-            Config::setSliderPositonGrid(0);
+            Config::setSliderPositionGrid(0);
         }
     });
 
@@ -237,11 +283,11 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 64;
             ui->sizeSlider->setValue(28);
             Config::setIconSize(64);
-            Config::setSliderPositon(28);
+            Config::setSliderPosition(28);
         } else {
             ui->sizeSlider->setValue(28);
             Config::setIconSizeGrid(97);
-            Config::setSliderPositonGrid(28);
+            Config::setSliderPositionGrid(28);
         }
     });
 
@@ -250,11 +296,11 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 128;
             ui->sizeSlider->setValue(92);
             Config::setIconSize(128);
-            Config::setSliderPositon(92);
+            Config::setSliderPosition(92);
         } else {
             ui->sizeSlider->setValue(92);
             Config::setIconSizeGrid(160);
-            Config::setSliderPositonGrid(91);
+            Config::setSliderPositionGrid(91);
         }
     });
 
@@ -263,15 +309,16 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 256;
             ui->sizeSlider->setValue(220);
             Config::setIconSize(256);
-            Config::setSliderPositon(220);
+            Config::setSliderPosition(220);
         } else {
             ui->sizeSlider->setValue(220);
             Config::setIconSizeGrid(256);
-            Config::setSliderPositonGrid(220);
+            Config::setSliderPositionGrid(220);
         }
     });
     // List
     connect(ui->setlistModeListAct, &QAction::triggered, m_dock_widget.data(), [this]() {
+        BackgroundMusicPlayer::getInstance().stopMusic();
         m_dock_widget->setWidget(m_game_list_frame.data());
         m_game_grid_frame->hide();
         m_elf_viewer->hide();
@@ -282,12 +329,13 @@ void MainWindow::CreateConnects() {
         }
         isTableList = true;
         Config::setTableMode(0);
-        int slider_pos = Config::getSliderPositon();
+        int slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
     });
     // Grid
     connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget.data(), [this]() {
+        BackgroundMusicPlayer::getInstance().stopMusic();
         m_dock_widget->setWidget(m_game_grid_frame.data());
         m_game_grid_frame->show();
         m_game_list_frame->hide();
@@ -298,12 +346,13 @@ void MainWindow::CreateConnects() {
         }
         isTableList = false;
         Config::setTableMode(1);
-        int slider_pos_grid = Config::getSliderPositonGrid();
+        int slider_pos_grid = Config::getSliderPositionGrid();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
     });
     // Elf
     connect(ui->setlistElfAct, &QAction::triggered, m_dock_widget.data(), [this]() {
+        BackgroundMusicPlayer::getInstance().stopMusic();
         m_dock_widget->setWidget(m_elf_viewer.data());
         m_game_grid_frame->hide();
         m_game_list_frame->hide();
@@ -311,6 +360,85 @@ void MainWindow::CreateConnects() {
         isTableList = false;
         ui->sizeSlider->setDisabled(true);
         Config::setTableMode(2);
+    });
+
+    // Cheats/Patches Download.
+    connect(ui->downloadCheatsPatchesAct, &QAction::triggered, this, [this]() {
+        QDialog* panelDialog = new QDialog(this);
+        QVBoxLayout* layout = new QVBoxLayout(panelDialog);
+        QPushButton* downloadAllCheatsButton =
+            new QPushButton(tr("Download Cheats For All Installed Games"), panelDialog);
+        QPushButton* downloadAllPatchesButton =
+            new QPushButton(tr("Download Patches For All Games"), panelDialog);
+
+        layout->addWidget(downloadAllCheatsButton);
+        layout->addWidget(downloadAllPatchesButton);
+
+        panelDialog->setLayout(layout);
+
+        connect(downloadAllCheatsButton, &QPushButton::clicked, this, [this, panelDialog]() {
+            QEventLoop eventLoop;
+            int pendingDownloads = 0;
+
+            auto onDownloadFinished = [&]() {
+                if (--pendingDownloads <= 0) {
+                    eventLoop.quit();
+                }
+            };
+
+            for (const GameInfo& game : m_game_info->m_games) {
+                QString empty = "";
+                QString gameSerial = QString::fromStdString(game.serial);
+                QString gameVersion = QString::fromStdString(game.version);
+
+                CheatsPatches* cheatsPatches =
+                    new CheatsPatches(empty, empty, empty, empty, empty, nullptr);
+                connect(cheatsPatches, &CheatsPatches::downloadFinished, onDownloadFinished);
+
+                pendingDownloads += 3;
+
+                cheatsPatches->downloadCheats("wolf2022", gameSerial, gameVersion, false);
+                cheatsPatches->downloadCheats("GoldHEN", gameSerial, gameVersion, false);
+                cheatsPatches->downloadCheats("shadPS4", gameSerial, gameVersion, false);
+            }
+            eventLoop.exec();
+
+            QMessageBox::information(
+                nullptr, tr("Download Complete"),
+                tr("You have downloaded cheats for all the games you have installed."));
+
+            panelDialog->accept();
+        });
+        connect(downloadAllPatchesButton, &QPushButton::clicked, [panelDialog]() {
+            QEventLoop eventLoop;
+            int pendingDownloads = 0;
+
+            auto onDownloadFinished = [&]() {
+                if (--pendingDownloads <= 0) {
+                    eventLoop.quit();
+                }
+            };
+
+            QString empty = "";
+            CheatsPatches* cheatsPatches =
+                new CheatsPatches(empty, empty, empty, empty, empty, nullptr);
+            connect(cheatsPatches, &CheatsPatches::downloadFinished, onDownloadFinished);
+
+            pendingDownloads += 2;
+
+            cheatsPatches->downloadPatches("GoldHEN", false);
+            cheatsPatches->downloadPatches("shadPS4", false);
+
+            eventLoop.exec();
+            QMessageBox::information(
+                nullptr, tr("Download Complete"),
+                QString(tr("Patches Downloaded Successfully!") + "\n" +
+                        tr("All Patches available for all games have been downloaded.")));
+            cheatsPatches->createFilesJson("GoldHEN");
+            cheatsPatches->createFilesJson("shadPS4");
+            panelDialog->accept();
+        });
+        panelDialog->exec();
     });
 
     // Dump game list.
@@ -329,12 +457,14 @@ void MainWindow::CreateConnects() {
                    .arg(" APP VERSION", -11)
                    .arg("                Path");
         for (const GameInfo& game : m_game_info->m_games) {
+            QString game_path;
+            Common::FS::PathToQString(game_path, game.path);
             out << QString("%1 %2 %3     %4 %5\n")
                        .arg(QString::fromStdString(game.name), -50)
                        .arg(QString::fromStdString(game.serial), -10)
                        .arg(QString::fromStdString(game.fw), -4)
                        .arg(QString::fromStdString(game.version), -11)
-                       .arg(QString::fromStdString(game.path));
+                       .arg(game_path);
         }
     });
 
@@ -400,29 +530,36 @@ void MainWindow::CreateConnects() {
 }
 
 void MainWindow::StartGame() {
+    isGameRunning = true;
+    BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = Config::getTableMode();
     if (table_mode == 0) {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else {
         if (m_elf_viewer->currentItem()) {
             int itemID = m_elf_viewer->currentItem()->row();
-            gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
+            gamePath = m_elf_viewer->m_elf_list[itemID];
         }
     }
     if (gamePath != "") {
         AddRecentFiles(gamePath);
         Core::Emulator emulator;
-        emulator.Run(gamePath.toUtf8().constData());
+        const auto path = Common::FS::PathFromQString(gamePath);
+        if (!std::filesystem::exists(path)) {
+            QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
+            return;
+        }
+        emulator.Run(path);
     }
 }
 
@@ -464,7 +601,7 @@ void MainWindow::RefreshGameTable() {
     m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
     statusBar->clearMessage();
     int numGames = m_game_info->m_games.size();
-    QString statusMessage = "Games: " + QString::number(numGames);
+    QString statusMessage = tr("Games: ") + QString::number(numGames);
     statusBar->showMessage(statusMessage);
 }
 
@@ -478,6 +615,7 @@ void MainWindow::ConfigureGuiFromSettings() {
     } else {
         ui->setlistModeGridAct->setChecked(true);
     }
+    BackgroundMusicPlayer::getInstance().setVolume(Config::getBGMvolume());
 }
 
 void MainWindow::SaveWindowState() const {
@@ -490,17 +628,14 @@ void MainWindow::SaveWindowState() const {
 void MainWindow::InstallPkg() {
     QFileDialog dialog;
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter(tr("PKG File (*.PKG)"));
+    dialog.setNameFilter(tr("PKG File (*.PKG *.pkg)"));
     if (dialog.exec()) {
         QStringList fileNames = dialog.selectedFiles();
         int nPkg = fileNames.size();
         int pkgNum = 0;
         for (const QString& file : fileNames) {
             ++pkgNum;
-            std::filesystem::path path(file.toStdString());
-#ifdef _WIN64
-            path = std::filesystem::path(file.toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(file);
             MainWindow::InstallDragDropPkg(path, pkgNum, nPkg);
         }
     }
@@ -515,13 +650,16 @@ void MainWindow::BootGame() {
         int nFiles = fileNames.size();
 
         if (nFiles > 1) {
-            QMessageBox::critical(nullptr, "Game Boot", QString("Only one file can be selected!"));
+            QMessageBox::critical(nullptr, tr("Game Boot"),
+                                  QString(tr("Only one file can be selected!")));
         } else {
-            std::filesystem::path path(fileNames[0].toStdString());
-#ifdef _WIN64
-            path = std::filesystem::path(fileNames[0].toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(fileNames[0]);
             Core::Emulator emulator;
+            if (!std::filesystem::exists(path)) {
+                QMessageBox::critical(nullptr, tr("Run Game"),
+                                      QString(tr("Eboot.bin file not found")));
+                return;
+            }
             emulator.Run(path);
         }
     }
@@ -529,41 +667,91 @@ void MainWindow::BootGame() {
 
 void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
-        pkg = PKG();
-        pkg.Open(file);
         std::string failreason;
-        const auto extract_path =
-            std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
+        pkg = PKG();
+        if (!pkg.Open(file, failreason)) {
+            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
+            return;
+        }
+        InstallDirSelect ids;
+        ids.exec();
+        auto game_install_dir = ids.getSelectedDirectory();
+        auto game_folder_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        QDir game_dir(QString::fromStdString(extract_path.string()));
+        bool use_game_update = pkgType.contains("PATCH") && Config::getSeparateUpdateEnabled();
+        auto game_update_path = use_game_update
+                                    ? game_install_dir / (std::string(pkg.GetTitleID()) + "-UPDATE")
+                                    : game_folder_path;
+        QString gameDirPath;
+        Common::FS::PathToQString(gameDirPath, game_folder_path);
+        QDir game_dir(gameDirPath);
         if (game_dir.exists()) {
             QMessageBox msgBox;
-            msgBox.setWindowTitle("PKG Extraction");
+            msgBox.setWindowTitle(tr("PKG Extraction"));
+
+            if (!psf.Open(pkg.sfo)) {
+                QMessageBox::critical(this, tr("PKG ERROR"),
+                                      "Could not read SFO. Check log for details");
+                return;
+            }
+
+            std::string content_id;
+            if (auto value = psf.GetString("CONTENT_ID"); value.has_value()) {
+                content_id = std::string{*value};
+            } else {
+                QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no CONTENT_ID");
+                return;
+            }
+            std::string entitlement_label = Common::SplitString(content_id, '-')[2];
+
+            auto addon_extract_path =
+                Config::getAddonInstallDir() / pkg.GetTitleID() / entitlement_label;
+            QString addonDirPath;
+            Common::FS::PathToQString(addonDirPath, addon_extract_path);
+            QDir addon_dir(addonDirPath);
+            auto category = psf.GetString("CATEGORY");
+
             if (pkgType.contains("PATCH")) {
-                psf.open("", pkg.sfo);
-                QString pkg_app_version = QString::fromStdString(psf.GetString("APP_VER"));
-                psf.open(extract_path.string() + "/sce_sys/param.sfo", {});
-                QString game_app_version = QString::fromStdString(psf.GetString("APP_VER"));
+                QString pkg_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    pkg_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
+                std::filesystem::path sce_folder_path =
+                    std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")
+                        ? game_update_path / "sce_sys" / "param.sfo"
+                        : game_folder_path / "sce_sys" / "param.sfo";
+                psf.Open(sce_folder_path);
+                QString game_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    game_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
-                    msgBox.setText(
-                        QString("Patch detected!\nPKG and Game versions match!: %1\nWould you like "
-                                "to overwrite?")
-                            .arg(pkg_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("PKG and Game versions match: ") + pkg_app_version +
+                                           "\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else if (pkgD < appD) {
-                    msgBox.setText(QString("Patch detected!\nPKG Version %1 is older "
-                                           "than installed version!: %2\nWould you like "
-                                           "to overwrite?")
-                                       .arg(pkg_app_version, game_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("PKG Version %1 is older than installed version: ")
+                                               .arg(pkg_app_version) +
+                                           game_app_version + "\n" +
+                                           tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else {
-                    msgBox.setText(QString("Patch detected!\nGame is installed: %1\nWould you like "
-                                           "to install Patch: %2?")
-                                       .arg(game_app_version, pkg_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("Game is installed: ") + game_app_version + "\n" +
+                                           tr("Would you like to install Patch: ") +
+                                           pkg_app_version + " ?"));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 }
@@ -573,9 +761,36 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 } else {
                     return;
                 }
+            } else if (category == "ac") {
+                if (!addon_dir.exists()) {
+                    QMessageBox addonMsgBox;
+                    addonMsgBox.setWindowTitle(tr("DLC Installation"));
+                    addonMsgBox.setText(QString(tr("Would you like to install DLC: %1?"))
+                                            .arg(QString::fromStdString(entitlement_label)));
+
+                    addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    addonMsgBox.setDefaultButton(QMessageBox::No);
+                    int result = addonMsgBox.exec();
+                    if (result == QMessageBox::Yes) {
+                        game_update_path = addon_extract_path;
+                    } else {
+                        return;
+                    }
+                } else {
+                    msgBox.setText(QString(tr("DLC already installed:") + "\n" + addonDirPath +
+                                           "\n\n" + tr("Would you like to overwrite?")));
+                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setDefaultButton(QMessageBox::No);
+                    int result = msgBox.exec();
+                    if (result == QMessageBox::Yes) {
+                        game_update_path = addon_extract_path;
+                    } else {
+                        return;
+                    }
+                }
             } else {
-                msgBox.setText(QString("Game already installed\n%1\nWould you like to overwrite?")
-                                   .arg(QString::fromStdString(extract_path.string())));
+                msgBox.setText(QString(tr("Game already installed") + "\n" + gameDirPath + "\n" +
+                                       tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);
                 int result = msgBox.exec();
@@ -588,59 +803,63 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         } else {
             // Do nothing;
             if (pkgType.contains("PATCH")) {
-                QMessageBox::information(this, "PKG Extraction",
-                                         "PKG is a patch, please install the game first!");
+                QMessageBox::information(this, tr("PKG Extraction"),
+                                         tr("PKG is a patch, please install the game first!"));
                 return;
             }
             // what else?
         }
-
-        if (!pkg.Extract(file, extract_path, failreason)) {
-            QMessageBox::critical(this, "PKG ERROR", QString::fromStdString(failreason));
+        if (!pkg.Extract(file, game_update_path, failreason)) {
+            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
         } else {
             int nfiles = pkg.GetNumberOfFiles();
 
-            QVector<int> indices;
-            for (int i = 0; i < nfiles; i++) {
-                indices.append(i);
-            }
-
-            QProgressDialog dialog;
-            dialog.setWindowTitle("PKG Extraction");
-            dialog.setWindowModality(Qt::WindowModal);
-            QString extractmsg = QString("Extracting PKG %1/%2").arg(pkgNum).arg(nPkg);
-            dialog.setLabelText(extractmsg);
-            dialog.setAutoClose(true);
-            dialog.setRange(0, nfiles);
-
-            QFutureWatcher<void> futureWatcher;
-            connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
-                if (pkgNum == nPkg) {
-                    QString path = QString::fromStdString(Config::getGameInstallDir());
-                    QMessageBox extractMsgBox(this);
-                    extractMsgBox.setWindowTitle("Extraction Finished");
-                    extractMsgBox.setText(QString("Game successfully installed at %1").arg(path));
-                    extractMsgBox.addButton(QMessageBox::Ok);
-                    extractMsgBox.setDefaultButton(QMessageBox::Ok);
-                    connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
-                            [&](QAbstractButton* button) {
-                                if (extractMsgBox.button(QMessageBox::Ok) == button) {
-                                    extractMsgBox.close();
-                                    emit ExtractionFinished();
-                                }
-                            });
-                    extractMsgBox.exec();
+            if (nfiles > 0) {
+                QVector<int> indices;
+                for (int i = 0; i < nfiles; i++) {
+                    indices.append(i);
                 }
-            });
-            connect(&dialog, &QProgressDialog::canceled, [&]() { futureWatcher.cancel(); });
-            connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
-                    &QProgressDialog::setValue);
-            futureWatcher.setFuture(
-                QtConcurrent::map(indices, [&](int index) { pkg.ExtractFiles(index); }));
-            dialog.exec();
+
+                QProgressDialog dialog;
+                dialog.setWindowTitle(tr("PKG Extraction"));
+                dialog.setWindowModality(Qt::WindowModal);
+                QString extractmsg = QString(tr("Extracting PKG %1/%2")).arg(pkgNum).arg(nPkg);
+                dialog.setLabelText(extractmsg);
+                dialog.setAutoClose(true);
+                dialog.setRange(0, nfiles);
+
+                QFutureWatcher<void> futureWatcher;
+                connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
+                    if (pkgNum == nPkg) {
+                        QString path;
+                        Common::FS::PathToQString(path, game_install_dir);
+                        QMessageBox extractMsgBox(this);
+                        extractMsgBox.setWindowTitle(tr("Extraction Finished"));
+                        extractMsgBox.setText(
+                            QString(tr("Game successfully installed at %1")).arg(path));
+                        extractMsgBox.addButton(QMessageBox::Ok);
+                        extractMsgBox.setDefaultButton(QMessageBox::Ok);
+                        connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
+                                [&](QAbstractButton* button) {
+                                    if (extractMsgBox.button(QMessageBox::Ok) == button) {
+                                        extractMsgBox.close();
+                                        emit ExtractionFinished();
+                                    }
+                                });
+                        extractMsgBox.exec();
+                    }
+                });
+                connect(&dialog, &QProgressDialog::canceled, [&]() { futureWatcher.cancel(); });
+                connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
+                        &QProgressDialog::setValue);
+                futureWatcher.setFuture(
+                    QtConcurrent::map(indices, [&](int index) { pkg.ExtractFiles(index); }));
+                dialog.exec();
+            }
         }
     } else {
-        QMessageBox::critical(this, "PKG ERROR", "File doesn't appear to be a valid PKG file");
+        QMessageBox::critical(this, tr("PKG ERROR"),
+                              tr("File doesn't appear to be a valid PKG file"));
     }
 }
 
@@ -714,6 +933,10 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
+    ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));
+    ui->downloadCheatsPatchesAct->setIcon(
+        RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
+    ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
@@ -723,6 +946,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->playButton->setIcon(RecolorIcon(ui->playButton->icon(), isWhite));
     ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
+    ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
@@ -780,9 +1004,59 @@ void MainWindow::CreateRecentGameActions() {
     }
 
     connect(m_recent_files_group, &QActionGroup::triggered, this, [this](QAction* action) {
-        QString gamePath = action->text();
-        AddRecentFiles(gamePath); // Update the list.
+        auto gamePath = Common::FS::PathFromQString(action->text());
+        AddRecentFiles(action->text()); // Update the list.
         Core::Emulator emulator;
-        emulator.Run(gamePath.toUtf8().constData());
+        if (!std::filesystem::exists(gamePath)) {
+            QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
+            return;
+        }
+        emulator.Run(gamePath);
     });
+}
+
+void MainWindow::LoadTranslation() {
+    auto language = QString::fromStdString(Config::getEmulatorLanguage());
+
+    const QString base_dir = QStringLiteral(":/translations");
+    QString base_path = QStringLiteral("%1/%2.qm").arg(base_dir).arg(language);
+
+    if (QFile::exists(base_path)) {
+        if (translator != nullptr) {
+            qApp->removeTranslator(translator);
+        }
+
+        translator = new QTranslator(qApp);
+        if (!translator->load(base_path)) {
+            QMessageBox::warning(
+                nullptr, QStringLiteral("Translation Error"),
+                QStringLiteral("Failed to find load translation file for '%1':\n%2")
+                    .arg(language)
+                    .arg(base_path));
+            delete translator;
+        } else {
+            qApp->installTranslator(translator);
+            ui->retranslateUi(this);
+        }
+    }
+}
+
+void MainWindow::OnLanguageChanged(const std::string& locale) {
+    Config::setEmulatorLanguage(locale);
+
+    LoadTranslation();
+}
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return) {
+            auto tblMode = Config::getTableMode();
+            if (tblMode != 2 && (tblMode != 1 || m_game_grid_frame->IsValidCellSelected())) {
+                StartGame();
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }

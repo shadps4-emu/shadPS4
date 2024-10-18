@@ -3,20 +3,9 @@
 
 #pragma once
 
-#include <QFutureWatcher>
-#include <QGraphicsBlurEffect>
-#include <QHeaderView>
-#include <QLabel>
-#include <QMainWindow>
-#include <QPixmap>
 #include <QScrollBar>
-#include <QStyleOptionViewItem>
-#include <QTableWidget>
-#include <QTableWidgetItem>
-#include <QVBoxLayout>
-#include <QWidget>
-#include <QtConcurrent/QtConcurrent>
 
+#include "background_music_player.h"
 #include "game_info.h"
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
@@ -33,10 +22,14 @@ public Q_SLOTS:
     void RefreshListBackgroundImage();
     void SortNameAscending(int columnIndex);
     void SortNameDescending(int columnIndex);
+    void PlayBackgroundMusic(QTableWidgetItem* item);
+    void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                              int previousColumn);
 
 private:
     void SetTableItem(int row, int column, QString itemStr);
     void SetRegionFlag(int row, int column, QString itemStr);
+    QString GetPlayTime(const std::string& serial);
     QList<QAction*> m_columnActs;
     GameInfoClass* game_inf_get = nullptr;
     bool ListSortedAsc = true;
@@ -52,25 +45,58 @@ public:
 
     int icon_size;
 
+    static float parseAsFloat(const std::string& str, const int& offset) {
+        return std::stof(str.substr(0, str.size() - offset));
+    }
+
+    static float parseSizeMB(const std::string& size) {
+        float num = parseAsFloat(size, 3);
+        return (size[size.size() - 2] == 'G') ? num * 1024 : num;
+    }
+
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
-        if (columnIndex == 1) {
+        switch (columnIndex) {
+        case 1:
             return a.name < b.name;
-        } else if (columnIndex == 2) {
-            return a.serial < b.serial;
-        } else if (columnIndex == 3) {
-            return a.fw < b.fw;
+        case 2:
+            return a.serial.substr(4) < b.serial.substr(4);
+        case 3:
+            return a.region < b.region;
+        case 4:
+            return parseAsFloat(a.fw, 0) < parseAsFloat(b.fw, 0);
+        case 5:
+            return parseSizeMB(b.size) < parseSizeMB(a.size);
+        case 6:
+            return a.version < b.version;
+        case 7:
+            return a.play_time < b.play_time;
+        case 8:
+            return a.path < b.path;
+        default:
+            return false;
         }
-        return false;
     }
 
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
-        if (columnIndex == 1) {
+        switch (columnIndex) {
+        case 1:
             return a.name > b.name;
-        } else if (columnIndex == 2) {
-            return a.serial > b.serial;
-        } else if (columnIndex == 3) {
-            return a.fw > b.fw;
+        case 2:
+            return a.serial.substr(4) > b.serial.substr(4);
+        case 3:
+            return a.region > b.region;
+        case 4:
+            return parseAsFloat(a.fw, 0) > parseAsFloat(b.fw, 0);
+        case 5:
+            return parseSizeMB(b.size) > parseSizeMB(a.size);
+        case 6:
+            return a.version > b.version;
+        case 7:
+            return a.play_time > b.play_time;
+        case 8:
+            return a.path > b.path;
+        default:
+            return false;
         }
-        return false;
     }
 };

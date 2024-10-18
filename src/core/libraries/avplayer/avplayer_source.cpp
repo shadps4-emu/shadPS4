@@ -5,7 +5,10 @@
 
 #include "avplayer_file_streamer.h"
 
+#include "common/alignment.h"
 #include "common/singleton.h"
+#include "common/thread.h"
+
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/time_management.h"
 
@@ -19,33 +22,53 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+// The av_err2str macro in libavutil/error.h does not play nice with C++
+#ifdef av_err2str
+#undef av_err2str
+#include <string>
+av_always_inline std::string av_err2string(int errnum) {
+    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+    return av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE, errnum);
+}
+#define av_err2str(err) av_err2string(err).c_str()
+#endif // av_err2str
+
 namespace Libraries::AvPlayer {
 
 using namespace Kernel;
 
-AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
-                               const SceAvPlayerInitData& init_data,
-                               SceAvPlayerSourceType source_type)
-    : m_state(state), m_memory_replacement(init_data.memory_replacement),
-      m_num_output_video_framebuffers(
-          std::min(std::max(2, init_data.num_output_video_framebuffers), 16)) {
-    AVFormatContext* context = avformat_alloc_context();
-    if (init_data.file_replacement.open != nullptr) {
-        m_up_data_streamer =
-            std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement, path);
-        context->pb = m_up_data_streamer->GetContext();
-        ASSERT(!AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr)));
-    } else {
-        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        ASSERT(!AVPLAYER_IS_ERROR(
-            avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr)));
-    }
-    m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);
-}
+AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2)
+    : m_state(state), m_use_vdec2(use_vdec2) {}
 
 AvPlayerSource::~AvPlayerSource() {
     Stop();
+}
+
+bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view path) {
+    m_memory_replacement = init_data.memory_replacement,
+    m_num_output_video_framebuffers =
+        std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
+
+    AVFormatContext* context = avformat_alloc_context();
+    if (init_data.file_replacement.open != nullptr) {
+        m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
+        if (!m_up_data_streamer->Init(path)) {
+            return false;
+        }
+        context->pb = m_up_data_streamer->GetContext();
+        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+            return false;
+        }
+    } else {
+        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        const auto filepath = mnt->GetHostPath(path);
+        if (AVPLAYER_IS_ERROR(
+                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+            return false;
+        }
+    }
+    m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);
+    return true;
 }
 
 bool AvPlayerSource::FindStreamInfo() {
@@ -86,16 +109,16 @@ static f32 AVRationalToF32(const AVRational rational) {
     return f32(rational.num) / rational.den;
 }
 
-s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info.", stream_index);
-        return -1;
+        return false;
     }
     const auto p_stream = m_avformat_context->streams[stream_index];
     if (p_stream == nullptr || p_stream->codecpar == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info. NULL stream.", stream_index);
-        return -1;
+        return false;
     }
     info.type = CodecTypeToStreamType(p_stream->codecpar->codec_type);
     info.start_time = p_stream->start_time;
@@ -107,18 +130,25 @@ s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info)
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
-    case SCE_AVPLAYER_VIDEO:
+    case SCE_AVPLAYER_VIDEO: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
-        info.details.video.width = p_stream->codecpar->width;
-        info.details.video.height = p_stream->codecpar->height;
+        auto width = u32(p_stream->codecpar->width);
+        auto height = u32(p_stream->codecpar->height);
+        if (!m_use_vdec2) {
+            width = Common::AlignUp(width, 16);
+            height = Common::AlignUp(height, 16);
+        }
+        info.details.video.width = width;
+        info.details.video.height = height;
         if (p_lang_node != nullptr) {
             std::memcpy(info.details.video.language_code, p_lang_node->value,
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    case SCE_AVPLAYER_AUDIO:
+    }
+    case SCE_AVPLAYER_AUDIO: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
@@ -128,7 +158,8 @@ s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info)
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    case SCE_AVPLAYER_TIMEDTEXT:
+    }
+    case SCE_AVPLAYER_TIMEDTEXT: {
         LOG_WARNING(Lib_AvPlayer, "Stream {} is a timedtext stream.", stream_index);
         info.details.subs.font_size = 12;
         info.details.subs.text_size = 12;
@@ -137,11 +168,13 @@ s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info)
                         std::min(strlen(p_lang_node->value), size_t(3)));
         }
         break;
-    default:
-        LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index, info.type);
-        return -1;
     }
-    return 0;
+    default: {
+        LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index, info.type);
+        return false;
+    }
+    }
+    return true;
 }
 
 bool AvPlayerSource::EnableStream(u32 stream_index) {
@@ -167,8 +200,13 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
             LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for video stream {}.", stream_index);
             return false;
         }
-        const auto width = m_video_codec_context->width;
-        const auto size = (width * m_video_codec_context->height * 3) / 2;
+        auto width = u32(m_video_codec_context->width);
+        auto height = u32(m_video_codec_context->height);
+        if (!m_use_vdec2) {
+            width = Common::AlignUp(width, 16);
+            height = Common::AlignUp(height, 16);
+        }
+        const auto size = (width * height * 3) / 2;
         for (u64 index = 0; index < m_num_output_video_framebuffers; ++index) {
             m_video_buffers.Push(FrameBuffer(m_memory_replacement, 0x100, size));
         }
@@ -213,12 +251,12 @@ std::optional<bool> AvPlayerSource::HasFrames(u32 num_frames) {
     return m_video_packets.Size() > num_frames || m_is_eof;
 }
 
-s32 AvPlayerSource::Start() {
+bool AvPlayerSource::Start() {
     std::unique_lock lock(m_state_mutex);
 
     if (m_audio_codec_context == nullptr && m_video_codec_context == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
-        return -1;
+        return false;
     }
     m_demuxer_thread = std::jthread([this](std::stop_token stop) { this->DemuxerThread(stop); });
     m_video_decoder_thread =
@@ -226,7 +264,7 @@ s32 AvPlayerSource::Start() {
     m_audio_decoder_thread =
         std::jthread([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
     m_start_time = std::chrono::high_resolution_clock::now();
-    return 0;
+    return true;
 }
 
 bool AvPlayerSource::Stop() {
@@ -284,11 +322,6 @@ bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfo& video_info) {
     return true;
 }
 
-static void CopyNV12Data(u8* dst, const AVFrame& src) {
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + src.width * src.height, src.data[1], (src.width * src.height) / 2);
-}
-
 bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
     if (!IsActive()) {
         return false;
@@ -298,7 +331,7 @@ bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
 
     auto frame = m_video_frames.Pop();
     if (!frame.has_value()) {
-        LOG_WARNING(Lib_AvPlayer, "Could get video frame. EOF reached.");
+        LOG_TRACE(Lib_AvPlayer, "Could get video frame. EOF reached.");
         return false;
     }
 
@@ -333,7 +366,7 @@ bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
 
     auto frame = m_audio_frames.Pop();
     if (!frame.has_value()) {
-        LOG_WARNING(Lib_AvPlayer, "Could get audio frame. EOF reached.");
+        LOG_TRACE(Lib_AvPlayer, "Could get audio frame. EOF reached.");
         return false;
     }
 
@@ -416,6 +449,8 @@ void AvPlayerSource::ReleaseAVFormatContext(AVFormatContext* context) {
 
 void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvDemuxer");
+
     if (!m_audio_stream_index.has_value() && !m_video_stream_index.has_value()) {
         LOG_WARNING(Lib_AvPlayer, "Could not start DEMUXER thread. No streams enabled.");
         return;
@@ -423,7 +458,8 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread started");
 
     while (!stop.stop_requested()) {
-        if (m_video_packets.Size() > 30 && m_audio_packets.Size() > 8) {
+        if (m_video_packets.Size() > 30 &&
+            (!m_audio_stream_index.has_value() || m_audio_packets.Size() > 8)) {
             std::this_thread::sleep_for(milliseconds(5));
             continue;
         }
@@ -482,7 +518,7 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     }
     m_state.OnEOF();
 
-    LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& frame) {
@@ -493,13 +529,17 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
     nv12_frame->width = frame.width;
     nv12_frame->height = frame.height;
     nv12_frame->sample_aspect_ratio = frame.sample_aspect_ratio;
+    nv12_frame->crop_top = frame.crop_top;
+    nv12_frame->crop_bottom = frame.crop_bottom;
+    nv12_frame->crop_left = frame.crop_left;
+    nv12_frame->crop_right = frame.crop_right;
 
     av_frame_get_buffer(nv12_frame.get(), 0);
 
     if (m_sws_context == nullptr) {
         m_sws_context =
             SWSContextPtr(sws_getContext(frame.width, frame.height, AVPixelFormat(frame.format),
-                                         frame.width, frame.height, AV_PIX_FMT_NV12,
+                                         nv12_frame->width, nv12_frame->height, AV_PIX_FMT_NV12,
                                          SWS_FAST_BILINEAR, nullptr, nullptr, nullptr),
                           &ReleaseSWSContext);
     }
@@ -512,11 +552,35 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
     return nv12_frame;
 }
 
+static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
+    auto width = u32(src.width);
+    auto height = u32(src.height);
+    if (!use_vdec2) {
+        width = Common::AlignUp(width, 16);
+        height = Common::AlignUp(height, 16);
+    }
+
+    if (src.width == width) {
+        std::memcpy(dst, src.data[0], src.width * src.height);
+        std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
+    } else {
+        const auto luma_dst = dst;
+        for (u32 y = 0; y < src.height; ++y) {
+            std::memcpy(luma_dst + y * width, src.data[0] + y * src.width, src.width);
+        }
+        const auto chroma_dst = dst + width * height;
+        for (u32 y = 0; y < src.height / 2; ++y) {
+            std::memcpy(chroma_dst + y * (width / 2), src.data[0] + y * (src.width / 2),
+                        src.width / 2);
+        }
+    }
+}
+
 Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame) {
     ASSERT(frame.format == AV_PIX_FMT_NV12);
 
     auto p_buffer = buffer.GetBuffer();
-    CopyNV12Data(p_buffer, frame);
+    CopyNV12Data(p_buffer, frame, m_use_vdec2);
 
     const auto pkt_dts = u64(frame.pkt_dts) * 1000;
     const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
@@ -524,6 +588,13 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     const auto den = time_base.den;
     const auto num = time_base.num;
     const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
+
+    auto width = u32(frame.width);
+    auto height = u32(frame.height);
+    if (!m_use_vdec2) {
+        width = Common::AlignUp(width, 16);
+        height = Common::AlignUp(height, 16);
+    }
 
     return Frame{
         .buffer = std::move(buffer),
@@ -535,9 +606,14 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                     {
                         .video =
                             {
-                                .width = u32(frame.width),
-                                .height = u32(frame.height),
+                                .width = width,
+                                .height = height,
                                 .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
+                                .crop_left_offset = u32(frame.crop_left),
+                                .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
+                                .crop_top_offset = u32(frame.crop_top),
+                                .crop_bottom_offset =
+                                    u32(frame.crop_bottom + (height - frame.height)),
                                 .pitch = u32(frame.linesize[0]),
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
@@ -549,6 +625,8 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvVideoDecoder");
+
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread started");
     while ((!m_is_eof || m_video_packets.Size() != 0) && !stop.stop_requested()) {
         if (!m_video_packets_cv.Wait(stop,
@@ -604,7 +682,7 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
         }
     }
 
-    LOG_INFO(Lib_AvPlayer, "Video Decoder Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Video Decoder Thread exited normally");
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertAudioFrame(const AVFrame& frame) {
@@ -669,6 +747,8 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvAudioDecoder");
+
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread started");
     while ((!m_is_eof || m_audio_packets.Size() != 0) && !stop.stop_requested()) {
         if (!m_audio_packets_cv.Wait(stop,
@@ -724,7 +804,7 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
         }
     }
 
-    LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread exited normally");
 }
 
 bool AvPlayerSource::HasRunningThreads() const {

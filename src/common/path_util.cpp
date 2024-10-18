@@ -22,6 +22,10 @@
 #endif
 #endif
 
+#ifdef ENABLE_QT_GUI
+#include <QString>
+#endif
+
 namespace Common::FS {
 
 namespace fs = std::filesystem;
@@ -82,11 +86,32 @@ static std::filesystem::path GetBundleParentDirectory() {
 
 static auto UserPaths = [] {
 #ifdef __APPLE__
-    std::filesystem::current_path(GetBundleParentDirectory());
+    // Start by assuming the base directory is the bundle's parent directory.
+    std::filesystem::path base_dir = GetBundleParentDirectory();
+    std::filesystem::path user_dir = base_dir / PORTABLE_DIR;
+    // Check if the "user" directory exists in the current path:
+    if (!std::filesystem::exists(user_dir)) {
+        // If it doesn't exist, use the new hardcoded path:
+        user_dir =
+            std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadPS4";
+    }
+#elif defined(__linux__)
+    auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
+    // Check if the "user" directory exists in the current path:
+    if (!std::filesystem::exists(user_dir)) {
+        // If it doesn't exist, use XDG_DATA_HOME if it is set, and provide a standard default
+        const char* xdg_data_home = getenv("XDG_DATA_HOME");
+        if (xdg_data_home != nullptr && strlen(xdg_data_home) > 0) {
+            user_dir = std::filesystem::path(xdg_data_home) / "shadPS4";
+        } else {
+            user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
+        }
+    }
+#else
+    const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 #endif
 
     std::unordered_map<PathType, fs::path> paths;
-    const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 
     const auto create_path = [&](PathType shad_path, const fs::path& new_path) {
         std::filesystem::create_directory(new_path);
@@ -97,13 +122,15 @@ static auto UserPaths = [] {
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
     create_path(PathType::ShaderDir, user_dir / SHADER_DIR);
-    create_path(PathType::PM4Dir, user_dir / PM4_DIR);
     create_path(PathType::SaveDataDir, user_dir / SAVEDATA_DIR);
     create_path(PathType::GameDataDir, user_dir / GAMEDATA_DIR);
     create_path(PathType::TempDataDir, user_dir / TEMPDATA_DIR);
     create_path(PathType::SysModuleDir, user_dir / SYSMODULES_DIR);
     create_path(PathType::DownloadDir, user_dir / DOWNLOAD_DIR);
     create_path(PathType::CapturesDir, user_dir / CAPTURES_DIR);
+    create_path(PathType::CheatsDir, user_dir / CHEATS_DIR);
+    create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
+    create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
 
     return paths;
 }();
@@ -151,5 +178,23 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
 
     UserPaths.insert_or_assign(shad_path, new_path);
 }
+
+#ifdef ENABLE_QT_GUI
+void PathToQString(QString& result, const std::filesystem::path& path) {
+#ifdef _WIN32
+    result = QString::fromStdWString(path.wstring());
+#else
+    result = QString::fromStdString(path.string());
+#endif
+}
+
+std::filesystem::path PathFromQString(const QString& path) {
+#ifdef _WIN32
+    return std::filesystem::path(path.toStdWString());
+#else
+    return std::filesystem::path(path.toStdString());
+#endif
+}
+#endif
 
 } // namespace Common::FS

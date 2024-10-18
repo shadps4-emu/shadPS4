@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"

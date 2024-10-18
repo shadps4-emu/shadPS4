@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/assert.h>
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -78,7 +78,7 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
-    LOG_INFO(Kernel_Event, "called");
+    LOG_DEBUG(Kernel_Event, "called");
     ef->Clear(bitPattern);
     return ORBIS_OK;
 }
@@ -97,7 +97,7 @@ int PS4_SYSV_ABI sceKernelSetEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) 
 }
 int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat) {
-    LOG_INFO(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
+    LOG_DEBUG(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
 
     if (ef == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -137,7 +137,7 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 
     auto result = ef->Poll(bitPattern, wait, clear, pResultPat);
 
-    if (result != ORBIS_OK) {
+    if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_EBUSY) {
         LOG_ERROR(Kernel_Event, "returned {}", result);
     }
 
@@ -145,7 +145,7 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 }
 int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat, OrbisKernelUseconds* pTimeout) {
-    LOG_INFO(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
+    LOG_DEBUG(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
     if (ef == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
     }
@@ -184,7 +184,7 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 
     u32 result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
 
-    if (result != ORBIS_OK) {
+    if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_ETIMEDOUT) {
         LOG_ERROR(Kernel_Event, "returned {:#x}", result);
     }
 

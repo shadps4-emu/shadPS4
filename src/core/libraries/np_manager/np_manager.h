@@ -11,6 +11,17 @@ class SymbolsResolver;
 
 namespace Libraries::NpManager {
 
+constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
+
+enum OrbisNpState {
+    ORBIS_NP_STATE_UNKNOWN = 0,
+    ORBIS_NP_STATE_SIGNED_OUT,
+    ORBIS_NP_STATE_SIGNED_IN
+};
+
+using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
+                                                               void* userdata);
+
 constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 typedef int OrbisUserServiceUserId;
@@ -207,7 +218,7 @@ int PS4_SYSV_ABI sceNpCheckNpReachability();
 int PS4_SYSV_ABI sceNpCheckPlus();
 int PS4_SYSV_ABI sceNpCreateAsyncRequest();
 int PS4_SYSV_ABI sceNpCreateRequest();
-int PS4_SYSV_ABI sceNpDeleteRequest();
+int PS4_SYSV_ABI sceNpDeleteRequest(int reqId);
 int PS4_SYSV_ABI sceNpGetAccountAge();
 int PS4_SYSV_ABI sceNpGetAccountCountry();
 int PS4_SYSV_ABI sceNpGetAccountCountryA();
@@ -222,10 +233,10 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatus();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatusA();
 int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId);
 int PS4_SYSV_ABI sceNpGetNpReachabilityState();
-int PS4_SYSV_ABI sceNpGetOnlineId();
+int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId);
 int PS4_SYSV_ABI sceNpGetParentalControlInfo();
 int PS4_SYSV_ABI sceNpGetParentalControlInfoA();
-int PS4_SYSV_ABI sceNpGetState();
+int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state);
 int PS4_SYSV_ABI sceNpGetUserIdByAccountId();
 int PS4_SYSV_ABI sceNpGetUserIdByOnlineId();
 int PS4_SYSV_ABI sceNpHasSignedUp();
@@ -526,7 +537,8 @@ int PS4_SYSV_ABI Func_F91B5B25CC9B30D9();
 int PS4_SYSV_ABI Func_FC335B7102A585B3();
 int PS4_SYSV_ABI Func_FCEAC354CA8B206E();
 int PS4_SYSV_ABI Func_FF966E4351E564D6();
-int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit();
+int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
+                                                      void* userdata);
 int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit();
 
 void RegisterlibSceNpManager(Core::Loader::SymbolsResolver* sym);

@@ -5,11 +5,15 @@
 
 #include <atomic>
 #include <mutex>
+#include <semaphore>
 #include <string>
 #include <vector>
 #include <pthread.h>
 #include <sched.h>
+
 #include "common/types.h"
+
+#define ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER (reinterpret_cast<ScePthreadMutex>(1))
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -19,6 +23,12 @@ namespace Libraries::Kernel {
 constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
+constexpr int ORBIS_KERNEL_SEM_VALUE_MAX = 0x7FFFFFFF;
+
+constexpr int ORBIS_PTHREAD_MUTEX_ERRORCHECK = 1;
+constexpr int ORBIS_PTHREAD_MUTEX_RECURSIVE = 2;
+constexpr int ORBIS_PTHREAD_MUTEX_NORMAL = 3;
+constexpr int ORBIS_PTHREAD_MUTEX_ADAPTIVE = 4;
 
 struct PthreadInternal;
 struct PthreadAttrInternal;
@@ -104,9 +114,14 @@ struct PthreadRwInternal {
     std::string name;
 };
 
+struct PthreadSemInternal {
+    std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX> semaphore;
+    std::atomic<s32> value;
+};
+
 class PThreadPool {
 public:
-    ScePthread Create();
+    ScePthread Create(const char* name);
 
 private:
     std::vector<ScePthread> m_threads;
@@ -120,6 +135,12 @@ public:
     }
     void setDefaultMutexattr(ScePthreadMutexattr attr) {
         m_default_mutexattr = attr;
+    }
+    ScePthreadMutexattr* getAdaptiveMutexattr() {
+        return &m_adaptive_mutexattr;
+    }
+    void setAdaptiveMutexattr(ScePthreadMutexattr attr) {
+        m_adaptive_mutexattr = attr;
     }
     ScePthreadCondattr* getDefaultCondattr() {
         return &m_default_condattr;
@@ -148,6 +169,7 @@ public:
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
+    ScePthreadMutexattr m_adaptive_mutexattr = nullptr;
     ScePthreadCondattr m_default_condattr = nullptr;
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;

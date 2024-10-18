@@ -1,11 +1,14 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <imgui.h>
 #include <pthread.h>
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/thread.h"
+#include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
@@ -96,7 +99,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
     }
 
     if (attribute->reserved0 != 0 || attribute->reserved1 != 0) {
-        LOG_ERROR(Lib_VideoOut, "Invalid reserved memebers");
+        LOG_ERROR(Lib_VideoOut, "Invalid reserved members");
         return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
     if (attribute->aspect_ratio != 0) {
@@ -159,13 +162,7 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
-    if (!req) {
-        return std::chrono::microseconds{0};
-    }
-
-    const auto start = std::chrono::high_resolution_clock::now();
-
+void VideoOutDriver::Flip(const Request& req) {
     // Whatever the game is rendering show splash if it is active
     if (!renderer->ShowSplash(req.frame)) {
         // Present the frame.
@@ -201,9 +198,11 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
         port->buffer_labels[req.index] = 0;
         port->SignalVoLabel();
     }
+}
 
-    const auto end = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+void VideoOutDriver::DrawBlankFrame() {
+    const auto empty_frame = renderer->PrepareBlankFrame(false);
+    renderer->Present(empty_frame);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
@@ -252,15 +251,20 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
     requests.push({
         .frame = frame,
         .port = port,
-        .index = index,
         .flip_arg = flip_arg,
+        .index = index,
         .eop = is_eop,
     });
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::milliseconds VblankPeriod{16};
-    Common::SetCurrentThreadName("PresentThread");
+    static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
+    const auto vblank_period = VblankPeriod / Config::vblankDiv();
+
+    Common::SetCurrentThreadName("shadPS4:PresentThread");
+    Common::SetCurrentThreadRealtime(vblank_period);
+
+    Common::AccurateTimer timer{vblank_period};
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -272,18 +276,22 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return {};
     };
 
-    auto vblank_period = VblankPeriod / Config::vblankDiv();
     auto delay = std::chrono::microseconds{0};
     while (!token.stop_requested()) {
-        // Sleep for most of the vblank duration.
-        std::this_thread::sleep_for(vblank_period - delay);
+        timer.Start();
 
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
-            delay = Flip(request);
-            FRAME_END;
+            if (!request) {
+                if (!main_port.is_open || DebugState.IsGuestThreadsPaused()) {
+                    DrawBlankFrame();
+                }
+            } else {
+                Flip(request);
+                FRAME_END;
+            }
         }
 
         {
@@ -302,6 +310,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                                     Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
             }
         }
+
+        timer.End();
     }
 }
 

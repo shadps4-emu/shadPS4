@@ -1,31 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-/********************************************************************************
-** Form generated from reading UI file 'main_window.ui'
-**
-** Created by: Qt User Interface Compiler version 6.6.1
-**
-** WARNING! All changes made in this file will be lost when recompiling UI file!
-********************************************************************************/
+#pragma once
 
-#ifndef MAIN_WINDOW_UI_H
-#define MAIN_WINDOW_UI_H
-
-#include <QtCore/QVariant>
-#include <QtGui/QAction>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QMenuBar>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QSlider>
-#include <QtWidgets/QToolBar>
-#include <QtWidgets/QWidget>
-
-QT_BEGIN_NAMESPACE
+#include <QMenuBar>
+#include <QPushButton>
+#include <QToolBar>
 
 class Ui_MainWindow {
 public:
@@ -43,8 +23,10 @@ public:
     QAction* setlistModeGridAct;
     QAction* setlistElfAct;
     QAction* gameInstallPathAct;
+    QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
+    QAction* updaterAct;
     QAction* aboutAct;
     QAction* configureAct;
     QAction* setThemeDark;
@@ -57,6 +39,7 @@ public:
     QPushButton* playButton;
     QPushButton* pauseButton;
     QPushButton* stopButton;
+    QPushButton* refreshButton;
     QPushButton* settingsButton;
     QPushButton* controllerButton;
 
@@ -72,7 +55,7 @@ public:
     QMenu* menuSettings;
     QMenu* menuUtils;
     QMenu* menuThemes;
-    QMenu* menuAbout;
+    QMenu* menuHelp;
     QToolBar* toolBar;
 
     void setupUi(QMainWindow* MainWindow) {
@@ -138,12 +121,18 @@ public:
         gameInstallPathAct = new QAction(MainWindow);
         gameInstallPathAct->setObjectName("gameInstallPathAct");
         gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
+        downloadCheatsPatchesAct = new QAction(MainWindow);
+        downloadCheatsPatchesAct->setObjectName("downloadCheatsPatchesAct");
+        downloadCheatsPatchesAct->setIcon(QIcon(":images/update_icon.png"));
         dumpGameListAct = new QAction(MainWindow);
         dumpGameListAct->setObjectName("dumpGameList");
+        dumpGameListAct->setIcon(QIcon(":images/dump_icon.png"));
         pkgViewerAct = new QAction(MainWindow);
         pkgViewerAct->setObjectName("pkgViewer");
-        pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
+        updaterAct = new QAction(MainWindow);
+        updaterAct->setObjectName("updaterAct");
+        updaterAct->setIcon(QIcon(":images/update_icon.png"));
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
         aboutAct->setIcon(QIcon(":images/about_icon.png"));
@@ -194,10 +183,14 @@ public:
         stopButton->setFlat(true);
         stopButton->setIcon(QIcon(":images/stop_icon.png"));
         stopButton->setIconSize(QSize(40, 40));
+        refreshButton = new QPushButton(centralWidget);
+        refreshButton->setFlat(true);
+        refreshButton->setIcon(QIcon(":images/refresh_icon.png"));
+        refreshButton->setIconSize(QSize(32, 32));
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
-        settingsButton->setIconSize(QSize(40, 40));
+        settingsButton->setIconSize(QSize(44, 44));
         controllerButton = new QPushButton(centralWidget);
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));
@@ -256,8 +249,8 @@ public:
         menuThemes = new QMenu(menuView);
         menuThemes->setObjectName("menuThemes");
         menuThemes->setIcon(QIcon(":images/themes_icon.png"));
-        menuAbout = new QMenu(menuBar);
-        menuAbout->setObjectName("menuAbout");
+        menuHelp = new QMenu(menuBar);
+        menuHelp->setObjectName("menuHelp");
         MainWindow->setMenuBar(menuBar);
         toolBar = new QToolBar(MainWindow);
         toolBar->setObjectName("toolBar");
@@ -266,7 +259,7 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
-        menuBar->addAction(menuAbout->menuAction());
+        menuBar->addAction(menuHelp->menuAction());
         menuFile->addAction(bootInstallPkgAct);
         menuFile->addAction(bootGameAct);
         menuFile->addAction(addElfFolderAct);
@@ -280,8 +273,8 @@ public:
         menuView->addAction(menuGame_List_Mode->menuAction());
         menuView->addAction(menuGame_List_Icons->menuAction());
         menuView->addAction(menuThemes->menuAction());
-        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeDark);
+        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeGreen);
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);
@@ -295,9 +288,11 @@ public:
         menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
+        menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
-        menuAbout->addAction(aboutAct);
+        menuHelp->addAction(updaterAct);
+        menuHelp->addAction(aboutAct);
 
         retranslateUi(MainWindow);
 
@@ -311,6 +306,8 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
+        updaterAct->setText(
+            QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
@@ -341,6 +338,8 @@ public:
         setlistElfAct->setText(QCoreApplication::translate("MainWindow", "Elf Viewer", nullptr));
         gameInstallPathAct->setText(
             QCoreApplication::translate("MainWindow", "Game Install Directory", nullptr));
+        downloadCheatsPatchesAct->setText(
+            QCoreApplication::translate("MainWindow", "Download Cheats/Patches", nullptr));
         dumpGameListAct->setText(
             QCoreApplication::translate("MainWindow", "Dump Game List", nullptr));
         pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
@@ -355,7 +354,7 @@ public:
         menuSettings->setTitle(QCoreApplication::translate("MainWindow", "Settings", nullptr));
         menuUtils->setTitle(QCoreApplication::translate("MainWindow", "Utils", nullptr));
         menuThemes->setTitle(QCoreApplication::translate("MainWindow", "Themes", nullptr));
-        menuAbout->setTitle(QCoreApplication::translate("MainWindow", "About", nullptr));
+        menuHelp->setTitle(QCoreApplication::translate("MainWindow", "Help", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
         setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeGreen->setText(QCoreApplication::translate("MainWindow", "Green", nullptr));
@@ -368,7 +367,3 @@ public:
 namespace Ui {
 class MainWindow : public Ui_MainWindow {};
 } // namespace Ui
-
-QT_END_NAMESPACE
-
-#endif // MAIN_WINDOW_UI_H

@@ -6,7 +6,9 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 6_GB; // ~ 6GB
+constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5056_MB; // ~ 5GB
+// TODO: Confirm this value on hardware.
+constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE_PRO = 5568_MB; // ~ 5.5GB
 
 namespace Libraries::Kernel {
 
@@ -56,7 +58,7 @@ struct OrbisVirtualQueryInfo {
         BitField<1, 1, u32> is_direct;
         BitField<2, 1, u32> is_stack;
         BitField<3, 1, u32> is_pooled;
-        BitField<4, 1, u32> is_commited;
+        BitField<4, 1, u32> is_committed;
     };
     std::array<char, 32> name;
 };
@@ -95,6 +97,10 @@ s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len,
                                             int flags);
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot);
 
+int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot);
+
+int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot);
+
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize);
 s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* sizeOut);
@@ -109,5 +115,12 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                                     int* numEntriesOut, int flags);
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name);
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_t len,
+                                           size_t alignment, u64* physAddrOut);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t alignment, int flags,
+                                            void** addrOut);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags);
 
 } // namespace Libraries::Kernel

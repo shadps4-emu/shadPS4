@@ -144,10 +144,10 @@ static constexpr std::array component_bits = {
     std::array{8, 8, 0, 0},     //  3 Format8_8
     std::array{32, 0, 0, 0},    //  4 Format32
     std::array{16, 16, 0, 0},   //  5 Format16_16
-    std::array{10, 11, 11, 0},  //  6 Format10_11_11
-    std::array{11, 11, 10, 0},  //  7 Format11_11_10
-    std::array{10, 10, 10, 2},  //  8 Format10_10_10_2
-    std::array{2, 10, 10, 10},  //  9 Format2_10_10_10
+    std::array{11, 11, 10, 0},  //  6 Format10_11_11
+    std::array{10, 11, 11, 0},  //  7 Format11_11_10
+    std::array{2, 10, 10, 10},  //  8 Format10_10_10_2
+    std::array{10, 10, 10, 2},  //  9 Format2_10_10_10
     std::array{8, 8, 8, 8},     // 10 Format8_8_8_8
     std::array{32, 32, 0, 0},   // 11 Format32_32
     std::array{16, 16, 16, 16}, // 12 Format16_16_16_16
@@ -155,12 +155,12 @@ static constexpr std::array component_bits = {
     std::array{32, 32, 32, 32}, // 14 Format32_32_32_32
     std::array{0, 0, 0, 0},     // 15
     std::array{5, 6, 5, 0},     // 16 Format5_6_5
-    std::array{1, 5, 5, 5},     // 17 Format1_5_5_5
-    std::array{5, 5, 5, 1},     // 18 Format5_5_5_1
+    std::array{5, 5, 5, 1},     // 17 Format1_5_5_5
+    std::array{1, 5, 5, 5},     // 18 Format5_5_5_1
     std::array{4, 4, 4, 4},     // 19 Format4_4_4_4
-    std::array{8, 24, 0, 0},    // 20 Format8_24
-    std::array{24, 8, 0, 0},    // 21 Format24_8
-    std::array{24, 8, 0, 0},    // 22 FormatX24_8_32
+    std::array{24, 8, 0, 0},    // 20 Format8_24
+    std::array{8, 24, 0, 0},    // 21 Format24_8
+    std::array{8, 24, 0, 0},    // 22 FormatX24_8_32
     std::array{0, 0, 0, 0},     // 23
     std::array{0, 0, 0, 0},     // 24
     std::array{0, 0, 0, 0},     // 25
@@ -197,10 +197,10 @@ static constexpr std::array component_offset = {
     std::array{0, 8, -1, -1},   //  3 Format8_8
     std::array{0, -1, -1, -1},  //  4 Format32
     std::array{0, 16, -1, -1},  //  5 Format16_16
-    std::array{0, 10, 21, -1},  //  6 Format10_11_11
-    std::array{0, 11, 22, -1},  //  7 Format11_11_10
-    std::array{0, 10, 20, 30},  //  8 Format10_10_10_2
-    std::array{0, 2, 12, 22},   //  9 Format2_10_10_10
+    std::array{0, 11, 22, -1},  //  6 Format10_11_11
+    std::array{0, 10, 21, -1},  //  7 Format11_11_10
+    std::array{0, 2, 12, 22},   //  8 Format10_10_10_2
+    std::array{0, 10, 20, 30},  //  9 Format2_10_10_10
     std::array{0, 8, 16, 24},   // 10 Format8_8_8_8
     std::array{0, 32, -1, -1},  // 11 Format32_32
     std::array{0, 16, 32, 48},  // 12 Format16_16_16_16
@@ -208,12 +208,12 @@ static constexpr std::array component_offset = {
     std::array{0, 32, 64, 96},  // 14 Format32_32_32_32
     std::array{-1, -1, -1, -1}, // 15
     std::array{0, 5, 11, -1},   // 16 Format5_6_5
-    std::array{0, 1, 6, 11},    // 17 Format1_5_5_5
-    std::array{0, 5, 10, 15},   // 18 Format5_5_5_1
+    std::array{0, 5, 10, 15},   // 17 Format1_5_5_5
+    std::array{0, 1, 6, 11},    // 18 Format5_5_5_1
     std::array{0, 4, 8, 12},    // 19 Format4_4_4_4
-    std::array{0, 8, -1, -1},   // 20 Format8_24
-    std::array{0, 24, -1, -1},  // 21 Format24_8
-    std::array{0, 24, -1, -1},  // 22 FormatX24_8_32
+    std::array{0, 24, -1, -1},  // 20 Format8_24
+    std::array{0, 8, -1, -1},   // 21 Format24_8
+    std::array{0, 8, -1, -1},   // 22 FormatX24_8_32
     std::array{-1, -1, -1, -1}, // 23
     std::array{-1, -1, -1, -1}, // 24
     std::array{-1, -1, -1, -1}, // 25

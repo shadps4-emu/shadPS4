@@ -1,0 +1,36 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+// error codes
+constexpr int ORBIS_NET_CTL_ERROR_CALLBACK_MAX = 0x80412103;
+constexpr int ORBIS_NET_CTL_ERROR_ID_NOT_FOUND = 0x80412104;
+constexpr int ORBIS_NET_CTL_ERROR_INVALID_ID = 0x80412105;
+constexpr int ORBIS_NET_CTL_ERROR_INVALID_ADDR = 0x80412107;
+constexpr int ORBIS_NET_CTL_ERROR_NOT_CONNECTED = 0x80412108;
+constexpr int ORBIS_NET_CTL_ERROR_NOT_AVAIL = 0x80412109;
+constexpr int ORBIS_NET_CTL_ERROR_NETWORK_DISABLED = 0x8041210D;
+constexpr int ORBIS_NET_CTL_ERROR_DISCONNECT_REQ = 0x8041210E;
+constexpr int ORBIS_NET_CTL_ERROR_ETHERNET_PLUGOUT = 0x80412115;
+constexpr int ORBIS_NET_CTL_ERROR_WIFI_DEAUTHED = 0x80412116;
+constexpr int ORBIS_NET_CTL_ERROR_WIFI_BEACON_LOST = 0x80412117;
+
+// state codes
+constexpr int ORBIS_NET_CTL_STATE_DISCONNECTED = 0;
+constexpr int ORBIS_NET_CTL_STATE_CONNECTING = 1;
+constexpr int ORBIS_NET_CTL_STATE_IPOBTAINING = 2;
+constexpr int ORBIS_NET_CTL_STATE_IPOBTAINED = 3;
+
+// event type
+constexpr int ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED = 1;
+constexpr int ORBIS_SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2;
+constexpr int ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED = 3;
+
+// get info codes
+// device
+constexpr int ORBIS_NET_CTL_DEVICE_WIRED = 0;
+constexpr int ORBIS_NET_CTL_DEVICE_WIRELESS = 1;
+// link
+constexpr int ORBIS_NET_CTL_LINK_DISCONNECTED = 0;
+constexpr int ORBIS_NET_CTL_LINK_CONNECTED = 1;

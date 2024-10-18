@@ -3,17 +3,7 @@
 
 #pragma once
 
-#include <ranges>
-#include <QApplication>
 #include <QFileDialog>
-#include <QMainWindow>
-#include <QMenuBar>
-#include <QScrollBar>
-#include <QTableWidget>
-#include <QTextEdit>
-#include <QTreeView>
-#include <QVBoxLayout>
-#include <QWidget>
 
 #include "core/loader/elf.h"
 #include "game_list_frame.h"

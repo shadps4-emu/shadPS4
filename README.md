@@ -12,7 +12,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 </h1>
 
 <h1 align="center">
- <a href="https://discord.gg/MyZRaBngxA">
+ <a href="https://discord.gg/bFJxfftGW6">
         <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4 Discord&logo=Discord&logoColor=white" width="240">
  <a href="https://github.com/shadps4-emu/shadPS4/releases/latest">
         <img src="https://img.shields.io/github/downloads/shadps4-emu/shadPS4/total.svg" width="140">
@@ -26,33 +26,34 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <p align="center">
   <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Bloodborne.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/1.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/2.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/3.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/4.png" width="400">
 </p>
 
-# shadPS4
+# General information
 
-shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++
+**shadPS4** is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
 
-If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
-
-To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-emu/shadps4-game-compatibility).
-
-To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
-
-To get the latest news, go to our [**X (twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
+If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).\
+To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-emu/shadps4-game-compatibility).\
+To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Discord server**](https://discord.gg/bFJxfftGW6).\
+To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).\
+For those who'd like to donate to the project, we now have a [**Kofi page**](https://ko-fi.com/shadps4)!
 
 # Status
 
-In development, small games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) and others...
+> [!IMPORTANT]
+> shadPS4 is early in development, don't expect a flawless experience.
+
+Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=wC6s0avpQRE), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag) and many other games.
 
 # Why
 
-The project started as a fun project. Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
+This project began as a fun project. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
 
-# Build
+# Building
 
 ## Windows
 
@@ -62,42 +63,23 @@ Check the build instructions for [**Windows**](https://github.com/shadps4-emu/sh
 
 Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
 
-## Build status
+## macOS
 
-<details>
-<summary><b>Windows</b></summary>
+Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
 
-| Windows | Build status |
-|--------|--------|
-|Windows SDL Build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
-|Windows Qt Build|[![Windows-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml)
-</details>
-
-<details>
-<summary><b>Linux</b></summary>
-
-| Linux | Build status |
-|--------|--------|
-|Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
-|Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
-</details>
-
-<details>
-<summary><b>macOS</b></summary>
-
-| macOS | Build status |
-|--------|--------|
-|macOS SDL Build|[![macOS-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml)
-|macOS Qt Build|[![macOS-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml)
-</details>
+> [!IMPORTANT]
+> macOS users need at least macOS 15 on Apple Silicon-based Mac devices and at least macOS 14 on Intel-based Mac devices.
 
 # Debugging and reporting issues
 
-For more information on how to test, debug and report issues with the emulator or games, read the [Debugging documentation](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
+For more information on how to test, debug and report issues with the emulator or games, read the [**Debugging documentation**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
 
-# Keyboard Mapping
+# Keyboard mapping
 
-| Controller button | Keyboard |
+> [!NOTE]
+> Xbox and DualShock controllers work out of the box.
+
+| Controller button | Keyboard equivelant |
 |-------------|-------------|
 LEFT AXIS UP | W |
 LEFT AXIS DOWN | S |
@@ -116,7 +98,7 @@ PAD DOWN | DOWN |
 PAD LEFT | LEFT |
 PAD RIGHT | RIGHT |
 OPTIONS | RETURN |
-TOUCH PAD | SPACE |
+BACK BUTTON / TOUCH PAD | SPACE |
 L1 | Q |
 R1 | U |
 L2 | E |
@@ -137,8 +119,7 @@ Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
 # Contributing
 
-If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.
-
+If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
 Open a PR and we'll check it :)
 
 # Contributors
@@ -147,9 +128,17 @@ Open a PR and we'll check it :)
   <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
 </a>
 
-# Sister Projects
 
-- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
+# Special Thanks
+
+A few noteworthy teams/projects who've helped us along the way are:
+
+- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat. They have been incredibly helpful in understanding and solving problems that came up from natively executing the x64 code of PS4 binaries
+
+- [**fpPS4**](https://github.com/red-prig/fpPS4): The fpPS4 team has assisted massively with understanding some of the more complex parts of the PS4 operating system and libraries, by helping with reverse engineering work and research.
+
+- **yuzu**: Our shader compiler has been designed with yuzu's Hades compiler as a blueprint. This allowed us to focus on the challenges of emulating a modern AMD GPU while having a high-quality optimizing shader compiler implementation as a base.
+
 - [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
 
 # License

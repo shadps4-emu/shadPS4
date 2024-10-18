@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "common/assert.h"
 #include "common/func_traits.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -12,9 +13,39 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Shader::Backend::SPIRV {
 namespace {
+
+static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType type) {
+    switch (type) {
+    case AmdGpu::PrimitiveType::PointList:
+        return spv::ExecutionMode::InputPoints;
+    case AmdGpu::PrimitiveType::LineList:
+        return spv::ExecutionMode::InputLines;
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleStrip:
+        return spv::ExecutionMode::Triangles;
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+        return spv::ExecutionMode::InputTrianglesAdjacency;
+    default:
+        UNREACHABLE_MSG("Unknown input primitive type {}", u32(type));
+    }
+}
+
+static constexpr spv::ExecutionMode GetOutputPrimitiveType(AmdGpu::GsOutputPrimitiveType type) {
+    switch (type) {
+    case AmdGpu::GsOutputPrimitiveType::PointList:
+        return spv::ExecutionMode::OutputVertices;
+    case AmdGpu::GsOutputPrimitiveType::LineStrip:
+        return spv::ExecutionMode::OutputLineStrip;
+    case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+        return spv::ExecutionMode::OutputTriangleStrip;
+    default:
+        UNREACHABLE_MSG("Unknown output primitive type {}", u32(type));
+    }
+}
 
 template <auto func, typename... Args>
 void SetDefinition(EmitContext& ctx, IR::Inst* inst, Args... args) {
@@ -39,6 +70,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg.ScalarReg();
     } else if constexpr (std::is_same_v<ArgType, IR::VectorReg>) {
         return arg.VectorReg();
+    } else if constexpr (std::is_same_v<ArgType, const char*>) {
+        return arg.StringLiteral();
     }
 }
 
@@ -99,7 +132,7 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
     }
 }
 
-void Traverse(EmitContext& ctx, IR::Program& program) {
+void Traverse(EmitContext& ctx, const IR::Program& program) {
     IR::Block* current_block{};
     for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
         switch (node.type) {
@@ -162,7 +195,7 @@ void Traverse(EmitContext& ctx, IR::Program& program) {
     }
 }
 
-Id DefineMain(EmitContext& ctx, IR::Program& program) {
+Id DefineMain(EmitContext& ctx, const IR::Program& program) {
     const Id void_function{ctx.TypeFunction(ctx.void_id)};
     const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, void_function)};
     for (IR::Block* const block : program.blocks) {
@@ -173,28 +206,66 @@ Id DefineMain(EmitContext& ctx, IR::Program& program) {
     return main;
 }
 
-void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
-    const auto& info = program.info;
-    const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
-    spv::ExecutionModel execution_model{};
+void SetupCapabilities(const Info& info, EmitContext& ctx) {
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
+    ctx.AddCapability(spv::Capability::ImageQuery);
     if (info.uses_fp16) {
         ctx.AddCapability(spv::Capability::Float16);
         ctx.AddCapability(spv::Capability::Int16);
     }
-    ctx.AddCapability(spv::Capability::Int64);
-    if (info.has_storage_images) {
-        ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
+    if (info.uses_fp64) {
+        ctx.AddCapability(spv::Capability::Float64);
     }
+    ctx.AddCapability(spv::Capability::Int64);
+    if (info.has_storage_images || info.has_image_buffers) {
+        ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
+        ctx.AddCapability(spv::Capability::StorageImageReadWithoutFormat);
+        ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
+    }
+    if (info.has_texel_buffers) {
+        ctx.AddCapability(spv::Capability::SampledBuffer);
+    }
+    if (info.has_image_buffers) {
+        ctx.AddCapability(spv::Capability::ImageBuffer);
+    }
+    if (info.has_image_gather) {
+        ctx.AddCapability(spv::Capability::ImageGatherExtended);
+    }
+    if (info.has_image_query) {
+        ctx.AddCapability(spv::Capability::ImageQuery);
+    }
+    if (info.uses_lane_id) {
+        ctx.AddCapability(spv::Capability::GroupNonUniform);
+    }
+    if (info.uses_group_quad) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
+    }
+    if (info.uses_group_ballot) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
+    }
+    if (info.stage == Stage::Export || info.stage == Stage::Vertex) {
+        ctx.AddExtension("SPV_KHR_shader_draw_parameters");
+        ctx.AddCapability(spv::Capability::DrawParameters);
+    }
+    if (info.stage == Stage::Geometry) {
+        ctx.AddCapability(spv::Capability::Geometry);
+    }
+}
+
+void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
+    const auto& info = program.info;
+    const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
+    spv::ExecutionModel execution_model{};
     switch (program.info.stage) {
     case Stage::Compute: {
-        const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
+        const std::array<u32, 3> workgroup_size{ctx.runtime_info.cs_info.workgroup_size};
         execution_model = spv::ExecutionModel::GLCompute;
         ctx.AddExecutionMode(main, spv::ExecutionMode::LocalSize, workgroup_size[0],
                              workgroup_size[1], workgroup_size[2]);
         break;
     }
+    case Stage::Export:
     case Stage::Vertex:
         execution_model = spv::ExecutionModel::Vertex;
         break;
@@ -205,22 +276,23 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
-        ctx.AddCapability(spv::Capability::GroupNonUniform);
-        if (info.uses_group_quad) {
-            ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
-        }
         if (info.has_discard) {
+            ctx.AddExtension("SPV_EXT_demote_to_helper_invocation");
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
-        }
-        if (info.has_image_gather) {
-            ctx.AddCapability(spv::Capability::ImageGatherExtended);
-        }
-        if (info.has_image_query) {
-            ctx.AddCapability(spv::Capability::ImageQuery);
         }
         if (info.stores.Get(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
+        break;
+    case Stage::Geometry:
+        execution_model = spv::ExecutionModel::Geometry;
+        ctx.AddExecutionMode(main, GetInputPrimitiveType(ctx.runtime_info.gs_info.in_primitive));
+        ctx.AddExecutionMode(main,
+                             GetOutputPrimitiveType(ctx.runtime_info.gs_info.out_primitive[0]));
+        ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices,
+                             ctx.runtime_info.gs_info.output_vertices);
+        ctx.AddExecutionMode(main, spv::ExecutionMode::Invocations,
+                             ctx.runtime_info.gs_info.num_invocations);
         break;
     default:
         throw NotImplementedException("Stage {}", u32(program.info.stage));
@@ -228,7 +300,25 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     ctx.AddEntryPoint(execution_model, main, "main", interfaces);
 }
 
-void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
+void SetupFloatMode(EmitContext& ctx, const Profile& profile, const RuntimeInfo& runtime_info,
+                    Id main_func) {
+    ctx.AddExtension("SPV_KHR_float_controls");
+    const auto fp_denorm_mode = runtime_info.fp_denorm_mode32;
+    if (fp_denorm_mode == AmdGpu::FpDenormMode::InOutFlush) {
+        if (profile.support_fp32_denorm_flush) {
+            ctx.AddCapability(spv::Capability::DenormFlushToZero);
+            ctx.AddExecutionMode(main_func, spv::ExecutionMode::DenormFlushToZero, 32U);
+        }
+    } else {
+        LOG_WARNING(Render_Vulkan, "Unknown FP denorm mode {}", u32(fp_denorm_mode));
+    }
+    const auto fp_round_mode = runtime_info.fp_round_mode32;
+    if (fp_round_mode != AmdGpu::FpRoundMode::NearestEven) {
+        LOG_WARNING(Render_Vulkan, "Unknown FP rounding mode {}", u32(fp_round_mode));
+    }
+}
+
+void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     auto inst{program.blocks.front()->begin()};
     size_t block_index{0};
     ctx.PatchDeferredPhi([&](size_t phi_arg) {
@@ -247,15 +337,15 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
 }
 } // Anonymous namespace
 
-std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, u32& binding) {
-    EmitContext ctx{profile, program, binding};
+std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info,
+                           const IR::Program& program, Bindings& binding) {
+    EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    if (program.info.stage == Stage::Vertex) {
-        ctx.AddExtension("SPV_KHR_shader_draw_parameters");
-        ctx.AddCapability(spv::Capability::DrawParameters);
-    }
+    SetupCapabilities(program.info, ctx);
+    SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
+    binding.user_data += program.info.ud_mask.NumRegs();
     return ctx.Assemble();
 }
 
@@ -315,6 +405,10 @@ void EmitGetVccHi(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitGetM0(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitSetScc(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
@@ -336,6 +430,10 @@ void EmitSetVccLo(EmitContext& ctx) {
 }
 
 void EmitSetVccHi(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetM0(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

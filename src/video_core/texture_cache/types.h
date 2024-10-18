@@ -36,6 +36,8 @@ struct Extent3D {
     u32 width;
     u32 height;
     u32 depth;
+
+    auto operator<=>(const Extent3D&) const = default;
 };
 
 struct SubresourceLayers {

@@ -14,26 +14,30 @@ namespace Core::FileSys {
 
 class MntPoints {
 #ifdef _WIN64
-    static constexpr bool NeedsCaseInsensiveSearch = false;
+    static constexpr bool NeedsCaseInsensitiveSearch = false;
 #else
-    static constexpr bool NeedsCaseInsensiveSearch = true;
+    static constexpr bool NeedsCaseInsensitiveSearch = true;
 #endif
 public:
     struct MntPair {
         std::filesystem::path host_path;
         std::string mount; // e.g /app0/
+        bool read_only;
     };
 
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
-    void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
+               bool read_only = false);
     void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
     void UnmountAll();
 
-    std::filesystem::path GetHostPath(std::string_view guest_directory);
+    std::filesystem::path GetHostPath(std::string_view guest_directory,
+                                      bool* is_read_only = nullptr);
 
     const MntPair* GetMount(const std::string& guest_path) {
+        std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(
             m_mnt_pairs, [&](const auto& mount) { return guest_path.starts_with(mount.mount); });
         return it == m_mnt_pairs.end() ? nullptr : &*it;

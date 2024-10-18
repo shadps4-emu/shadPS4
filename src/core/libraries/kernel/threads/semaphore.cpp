@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <condition_variable>
+#include <list>
 #include <mutex>
-#include <utility>
-#include <boost/intrusive/list.hpp>
 #include <pthread.h>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
-
-using ListBaseHook =
-    boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
 class Semaphore {
 public:
@@ -35,12 +32,20 @@ public:
             return ORBIS_KERNEL_ERROR_EBUSY;
         }
 
+        if (timeout && *timeout == 0) {
+            return SCE_KERNEL_ERROR_ETIMEDOUT;
+        }
+
         // Create waiting thread object and add it into the list of waiters.
         WaitingThread waiter{need_count, is_fifo};
-        AddWaiter(waiter);
+        const auto it = AddWaiter(&waiter);
 
         // Perform the wait.
-        return waiter.Wait(lk, timeout);
+        const s32 result = waiter.Wait(lk, timeout);
+        if (result == SCE_KERNEL_ERROR_ETIMEDOUT) {
+            wait_list.erase(it);
+        }
+        return result;
     }
 
     bool Signal(s32 signal_count) {
@@ -52,14 +57,14 @@ public:
 
         // Wake up threads in order of priority.
         for (auto it = wait_list.begin(); it != wait_list.end();) {
-            auto& waiter = *it;
-            if (waiter.need_count > token_count) {
+            auto* waiter = *it;
+            if (waiter->need_count > token_count) {
                 ++it;
                 continue;
             }
             it = wait_list.erase(it);
-            token_count -= waiter.need_count;
-            waiter.cv.notify_one();
+            token_count -= waiter->need_count;
+            waiter->cv.notify_one();
         }
 
         return true;
@@ -70,9 +75,9 @@ public:
         if (num_waiters) {
             *num_waiters = wait_list.size();
         }
-        for (auto& waiter : wait_list) {
-            waiter.was_cancled = true;
-            waiter.cv.notify_one();
+        for (auto* waiter : wait_list) {
+            waiter->was_cancled = true;
+            waiter->cv.notify_one();
         }
         wait_list.clear();
         token_count = set_count < 0 ? init_count : set_count;
@@ -80,7 +85,7 @@ public:
     }
 
 public:
-    struct WaitingThread : public ListBaseHook {
+    struct WaitingThread {
         std::condition_variable cv;
         u32 priority;
         s32 need_count;
@@ -132,24 +137,24 @@ public:
         }
     };
 
-    void AddWaiter(WaitingThread& waiter) {
+    using WaitList = std::list<WaitingThread*>;
+
+    WaitList::iterator AddWaiter(WaitingThread* waiter) {
         // Insert at the end of the list for FIFO order.
         if (is_fifo) {
             wait_list.push_back(waiter);
-            return;
+            return --wait_list.end();
         }
         // Find the first with priority less then us and insert right before it.
         auto it = wait_list.begin();
-        while (it != wait_list.end() && it->priority > waiter.priority) {
+        while (it != wait_list.end() && (*it)->priority > waiter->priority) {
             ++it;
         }
         wait_list.insert(it, waiter);
+        return it;
     }
 
-    using WaitingThreads =
-        boost::intrusive::list<WaitingThread, boost::intrusive::base_hook<ListBaseHook>,
-                               boost::intrusive::constant_time_size<false>>;
-    WaitingThreads wait_list;
+    WaitList wait_list;
     std::string name;
     std::atomic<s32> token_count;
     std::mutex mutex;

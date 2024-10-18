@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 #include "common/types.h"
@@ -30,6 +31,15 @@ enum class MemoryUsage {
     Stream,      ///< Requests device local host visible buffer, falling back host memory.
 };
 
+constexpr vk::BufferUsageFlags ReadFlags =
+    vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformTexelBuffer |
+    vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eIndexBuffer |
+    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer;
+
+constexpr vk::BufferUsageFlags AllFlags = ReadFlags | vk::BufferUsageFlagBits::eTransferDst |
+                                          vk::BufferUsageFlagBits::eStorageTexelBuffer |
+                                          vk::BufferUsageFlagBits::eStorageBuffer;
+
 struct UniqueBuffer {
     explicit UniqueBuffer(vk::Device device, VmaAllocator allocator);
     ~UniqueBuffer();
@@ -38,9 +48,9 @@ struct UniqueBuffer {
     UniqueBuffer& operator=(const UniqueBuffer&) = delete;
 
     UniqueBuffer(UniqueBuffer&& other)
-        : buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
-          allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
-          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)} {}
+        : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
+          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
+          buffer{std::exchange(other.buffer, VK_NULL_HANDLE)} {}
     UniqueBuffer& operator=(UniqueBuffer&& other) {
         buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);
@@ -63,7 +73,8 @@ struct UniqueBuffer {
 
 class Buffer {
 public:
-    explicit Buffer(const Vulkan::Instance& instance, MemoryUsage usage, VAddr cpu_addr_,
+    explicit Buffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+                    MemoryUsage usage, VAddr cpu_addr_, vk::BufferUsageFlags flags,
                     u64 size_bytes_);
 
     Buffer& operator=(const Buffer&) = delete;
@@ -72,7 +83,8 @@ public:
     Buffer& operator=(Buffer&&) = default;
     Buffer(Buffer&&) = default;
 
-    vk::BufferView View(u32 offset, u32 size, AmdGpu::DataFormat dfmt, AmdGpu::NumberFormat nfmt);
+    vk::BufferView View(u32 offset, u32 size, bool is_written, AmdGpu::DataFormat dfmt,
+                        AmdGpu::NumberFormat nfmt);
 
     /// Increases the likeliness of this being a stream buffer
     void IncreaseStreamScore(int score) noexcept {
@@ -107,6 +119,25 @@ public:
         return buffer;
     }
 
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlagBits2 dst_acess_mask,
+                                                       vk::PipelineStageFlagBits2 dst_stage) {
+        if (dst_acess_mask == access_mask && stage == dst_stage) {
+            return {};
+        }
+
+        auto barrier = vk::BufferMemoryBarrier2{
+            .srcStageMask = stage,
+            .srcAccessMask = access_mask,
+            .dstStageMask = dst_stage,
+            .dstAccessMask = dst_acess_mask,
+            .buffer = buffer.buffer,
+            .size = size_bytes,
+        };
+        access_mask = dst_acess_mask;
+        stage = dst_stage;
+        return barrier;
+    }
+
 public:
     VAddr cpu_addr = 0;
     bool is_picked{};
@@ -114,17 +145,12 @@ public:
     int stream_score = 0;
     size_t size_bytes = 0;
     std::span<u8> mapped_data;
-    const Vulkan::Instance* instance{};
+    const Vulkan::Instance* instance;
+    Vulkan::Scheduler* scheduler;
     MemoryUsage usage;
     UniqueBuffer buffer;
-    struct BufferView {
-        u32 offset;
-        u32 size;
-        AmdGpu::DataFormat dfmt;
-        AmdGpu::NumberFormat nfmt;
-        vk::BufferView handle;
-    };
-    std::vector<BufferView> views;
+    vk::AccessFlagBits2 access_mask{vk::AccessFlagBits2::eNone};
+    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eNone};
 };
 
 class StreamBuffer : public Buffer {
@@ -163,7 +189,6 @@ private:
     void WaitPendingOperations(u64 requested_upper_bound);
 
 private:
-    Vulkan::Scheduler& scheduler;
     u64 offset{};
     u64 mapped_size{};
     std::vector<Watch> current_watches;

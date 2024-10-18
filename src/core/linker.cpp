@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -10,12 +11,14 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/cpu_patches.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
+#include "debug_state.h"
 
 namespace Core {
 
@@ -25,7 +28,8 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
 }
 
-static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
+#ifdef ARCH_X86_64
+static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
     // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
     // a specific layout
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
@@ -46,6 +50,7 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  : "r"(addr), "r"(params), "r"(exit_func)
                  : "rax", "rsi", "rdi");
 }
+#endif
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -68,16 +73,25 @@ void Linker::Execute() {
     }
 
     // Configure used flexible memory size.
-    // if (auto* mem_param = GetProcParam()->mem_param) {
-    //      if (u64* flexible_size = mem_param->flexible_memory_size) {
-    //          memory->SetTotalFlexibleSize(*flexible_size);
-    //      }
-    //  }
+    if (const auto* proc_param = GetProcParam()) {
+        if (proc_param->size >=
+            offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
+            if (const auto* mem_param = proc_param->mem_param) {
+                if (mem_param->size >=
+                    offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
+                    if (const auto* flexible_size = mem_param->flexible_memory_size) {
+                        memory->SetupMemoryRegions(*flexible_size);
+                    }
+                }
+            }
+        }
+    }
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+    DebugState.AddCurrentThreadToGuestList();
     Libraries::Kernel::pthreadInitSelfMainThread();
-    InitTlsForThread(true);
+    EnsureThreadInitialized(true);
 
     // Start shared library modules
     for (auto& m : m_modules) {
@@ -93,9 +107,16 @@ void Linker::Execute() {
 
     for (auto& m : m_modules) {
         if (!m->IsSharedLib()) {
-            RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
+#ifdef ARCH_X86_64
+            ExecuteGuest(RunMainEntry, m->GetEntryAddress(), &p, ProgramExitFunc);
+#else
+            UNIMPLEMENTED_MSG(
+                "Missing guest entrypoint implementation for target CPU architecture.");
+#endif
         }
     }
+
+    SetTcbBase(nullptr);
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -168,7 +189,7 @@ void Linker::Relocate(Module* module) {
             auto sym_bind = sym.GetBind();
             auto sym_type = sym.GetType();
             auto sym_visibility = sym.GetVisibility();
-            u64 symbol_vitrual_addr = 0;
+            u64 symbol_virtual_addr = 0;
             Loader::SymbolRecord symrec{};
             switch (sym_type) {
             case STT_FUN:
@@ -185,12 +206,12 @@ void Linker::Relocate(Module* module) {
             }
 
             if (sym_visibility != 0) {
-                LOG_INFO(Core_Linker, "symbol visilibity !=0");
+                LOG_INFO(Core_Linker, "symbol visibility !=0");
             }
 
             switch (sym_bind) {
             case STB_LOCAL:
-                symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                symbol_virtual_addr = rel_base_virtual_addr + sym.st_value;
                 module->SetRelaBit(bit_idx);
                 break;
             case STB_GLOBAL:
@@ -200,14 +221,14 @@ void Linker::Relocate(Module* module) {
                     // Only set the rela bit if the symbol was actually resolved and not stubbed.
                     module->SetRelaBit(bit_idx);
                 }
-                symbol_vitrual_addr = symrec.virtual_address;
+                symbol_virtual_addr = symrec.virtual_address;
                 break;
             }
             default:
                 ASSERT_MSG(0, "unknown bind type {}", sym_bind);
             }
-            rel_is_resolved = (symbol_vitrual_addr != 0);
-            rel_value = (rel_is_resolved ? symbol_vitrual_addr + addend : 0);
+            rel_is_resolved = (symbol_virtual_addr != 0);
+            rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
             rel_name = symrec.name;
             break;
         }
@@ -306,7 +327,8 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
         // TODO: Determine if Windows will crash from this
-        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        u8* dest =
+            reinterpret_cast<u8*>(ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -316,7 +338,18 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     return addr + offset;
 }
 
-void Linker::InitTlsForThread(bool is_primary) {
+thread_local std::once_flag init_tls_flag;
+
+void Linker::EnsureThreadInitialized(bool is_primary) const {
+    std::call_once(init_tls_flag, [this, is_primary] {
+#ifdef ARCH_X86_64
+        InitializeThreadPatchStack();
+#endif
+        InitTlsForThread(is_primary);
+    });
+}
+
+void Linker::InitTlsForThread(bool is_primary) const {
     static constexpr size_t TcbSize = 0x40;
     static constexpr size_t TlsAllocAlign = 0x20;
     const size_t total_tls_size = Common::AlignUp(static_tls_size, TlsAllocAlign) + TcbSize;
@@ -338,7 +371,7 @@ void Linker::InitTlsForThread(bool is_primary) {
     } else {
         if (heap_api) {
 #ifndef WIN32
-            addr_out = heap_api->heap_malloc(total_tls_size);
+            addr_out = ExecuteGuestWithoutTls(heap_api->heap_malloc, total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
 #else

@@ -2,20 +2,23 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
+#include <semaphore>
 #include <thread>
-#include <semaphore.h>
+
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
+#include "core/tls.h"
 #ifdef _WIN64
 #include <windows.h>
 #else
@@ -33,6 +36,10 @@ void init_pthreads() {
     ScePthreadMutexattr default_mutexattr = nullptr;
     scePthreadMutexattrInit(&default_mutexattr);
     g_pthread_cxt->setDefaultMutexattr(default_mutexattr);
+    ScePthreadMutexattr adaptive_mutexattr = nullptr;
+    scePthreadMutexattrInit(&adaptive_mutexattr);
+    scePthreadMutexattrSettype(&adaptive_mutexattr, ORBIS_PTHREAD_MUTEX_ADAPTIVE);
+    g_pthread_cxt->setAdaptiveMutexattr(adaptive_mutexattr);
     // default cond init
     ScePthreadCondattr default_condattr = nullptr;
     scePthreadCondattrInit(&default_condattr);
@@ -50,11 +57,12 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
+    const char* name = "Main_Thread";
     auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
-    g_pthread_self = pthread_pool->Create();
+    g_pthread_self = pthread_pool->Create(name);
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
-    g_pthread_self->name = "Main_Thread";
+    g_pthread_self->name = name;
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
@@ -292,7 +300,7 @@ ScePthread PS4_SYSV_ABI scePthreadSelf() {
 
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (pattr == nullptr || *pattr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -384,7 +392,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t st
 }
 
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (thread == nullptr) {
         return SCE_KERNEL_ERROR_ESRCH;
@@ -408,14 +416,11 @@ int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u
 }
 
 ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
-    if (addr == nullptr || *addr != nullptr) {
+    if (addr == nullptr ||
+        (*addr != nullptr && *addr != ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER)) {
         return addr;
     }
-    static std::mutex mutex;
-    std::scoped_lock lk{mutex};
-    if (*addr != nullptr) {
-        return addr;
-    }
+
     const VAddr vaddr = reinterpret_cast<VAddr>(addr);
     std::string name = fmt::format("mutex{:#x}", vaddr);
     scePthreadMutexInit(addr, nullptr, name.c_str());
@@ -429,14 +434,14 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (mutex_attr == nullptr) {
-        attr = g_pthread_cxt->getDefaultMutexattr();
-    } else {
-        if (*mutex_attr == nullptr) {
-            attr = g_pthread_cxt->getDefaultMutexattr();
+    if (mutex_attr == nullptr || *mutex_attr == nullptr) {
+        if (*mutex == ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER) {
+            attr = g_pthread_cxt->getAdaptiveMutexattr();
         } else {
-            attr = mutex_attr;
+            attr = g_pthread_cxt->getDefaultMutexattr();
         }
+    } else {
+        attr = mutex_attr;
     }
 
     *mutex = new PthreadMutexInternal{};
@@ -510,23 +515,27 @@ int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type) {
     int ptype = PTHREAD_MUTEX_DEFAULT;
     switch (type) {
-    case 1:
+    case ORBIS_PTHREAD_MUTEX_ERRORCHECK:
         ptype = PTHREAD_MUTEX_ERRORCHECK;
         break;
-    case 2:
+    case ORBIS_PTHREAD_MUTEX_RECURSIVE:
         ptype = PTHREAD_MUTEX_RECURSIVE;
         break;
-    case 3:
-    case 4:
+    case ORBIS_PTHREAD_MUTEX_NORMAL:
         ptype = PTHREAD_MUTEX_NORMAL;
         break;
+    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
+        LOG_ERROR(Kernel_Pthread, "Unimplemented adaptive mutex");
+        ptype = PTHREAD_MUTEX_ERRORCHECK;
+        break;
     default:
-        UNREACHABLE_MSG("Invalid type: {}", type);
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutexattr_settype(&(*attr)->pth_mutex_attr, ptype);
+    ASSERT(result == 0);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol) {
@@ -580,8 +589,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
-    mutex = createMutex(mutex);
-    if (mutex == nullptr) {
+    if (mutex == nullptr || *mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
@@ -654,7 +662,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
 
     if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
     }
 
     switch (result) {
@@ -984,19 +992,21 @@ static void cleanup_thread(void* arg) {
             destructor(value);
         }
     }
+    Core::SetTcbBase(nullptr);
     thread->is_almost_done = true;
+    DebugState.RemoveCurrentThreadFromGuestList();
 }
 
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->InitTlsForThread(false);
+    const auto* linker = Common::Singleton<Core::Linker>::Instance();
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
     thread->is_started = true;
-    ret = thread->entry(thread->arg);
+    DebugState.AddCurrentThreadToGuestList();
+    ret = linker->ExecuteGuest(thread->entry, thread->arg);
     pthread_cleanup_pop(1);
     return ret;
 }
@@ -1013,7 +1023,7 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
         attr = g_pthread_cxt->GetDefaultAttr();
     }
 
-    *thread = pthread_pool->Create();
+    *thread = pthread_pool->Create(name);
 
     if ((*thread)->attr != nullptr) {
         scePthreadAttrDestroy(&(*thread)->attr);
@@ -1055,11 +1065,11 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     }
 }
 
-ScePthread PThreadPool::Create() {
+ScePthread PThreadPool::Create(const char* name) {
     std::scoped_lock lock{m_mutex};
 
     for (auto* p : m_threads) {
-        if (p->is_free) {
+        if (p->is_free && name != nullptr && p->name == name) {
             p->is_free = false;
             return p;
         }
@@ -1123,7 +1133,6 @@ int PS4_SYSV_ABI posix_pthread_join(ScePthread thread, void** res) {
 }
 
 int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
-    LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
     thread->is_detached = true;
     return ORBIS_OK;
 }
@@ -1183,6 +1192,7 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     int result = pthread_condattr_destroy(&(*attr)->cond_attr);
 
     LOG_DEBUG(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
+    delete *attr;
 
     switch (result) {
     case 0:
@@ -1374,90 +1384,97 @@ int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
     return pthread_detach(thread->pth);
 }
 
-int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
-    int result = sem_init(sem, pshared, value);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_init(PthreadSemInternal** sem, int pshared, unsigned int value) {
+    if (value > ORBIS_KERNEL_SEM_VALUE_MAX) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    if (sem != nullptr) {
+        *sem = new PthreadSemInternal{
+            .semaphore = std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX>{value},
+            .value = {static_cast<int>(value)},
+        };
+    }
+    return 0;
 }
 
-int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
-    int result = sem_wait(sem);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_wait(PthreadSemInternal** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    (*sem)->semaphore.acquire();
+    --(*sem)->value;
+    return 0;
 }
 
-int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
-    int result = sem_trywait(sem);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_trywait(PthreadSemInternal** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    if (!(*sem)->semaphore.try_acquire()) {
+        SetPosixErrno(EAGAIN);
+        return -1;
+    }
+    --(*sem)->value;
+    return 0;
 }
 
-#ifndef HAVE_SEM_TIMEDWAIT
-int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
-    int rc;
-    while ((rc = sem_trywait(sem)) == EAGAIN) {
-        struct timespec curr_time;
-        clock_gettime(CLOCK_REALTIME, &curr_time);
-
-        s64 remaining_ns = 0;
-        remaining_ns +=
-            (static_cast<s64>(abstime->tv_sec) - static_cast<s64>(curr_time.tv_sec)) * 1000000000L;
-        remaining_ns += static_cast<s64>(abstime->tv_nsec) - static_cast<s64>(curr_time.tv_nsec);
-
-        if (remaining_ns <= 0) {
-            return ETIMEDOUT;
-        }
-
-        struct timespec sleep_time;
-        sleep_time.tv_sec = 0;
-        if (remaining_ns < 5000000L) {
-            sleep_time.tv_nsec = remaining_ns;
-        } else {
-            sleep_time.tv_nsec = 5000000;
-        }
-
-        nanosleep(&sleep_time, nullptr);
+int PS4_SYSV_ABI posix_sem_timedwait(PthreadSemInternal** sem, const timespec* t) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return rc;
-}
-#endif
 
-int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
-    int result = sem_timedwait(sem, t);
-    if (result == -1) {
-        SetPosixErrno(errno);
+    using std::chrono::duration_cast;
+    using std::chrono::nanoseconds;
+    using std::chrono::seconds;
+    using std::chrono::system_clock;
+
+    const system_clock::time_point time{
+        duration_cast<system_clock::duration>(seconds{t->tv_sec} + nanoseconds{t->tv_nsec})};
+    if (!(*sem)->semaphore.try_acquire_until(time)) {
+        SetPosixErrno(ETIMEDOUT);
+        return -1;
     }
-    return result;
+    --(*sem)->value;
+    return 0;
 }
 
-int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
-    int result = sem_post(sem);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_post(PthreadSemInternal** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    if ((*sem)->value == ORBIS_KERNEL_SEM_VALUE_MAX) {
+        SetPosixErrno(EOVERFLOW);
+        return -1;
+    }
+    ++(*sem)->value;
+    (*sem)->semaphore.release();
+    return 0;
 }
 
-int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
-    int result = sem_destroy(sem);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_destroy(PthreadSemInternal** sem) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    delete *sem;
+    *sem = nullptr;
+    return 0;
 }
 
-int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
-    int result = sem_getvalue(sem, sval);
-    if (result == -1) {
-        SetPosixErrno(errno);
+int PS4_SYSV_ABI posix_sem_getvalue(PthreadSemInternal** sem, int* sval) {
+    if (sem == nullptr || *sem == nullptr) {
+        SetPosixErrno(EINVAL);
+        return -1;
     }
-    return result;
+    if (sval) {
+        *sval = (*sem)->value;
+    }
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const pthread_attr_t* attr, size_t* size) {
@@ -1481,6 +1498,8 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 }
 
 [[noreturn]] void PS4_SYSV_ABI scePthreadExit(void* value_ptr) {
+    g_pthread_self->is_free = true;
+
     pthread_exit(value_ptr);
     UNREACHABLE();
 }
@@ -1499,6 +1518,10 @@ int PS4_SYSV_ABI scePthreadGetprio(ScePthread thread, int* prio) {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio) {
+    if (thread == nullptr) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadSetprio: thread is nullptr");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     thread->prio = prio;
     return ORBIS_OK;
 }
@@ -1608,6 +1631,10 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
     LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTimedlock);
+
+    // scePthreadMutexInitForInternalLibc, scePthreadMutexattrInitForInternalLibc
+    LIB_FUNCTION("qH1gXoq71RY", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
+    LIB_FUNCTION("n2MMpvU8igI", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
 
     // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);

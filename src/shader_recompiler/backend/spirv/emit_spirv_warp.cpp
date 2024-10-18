@@ -22,4 +22,17 @@ Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index) {
     return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, index);
 }
 
+Id EmitReadFirstLane(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
+}
+
+Id EmitReadLane(EmitContext& ctx, Id value, u32 lane) {
+    return ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value,
+                                          ctx.ConstU32(lane));
+}
+
+Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane) {
+    return ctx.u32_zero_value;
+}
+
 } // namespace Shader::Backend::SPIRV

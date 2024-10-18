@@ -29,7 +29,7 @@ static inline bool IsProfilerConnected() {
 #define TRACK_ALLOC(ptr, size, pool) TracyAllocN(std::bit_cast<void*>(ptr), (size), (pool))
 #define TRACK_FREE(ptr, pool) TracyFreeN(std::bit_cast<void*>(ptr), (pool))
 
-enum MarkersPallete : int {
+enum MarkersPalette : int {
     EmulatorMarkerColor = 0x264653,
     RendererMarkerColor = 0x2a9d8f,
     HleMarkerColor = 0xe9c46a,

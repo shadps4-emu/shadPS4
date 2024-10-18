@@ -7,6 +7,8 @@
 
 #include "common/types.h"
 
+#include <string_view>
+
 struct AVIOContext;
 
 namespace Libraries::AvPlayer {
@@ -14,6 +16,7 @@ namespace Libraries::AvPlayer {
 class IDataStreamer {
 public:
     virtual ~IDataStreamer() = default;
+    virtual bool Init(std::string_view path) = 0;
     virtual AVIOContext* GetContext() = 0;
 };
 

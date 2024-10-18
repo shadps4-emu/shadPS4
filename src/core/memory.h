@@ -28,8 +28,9 @@ enum class MemoryProt : u32 {
     CpuReadWrite = 2,
     GpuRead = 16,
     GpuWrite = 32,
-    GpuReadWrite = 38,
+    GpuReadWrite = 48,
 };
+DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 
 enum class MemoryMapFlags : u32 {
     NoFlags = 0,
@@ -49,15 +50,17 @@ enum class VMAType : u32 {
     Direct = 2,
     Flexible = 3,
     Pooled = 4,
-    Stack = 5,
-    Code = 6,
-    File = 7,
+    PoolReserved = 5,
+    Stack = 6,
+    Code = 7,
+    File = 8,
 };
 
 struct DirectMemoryArea {
     PAddr base = 0;
     size_t size = 0;
     int memory_type = 0;
+    bool is_pooled = false;
     bool is_free = true;
 
     PAddr GetEnd() const {
@@ -95,7 +98,7 @@ struct VirtualMemoryArea {
     }
 
     bool IsMapped() const noexcept {
-        return type != VMAType::Free && type != VMAType::Reserved;
+        return type != VMAType::Free && type != VMAType::Reserved && type != VMAType::PoolReserved;
     }
 
     bool CanMergeWith(const VirtualMemoryArea& next) const {
@@ -130,8 +133,12 @@ public:
         rasterizer = rasterizer_;
     }
 
-    void SetTotalFlexibleSize(u64 size) {
-        total_flexible_size = size;
+    u64 GetTotalDirectSize() const {
+        return total_direct_size;
+    }
+
+    u64 GetTotalFlexibleSize() const {
+        return total_flexible_size;
     }
 
     u64 GetAvailableFlexibleSize() const {
@@ -142,13 +149,22 @@ public:
         return impl.SystemReservedVirtualBase();
     }
 
+    void SetupMemoryRegions(u64 flexible_size);
+
+    PAddr PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment);
+
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
 
     void Free(PAddr phys_addr, size_t size);
 
+    int PoolReserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
+                    u64 alignment = 0);
+
     int Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
                 u64 alignment = 0);
+
+    int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "",
@@ -157,13 +173,18 @@ public:
     int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                 MemoryMapFlags flags, uintptr_t fd, size_t offset);
 
+    void PoolDecommit(VAddr virtual_addr, size_t size);
+
     void UnmapMemory(VAddr virtual_addr, size_t size);
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
-    int VirtualQuery(VAddr addr, int flags, Libraries::Kernel::OrbisVirtualQueryInfo* info);
+    int Protect(VAddr addr, size_t size, MemoryProt prot);
 
-    int DirectMemoryQuery(PAddr addr, bool find_next, Libraries::Kernel::OrbisQueryInfo* out_info);
+    int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
+
+    int DirectMemoryQuery(PAddr addr, bool find_next,
+                          ::Libraries::Kernel::OrbisQueryInfo* out_info);
 
     int DirectQueryAvailable(PAddr search_start, PAddr search_end, size_t alignment,
                              PAddr* phys_addr_out, size_t* size_out);
@@ -212,12 +233,15 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
+    void UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+
 private:
     AddressSpace impl;
     DMemMap dmem_map;
     VMAMap vma_map;
-    std::recursive_mutex mutex;
-    size_t total_flexible_size = 448_MB;
+    std::mutex mutex;
+    size_t total_direct_size{};
+    size_t total_flexible_size{};
     size_t flexible_usage{};
     Vulkan::Rasterizer* rasterizer{};
 };

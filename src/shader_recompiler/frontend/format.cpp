@@ -1786,8 +1786,7 @@ constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
 
 constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
     // 0 = V_NOP
-    {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Any, ScalarType::Any},
     // 1 = V_MOV_B32
     {InstClass::VectorRegMov, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
      ScalarType::Uint32},
@@ -3603,8 +3602,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
     // 79 = IMAGE_GATHER4_C_LZ
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 80 = IMAGE_GATHER4_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
@@ -3626,8 +3625,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 88 = IMAGE_GATHER4_C_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 89 = IMAGE_GATHER4_C_CL_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
@@ -3643,8 +3642,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
     // 95 = IMAGE_GATHER4_C_LZ_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 96 = IMAGE_GET_LOD
     {InstClass::VectorMemImgUt, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
      ScalarType::Float32},
@@ -3656,8 +3655,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {},
     {},
     // 104 = IMAGE_SAMPLE_CD
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
     // 105 = IMAGE_SAMPLE_CD_CL
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
@@ -3719,8 +3718,9 @@ InstFormat InstructionFormat(InstEncoding encoding, uint32_t opcode) {
         return InstructionFormatSOP2[opcode];
     case InstEncoding::VOP2:
         return InstructionFormatVOP2[opcode];
+    default:
+        UNREACHABLE();
     }
-    UNREACHABLE();
     return {};
 }
 

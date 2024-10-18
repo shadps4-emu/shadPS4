@@ -7,8 +7,10 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 #define MAGIC_ENUM_RANGE_MIN 0
 #define MAGIC_ENUM_RANGE_MAX 1515
@@ -16,8 +18,9 @@
 
 namespace Shader::Gcn {
 
-Translator::Translator(IR::Block* block_, Info& info_, const Profile& profile_)
-    : ir{*block_, block_->begin()}, info{info_}, profile{profile_} {}
+Translator::Translator(IR::Block* block_, Info& info_, const RuntimeInfo& runtime_info_,
+                       const Profile& profile_)
+    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {}
 
 void Translator::EmitPrologue() {
     ir.Prologue();
@@ -25,7 +28,7 @@ void Translator::EmitPrologue() {
 
     // Initialize user data.
     IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
-    for (u32 i = 0; i < info.num_user_data; i++) {
+    for (u32 i = 0; i < runtime_info.num_user_data; i++) {
         ir.SetScalarReg(dst_sreg, ir.GetUserData(dst_sreg));
         ++dst_sreg;
     }
@@ -33,18 +36,19 @@ void Translator::EmitPrologue() {
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
     switch (info.stage) {
     case Stage::Vertex:
+    case Stage::Export:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
         // v1: instance ID, step rate 0
-        if (info.num_input_vgprs > 0) {
+        if (runtime_info.num_input_vgprs > 0) {
             ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId0));
         }
         // v2: instance ID, step rate 1
-        if (info.num_input_vgprs > 1) {
+        if (runtime_info.num_input_vgprs > 1) {
             ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId1));
         }
         // v3: instance ID, plain
-        if (info.num_input_vgprs > 2) {
+        if (runtime_info.num_input_vgprs > 2) {
             ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
         }
         break;
@@ -64,15 +68,29 @@ void Translator::EmitPrologue() {
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 1));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 2));
 
-        if (info.tgid_enable[0]) {
+        if (runtime_info.cs_info.tgid_enable[0]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 0));
         }
-        if (info.tgid_enable[1]) {
+        if (runtime_info.cs_info.tgid_enable[1]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 1));
         }
-        if (info.tgid_enable[2]) {
+        if (runtime_info.cs_info.tgid_enable[2]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
         }
+        break;
+    case Stage::Geometry:
+        switch (runtime_info.gs_info.out_primitive[0]) {
+        case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+            ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
+            [[fallthrough]];
+        case AmdGpu::GsOutputPrimitiveType::LineStrip:
+            ir.SetVectorReg(IR::VectorReg::V1, ir.Imm32(1u)); // vertex 1
+            [[fallthrough]];
+        default:
+            ir.SetVectorReg(IR::VectorReg::V0, ir.Imm32(0u)); // vertex 0
+            break;
+        }
+        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     default:
         throw NotImplementedException("Unknown shader stage");
@@ -151,10 +169,11 @@ T Translator::GetSrc(const InstOperand& operand) {
         break;
     case OperandField::M0:
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.BitCast<IR::F32>(ir.GetM0());
         } else {
-            return m0_value;
+            value = ir.GetM0();
         }
+        break;
     default:
         UNREACHABLE();
     }
@@ -168,10 +187,10 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            LOG_WARNING(Render_Vulkan, "Input abs modifier on integer instruction");
+            value = ir.IAbs(value);
         }
         if (operand.input_modifier.neg) {
-            UNREACHABLE();
+            value = ir.INeg(value);
         }
     }
     return value;
@@ -208,7 +227,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         const auto value_lo = ir.GetVectorReg(IR::VectorReg(operand.code));
         const auto value_hi = ir.GetVectorReg(IR::VectorReg(operand.code + 1));
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackFloat2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
@@ -278,12 +297,15 @@ template IR::F64 Translator::GetSrc64<IR::F64>(const InstOperand&);
 
 void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     IR::U32F32 result = value;
-    if (operand.output_modifier.multiplier != 0.f) {
-        result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
+    if (value.Type() == IR::Type::F32) {
+        if (operand.output_modifier.multiplier != 0.f) {
+            result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
+        }
+        if (operand.output_modifier.clamp) {
+            result = ir.FPSaturate(value);
+        }
     }
-    if (operand.output_modifier.clamp) {
-        result = ir.FPSaturate(value);
-    }
+
     switch (operand.field) {
     case OperandField::ScalarGPR:
         return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
@@ -294,8 +316,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     case OperandField::VccHi:
         return ir.SetVccHi(result);
     case OperandField::M0:
-        m0_value = result;
-        break;
+        return ir.SetM0(result);
     default:
         UNREACHABLE();
     }
@@ -346,7 +367,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
     // Parse the assembly to generate a list of attributes.
     u32 fetch_size{};
-    const auto attribs = ParseFetchShader(code, &fetch_size);
+    const auto fetch_data = ParseFetchShader(code, &fetch_size);
 
     if (Config::dumpShaders()) {
         using namespace Common::FS;
@@ -354,12 +375,15 @@ void Translator::EmitFetch(const GcnInst& inst) {
         if (!std::filesystem::exists(dump_dir)) {
             std::filesystem::create_directories(dump_dir);
         }
-        const auto filename = fmt::format("vs_fetch_{:#018x}.bin", info.pgm_hash);
+        const auto filename = fmt::format("vs_{:#018x}.fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
         file.WriteRaw<u8>(code, fetch_size);
     }
 
-    for (const auto& attrib : attribs) {
+    info.vertex_offset_sgpr = fetch_data.vertex_offset_sgpr;
+    info.instance_offset_sgpr = fetch_data.instance_offset_sgpr;
+
+    for (const auto& attrib : fetch_data.attributes) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
@@ -396,9 +420,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sgpr_base = attrib.sgpr_base,
                 .dword_offset = attrib.dword_offset,
-                .length = buffer.num_records,
                 .used_types = IR::Type::F32,
-                .is_storage = true, // we may not fit into UBO with large meshes
                 .is_instance_data = true,
             });
             instance_buf_handle = s32(info.buffers.size() - 1);
@@ -418,32 +440,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     }
 }
 
-void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
-    switch (inst.opcode) {
-    case Opcode::S_BARRIER:
-        return S_BARRIER();
-    case Opcode::S_TTRACEDATA:
-        LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
-        return;
-    case Opcode::S_GETPC_B64:
-        return S_GETPC_B64(pc, inst);
-    case Opcode::S_WAITCNT:
-    case Opcode::S_NOP:
-    case Opcode::S_ENDPGM:
-    case Opcode::S_CBRANCH_EXECZ:
-    case Opcode::S_CBRANCH_SCC0:
-    case Opcode::S_CBRANCH_SCC1:
-    case Opcode::S_CBRANCH_VCCNZ:
-    case Opcode::S_CBRANCH_VCCZ:
-    case Opcode::S_BRANCH:
-        return;
-    default:
-        UNREACHABLE();
-    }
-}
-
 void Translator::LogMissingOpcode(const GcnInst& inst) {
-    const u32 opcode = u32(inst.opcode);
     LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({}, category = {})",
               magic_enum::enum_name(inst.opcode), u32(inst.opcode),
               magic_enum::enum_name(inst.category));
@@ -451,17 +448,17 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
 }
 
 void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info,
-               const Profile& profile) {
+               const RuntimeInfo& runtime_info, const Profile& profile) {
     if (inst_list.empty()) {
         return;
     }
-    Translator translator{block, info, profile};
+    Translator translator{block, info, runtime_info, profile};
     for (const auto& inst : inst_list) {
         pc += inst.length;
 
         // Special case for emitting fetch shader.
         if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex);
+            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export);
             translator.EmitFetch(inst);
             continue;
         }

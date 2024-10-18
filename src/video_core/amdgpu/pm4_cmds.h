@@ -36,6 +36,8 @@ union PM4Type0Header {
 };
 
 union PM4Type3Header {
+    static constexpr u32 TYPE = 3;
+
     constexpr PM4Type3Header(PM4ItOpcode code, u32 num_words_min_one,
                              PM4ShaderType stype = PM4ShaderType::ShaderGraphics,
                              PM4Predicate pred = PM4Predicate::PredDisable) {
@@ -187,6 +189,11 @@ struct PM4CmdSetData {
         BitField<28, 4, u32> index;      ///< Index for UCONFIG/CONTEXT on CI+
                                          ///< Program to zero for other opcodes and on SI
     };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
 
     template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
     static constexpr u32* SetContextReg(u32* cmdbuf, Args... data) {
@@ -206,6 +213,7 @@ struct PM4CmdNop {
     enum PayloadType : u32 {
         DebugMarkerPush = 0x68750001u,      ///< Begin of GPU event scope
         DebugMarkerPop = 0x68750002u,       ///< End of GPU event scope
+        DebugSetMarker = 0x68750003u,       ///< Set GPU event marker
         SetVsharpInUdata = 0x68750004u,     ///< Indicates that V# will be set in the next packet
         SetTsharpInUdata = 0x68750005u,     ///< Indicates that T# will be set in the next packet
         SetSsharpInUdata = 0x68750006u,     ///< Indicates that S# will be set in the next packet
@@ -251,20 +259,6 @@ struct PM4CmdDrawIndexAuto {
     PM4Type3Header header;
     u32 index_count;
     u32 draw_initiator;
-};
-
-struct PM4CmdDrawIndirect {
-    PM4Type3Header header; ///< header
-    u32 data_offset;       ///< DWORD aligned offset
-    union {
-        u32 dw2;
-        BitField<0, 16, u32> base_vtx_loc; ///< base vertex location
-    };
-    union {
-        u32 dw3;
-        BitField<0, 16, u32> start_inst_loc; ///< start instance location
-    };
-    u32 draw_initiator; ///< Draw Initiator Register
 };
 
 enum class DataSelect : u32 {
@@ -364,6 +358,27 @@ struct PM4CmdEventWriteEop {
     }
 };
 
+struct PM4CmdAcquireMem {
+    PM4Type3Header header;
+    u32 cp_coher_cntl;
+    u32 cp_coher_size_lo;
+    u32 cp_coher_size_hi;
+    u32 cp_coher_base_lo;
+    u32 cp_coher_base_hi;
+    u32 poll_interval;
+};
+
+enum class DmaDataDst : u32 {
+    Memory = 0,
+    Gds = 1,
+};
+
+enum class DmaDataSrc : u32 {
+    Memory = 0,
+    Gds = 1,
+    Data = 2,
+};
+
 struct PM4DmaData {
     PM4Type3Header header;
     union {
@@ -371,11 +386,11 @@ struct PM4DmaData {
         BitField<12, 1, u32> src_atc;
         BitField<13, 2, u32> src_cache_policy;
         BitField<15, 1, u32> src_volatile;
-        BitField<20, 2, u32> dst_sel;
+        BitField<20, 2, DmaDataDst> dst_sel;
         BitField<24, 1, u32> dst_atc;
         BitField<25, 2, u32> dst_cache_policy;
         BitField<27, 1, u32> dst_volatile;
-        BitField<29, 2, u32> src_sel;
+        BitField<29, 2, DmaDataSrc> src_sel;
         BitField<31, 1, u32> cp_sync;
     };
     union {
@@ -470,6 +485,10 @@ struct PM4CmdWriteData {
     };
     u32 data[0];
 
+    u32 Size() const {
+        return (header.count.Value() - 2) * 4;
+    }
+
     template <typename T>
     void Address(T addr) {
         addr64 = static_cast<u64>(addr);
@@ -484,7 +503,7 @@ struct PM4CmdWriteData {
 struct PM4CmdEventWriteEos {
     enum class Command : u32 {
         GdsStore = 1u,
-        SingalFence = 2u,
+        SignalFence = 2u,
     };
 
     PM4Type3Header header;
@@ -516,13 +535,17 @@ struct PM4CmdEventWriteEos {
     }
 
     void SignalFence() const {
-        switch (command.Value()) {
-        case Command::SingalFence: {
+        const auto cmd = command.Value();
+        switch (cmd) {
+        case Command::SignalFence: {
             *Address() = DataDWord();
             break;
         }
+        case Command::GdsStore: {
+            break;
+        }
         default: {
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown command {}", u32(cmd));
         }
         }
     }
@@ -702,6 +725,89 @@ struct PM4CmdReleaseMem {
         }
         }
     }
+};
+
+struct PM4CmdSetBase {
+    enum class BaseIndex : u32 {
+        DisplayListPatchTable = 0b0000,
+        DrawIndexIndirPatchTable = 0b0001,
+        GdsPartition = 0b0010,
+        CePartition = 0b0011,
+    };
+
+    PM4Type3Header header;
+    union {
+        BitField<0, 4, BaseIndex> base_index;
+        u32 dw1;
+    };
+    u32 address0;
+    u32 address1;
+
+    template <typename T>
+    T Address() const {
+        ASSERT(base_index == BaseIndex::DisplayListPatchTable ||
+               base_index == BaseIndex::DrawIndexIndirPatchTable);
+        return reinterpret_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+    }
+};
+
+struct PM4CmdDispatchIndirect {
+    struct GroupDimensions {
+        u32 dim_x;
+        u32 dim_y;
+        u32 dim_z;
+    };
+
+    PM4Type3Header header;
+    u32 data_offset;        ///< Byte aligned offset where the required data structure starts
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+};
+
+struct PM4CmdDrawIndirect {
+    struct DrawInstancedArgs {
+        u32 vertex_count_per_instance;
+        u32 instance_count;
+        u32 start_vertex_location;
+        u32 start_instance_location;
+    };
+
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union {
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
+    u32 draw_initiator; ///< Draw Initiator Register
+};
+
+struct PM4CmdDrawIndexIndirect {
+    struct DrawIndexInstancedArgs {
+        u32 index_count_per_instance;
+        u32 instance_count;
+        u32 start_index_location;
+        u32 base_vertex_location;
+        u32 start_instance_location;
+    };
+
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union { // NOTE: this one is undocumented in AMD spec, but Gnm driver writes this field
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
+    u32 draw_initiator; ///< Draw Initiator Register
 };
 
 } // namespace AmdGpu

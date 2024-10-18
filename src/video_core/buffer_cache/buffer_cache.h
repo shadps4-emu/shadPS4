@@ -28,7 +28,7 @@ using BufferId = Common::SlotId;
 
 static constexpr BufferId NULL_BUFFER_ID{0};
 
-static constexpr u32 NUM_VERTEX_BUFFERS = 32;
+class TextureCache;
 
 class BufferCache {
 public:
@@ -53,8 +53,23 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         const AmdGpu::Liverpool* liverpool, PageManager& tracker);
+                         const AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
+                         PageManager& tracker);
     ~BufferCache();
+
+    /// Returns a pointer to GDS device local buffer.
+    [[nodiscard]] const Buffer* GetGdsBuffer() const noexcept {
+        return &gds_buffer;
+    }
+
+    /// Retrieves the buffer with the specified id.
+    [[nodiscard]] Buffer& GetBuffer(BufferId id) {
+        return slot_buffers[id];
+    }
+
+    [[nodiscard]] vk::BufferView& NullBufferView() {
+        return null_buffer_view;
+    }
 
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
@@ -65,11 +80,15 @@ public:
     /// Bind host index buffer for the current draw.
     u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
 
+    /// Writes a value to GDS buffer.
+    void InlineDataToGds(u32 gds_offset, u32 value);
+
     /// Obtains a buffer for the specified region.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
+                                                       bool is_texel_buffer = false);
 
     /// Obtains a temporary buffer for usage in texture cache.
-    [[nodiscard]] std::pair<const Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);
 
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
@@ -115,18 +134,23 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    bool SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size);
+    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_texel_buffer);
+
+    bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
 
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     const AmdGpu::Liverpool* liverpool;
+    TextureCache& texture_cache;
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
-    std::recursive_mutex mutex;
+    Buffer gds_buffer;
+    std::mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    vk::BufferView null_buffer_view;
     MemoryTracker memory_tracker;
     PageTable page_table;
 };

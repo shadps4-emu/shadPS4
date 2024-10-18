@@ -1,33 +1,34 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <future>
-#include <thread>
 #include <QProgressDialog>
-#include <QtConcurrent/QtConcurrent>
 
+#include "common/path_util.h"
 #include "game_info.h"
 
 GameInfoClass::GameInfoClass() = default;
 GameInfoClass::~GameInfoClass() = default;
 
 void GameInfoClass::GetGameInfo(QWidget* parent) {
-    QString installDir = QString::fromStdString(Config::getGameInstallDir());
     QStringList filePaths;
-    QDir parentFolder(installDir);
-    QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const auto& fileInfo : fileList) {
-        if (fileInfo.isDir()) {
-            filePaths.append(fileInfo.absoluteFilePath());
+    for (const auto& installLoc : Config::getGameInstallDirs()) {
+        QString installDir;
+        Common::FS::PathToQString(installDir, installLoc);
+        QDir parentFolder(installDir);
+        QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const auto& fileInfo : fileList) {
+            if (fileInfo.isDir() && !fileInfo.filePath().endsWith("-UPDATE")) {
+                filePaths.append(fileInfo.absoluteFilePath());
+            }
         }
     }
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
-                  return readGameInfo(path.toStdString());
+                  return readGameInfo(Common::FS::PathFromQString(path));
               }).results();
 
     // Progress bar, please be patient :)
-    QProgressDialog dialog("Loading game list, please wait :3", "Cancel", 0, 0, parent);
-    dialog.setWindowTitle("Loading...");
+    QProgressDialog dialog(tr("Loading game list, please wait :3"), tr("Cancel"), 0, 0, parent);
+    dialog.setWindowTitle(tr("Loading..."));
 
     QFutureWatcher<void> futureWatcher;
     GameListUtils game_util;

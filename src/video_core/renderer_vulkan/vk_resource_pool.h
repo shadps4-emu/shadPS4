@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <deque>
 #include <vector>
+#include <boost/container/static_vector.hpp>
 #include <tsl/robin_map.h>
 
 #include "common/types.h"
@@ -62,32 +64,29 @@ private:
     std::vector<vk::CommandBuffer> cmd_buffers;
 };
 
-class DescriptorHeap final : public ResourcePool {
+class DescriptorHeap final {
+    static constexpr u32 DescriptorSetBatch = 32;
+
 public:
     explicit DescriptorHeap(const Instance& instance, MasterSemaphore* master_semaphore,
-                            std::span<const vk::DescriptorSetLayoutBinding> bindings,
+                            std::span<const vk::DescriptorPoolSize> pool_sizes,
                             u32 descriptor_heap_count = 1024);
-    ~DescriptorHeap() override;
+    ~DescriptorHeap();
 
-    const vk::DescriptorSetLayout& Layout() const {
-        return *descriptor_set_layout;
-    }
-
-    void Allocate(std::size_t begin, std::size_t end) override;
-
-    vk::DescriptorSet Commit();
+    vk::DescriptorSet Commit(vk::DescriptorSetLayout set_layout);
 
 private:
-    void AppendDescriptorPool();
+    void CreateDescriptorPool();
 
 private:
     vk::Device device;
-    vk::UniqueDescriptorSetLayout descriptor_set_layout;
+    MasterSemaphore* master_semaphore;
     u32 descriptor_heap_count;
-    std::vector<vk::DescriptorPoolSize> pool_sizes;
-    std::vector<vk::UniqueDescriptorPool> pools;
-    std::vector<vk::DescriptorSet> descriptor_sets;
-    std::vector<std::size_t> hashes;
+    std::span<const vk::DescriptorPoolSize> pool_sizes;
+    vk::DescriptorPool curr_pool;
+    std::deque<std::pair<vk::DescriptorPool, u64>> pending_pools;
+    using DescSetBatch = boost::container::static_vector<vk::DescriptorSet, DescriptorSetBatch>;
+    tsl::robin_map<u64, DescSetBatch> descriptor_sets;
 };
 
 } // namespace Vulkan

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
-#include <common/assert.h>
 #include <magic_enum.hpp>
+
 #include "audio_core/sdl_audio.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/error_codes.h"
@@ -175,11 +176,15 @@ int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
 }
 
 int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
+    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+
     int type = 0;
     int channels_num = 0;
 
-    if (!audio->AudioOutGetStatus(handle, &type, &channels_num)) {
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    if (const auto err = audio->AudioOutGetStatus(handle, &type, &channels_num); err != ORBIS_OK) {
+        return err;
     }
 
     state->rerouteCounter = 0;
@@ -309,12 +314,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         LOG_ERROR(Lib_AudioOut, "Invalid format attribute");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
-    int result = audio->AudioOutOpen(port_type, length, sample_rate, format);
-    if (result == -1) {
-        LOG_ERROR(Lib_AudioOut, "Audio ports are full");
-        return ORBIS_AUDIO_OUT_ERROR_PORT_FULL;
-    }
-    return result;
+    return audio->AudioOutOpen(port_type, length, sample_rate, format);
 }
 
 int PS4_SYSV_ABI sceAudioOutOpenEx() {
@@ -323,12 +323,19 @@ int PS4_SYSV_ABI sceAudioOutOpenEx() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
+    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+    if (ptr == nullptr) {
+        // Nothing to output
+        return ORBIS_OK;
+    }
     return audio->AudioOutOutput(handle, ptr);
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     for (u32 i = 0; i < num; i++) {
-        if (auto err = audio->AudioOutOutput(param[i].handle, param[i].ptr); err != 0)
+        if (const auto err = sceAudioOutOutput(param[i].handle, param[i].ptr); err != 0)
             return err;
     }
     return ORBIS_OK;
@@ -425,10 +432,10 @@ int PS4_SYSV_ABI sceAudioOutSetUsbVolume() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
-    if (!audio->AudioOutSetVolume(handle, flag, vol)) {
+    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
-    return ORBIS_OK;
+    return audio->AudioOutSetVolume(handle, flag, vol);
 }
 
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown() {

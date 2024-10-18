@@ -24,11 +24,12 @@ public:
     AvPlayerState(const SceAvPlayerInitData& init_data);
     ~AvPlayerState();
 
-    s32 AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
+    void PostInit(const SceAvPlayerPostInitData& post_init_data);
+    bool AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
     s32 GetStreamCount();
-    s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    bool GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
-    s32 Start();
+    bool Start();
     bool Stop();
     bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
     bool GetVideoData(SceAvPlayerFrameInfo& video_info);
@@ -38,12 +39,12 @@ public:
     bool SetLooping(bool is_looping);
 
 private:
-    using ScePthreadMutex = Kernel::ScePthreadMutex;
-    using ScePthread = Kernel::ScePthread;
-
     // Event Replacement
-    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, s32 event_id, s32 source_id,
-                                                   void* event_data);
+    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, SceAvPlayerEvents event_id,
+                                                   s32 source_id, void* event_data);
+
+    static void PS4_SYSV_ABI DefaultEventCallback(void* handle, SceAvPlayerEvents event_id,
+                                                  s32 source_id, void* event_data);
 
     void OnWarning(u32 id) override;
     void OnError() override;
@@ -68,6 +69,7 @@ private:
     std::unique_ptr<AvPlayerSource> m_up_source;
 
     SceAvPlayerInitData m_init_data{};
+    SceAvPlayerPostInitData m_post_init_data{};
     SceAvPlayerEventReplacement m_event_replacement{};
     bool m_auto_start{};
     u8 m_default_language[4]{};

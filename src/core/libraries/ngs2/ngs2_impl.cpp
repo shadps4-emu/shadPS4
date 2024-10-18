@@ -138,13 +138,13 @@ s32 Ngs2::SystemSetupCore(StackBuffer* buf, SystemOptions* options, Ngs2Handle**
     // Validate maxGrainSamples
     if (maxGrainSamples < 64 || maxGrainSamples > 1024 || (maxGrainSamples & 0x3F) != 0) {
         LOG_ERROR(Lib_Ngs2, "Invalid system option (maxGrainSamples={},x64)", maxGrainSamples);
-        return ORBIS_NGS2_ERROR_INVALID_MAXIMUM_GRAIN_SAMPLES;
+        return ORBIS_NGS2_ERROR_INVALID_MAX_GRAIN_SAMPLES;
     }
 
     // Validate numGrainSamples
     if (numGrainSamples < 64 || numGrainSamples > 1024 || (numGrainSamples & 0x3F) != 0) {
         LOG_ERROR(Lib_Ngs2, "Invalid system option (numGrainSamples={},x64)", numGrainSamples);
-        return ORBIS_NGS2_ERROR_INVALID_GRAIN_SAMPLES;
+        return ORBIS_NGS2_ERROR_INVALID_NUM_GRAIN_SAMPLES;
     }
 
     // Validate sampleRate

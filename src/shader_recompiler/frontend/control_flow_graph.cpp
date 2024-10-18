@@ -21,8 +21,12 @@ struct Compare {
     }
 };
 
-static IR::Condition MakeCondition(Opcode opcode) {
-    switch (opcode) {
+static IR::Condition MakeCondition(const GcnInst& inst) {
+    if (inst.IsCmpx()) {
+        return IR::Condition::Execnz;
+    }
+
+    switch (inst.opcode) {
     case Opcode::S_CBRANCH_SCC0:
         return IR::Condition::Scc0;
     case Opcode::S_CBRANCH_SCC1:
@@ -37,7 +41,6 @@ static IR::Condition MakeCondition(Opcode opcode) {
         return IR::Condition::Execnz;
     case Opcode::S_AND_SAVEEXEC_B64:
     case Opcode::S_ANDN2_B64:
-    case Opcode::V_CMPX_NE_U32:
         return IR::Condition::Execnz;
     default:
         return IR::Condition::True;
@@ -94,7 +97,8 @@ void CFG::EmitDivergenceLabels() {
                // While this instruction does not save EXEC it is often used paired
                // with SAVEEXEC to mask the threads that didn't pass the condition
                // of initial branch.
-               inst.opcode == Opcode::S_ANDN2_B64 || inst.opcode == Opcode::V_CMPX_NE_U32;
+               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo) ||
+               inst.IsCmpx();
     };
     const auto is_close_scope = [](const GcnInst& inst) {
         // Closing an EXEC scope can be either a branch instruction
@@ -104,7 +108,8 @@ void CFG::EmitDivergenceLabels() {
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
-               inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ANDN2_B64;
+               inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ENDPGM ||
+               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo);
     };
 
     // Since we will be adding new labels, avoid iterating those as well.
@@ -121,7 +126,8 @@ void CFG::EmitDivergenceLabels() {
         s32 curr_begin = -1;
         for (size_t index = GetIndex(start); index < end_index; index++) {
             const auto& inst = inst_list[index];
-            if (is_close_scope(inst) && curr_begin != -1) {
+            const bool is_close = is_close_scope(inst);
+            if ((is_close || index == end_index - 1) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
                 if (index - curr_begin == 1) {
                     curr_begin = -1;
@@ -132,8 +138,16 @@ void CFG::EmitDivergenceLabels() {
                 const auto& save_inst = inst_list[curr_begin];
                 const Label label = index_to_pc[curr_begin] + save_inst.length;
                 AddLabel(label);
-                // Add a label to the close scope instruction as well.
-                AddLabel(index_to_pc[index]);
+                // Add a label to the close scope instruction.
+                // There are 3 cases where we need to close a scope.
+                // * Close scope instruction inside the block
+                // * Close scope instruction at the end of the block (cbranch or endpgm)
+                // * Normal instruction at the end of the block
+                // For the last case we must NOT add a label as that would cause
+                // the instruction to be separated into its own basic block.
+                if (is_close) {
+                    AddLabel(index_to_pc[index]);
+                }
                 // Reset scope begin.
                 curr_begin = -1;
             }
@@ -171,7 +185,7 @@ void CFG::EmitBlocks() {
         block->begin_index = GetIndex(start);
         block->end_index = end_index;
         block->end_inst = end_inst;
-        block->cond = MakeCondition(end_inst.opcode);
+        block->cond = MakeCondition(end_inst);
         blocks.insert(*block);
     }
 }
@@ -188,7 +202,7 @@ void CFG::LinkBlocks() {
         const auto end_inst{block.end_inst};
         // Handle divergence block inserted here.
         if (end_inst.opcode == Opcode::S_AND_SAVEEXEC_B64 ||
-            end_inst.opcode == Opcode::S_ANDN2_B64 || end_inst.opcode == Opcode::V_CMPX_NE_U32) {
+            end_inst.opcode == Opcode::S_ANDN2_B64 || end_inst.IsCmpx()) {
             // Blocks are stored ordered by address in the set
             auto next_it = std::next(it);
             auto* target_block = &(*next_it);

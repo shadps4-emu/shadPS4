@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
 #include <condition_variable>
 #include <mutex>
+
 #include "common/types.h"
 
 namespace Libraries::Kernel {

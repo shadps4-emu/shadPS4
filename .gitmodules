@@ -82,3 +82,20 @@
 	path = externals/ffmpeg-core
 	url = https://github.com/shadps4-emu/ext-ffmpeg-core.git
 	shallow = true
+[submodule "externals/half"]
+	path = externals/half
+	url = https://github.com/ROCm/half.git
+	shallow = true
+[submodule "externals/dear_imgui"]
+	path = externals/dear_imgui
+	url = https://github.com/shadps4-emu/ext-imgui.git
+	shallow = true
+	branch = docking
+[submodule "externals/pugixml"]
+	path = externals/pugixml
+	url = https://github.com/zeux/pugixml.git
+	shallow = true
+[submodule "externals/discord-rpc"]
+	path = externals/discord-rpc
+	url = https://github.com/shadps4-emu/ext-discord-rpc.git
+	shallow = true
