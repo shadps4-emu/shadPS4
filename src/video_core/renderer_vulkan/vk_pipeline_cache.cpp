@@ -181,26 +181,6 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 PipelineCache::~PipelineCache() = default;
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
-    const auto& regs = liverpool->regs;
-    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
-        return nullptr;
-    }
-    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
-    // actual draw hence can skip pipeline creation.
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
-        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
-        return nullptr;
-    }
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
-        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
-        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
-        return nullptr;
-    }
-    if (regs.primitive_type == AmdGpu::PrimitiveType::None) {
-        LOG_TRACE(Render_Vulkan, "Primitive type 'None' skipped");
-        return nullptr;
-    }
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }
