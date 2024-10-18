@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében. Ha a javítás nem jelenik meg, lehet, hogy nem létezik a játék adott sorozatszámához és verziójához. Lehet, hogy frissítenie kell a játékot.</translation>
+			<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében. Ha a javítás nem jelenik meg, lehet, hogy nem létezik a játék adott sorozatszámához és verziójához.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Nem sikerült HTML oldal lekérése.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>A játék verziója: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>A letöltött javítás csak a(z) %1 verzión működik</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Lehet, hogy frissítened kell a játékodat.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Inkompatibilitási értesítés</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

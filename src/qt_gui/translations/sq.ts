@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës. Mund të jetë e nevojshme të përditësosh lojën.</translation>
+			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Gjetja e faqes HTML dështoi.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Loja është në versionin: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Patch-i i shkarkuar funksionon vetëm në versionin: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Ju mund të duhet të përditësoni lojën tuaj.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Njoftim për papajtueshmëri</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

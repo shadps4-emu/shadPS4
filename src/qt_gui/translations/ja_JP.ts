@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。ゲームを更新する必要があるかもしれません。</translation>
+			<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>HTMLページの取得に失敗しました。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>ゲームのバージョン: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>ダウンロードしたパッチはバージョン: %1 のみ機能します</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>ゲームを更新する必要があるかもしれません。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>互換性のない通知</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

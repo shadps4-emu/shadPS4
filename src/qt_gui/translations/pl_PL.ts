@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody. Jeśli poprawka się nie pojawia, możliwe, że nie istnieje dla konkretnego numeru seryjnego i wersji gry. Może być konieczne zaktualizowanie gry.</translation>
+			<translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody. Jeśli poprawka się nie pojawia, możliwe, że nie istnieje dla konkretnego numeru seryjnego i wersji gry.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Nie udało się pobrać strony HTML.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Gra jest w wersji: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Pobrana łatka działa tylko w wersji: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Możesz potrzebować zaktualizować swoją grę.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Powiadomienie o niezgodności</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

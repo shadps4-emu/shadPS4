@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats. Si le correctif n'apparaît pas, il se peut qu'il n'existe pas pour le numéro de série et la version spécifiques du jeu. Il peut être nécessaire de mettre à jour le jeu.</translation>
+			<translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats. Si le correctif n'apparaît pas, il se peut qu'il n'existe pas pour le numéro de série et la version spécifiques du jeu.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Échec de la récupération de la page HTML.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Le jeu est en version: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Le patch téléchargé ne fonctionne que sur la version: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Vous devrez peut-être mettre à jour votre jeu.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Avis d'incompatibilité</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

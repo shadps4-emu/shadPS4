@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi. Yamanın görünmemesi durumunda, belirli seri numarası ve oyun sürümü için mevcut olmayabilir. Oyunu güncellemeniz gerekebilir.</translation>
+			<translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi. Yamanın görünmemesi durumunda, belirli seri numarası ve oyun sürümü için mevcut olmayabilir.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>HTML sayfası alınamadı.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Oyun sürümde: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>İndirilen yamanın sadece sürümde çalışıyor: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Oyunuzu güncellemeniz gerekebilir.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Uyumsuzluk Bildirimi</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
