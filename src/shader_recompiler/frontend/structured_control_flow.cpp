@@ -144,32 +144,32 @@ std::string DumpExpr(const Statement* stmt) {
 [[maybe_unused]] std::string DumpTree(const Tree& tree, u32 indentation = 0) {
     std::string ret;
     std::string indent(indentation, ' ');
-    for (auto stmt = tree.begin(); stmt != tree.end(); ++stmt) {
-        switch (stmt->type) {
+    for (const auto& stmt : tree) {
+        switch (stmt.type) {
         case StatementType::Code:
             ret += fmt::format("{}    Block {:04x} -> {:04x} (0x{:016x});\n", indent,
-                               stmt->block->begin, stmt->block->end,
-                               reinterpret_cast<uintptr_t>(stmt->block));
+                               stmt.block->begin, stmt.block->end,
+                               reinterpret_cast<uintptr_t>(stmt.block));
             break;
         case StatementType::Goto:
-            ret += fmt::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt->cond),
-                               stmt->label->id);
+            ret += fmt::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt.cond),
+                               stmt.label->id);
             break;
         case StatementType::Label:
-            ret += fmt::format("{}L{}:\n", indent, stmt->id);
+            ret += fmt::format("{}L{}:\n", indent, stmt.id);
             break;
         case StatementType::If:
-            ret += fmt::format("{}    if ({}) {{\n", indent, DumpExpr(stmt->cond));
-            ret += DumpTree(stmt->children, indentation + 4);
+            ret += fmt::format("{}    if ({}) {{\n", indent, DumpExpr(stmt.cond));
+            ret += DumpTree(stmt.children, indentation + 4);
             ret += fmt::format("{}    }}\n", indent);
             break;
         case StatementType::Loop:
             ret += fmt::format("{}    do {{\n", indent);
-            ret += DumpTree(stmt->children, indentation + 4);
-            ret += fmt::format("{}    }} while ({});\n", indent, DumpExpr(stmt->cond));
+            ret += DumpTree(stmt.children, indentation + 4);
+            ret += fmt::format("{}    }} while ({});\n", indent, DumpExpr(stmt.cond));
             break;
         case StatementType::Break:
-            ret += fmt::format("{}    if ({}) break;\n", indent, DumpExpr(stmt->cond));
+            ret += fmt::format("{}    if ({}) break;\n", indent, DumpExpr(stmt.cond));
             break;
         case StatementType::Return:
             ret += fmt::format("{}    return;\n", indent);
@@ -181,7 +181,7 @@ std::string DumpExpr(const Statement* stmt) {
             ret += fmt::format("{}    unreachable;\n", indent);
             break;
         case StatementType::SetVariable:
-            ret += fmt::format("{}    goto_L{} = {};\n", indent, stmt->id, DumpExpr(stmt->op));
+            ret += fmt::format("{}    goto_L{} = {};\n", indent, stmt.id, DumpExpr(stmt.op));
             break;
         case StatementType::Function:
         case StatementType::Identity:
@@ -625,8 +625,8 @@ private:
             node.data.block = current_block;
         }};
         Tree& tree{parent.children};
-        for (auto it = tree.begin(); it != tree.end(); ++it) {
-            Statement& stmt{*it};
+        for (auto& child : tree) {
+            Statement& stmt{child};
             switch (stmt.type) {
             case StatementType::Label:
                 // Labels can be ignored

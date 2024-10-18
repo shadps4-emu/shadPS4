@@ -59,7 +59,7 @@ public:
         for (auto it = wait_list.begin(); it != wait_list.end();) {
             auto* waiter = *it;
             if (waiter->need_count > token_count) {
-                it++;
+                ++it;
                 continue;
             }
             it = wait_list.erase(it);
@@ -148,7 +148,7 @@ public:
         // Find the first with priority less then us and insert right before it.
         auto it = wait_list.begin();
         while (it != wait_list.end() && (*it)->priority > waiter->priority) {
-            it++;
+            ++it;
         }
         wait_list.insert(it, waiter);
         return it;

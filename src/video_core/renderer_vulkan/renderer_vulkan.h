@@ -70,7 +70,7 @@ public:
     bool IsVideoOutSurface(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
         return std::ranges::find_if(vo_buffers_addr, [&](VAddr vo_buffer) {
                    return vo_buffer == color_buffer.Address();
-               }) != vo_buffers_addr.end();
+               }) != vo_buffers_addr.cend();
     }
 
     bool ShowSplash(Frame* frame = nullptr);
