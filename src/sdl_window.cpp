@@ -308,40 +308,7 @@ SDL_Keymod KeyBinding::getCustomModState() {
     return state;
 }
 
-} // namespace KBMConfig
-
-namespace Frontend {
-using Libraries::Pad::OrbisPadButtonDataOffset;
-
-using namespace KBMConfig;
-using KBMConfig::AxisMapping;
-using KBMConfig::KeyBinding;
-
-// modifiers are bitwise or-d together, so we need to check if ours is in that
-template <typename T>
-typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingPartialModifiers(
-    const std::map<KeyBinding, T>& map, KeyBinding binding) {
-    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
-         it++) {
-        if ((it->first.key == binding.key) && (it->first.modifier & binding.modifier) != 0) {
-            return it;
-        }
-    }
-    return map.end(); // Return end if no match is found
-}
-template <typename T>
-typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingOnlyNoModifiers(
-    const std::map<KeyBinding, T>& map, KeyBinding binding) {
-    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
-         it++) {
-        if (it->first.key == binding.key && it->first.modifier == SDL_KMOD_NONE) {
-            return it;
-        }
-    }
-    return map.end(); // Return end if no match is found
-}
-
-void WindowSDL::parseInputConfig() {
+void parseInputConfig() {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
@@ -498,6 +465,39 @@ void WindowSDL::parseInputConfig() {
         }
     }
     file.close();
+}
+
+} // namespace KBMConfig
+
+namespace Frontend {
+using Libraries::Pad::OrbisPadButtonDataOffset;
+
+using namespace KBMConfig;
+using KBMConfig::AxisMapping;
+using KBMConfig::KeyBinding;
+
+// modifiers are bitwise or-d together, so we need to check if ours is in that
+template <typename T>
+typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingPartialModifiers(
+    const std::map<KeyBinding, T>& map, KeyBinding binding) {
+    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
+         it++) {
+        if ((it->first.key == binding.key) && (it->first.modifier & binding.modifier) != 0) {
+            return it;
+        }
+    }
+    return map.end(); // Return end if no match is found
+}
+template <typename T>
+typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingOnlyNoModifiers(
+    const std::map<KeyBinding, T>& map, KeyBinding binding) {
+    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
+         it++) {
+        if (it->first.key == binding.key && it->first.modifier == SDL_KMOD_NONE) {
+            return it;
+        }
+    }
+    return map.end(); // Return end if no match is found
 }
 
 Uint32 WindowSDL::keyRepeatCallback(void* param, Uint32 id, Uint32 interval) {
