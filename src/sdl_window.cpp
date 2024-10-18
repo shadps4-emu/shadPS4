@@ -17,6 +17,9 @@
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
 #endif
+#include <common/singleton.h>
+#include <core/libraries/mouse/mouse.h>
+#include <input/mouse.h>
 
 namespace Frontend {
 
@@ -114,11 +117,31 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+        onMouseAction(&event);
+        break;
     default:
         break;
     }
 }
-
+void WindowSDL::onMouseAction(const SDL_Event* event) {
+    auto* mouse = Common::Singleton<Input::GameMouse>::Instance();
+    using Libraries::Mouse::OrbisMouseButtonDataOffset;
+    u32 button = 0;
+    switch (event->button.button) {
+    case SDL_BUTTON_LEFT:
+        button = OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_PRIMARY;
+        break;
+    case SDL_BUTTON_RIGHT:
+        button = OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_SECONDARY;
+        break;
+    }
+    if (button != 0) {
+        mouse->CheckButton(0, button, event->type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+    }
+}
 void WindowSDL::onResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();
