@@ -142,8 +142,11 @@ if (WIN32)
 endif()
 
 # half
-add_library(half INTERFACE)
-target_include_directories(half INTERFACE half/include)
+if (NOT TARGET half::half)
+    add_library(half INTERFACE)
+    target_include_directories(half INTERFACE half/include)
+    add_library(half::half ALIAS half)
+endif()
 
 if (APPLE)
     # date
