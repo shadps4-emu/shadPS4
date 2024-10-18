@@ -19,7 +19,7 @@ class GameController;
 
 namespace KBMConfig {
 std::string getDefaultKeyboardConfig();
-void parseInputConfig();
+void parseInputConfig(const std::string game_id);
 
 class KeyBinding {
 public:

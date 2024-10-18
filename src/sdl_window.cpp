@@ -204,6 +204,7 @@ std::map<KeyBinding, u32> button_map = {};
 std::map<KeyBinding, AxisMapping> axis_map = {};
 std::map<SDL_Keycode, std::pair<SDL_Keymod, bool>> key_to_modkey_toggle_map = {};
 
+
 // i wrapped it in a function so I can collapse it
 std::string getDefaultKeyboardConfig() {
     std::string default_config =
@@ -272,6 +273,8 @@ axis_left_y_plus = s;
     return default_config;
 }
 
+
+
 // Flags and values for varying purposes
 int mouse_joystick_binding = 0;
 float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.125;
@@ -308,13 +311,12 @@ SDL_Keymod KeyBinding::getCustomModState() {
     return state;
 }
 
-void parseInputConfig() {
+void parseInputConfig(const std::string game_id = "") {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "kbmConfig";
-    const auto config_file =
-        config_dir / (std::string(Common::ElfInfo::Instance().GameSerial()) + ".ini");
+    const auto config_file = config_dir / (game_id + ".ini");
     const auto default_config_file = config_dir / "default.ini";
 
     // Ensure the config directory exists
@@ -327,7 +329,7 @@ void parseInputConfig() {
         // If game-specific config doesn't exist, check for the default config
         if (!std::filesystem::exists(default_config_file)) {
             // If the default config is also missing, create it from getDefaultConfig()
-            const auto default_config = getDefaultKeyboardConfig();
+            const auto default_config = getDefaultKeyboardConfig(); 
             std::ofstream default_config_stream(default_config_file);
             if (default_config_stream) {
                 default_config_stream << default_config;
@@ -335,9 +337,13 @@ void parseInputConfig() {
         }
 
         // If default config now exists, copy it to the game-specific config file
-        if (std::filesystem::exists(default_config_file)) {
+        if (std::filesystem::exists(default_config_file) && !game_id.empty()) {
             std::filesystem::copy(default_config_file, config_file);
         }
+    }
+    // if we just called the function to generate the directory and the default .ini
+    if(game_id.empty()) {
+        return;
     }
 
     // we reset these here so in case the user fucks up or doesn't include this we can fall back to
@@ -467,14 +473,14 @@ void parseInputConfig() {
     file.close();
 }
 
-} // namespace KBMConfig
+}
 
 namespace Frontend {
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
 using namespace KBMConfig;
-using KBMConfig::AxisMapping;
 using KBMConfig::KeyBinding;
+using KBMConfig::AxisMapping;
 
 // modifiers are bitwise or-d together, so we need to check if ours is in that
 template <typename T>
@@ -615,7 +621,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
     // initialize kbm controls
-    parseInputConfig();
+    parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     // Start polling the mouse
     if (mouse_polling_id == 0) {
         mouse_polling_id = SDL_AddTimer(33, mousePolling, (void*)this);
@@ -721,7 +727,7 @@ void WindowSDL::onKeyboardMouseEvent(const SDL_Event* event) {
     if (event->type == SDL_EVENT_KEY_DOWN) {
         // Reparse kbm inputs
         if (binding.key == SDLK_F8) {
-            parseInputConfig();
+            parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
         }
         // Toggle mouse capture and movement input
         else if (binding.key == SDLK_F9) {
