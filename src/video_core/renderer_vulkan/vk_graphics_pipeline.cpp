@@ -5,8 +5,8 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
-#include "common/scope_exit.h"
 #include "common/assert.h"
+#include "common/scope_exit.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -389,6 +389,10 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     Shader::PushData push_data{};
     Shader::Backend::Bindings binding{};
 
+    buffer_infos.clear();
+    buffer_views.clear();
+    image_infos.clear();
+
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
@@ -399,8 +403,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
         stage->PushUd(binding, push_data);
 
-        BindBuffers(buffer_cache, texture_cache, *stage, binding, push_data,
-                           set_writes, buffer_barriers);
+        BindBuffers(buffer_cache, texture_cache, *stage, binding, push_data, set_writes,
+                    buffer_barriers);
 
         BindTextures(texture_cache, *stage, binding, set_writes);
     }
@@ -414,6 +418,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     if (set_writes.empty()) {
         return;
     }
+
     if (!buffer_barriers.empty()) {
         const auto dependencies = vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
@@ -423,6 +428,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         scheduler.EndRendering();
         cmdbuf.pipelineBarrier2(dependencies);
     }
+
     // Bind descriptor set.
     if (uses_push_descriptors) {
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
@@ -434,8 +440,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         set_write.dstSet = desc_set;
     }
     instance.GetDevice().updateDescriptorSets(set_writes, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                              desc_set, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, desc_set, {});
 }
 
 } // namespace Vulkan

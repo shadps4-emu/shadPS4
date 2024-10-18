@@ -119,14 +119,15 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
 
     info->PushUd(binding, push_data);
 
+    buffer_infos.clear();
+    buffer_views.clear();
+    image_infos.clear();
+
     // Most of the time when a metadata is updated with a shader it gets cleared. It means
     // we can skip the whole dispatch and update the tracked state instead. Also, it is not
     // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
     // will need its full emulation anyways. For cases of metadata read a warning will be logged.
-    for (const auto& desc : info->buffers) {
-        if (desc.is_gds_buffer) {
-            continue;
-        }
+    for (const auto& desc : info->texture_buffers) {
         const VAddr address = desc.GetSharp(*info).base_address;
         if (desc.is_written) {
             if (texture_cache.TouchMeta(address, true)) {
@@ -140,14 +141,15 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         }
     }
 
-    BindBuffers(buffer_cache, texture_cache, *info, binding, push_data,
-                       set_writes, buffer_barriers);
+    BindBuffers(buffer_cache, texture_cache, *info, binding, push_data, set_writes,
+                buffer_barriers);
 
     BindTextures(texture_cache, *info, binding, set_writes);
 
     if (set_writes.empty()) {
         return false;
     }
+
     const auto cmdbuf = scheduler.CommandBuffer();
     if (!buffer_barriers.empty()) {
         const auto dependencies = vk::DependencyInfo{
@@ -158,8 +160,10 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         scheduler.EndRendering();
         cmdbuf.pipelineBarrier2(dependencies);
     }
+
     cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(push_data),
                          &push_data);
+
     // Bind descriptor set.
     if (uses_push_descriptors) {
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0,
@@ -171,8 +175,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         set_write.dstSet = desc_set;
     }
     instance.GetDevice().updateDescriptorSets(set_writes, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, desc_set,
-                              {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, desc_set, {});
 
     return true;
 }

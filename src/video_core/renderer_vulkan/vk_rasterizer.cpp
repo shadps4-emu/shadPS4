@@ -258,8 +258,8 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
     scheduler.BeginRendering(state);
 }
 
-void Rasterizer::InlineDataToGds(u32 gds_offset, u32 value) {
-    buffer_cache.InlineDataToGds(gds_offset, value);
+void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
+    buffer_cache.InlineData(address, value, num_bytes, is_gds);
 }
 
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {

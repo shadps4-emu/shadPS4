@@ -149,6 +149,8 @@ public:
         return impl.SystemReservedVirtualBase();
     }
 
+    bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
+
     void SetupMemoryRegions(u64 flexible_size);
 
     PAddr PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment);

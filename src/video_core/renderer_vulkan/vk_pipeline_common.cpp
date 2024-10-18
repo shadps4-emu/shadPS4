@@ -4,11 +4,11 @@
 #include <boost/container/static_vector.hpp>
 
 #include "shader_recompiler/info.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 
 namespace Vulkan {
 
@@ -22,15 +22,14 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
 
 Pipeline::~Pipeline() = default;
 
-void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::TextureCache& texture_cache,
-                                  const Shader::Info& stage,
-                                  Shader::Backend::Bindings& binding, Shader::PushData& push_data,
-                                  DescriptorWrites& set_writes, BufferBarriers& buffer_barriers) const {
+void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache,
+                           VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
+                           Shader::Backend::Bindings& binding, Shader::PushData& push_data,
+                           DescriptorWrites& set_writes, BufferBarriers& buffer_barriers) const {
     using BufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
     static boost::container::static_vector<BufferBindingInfo, 32> buffer_bindings;
 
     buffer_bindings.clear();
-    buffer_infos.clear();
 
     for (const auto& desc : stage.buffers) {
         const auto vsharp = desc.GetSharp(stage);
@@ -46,7 +45,6 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::Text
     static boost::container::static_vector<TexBufferBindingInfo, 32> texbuffer_bindings;
 
     texbuffer_bindings.clear();
-    buffer_views.clear();
 
     for (const auto& desc : stage.texture_buffers) {
         const auto vsharp = desc.GetSharp(stage);
@@ -75,16 +73,16 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::Text
                 buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
         } else {
-            const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(vsharp.base_address, vsharp.GetSize(), desc.is_written,
-                                          false, buffer_id);
+            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
+                vsharp.base_address, vsharp.GetSize(), desc.is_written, false, buffer_id);
             const u32 alignment =
                 is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
             push_data.AddOffset(binding.buffer, adjust);
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, vsharp.GetSize() + adjust);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned,
+                                      vsharp.GetSize() + adjust);
         }
 
         set_writes.push_back({
@@ -107,9 +105,8 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::Text
         vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         if (buffer_id) {
             const u32 alignment = instance.TexelBufferMinAlignment();
-            const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(vsharp.base_address, vsharp.GetSize(), desc.is_written, true,
-                                          buffer_id);
+            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
+                vsharp.base_address, vsharp.GetSize(), desc.is_written, true, buffer_id);
             const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
             ASSERT_MSG(fmt_stride == vsharp.GetStride(),
                        "Texel buffer stride must match format stride");
@@ -117,12 +114,13 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::Text
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % fmt_stride == 0);
             push_data.AddOffset(binding.buffer, adjust / fmt_stride);
-            buffer_view = vk_buffer->View(offset_aligned, vsharp.GetSize() + adjust, desc.is_written,
-                                          vsharp.GetDataFmt(), vsharp.GetNumberFmt());
+            buffer_view =
+                vk_buffer->View(offset_aligned, vsharp.GetSize() + adjust, desc.is_written,
+                                vsharp.GetDataFmt(), vsharp.GetNumberFmt());
             if (auto barrier =
-                vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                      : vk::AccessFlagBits2::eShaderRead,
-                                      vk::PipelineStageFlagBits2::eComputeShader)) {
+                    vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                          : vk::AccessFlagBits2::eShaderRead,
+                                          vk::PipelineStageFlagBits2::eComputeShader)) {
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written) {
@@ -151,7 +149,6 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
     static boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 
     image_bindings.clear();
-    image_infos.clear();
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
