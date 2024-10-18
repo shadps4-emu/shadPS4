@@ -33,6 +33,13 @@ public:
     }
 
     using DescriptorWrites = boost::container::small_vector<vk::WriteDescriptorSet, 16>;
+    using BufferBarriers = boost::container::small_vector<vk::BufferMemoryBarrier2, 16>;
+
+    void BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::TextureCache& texture_cache,
+                     const Shader::Info& stage, Shader::Backend::Bindings& binding,
+                     Shader::PushData& push_data, DescriptorWrites& set_writes,
+                     BufferBarriers& buffer_barriers) const;
+
     void BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
                       Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const;
 
@@ -44,6 +51,8 @@ protected:
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
     static boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
+    static boost::container::static_vector<vk::BufferView, 8> buffer_views;
+    static boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
 };
 
 } // namespace Vulkan

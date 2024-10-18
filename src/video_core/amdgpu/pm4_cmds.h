@@ -313,25 +313,26 @@ struct PM4CmdEventWriteEop {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence() const {
+    void SignalFence(auto&& write_mem) const {
+        u32* address = Address<u32>();
         switch (data_sel.Value()) {
         case DataSelect::None: {
             break;
         }
         case DataSelect::Data32Low: {
-            *Address<u32>() = DataDWord();
+            write_mem(address, DataDWord(), sizeof(u32));
             break;
         }
         case DataSelect::Data64: {
-            *Address<u64>() = DataQWord();
+            write_mem(address, DataQWord(), sizeof(u64));
             break;
         }
         case DataSelect::GpuClock64: {
-            *Address<u64>() = GetGpuClock64();
+            write_mem(address, GetGpuClock64(), sizeof(u64));
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            write_mem(address, Common::FencedRDTSC(), sizeof(u64));
             break;
         }
         default: {
@@ -401,6 +402,20 @@ struct PM4DmaData {
     u32 dst_addr_lo;
     u32 dst_addr_hi;
     u32 command;
+
+    template <typename T>
+    T SrcAddress() const {
+        return std::bit_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
+    }
+
+    template <typename T>
+    T DstAddress() const {
+        return std::bit_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
+    }
+
+    u32 NumBytes() const noexcept {
+        return command & 0x1fffff;
+    }
 };
 
 struct PM4CmdWaitRegMem {
@@ -432,7 +447,7 @@ struct PM4CmdWaitRegMem {
 
     template <typename T = u32*>
     T Address() const {
-        return reinterpret_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
     }
 
     bool Test() const {
@@ -534,11 +549,11 @@ struct PM4CmdEventWriteEos {
         return this->data;
     }
 
-    void SignalFence() const {
+    void SignalFence(auto&& write_mem) const {
         const auto cmd = command.Value();
         switch (cmd) {
         case Command::SignalFence: {
-            *Address() = DataDWord();
+            write_mem(Address(), DataDWord(), sizeof(u32));
             break;
         }
         case Command::GdsStore: {

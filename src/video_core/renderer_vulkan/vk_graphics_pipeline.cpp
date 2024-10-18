@@ -5,8 +5,8 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
-#include "common/alignment.h"
 #include "common/assert.h"
+#include "common/scope_exit.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -384,13 +384,13 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                      VideoCore::BufferCache& buffer_cache,
                                      VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
-    boost::container::static_vector<vk::BufferView, 8> buffer_views;
-    boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
-    boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
+    BufferBarriers buffer_barriers;
     Shader::PushData push_data{};
     Shader::Backend::Bindings binding{};
 
+    buffer_infos.clear();
+    buffer_views.clear();
     image_infos.clear();
 
     for (const auto* stage : stages) {
@@ -402,111 +402,22 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
         stage->PushUd(binding, push_data);
-        for (const auto& buffer : stage->buffers) {
-            const auto vsharp = buffer.GetSharp(*stage);
-            const bool is_storage = buffer.IsStorage(vsharp);
-            if (vsharp && vsharp.GetSize() > 0) {
-                const VAddr address = vsharp.base_address;
-                if (texture_cache.IsMeta(address)) {
-                    LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
-                }
-                const u32 size = vsharp.GetSize();
-                const u32 alignment =
-                    is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-                const auto [vk_buffer, offset] =
-                    buffer_cache.ObtainBuffer(address, size, buffer.is_written);
-                const u32 offset_aligned = Common::AlignDown(offset, alignment);
-                const u32 adjust = offset - offset_aligned;
-                ASSERT(adjust % 4 == 0);
-                push_data.AddOffset(binding.buffer, adjust);
-                buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            } else if (instance.IsNullDescriptorSupported()) {
-                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
-            } else {
-                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
-                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
-            }
-            set_writes.push_back({
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding.unified++,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
-                                             : vk::DescriptorType::eUniformBuffer,
-                .pBufferInfo = &buffer_infos.back(),
-            });
-            ++binding.buffer;
-        }
 
-        const auto null_buffer_view =
-            instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
-        for (const auto& desc : stage->texture_buffers) {
-            const auto vsharp = desc.GetSharp(*stage);
-            vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
-            const u32 size = vsharp.GetSize();
-            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
-                const VAddr address = vsharp.base_address;
-                const u32 alignment = instance.TexelBufferMinAlignment();
-                const auto [vk_buffer, offset] =
-                    buffer_cache.ObtainBuffer(address, size, desc.is_written, true);
-                const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
-                ASSERT_MSG(fmt_stride == vsharp.GetStride(),
-                           "Texel buffer stride must match format stride");
-                const u32 offset_aligned = Common::AlignDown(offset, alignment);
-                const u32 adjust = offset - offset_aligned;
-                ASSERT(adjust % fmt_stride == 0);
-                push_data.AddOffset(binding.buffer, adjust / fmt_stride);
-                buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
-                                              vsharp.GetDataFmt(), vsharp.GetNumberFmt());
-                const auto dst_access = desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                        : vk::AccessFlagBits2::eShaderRead;
-                if (auto barrier = vk_buffer->GetBarrier(
-                        dst_access, vk::PipelineStageFlagBits2::eVertexShader)) {
-                    buffer_barriers.emplace_back(*barrier);
-                }
-                if (desc.is_written) {
-                    texture_cache.InvalidateMemoryFromGPU(address, size);
-                }
-            }
-            set_writes.push_back({
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding.unified++,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                  : vk::DescriptorType::eUniformTexelBuffer,
-                .pTexelBufferView = &buffer_view,
-            });
-            ++binding.buffer;
-        }
+        BindBuffers(buffer_cache, texture_cache, *stage, binding, push_data, set_writes,
+                    buffer_barriers);
 
         BindTextures(texture_cache, *stage, binding, set_writes);
-
-        for (const auto& sampler : stage->samplers) {
-            auto ssharp = sampler.GetSharp(*stage);
-            if (ssharp.force_degamma) {
-                LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
-            }
-            if (sampler.disable_aniso) {
-                const auto& tsharp = stage->images[sampler.associated_image].GetSharp(*stage);
-                if (tsharp.base_level == 0 && tsharp.last_level == 0) {
-                    ssharp.max_aniso.Assign(AmdGpu::AnisoRatio::One);
-                }
-            }
-            const auto vk_sampler = texture_cache.GetSampler(ssharp);
-            image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-            set_writes.push_back({
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding.unified++,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eSampler,
-                .pImageInfo = &image_infos.back(),
-            });
-        }
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
+    SCOPE_EXIT {
+        cmdbuf.pushConstants(*pipeline_layout, gp_stage_flags, 0U, sizeof(push_data), &push_data);
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, Handle());
+    };
+
+    if (set_writes.empty()) {
+        return;
+    }
 
     if (!buffer_barriers.empty()) {
         const auto dependencies = vk::DependencyInfo{
@@ -518,22 +429,18 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         cmdbuf.pipelineBarrier2(dependencies);
     }
 
-    if (!set_writes.empty()) {
-        if (uses_push_descriptors) {
-            cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                        set_writes);
-        } else {
-            const auto desc_set = desc_heap.Commit(*desc_layout);
-            for (auto& set_write : set_writes) {
-                set_write.dstSet = desc_set;
-            }
-            instance.GetDevice().updateDescriptorSets(set_writes, {});
-            cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                      desc_set, {});
-        }
+    // Bind descriptor set.
+    if (uses_push_descriptors) {
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
+                                    set_writes);
+        return;
     }
-    cmdbuf.pushConstants(*pipeline_layout, gp_stage_flags, 0U, sizeof(push_data), &push_data);
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, Handle());
+    const auto desc_set = desc_heap.Commit(*desc_layout);
+    for (auto& set_write : set_writes) {
+        set_write.dstSet = desc_set;
+    }
+    instance.GetDevice().updateDescriptorSets(set_writes, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, desc_set, {});
 }
 
 } // namespace Vulkan

@@ -98,10 +98,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
 
     const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
     buffer_cache.BindVertexBuffers(vs_info);
-    const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
+    buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
-    const auto total_offset = base + offset;
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
 
     BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
@@ -110,9 +109,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
 
     if (is_indexed) {
-        cmdbuf.drawIndexedIndirect(buffer->Handle(), total_offset, 1, 0);
+        cmdbuf.drawIndexedIndirect(buffer->Handle(), base, 1, 0);
     } else {
-        cmdbuf.drawIndirect(buffer->Handle(), total_offset, 1, 0);
+        cmdbuf.drawIndirect(buffer->Handle(), base, 1, 0);
     }
 }
 
@@ -161,9 +160,8 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     scheduler.EndRendering();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
-    const auto total_offset = base + offset;
-    cmdbuf.dispatchIndirect(buffer->Handle(), total_offset);
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
+    cmdbuf.dispatchIndirect(buffer->Handle(), base);
 }
 
 u64 Rasterizer::Flush() {
@@ -260,8 +258,8 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
     scheduler.BeginRendering(state);
 }
 
-void Rasterizer::InlineDataToGds(u32 gds_offset, u32 value) {
-    buffer_cache.InlineDataToGds(gds_offset, value);
+void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
+    buffer_cache.InlineData(address, value, num_bytes, is_gds);
 }
 
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {

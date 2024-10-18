@@ -45,6 +45,10 @@ public:
     explicit AddressSpace();
     ~AddressSpace();
 
+    [[nodiscard]] u8* BackingBase() const noexcept {
+        return backing_base;
+    }
+
     [[nodiscard]] VAddr SystemManagedVirtualBase() noexcept {
         return reinterpret_cast<VAddr>(system_managed_base);
     }

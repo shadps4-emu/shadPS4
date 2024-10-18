@@ -6,6 +6,7 @@
 #include <type_traits>
 #include "common/func_traits.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 
 namespace Shader::Optimization {
 
@@ -215,36 +216,17 @@ void FoldAdd(IR::Block& block, IR::Inst& inst) {
     }
 }
 
-template <u32 idx>
-bool IsArgImm(const IR::Inst& inst, u32 imm) {
-    const IR::Value& arg = inst.Arg(idx);
-    return arg.IsImmediate() && arg.U32() == imm;
-};
-
-void FoldBooleanConvert(IR::Inst& inst) {
-    // Eliminate pattern
-    // %4 = <some bool>
-    // %5 = SelectU32 %4, #1, #0 (uses: 2)
-    // %8 = INotEqual %5, #0 (uses: 1)
-    if (!IsArgImm<1>(inst, 0)) {
-        return;
-    }
-    IR::Inst* prod = inst.Arg(0).TryInstRecursive();
-    if (!prod || prod->GetOpcode() != IR::Opcode::SelectU32) {
-        return;
-    }
-    if (IsArgImm<1>(*prod, 1) && IsArgImm<2>(*prod, 0)) {
-        inst.ReplaceUsesWith(prod->Arg(0));
-    }
-}
-
-void FoldCmpClass(IR::Inst& inst) {
+void FoldCmpClass(IR::Block& block, IR::Inst& inst) {
     ASSERT_MSG(inst.Arg(1).IsImmediate(), "Unable to resolve compare operation");
     const auto class_mask = static_cast<IR::FloatClassFunc>(inst.Arg(1).U32());
     if ((class_mask & IR::FloatClassFunc::NaN) == IR::FloatClassFunc::NaN) {
         inst.ReplaceOpcode(IR::Opcode::FPIsNan32);
     } else if ((class_mask & IR::FloatClassFunc::Infinity) == IR::FloatClassFunc::Infinity) {
         inst.ReplaceOpcode(IR::Opcode::FPIsInf32);
+    } else if ((class_mask & IR::FloatClassFunc::Finite) == IR::FloatClassFunc::Finite) {
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        const IR::F32 value = IR::F32{inst.Arg(0)};
+        inst.ReplaceUsesWith(ir.LogicalNot(ir.LogicalOr(ir.FPIsInf(value), ir.FPIsInf(value))));
     } else {
         UNREACHABLE();
     }
@@ -276,7 +258,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a * b; });
         return;
     case IR::Opcode::FPCmpClass32:
-        FoldCmpClass(inst);
+        FoldCmpClass(block, inst);
         return;
     case IR::Opcode::ShiftLeftLogical32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return static_cast<u32>(a << b); });

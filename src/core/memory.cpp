@@ -54,6 +54,17 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
              total_flexible_size, total_direct_size);
 }
 
+bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
+    const VAddr virtual_addr = std::bit_cast<VAddr>(address);
+    const auto& vma = FindVMA(virtual_addr)->second;
+    if (vma.type != VMAType::Direct) {
+        return false;
+    }
+    u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
+    memcpy(backing, data, num_bytes);
+    return true;
+}
+
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment) {
     std::scoped_lock lk{mutex};
 

@@ -8,6 +8,9 @@
 namespace VideoCore {
 
 Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sampler) {
+    if (sampler.force_degamma) {
+        LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
+    }
     using namespace Vulkan;
     const vk::SamplerCreateInfo sampler_ci = {
         .magFilter = LiverpoolToVK::Filter(sampler.xy_mag_filter),
