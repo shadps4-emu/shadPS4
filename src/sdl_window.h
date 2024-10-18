@@ -5,6 +5,7 @@
 
 #include <string>
 #include "common/types.h"
+#include "input/controller.h"
 
 #include <SDL3/SDL_events.h>
 
@@ -16,7 +17,8 @@ namespace Input {
 class GameController;
 }
 
-namespace Frontend {
+namespace KBMConfig {
+std::string getDefaultKeyboardConfig();
 
 class KeyBinding {
 public:
@@ -28,6 +30,14 @@ public:
     ~KeyBinding(){};
     static SDL_Keymod getCustomModState();
 };
+
+struct AxisMapping {
+    Input::Axis axis;
+    int value; // Value to set for key press (+127 or -127 for movement)
+};
+} // namespace KBMConfig
+
+namespace Frontend {
 
 enum class WindowSystemType : u8 {
     Headless,
@@ -88,8 +98,8 @@ private:
     void onGamepadEvent(const SDL_Event* event);
     int sdlGamepadToOrbisButton(u8 button);
 
-    void updateModKeyedInputsManually(KeyBinding& binding);
-    void updateButton(KeyBinding& binding, u32 button, bool isPressed);
+    void updateModKeyedInputsManually(KBMConfig::KeyBinding& binding);
+    void updateButton(KBMConfig::KeyBinding& binding, u32 button, bool isPressed);
     static Uint32 keyRepeatCallback(void* param, Uint32 id, Uint32 interval);
     static Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
 

@@ -53,61 +53,11 @@ Uint32 getMouseWheelEvent(const SDL_Event* event) {
     return 0;
 }
 
-namespace Frontend {
+namespace KBMConfig {
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
-KeyBinding::KeyBinding(const SDL_Event* event) {
-    modifier = getCustomModState();
-    key = 0;
-    // std::cout << "Someone called the new binding ctor!\n";
-    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
-        key = event->key.key;
-    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-               event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
-        key = event->button.button;
-    } else if (event->type == SDL_EVENT_MOUSE_WHEEL) {
-        key = getMouseWheelEvent(event);
-    } else {
-        std::cout << "We don't support this event type!\n";
-    }
-}
-
-bool KeyBinding::operator<(const KeyBinding& other) const {
-    return std::tie(key, modifier) < std::tie(other.key, other.modifier);
-}
-
-// modifiers are bitwise or-d together, so we need to check if ours is in that
-template <typename T>
-typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingPartialModifiers(
-    const std::map<KeyBinding, T>& map, KeyBinding binding) {
-    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
-         it++) {
-        if ((it->first.key == binding.key) && (it->first.modifier & binding.modifier) != 0) {
-            return it;
-        }
-    }
-    return map.end(); // Return end if no match is found
-}
-template <typename T>
-typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingOnlyNoModifiers(
-    const std::map<KeyBinding, T>& map, KeyBinding binding) {
-    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
-         it++) {
-        if (it->first.key == binding.key && it->first.modifier == SDL_KMOD_NONE) {
-            return it;
-        }
-    }
-    return map.end(); // Return end if no match is found
-}
-
-// Axis map: maps key+modifier to controller axis and axis value
-struct AxisMapping {
-    Input::Axis axis;
-    int value; // Value to set for key press (+127 or -127 for movement)
-};
-
 // i strongly suggest you collapse these maps
-std::map<std::string, u32> string_to_cbutton_map = {
+const std::map<std::string, u32> string_to_cbutton_map = {
     {"triangle", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE},
     {"circle", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE},
     {"cross", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS},
@@ -127,7 +77,7 @@ std::map<std::string, u32> string_to_cbutton_map = {
     {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 };
-std::map<std::string, AxisMapping> string_to_axis_map = {
+const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
     {"axis_left_x_minus", {Input::Axis::LeftX, -127}},
     {"axis_left_y_plus", {Input::Axis::LeftY, 127}},
@@ -137,7 +87,7 @@ std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_right_y_plus", {Input::Axis::RightY, 127}},
     {"axis_right_y_minus", {Input::Axis::RightY, -127}},
 };
-std::map<std::string, u32> string_to_keyboard_key_map = {
+const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"a", SDLK_A},
     {"b", SDLK_B},
     {"c", SDLK_C},
@@ -234,7 +184,7 @@ std::map<std::string, u32> string_to_keyboard_key_map = {
     {"kpequals", SDLK_KP_EQUALS},
     {"capslock", SDLK_CAPSLOCK},
 };
-std::map<std::string, u32> string_to_keyboard_mod_key_map = {
+const std::map<std::string, u32> string_to_keyboard_mod_key_map = {
     {"lshift", SDL_KMOD_LSHIFT}, {"rshift", SDL_KMOD_RSHIFT},
     {"lctrl", SDL_KMOD_LCTRL},   {"rctrl", SDL_KMOD_RCTRL},
     {"lalt", SDL_KMOD_LALT},     {"ralt", SDL_KMOD_RALT},
@@ -250,22 +200,6 @@ std::map<std::string, u32> string_to_keyboard_mod_key_map = {
 std::map<KeyBinding, u32> button_map = {};
 std::map<KeyBinding, AxisMapping> axis_map = {};
 std::map<SDL_Keycode, std::pair<SDL_Keymod, bool>> key_to_modkey_toggle_map = {};
-
-SDL_Keymod KeyBinding::getCustomModState() {
-    SDL_Keymod state = SDL_GetModState();
-    for (auto mod_flag : key_to_modkey_toggle_map) {
-        if (mod_flag.second.second) {
-            state |= mod_flag.second.first;
-        }
-    }
-    return state;
-}
-
-// Flags and values for varying purposes
-int mouse_joystick_binding = 0;
-float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.125;
-Uint32 mouse_polling_id = 0;
-bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
 // i wrapped it in a function so I can collapse it
 std::string getDefaultKeyboardConfig() {
@@ -332,6 +266,75 @@ axis_left_y_minus = w;
 axis_left_y_plus = s;
 )";
     return default_config;
+}
+
+// Flags and values for varying purposes
+int mouse_joystick_binding = 0;
+float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.125;
+Uint32 mouse_polling_id = 0;
+bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
+
+KeyBinding::KeyBinding(const SDL_Event* event) {
+    modifier = getCustomModState();
+    key = 0;
+    // std::cout << "Someone called the new binding ctor!\n";
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+        key = event->key.key;
+    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+               event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        key = event->button.button;
+    } else if (event->type == SDL_EVENT_MOUSE_WHEEL) {
+        key = getMouseWheelEvent(event);
+    } else {
+        std::cout << "We don't support this event type!\n";
+    }
+}
+
+bool KeyBinding::operator<(const KeyBinding& other) const {
+    return std::tie(key, modifier) < std::tie(other.key, other.modifier);
+}
+
+SDL_Keymod KeyBinding::getCustomModState() {
+    SDL_Keymod state = SDL_GetModState();
+    for (auto mod_flag : KBMConfig::key_to_modkey_toggle_map) {
+        if (mod_flag.second.second) {
+            state |= mod_flag.second.first;
+        }
+    }
+    return state;
+}
+
+} // namespace KBMConfig
+
+namespace Frontend {
+using Libraries::Pad::OrbisPadButtonDataOffset;
+
+using namespace KBMConfig;
+using KBMConfig::AxisMapping;
+using KBMConfig::KeyBinding;
+
+// modifiers are bitwise or-d together, so we need to check if ours is in that
+template <typename T>
+typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingPartialModifiers(
+    const std::map<KeyBinding, T>& map, KeyBinding binding) {
+    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
+         it++) {
+        if ((it->first.key == binding.key) && (it->first.modifier & binding.modifier) != 0) {
+            return it;
+        }
+    }
+    return map.end(); // Return end if no match is found
+}
+template <typename T>
+typename std::map<KeyBinding, T>::const_iterator FindKeyAllowingOnlyNoModifiers(
+    const std::map<KeyBinding, T>& map, KeyBinding binding) {
+    for (typename std::map<KeyBinding, T>::const_iterator it = map.cbegin(); it != map.cend();
+         it++) {
+        if (it->first.key == binding.key && it->first.modifier == SDL_KMOD_NONE) {
+            return it;
+        }
+    }
+    return map.end(); // Return end if no match is found
 }
 
 void WindowSDL::parseInputConfig(const std::string& filename) {
