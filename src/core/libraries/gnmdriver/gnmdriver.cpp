@@ -359,12 +359,13 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     eq->AddEvent(kernel_event);
 
     Platform::IrqC::Instance()->Register(
-        Platform::InterruptId::GfxEop,
+        static_cast<Platform::InterruptId>(id),
         [=](Platform::InterruptId irq) {
-            ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
+            ASSERT_MSG(irq == static_cast<Platform::InterruptId>(id),
                        "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
                                                      // proper filtering in trigger function
-            eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
+            eq->TriggerEvent(static_cast<GnmEventIdents>(id), SceKernelEvent::Filter::GraphicsCore,
+                             nullptr);
         },
         eq);
     return ORBIS_OK;
@@ -468,7 +469,6 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
 
 s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    ASSERT_MSG(id == GnmEventIdents::GfxEop);
 
     if (!eq) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -476,7 +476,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
 
     eq->RemoveEvent(id);
 
-    Platform::IrqC::Instance()->Unregister(Platform::InterruptId::GfxEop, eq);
+    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), eq);
     return ORBIS_OK;
 }
 
