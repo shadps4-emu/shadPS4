@@ -345,6 +345,13 @@ set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
               src/core/libraries/fiber/fiber.h
 )
 
+set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
+             src/core/libraries/videodec/videodec2_impl.h
+             src/core/libraries/videodec/videodec2.cpp
+             src/core/libraries/videodec/videodec2.h
+             src/core/libraries/videodec/videodec2_avc.h
+)
+
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
@@ -498,6 +505,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${MISC_LIBS}
          ${DIALOGS_LIB}
          ${FIBER_LIB}
+         ${VDEC_LIB}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h

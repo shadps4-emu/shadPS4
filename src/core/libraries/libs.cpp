@@ -41,6 +41,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/usbd/usbd.h"
+#include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
 
 namespace Libraries {
@@ -80,6 +81,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ErrorDialog::RegisterlibSceErrorDialog(sym);
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
     Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
+    Libraries::Vdec2::RegisterlibSceVdec2(sym);
     Libraries::Audio3d::RegisterlibSceAudio3d(sym);
     Libraries::Ime::RegisterlibSceIme(sym);
     Libraries::GameLiveStreaming::RegisterlibSceGameLiveStreaming(sym);
