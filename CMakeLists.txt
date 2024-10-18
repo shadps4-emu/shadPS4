@@ -184,6 +184,9 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/ajm/ajm.cpp
               src/core/libraries/ajm/ajm.h
+              src/core/libraries/ajm/ajm_mp3.h 
+              src/core/libraries/ajm/ajm_mp3.cpp
+              src/core/libraries/ajm/ajm_instance.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
