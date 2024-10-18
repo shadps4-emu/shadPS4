@@ -168,6 +168,10 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"rmeta", SDLK_RGUI},
     {"lwin", SDLK_LGUI},
     {"rwin", SDLK_RGUI},
+    {"home", SDLK_HOME},
+    {"end", SDLK_END},
+    {"pgup", SDLK_PAGEUP},
+    {"pgdown", SDLK_PAGEDOWN},
     {"leftbutton", SDL_BUTTON_LEFT},
     {"rightbutton", SDL_BUTTON_RIGHT},
     {"middlebutton", SDL_BUTTON_MIDDLE},
@@ -203,7 +207,6 @@ const std::map<std::string, u32> string_to_keyboard_mod_key_map = {
 std::map<KeyBinding, u32> button_map = {};
 std::map<KeyBinding, AxisMapping> axis_map = {};
 std::map<SDL_Keycode, std::pair<SDL_Keymod, bool>> key_to_modkey_toggle_map = {};
-
 
 // i wrapped it in a function so I can collapse it
 std::string getDefaultKeyboardConfig() {
@@ -273,8 +276,6 @@ axis_left_y_plus = s;
     return default_config;
 }
 
-
-
 // Flags and values for varying purposes
 int mouse_joystick_binding = 0;
 float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.125;
@@ -329,7 +330,7 @@ void parseInputConfig(const std::string game_id = "") {
         // If game-specific config doesn't exist, check for the default config
         if (!std::filesystem::exists(default_config_file)) {
             // If the default config is also missing, create it from getDefaultConfig()
-            const auto default_config = getDefaultKeyboardConfig(); 
+            const auto default_config = getDefaultKeyboardConfig();
             std::ofstream default_config_stream(default_config_file);
             if (default_config_stream) {
                 default_config_stream << default_config;
@@ -342,7 +343,7 @@ void parseInputConfig(const std::string game_id = "") {
         }
     }
     // if we just called the function to generate the directory and the default .ini
-    if(game_id.empty()) {
+    if (game_id.empty()) {
         return;
     }
 
@@ -473,14 +474,14 @@ void parseInputConfig(const std::string game_id = "") {
     file.close();
 }
 
-}
+} // namespace KBMConfig
 
 namespace Frontend {
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
 using namespace KBMConfig;
-using KBMConfig::KeyBinding;
 using KBMConfig::AxisMapping;
+using KBMConfig::KeyBinding;
 
 // modifiers are bitwise or-d together, so we need to check if ours is in that
 template <typename T>
