@@ -1039,6 +1039,26 @@
 			<translation>HTML خطا دربازیابی صفحه</translation>
 		</message>
 		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>بازی در نسخه: %1 است</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>وصله دانلود شده فقط در نسخه: %1 کار می کند</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>شاید لازم باشد بازی خود را به روز کنید.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>اطلاعیه عدم سازگاری</translation>
+		</message>
+		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
 			<translation>خطا در اجرای فایل:</translation>

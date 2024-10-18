@@ -1039,6 +1039,26 @@
 			<translation>Αποτυχία ανάκτησης σελίδας HTML.</translation>
 		</message>
 		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Το παιχνίδι είναι στην έκδοση: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Η ληφθείσα ενημέρωση λειτουργεί μόνο στην έκδοση: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Μπορεί να χρειαστεί να ενημερώσετε το παιχνίδι σας.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Ειδοποίηση ασυμβατότητας</translation>
+		</message>
+		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
 			<translation>Αποτυχία ανοίγματος αρχείου:</translation>

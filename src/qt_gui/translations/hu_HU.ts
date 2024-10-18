@@ -1039,6 +1039,26 @@
 			<translation>Nem sikerült HTML oldal lekérése.</translation>
 		</message>
 		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>A játék verziója: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>A letöltött javítás csak a(z) %1 verzión működik</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Lehet, hogy frissítened kell a játékodat.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Inkompatibilitási értesítés</translation>
+		</message>
+		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
 			<translation>Nem sikerült megnyitni a fájlt:</translation>
