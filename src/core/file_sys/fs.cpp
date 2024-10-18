@@ -30,9 +30,13 @@ void MntPoints::UnmountAll() {
 
 std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    const auto normalized_path = std::filesystem::path(path).lexically_normal().string();
+    std::string corrected_path(path);
+    while (size_t pos = corrected_path.find("//") != std::string::npos) {
+        corrected_path.replace(pos, 2, "/");
+        pos = corrected_path.find("//", pos + 1);
+    }
 
-    const MntPair* mount = GetMount(normalized_path);
+    const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
         return "";
     }
@@ -42,18 +46,18 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Nothing to do if getting the mount itself.
-    if (normalized_path == mount->mount) {
+    if (corrected_path == mount->mount) {
         return mount->host_path;
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    const auto rel_path = std::string_view{normalized_path}.substr(mount->mount.size() + 1);
+    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
     std::filesystem::path host_path = mount->host_path / rel_path;
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
     patch_path /= rel_path;
 
-    if ((normalized_path.starts_with("/app0") || normalized_path.starts_with("/hostapp")) &&
+    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
         std::filesystem::exists(patch_path)) {
         return patch_path;
     }
