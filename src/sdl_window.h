@@ -103,7 +103,7 @@ private:
     static Uint32 keyRepeatCallback(void* param, Uint32 id, Uint32 interval);
     static Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
 
-    void parseInputConfig(const std::string& filename);
+    void parseInputConfig();
 
 private:
     s32 width;
