@@ -141,11 +141,14 @@ if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
-if (APPLE)
-    # half
+# half
+if (NOT TARGET half::half)
     add_library(half INTERFACE)
     target_include_directories(half INTERFACE half/include)
+    add_library(half::half ALIAS half)
+endif()
 
+if (APPLE)
     # date
     if (NOT TARGET date::date-tz)
         option(BUILD_TZ_LIB "" ON)

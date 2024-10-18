@@ -31,7 +31,7 @@ inline void CentralizeNextWindow() {
 }
 
 inline void CentralizeWindow() {
-    const auto display_size = GetIO().DisplaySize;
+    const auto display_size = GetIO().DisplaySize - GetCurrentWindowRead()->SizeFull;
     SetWindowPos(display_size / 2.0f);
 }
 
@@ -41,7 +41,7 @@ inline void KeepWindowInside(ImVec2 display_size = GetIO().DisplaySize) {
         SetWindowPos(ImMax(cur_pos, ImVec2(0.0f, 0.0f)));
         return;
     }
-    const auto cur_size = GetWindowSize();
+    const auto cur_size = GetCurrentWindowRead()->SizeFull;
     const auto bottom_right = cur_pos + cur_size;
     if (bottom_right.x > display_size.x || bottom_right.y > display_size.y) {
         const auto max_pos = display_size - cur_size;

@@ -678,13 +678,10 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         auto game_install_dir = ids.getSelectedDirectory();
         auto game_folder_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        bool use_game_update = pkgType.contains("Patch") && Config::getSeparateUpdateEnabled();
+        bool use_game_update = pkgType.contains("PATCH") && Config::getSeparateUpdateEnabled();
         auto game_update_path = use_game_update
                                     ? game_install_dir / (std::string(pkg.GetTitleID()) + "-UPDATE")
                                     : game_folder_path;
-        if (!std::filesystem::exists(game_update_path)) {
-            std::filesystem::create_directory(game_update_path);
-        }
         QString gameDirPath;
         Common::FS::PathToQString(gameDirPath, game_folder_path);
         QDir game_dir(gameDirPath);
@@ -792,8 +789,6 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                QString gameDirPath;
-                Common::FS::PathToQString(gameDirPath, game_folder_path);
                 msgBox.setText(QString(tr("Game already installed") + "\n" + gameDirPath + "\n" +
                                        tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);

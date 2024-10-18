@@ -87,6 +87,32 @@ enum OrbisSystemParamLanguage {
     ORBIS_SYSTEM_PARAM_LANG_INDONESIAN = 29
 };
 
+enum OrbisSystemServiceEventType {
+    ORBIS_SYSTEM_SERVICE_EVENT_INVALID = -1,
+    ORBIS_SYSTEM_SERVICE_EVENT_ON_RESUME = 0x10000000,
+    ORBIS_SYSTEM_SERVICE_EVENT_GAME_LIVE_STREAMING_STATUS_UPDATE = 0x10000001,
+    ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION = 0x10000002,
+    ORBIS_SYSTEM_SERVICE_EVENT_ENTITLEMENT_UPDATE = 0x10000003,
+    ORBIS_SYSTEM_SERVICE_EVENT_GAME_CUSTOM_DATA = 0x10000004,
+    ORBIS_SYSTEM_SERVICE_EVENT_DISPLAY_SAFE_AREA_UPDATE = 0x10000005,
+    ORBIS_SYSTEM_SERVICE_EVENT_URL_OPEN = 0x10000006,
+    ORBIS_SYSTEM_SERVICE_EVENT_LAUNCH_APP = 0x10000007,
+    ORBIS_SYSTEM_SERVICE_EVENT_APP_LAUNCH_LINK = 0x10000008,
+    ORBIS_SYSTEM_SERVICE_EVENT_ADDCONTENT_INSTALL = 0x10000009,
+    ORBIS_SYSTEM_SERVICE_EVENT_RESET_VR_POSITION = 0x1000000a,
+    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_EVENT = 0x1000000b,
+    ORBIS_SYSTEM_SERVICE_EVENT_PLAYGO_LOCUS_UPDATE = 0x1000000c,
+    ORBIS_SYSTEM_SERVICE_EVENT_PLAY_TOGETHER_HOST = 0x1000000d,
+    ORBIS_SYSTEM_SERVICE_EVENT_SERVICE_ENTITLEMENT_UPDATE = 0x1000000e,
+    ORBIS_SYSTEM_SERVICE_EVENT_EYE_TO_EYE_DISTANCE_UPDATE = 0x1000000f,
+    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_MATCH_EVENT = 0x10000010,
+    ORBIS_SYSTEM_SERVICE_EVENT_PLAY_TOGETHER_HOST_A = 0x10000011,
+    ORBIS_SYSTEM_SERVICE_EVENT_WEBBROWSER_CLOSED = 0x10000012,
+    ORBIS_SYSTEM_SERVICE_EVENT_CONTROLLER_SETTINGS_CLOSED = 0x10000013,
+    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_TEAM_ON_TEAM_MATCH_EVENT = 0x10000014,
+    ORBIS_SYSTEM_SERVICE_EVENT_OPEN_SHARE_MENU = 0x30000000
+};
+
 struct OrbisSystemServiceStatus {
     s32 eventNum;
     bool isSystemUiOverlaid;
@@ -100,6 +126,41 @@ struct OrbisSystemServiceStatus {
 struct OrbisSystemServiceDisplaySafeAreaInfo {
     float ratio;
     uint8_t reserved[128];
+};
+
+struct OrbisSystemServiceEvent {
+    OrbisSystemServiceEventType eventType;
+    union {
+        char param[8192];
+        struct {
+            char source[1024];
+            char url[4096];
+        } urlOpen;
+        struct {
+            u32 size;
+            u8 arg[8188];
+        } launchApp;
+        struct {
+            u32 size;
+            u8 arg[2020];
+        } appLaunchLink;
+        struct {
+            s32 userId;
+            char eventId[37];
+            char bootArgument[7169];
+        } joinEvent;
+        struct {
+            s32 userId;
+            u32 npServiceLabel;
+            u8 reserved[8184];
+        } serviceEntitlementUpdate;
+        struct {
+            s32 userId;
+            u32 npServiceLabel;
+            u8 reserved[8184];
+        } unifiedEntitlementUpdate;
+        u8 reserved[8192];
+    };
 };
 
 bool IsSplashVisible();
@@ -480,7 +541,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value);
 int PS4_SYSV_ABI sceSystemServiceParamGetString();
 int PS4_SYSV_ABI sceSystemServicePowerTick();
 int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess();
-int PS4_SYSV_ABI sceSystemServiceReceiveEvent();
+s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event);
 int PS4_SYSV_ABI sceSystemServiceReenableMusicPlayer();
 int PS4_SYSV_ABI sceSystemServiceRegisterDaemon();
 int PS4_SYSV_ABI sceSystemServiceReleaseFb0();
