@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais. Jei pleistras nepasirodo, gali būti, kad jo nėra tam tikram žaidimo serijos numeriui ir versijai. Gali prireikti atnaujinti žaidimą.</translation>
+			<translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais. Jei pleistras nepasirodo, gali būti, kad jo nėra tam tikram žaidimo serijos numeriui ir versijai.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>

@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës. Mund të jetë e nevojshme të përditësosh lojën.</translation>
+			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>

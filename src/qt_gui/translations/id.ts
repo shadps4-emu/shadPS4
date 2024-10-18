@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik. Mungkin perlu memperbarui game.</translation>
+			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>

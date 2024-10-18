@@ -1021,12 +1021,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="762"/>
 			<source>Download Complete</source>
-			<translation>پچ ها با موفقیت بارگیری شدند! تمام وصله های موجود برای همه بازی ها دانلود شده اند، نیازی به دانلود جداگانه آنها برای هر بازی نیست، همانطور که در Cheats اتفاق می افتد. اگر پچ ظاهر نشد، ممکن است برای سریال و نسخه خاصی از بازی وجود نداشته باشد. ممکن است نیاز به آپدیت بازی باشد.✅</translation>
+			<translation>دانلود کامل شد</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>دانلود با موفقیت به اتمام رسید✅</translation>
+			<translation>پچ ها با موفقیت بارگیری شدند! تمام وصله های موجود برای همه بازی ها دانلود شده اند، نیازی به دانلود جداگانه آنها برای هر بازی نیست، همانطور که در Cheats اتفاق می افتد. اگر پچ ظاهر نشد، ممکن است برای سریال و نسخه خاصی از بازی وجود نداشته باشد.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
