@@ -447,7 +447,7 @@ struct PM4CmdWaitRegMem {
 
     template <typename T = u32*>
     T Address() const {
-        return reinterpret_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
     }
 
     bool Test() const {
