@@ -226,6 +226,7 @@ public:
     void V_MED3_I32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
+    void V_CVT_PK_U16_U32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);

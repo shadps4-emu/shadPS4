@@ -405,12 +405,12 @@ struct PM4DmaData {
 
     template <typename T>
     T SrcAddress() const {
-        return reinterpret_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
+        return std::bit_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
     }
 
     template <typename T>
     T DstAddress() const {
-        return reinterpret_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
+        return std::bit_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
     }
 
     u32 NumBytes() const noexcept {
