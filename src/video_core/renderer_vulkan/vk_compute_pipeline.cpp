@@ -26,6 +26,15 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+
+    if (info->has_readconst) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     for (const auto& buffer : info->buffers) {
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
@@ -123,6 +132,20 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     image_infos.clear();
 
     info->PushUd(binding, push_data);
+    if (info->has_readconst) {
+        const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(info->flattened_ud_buf);
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset,
+                                  info->flattened_ud_buf.size() * sizeof(u32));
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
+        ++binding.buffer;
+    }
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
         if (desc.is_gds_buffer) {
