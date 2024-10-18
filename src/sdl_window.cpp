@@ -170,6 +170,8 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"leftbutton", SDL_BUTTON_LEFT},
     {"rightbutton", SDL_BUTTON_RIGHT},
     {"middlebutton", SDL_BUTTON_MIDDLE},
+    {"sidebuttonback", SDL_BUTTON_X1},
+    {"sidebuttonforward", SDL_BUTTON_X2},
     {"mousewheelup", SDL_EVENT_MOUSE_WHEEL_UP},
     {"mousewheeldown", SDL_EVENT_MOUSE_WHEEL_DOWN},
     {"mousewheelleft", SDL_EVENT_MOUSE_WHEEL_LEFT},
