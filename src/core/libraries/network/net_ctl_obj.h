@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <mutex>
-
 #include "common/types.h"
 
 namespace Libraries::NetCtl {
@@ -25,16 +23,17 @@ struct NetCtlCallbackForNpToolkit {
 
 class NetCtlInternal {
 public:
-    NetCtlInternal();
+    explicit NetCtlInternal();
     ~NetCtlInternal();
-    s32 registerCallback(OrbisNetCtlCallback func, void* arg);
-    s32 registerNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit func, void* arg);
-    void checkCallback();
-    void checkNpToolkitCallback();
+
+    s32 RegisterCallback(OrbisNetCtlCallback func, void* arg);
+    s32 RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit func, void* arg);
+    void CheckCallback();
+    void CheckNpToolkitCallback();
 
 public:
-    std::array<NetCtlCallback, 8> nptoolCallbacks;
-    std::array<NetCtlCallbackForNpToolkit, 8> callbacks;
+    std::array<NetCtlCallbackForNpToolkit, 8> nptool_callbacks{};
+    std::array<NetCtlCallback, 8> callbacks{};
     std::mutex m_mutex;
 };
 } // namespace Libraries::NetCtl

@@ -148,7 +148,7 @@ public:
     VAddr SystemReservedVirtualBase() noexcept {
         return impl.SystemReservedVirtualBase();
     }
-    
+
     bool IsValidAddress(const void* addr) const noexcept {
         const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
         const auto end_it = std::prev(vma_map.end());

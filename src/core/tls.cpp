@@ -5,6 +5,8 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/types.h"
+#include "core/cpu_patches.h"
+#include "core/libraries/kernel/threads/threads.h"
 #include "core/tls.h"
 
 #ifdef _WIN32
@@ -180,5 +182,16 @@ Tcb* GetTcbBase() {
 }
 
 #endif
+
+thread_local std::once_flag init_tls_flag;
+
+void EnsureThreadInitialized() {
+    std::call_once(init_tls_flag, [] {
+#ifdef ARCH_X86_64
+        InitializeThreadPatchStack();
+#endif
+        SetTcbBase(Libraries::Kernel::g_curthread->tcb);
+    });
+}
 
 } // namespace Core

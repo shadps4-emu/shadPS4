@@ -1,21 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "avplayer_file_streamer.h"
-#include "avplayer_source.h"
-#include "avplayer_state.h"
-
-#include "common/singleton.h"
+#include "common/logging/log.h"
 #include "common/thread.h"
+#include "core/libraries/avplayer/avplayer_source.h"
+#include "core/libraries/avplayer/avplayer_state.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/time_management.h"
-#include "core/linker.h"
+#include "core/tls.h"
 
 #include <magic_enum.hpp>
 
 namespace Libraries::AvPlayer {
-
-using namespace Kernel;
 
 void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayerEvents event_id,
                                                        s32 source_id, void* event_data) {
@@ -96,8 +91,7 @@ void AvPlayerState::DefaultEventCallback(void* opaque, SceAvPlayerEvents event_i
     const auto callback = self->m_event_replacement.event_callback;
     const auto ptr = self->m_event_replacement.object_ptr;
     if (callback != nullptr) {
-        const auto* linker = Common::Singleton<Core::Linker>::Instance();
-        linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
+        Core::ExecuteGuest(callback, ptr, event_id, 0, event_data);
     }
 }
 

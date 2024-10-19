@@ -3,20 +3,18 @@
 
 #pragma once
 
-#include "avplayer.h"
-#include "avplayer_common.h"
-#include "avplayer_data_streamer.h"
-
-#include "common/polyfill_thread.h"
-#include "common/types.h"
-#include "core/libraries/kernel/thread_management.h"
-
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
-#include <string>
+#include <string_view>
+
+#include "common/assert.h"
+#include "common/polyfill_thread.h"
+#include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/avplayer/avplayer_common.h"
+#include "core/libraries/avplayer/avplayer_data_streamer.h"
 
 struct AVCodecContext;
 struct AVFormatContext;
@@ -139,8 +137,6 @@ public:
     bool IsActive();
 
 private:
-    using ScePthread = Kernel::ScePthread;
-
     static void ReleaseAVPacket(AVPacket* packet);
     static void ReleaseAVFrame(AVFrame* frame);
     static void ReleaseAVCodecContext(AVCodecContext* context);

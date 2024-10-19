@@ -140,20 +140,6 @@ const void* PS4_SYSV_ABI posix_pthread_getspecific(PthreadKeyT key) {
     return nullptr;
 }
 
-void _thr_tsd_unload(struct dl_phdr_info* phdr_info) {
-    std::scoped_lock lk{KeytableLock};
-    for (int key = 0; key < PTHREAD_KEYS_MAX; key++) {
-        if (!ThreadKeytable[key].allocated) {
-            continue;
-        }
-        const auto destructor = ThreadKeytable[key].destructor;
-        if (destructor != nullptr) {
-            if (__elf_phdr_match_addr(phdr_info, destructor))
-                ThreadKeytable[key].destructor = nullptr;
-        }
-    }
-}
-
 void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
@@ -162,8 +148,7 @@ void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
 
     // Orbis
     LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_create));
-    LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_getspecific));
+    LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
     LIB_FUNCTION("+BzXYkqYeLE", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_setspecific));
 }

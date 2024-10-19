@@ -78,7 +78,8 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
 
     /* Allocate a stack from usrstack. */
     if (last_stack == 0) {
-        last_stack = _usrstack - ThrStackInitial - ThrGuardDefault;
+        static constexpr VAddr UsrStack = 0x7EFFF8000ULL;
+        last_stack = UsrStack - ThrStackInitial - ThrGuardDefault;
     }
 
     /* Allocate a new stack. */
