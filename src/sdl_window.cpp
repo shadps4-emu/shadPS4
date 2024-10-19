@@ -4,6 +4,7 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include "common/assert.h"
 #include "common/config.h"
@@ -19,6 +20,11 @@
 #endif
 
 namespace Frontend {
+
+static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+    return controller->Poll();
+}
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
                      std::string_view window_title)
@@ -117,6 +123,10 @@ void WindowSDL::waitEvent() {
     default:
         break;
     }
+}
+
+void WindowSDL::initTimers() {
+    SDL_AddTimer(100, &PollController, controller);
 }
 
 void WindowSDL::onResize() {

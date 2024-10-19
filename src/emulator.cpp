@@ -257,6 +257,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::jthread mainthread =
         std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
 
+    window->initTimers();
     while (window->isOpen()) {
         window->waitEvent();
     }
