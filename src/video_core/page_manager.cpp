@@ -10,7 +10,7 @@
 #include "core/signals.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
-#define ENABLE_USERFAULTFD 1
+
 #ifndef _WIN64
 #include <sys/mman.h>
 #ifdef ENABLE_USERFAULTFD

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 
 extern "C" {
@@ -19,6 +20,7 @@ enum class AjmCodecType : u32 {
     M4aacDec = 2,
     Max = 23,
 };
+DECLARE_ENUM_FLAG_OPERATORS(AjmCodecType);
 static constexpr u32 NumAjmCodecs = u32(AjmCodecType::Max);
 
 enum class AjmFormatEncoding : u32 {
@@ -28,8 +30,8 @@ enum class AjmFormatEncoding : u32 {
 };
 
 struct AjmSidebandResult {
-    s32	result;
-    s32	internal_result;
+    s32 result;
+    s32 internal_result;
 };
 
 struct AjmSidebandMFrame {
@@ -64,8 +66,8 @@ struct AjmInstance {
 
     virtual void Reset() = 0;
 
-    virtual std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size,
-                                       u8* out_buf, u32 out_size) = 0;
+    virtual std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
+                                             u32 out_size) = 0;
 };
 
 } // namespace Libraries::Ajm

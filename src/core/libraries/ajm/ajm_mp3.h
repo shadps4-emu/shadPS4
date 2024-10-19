@@ -15,17 +15,11 @@ struct AVCodecParserContext;
 
 namespace Libraries::Ajm {
 
-enum class AjmDecMp3OflType : u32 {
-    None = 0,
-    Lame = 1,
-    Vbri = 2,
-    Fgh = 3,
-    VbriAndFgh = 4
-};
+enum class AjmDecMp3OflType : u32 { None = 0, Lame = 1, Vbri = 2, Fgh = 3, VbriAndFgh = 4 };
 
 // 11-bit syncword if MPEG 2.5 extensions are enabled
 static constexpr u8 SYNCWORDH = 0xff;
-static constexpr u8	SYNCWORDL = 0xe0;
+static constexpr u8 SYNCWORDL = 0xe0;
 
 struct AjmDecMp3ParseFrame {
     u64 frame_size;
@@ -73,8 +67,8 @@ struct AjmMp3Decoder : public AjmInstance {
 
     void Reset() override;
 
-    std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size,
-                                     u8* out_buf, u32 out_size) override;
+    std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
+                                     u32 out_size) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);

@@ -54,7 +54,7 @@ file(GLOB LIBATRAC9_SOURCES
 )
 
 add_library(LibAtrac9 STATIC ${LIBATRAC9_SOURCES})
-target_include_directories(LibAtrac9 PUBLIC LibAtrac9/C/src)
+target_include_directories(LibAtrac9 INTERFACE LibAtrac9/C/src)
 
 # Zlib-Ng
 if (NOT TARGET zlib-ng::zlib)

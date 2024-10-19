@@ -15,7 +15,9 @@ namespace Libraries::Ajm {
 
 // Following tables have been reversed from AJM library
 static constexpr std::array<std::array<s32, 3>, 3> SamplerateTable = {{
-    {0x5622, 0x5DC0, 0x3E80}, {0xAC44, 0xBB80, 0x7D00}, {0x2B11, 0x2EE0, 0x1F40},
+    {0x5622, 0x5DC0, 0x3E80},
+    {0xAC44, 0xBB80, 0x7D00},
+    {0x2B11, 0x2EE0, 0x1F40},
 }};
 
 static constexpr std::array<std::array<s32, 15>, 2> BitrateTable = {{
@@ -78,14 +80,13 @@ void AjmMp3Decoder::Reset() {
     file.open(fmt::format("inst{}_{}.raw", index, ++filename), std::ios::out | std::ios::binary);
 }
 
-std::tuple<u32, u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size,
-                                          u8* out_buf, u32 out_size) {
+std::tuple<u32, u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_buf,
+                                                u32 out_size) {
     u32 num_frames = 0;
     AVPacket* pkt = av_packet_alloc();
     while (in_size > 0 && out_size > 0) {
-        int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
-                                   buf, in_size,
-                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+        int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, buf, in_size, AV_NOPTS_VALUE,
+                                   AV_NOPTS_VALUE, 0);
         ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
         buf += ret;
         in_size -= ret;

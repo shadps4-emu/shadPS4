@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
+#include <iostream>
 #include <memory>
+#include <fmt/chrono.h>
 #include <magic_enum.hpp>
 
 #include "audio_core/sdl_audio.h"
@@ -335,6 +338,10 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     for (u32 i = 0; i < num; i++) {
+        std::fstream file;
+        file.open(fmt::format("handle{}.raw", param[i].handle), std::ios::out | std::ios::binary);
+        file.write(static_cast<const char*>(param[i].ptr), 1024);
+        file.close();
         if (const auto err = sceAudioOutOutput(param[i].handle, param[i].ptr); err != 0)
             return err;
     }
