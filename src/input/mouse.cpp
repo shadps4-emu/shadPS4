@@ -11,68 +11,69 @@ GameMouse::GameMouse() {
     m_last_state = MouseState();
 }
 
-int GameMouse::ReadStates(MouseState* states, int states_num, bool* isConnected) {
+int GameMouse::ReadStates(MouseState* states, int states_num) {
     std::scoped_lock lock{m_mutex};
 
-    *isConnected = m_connected;
+    const u32 count = std::min(m_states_num, u32(states_num));
 
-    int ret_num = 0;
-
-    if (m_connected) {
-        if (m_states_num == 0) {
-            ret_num = 1;
-            states[0] = m_last_state;
-        } else {
-            for (uint32_t i = 0; i < m_states_num; i++) {
-                if (ret_num >= states_num) {
-                    break;
-                }
-                auto index = (m_first_state + i) % MAX_MOUSE_STATES;
-                if (!m_private[index].obtained) {
-                    m_private[index].obtained = true;
-
-                    states[ret_num++] = m_states[index];
-                }
-            }
-        }
+    u32 begin = (m_index - m_states_num + 1) % MAX_MOUSE_STATES;
+    for (u32 i = 0; i < count; i++) {
+        u32 idx = (begin + i) % MAX_MOUSE_STATES;
+        states[i] = m_states[idx];
     }
 
-    return ret_num;
-}
-
-MouseState GameMouse::GetLastState() const {
-    if (m_states_num == 0) {
-        return m_last_state;
-    }
-
-    auto last = (m_first_state + m_states_num - 1) % MAX_MOUSE_STATES;
-
-    return m_states[last];
+    m_states_num -= count;
+    return static_cast<int>(count);
 }
 
 void GameMouse::AddState(const MouseState& state) {
-    if (m_states_num >= MAX_MOUSE_STATES) {
-        m_states_num = MAX_MOUSE_STATES - 1;
-        m_first_state = (m_first_state + 1) % MAX_MOUSE_STATES;
+    std::scoped_lock lock{m_mutex};
+
+    m_index = (m_index + 1) % MAX_MOUSE_STATES;
+    if (m_states_num < MAX_MOUSE_STATES) {
+        ++m_states_num;
     }
-
-    auto index = (m_first_state + m_states_num) % MAX_MOUSE_STATES;
-
-    m_states[index] = state;
-    m_last_state = state;
-    m_private[index].obtained = false;
-    m_states_num++;
+    m_states[m_index] = state;
+    m_last_state = MouseState{
+        .button_state = state.button_state,
+    };
 }
 
-void GameMouse::CheckButton(int id, u32 button, bool isPressed) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
+void GameMouse::CheckButton(u32 button, bool isPressed) {
+    if (!m_connected) {
+        return;
+    }
+    MouseState state = m_last_state;
     state.time = Libraries::Kernel::sceKernelGetProcessTime();
     if (isPressed) {
-        state.buttonsState |= button;
+        state.button_state |= button;
     } else {
-        state.buttonsState &= ~button;
+        state.button_state &= ~button;
     }
+
+    AddState(state);
+}
+
+void GameMouse::CheckMove(int x, int y) {
+    if (!m_connected) {
+        return;
+    }
+    MouseState state = m_last_state;
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
+    state.x_axis = x;
+    state.y_axis = y;
+
+    AddState(state);
+}
+
+void GameMouse::CheckWheel(int x, int y) {
+    if (!m_connected) {
+        return;
+    }
+    MouseState state = m_last_state;
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
+    state.wheel = y;
+    state.tilt = x;
 
     AddState(state);
 }
