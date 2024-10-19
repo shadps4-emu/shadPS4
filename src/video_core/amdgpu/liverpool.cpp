@@ -666,6 +666,35 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             };
             break;
         }
+        case PM4ItOpcode::DmaData: {
+            const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
+            if (dma_data->dst_addr_lo == 0x3022C) {
+                break;
+            }
+            if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
+                rasterizer->InlineData(dma_data->dst_addr_lo, &dma_data->data, sizeof(u32), true);
+            } else if (dma_data->src_sel == DmaDataSrc::Memory &&
+                       dma_data->dst_sel == DmaDataDst::Gds) {
+                rasterizer->InlineData(dma_data->dst_addr_lo, dma_data->SrcAddress<const void*>(),
+                                       dma_data->NumBytes(), true);
+            } else if (dma_data->src_sel == DmaDataSrc::Data &&
+                       dma_data->dst_sel == DmaDataDst::Memory) {
+                rasterizer->InlineData(dma_data->DstAddress<VAddr>(), &dma_data->data, sizeof(u32),
+                                       false);
+            } else if (dma_data->src_sel == DmaDataSrc::Gds &&
+                       dma_data->dst_sel == DmaDataDst::Memory) {
+                LOG_WARNING(Render_Vulkan, "GDS memory read");
+            } else if (dma_data->src_sel == DmaDataSrc::Memory &&
+                       dma_data->dst_sel == DmaDataDst::Memory) {
+                rasterizer->InlineData(dma_data->DstAddress<VAddr>(),
+                                       dma_data->SrcAddress<const void*>(), dma_data->NumBytes(),
+                                       false);
+            } else {
+                UNREACHABLE_MSG("WriteData src_sel = {}, dst_sel = {}",
+                                u32(dma_data->src_sel.Value()), u32(dma_data->dst_sel.Value()));
+            }
+            break;
+        }
         case PM4ItOpcode::AcquireMem: {
             break;
         }

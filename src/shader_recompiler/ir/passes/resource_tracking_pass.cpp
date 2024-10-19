@@ -605,7 +605,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                                  : IR::F32{};
     const IR::F32 lod_clamp = inst_info.has_lod_clamp ? get_addr_reg(addr_reg++) : IR::F32{};
 
-    const auto new_inst = [&] -> IR::Value {
+    auto new_inst = [&] -> IR::Value {
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {
                 return ir.ImageGatherDref(handle, coords, offset, dref, inst_info);
