@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "avplayer_source.h"
-
-#include "avplayer_file_streamer.h"
-
 #include "common/alignment.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-
 #include "core/file_sys/fs.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/avplayer/avplayer_file_streamer.h"
+#include "core/libraries/avplayer/avplayer_source.h"
 
 #include <magic_enum.hpp>
 
@@ -34,8 +30,6 @@ av_always_inline std::string av_err2string(int errnum) {
 #endif // av_err2str
 
 namespace Libraries::AvPlayer {
-
-using namespace Kernel;
 
 AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2)
     : m_state(state), m_use_vdec2(use_vdec2) {}

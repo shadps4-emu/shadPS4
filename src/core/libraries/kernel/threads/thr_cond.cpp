@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include <cstring>
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
@@ -68,6 +68,7 @@ static int InitStatic(Pthread* thread, PthreadCondT* cond) {
         } else if (cvp == THR_COND_DESTROYED) {                                                    \
             return POSIX_EINVAL;                                                                   \
         }                                                                                          \
+        cvp = *cond;                                                                               \
     }
 
 int PS4_SYSV_ABI posix_pthread_cond_init(PthreadCondT* cond, const PthreadCondAttrT* cond_attr) {

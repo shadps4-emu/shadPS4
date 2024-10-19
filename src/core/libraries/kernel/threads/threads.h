@@ -194,6 +194,8 @@ enum class ThreadListFlags : u32 {
     InGcList = 4,
 };
 
+using PthreadEntryFunc = void* (*)(void*);
+
 constexpr u32 TidTerminated = 1;
 
 struct Pthread {
@@ -272,15 +274,6 @@ void RegisterSemaphore(Core::Loader::SymbolsResolver* sym);
 void RegisterSpec(Core::Loader::SymbolsResolver* sym);
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym);
 void RegisterThread(Core::Loader::SymbolsResolver* sym);
-
-inline void RegisterThreads(Core::Loader::SymbolsResolver* sym) {
-    RegisterMutex(sym);
-    RegisterCond(sym);
-    RegisterRwlock(sym);
-    RegisterSemaphore(sym);
-    RegisterSpec(sym);
-    RegisterThreadAttr(sym);
-    RegisterThread(sym);
-}
+void RegisterRtld(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

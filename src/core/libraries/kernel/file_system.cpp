@@ -13,7 +13,7 @@
 
 namespace Libraries::Kernel {
 
-std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::filesystem::path& path) {
+auto GetDirectoryEntries(const std::filesystem::path& path) {
     std::vector<Core::FileSys::DirEntry> files;
     for (const auto& entry : std::filesystem::directory_iterator(path)) {
         auto& dir_entry = files.emplace_back();

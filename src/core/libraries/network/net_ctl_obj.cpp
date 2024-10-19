@@ -1,80 +1,62 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/singleton.h"
-#include "core/linker.h"
-#include "net_ctl_codes.h"
-#include "net_ctl_obj.h"
+#include "core/libraries/network/net_ctl_codes.h"
+#include "core/libraries/network/net_ctl_obj.h"
+#include "core/tls.h"
 
-Libraries::NetCtl::NetCtlInternal::NetCtlInternal() {
-    callbacks.fill({nullptr, nullptr});
-    nptoolCallbacks.fill({nullptr, nullptr});
-}
+namespace Libraries::NetCtl {
 
-Libraries::NetCtl::NetCtlInternal::~NetCtlInternal() {}
+NetCtlInternal::NetCtlInternal() = default;
 
-s32 Libraries::NetCtl::NetCtlInternal::registerCallback(OrbisNetCtlCallback func, void* arg) {
-    std::unique_lock lock{m_mutex};
+NetCtlInternal::~NetCtlInternal() = default;
+
+s32 NetCtlInternal::RegisterCallback(OrbisNetCtlCallback func, void* arg) {
+    std::scoped_lock lock{m_mutex};
 
     // Find the next available slot
-    int next_id = 0;
-    for (const auto& callback : callbacks) {
-        if (callback.func == nullptr) {
-            break;
-        }
-        next_id++;
-    }
-
-    if (next_id == 8) {
+    const auto it = std::ranges::find(callbacks, nullptr, &NetCtlCallback::func);
+    if (it == callbacks.end()) {
         return ORBIS_NET_CTL_ERROR_CALLBACK_MAX;
     }
 
+    const int next_id = std::distance(callbacks.begin(), it);
     callbacks[next_id].func = func;
     callbacks[next_id].arg = arg;
     return next_id;
 }
 
-s32 Libraries::NetCtl::NetCtlInternal::registerNpToolkitCallback(
-    OrbisNetCtlCallbackForNpToolkit func, void* arg) {
-
-    std::unique_lock lock{m_mutex};
+s32 NetCtlInternal::RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit func, void* arg) {
+    std::scoped_lock lock{m_mutex};
 
     // Find the next available slot
-    int next_id = 0;
-    for (const auto& callback : nptoolCallbacks) {
-        if (callback.func == nullptr) {
-            break;
-        }
-        next_id++;
-    }
-
-    if (next_id == 8) {
+    const auto it = std::ranges::find(nptool_callbacks, nullptr, &NetCtlCallbackForNpToolkit::func);
+    if (it == nptool_callbacks.end()) {
         return ORBIS_NET_CTL_ERROR_CALLBACK_MAX;
     }
 
-    nptoolCallbacks[next_id].func = func;
-    nptoolCallbacks[next_id].arg = arg;
+    const int next_id = std::distance(nptool_callbacks.begin(), it);
+    nptool_callbacks[next_id].func = func;
+    nptool_callbacks[next_id].arg = arg;
     return next_id;
 }
 
-void Libraries::NetCtl::NetCtlInternal::checkCallback() {
-    std::unique_lock lock{m_mutex};
-    const auto* linker = Common::Singleton<Core::Linker>::Instance();
-    for (auto& callback : callbacks) {
-        if (callback.func != nullptr) {
-            linker->ExecuteGuest(callback.func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED,
-                                 callback.arg);
+void NetCtlInternal::CheckCallback() {
+    std::scoped_lock lock{m_mutex};
+    for (const auto [func, arg] : callbacks) {
+        if (func != nullptr) {
+            Core::ExecuteGuest(func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED, arg);
         }
     }
 }
 
-void Libraries::NetCtl::NetCtlInternal::checkNpToolkitCallback() {
-    std::unique_lock lock{m_mutex};
-    const auto* linker = Common::Singleton<Core::Linker>::Instance();
-    for (auto& callback : nptoolCallbacks) {
-        if (callback.func != nullptr) {
-            linker->ExecuteGuest(callback.func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED,
-                                 callback.arg);
+void NetCtlInternal::CheckNpToolkitCallback() {
+    std::scoped_lock lock{m_mutex};
+    for (const auto [func, arg] : nptool_callbacks) {
+        if (func != nullptr) {
+            Core::ExecuteGuest(func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED, arg);
         }
     }
 }
+
+} // namespace Libraries::NetCtl

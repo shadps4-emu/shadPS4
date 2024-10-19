@@ -8,30 +8,26 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
-#include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
-#include "core/cpu_patches.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
-#include "debug_state.h"
 
 namespace Core {
 
-using ExitFunc = PS4_SYSV_ABI void (*)();
-
 static PS4_SYSV_ABI void ProgramExitFunc() {
-    fmt::print("exit function called\n");
+    LOG_ERROR(Core_Linker, "Exit function called");
 }
 
 #ifdef ARCH_X86_64
-static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
-    // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
-    // a specific layout
+static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (void* arg) {
+    EntryParams* params = (EntryParams*)arg;
+    // Start shared library modules
+    params->linker->LoadSharedLibraries();
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
                  "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
 
@@ -47,8 +43,9 @@ static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc 
                  "jmp *%0\n" // can't use call here, as that would mangle the prepared stack.
                              // there's no coming back
                  :
-                 : "r"(addr), "r"(params), "r"(exit_func)
+                 : "r"(params->entry_addr), "r"(params), "r"(params->exit_func)
                  : "rax", "rsi", "rdi");
+    UNREACHABLE();
 }
 #endif
 
@@ -62,10 +59,8 @@ void Linker::Execute() {
     }
 
     // Calculate static TLS size.
-    for (const auto& module : m_modules) {
-        static_tls_size += module->tls.image_size;
-        module->tls.offset = static_tls_size;
-    }
+    Module* module = m_modules[0].get();
+    static_tls_size = module->tls.offset = module->tls.image_size;
 
     // Relocate all modules
     for (const auto& m : m_modules) {
@@ -87,36 +82,14 @@ void Linker::Execute() {
         }
     }
 
-    // Init primary thread.
-    Common::SetCurrentThreadName("GAME_MainThread");
-    DebugState.AddCurrentThreadToGuestList();
-    Libraries::Kernel::pthreadInitSelfMainThread();
-    EnsureThreadInitialized(true);
-
-    // Start shared library modules
-    for (auto& m : m_modules) {
-        if (m->IsSharedLib()) {
-            m->Start(0, nullptr, nullptr);
-        }
-    }
-
     // Start main module.
-    EntryParams p{};
-    p.argc = 1;
-    p.argv[0] = "eboot.bin";
-
-    for (auto& m : m_modules) {
-        if (!m->IsSharedLib()) {
-#ifdef ARCH_X86_64
-            ExecuteGuest(RunMainEntry, m->GetEntryAddress(), &p, ProgramExitFunc);
-#else
-            UNIMPLEMENTED_MSG(
-                "Missing guest entrypoint implementation for target CPU architecture.");
-#endif
-        }
-    }
-
-    SetTcbBase(nullptr);
+    EntryParams* params = new EntryParams;
+    params->argc = 1;
+    params->argv[0] = "eboot.bin";
+    params->entry_addr = module->GetEntryAddress();
+    params->exit_func = ProgramExitFunc;
+    params->linker = this;
+    Libraries::Kernel::LaunchThread(RunMainEntry, params, "GAME_MainThread");
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -337,17 +310,6 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     return addr + offset;
 }
 
-thread_local std::once_flag init_tls_flag;
-
-void Linker::EnsureThreadInitialized(bool is_primary) const {
-    std::call_once(init_tls_flag, [this, is_primary] {
-#ifdef ARCH_X86_64
-        InitializeThreadPatchStack();
-#endif
-        InitTlsForThread(is_primary);
-    });
-}
-
 void* Linker::AllocateTlsForThread(bool is_primary) {
     static constexpr size_t TcbSize = 0x40;
     static constexpr size_t TlsAllocAlign = 0x20;
@@ -369,7 +331,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
-            addr_out = heap_api->heap_malloc(total_tls_size);
+            addr_out = Core::ExecuteGuest(heap_api->heap_malloc, total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
         }
@@ -377,22 +339,31 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
     return addr_out;
 }
 
+void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
+    if (heap_api) {
+        Core::ExecuteGuest(heap_api->heap_free, pointer);
+    } else {
+        std::free(pointer);
+    }
+}
+
 void Linker::DebugDump() {
     const auto& log_dir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
     const std::filesystem::path debug(log_dir / "debugdump");
     std::filesystem::create_directory(debug);
     for (const auto& m : m_modules) {
-        // TODO make a folder with game id for being more unique?
-        const std::filesystem::path filepath(debug / m.get()->file.stem());
+        Module* module = m.get();
+        auto& elf = module->elf;
+        const std::filesystem::path filepath(debug / module->file.stem());
         std::filesystem::create_directory(filepath);
-        m.get()->import_sym.DebugDump(filepath / "imports.txt");
-        m.get()->export_sym.DebugDump(filepath / "exports.txt");
-        if (m.get()->elf.IsSelfFile()) {
-            m.get()->elf.SelfHeaderDebugDump(filepath / "selfHeader.txt");
-            m.get()->elf.SelfSegHeaderDebugDump(filepath / "selfSegHeaders.txt");
+        module->import_sym.DebugDump(filepath / "imports.txt");
+        module->export_sym.DebugDump(filepath / "exports.txt");
+        if (elf.IsSelfFile()) {
+            elf.SelfHeaderDebugDump(filepath / "selfHeader.txt");
+            elf.SelfSegHeaderDebugDump(filepath / "selfSegHeaders.txt");
         }
-        m.get()->elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
-        m.get()->elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
+        elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
+        elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
     }
 }
 
