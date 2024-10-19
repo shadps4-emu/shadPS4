@@ -145,10 +145,24 @@ struct OrbisImeKeyboardResourceIdArray {
     u32 resourceId[6];
 };
 
+enum class OrbisImeCaretMovementDirection : u32 {
+    STILL = 0,
+    LEFT = 1,
+    RIGHT = 2,
+    UP = 3,
+    DOWN = 4,
+    HOME = 5,
+    END = 6,
+    PAGE_UP = 7,
+    PAGE_DOWN = 8,
+    TOP = 9,
+    BOTTOM = 10,
+};
+
 union OrbisImeEventParam {
     OrbisImeRect rect;
     OrbisImeEditText text;
-    u32 caretMove; // OrbisImeCaretMovementDirection
+    OrbisImeCaretMovementDirection caretMove;
     OrbisImeKeycode keycode;
     OrbisImeKeyboardResourceIdArray resourceIdArray;
     char16_t* candidateWord;

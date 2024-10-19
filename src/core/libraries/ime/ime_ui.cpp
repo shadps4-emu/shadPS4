@@ -160,7 +160,7 @@ void ImeUi::DrawInputText() {
         SetKeyboardFocusHere();
     }
     if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
-                    input_size, ImGuiInputTextFlags_CallbackEdit, InputTextCallback, this)) {
+                    input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
@@ -169,32 +169,58 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeUi* ui = static_cast<ImeUi*>(data->UserData);
     ASSERT(ui);
 
-    OrbisImeEditText eventParam{};
-    eventParam.str = reinterpret_cast<char16_t*>(ui->ime_param->work);
-    eventParam.caretIndex = data->CursorPos;
-    eventParam.areaNum = 1;
+    static int lastCaretPos = -1;
+    if (lastCaretPos == -1) {
+        lastCaretPos = data->CursorPos;
+    } else if (data->CursorPos != lastCaretPos) {
+        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::STILL;
+        if (data->CursorPos < lastCaretPos) {
+            caretDirection = OrbisImeCaretMovementDirection::LEFT;
+        } else if (data->CursorPos > lastCaretPos) {
+            caretDirection = OrbisImeCaretMovementDirection::RIGHT;
+        }
 
-    eventParam.textArea[0].mode = 1; // Edit
-    eventParam.textArea[0].index = 0;
-    eventParam.textArea[0].length = data->BufTextLen;
+        OrbisImeEvent event{};
+        event.id = OrbisImeEventId::UPDATE_CARET;
+        event.param.caretMove = caretDirection;
 
-    if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
-                                       ui->ime_param->maxTextLength)) {
-        LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
-        return 0;
+        lastCaretPos = data->CursorPos;
+        ui->state->SendEvent(&event);
     }
 
-    if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, ui->ime_param->inputTextBuffer,
-                                       ui->ime_param->maxTextLength)) {
-        LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
-        return 0;
+    static std::string lastText;
+    std::string currentText(data->Buf, data->BufTextLen);
+    if (currentText != lastText) {
+        OrbisImeEditText eventParam{};
+        eventParam.str = reinterpret_cast<char16_t*>(ui->ime_param->work);
+        eventParam.caretIndex = data->CursorPos;
+        eventParam.areaNum = 1;
+
+        eventParam.textArea[0].mode = 1; // Edit
+        eventParam.textArea[0].index = 0;
+        eventParam.textArea[0].length = data->BufTextLen;
+
+        if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
+                                           ui->ime_param->maxTextLength)) {
+            LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
+            return 0;
+        }
+
+        if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
+                                           ui->ime_param->inputTextBuffer,
+                                           ui->ime_param->maxTextLength)) {
+            LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
+            return 0;
+        }
+
+        OrbisImeEvent event{};
+        event.id = OrbisImeEventId::UPDATE_TEXT;
+        event.param.text = eventParam;
+
+        lastText = currentText;
+        ui->state->SendEvent(&event);
     }
 
-    OrbisImeEvent event{};
-    event.id = OrbisImeEventId::UPDATE_TEXT;
-    event.param.text = eventParam;
-
-    ui->state->SendEvent(&event);
     return 0;
 }
 
