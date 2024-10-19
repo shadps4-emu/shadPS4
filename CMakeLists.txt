@@ -30,6 +30,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
+option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -405,8 +406,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/decoder.cpp
            src/common/decoder.h
-           src/common/discord_rpc_handler.cpp
-           src/common/discord_rpc_handler.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
@@ -446,6 +445,10 @@ set(COMMON src/common/logging/backend.cpp
            src/common/scm_rev.cpp
            src/common/scm_rev.h
 )
+
+if (ENABLE_DISCORD_RPC)
+    list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
+endif()
 
 set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
@@ -895,7 +898,9 @@ if (UNIX AND NOT APPLE)
 endif()
 
 # Discord RPC
-target_link_libraries(shadps4 PRIVATE discord-rpc)
+if (ENABLE_DISCORD_RPC)
+    target_link_libraries(shadps4 PRIVATE discord-rpc)
+endif()
 
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
