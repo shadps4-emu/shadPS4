@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include "common/cstring.h"
 #include "common/types.h"
-#include "core/libraries/dialogs/ime_dialog.h"
+#include "core/libraries/ime/ime_dialog.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {

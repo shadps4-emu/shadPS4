@@ -1,13 +1,109 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <queue>
 #include "ime.h"
+#include "ime_ui.h"
 
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/linker.h"
 
 namespace Libraries::Ime {
+
+static std::queue<OrbisImeEvent> g_ime_events;
+static ImeState g_ime_state{};
+static ImeUi g_ime_ui;
+
+class ImeKeyboard {
+public:
+    ImeKeyboard(const OrbisImeKeyboardParam* param) {
+        Init(param, false);
+    }
+    ImeKeyboard(const OrbisImeParam* param) {
+        Init(param, true);
+    }
+    ~ImeKeyboard() = default;
+
+    void Init(const void* param, bool ime_mode) {
+        if (ime_mode) {
+            m_param.ime = *(OrbisImeParam*)param;
+        } else {
+            m_param.key = *(OrbisImeKeyboardParam*)param;
+        }
+        m_ime_mode = ime_mode;
+
+        // Open an event to let the game know the IME has started
+        OrbisImeEvent openEvent{};
+        openEvent.id = (ime_mode ? OrbisImeEventId::OPEN : OrbisImeEventId::KEYBOARD_OPEN);
+
+        if (ime_mode) {
+            sceImeGetPanelSize(&m_param.ime, &openEvent.param.rect.width,
+                               &openEvent.param.rect.height);
+            openEvent.param.rect.x = m_param.ime.posx;
+            openEvent.param.rect.y = m_param.ime.posy;
+        } else {
+            openEvent.param.resourceIdArray.userId = 1;
+            openEvent.param.resourceIdArray.resourceId[0] = 1;
+        }
+
+        Execute(nullptr, &openEvent, true);
+
+        if (ime_mode) {
+            g_ime_state = ImeState(&m_param.ime);
+            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime);
+        }
+    }
+
+    s32 Update(OrbisImeEventHandler handler) {
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
+
+        std::unique_lock lock{g_ime_state.queue_mutex};
+
+        while (!g_ime_state.event_queue.empty()) {
+            OrbisImeEvent event = g_ime_state.event_queue.front();
+            g_ime_state.event_queue.pop();
+            Execute(handler, &event, false);
+        }
+
+        return ORBIS_OK;
+    }
+
+    void Execute(OrbisImeEventHandler handler, OrbisImeEvent* event, bool use_param_handler) {
+        const auto* linker = Common::Singleton<Core::Linker>::Instance();
+
+        if (m_ime_mode) {
+            OrbisImeParam param = m_param.ime;
+            if (use_param_handler) {
+                linker->ExecuteGuest(param.handler, param.arg, event);
+            } else {
+                linker->ExecuteGuest(handler, param.arg, event);
+            }
+        } else {
+            OrbisImeKeyboardParam param = m_param.key;
+            if (use_param_handler) {
+                linker->ExecuteGuest(param.handler, param.arg, event);
+            } else {
+                linker->ExecuteGuest(handler, param.arg, event);
+            }
+        }
+    }
+
+    bool IsIme() {
+        return m_ime_mode;
+    }
+
+private:
+    union ImeParam {
+        OrbisImeKeyboardParam key;
+        OrbisImeParam ime;
+    } m_param{};
+    bool m_ime_mode = false;
+};
+
+static std::unique_ptr<ImeKeyboard> gImeKeyboard;
 
 int PS4_SYSV_ABI FinalizeImeModule() {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
@@ -104,13 +200,34 @@ int PS4_SYSV_ABI sceImeGetPanelPositionAndForm() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeGetPanelSize() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height) {
+    LOG_INFO(Lib_Ime, "called");
+
+    switch (param->type) {
+    case OrbisImeType::DEFAULT:
+    case OrbisImeType::BASIC_LATIN:
+    case OrbisImeType::URL:
+    case OrbisImeType::MAIL:
+        *width = 793;
+        *height = 408;
+        break;
+    case OrbisImeType::NUMBER:
+        *width = 370;
+        *height = 402;
+        break;
+    }
+
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeKeyboardClose() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceImeKeyboardClose(s32 userId) {
+    LOG_INFO(Lib_Ime, "(STUBBED) called");
+
+    if (!gImeKeyboard) {
+        return 0x80BC0002;
+    }
+
+    gImeKeyboard.release();
     return ORBIS_OK;
 }
 
@@ -124,8 +241,17 @@ int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeKeyboardOpen() {
+s32 PS4_SYSV_ABI sceImeKeyboardOpen(s32 userId, const OrbisImeKeyboardParam* param) {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
+
+    if (!param) {
+        return 0x80BC0031;
+    }
+    if (gImeKeyboard) {
+        return 0x80BC0001;
+    }
+
+    gImeKeyboard = std::make_unique<ImeKeyboard>(param);
     return ORBIS_OK;
 }
 
@@ -144,8 +270,19 @@ int PS4_SYSV_ABI sceImeKeyboardUpdate() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeOpen() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const void* extended) {
+    LOG_INFO(Lib_Ime, "called");
+
+    if (!gImeKeyboard) {
+        gImeKeyboard = std::make_unique<ImeKeyboard>(param);
+    } else {
+        if (gImeKeyboard->IsIme()) {
+            return 0x80BC0001;
+        }
+
+        gImeKeyboard->Init((void*)param, true);
+    }
+
     return ORBIS_OK;
 }
 
@@ -154,9 +291,15 @@ int PS4_SYSV_ABI sceImeOpenInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeParamInit() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
+    LOG_INFO(Lib_Ime, "called");
+
+    if (!param) {
+        return;
+    }
+
+    memset(param, 0, sizeof(OrbisImeParam));
+    param->userId = -1;
 }
 
 int PS4_SYSV_ABI sceImeSetCandidateIndex() {
@@ -164,7 +307,7 @@ int PS4_SYSV_ABI sceImeSetCandidateIndex() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeSetCaret() {
+int PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret) {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -179,9 +322,14 @@ int PS4_SYSV_ABI sceImeSetTextGeometry() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeUpdate() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
+    LOG_TRACE(Lib_Ime, "called");
+
+    if (!gImeKeyboard) {
+        return 0;
+    }
+
+    return gImeKeyboard->Update(handler);
 }
 
 int PS4_SYSV_ABI sceImeVshClearPreedit() {

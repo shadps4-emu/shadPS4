@@ -5,6 +5,7 @@
 
 #include "common/enum.h"
 #include "common/types.h"
+#include "ime_common.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -68,21 +69,6 @@ enum class OrbisImeDialogEndStatus : u32 {
     ABORTED = 2,
 };
 
-enum class OrbisImeType : u32 {
-    DEFAULT = 0,
-    BASIC_LATIN = 1,
-    URL = 2,
-    MAIL = 3,
-    NUMBER = 4,
-};
-
-enum class OrbisImeEnterLabel : u32 {
-    DEFAULT = 0,
-    SEND = 1,
-    SEARCH = 2,
-    GO = 3,
-};
-
 enum class OrbisImeDialogOption : u32 {
     DEFAULT = 0,
     MULTILINE = 1,
@@ -91,71 +77,13 @@ enum class OrbisImeDialogOption : u32 {
     // TODO: Document missing options
     LARGE_RESOLUTION = 1024,
 };
-
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
-
-enum class OrbisImeInputMethod : u32 {
-    DEFAULT = 0,
-};
-
-enum class OrbisImeHorizontalAlignment : u32 {
-    LEFT = 0,
-    CENTER = 1,
-    RIGHT = 2,
-};
-
-enum class OrbisImeVerticalAlignment : u32 {
-    TOP = 0,
-    CENTER = 1,
-    BOTTOM = 2,
-};
 
 enum class OrbisImePanelPriority : u32 {
     DEFAULT = 0,
     ALPHABET = 1,
     SYMBOL = 2,
     ACCENT = 3,
-};
-
-enum class OrbisImeKeyboardType : u32 {
-    NONE = 0,
-    DANISH = 1,
-    GERMAN = 2,
-    GERMAN_SW = 3,
-    ENGLISH_US = 4,
-    ENGLISH_GB = 5,
-    SPANISH = 6,
-    SPANISH_LA = 7,
-    FINNISH = 8,
-    FRENCH = 9,
-    FRENCH_BR = 10,
-    FRENCH_CA = 11,
-    FRENCH_SW = 12,
-    ITALIAN = 13,
-    DUTCH = 14,
-    NORWEGIAN = 15,
-    POLISH = 16,
-    PORTUGUESE_BR = 17,
-    PORTUGUESE_PT = 18,
-    RUSSIAN = 19,
-    SWEDISH = 20,
-    TURKISH = 21,
-    JAPANESE_ROMAN = 22,
-    JAPANESE_KANA = 23,
-    KOREAN = 24,
-    SM_CHINESE = 25,
-    TR_CHINESE_ZY = 26,
-    TR_CHINESE_PY_HK = 27,
-    TR_CHINESE_PY_TW = 28,
-    TR_CHINESE_CG = 29,
-    ARABIC_AR = 30,
-    THAI = 31,
-    CZECH = 32,
-    GREEK = 33,
-    INDONESIAN = 34,
-    VIETNAMESE = 35,
-    ROMANIAN = 36,
-    HUNGARIAN = 37,
 };
 
 struct OrbisImeColor {
@@ -179,9 +107,6 @@ struct OrbisImeKeycode {
     u32 resourceId;
     u64 timestamp;
 };
-
-typedef PS4_SYSV_ABI int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength,
-                                               const char16_t* srcText, u32 srcTextLength);
 
 typedef PS4_SYSV_ABI int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode,
                                                       u16* outKeycode, u32* outStatus,
