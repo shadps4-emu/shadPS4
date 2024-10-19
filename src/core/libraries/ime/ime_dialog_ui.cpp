@@ -9,8 +9,8 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
-#include "core/libraries/dialogs/ime_dialog.h"
-#include "core/libraries/dialogs/ime_dialog_ui.h"
+#include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/ime/ime_dialog_ui.h"
 #include "core/linker.h"
 #include "imgui/imgui_std.h"
 
@@ -22,8 +22,9 @@ namespace Libraries::ImeDialog {
 
 ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
                                const OrbisImeParamExtended* extended) {
-    if (!param)
+    if (!param) {
         return;
+    }
 
     userId = param->userId;
     is_multiLine = True(param->option & OrbisImeDialogOption::MULTILINE);
@@ -344,7 +345,6 @@ void ImeDialogUi::DrawMultiLineInputText() {
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeDialogUi* ui = static_cast<ImeDialogUi*>(data->UserData);
-
     ASSERT(ui);
 
     // Should we filter punctuation?
