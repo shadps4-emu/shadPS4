@@ -29,6 +29,14 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
             sources[inst.dst[0].code] = inst.control.sopk.simm;
             break;
         }
+        case Gcn::Opcode::S_MOV_B32: {
+            sources[inst.dst[0].code] = inst.src[0].code;
+            break;
+        }
+        case Gcn::Opcode::S_ADDK_I32: {
+            sources[inst.dst[0].code] += inst.control.sopk.simm;
+            break;
+        }
         case Gcn::Opcode::EXP: {
             const auto& exp = inst.control.exp;
             const IR::Attribute semantic = static_cast<IR::Attribute>(exp.target);

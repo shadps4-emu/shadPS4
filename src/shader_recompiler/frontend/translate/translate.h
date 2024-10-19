@@ -108,8 +108,9 @@ public:
     void S_MOV_B64(const GcnInst& inst);
     void S_NOT_B64(const GcnInst& inst);
     void S_BREV_B32(const GcnInst& inst);
+    void S_BCNT1_I32_B64(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
-    void S_AND_SAVEEXEC_B64(const GcnInst& inst);
+    void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
 
     // SOPC
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
@@ -225,6 +226,7 @@ public:
     void V_MED3_I32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
+    void V_CVT_PK_U16_U32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
