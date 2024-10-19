@@ -99,7 +99,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex) {
         return POSIX_EINVAL;
     }
     if (m->m_owner != nullptr) {
-        return EBUSY;
+        return POSIX_EBUSY;
     }
     *mutex = THR_MUTEX_DESTROYED;
     std::destroy_at(m);

@@ -10,6 +10,8 @@
 
 namespace Libraries::Kernel {
 
+Pthread* g_curthread{};
+
 Core::Tcb* TcbCtor(Pthread* thread, int initial);
 void TcbDtor(Core::Tcb* oldtls);
 
@@ -85,11 +87,11 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         tcb = TcbCtor(thread, 1 /* initial tls */);
     }
     if (tcb != nullptr) {
-        memset(thread, 0, sizeof(*thread));
         thread->tcb = tcb;
         // thread->sleepqueue = _sleepq_alloc();
         // thread->wake_addr = _thr_alloc_wake_addr();
     } else {
+        std::destroy_at(thread);
         free(thread);
         total_threads.fetch_sub(1);
         thread = nullptr;
@@ -108,6 +110,7 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     if (free_threads.size() >= MaxCachedThreads) {
         //_sleepq_free(thread->sleepqueue);
         //_thr_release_wake_addr(thread->wake_addr);
+        std::destroy_at(thread);
         free(thread);
         total_threads.fetch_sub(1);
     } else {

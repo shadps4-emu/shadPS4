@@ -29,7 +29,6 @@
 #include <objbase.h>
 #include <windows.h>
 #else
-#include <sys/mman.h>
 #ifdef __APPLE__
 #include <date/tz.h>
 #endif
