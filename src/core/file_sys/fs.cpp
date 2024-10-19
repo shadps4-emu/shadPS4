@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/config.h"
 #include "common/string_util.h"
 #include "core/file_sys/fs.h"
 
@@ -27,9 +28,9 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, bool* is_read_only) {
+std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    std::string corrected_path(guest_directory);
+    std::string corrected_path(path);
     size_t pos = corrected_path.find("//");
     while (pos != std::string::npos) {
         corrected_path.replace(pos, 2, "/");
@@ -51,68 +52,83 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, b
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    pos = mount->mount.size() + 1;
-    const auto rel_path = std::string_view(corrected_path).substr(pos);
-    const auto host_path = mount->host_path / rel_path;
+    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
+    std::filesystem::path host_path = mount->host_path / rel_path;
+    std::filesystem::path patch_path = mount->host_path;
+    patch_path += "-UPDATE";
+    patch_path /= rel_path;
+
+    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
+        std::filesystem::exists(patch_path)) {
+        return patch_path;
+    }
+
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
     }
 
-    // If the path does not exist attempt to verify this.
-    // Retrieve parent path until we find one that exists.
-    std::scoped_lock lk{m_mutex};
-    path_parts.clear();
-    auto current_path = host_path;
-    while (!std::filesystem::exists(current_path)) {
-        // We have probably cached this if it's a folder.
-        if (auto it = path_cache.find(current_path); it != path_cache.end()) {
-            current_path = it->second;
-            break;
+    const auto search = [&](const auto host_path) {
+        // If the path does not exist attempt to verify this.
+        // Retrieve parent path until we find one that exists.
+        std::scoped_lock lk{m_mutex};
+        path_parts.clear();
+        auto current_path = host_path;
+        while (!std::filesystem::exists(current_path)) {
+            // We have probably cached this if it's a folder.
+            if (auto it = path_cache.find(current_path); it != path_cache.end()) {
+                current_path = it->second;
+                break;
+            }
+            path_parts.emplace_back(current_path.filename());
+            current_path = current_path.parent_path();
         }
-        path_parts.emplace_back(current_path.filename());
-        current_path = current_path.parent_path();
-    }
-
-    // We have found an anchor. Traverse parts we recoded and see if they
-    // exist in filesystem but in different case.
-    auto guest_path = current_path;
-    while (!path_parts.empty()) {
-        const auto part = path_parts.back();
-        const auto add_match = [&](const auto& host_part) {
-            current_path /= host_part;
-            guest_path /= part;
-            path_cache[guest_path] = current_path;
-            path_parts.pop_back();
-        };
-
-        // Can happen when the mismatch is in upper folder.
-        if (std::filesystem::exists(current_path / part)) {
-            add_match(part);
-            continue;
-        }
-        const auto part_low = Common::ToLower(part.string());
-        bool found_match = false;
-        for (const auto& path : std::filesystem::directory_iterator(current_path)) {
-            const auto candidate = path.path().filename();
-            const auto filename = Common::ToLower(candidate.string());
-            // Check if a filename matches in case insensitive manner.
-            if (filename != part_low) {
+        // We have found an anchor. Traverse parts we recoded and see if they
+        // exist in filesystem but in different case.
+        auto guest_path = current_path;
+        while (!path_parts.empty()) {
+            const auto part = path_parts.back();
+            const auto add_match = [&](const auto& host_part) {
+                current_path /= host_part;
+                guest_path /= part;
+                path_cache[guest_path] = current_path;
+                path_parts.pop_back();
+            };
+            // Can happen when the mismatch is in upper folder.
+            if (std::filesystem::exists(current_path / part)) {
+                add_match(part);
                 continue;
             }
-            // We found a match, record the actual path in the cache.
-            add_match(candidate);
-            found_match = true;
-            break;
+            const auto part_low = Common::ToLower(part.string());
+            bool found_match = false;
+            for (const auto& path : std::filesystem::directory_iterator(current_path)) {
+                const auto candidate = path.path().filename();
+                const auto filename = Common::ToLower(candidate.string());
+                // Check if a filename matches in case insensitive manner.
+                if (filename != part_low) {
+                    continue;
+                }
+                // We found a match, record the actual path in the cache.
+                add_match(candidate);
+                found_match = true;
+                break;
+            }
+            if (!found_match) {
+                return std::optional<std::filesystem::path>({});
+            }
         }
-        if (!found_match) {
-            // Opening the guest path will surely fail but at least gives
-            // a better error message than the empty path.
-            return host_path;
-        }
+        return std::optional<std::filesystem::path>(current_path);
+    };
+
+    if (const auto path = search(patch_path)) {
+        return *path;
+    }
+    if (const auto path = search(host_path)) {
+        return *path;
     }
 
-    // The path was found.
-    return current_path;
+    // Opening the guest path will surely fail but at least gives
+    // a better error message than the empty path.
+    return host_path;
 }
 
 int HandleTable::CreateHandle() {

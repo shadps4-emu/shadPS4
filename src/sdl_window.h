@@ -68,6 +68,8 @@ public:
 
     void waitEvent();
 
+    void initTimers();
+
 private:
     void onResize();
     void onKeyPress(const SDL_Event* event);

@@ -5,10 +5,14 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
+#include <imgui.h>
 
+#include "common.h"
 #include "common/types.h"
-#include "video_core/buffer_cache/buffer_cache.h"
+#include "imgui_memory_editor.h"
+#include "reg_view.h"
 
 namespace AmdGpu {
 union PM4Type3Header;
@@ -19,45 +23,54 @@ namespace Core::Devtools::Widget {
 
 class FrameDumpViewer;
 
-class CmdListViewer {
-    /*
-     * Generic PM4 header
-     */
-    union PM4Header {
-        struct {
-            u32 reserved : 16;
-            u32 count : 14;
-            u32 type : 2; // PM4_TYPE
-        };
-        u32 u32All;
-    };
-    struct BatchInfo {
-        std::string marker{};
-        size_t start_addr;
-        size_t end_addr;
-        size_t command_addr;
-        AmdGpu::PM4ItOpcode type;
-        bool bypass{false};
-    };
+void ParsePolygonControl(u32 value, bool begin_table = true);
+void ParseAaConfig(u32 value, bool begin_table = true);
+void ParseViewportControl(u32 value, bool begin_table = true);
+void ParseColorControl(u32 value, bool begin_table = true);
+void ParseColor0Info(u32 value, bool begin_table = true);
+void ParseColor0Attrib(u32 value, bool begin_table = true);
+void ParseBlendControl(u32 value, bool begin_table = true);
+void ParseDepthRenderControl(u32 value, bool begin_table = true);
+void ParseDepthControl(u32 value, bool begin_table = true);
+void ParseEqaa(u32 value, bool begin_table = true);
+void ParseZInfo(u32 value, bool begin_table = true);
 
-    FrameDumpViewer* parent;
-    std::vector<BatchInfo> batches{};
+class CmdListViewer {
+
+    DebugStateType::FrameDump* frame_dump;
+
+    uintptr_t base_addr;
+    std::string name;
+    std::vector<GPUEvent> events{};
     uintptr_t cmdb_addr;
     size_t cmdb_size;
 
+    std::string cmdb_view_name;
+    MemoryEditor cmdb_view;
+
     int batch_bp{-1};
     int vqid{255};
+    u32 highlight_batch{~0u};
 
-    void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetContextReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnSetShReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
-    void OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    RegView batch_view;
+    int last_selected_batch{-1};
+
+    std::vector<RegView> extra_batch_view;
+
+    static void OnNop(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetBase(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetContextReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnSetShReg(AmdGpu::PM4Type3Header const* header, u32 const* body);
+    static void OnDispatch(AmdGpu::PM4Type3Header const* header, u32 const* body);
 
 public:
-    explicit CmdListViewer(FrameDumpViewer* parent, const std::vector<u32>& cmd_list);
+    static void LoadConfig(const char* line);
+    static void SerializeConfig(ImGuiTextBuffer* buf);
 
-    void Draw();
+    explicit CmdListViewer(DebugStateType::FrameDump* frame_dump, const std::vector<u32>& cmd_list,
+                           uintptr_t base_addr = 0, std::string name = "");
+
+    void Draw(bool only_batches_view = false);
 };
 
 } // namespace Core::Devtools::Widget

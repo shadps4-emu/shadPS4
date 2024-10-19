@@ -29,6 +29,7 @@ public Q_SLOTS:
 private:
     void SetTableItem(int row, int column, QString itemStr);
     void SetRegionFlag(int row, int column, QString itemStr);
+    QString GetPlayTime(const std::string& serial);
     QList<QAction*> m_columnActs;
     GameInfoClass* game_inf_get = nullptr;
     bool ListSortedAsc = true;
@@ -68,6 +69,8 @@ public:
         case 6:
             return a.version < b.version;
         case 7:
+            return a.play_time < b.play_time;
+        case 8:
             return a.path < b.path;
         default:
             return false;
@@ -89,6 +92,8 @@ public:
         case 6:
             return a.version > b.version;
         case 7:
+            return a.play_time > b.play_time;
+        case 8:
             return a.path > b.path;
         default:
             return false;

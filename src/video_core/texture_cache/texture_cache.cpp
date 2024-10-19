@@ -237,6 +237,16 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
         }
     }
 
+    if (image_id) {
+        Image& image_resoved = slot_images[image_id];
+
+        if (image_resoved.info.resources < info.resources) {
+            // The image was clearly picked up wrong.
+            FreeImage(image_id);
+            image_id = {};
+            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
+        }
+    }
     // Create and register a new image
     if (!image_id) {
         image_id = slot_images.insert(instance, scheduler, info);
@@ -417,7 +427,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size_bytes;
-    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainTempBuffer(image_addr, image_size);
+    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainViewBuffer(image_addr, image_size);
     // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,

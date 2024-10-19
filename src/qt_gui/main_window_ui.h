@@ -190,7 +190,7 @@ public:
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
-        settingsButton->setIconSize(QSize(40, 40));
+        settingsButton->setIconSize(QSize(44, 44));
         controllerButton = new QPushButton(centralWidget);
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));

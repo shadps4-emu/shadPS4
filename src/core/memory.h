@@ -28,7 +28,7 @@ enum class MemoryProt : u32 {
     CpuReadWrite = 2,
     GpuRead = 16,
     GpuWrite = 32,
-    GpuReadWrite = 38,
+    GpuReadWrite = 48,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 
@@ -148,6 +148,8 @@ public:
     VAddr SystemReservedVirtualBase() noexcept {
         return impl.SystemReservedVirtualBase();
     }
+
+    bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
 
     void SetupMemoryRegions(u64 flexible_size);
 

@@ -520,7 +520,7 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
 
     if (!result) {
         LOG_ERROR(Lib_NpTrophy, "Failed to open trophy xml : {}", result.description());
-        return ORBIS_OK;
+        return -1;
     }
 
     int num_trophies = 0;

@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Escolha o diretório</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Selecione o diretório em que você deseja instalar.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -128,6 +141,26 @@
 			<translation>Copiar Tudo</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Deletar...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Deletar Jogo</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Deletar Atualização</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Deletar DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Criação de atalho</translation>
@@ -152,6 +185,46 @@
 			<source>Install PKG</source>
 			<translation>Instalar PKG</translation>
 		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Jogo</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>Este recurso requer a opção de configuração 'Habilitar Pasta de Atualização Separada' para funcionar. Se você quiser usar este recurso, habilite-o.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>Este jogo não tem atualização para excluir!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Atualização</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>Este jogo não tem DLC para excluir!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Deletar %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Tem certeza de que deseja excluir o diretório %2 de %1 ?</translation>
+		</message>		
 	</context>
 	<context>
 		<name>MainWindow</name>
@@ -405,6 +478,11 @@
 			<translation>Ativar Tela Cheia</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Habilitar pasta de atualização separada</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
 			<translation>Mostrar Splash Inicial</translation>
@@ -413,6 +491,11 @@
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
 			<translation>Modo PS4 Pro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Ativar Discord Rich Presence</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -433,6 +516,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Filtro do Registro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Entradas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Ocultar Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Tempo de Inatividade para Ocultar Cursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Controle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Comportamento do botão Voltar</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +588,24 @@
 			<translation>Ativar GPU NULA</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Ativar Dumping de PM4</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Pastas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Pastas dos Jogos</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Adicionar...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Remover</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -898,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com os Cheats. Se o patch não aparecer, pode ser que ele não exista para o número de série e a versão específicos do jogo. Pode ser necessário atualizar o jogo.</translation>
+			<translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com os Cheats. Se o patch não aparecer, pode ser que ele não exista para o número de série e a versão específicos do jogo.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -909,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Falha ao recuperar a página HTML.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>O jogo está na versão: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>O patch baixado só funciona na versão: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Talvez você precise atualizar seu jogo.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Aviso de incompatibilidade</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
@@ -991,17 +1139,27 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Ativar modo tela cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+			<translation>Ativar Tela Cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Habilitar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Mostrar tela inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
+			<translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>É um PS4 Pro:\nFaz o emulador agir como um PS4 PRO, o que pode ativar recursos especiais em jogos que o suportam.</translation>
+			<translation>Modo PS4 Pro:\nFaz o emulador agir como um PS4 PRO, o que pode ativar recursos especiais em jogos que o suportam.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Ativar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1011,12 +1169,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Tipo de log:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
+			<translation>Tipo de Registro:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filtro de log: Imprime apenas informações específicas. Exemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Níveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
+			<translation>Filtro de Registro:\nImprime apenas informações específicas.\nExemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical"\nNíveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1185,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Ocultar Cursor:\nEscolha quando o cursor desaparecerá:\nNunca: Você sempre verá o mouse.\nParado: Defina um tempo para ele desaparecer após ficar inativo.\nSempre: Você nunca verá o mouse.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Defina um tempo em segundos para o mouse desaparecer após ficar inativo.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Comportamento do botão Voltar:\nDefine o botão Voltar do controle para emular o toque na posição especificada no touchpad do PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Nunca</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Parado</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Sempre</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Esquerdo</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Direito</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Touchpad Centro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Nenhum</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1262,19 @@
 			<translation>Ativar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse nenhuma placa gráfica.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Ativar Dumping de PM4:\nArmazena os dados de instrução bruta da GPU em uma pasta enquanto o emulador os processa, para fins de depuração técnica. Recomendado deixar desativado.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Pastas dos jogos:\nA lista de pastas para verificar se há jogos instalados.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Adicionar:\nAdicione uma pasta à lista.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Remover:\nRemove uma pasta da lista.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1120,6 +1338,11 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Diretório</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Tempo Jogado</translation>
 		</message>
 	</context>
 	<context>

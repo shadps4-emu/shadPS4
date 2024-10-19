@@ -329,6 +329,11 @@ bool ImageInfo::IsMipOf(const ImageInfo& info) const {
         return false;
     }
 
+    // Ensure that address matches too.
+    if ((info.guest_address + info.mips_layout[mip].offset) != guest_address) {
+        return false;
+    }
+
     return true;
 }
 

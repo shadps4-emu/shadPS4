@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Choose directory</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -128,6 +141,26 @@
 			<translation>Copy All</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Delete...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Delete Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Delete Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Delete DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Shortcut creation</translation>
@@ -151,6 +184,46 @@
 			<location filename="../gui_context_menus.h" line="275"/>
 			<source>Install PKG</source>
 			<translation>Install PKG</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>This game has no update to delete!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>This game has no DLC to delete!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Delete %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Are you sure you want to delete %1's %2 directory?</translation>
 		</message>
 	</context>
 	<context>
@@ -405,6 +478,11 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
 			<translation>Show Splash</translation>
@@ -413,6 +491,11 @@
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
 			<translation>Is PS4 Pro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Aktiver Discord Rich Presence</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -433,6 +516,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Inndata</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Markør</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Skjul markør</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Timeout for å skjule markør ved inaktivitet</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontroller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Tilbakeknapp atferd</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +588,24 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Stier</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Spillmapper</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Legg til...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Fjern</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -898,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Oppdateringer lastet ned vellykket! Alle oppdateringer tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis oppdateringen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet. Det kan være nødvendig å oppdatere spillet.</translation>
+			<translation>Oppdateringer lastet ned vellykket! Alle oppdateringer tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis oppdateringen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -909,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Kunne ikke hente HTML-side.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Spillet er i versjon: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Den nedlastede patchen fungerer bare på versjon: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Du må kanskje oppdatere spillet ditt.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Inkompatibilitetsvarsel</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
@@ -994,6 +1142,11 @@
 			<translation>Aktiver fullskjerm:\nSetter automatisk spillvinduet i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
 			<translation>Vis startskjerm:\nViser spillets startskjerm (et spesialbilde) når spillet starter.</translation>
@@ -1002,6 +1155,11 @@
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
 			<translation>Er PS4 Pro:\nFår emulatoren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter det.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevant informasjon på Discord-profilen din.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1016,7 +1174,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Loggfilter: Filtrerer loggen for å kun skrive ut spesifikk informasjon. Eksempler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
+			<translation>Loggfilter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1185,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Spille tittelmusikk:\nHvis et spill støtter det, aktiverer det å spille spesiell musikk når du velger spillet i GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Skjul musepeker:\nVelg når musepekeren skal forsvinne:\nAldri: Du vil alltid se musen.\nInaktiv: Sett en tid for at den skal forsvinne etter å ha vært inaktiv.\nAlltid: du vil aldri se musen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Sett en tid for når musen forsvinner etter å ha vært inaktiv.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Atferd for tilbaketasten:\nSetter tilbaketasten på kontrolleren til å imitere et trykk på den angitte posisjonen på PS4s berøringsplate.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Aldri</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Inaktiv</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Alltid</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Berøringsplate Venstre</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Berøringsplate Høyre</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Berøringsplate Midt</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Ingen</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1262,19 @@
 			<translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillrendering som om det ikke var noe grafikkort.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Aktiver PM4 dumping:\nFor teknisk feilsøking lagrer rå GPU-instruksjonsdata i en mappe mens emulatoren behandler dem.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Spillmapper:\nListen over mapper for å sjekke installerte spill.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Legg til:\nLegg til en mappe til listen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Fjern:\nFjern en mappe fra listen.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1121,6 +1339,11 @@
 			<source>Path</source>
 			<translation>Sti</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Spilletid</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1169,7 +1392,7 @@
 			<source>Update Available</source>
 			<translation>Oppdatering tilgjengelig</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Oppdateringskanal</translation>

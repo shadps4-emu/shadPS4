@@ -9,6 +9,7 @@
 
 #include "background_music_player.h"
 #include "common/config.h"
+#include "common/discord_rpc_handler.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"

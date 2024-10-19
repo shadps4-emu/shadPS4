@@ -36,6 +36,10 @@ void init_pthreads() {
     ScePthreadMutexattr default_mutexattr = nullptr;
     scePthreadMutexattrInit(&default_mutexattr);
     g_pthread_cxt->setDefaultMutexattr(default_mutexattr);
+    ScePthreadMutexattr adaptive_mutexattr = nullptr;
+    scePthreadMutexattrInit(&adaptive_mutexattr);
+    scePthreadMutexattrSettype(&adaptive_mutexattr, ORBIS_PTHREAD_MUTEX_ADAPTIVE);
+    g_pthread_cxt->setAdaptiveMutexattr(adaptive_mutexattr);
     // default cond init
     ScePthreadCondattr default_condattr = nullptr;
     scePthreadCondattrInit(&default_condattr);
@@ -412,7 +416,8 @@ int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u
 }
 
 ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
-    if (addr == nullptr || *addr != nullptr) {
+    if (addr == nullptr ||
+        (*addr != nullptr && *addr != ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER)) {
         return addr;
     }
 
@@ -429,14 +434,14 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (mutex_attr == nullptr) {
-        attr = g_pthread_cxt->getDefaultMutexattr();
-    } else {
-        if (*mutex_attr == nullptr) {
-            attr = g_pthread_cxt->getDefaultMutexattr();
+    if (mutex_attr == nullptr || *mutex_attr == nullptr) {
+        if (*mutex == ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER) {
+            attr = g_pthread_cxt->getAdaptiveMutexattr();
         } else {
-            attr = mutex_attr;
+            attr = g_pthread_cxt->getDefaultMutexattr();
         }
+    } else {
+        attr = mutex_attr;
     }
 
     *mutex = new PthreadMutexInternal{};

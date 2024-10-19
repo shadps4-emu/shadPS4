@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - ディレクトリを選択</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -128,6 +141,26 @@
 			<translation>すべてコピー</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Delete...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Delete Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Delete Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Delete DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>ショートカットの作成</translation>
@@ -151,6 +184,46 @@
 			<location filename="../gui_context_menus.h" line="275"/>
 			<source>Install PKG</source>
 			<translation>PKGをインストール</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>This game has no update to delete!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>This game has no DLC to delete!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Delete %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Are you sure you want to delete %1's %2 directory?</translation>
 		</message>
 	</context>
 	<context>
@@ -405,6 +478,11 @@
 			<translation>フルスクリーンを有効にする</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
 			<translation>スプラッシュを表示する</translation>
@@ -413,6 +491,11 @@
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
 			<translation>PS4 Proモード</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Discord Rich Presenceを有効にする</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -433,6 +516,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>ログフィルター</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>入力</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>カーソル</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>カーソルを隠す</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>カーソル非アクティブタイムアウト</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>コントローラー</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>戻るボタンの動作</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +588,24 @@
 			<translation>NULL GPUを有効にする</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4ダンプを有効にする</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>パス</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>ゲームフォルダ</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>追加...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>削除</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -898,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。ゲームを更新する必要があるかもしれません。</translation>
+			<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -909,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>HTMLページの取得に失敗しました。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>ゲームのバージョン: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>ダウンロードしたパッチはバージョン: %1 のみ機能します</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>ゲームを更新する必要があるかもしれません。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>互換性のない通知</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
@@ -994,6 +1142,11 @@
 			<translation>全画面モードを有効にする:\nゲームウィンドウを自動的に全画面モードにします。\nF11キーを押すことで切り替えることができます。</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
 			<translation>スプラッシュスクリーンを表示:\nゲーム起動中にゲームのスプラッシュスクリーン（特別な画像）を表示します。</translation>
@@ -1002,6 +1155,11 @@
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
 			<translation>PS4 Proです:\nエミュレーターがPS4 PROとして動作するようにし、これをサポートするゲームで特別な機能を有効にする場合があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Discord Rich Presenceを有効にする:\nエミュレーターのアイコンと関連情報をDiscordプロフィールに表示します。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1016,7 +1174,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>ログフィルター: 特定の情報のみを印刷するようにログをフィルタリングします。例: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" レベル: Trace, Debug, Info, Warning, Error, Critical - この順序で、特定のレベルはリスト内のすべての前のレベルをサイレンスし、その後のすべてのレベルをログに記録します。</translation>
+			<translation>ログフィルター:\n特定の情報のみを印刷するようにログをフィルタリングします。\n例: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" レベル: Trace, Debug, Info, Warning, Error, Critical - この順序で、特定のレベルはリスト内のすべての前のレベルをサイレンスし、その後のすべてのレベルをログに記録します。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1185,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>タイトルミュージックを再生:\nゲームがそれをサポートしている場合、GUIでゲームを選択したときに特別な音楽を再生することを有効にします。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>カーソルを隠す:\nカーソルが消えるタイミングを選択してください:\n決して: いつでもマウスが見えます。\nアイドル: アイダルの後に消えるまでの時間を設定します。\n常に: マウスは決して見えません。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>アイドル後にマウスが消えるまでの時間を設定します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>戻るボタンの動作:\nコントローラーの戻るボタンを、PS4のタッチパッドの指定された位置をタッチするように設定します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>決して</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>アイドル</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>常に</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>タッチパッド左</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>タッチパッド右</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>タッチパッド中央</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>なし</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1262,19 @@
 			<translation>Null GPUを有効にする:\n技術的なデバッグの目的で、グラフィックスカードがないかのようにゲームのレンダリングを無効にします。</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4ダンプを有効にする:\n技術的なデバッグの目的で、エミュレーターが処理している間に生のGPU命令データをフォルダーに保存します。</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>ゲームフォルダ:\nインストールされたゲームを確認するためのフォルダのリスト。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>追加:\nリストにフォルダを追加します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>削除:\nリストからフォルダを削除します。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1121,6 +1339,11 @@
 			<source>Path</source>
 			<translation>パス</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>プレイ時間</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1169,7 +1392,7 @@
 			<source>Update Available</source>
 			<translation>アップデートがあります</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>アップデートチャネル</translation>

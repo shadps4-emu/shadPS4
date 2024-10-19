@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Choose directory</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -128,6 +141,26 @@
 			<translation>Copy All</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Delete...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Delete Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Delete Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Delete DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Shortcut creation</translation>
@@ -151,6 +184,46 @@
 			<location filename="../gui_context_menus.h" line="275"/>
 			<source>Install PKG</source>
 			<translation>Install PKG</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>This game has no update to delete!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>This game has no DLC to delete!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Delete %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Are you sure you want to delete %1's %2 directory?</translation>
 		</message>
 	</context>
 	<context>
@@ -405,6 +478,11 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
 			<translation>Show Splash</translation>
@@ -413,6 +491,11 @@
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
 			<translation>Is PS4 Pro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Aktifkan Discord Rich Presence</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -433,6 +516,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Masukan</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Sembunyikan kursor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Batas waktu sembunyikan kursor tidak aktif</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Pengontrol</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Perilaku tombol kembali</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +588,24 @@
 			<translation>Enable NULL GPU</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>Enable PM4 Dumping</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Jalur</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Folder Permainan</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Tambah...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Hapus</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -898,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik. Mungkin perlu memperbarui game.</translation>
+			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -909,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Gagal mengambil halaman HTML.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Permainan berada di versi: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Patch yang diunduh hanya berfungsi pada versi: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Anda mungkin perlu memperbarui permainan Anda.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Pemberitahuan Ketidakcocokan</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
@@ -994,6 +1142,11 @@
 			<translation>Aktifkan Mode Layar Penuh:\nSecara otomatis menempatkan jendela permainan dalam mode layar penuh.\nIni dapat dinonaktifkan dengan menekan tombol F11.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
 			<translation>Tampilkan Layar Pembuka:\nMenampilkan layar pembuka permainan (gambar khusus) saat permainan dimulai.</translation>
@@ -1002,6 +1155,11 @@
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
 			<translation>Adalah PS4 Pro:\nMembuat emulator berfungsi sebagai PS4 PRO, yang mungkin mengaktifkan fitur khusus dalam permainan yang mendukungnya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Aktifkan Discord Rich Presence:\nMenampilkan ikon emulator dan informasi relevan di profil Discord Anda.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1016,7 +1174,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Filter Log: Menyaring log untuk hanya mencetak informasi tertentu. Contoh: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Tingkatan: Trace, Debug, Info, Warning, Error, Critical - dalam urutan ini, tingkat tertentu membungkam semua tingkat sebelumnya dalam daftar dan mencatat setiap tingkat setelahnya.</translation>
+			<translation>Filter Log:\nMenyaring log untuk hanya mencetak informasi tertentu.\nContoh: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Tingkatan: Trace, Debug, Info, Warning, Error, Critical - dalam urutan ini, tingkat tertentu membungkam semua tingkat sebelumnya dalam daftar dan mencatat setiap tingkat setelahnya.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1185,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Putar Musik Judul Permainan:\nJika permainan mendukungnya, aktifkan pemutaran musik khusus saat memilih permainan di GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Sembunyikan Kursor:\nPilih kapan kursor akan menghilang:\nTidak Pernah: Anda akan selalu melihat mouse.\nTidak Aktif: Tetapkan waktu untuk menghilang setelah tidak aktif.\nSelalu: Anda tidak akan pernah melihat mouse.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Tetapkan waktu untuk mouse menghilang setelah tidak aktif.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Perilaku Tombol Kembali:\nMengatur tombol kembali pada pengontrol untuk meniru ketukan di posisi yang ditentukan di touchpad PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Tidak Pernah</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Diam</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Selalu</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Touchpad Kiri</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Touchpad Kanan</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Pusat Touchpad</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Tidak Ada</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1262,19 @@
 			<translation>Aktifkan GPU Null:\nUntuk tujuan debugging teknis, menonaktifkan rendering permainan seolah-olah tidak ada kartu grafis.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>Aktifkan Pembuangan PM4:\nUntuk tujuan debugging teknis, menyimpan data instruksi GPU mentah ke folder saat emulator memprosesnya.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Folder Permainan:\nDaftar folder untuk memeriksa permainan yang diinstal.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Tambah:\nTambahkan folder ke daftar.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Hapus:\nHapus folder dari daftar.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1121,6 +1339,11 @@
 			<source>Path</source>
 			<translation>Jalur</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Waktu Bermain</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1169,7 +1392,7 @@
 			<source>Update Available</source>
 			<translation>Pembaruan Tersedia</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Saluran Pembaruan</translation>

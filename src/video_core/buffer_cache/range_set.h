@@ -43,11 +43,10 @@ struct RangeSet {
         if (m_ranges_set.empty()) {
             return;
         }
-        auto it = m_ranges_set.begin();
-        auto end_it = m_ranges_set.end();
-        for (; it != end_it; it++) {
-            const VAddr inter_addr_end = it->upper();
-            const VAddr inter_addr = it->lower();
+
+        for (const auto& set : m_ranges_set) {
+            const VAddr inter_addr_end = set.upper();
+            const VAddr inter_addr = set.lower();
             func(inter_addr, inter_addr_end);
         }
     }

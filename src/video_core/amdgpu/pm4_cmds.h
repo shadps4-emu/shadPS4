@@ -213,6 +213,7 @@ struct PM4CmdNop {
     enum PayloadType : u32 {
         DebugMarkerPush = 0x68750001u,      ///< Begin of GPU event scope
         DebugMarkerPop = 0x68750002u,       ///< End of GPU event scope
+        DebugSetMarker = 0x68750003u,       ///< Set GPU event marker
         SetVsharpInUdata = 0x68750004u,     ///< Indicates that V# will be set in the next packet
         SetTsharpInUdata = 0x68750005u,     ///< Indicates that T# will be set in the next packet
         SetSsharpInUdata = 0x68750006u,     ///< Indicates that S# will be set in the next packet
@@ -312,25 +313,26 @@ struct PM4CmdEventWriteEop {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence() const {
+    void SignalFence(auto&& write_mem) const {
+        u32* address = Address<u32>();
         switch (data_sel.Value()) {
         case DataSelect::None: {
             break;
         }
         case DataSelect::Data32Low: {
-            *Address<u32>() = DataDWord();
+            write_mem(address, DataDWord(), sizeof(u32));
             break;
         }
         case DataSelect::Data64: {
-            *Address<u64>() = DataQWord();
+            write_mem(address, DataQWord(), sizeof(u64));
             break;
         }
         case DataSelect::GpuClock64: {
-            *Address<u64>() = GetGpuClock64();
+            write_mem(address, GetGpuClock64(), sizeof(u64));
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            write_mem(address, Common::FencedRDTSC(), sizeof(u64));
             break;
         }
         default: {
@@ -400,6 +402,20 @@ struct PM4DmaData {
     u32 dst_addr_lo;
     u32 dst_addr_hi;
     u32 command;
+
+    template <typename T>
+    T SrcAddress() const {
+        return std::bit_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
+    }
+
+    template <typename T>
+    T DstAddress() const {
+        return std::bit_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
+    }
+
+    u32 NumBytes() const noexcept {
+        return command & 0x1fffff;
+    }
 };
 
 struct PM4CmdWaitRegMem {
@@ -431,7 +447,7 @@ struct PM4CmdWaitRegMem {
 
     template <typename T = u32*>
     T Address() const {
-        return reinterpret_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
     }
 
     bool Test() const {
@@ -533,11 +549,11 @@ struct PM4CmdEventWriteEos {
         return this->data;
     }
 
-    void SignalFence() const {
+    void SignalFence(auto&& write_mem) const {
         const auto cmd = command.Value();
         switch (cmd) {
         case Command::SignalFence: {
-            *Address() = DataDWord();
+            write_mem(Address(), DataDWord(), sizeof(u32));
             break;
         }
         case Command::GdsStore: {

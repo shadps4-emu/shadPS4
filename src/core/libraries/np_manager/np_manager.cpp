@@ -902,12 +902,13 @@ int PS4_SYSV_ABI sceNpCreateAsyncRequest() {
 }
 
 int PS4_SYSV_ABI sceNpCreateRequest() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called");
+    static int id = 0;
+    return ++id;
 }
 
-int PS4_SYSV_ABI sceNpDeleteRequest() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpDeleteRequest(int reqId) {
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called reqId = {}", reqId);
     return ORBIS_OK;
 }
 
@@ -985,8 +986,12 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetOnlineId() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId) {
+    LOG_DEBUG(Lib_NpManager, "userId {}", userId);
+    std::string name = Config::getUserName();
+    // Fill the unused stuffs to 0
+    memset(onlineId, 0, sizeof(*onlineId));
+    strcpy(onlineId->data, name.c_str());
     return ORBIS_OK;
 }
 

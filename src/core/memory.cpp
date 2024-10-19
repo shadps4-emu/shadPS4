@@ -3,6 +3,7 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
@@ -39,8 +40,10 @@ MemoryManager::MemoryManager() {
 MemoryManager::~MemoryManager() = default;
 
 void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
+    const auto total_size =
+        Config::isNeoMode() ? SCE_KERNEL_MAIN_DMEM_SIZE_PRO : SCE_KERNEL_MAIN_DMEM_SIZE;
     total_flexible_size = flexible_size;
-    total_direct_size = SCE_KERNEL_MAIN_DMEM_SIZE - flexible_size;
+    total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers direct memory physical block.
     // Note that this should never be called after direct memory allocations have been made.
@@ -49,6 +52,17 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
+}
+
+bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
+    const VAddr virtual_addr = std::bit_cast<VAddr>(address);
+    const auto& vma = FindVMA(virtual_addr)->second;
+    if (vma.type != VMAType::Direct) {
+        return false;
+    }
+    u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
+    memcpy(backing, data, num_bytes);
+    return true;
 }
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment) {
@@ -95,7 +109,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
         return dmem_area->second.is_free && remaining_size >= size;
     };
     while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
-        dmem_area++;
+        ++dmem_area;
     }
     ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
 
@@ -242,6 +256,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
 
+    rasterizer->MapMemory(mapped_addr, size);
     return ORBIS_OK;
 }
 
@@ -483,7 +498,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
 
     auto it = FindVMA(addr);
     if (it->second.type == VMAType::Free && flags == 1) {
-        it++;
+        ++it;
     }
     if (it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
@@ -599,7 +614,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
         return remaining_size >= size;
     };
     while (!is_suitable()) {
-        it++;
+        ++it;
     }
     return virtual_addr;
 }

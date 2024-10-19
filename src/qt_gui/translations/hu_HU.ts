@@ -53,6 +53,19 @@
 		</message>
 	</context>
 	<context>
+		<name>InstallDirSelect</name>
+		<message>
+			<location filename="../install_dir_select.cpp" line="30"/>
+			<source>shadPS4 - Choose directory</source>
+			<translation>shadPS4 - Mappa kiválasztása</translation>
+		</message>
+		<message>
+			<location filename="../install_dir_select.cpp" line="37"/>
+			<source>Select which directory you want to install to.</source>
+			<translation>Select which directory you want to install to.</translation>
+		</message>
+	</context>
+	<context>
 		<name>GameInstallDialog</name>
 		<message>
 			<location filename="../game_install_dialog.cpp" line="24"/>
@@ -128,6 +141,26 @@
 			<translation>Összes Másolása</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="72"/>
+			<source>Delete...</source>
+			<translation>Delete...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="73"/>
+			<source>Delete Game</source>
+			<translation>Delete Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="74"/>
+			<source>Delete Update</source>
+			<translation>Delete Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="75"/>
+			<source>Delete DLC</source>
+			<translation>Delete DLC</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="173"/>
 			<source>Shortcut creation</source>
 			<translation>Parancsikon létrehozása</translation>
@@ -151,6 +184,46 @@
 			<location filename="../gui_context_menus.h" line="253"/>
 			<source>Install PKG</source>
 			<translation>PKG telepítése</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="299"/>
+			<source>Game</source>
+			<translation>Game</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="305"/>
+			<source>requiresEnableSeparateUpdateFolder_MSG</source>
+			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="312"/>
+			<source>This game has no update to delete!</source>
+			<translation>This game has no update to delete!</translation>
+		</message>
+			<message>
+			<location filename="../gui_context_menus.h" line="316"/>
+			<source>Update</source>
+			<translation>Update</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="321"/>
+			<source>This game has no DLC to delete!</source>
+			<translation>This game has no DLC to delete!</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="325"/>
+			<source>DLC</source>
+			<translation>DLC</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="332"/>
+			<source>Delete %1</source>
+			<translation>Delete %1</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="333"/>
+			<source>Are you sure you want to delete %1's %2 directory?</source>
+			<translation>Are you sure you want to delete %1's %2 directory?</translation>
 		</message>
 	</context>
 	<context>
@@ -405,6 +478,11 @@
 			<translation>Teljesképernyő Engedélyezése</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="140"/>
+			<source>Enable Separate Update Folder</source>
+			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
 			<translation>Indítóképernyő Mutatása</translation>
@@ -413,6 +491,11 @@
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
 			<translation>PS4 Pro</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="154"/>
+			<source>Enable Discord Rich Presence</source>
+			<translation>Engedélyezze a Discord Rich Presence-t</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -433,6 +516,36 @@
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
 			<translation>Naplózási Filter</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="595"/>
+			<source>Input</source>
+			<translation>Bemenet</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="611"/>
+			<source>Cursor</source>
+			<translation>Kurzor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="635"/>
+			<source>Hide Cursor</source>
+			<translation>Kurzor elrejtése</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="668"/>
+			<source>Hide Cursor Idle Timeout</source>
+			<translation>Kurzor inaktivitási időtúllépés</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="767"/>
+			<source>Controller</source>
+			<translation>Kontroller</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="797"/>
+			<source>Back Button Behavior</source>
+			<translation>Vissza gomb viselkedése</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -475,9 +588,24 @@
 			<translation>NULL GPU Engedélyezése</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="476"/>
-			<source>Enable PM4 Dumping</source>
-			<translation>PM4 Dumpolás Engedélyezése</translation>
+			<location filename="../settings_dialog.ui" line="1111"/>
+			<source>Paths</source>
+			<translation>Útvonalak</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1119"/>
+			<source>Game Folders</source>
+			<translation>Játékmappák</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Add...</source>
+			<translation>Hozzáadás...</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="1141"/>
+			<source>Remove</source>
+			<translation>Eltávolítás</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="517"/>
@@ -898,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében. Ha a javítás nem jelenik meg, lehet, hogy nem létezik a játék adott sorozatszámához és verziójához. Lehet, hogy frissítenie kell a játékot.</translation>
+			<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében. Ha a javítás nem jelenik meg, lehet, hogy nem létezik a játék adott sorozatszámához és verziójához.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -909,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Nem sikerült HTML oldal lekérése.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>A játék verziója: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>A letöltött javítás csak a(z) %1 verzión működik</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Lehet, hogy frissítened kell a játékodat.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Inkompatibilitási értesítés</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
@@ -994,6 +1142,11 @@
 			<translation>Teljes képernyő engedélyezése:\nAutomatikusan teljes képernyőre állítja a játék ablakát.\nEz a F11 billentyű megnyomásával kapcsolható ki/be.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>separateUpdatesCheckBox</source>
+			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
 			<translation>Indító képernyő megjelenítése:\nMegjeleníti a játék indító képernyőjét (különleges képet) a játék elindításakor.</translation>
@@ -1002,6 +1155,11 @@
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
 			<translation>PS4 Pro:\nAz emulátort PS4 PRO-ként kezeli, ami engedélyezheti a speciális funkciókat olyan játékokban, amelyek támogatják.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="438"/>
+			<source>discordRPCCheckbox</source>
+			<translation>Engedélyezze a Discord Rich Presence-t:\nMegjeleníti az emulator ikonját és a kapcsolódó információkat a Discord profilján.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
@@ -1016,7 +1174,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Napló szűrő: Csak bizonyos információk megjelenítésére szűri a naplót. Példák: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Szintek: Trace, Debug, Info, Warning, Error, Critical - ebben a sorrendben, egy konkrét szint elnémítja az előtte lévő összes szintet, és naplózza az utána következő szinteket.</translation>
+			<translation>Napló szűrő:\nCsak bizonyos információk megjelenítésére szűri a naplót.\nPéldák: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Szintek: Trace, Debug, Info, Warning, Error, Critical - ebben a sorrendben, egy konkrét szint elnémítja az előtte lévő összes szintet, és naplózza az utána következő szinteket.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1027,6 +1185,56 @@
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
 			<translation>Játék címzene lejátszása:\nHa a játék támogatja, engedélyezze a speciális zene lejátszását, amikor a játékot kiválasztja a GUI-ban.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="450"/>
+			<source>hideCursorGroupBox</source>
+			<translation>Akurátor elrejtése:\nVálassza ki, mikor tűnjön el az egérkurzor:\nSoha: Az egér mindig látható.\nInaktív: Állítson be egy időt, amikor inaktív állapotban eltűnik.\nMindig: soha nem látja az egeret.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="452"/>
+			<source>idleTimeoutGroupBox</source>
+			<translation>Állítson be egy időt, ameddig az egér inaktív állapot után eltűnik.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="454"/>
+			<source>backButtonBehaviorGroupBox</source>
+			<translation>Vissza gomb viselkedés:\nBeállítja a vezérlő vissza gombját, hogy utánozza a PS4 érintőpadján megadott pozíció megérintését.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="70"/>
+			<source>Never</source>
+			<translation>Soha</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="71"/>
+			<source>Idle</source>
+			<translation>Inaktív</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Always</source>
+			<translation>Mindig</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="101"/>
+			<source>Touchpad Left</source>
+			<translation>Érintőpad Balra</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="102"/>
+			<source>Touchpad Right</source>
+			<translation>Érintőpad Jobbra</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="103"/>
+			<source>Touchpad Center</source>
+			<translation>Érintőpad Középen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="104"/>
+			<source>None</source>
+			<translation>Semmi</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1054,9 +1262,19 @@
 			<translation>Null GPU engedélyezése:\nMűszaki hibaelhárítás céljából letiltja a játék renderelését, mintha nem lenne grafikus kártya.</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp" line="323"/>
-			<source>dumpPM4CheckBox</source>
-			<translation>PM4 dumpolás engedélyezése:\nMűszaki hibaelhárítás céljából a nyers GPU utasítási adatokat elmenti egy mappába, ahogy az emulátor feldolgozza őket.</translation>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>gameFoldersBox</source>
+			<translation>Játék mappák:\nA mappák listája az telepített játékok ellenőrzésére.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>addFolderButton</source>
+			<translation>Hozzáadás:\nHozzon létre egy mappát a listában.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="465"/>
+			<source>removeFolderButton</source>
+			<translation>Eltávolítás:\nTávolítson el egy mappát a listából.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
@@ -1121,6 +1339,11 @@
 			<source>Path</source>
 			<translation>Útvonal</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="38"/>
+			<source>Play Time</source>
+			<translation>Játékidő</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1169,7 +1392,7 @@
 			<source>Update Available</source>
 			<translation>Frissítés elérhető</translation>
 		</message>
-		<message> 
+		<message>
 			<location filename="../check_update.cpp" line="187"/>
 			<source>Update Channel</source>
 			<translation>Frissítési Csatorna</translation>
