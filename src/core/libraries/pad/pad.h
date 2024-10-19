@@ -9,6 +9,10 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+namespace Input {
+struct State;
+}
+
 namespace Libraries::Pad {
 
 constexpr int ORBIS_PAD_MAX_TOUCH_NUM = 2;
@@ -188,6 +192,8 @@ struct OrbisPadData {
     u8 reserve[2];
     u8 deviceUniqueDataLen;
     u8 deviceUniqueData[ORBIS_PAD_MAX_DEVICE_UNIQUE_DATA_SIZE];
+
+    void CopyFromState(const Input::State& state);
 };
 
 struct OrbisPadTouchPadInformation {

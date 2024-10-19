@@ -238,11 +238,21 @@ void MsgDialogUi::Finish(ButtonId buttonId, Result r) {
     }
     if (status) {
         *status = Status::FINISHED;
+        if (callback.has_value()) {
+            callback.value()(DialogResult{
+                .result = r,
+                .buttonId = buttonId,
+            });
+        }
     }
     state = nullptr;
     status = nullptr;
     result = nullptr;
     RemoveLayer(this);
+    if (self_destruct) {
+        self_destruct = false;
+        delete this;
+    }
 }
 
 void MsgDialogUi::Draw() {
@@ -282,19 +292,24 @@ void MsgDialogUi::Draw() {
     first_render = false;
 }
 
-DialogResult Libraries::MsgDialog::ShowMsgDialog(MsgDialogState p_state, bool block) {
-    static DialogResult result{};
-    static Status status;
-    static MsgDialogUi dialog;
-    static MsgDialogState state;
-    dialog = MsgDialogUi{};
-    status = Status::RUNNING;
-    state = std::move(p_state);
-    dialog = MsgDialogUi(&state, &status, &result);
+void Libraries::MsgDialog::ShowMsgDialog(
+    MsgDialogState p_state, bool block, std::optional<std::function<void(DialogResult)>> callback) {
+    auto status = new Status{Status::RUNNING};
+    auto state = new MsgDialogState{std::move(p_state)};
+    auto dialog = new MsgDialogUi(state, status, nullptr);
+    bool running = true;
+    dialog->SetSelfDestruct();
+    dialog->SetCallback([&, status, state, callback = std::move(callback)](auto result) {
+        running = false;
+        delete status;
+        delete state;
+        if (callback.has_value()) {
+            callback.value()(result);
+        }
+    });
     if (block) {
-        while (status == Status::RUNNING) {
+        while (running) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
-    return result;
 }
