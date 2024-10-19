@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -10,6 +11,8 @@
 #include "common/types.h"
 #include "core/libraries/system/commondialog.h"
 #include "imgui/imgui_layer.h"
+
+#include <functional>
 
 namespace Libraries::MsgDialog {
 
@@ -157,6 +160,10 @@ class MsgDialogUi final : public ImGui::Layer {
     CommonDialog::Status* status{};
     DialogResult* result{};
 
+    // HOST ONLY
+    bool self_destruct{false};
+    std::optional<std::function<void(DialogResult)>> callback;
+
     void DrawUser();
     void DrawProgressBar();
     void DrawSystemMessage();
@@ -169,13 +176,22 @@ public:
     MsgDialogUi(MsgDialogUi&& other) noexcept;
     MsgDialogUi& operator=(MsgDialogUi other);
 
+    void SetSelfDestruct() {
+        self_destruct = true;
+    }
+
+    void SetCallback(std::function<void(DialogResult)> callback) {
+        this->callback = std::move(callback);
+    }
+
     void Finish(ButtonId buttonId, CommonDialog::Result r = CommonDialog::Result::OK);
 
     void Draw() override;
 };
 
-// Utility function to show a message dialog
-// !!! This function can block !!!
-DialogResult ShowMsgDialog(MsgDialogState state, bool block = true);
+// Utility function to show a message dialog from host code
+// callback is called from the present thread
+void ShowMsgDialog(MsgDialogState state, bool block = false,
+                   std::optional<std::function<void(DialogResult)>> callback = std::nullopt);
 
 }; // namespace Libraries::MsgDialog

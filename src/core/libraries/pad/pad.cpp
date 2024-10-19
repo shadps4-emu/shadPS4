@@ -12,8 +12,62 @@
 
 namespace Libraries::Pad {
 
+static bool g_initialized = false;
+
+static bool g_pad_standard_connected = false;
+static bool g_pad_standard_special_connected = false;
+
+constexpr auto PAD_STANDARD_HANDLER = 0xBC1;
+constexpr auto PAD_SPECIAL_HANDLER = 0xBC2;
+
+void OrbisPadData::CopyFromState(const Input::State& state) {
+    buttons = state.buttonsState;
+    leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
+    leftStick.y = state.axes[static_cast<int>(Input::Axis::LeftY)];
+    rightStick.x = state.axes[static_cast<int>(Input::Axis::RightX)];
+    rightStick.y = state.axes[static_cast<int>(Input::Axis::RightY)];
+    analogButtons.l2 = state.axes[static_cast<int>(Input::Axis::TriggerLeft)];
+    analogButtons.r2 = state.axes[static_cast<int>(Input::Axis::TriggerRight)];
+    orientation.x = 0.0f;
+    orientation.y = 0.0f;
+    orientation.z = 0.0f;
+    orientation.w = 1.0f;
+    acceleration.x = 0.0f;
+    acceleration.y = 0.0f;
+    acceleration.z = 0.0f;
+    angularVelocity.x = 0.0f;
+    angularVelocity.y = 0.0f;
+    angularVelocity.z = 0.0f;
+    touchData.touchNum = (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
+    touchData.touch[0].x = state.touchpad[0].x;
+    touchData.touch[0].y = state.touchpad[0].y;
+    touchData.touch[0].id = 1;
+    touchData.touch[1].x = state.touchpad[1].x;
+    touchData.touch[1].y = state.touchpad[1].y;
+    touchData.touch[1].id = 2;
+    connected = true;
+    timestamp = state.time;
+    connectedCount = 1;
+    deviceUniqueDataLen = 0;
+}
+
 int PS4_SYSV_ABI scePadClose(s32 handle) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        g_pad_standard_connected = false;
+    }
+    if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        g_pad_standard_special_connected = false;
+    }
     return ORBIS_OK;
 }
 
@@ -24,16 +78,135 @@ int PS4_SYSV_ABI scePadConnectPort() {
 
 int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     s32 handle, OrbisPadDeviceClassExtendedInformation* pExtInfo) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (Config::getUseSpecialPad()) {
-        pExtInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
+
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
-    return ORBIS_OK;
+
+    if (pExtInfo == nullptr) {
+        return ORBIS_PAD_ERROR_INVALID_ARG;
+    }
+
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        pExtInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+        return ORBIS_OK;
+    }
+    if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        pExtInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+        switch (pExtInfo->deviceClass) {
+        case ORBIS_PAD_DEVICE_CLASS_STEERING_WHEEL: {
+            auto& data = pExtInfo->classData.steeringWheel;
+            data.maxPhysicalWheelAngle = 360;
+            data.capability = 0b1110; // Handbrake, Shift, 3 pedals
+        } break;
+        default:
+            memset(pExtInfo->classData.data, 0, sizeof(pExtInfo->classData.data));
+            break;
+        }
+        return ORBIS_OK;
+    }
+
+    return ORBIS_PAD_ERROR_INVALID_HANDLE;
 }
 
 int PS4_SYSV_ABI scePadDeviceClassParseData(s32 handle, const OrbisPadData* pData,
                                             OrbisPadDeviceClassData* pDeviceClassData) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_TRACE(Lib_Pad, "called handle = {}", handle);
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
+    }
+    if (pData == nullptr || pDeviceClassData == nullptr) {
+        return ORBIS_PAD_ERROR_INVALID_ARG;
+    }
+
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        pDeviceClassData->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+        return ORBIS_OK;
+    }
+
+    if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        auto pad_class = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+        pDeviceClassData->deviceClass = pad_class;
+        switch (pad_class) {
+        case ORBIS_PAD_DEVICE_CLASS_GUITAR: {
+            LOG_ERROR(Lib_Pad, "(STUBBED) guitar not implemented");
+            auto& data = pDeviceClassData->classData.guitar;
+            // TODO implement guitar
+        } break;
+        case ORBIS_PAD_DEVICE_CLASS_DRUM: {
+            LOG_ERROR(Lib_Pad, "(STUBBED) drum not implemented");
+            auto& data = pDeviceClassData->classData.drum;
+            // TODO implement drum
+        } break;
+        case ORBIS_PAD_DEVICE_CLASS_STEERING_WHEEL: {
+            auto& data = pDeviceClassData->classData.steeringWheel;
+            // TODO proper implement steering wheel
+            auto& left_stick = pData->leftStick.x;
+            data.steeringWheelAngle = static_cast<float>(left_stick - 0x7F) / 127.0f * 180.0f;
+            if (data.steeringWheelAngle == 0.0) {
+                data.steeringWheel = 0x80;
+            } else {
+                data.steeringWheel =
+                    static_cast<u16>((data.steeringWheelAngle / 360.0f + 0.5f) * 0xFFFF);
+            }
+            data.acceleratorPedal = static_cast<u16>(pData->analogButtons.r2) * 0x102;
+            data.brakePedal = static_cast<u16>(pData->analogButtons.l2) * 0x102;
+            data.clutchPedal = pData->buttons & ORBIS_PAD_BUTTON_L1 ? 0xFFFF : 0x0000;
+            data.handBrake = pData->buttons & ORBIS_PAD_BUTTON_R1 ? 0xFFFF : 0x0000;
+
+            static int gear = 1;
+            static bool switch_gear_up_pressed_last = false;
+            static bool switch_gear_down_pressed_last = false;
+            bool switch_gear_up_pressed = pData->buttons & ORBIS_PAD_BUTTON_SQUARE;
+            bool switch_gear_down_pressed = pData->buttons & ORBIS_PAD_BUTTON_CROSS;
+            if (switch_gear_up_pressed != switch_gear_up_pressed_last) {
+                switch_gear_up_pressed_last = switch_gear_up_pressed;
+                if (switch_gear_up_pressed) {
+                    if (gear < 7) {
+                        ++gear;
+                    }
+                }
+            }
+            if (switch_gear_down_pressed != switch_gear_down_pressed_last) {
+                switch_gear_down_pressed_last = switch_gear_down_pressed;
+                if (switch_gear_down_pressed) {
+                    if (gear > 0) {
+                        --gear;
+                    }
+                }
+            }
+
+            if (gear == 0) {
+                data.gear = 1 << 7;
+            } else {
+                data.gear = 1 << (gear - 1);
+            }
+        } break;
+        case ORBIS_PAD_DEVICE_CLASS_FLIGHT_STICK: {
+            LOG_ERROR(Lib_Pad, "(STUBBED) flight stick not implemented");
+            auto& data = pDeviceClassData->classData.flightStick;
+            // TODO implement flight stick
+        } break;
+        default:
+            pDeviceClassData->bDataValid = false;
+            break;
+        }
+        return ORBIS_OK;
+    }
+
     return ORBIS_OK;
 }
 
@@ -89,32 +262,39 @@ int PS4_SYSV_ABI scePadGetCapability() {
 
 int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerInformation* pInfo) {
     LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
-    if (handle < 0) {
-        pInfo->touchPadInfo.pixelDensity = 1;
-        pInfo->touchPadInfo.resolution.x = 1920;
-        pInfo->touchPadInfo.resolution.y = 950;
-        pInfo->stickInfo.deadZoneLeft = 2;
-        pInfo->stickInfo.deadZoneRight = 2;
-        pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
-        pInfo->connectedCount = 1;
-        pInfo->connected = false;
-        pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
-        return SCE_OK;
+
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
+
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+    } else if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+    } else {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
+
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
     pInfo->stickInfo.deadZoneLeft = 2;
     pInfo->stickInfo.deadZoneRight = 2;
-    pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
+    pInfo->connectionType = 0; // Local connection
     pInfo->connectedCount = 1;
     pInfo->connected = true;
-    pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
-    if (Config::getUseSpecialPad()) {
-        pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
+    if (handle == PAD_STANDARD_HANDLER) {
+        pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+    } else if (handle == PAD_SPECIAL_HANDLER) {
         pInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+    } else {
+        UNREACHABLE();
     }
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadGetDataInternal() {
@@ -134,7 +314,7 @@ int PS4_SYSV_ABI scePadGetDeviceInfo() {
 
 int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
                                                    OrbisPadExtendedControllerInformation* pInfo) {
-    LOG_INFO(Lib_Pad, "called handle = {}", handle);
+    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
 
     pInfo->padType1 = 0;
     pInfo->padType2 = 0;
@@ -200,7 +380,8 @@ int PS4_SYSV_ABI scePadGetVersionInfo() {
 }
 
 int PS4_SYSV_ABI scePadInit() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_DEBUG(Lib_Pad, "called");
+    g_initialized = true;
     return ORBIS_OK;
 }
 
@@ -245,28 +426,40 @@ int PS4_SYSV_ABI scePadMbusTerm() {
 }
 
 int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
-    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
-    if (Config::getUseSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
+    LOG_DEBUG(Lib_Pad, "Called user_id = {} type = {} index = {}", userId,
+              type == ORBIS_PAD_PORT_TYPE_STANDARD  ? "standard"
+              : type == ORBIS_PAD_PORT_TYPE_SPECIAL ? "special"
+                                                    : "unknown",
+              index);
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
-    return 1; // dummy
+    if (type == ORBIS_PAD_PORT_TYPE_STANDARD) {
+        if (g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_ALREADY_OPENED;
+        }
+        g_pad_standard_connected = true;
+        return PAD_STANDARD_HANDLER;
+    }
+
+    if (type == ORBIS_PAD_PORT_TYPE_SPECIAL) {
+        if (!Config::getUseSpecialPad()) {
+            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
+        }
+        if (g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_ALREADY_OPENED;
+        }
+        g_pad_standard_special_connected = true;
+        return PAD_SPECIAL_HANDLER;
+    }
+
+    return ORBIS_PAD_ERROR_INVALID_ARG;
 }
 
 int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index,
                                const OrbisPadOpenExtParam* pParam) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (Config::getUseSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
-    return 1; // dummy
+    LOG_DEBUG(Lib_Pad, "Redirecting call to scePadOpen");
+    return scePadOpen(userId, type, index, nullptr);
 }
 
 int PS4_SYSV_ABI scePadOpenExt2() {
@@ -280,49 +473,80 @@ int PS4_SYSV_ABI scePadOutputReport() {
 }
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
-    int connected_count = 0;
-    bool connected = false;
-    Input::State states[64];
-    auto* controller = Common::Singleton<Input::GameController>::Instance();
-    int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
+    LOG_TRACE(Lib_Pad, "called handle = {} num = {}", handle, num);
 
-    if (!connected) {
-        ret_num = 1;
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
 
-    for (int i = 0; i < ret_num; i++) {
-        pData[i].buttons = states[i].buttonsState;
-        pData[i].leftStick.x = states[i].axes[static_cast<int>(Input::Axis::LeftX)];
-        pData[i].leftStick.y = states[i].axes[static_cast<int>(Input::Axis::LeftY)];
-        pData[i].rightStick.x = states[i].axes[static_cast<int>(Input::Axis::RightX)];
-        pData[i].rightStick.y = states[i].axes[static_cast<int>(Input::Axis::RightY)];
-        pData[i].analogButtons.l2 = states[i].axes[static_cast<int>(Input::Axis::TriggerLeft)];
-        pData[i].analogButtons.r2 = states[i].axes[static_cast<int>(Input::Axis::TriggerRight)];
-        pData[i].orientation.x = 0.0f;
-        pData[i].orientation.y = 0.0f;
-        pData[i].orientation.z = 0.0f;
-        pData[i].orientation.w = 1.0f;
-        pData[i].acceleration.x = 0.0f;
-        pData[i].acceleration.y = 0.0f;
-        pData[i].acceleration.z = 0.0f;
-        pData[i].angularVelocity.x = 0.0f;
-        pData[i].angularVelocity.y = 0.0f;
-        pData[i].angularVelocity.z = 0.0f;
-        pData[i].touchData.touchNum =
-            (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
-        pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
-        pData[i].touchData.touch[0].y = states[i].touchpad[0].y;
-        pData[i].touchData.touch[0].id = 1;
-        pData[i].touchData.touch[1].x = states[i].touchpad[1].x;
-        pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
-        pData[i].touchData.touch[1].id = 2;
-        pData[i].connected = connected;
-        pData[i].timestamp = states[i].time;
-        pData[i].connectedCount = connected_count;
-        pData[i].deviceUniqueDataLen = 0;
+    if (num < 1 || num > 64) {
+        return ORBIS_PAD_ERROR_INVALID_ARG;
     }
 
-    return ret_num;
+    // Hack to copy state between pads
+    static bool connected = false;
+    static std::array<Input::State, 64> states;
+    static int state_count = 0;
+    static bool has_std_data = false;
+    static bool has_special_data = false;
+
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+
+        if (!has_special_data) {
+            int connected_count = 0;
+            auto* controller = Common::Singleton<Input::GameController>::Instance();
+            state_count = controller->ReadStates(states.data(), num, &connected, &connected_count);
+            has_std_data = true;
+        } else {
+            has_special_data = false;
+        }
+
+        if (!connected) {
+            pData[0] = OrbisPadData{
+                .connected = false,
+            };
+            return 1;
+        }
+
+        for (int i = 0; i < state_count; i++) {
+            pData[i].CopyFromState(states[i]);
+        }
+
+        return state_count;
+    }
+
+    if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+
+        if (!has_std_data) {
+            int connected_count = 0;
+            auto* controller = Common::Singleton<Input::GameController>::Instance();
+            state_count = controller->ReadStates(states.data(), num, &connected, &connected_count);
+            has_special_data = true;
+        } else {
+            has_std_data = false;
+        }
+
+        if (!connected) {
+            pData[0] = OrbisPadData{
+                .connected = false,
+            };
+            return 1;
+        }
+
+        for (int i = 0; i < state_count; i++) {
+            pData[i].CopyFromState(states[i]);
+        }
+
+        return state_count;
+    }
+
+    return ORBIS_PAD_ERROR_INVALID_HANDLE;
 }
 
 int PS4_SYSV_ABI scePadReadBlasterForTracker() {
@@ -346,42 +570,36 @@ int PS4_SYSV_ABI scePadReadHistory() {
 }
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
-    auto* controller = Common::Singleton<Input::GameController>::Instance();
-    int connectedCount = 0;
-    bool isConnected = false;
-    Input::State state;
-    controller->ReadState(&state, &isConnected, &connectedCount);
-    pData->buttons = state.buttonsState;
-    pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
-    pData->leftStick.y = state.axes[static_cast<int>(Input::Axis::LeftY)];
-    pData->rightStick.x = state.axes[static_cast<int>(Input::Axis::RightX)];
-    pData->rightStick.y = state.axes[static_cast<int>(Input::Axis::RightY)];
-    pData->analogButtons.l2 = state.axes[static_cast<int>(Input::Axis::TriggerLeft)];
-    pData->analogButtons.r2 = state.axes[static_cast<int>(Input::Axis::TriggerRight)];
-    pData->orientation.x = 0;
-    pData->orientation.y = 0;
-    pData->orientation.z = 0;
-    pData->orientation.w = 1;
-    pData->acceleration.x = 0.0f;
-    pData->acceleration.y = 0.0f;
-    pData->acceleration.z = 0.0f;
-    pData->angularVelocity.x = 0.0f;
-    pData->angularVelocity.y = 0.0f;
-    pData->angularVelocity.z = 0.0f;
-    pData->touchData.touchNum =
-        (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
-    pData->touchData.touch[0].x = state.touchpad[0].x;
-    pData->touchData.touch[0].y = state.touchpad[0].y;
-    pData->touchData.touch[0].id = 1;
-    pData->touchData.touch[1].x = state.touchpad[1].x;
-    pData->touchData.touch[1].y = state.touchpad[1].y;
-    pData->touchData.touch[1].id = 2;
-    pData->timestamp = state.time;
-    pData->connected = true;   // isConnected; //TODO fix me proper
-    pData->connectedCount = 1; // connectedCount;
-    pData->deviceUniqueDataLen = 0;
+    LOG_TRACE(Lib_Pad, "called handle = {}", handle);
 
-    return SCE_OK;
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
+    }
+
+    if (handle == PAD_STANDARD_HANDLER) {
+        if (!g_pad_standard_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+
+    standard_handler:
+        auto* controller = Common::Singleton<Input::GameController>::Instance();
+        int connectedCount = 0;
+        bool isConnected = false;
+        Input::State state;
+        controller->ReadState(&state, &isConnected, &connectedCount);
+
+        pData->CopyFromState(state);
+
+        return ORBIS_OK;
+    }
+    if (handle == PAD_SPECIAL_HANDLER) {
+        if (!g_pad_standard_special_connected) {
+            return ORBIS_PAD_ERROR_INVALID_HANDLE;
+        }
+        // TODO implement special pad
+        goto standard_handler;
+    }
+    return ORBIS_PAD_ERROR_INVALID_HANDLE;
 }
 
 int PS4_SYSV_ABI scePadReadStateExt() {

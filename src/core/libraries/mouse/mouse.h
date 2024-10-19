@@ -23,15 +23,18 @@ struct OrbisMouseData {
     s32 yAxis;
     s32 wheel;
     s32 tilt;
-    u8 reserve[8];
+    std::array<u8, 8> reserve{};
 };
 
 enum OrbisMouseButtonDataOffset {
     ORBIS_MOUSE_BUTTON_PRIMARY = 0x00000001,
-    ORBIS_MOUSE_BUTTON_SECONDARY = 0x00000002
+    ORBIS_MOUSE_BUTTON_SECONDARY = 0x00000002,
+    ORBIS_MOUSE_BUTTON_OPTIONAL = 0x00000004,
+    ORBIS_MOUSE_BUTTON_OPTIONAL2 = 0x00000008,
+    ORBIS_MOUSE_BUTTON_OPTIONAL3 = 0x00000010,
 };
 
-int PS4_SYSV_ABI sceMouseClose();
+int PS4_SYSV_ABI sceMouseClose(s32 handle);
 int PS4_SYSV_ABI sceMouseConnectPort();
 int PS4_SYSV_ABI sceMouseDebugGetDeviceId();
 int PS4_SYSV_ABI sceMouseDeviceOpen();

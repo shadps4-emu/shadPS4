@@ -9,6 +9,9 @@
 
 // SDL
 #include <SDL3/SDL.h>
+
+#include "sdl_window.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
@@ -23,6 +26,9 @@ namespace ImGui::Sdl {
 
 // SDL Data
 struct SdlData {
+    // SDL Wrapper
+    const Frontend::WindowSDL* wrapper{};
+
     SDL_Window* window{};
     SDL_WindowID window_id{};
     Uint64 time{};
@@ -501,7 +507,7 @@ static void SetupPlatformHandles(ImGuiViewport* viewport, SDL_Window* window) {
 #endif
 }
 
-bool Init(SDL_Window* window) {
+bool Init(const Frontend::WindowSDL* wrapper) {
     ImGuiIO& io = ImGui::GetIO();
     IMGUI_CHECKVERSION();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
@@ -514,8 +520,9 @@ bool Init(SDL_Window* window) {
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // We can honor io.WantSetMousePos requests
                                                          // (optional, rarely used)
 
-    bd->window = window;
-    bd->window_id = SDL_GetWindowID(window);
+    bd->wrapper = wrapper;
+    bd->window = wrapper->GetSdlWindow();
+    bd->window_id = SDL_GetWindowID(bd->window);
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_SetClipboardTextFn = SetClipboardText;
@@ -543,7 +550,7 @@ bool Init(SDL_Window* window) {
     // Set platform dependent data in viewport
     // Our mouse update function expect PlatformHandle to be filled for the main viewport
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    SetupPlatformHandles(main_viewport, window);
+    SetupPlatformHandles(main_viewport, bd->window);
 
     // From 2.0.5: Set SDL hint to receive mouse click events on window focus, otherwise SDL doesn't
     // emit the event. Without this, when clicking to gain focus, our widgets wouldn't activate even
@@ -593,7 +600,6 @@ static void UpdateMouseData() {
     // (below)
     // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries
     // shouldn't e.g. trigger other operations outside
-    SDL_CaptureMouse((bd->mouse_buttons_down != 0) ? true : false);
     SDL_Window* focused_window = SDL_GetKeyboardFocus();
     const bool is_app_focused = (bd->window == focused_window);
 
@@ -662,7 +668,9 @@ static void UpdateMouseCursor() {
             SDL_SetCursor(expected_cursor); // SDL function doesn't have an early out (see #6113)
             bd->mouse_last_cursor = expected_cursor;
         }
-        SDL_ShowCursor();
+        if (!bd->wrapper->isCapturingMouse()) {
+            SDL_ShowCursor();
+        }
     }
 }
 
