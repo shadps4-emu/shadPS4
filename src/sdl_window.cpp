@@ -54,23 +54,26 @@ std::string getDefaultKeyboardConfig() {
         R"(## SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 ## SPDX-License-Identifier: GPL-2.0-or-later
  
-#Default controller button mappings
-#I will update this later
+#This is the default keybinding config
+#To change per-game configs, modify the CUSAXXXXX.ini files
+#To change the default config that applies to new games without already existing configs, modify default.ini
+#If you don't like certain mappings, delete, change or comment them out.
+#You can add any amount of KBM keybinds to a single controller input,
+#but you can use each KBM keybind for one controller input.
 
-#Taken keys:
+#Keybinds used by the emulator (these are unchangeable):
 #F11 : fullscreen
 #F10 : FPS counter
-#F9  : toggle mouse capture
+#F9  : toggle mouse-to-joystick input 
+#       (it overwrites everything else to that joystick, so this is required)
 #F8  : reparse keyboard input(this)
-#F7  : toggle mouse-to-joystick input 
-#      (it overwrites everything else to that joystick, so this is required)
 
 #This is a mapping for Bloodborne, inspired by other Souls titles on PC.
 
-#This is a quick and dirty implementation of binding the mouse to a user-specified joystick
+#Specifies which joystick the mouse movement controls.
 mouse_to_joystick = right;
 
-#Use another item(healing), change status in inventory
+#Use healing item, change status in inventory
 triangle = f;
 #Dodge, back in inventory
 circle = space;
@@ -81,12 +84,18 @@ square = r;
 
 #Emergency extra bullets
 up = w, lalt;
+up = mousewheelup;
 #Change quick item
 down = s, lalt;
+down = mousewheeldown;
 #Change weapon in left hand
 left = a, lalt;
+left = mousewheelleft;
 #Change weapon in right hand
 right = d, lalt;
+right = mousewheelright;
+#Change into 'inventory mode', so you don't have to hold lalt every time you go into menus
+modkey_toggle = i, lalt;
 
 #Menu
 options = escape;
@@ -105,6 +114,7 @@ r2 = leftbutton, lshift;
 l3 = x;
 #Center cam, lock on
 r3 = q;
+r3 = middlebutton;
 
 #Axis mappings
 #Move
@@ -112,6 +122,8 @@ axis_left_x_minus = a;
 axis_left_x_plus = d;
 axis_left_y_minus = w;
 axis_left_y_plus = s;
+#Change to 'walk mode' by holding the following key:
+leftjoystick_halfmode = lctrl;
 )";
     return default_config;
 }
