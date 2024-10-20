@@ -713,9 +713,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
                         (count - 1) * sizeof(u32));
             break;
         }
-        case PM4ItOpcode::DmaData: {
-            break;
-        }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
             regs.cs_program.dim_x = dispatch_direct->dim_x;
