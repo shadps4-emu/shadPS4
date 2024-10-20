@@ -288,20 +288,24 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
                     const auto at9_instance =
                         dynamic_cast<AjmAt9Decoder*>(dev->instances[instance].get());
                     const auto in_buffer = reinterpret_cast<const AjmJobBuffer*>(job_ptr);
-                    std::memcpy(
-                        at9_instance->config_data,
-                        reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(in_buffer->buffer)
-                            ->config_data,
-                        SCE_AT9_CONFIG_DATA_SIZE);
-                    LOG_INFO(
-                        Lib_Ajm, "Initialize params: {}, config_data: {}, reserved: {}",
-                        fmt::ptr(reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(
-                            in_buffer->buffer)),
-                        fmt::ptr(reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(
-                                     in_buffer->buffer)
-                                     ->config_data),
-                        reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(in_buffer->buffer)
-                            ->reserved);
+                    const auto params = reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(
+                        in_buffer->buffer);
+                    std::memcpy(at9_instance->config_data, params->config_data,
+                                SCE_AT9_CONFIG_DATA_SIZE);
+                }
+                break;
+            case AjmJobControlFlags::Initialize | AjmJobControlFlags::Reset:
+                LOG_INFO(Lib_Ajm, "Resetting instance {}", instance);
+                dev->instances[instance]->Reset();
+                LOG_INFO(Lib_Ajm, "Initializing instance {}", instance);
+                if (dev->instances[instance]->codec_type == AjmCodecType::At9Dec) {
+                    const auto at9_instance =
+                        dynamic_cast<AjmAt9Decoder*>(dev->instances[instance].get());
+                    const auto in_buffer = reinterpret_cast<const AjmJobBuffer*>(job_ptr);
+                    const auto params = reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(
+                        in_buffer->buffer);
+                    std::memcpy(at9_instance->config_data, params->config_data,
+                                SCE_AT9_CONFIG_DATA_SIZE);
                 }
                 break;
             case AjmJobControlFlags::Resample:
@@ -393,11 +397,7 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
     LOG_INFO(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context, batch_id,
              timeout);
 
-    if (batch_id > 0xFF) {
-        return ORBIS_AJM_ERROR_INVALID_BATCH;
-    }
-
-    if (batch_id >= dev->batches.size()) {
+    if (batch_id > 0xFF || batch_id >= dev->batches.size()) {
         return ORBIS_AJM_ERROR_INVALID_BATCH;
     }
 
@@ -486,6 +486,7 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmI
     if (dev->curr_cursor == dev->release_cursor) {
         return ORBIS_AJM_ERROR_OUT_OF_RESOURCES;
     }
+    ASSERT_MSG(flags.format == 0, "Only signed 16-bit PCM output is supported currently!");
     const u32 index = dev->free_instances[dev->curr_cursor++];
     dev->curr_cursor %= MaxInstances;
     std::unique_ptr<AjmInstance> instance;

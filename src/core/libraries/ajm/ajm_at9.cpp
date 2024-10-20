@@ -61,6 +61,7 @@ std::tuple<u32, u32, u32> AjmAt9Decoder::Decode(const u8* in_buf, u32 in_size, u
         in_size -= bytes_used;
         std::memcpy(out_buf, pcm_buffer, size);
         file.write(reinterpret_cast<const char*>(pcm_buffer), size);
+        file.flush(); // for easier debugging
         out_buf += size;
         out_size -= size;
         decoded_samples += decoder_handle->Config.FrameSamples;
