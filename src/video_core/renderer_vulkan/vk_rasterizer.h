@@ -54,10 +54,13 @@ public:
 
 private:
     void BeginRendering(const GraphicsPipeline& pipeline);
+    void Resolve();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();
     void UpdateDepthStencilState();
+
+    bool FilterDraw();
 
 private:
     const Instance& instance;
