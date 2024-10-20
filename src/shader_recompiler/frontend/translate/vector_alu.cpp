@@ -157,6 +157,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_RCP_F64(inst);
     case Opcode::V_RCP_IFLAG_F32:
         return V_RCP_F32(inst);
+    case Opcode::V_RCP_CLAMP_F32:
+        return V_RCP_F32(inst);
     case Opcode::V_RSQ_CLAMP_F32:
         return V_RSQ_F32(inst);
     case Opcode::V_RSQ_LEGACY_F32:
@@ -268,6 +270,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::GT, true, true, inst);
     case Opcode::V_CMPX_LG_I32:
         return V_CMP_U32(ConditionOp::LG, true, true, inst);
+    case Opcode::V_CMPX_GE_I32:
+        return V_CMP_U32(ConditionOp::GE, true, true, inst);
 
         //     V_CMP_{OP8}_U32
     case Opcode::V_CMP_F_U32:
@@ -355,6 +359,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MED3_I32(inst);
     case Opcode::V_SAD_U32:
         return V_SAD_U32(inst);
+    case Opcode::V_CVT_PK_U16_U32:
+        return V_CVT_PK_U16_U32(inst);
     case Opcode::V_CVT_PK_U8_F32:
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
@@ -1106,6 +1112,14 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
         result = ir.ISub(max, min);
     }
     SetDst(inst.dst[0], ir.IAdd(result, src2));
+}
+
+void Translator::V_CVT_PK_U16_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 lo = ir.IMin(src0, ir.Imm32(0xFFFF), false);
+    const IR::U32 hi = ir.IMin(src1, ir.Imm32(0xFFFF), false);
+    SetDst(inst.dst[0], ir.BitFieldInsert(lo, hi, ir.Imm32(16), ir.Imm32(16)));
 }
 
 void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {

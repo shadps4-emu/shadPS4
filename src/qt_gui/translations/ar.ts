@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>تم تنزيل التصحيحات بنجاح! تم تنزيل جميع التصحيحات لجميع الألعاب، ولا داعي لتنزيلها بشكل فردي لكل لعبة كما هو الحال مع الغش. إذا لم يظهر التحديث، قد يكون السبب أنه غير متوفر للإصدار وسيريال اللعبة المحدد. قد تحتاج إلى تحديث اللعبة.</translation>
+			<translation>تم تنزيل التصحيحات بنجاح! تم تنزيل جميع التصحيحات لجميع الألعاب، ولا داعي لتنزيلها بشكل فردي لكل لعبة كما هو الحال مع الغش. إذا لم يظهر التحديث، قد يكون السبب أنه غير متوفر للإصدار وسيريال اللعبة المحدد.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>.HTML فشل في استرجاع صفحة</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>اللعبة في الإصدار: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>الباتش الذي تم تنزيله يعمل فقط على الإصدار: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>قد تحتاج إلى تحديث لعبتك.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>إشعار عدم التوافق</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

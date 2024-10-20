@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>修補檔下載成功！所有遊戲的修補檔已下載完成，無需像作弊碼那樣為每個遊戲單獨下載。如果補丁未顯示，可能是該補丁不適用於特定的序號和遊戲版本。可能需要更新遊戲。</translation>
+			<translation>修補檔下載成功！所有遊戲的修補檔已下載完成，無需像作弊碼那樣為每個遊戲單獨下載。如果補丁未顯示，可能是該補丁不適用於特定的序號和遊戲版本。</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>無法檢索 HTML 頁面。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>遊戲版本: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>下載的補丁僅適用於版本: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>您可能需要更新遊戲。</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>不相容通知</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

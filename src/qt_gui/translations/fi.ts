@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Korjaukset ladattu onnistuneesti! Kaikki saatavilla olevat korjaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille kuten huijauksissa. Jos päivitystä ei näy, se saattaa olla, että sitä ei ole saatavilla tietylle sarjanumerolle ja peliversiolle. Saattaa olla tarpeen päivittää peli.</translation>
+			<translation>Korjaukset ladattu onnistuneesti! Kaikki saatavilla olevat korjaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille kuten huijauksissa. Jos päivitystä ei näy, se saattaa olla, että sitä ei ole saatavilla tietylle sarjanumerolle ja peliversiolle.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>HTML-sivun hakeminen epäonnistui.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Peli on versiossa: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation> ladattu päivitys toimii vain versiossa: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Sinun on ehkä päivitettävä peliäsi.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Yhteensopivuusilmoitus</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

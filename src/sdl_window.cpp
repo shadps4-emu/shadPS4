@@ -571,6 +571,11 @@ void WindowSDL::updateMouse() {
     }
 }
 
+static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+    return controller->Poll();
+}
+
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controller{controller_} {
@@ -684,6 +689,14 @@ void WindowSDL::waitEvent() {
         break;
     }
 }
+<<<<<<< HEAD
+=======
+
+void WindowSDL::initTimers() {
+    SDL_AddTimer(100, &PollController, controller);
+}
+
+>>>>>>> upstreamMain
 void WindowSDL::onResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();

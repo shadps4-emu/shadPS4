@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik. Mungkin perlu memperbarui game.</translation>
+			<translation>Patch Berhasil Diunduh! Semua Patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya satu per satu seperti yang terjadi pada Cheat. Jika patch tidak muncul, mungkin patch tersebut tidak ada untuk nomor seri dan versi game yang spesifik.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1037,6 +1037,26 @@
 			<location filename="../cheats_patches.cpp" line="778"/>
 			<source>Failed to retrieve HTML page.</source>
 			<translation>Gagal mengambil halaman HTML.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="850"/>
+			<source>The game is in version: %1</source>
+			<translation>Permainan berada di versi: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="851"/>
+			<source>The downloaded patch only works on version: %1</source>
+			<translation>Patch yang diunduh hanya berfungsi pada versi: %1</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="856"/>
+			<source>You may need to update your game.</source>
+			<translation>Anda mungkin perlu memperbarui permainan Anda.</translation>
+		</message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="860"/>
+			<source>Incompatibility Notice</source>
+			<translation>Pemberitahuan Ketidakcocokan</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>

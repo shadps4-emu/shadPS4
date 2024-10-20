@@ -93,6 +93,8 @@ public:
     void waitEvent();
     void updateMouse();
 
+    void initTimers();
+
 private:
     void onResize();
     void onKeyboardMouseEvent(const SDL_Event* event);
