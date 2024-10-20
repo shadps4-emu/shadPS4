@@ -32,11 +32,11 @@ public:
                   const QString& gameSize, const QPixmap& gameImage, QWidget* parent = nullptr);
     ~CheatsPatches();
 
-    // Public Methods
     void downloadCheats(const QString& source, const QString& m_gameSerial,
                         const QString& m_gameVersion, bool showMessageBox);
     void downloadPatches(const QString repository, const bool showMessageBox);
     void createFilesJson(const QString& repository);
+    void compatibleVersionNotice(const QString repository);
 
 signals:
     void downloadFinished();

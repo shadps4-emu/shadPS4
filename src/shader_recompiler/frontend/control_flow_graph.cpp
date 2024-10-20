@@ -163,10 +163,10 @@ void CFG::EmitDivergenceLabels() {
 }
 
 void CFG::EmitBlocks() {
-    for (auto it = labels.begin(); it != labels.end(); it++) {
+    for (auto it = labels.cbegin(); it != labels.cend(); ++it) {
         const Label start = *it;
         const auto next_it = std::next(it);
-        const bool is_last = next_it == labels.end();
+        const bool is_last = (next_it == labels.cend());
         if (is_last) {
             // Last label is special.
             return;
@@ -193,7 +193,7 @@ void CFG::EmitBlocks() {
 void CFG::LinkBlocks() {
     const auto get_block = [this](u32 address) {
         auto it = blocks.find(address, Compare{});
-        ASSERT_MSG(it != blocks.end() && it->begin == address);
+        ASSERT_MSG(it != blocks.cend() && it->begin == address);
         return &*it;
     };
 

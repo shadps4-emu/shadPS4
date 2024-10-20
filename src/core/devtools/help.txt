@@ -1,0 +1,8 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+R"(
+* If you hold shift, you can move the window without docking it.
+* You don't need to close every window you open. When a parent window is closed, all its children will be closed too.
+* If you want to inspect or compare more than 1 frame dump without undocking, there's a option to keep showing opened popups even when in hide/minimize the frame dump window.
+* To use the disassembly viewer, you need to set up a cli to use a external disassembler and use "{src}" as a placeholder for the source code file, e.g. dis.exe --some-opt "{src}"
+)"

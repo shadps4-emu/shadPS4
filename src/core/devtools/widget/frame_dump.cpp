@@ -7,6 +7,7 @@
 #include <magic_enum.hpp>
 
 #include "common/io_file.h"
+#include "core/devtools/options.h"
 #include "frame_dump.h"
 #include "imgui_internal.h"
 #include "imgui_memory_editor.h"
@@ -36,7 +37,8 @@ static std::array<char, 3> small_int_to_str(const s32 i) {
 
 namespace Core::Devtools::Widget {
 
-FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_frame_dump)) {
+FrameDumpViewer::FrameDumpViewer(const FrameDump& _frame_dump)
+    : frame_dump(std::make_shared<FrameDump>(_frame_dump)) {
     static int unique_id = 0;
     id = unique_id++;
 
@@ -44,33 +46,54 @@ FrameDumpViewer::FrameDumpViewer(FrameDump _frame_dump) : frame_dump(std::move(_
     selected_submit_num = 0;
     selected_queue_num2 = 0;
 
-    cmd_list_viewer.reserve(frame_dump.queues.size());
-    for (const auto& cmd : frame_dump.queues) {
-        cmd_list_viewer.emplace_back(this, cmd.data);
-        if (cmd.type == QueueType::dcb && cmd.submit_num == selected_submit_num &&
-            cmd.num2 == selected_queue_num2) {
-            selected_cmd = cmd_list_viewer.size() - 1;
+    has_queue_type.fill(false);
+    cmd_list_viewer.reserve(frame_dump->queues.size());
+    for (const auto& cmd : frame_dump->queues) {
+        if (!cmd.data.empty()) {
+            has_queue_type[static_cast<s32>(cmd.type)] = true;
+        }
+        const auto fname = fmt::format("F{} {}_{:02}_{:02}", frame_dump->frame_id,
+                                       magic_enum::enum_name(cmd.type), cmd.submit_num, cmd.num2);
+        cmd_list_viewer.emplace_back(frame_dump.get(), cmd.data, cmd.base_addr, fname);
+        if (cmd.type == QueueType::dcb && cmd.submit_num == 0 && cmd.num2 == 0) {
+            selected_cmd = static_cast<s32>(cmd_list_viewer.size() - 1);
         }
     }
-
-    cmdb_view.Open = false;
-    cmdb_view.ReadOnly = true;
 }
 
-FrameDumpViewer::~FrameDumpViewer() {}
+FrameDumpViewer::~FrameDumpViewer() = default;
 
 void FrameDumpViewer::Draw() {
     if (!is_open) {
         return;
     }
 
+    const auto try_select = [&, this] {
+        const auto it = std::ranges::find_if(frame_dump->queues, [&](const auto& cmd) {
+            return cmd.type == selected_queue_type &&
+                   (selected_submit_num == -1 || cmd.submit_num == selected_submit_num) &&
+                   (selected_queue_num2 == -1 || cmd.num2 == selected_queue_num2);
+        });
+        if (it != frame_dump->queues.end()) {
+            selected_cmd = static_cast<s32>(std::distance(frame_dump->queues.begin(), it));
+            selected_submit_num = static_cast<s32>(frame_dump->queues[selected_cmd].submit_num);
+            selected_queue_num2 = static_cast<s32>(frame_dump->queues[selected_cmd].num2);
+        }
+    };
+
+    bool is_showing = Options.frame_dump_render_on_collapse;
+    bool is_collapsed = true;
+
     char name[32];
-    snprintf(name, sizeof(name), "Frame #%d dump", id);
-    static ImGuiID dock_id = ImHashStr("FrameDumpDock");
-    SetNextWindowDockID(dock_id, ImGuiCond_Appearing);
+    snprintf(name, sizeof(name), "Frame #%d dump", frame_dump->frame_id);
     if (Begin(name, &is_open, ImGuiWindowFlags_NoSavedSettings)) {
+        is_showing = true;
+        is_collapsed = false;
+
         if (IsWindowAppearing()) {
             auto window = GetCurrentWindow();
+            static ImGuiID dock_id = ImHashStr("FrameDumpDock");
+            SetWindowDock(window, dock_id, ImGuiCond_Once | ImGuiCond_FirstUseEver);
             SetWindowSize(window, ImVec2{470.0f, 600.0f});
         }
         BeginGroup();
@@ -79,23 +102,44 @@ void FrameDumpViewer::Draw() {
         if (BeginCombo("##select_queue_type", magic_enum::enum_name(selected_queue_type).data(),
                        ImGuiComboFlags_WidthFitPreview)) {
             bool selected = false;
-#define COMBO(x) C_V(magic_enum::enum_name(x).data(), x, selected_queue_type, selected)
-            COMBO(QueueType::acb)
+#define COMBO(x)                                                                                   \
+    if (has_queue_type[static_cast<s32>(x)])                                                       \
+    C_V(magic_enum::enum_name(x).data(), x, selected_queue_type, selected)
             COMBO(QueueType::dcb);
             COMBO(QueueType::ccb);
+            COMBO(QueueType::acb);
             if (selected) {
                 selected_submit_num = selected_queue_num2 = -1;
+                try_select();
             }
             EndCombo();
         }
         SameLine();
+        BeginDisabled(selected_cmd == -1);
+        if (SmallButton("Dump cmd")) {
+            auto now_time = fmt::localtime(std::time(nullptr));
+            const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
+                                           magic_enum::enum_name(selected_queue_type),
+                                           selected_submit_num, selected_queue_num2);
+            Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Write);
+            const auto& data = frame_dump->queues[selected_cmd].data;
+            if (file.IsOpen()) {
+                DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
+                file.Write(data);
+            } else {
+                DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
+                LOG_ERROR(Core, "Failed to open file {}", fname);
+            }
+        }
+        EndDisabled();
+
         TextEx("Submit num");
         SameLine();
         if (BeginCombo("##select_submit_num", small_int_to_str(selected_submit_num).data(),
                        ImGuiComboFlags_WidthFitPreview)) {
-            std::array<bool, 32> available_submits{};
-            for (const auto& cmd : frame_dump.queues) {
-                if (cmd.type == selected_queue_type) {
+            std::array<bool, 32> available_submits{false};
+            for (const auto& cmd : frame_dump->queues) {
+                if (cmd.type == selected_queue_type && !cmd.data.empty()) {
                     available_submits[cmd.submit_num] = true;
                 }
             }
@@ -110,6 +154,7 @@ void FrameDumpViewer::Draw() {
             }
             if (selected) {
                 selected_queue_num2 = -1;
+                try_select();
             }
             EndCombo();
         }
@@ -118,9 +163,10 @@ void FrameDumpViewer::Draw() {
         SameLine();
         if (BeginCombo("##select_queue_num2", small_int_to_str(selected_queue_num2).data(),
                        ImGuiComboFlags_WidthFitPreview)) {
-            std::array<bool, 32> available_queues{};
-            for (const auto& cmd : frame_dump.queues) {
-                if (cmd.type == selected_queue_type && cmd.submit_num == selected_submit_num) {
+            std::array<bool, 32> available_queues{false};
+            for (const auto& cmd : frame_dump->queues) {
+                if (cmd.type == selected_queue_type && cmd.submit_num == selected_submit_num &&
+                    !cmd.data.empty()) {
                     available_queues[cmd.num2] = true;
                 }
             }
@@ -134,56 +180,16 @@ void FrameDumpViewer::Draw() {
                 }
             }
             if (selected) {
-                const auto it = std::ranges::find_if(frame_dump.queues, [&](const auto& cmd) {
-                    return cmd.type == selected_queue_type &&
-                           cmd.submit_num == selected_submit_num && cmd.num2 == selected_queue_num2;
-                });
-                if (it != frame_dump.queues.end()) {
-                    selected_cmd = std::distance(frame_dump.queues.begin(), it);
-                }
+                try_select();
             }
             EndCombo();
         }
-        SameLine();
-        BeginDisabled(selected_cmd == -1);
-        if (SmallButton("Dump cmd")) {
-            auto now_time = fmt::localtime(std::time(nullptr));
-            const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
-                                           magic_enum::enum_name(selected_queue_type),
-                                           selected_submit_num, selected_queue_num2);
-            Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Write);
-            auto& data = frame_dump.queues[selected_cmd].data;
-            if (file.IsOpen()) {
-                DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
-                file.Write(data);
-            } else {
-                DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
-                LOG_ERROR(Core, "Failed to open file {}", fname);
-            }
-        }
-        EndDisabled();
         EndGroup();
-
-        if (selected_cmd != -1) {
-            cmd_list_viewer[selected_cmd].Draw();
-        }
+    }
+    if (is_showing && selected_cmd != -1) {
+        cmd_list_viewer[selected_cmd].Draw(is_collapsed);
     }
     End();
-
-    if (cmdb_view.Open && selected_cmd != -1) {
-        auto& cmd = frame_dump.queues[selected_cmd].data;
-        auto cmd_size = cmd.size() * sizeof(u32);
-        MemoryEditor::Sizes s;
-        cmdb_view.CalcSizes(s, cmd_size, (size_t)cmd.data());
-        SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
-
-        char name[64];
-        snprintf(name, sizeof(name), "[GFX] Command buffer %d###cmdbuf_hex_%d", id, id);
-        if (Begin(name, &cmdb_view.Open, ImGuiWindowFlags_NoScrollbar)) {
-            cmdb_view.DrawContents(cmd.data(), cmd_size, (size_t)cmd.data());
-        }
-        End();
-    }
 }
 
 } // namespace Core::Devtools::Widget

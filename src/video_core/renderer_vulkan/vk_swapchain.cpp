@@ -47,7 +47,7 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
             std::find_if(modes.begin(), modes.end(),
                          [&requested](vk::PresentModeKHR mode) { return mode == requested; });
 
-        return it != modes.end();
+        return it != modes.cend();
     };
     const bool has_mailbox = find_mode(vk::PresentModeKHR::eMailbox);
 

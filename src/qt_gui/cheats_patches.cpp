@@ -32,8 +32,6 @@
 #include "common/path_util.h"
 #include "core/module.h"
 
-using namespace Common::FS;
-
 CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
                              const QString& gameVersion, const QString& gameSize,
                              const QPixmap& gameImage, QWidget* parent)
@@ -776,6 +774,7 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
             // Create the files.json file with the identification of which file to open
             createFilesJson(repository);
             populateFileListPatches();
+            compatibleVersionNotice(repository);
         } else {
             if (showMessageBox) {
                 QMessageBox::warning(this, tr("Error"),
@@ -785,6 +784,84 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
         }
         emit downloadFinished();
     });
+}
+
+void CheatsPatches::compatibleVersionNotice(const QString repository) {
+    QDir patchesDir(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
+    QDir dir = patchesDir.filePath(repository);
+
+    QStringList xmlFiles = dir.entryList(QStringList() << "*.xml", QDir::Files);
+    QSet<QString> appVersionsSet;
+
+    foreach (const QString& xmlFile, xmlFiles) {
+        QFile file(dir.filePath(xmlFile));
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QMessageBox::warning(this, tr("ERROR"),
+                                 QString(tr("Failed to open file:") + "\n%1").arg(xmlFile));
+            continue;
+        }
+
+        QXmlStreamReader xmlReader(&file);
+        bool foundMatchingID = false;
+
+        while (!xmlReader.atEnd() && !xmlReader.hasError()) {
+            QXmlStreamReader::TokenType token = xmlReader.readNext();
+            if (token == QXmlStreamReader::StartElement) {
+                if (xmlReader.name() == QStringLiteral("ID")) {
+                    QString id = xmlReader.readElementText();
+                    if (id == m_gameSerial) {
+                        foundMatchingID = true;
+                    }
+                } else if (xmlReader.name() == QStringLiteral("Metadata")) {
+                    if (foundMatchingID) {
+                        QString appVer = xmlReader.attributes().value("AppVer").toString();
+                        if (!appVer.isEmpty()) {
+                            appVersionsSet.insert(appVer);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (xmlReader.hasError()) {
+            QMessageBox::warning(this, tr("ERROR"),
+                                 QString(tr("XML ERROR:") + "\n%1").arg(xmlReader.errorString()));
+        }
+
+        if (foundMatchingID) {
+            QStringList incompatibleVersions;
+            bool hasMatchingVersion = false;
+
+            foreach (const QString& appVer, appVersionsSet) {
+                if (appVer != m_gameVersion) {
+                    incompatibleVersions.append(appVer);
+                } else {
+                    hasMatchingVersion = true;
+                }
+            }
+
+            if (!incompatibleVersions.isEmpty() ||
+                (hasMatchingVersion && incompatibleVersions.isEmpty())) {
+                QString message;
+
+                if (!incompatibleVersions.isEmpty()) {
+                    QString versionsList = incompatibleVersions.join(", ");
+                    message += QString(tr("The game is in version: %1")).arg(m_gameVersion) + "\n" +
+                               QString(tr("The downloaded patch only works on version: %1"))
+                                   .arg(versionsList);
+
+                    if (hasMatchingVersion) {
+                        message += QString(", %1").arg(m_gameVersion);
+                    }
+                    message += QString("\n" + tr("You may need to update your game."));
+                }
+
+                if (!message.isEmpty()) {
+                    QMessageBox::information(this, tr("Incompatibility Notice"), message);
+                }
+            }
+        }
+    }
 }
 
 void CheatsPatches::createFilesJson(const QString& repository) {
@@ -1126,8 +1203,8 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
         }
     }
 
-    // Remove the item from the list view if no patches were added (the game has patches, but not
-    // for the current version)
+    // Remove the item from the list view if no patches were added
+    // (the game has patches, but not for the current version)
     if (!patchAdded) {
         QStringListModel* model = qobject_cast<QStringListModel*>(patchesListView->model());
         if (model) {
@@ -1154,12 +1231,6 @@ void CheatsPatches::updateNoteTextEdit(const QString& patchName) {
             QString type = lineObject["Type"].toString();
             QString address = lineObject["Address"].toString();
             QString patchValue = lineObject["Value"].toString();
-
-            // add the values ​​to be modified in instructionsTextEdit
-            // text.append(QString("\nType: %1\nAddress: %2\n\nValue: %3")
-            //                .arg(type)
-            //                .arg(address)
-            //                .arg(patchValue));
         }
         text.replace("\\n", "\n");
         instructionsTextEdit->setText(text);

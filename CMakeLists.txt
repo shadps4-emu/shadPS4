@@ -30,7 +30,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
-
+option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
     set(BASE_ARCHITECTURE "${CMAKE_OSX_ARCHITECTURES}")
@@ -47,9 +47,15 @@ else()
     message(FATAL_ERROR "Unsupported CPU architecture: ${BASE_ARCHITECTURE}")
 endif()
 
-if (APPLE AND ARCHITECTURE STREQUAL "x86_64")
+if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
     # Exclude ARM homebrew path to avoid conflicts when cross compiling.
     list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
+
+    # Need to reconfigure pkg-config to use the right architecture library paths.
+    # It's not ideal to override these but otherwise the build breaks just by having pkg-config installed.
+    set(ENV{PKG_CONFIG_DIR} "")
+    set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig:${CMAKE_SYSROOT}/usr/local/lib/pkgconfig:${CMAKE_SYSROOT}/usr/local/share/pkgconfig")
+    set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
 endif()
 
 # This function should be passed a list of all files in a target. It will automatically generate file groups
@@ -103,6 +109,7 @@ find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
+find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.6 CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
@@ -286,6 +293,14 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d_error.h
                 src/core/libraries/audio3d/audio3d_impl.cpp
                 src/core/libraries/audio3d/audio3d_impl.h
+                src/core/libraries/ime/ime.cpp
+                src/core/libraries/ime/ime.h
+                src/core/libraries/game_live_streaming/gamelivestreaming.cpp
+                src/core/libraries/game_live_streaming/gamelivestreaming.h
+                src/core/libraries/remote_play/remoteplay.cpp
+                src/core/libraries/remote_play/remoteplay.h
+                src/core/libraries/share_play/shareplay.cpp
+                src/core/libraries/share_play/shareplay.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -301,6 +316,8 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
 
 set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
                 src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog_ui.cpp
+                src/core/libraries/dialogs/ime_dialog_ui.h
                 src/core/libraries/dialogs/ime_dialog.cpp
                 src/core/libraries/dialogs/ime_dialog.h
                 src/core/libraries/dialogs/error_codes.h
@@ -328,6 +345,10 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
 )
 
+set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
+              src/core/libraries/fiber/fiber.h
+)
+
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
@@ -344,15 +365,25 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
+              src/core/devtools/options.cpp
+              src/core/devtools/options.h
               src/core/devtools/gcn/gcn_context_regs.cpp
               src/core/devtools/gcn/gcn_op_names.cpp
               src/core/devtools/gcn/gcn_shader_regs.cpp
               src/core/devtools/widget/cmd_list.cpp
               src/core/devtools/widget/cmd_list.h
+              src/core/devtools/widget/common.h
               src/core/devtools/widget/frame_dump.cpp
               src/core/devtools/widget/frame_dump.h
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
+              src/core/devtools/widget/imgui_memory_editor.h
+              src/core/devtools/widget/reg_popup.cpp
+              src/core/devtools/widget/reg_popup.h
+              src/core/devtools/widget/reg_view.cpp
+              src/core/devtools/widget/reg_view.h
+              src/core/devtools/widget/text_editor.cpp
+              src/core/devtools/widget/text_editor.h
 )
 
 set(COMMON src/common/logging/backend.cpp
@@ -410,11 +441,17 @@ set(COMMON src/common/logging/backend.cpp
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
+           src/common/number_utils.h
+           src/common/number_utils.cpp
            src/common/memory_patcher.h
            src/common/memory_patcher.cpp
            src/common/scm_rev.cpp
            src/common/scm_rev.h
 )
+
+if (ENABLE_DISCORD_RPC)
+    list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
+endif()
 
 set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
@@ -466,6 +503,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
+         ${FIBER_LIB}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
@@ -695,6 +733,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
+           src/qt_gui/install_dir_select.cpp
+           src/qt_gui/install_dir_select.h
            src/qt_gui/pkg_viewer.cpp
            src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
@@ -746,7 +786,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui LibAtrac9 gcn)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui LibAtrac9 gcn half::half)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
@@ -769,9 +809,6 @@ if (APPLE)
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
-
-  # Half float conversions for F16C patches
-  target_link_libraries(shadps4 PRIVATE half)
 endif()
 
 if (NOT ENABLE_QT_GUI)
@@ -861,4 +898,17 @@ if (UNIX AND NOT APPLE)
         find_package(OpenSSL REQUIRED)
         target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
     endif()
+endif()
+
+# Discord RPC
+if (ENABLE_DISCORD_RPC)
+    target_link_libraries(shadps4 PRIVATE discord-rpc)
+endif()
+
+# Install rules
+install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    install(FILES ".github/shadps4.desktop" DESTINATION "share/applications")
+    install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps")
 endif()

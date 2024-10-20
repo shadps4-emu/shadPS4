@@ -87,7 +87,12 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
         return;
     }
 
-    // Pass other events to the game
+    DefaultEventCallback(opaque, event_id, 0, event_data);
+}
+
+void AvPlayerState::DefaultEventCallback(void* opaque, SceAvPlayerEvents event_id, s32 source_id,
+                                         void* event_data) {
+    auto const self = reinterpret_cast<AvPlayerState*>(opaque);
     const auto callback = self->m_event_replacement.event_callback;
     const auto ptr = self->m_event_replacement.object_ptr;
     if (callback != nullptr) {
@@ -102,8 +107,10 @@ AvPlayerState::AvPlayerState(const SceAvPlayerInitData& init_data)
     if (m_event_replacement.event_callback == nullptr || init_data.auto_start) {
         m_auto_start = true;
         m_init_data.event_replacement.event_callback = &AvPlayerState::AutoPlayEventCallback;
-        m_init_data.event_replacement.object_ptr = this;
+    } else {
+        m_init_data.event_replacement.event_callback = &AvPlayerState::DefaultEventCallback;
     }
+    m_init_data.event_replacement.object_ptr = this;
     if (init_data.default_language != nullptr) {
         std::memcpy(m_default_language, init_data.default_language, sizeof(m_default_language));
     }
@@ -123,6 +130,10 @@ AvPlayerState::~AvPlayerState() {
     m_event_queue.Clear();
 }
 
+void AvPlayerState::PostInit(const SceAvPlayerPostInitData& post_init_data) {
+    m_post_init_data = post_init_data;
+}
+
 // Called inside GAME thread
 bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source_type) {
     if (path.empty()) {
@@ -137,7 +148,9 @@ bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType sourc
             return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(*this);
+        m_up_source = std::make_unique<AvPlayerSource>(
+            *this, m_post_init_data.video_decoder_init.decoderType.video_type ==
+                       SCE_AVPLAYER_VIDEO_DECODER_TYPE_SOFTWARE2);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -367,8 +380,7 @@ void AvPlayerState::EmitEvent(SceAvPlayerEvents event_id, void* event_data) {
     const auto callback = m_init_data.event_replacement.event_callback;
     if (callback) {
         const auto ptr = m_init_data.event_replacement.object_ptr;
-        const auto* linker = Common::Singleton<Core::Linker>::Instance();
-        linker->ExecuteGuest(callback, ptr, event_id, 0, event_data);
+        callback(ptr, event_id, 0, event_data);
     }
 }
 

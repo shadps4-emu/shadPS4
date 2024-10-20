@@ -491,7 +491,7 @@ int PS4_SYSV_ABI sceUserServiceGetImeRunCount() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
-    LOG_INFO(Lib_UserService, "called");
+    LOG_DEBUG(Lib_UserService, "called");
     if (user_id == nullptr) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;

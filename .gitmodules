@@ -98,3 +98,7 @@
 [submodule "externals/LibAtrac9"]
 	path = externals/LibAtrac9
 	url = https://github.com/Vita3K/LibAtrac9
+[submodule "externals/discord-rpc"]
+	path = externals/discord-rpc
+	url = https://github.com/shadps4-emu/ext-discord-rpc.git
+	shallow = true

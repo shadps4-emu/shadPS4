@@ -41,12 +41,14 @@ struct AjmInOutJob {
     u32 unk1;
     u32 flags;
     AjmJobBuffer output;
+    void* sideband_output;
 };
 
 enum class AjmJobControlFlags : u32 {
     Reset = 1 << 2,
     Initialize = 1 << 3,
     Resample = 1 << 4,
+    StatisticsEngine = 1U << 31,
 };
 DECLARE_ENUM_FLAG_OPERATORS(AjmJobControlFlags)
 
@@ -92,7 +94,7 @@ struct AjmSingleJob {
     };
 };
 
-static_assert(sizeof(AjmSingleJob) == 0x40);
+static_assert(sizeof(AjmSingleJob) == 0x48);
 
 struct AjmMultiJob {
     AjmHLEOpcode opcode;
@@ -149,7 +151,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmSingleJob* batch_pos, u32 in
 void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(AjmSingleJob* batch_pos, const void* in_buffer,
                                               size_t in_size, const void** batch_address);
 void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(AjmSingleJob* batch_pos, u32 instance, AjmFlags flags,
-                                             void * in_buffer, u32 in_size, u8* out_buffer,
+                                             u8* in_buffer, u32 in_size, u8* out_buffer,
                                              const u32 out_size, u8* sideband_output,
                                              const u32 sideband_output_size, const void* ret_addr);
 void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 instance,
@@ -159,9 +161,10 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 in
                                                   u64 num_output_buffers, void* sideband_output,
                                                   u64 sideband_output_size, const void* ret_addr);
 int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size,
-                                        const int priority, AjmBatchError* patch_error,
+                                        const int priority, AjmBatchError* batch_error,
                                         u32* out_batch_id);
-int PS4_SYSV_ABI sceAjmBatchWait();
+int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u32 timeout,
+                                 AjmBatchError* const batch_error);
 int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData();
 int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* stream, u32 stream_size, int parse_ofl,
                                         AjmDecMp3ParseFrame* frame);

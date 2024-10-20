@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/debug_print.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -55,6 +56,13 @@ void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
 
 void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
+}
+
+void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, Id arg2, Id arg3) {
+    IR::DebugPrintFlags flags = inst->Flags<IR::DebugPrintFlags>();
+    std::array<Id, IR::DEBUGPRINT_NUM_FORMAT_ARGS> fmt_args = {arg0, arg1, arg2, arg3};
+    auto fmt_args_span = std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
+    ctx.OpDebugPrintf(fmt, fmt_args_span);
 }
 
 } // namespace Shader::Backend::SPIRV

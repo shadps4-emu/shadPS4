@@ -56,6 +56,7 @@ public:
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
     void TryOpenSDLController();
+    u32 Poll();
 
 private:
     struct StateInternal {
