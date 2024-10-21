@@ -160,22 +160,23 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     // Check and log format support details.
     for (const auto& format : LiverpoolToVK::SurfaceFormats()) {
-        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+        if (!IsFormatSupported(format.vk_format, format.flags)) {
             LOG_WARNING(Render_Vulkan,
                         "Surface format data_format={}, number_format={} is not fully supported "
-                        "(vk_format={}, requested flags={})",
+                        "(vk_format={}, missing features={})",
                         static_cast<u32>(format.data_format),
                         static_cast<u32>(format.number_format), vk::to_string(format.vk_format),
-                        vk::to_string(format.flags));
+                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
         }
     }
     for (const auto& format : LiverpoolToVK::DepthFormats()) {
-        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+        if (!IsFormatSupported(format.vk_format, format.flags)) {
             LOG_WARNING(Render_Vulkan,
                         "Depth format z_format={}, stencil_format={} is not fully supported "
-                        "(vk_format={}, requested flags={})",
+                        "(vk_format={}, missing features={})",
                         static_cast<u32>(format.z_format), static_cast<u32>(format.stencil_format),
-                        vk::to_string(format.vk_format), vk::to_string(format.flags));
+                        vk::to_string(format.vk_format),
+                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
         }
     }
 }
@@ -546,18 +547,21 @@ void Instance::CollectToolingInfo() {
     }
 }
 
-bool Instance::IsFormatSupported(const vk::Format format,
-                                 const vk::FormatFeatureFlags2 flags) const {
-    if (format == vk::Format::eUndefined) [[unlikely]] {
-        return true;
-    }
-
+vk::FormatFeatureFlags2 Instance::GetFormatFeatureFlags(vk::Format format) const {
     const auto it = format_properties.find(format);
     if (it == format_properties.end()) {
         UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
     }
 
-    return ((it->second.optimalTilingFeatures | it->second.bufferFeatures) & flags) == flags;
+    return it->second.optimalTilingFeatures | it->second.bufferFeatures;
+}
+
+bool Instance::IsFormatSupported(const vk::Format format,
+                                 const vk::FormatFeatureFlags2 flags) const {
+    if (format == vk::Format::eUndefined) [[unlikely]] {
+        return true;
+    }
+    return (GetFormatFeatureFlags(format) & flags) == flags;
 }
 
 static vk::Format GetAlternativeFormat(const vk::Format format) {
