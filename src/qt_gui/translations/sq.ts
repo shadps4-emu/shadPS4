@@ -143,27 +143,27 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="72"/>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Fshi...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="73"/>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Fshi lojën</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="74"/>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>Fshi përditësimin</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Fshi DLC-në</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
-			<translation>Krijim i shkurtores</translation>
+			<translation>Krijimi i shkurtores</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
@@ -188,27 +188,27 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="299"/>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Loja</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Kjo veçori kërkon cilësimin 'Aktivizo dosjen e ndarë të përditësimit' për të punuar. Në qoftë se do ta përdorësh këtë veçori, të lutem aktivizoje.</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>Kjo lojë nuk ka përditësim për të fshirë!</translation>
 		</message>
 			<message>
 			<location filename="../gui_context_menus.h" line="316"/>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Përditësim</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="321"/>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>Kjo lojë nuk ka DLC për të fshirë!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="325"/>
@@ -218,12 +218,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="332"/>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Fshi %1</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="333"/>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Je i sigurt që do të fsish dosjen %2 të %1?</translation>
 		</message>
 	</context>
 	<context>
@@ -256,7 +256,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="315"/>
 			<source>Configure...</source>
-			<translation>Formëso...</translation>
+			<translation>Konfiguro...</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="318"/>
@@ -480,7 +480,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Aktivizo dosjen e ndarë të përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -1026,7 +1026,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës.</translation>
+			<translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse arna nuk shfaqet, mund të mos ekzistojë për numrin e serikut dhe versionin specifik të lojës.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1046,12 +1046,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="851"/>
 			<source>The downloaded patch only works on version: %1</source>
-			<translation>Patch-i i shkarkuar funksionon vetëm në versionin: %1</translation>
+			<translation>Arna e shkarkuar funksionon vetëm në versionin: %1</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="856"/>
 			<source>You may need to update your game.</source>
-			<translation>Ju mund të duhet të përditësoni lojën tuaj.</translation>
+			<translation>Mund të duhet të përditësosh lojën tënde.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="860"/>
@@ -1096,7 +1096,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Nuk mund të zbatohen mashtrime para se të fillojë loja.</translation>
+			<translation>Nuk mund të zbatohen mashtrime para fillimit të lojës.</translation>
 		</message>
 	</context>
 	<context>
@@ -1144,7 +1144,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
