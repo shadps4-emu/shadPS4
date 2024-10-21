@@ -116,10 +116,10 @@ void Inst::SetArg(size_t index, Value value) {
     }
     const IR::Value arg{Arg(index)};
     if (!arg.IsImmediate()) {
-        UndoUse(arg);
+        UndoUse(arg.Inst());
     }
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), index);
     }
     if (op == Opcode::Phi) {
         phi_args[index].second = value;
@@ -140,12 +140,13 @@ Block* Inst::PhiBlock(size_t index) const {
 
 void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), phi_args.size());
     }
     phi_args.emplace_back(predecessor, value);
 }
 
 void Inst::Invalidate() {
+    ASSERT(uses.empty());
     ClearArgs();
     ReplaceOpcode(Opcode::Void);
 }
@@ -155,14 +156,14 @@ void Inst::ClearArgs() {
         for (auto& pair : phi_args) {
             IR::Value& value{pair.second};
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst());
             }
         }
         phi_args.clear();
     } else {
         for (auto& value : args) {
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst());
             }
         }
         // Reset arguments to null
@@ -172,12 +173,13 @@ void Inst::ClearArgs() {
 }
 
 void Inst::ReplaceUsesWith(Value replacement) {
-    Invalidate();
-    ReplaceOpcode(Opcode::Identity);
     if (!replacement.IsImmediate()) {
-        Use(replacement);
+        for (auto& [user, operand] : uses) {
+            user->SetArg(operand, replacement);
+        }
     }
-    args[0] = replacement;
+    uses.clear();
+    Invalidate();
 }
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {
@@ -192,14 +194,12 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
     op = opcode;
 }
 
-void Inst::Use(const Value& value) {
-    Inst* const inst{value.Inst()};
-    ++inst->use_count;
+void Inst::Use(Inst* used, u32 operand) {
+    used->uses.emplace_front(this, operand);
 }
 
-void Inst::UndoUse(const Value& value) {
-    Inst* const inst{value.Inst()};
-    --inst->use_count;
+void Inst::UndoUse(Inst* used) {
+    used->uses.remove_if([this](const IR::Use& use) { return use.user == this; });
 }
 
 } // namespace Shader::IR

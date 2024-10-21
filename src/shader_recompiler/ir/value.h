@@ -8,6 +8,7 @@
 #include <cstring>
 #include <type_traits>
 #include <utility>
+#include <boost/container/list.hpp>
 #include <boost/container/small_vector.hpp>
 #include <boost/intrusive/list.hpp>
 
@@ -15,6 +16,7 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 
@@ -104,6 +106,11 @@ public:
     explicit TypedValue(IR::Inst* inst_) : TypedValue(Value(inst_)) {}
 };
 
+struct Use {
+    Inst* user;
+    u32 operand;
+};
+
 class Inst : public boost::intrusive::list_base_hook<> {
 public:
     explicit Inst(IR::Opcode op_, u32 flags_) noexcept;
@@ -117,12 +124,12 @@ public:
 
     /// Get the number of uses this instruction has.
     [[nodiscard]] int UseCount() const noexcept {
-        return use_count;
+        return uses.size();
     }
 
     /// Determines whether this instruction has uses or not.
     [[nodiscard]] bool HasUses() const noexcept {
-        return use_count > 0;
+        return uses.size() > 0;
     }
 
     /// Get the opcode this microinstruction represents.
@@ -199,11 +206,10 @@ private:
         NonTriviallyDummy() noexcept {}
     };
 
-    void Use(const Value& value);
-    void UndoUse(const Value& value);
+    void Use(Inst* used, u32 operand);
+    void UndoUse(Inst* used);
 
     IR::Opcode op{};
-    int use_count{};
     u32 flags{};
     u32 definition{};
     union {
@@ -211,8 +217,10 @@ private:
         boost::container::small_vector<std::pair<Block*, Value>, 2> phi_args;
         std::array<Value, 6> args;
     };
+
+    boost::container::list<IR::Use> uses;
 };
-static_assert(sizeof(Inst) <= 128, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 152, "Inst size unintentionally increased");
 
 using U1 = TypedValue<Type::U1>;
 using U8 = TypedValue<Type::U8>;
