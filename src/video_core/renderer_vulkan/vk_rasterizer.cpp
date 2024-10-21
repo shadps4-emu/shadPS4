@@ -12,6 +12,10 @@
 #include "video_core/texture_cache/texture_cache.h"
 #include "vk_rasterizer.h"
 
+#ifdef MemoryBarrier
+#undef MemoryBarrier
+#endif
+
 namespace Vulkan {
 
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
