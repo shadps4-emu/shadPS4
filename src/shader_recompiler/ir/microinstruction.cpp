@@ -32,8 +32,6 @@ Inst::Inst(const Inst& base) : op{base.op}, flags{base.flags} {
 }
 
 Inst::~Inst() {
-    // necessary? Or are all Insts destroyed at once?
-    ClearArgs();
     if (op == Opcode::Phi) {
         std::destroy_at(&phi_args);
     } else {
@@ -178,9 +176,8 @@ void Inst::ClearArgs() {
 }
 
 void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
-    // Could also do temp_uses = std::move(uses)
-    // But clearer this way
     // Copy since user->SetArg will mutate this->uses
+    // Could also do temp_uses = std::move(uses) but more readable
     boost::container::list<IR::Use> temp_uses = uses;
     for (auto& [user, operand] : temp_uses) {
         DEBUG_ASSERT(user->Arg(operand).Inst() == this);
@@ -208,9 +205,7 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
 }
 
 void Inst::Use(Inst* used, u32 operand) {
-    DEBUG_ASSERT(std::none_of(used->uses.begin(), used->uses.end(), [&](const IR::Use& use) {
-        return use.operand == operand && use.user == this;
-    }));
+    DEBUG_ASSERT(0 == std::count(used->uses.begin(), used->uses.end(), IR::Use(this, operand)));
     used->uses.emplace_front(this, operand);
 }
 
