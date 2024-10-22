@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <any>
 #include <memory>
 
 #include "shader_recompiler/exception.h"
@@ -31,6 +32,8 @@ Inst::Inst(const Inst& base) : op{base.op}, flags{base.flags} {
 }
 
 Inst::~Inst() {
+    // necessary? Or are all Insts destroyed at once?
+    ClearArgs();
     if (op == Opcode::Phi) {
         std::destroy_at(&phi_args);
     } else {
@@ -175,12 +178,19 @@ void Inst::ClearArgs() {
 }
 
 void Inst::ReplaceUsesWith(Value replacement) {
+    // move uses because SetArg will call UndoUse and would otherwise
+    // mutate uses while iterating
+#ifdef _DEBUG
+    boost::container::list<IR::Use> temp_uses = uses;
+#else
+    boost::container::list<IR::Use> temp_uses = std::move(uses);
+#endif
     if (!replacement.IsImmediate()) {
-        for (auto& [user, operand] : uses) {
+        for (auto& [user, operand] : temp_uses) {
+            DEBUG_ASSERT(user->Arg(operand).Inst() == this);
             user->SetArg(operand, replacement);
         }
     }
-    uses.clear();
     Invalidate();
 }
 
@@ -197,11 +207,15 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
 }
 
 void Inst::Use(Inst* used, u32 operand) {
+    DEBUG_ASSERT(std::none_of(used->uses.begin(), used->uses.end(), [&](const IR::Use& use) {
+        return use.operand == operand && use.user == this;
+    }));
     used->uses.emplace_front(this, operand);
 }
 
 void Inst::UndoUse(Inst* used, u32 operand) {
     IR::Use use(this, operand);
+    DEBUG_ASSERT(1 == std::count(used->uses.begin(), used->uses.end(), use));
     used->uses.remove(use);
 }
 

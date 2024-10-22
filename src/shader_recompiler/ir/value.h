@@ -16,7 +16,6 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/opcodes.h"
-#include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 
