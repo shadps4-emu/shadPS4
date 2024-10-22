@@ -177,21 +177,22 @@ void Inst::ClearArgs() {
     }
 }
 
-void Inst::ReplaceUsesWith(Value replacement) {
-    // move uses because SetArg will call UndoUse and would otherwise
-    // mutate uses while iterating
-#ifdef _DEBUG
+void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
+    // Could also do temp_uses = std::move(uses)
+    // But clearer this way
+    // Copy since user->SetArg will mutate this->uses
     boost::container::list<IR::Use> temp_uses = uses;
-#else
-    boost::container::list<IR::Use> temp_uses = std::move(uses);
-#endif
-    if (!replacement.IsImmediate()) {
-        for (auto& [user, operand] : temp_uses) {
-            DEBUG_ASSERT(user->Arg(operand).Inst() == this);
-            user->SetArg(operand, replacement);
-        }
+    for (auto& [user, operand] : temp_uses) {
+        DEBUG_ASSERT(user->Arg(operand).Inst() == this);
+        user->SetArg(operand, replacement);
     }
     Invalidate();
+    if (preserve) {
+        // Still useful to have Identity for indirection.
+        // SSA pass would be more complicated without it
+        ReplaceOpcode(Opcode::Identity);
+        SetArg(0, replacement);
+    }
 }
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {

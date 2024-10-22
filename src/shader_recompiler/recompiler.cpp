@@ -59,6 +59,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     if (program.info.stage != Stage::Compute) {
         Shader::Optimization::LowerSharedMemToRegisters(program);

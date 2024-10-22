@@ -175,7 +175,13 @@ public:
     void Invalidate();
     void ClearArgs();
 
-    void ReplaceUsesWith(Value replacement);
+    void ReplaceUsesWithAndRemove(Value replacement) {
+        ReplaceUsesWith(replacement, false);
+    }
+
+    void ReplaceUsesWith(Value replacement) {
+        ReplaceUsesWith(replacement, true);
+    }
 
     void ReplaceOpcode(IR::Opcode opcode);
 
@@ -212,6 +218,7 @@ private:
 
     void Use(Inst* used, u32 operand);
     void UndoUse(Inst* used, u32 operand);
+    void ReplaceUsesWith(Value replacement, bool preserve);
 
     IR::Opcode op{};
     u32 flags{};
