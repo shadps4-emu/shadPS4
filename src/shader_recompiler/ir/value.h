@@ -11,6 +11,8 @@
 #include <boost/container/list.hpp>
 #include <boost/container/small_vector.hpp>
 #include <boost/intrusive/list.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm/unique.hpp>
 
 #include "common/assert.h"
 #include "shader_recompiler/exception.h"
@@ -209,6 +211,21 @@ public:
     template <typename DefinitionType>
     [[nodiscard]] DefinitionType Definition() const noexcept {
         return std::bit_cast<DefinitionType>(definition);
+    }
+
+    auto users() {
+        return boost::adaptors::transform(
+            boost::unique(uses,
+                          [](const IR::Use& a, const IR::Use& b) { return a.user == b.user; }),
+            [](const IR::Use& use) { return use.user; });
+    }
+
+    auto user_begin() {
+        return users().begin();
+    }
+
+    auto user_end() {
+        return users().end();
     }
 
 private:
