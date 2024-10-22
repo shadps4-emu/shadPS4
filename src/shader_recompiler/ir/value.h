@@ -109,6 +109,11 @@ public:
 struct Use {
     Inst* user;
     u32 operand;
+
+    Use() = default;
+    Use(Inst* user_, u32 operand_) : user(user_), operand(operand_) {}
+    Use(const Use&) = default;
+    bool operator==(const Use&) const noexcept = default;
 };
 
 class Inst : public boost::intrusive::list_base_hook<> {
@@ -207,7 +212,7 @@ private:
     };
 
     void Use(Inst* used, u32 operand);
-    void UndoUse(Inst* used);
+    void UndoUse(Inst* used, u32 operand);
 
     IR::Opcode op{};
     u32 flags{};

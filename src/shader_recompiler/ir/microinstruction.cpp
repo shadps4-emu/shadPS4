@@ -116,7 +116,7 @@ void Inst::SetArg(size_t index, Value value) {
     }
     const IR::Value arg{Arg(index)};
     if (!arg.IsImmediate()) {
-        UndoUse(arg.Inst());
+        UndoUse(arg.Inst(), index);
     }
     if (!value.IsImmediate()) {
         Use(value.Inst(), index);
@@ -153,17 +153,19 @@ void Inst::Invalidate() {
 
 void Inst::ClearArgs() {
     if (op == Opcode::Phi) {
-        for (auto& pair : phi_args) {
+        for (auto i = 0; i < phi_args.size(); i++) {
+            auto& pair = phi_args[i];
             IR::Value& value{pair.second};
             if (!value.IsImmediate()) {
-                UndoUse(value.Inst());
+                UndoUse(value.Inst(), i);
             }
         }
         phi_args.clear();
     } else {
-        for (auto& value : args) {
+        for (auto i = 0; i < args.size(); i++) {
+            auto& value = args[i];
             if (!value.IsImmediate()) {
-                UndoUse(value.Inst());
+                UndoUse(value.Inst(), i);
             }
         }
         // Reset arguments to null
@@ -198,8 +200,9 @@ void Inst::Use(Inst* used, u32 operand) {
     used->uses.emplace_front(this, operand);
 }
 
-void Inst::UndoUse(Inst* used) {
-    used->uses.remove_if([this](const IR::Use& use) { return use.user == this; });
+void Inst::UndoUse(Inst* used, u32 operand) {
+    IR::Use use(this, operand);
+    used->uses.remove(use);
 }
 
 } // namespace Shader::IR
