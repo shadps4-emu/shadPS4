@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include "core/libraries/kernel/threads/pthread.h"
 
 namespace Core::Loader {

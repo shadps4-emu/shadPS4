@@ -5,10 +5,10 @@
 
 #include <condition_variable>
 #include <forward_list>
+#include <list>
 #include <mutex>
 #include <shared_mutex>
 #include <boost/intrusive/list.hpp>
-#include <boost/thread/thread.hpp>
 
 #include "common/enum.h"
 #include "core/libraries/kernel/time.h"
@@ -230,12 +230,6 @@ using PthreadEntryFunc = void* (*)(void*);
 
 constexpr u32 TidTerminated = 1;
 
-struct WakeAddr {
-    WakeAddr* link;
-    u32 value;
-    char pad[12];
-};
-
 struct SleepQueue {
     std::list<Pthread*> sq_blocked;
     std::forward_list<SleepQueue*> sq_freeq;
@@ -291,7 +285,7 @@ struct Pthread {
     int report_events;
     int event_mask;
     std::string name;
-    WakeAddr* wake_addr;
+    std::binary_semaphore wake_sema{0};
     SleepQueue* sleepqueue;
     void* wchan;
     PthreadMutex* mutex_obj;
