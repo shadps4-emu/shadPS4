@@ -27,11 +27,10 @@ static std::mutex RwlockStaticLock;
     }
 
 static int RwlockInit(PthreadRwlockT* rwlock, const PthreadRwlockAttrT* attr) {
-    PthreadRwlock* prwlock = (PthreadRwlock*)calloc(1, sizeof(PthreadRwlock));
+    PthreadRwlock* prwlock = new PthreadRwlock{};
     if (prwlock == nullptr) {
         return POSIX_ENOMEM;
     }
-    std::construct_at(prwlock);
     *rwlock = prwlock;
     return 0;
 }
@@ -45,8 +44,7 @@ int PS4_SYSV_ABI posix_pthread_rwlock_destroy(PthreadRwlockT* rwlock) {
         return POSIX_EINVAL;
     }
     *rwlock = THR_RWLOCK_DESTROYED;
-    std::destroy_at(prwlock);
-    free(prwlock);
+    delete prwlock;
     return 0;
 }
 
@@ -121,21 +119,21 @@ int PthreadRwlock::Wrlock(const OrbisKernelTimespec* abstime) {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(PthreadRwlockT* rwlock) {
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Rdlock(nullptr);
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_timedrdlock(PthreadRwlockT* rwlock,
                                                   const OrbisKernelTimespec* abstime) {
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Rdlock(abstime);
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(PthreadRwlockT* rwlock) {
     Pthread* curthread = g_curthread;
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
 
     if (!prwlock->lock.try_lock_shared()) {
@@ -148,7 +146,7 @@ int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(PthreadRwlockT* rwlock) {
 
 int PS4_SYSV_ABI posix_pthread_rwlock_trywrlock(PthreadRwlockT* rwlock) {
     Pthread* curthread = g_curthread;
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
 
     if (!prwlock->lock.try_lock()) {
@@ -159,14 +157,14 @@ int PS4_SYSV_ABI posix_pthread_rwlock_trywrlock(PthreadRwlockT* rwlock) {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_wrlock(PthreadRwlockT* rwlock) {
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Wrlock(nullptr);
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_timedwrlock(PthreadRwlockT* rwlock,
                                                   const OrbisKernelTimespec* abstime) {
-    PthreadRwlockT prwlock;
+    PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Wrlock(abstime);
 }
@@ -213,7 +211,7 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_destroy(PthreadRwlockAttrT* rwlockattr
         return POSIX_EINVAL;
     }
 
-    free(prwlockattr);
+    delete prwlockattr;
     return 0;
 }
 
@@ -228,7 +226,7 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_init(PthreadRwlockAttrT* rwlockattr) {
         return POSIX_EINVAL;
     }
 
-    PthreadRwlockAttrT prwlockattr = (PthreadRwlockAttrT)malloc(sizeof(PthreadRwlockAttr));
+    PthreadRwlockAttrT prwlockattr = new PthreadRwlockAttr{};
     if (prwlockattr == nullptr) {
         return POSIX_ENOMEM;
     }

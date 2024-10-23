@@ -3,7 +3,9 @@
 
 #pragma once
 
-#include <sys/types.h>
+#include <algorithm>
+#include <fmt/core.h>
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "core/libraries/error_codes.h"
 
@@ -17,11 +19,21 @@ void ErrSceToPosix(int result);
 int ErrnoToSceKernelError(int e);
 void SetPosixErrno(int e);
 
-template <class F, F f>
+template <size_t N>
+struct StringLiteral {
+    constexpr StringLiteral(const char (&str)[N]) {
+        std::copy_n(str, N, value);
+    }
+
+    char value[N];
+};
+
+template <StringLiteral name, class F, F f>
 struct WrapperImpl;
 
-template <class R, class... Args, PS4_SYSV_ABI R (*f)(Args...)>
-struct WrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
+template <StringLiteral name, class R, class... Args, PS4_SYSV_ABI R (*f)(Args...)>
+struct WrapperImpl<name, PS4_SYSV_ABI R (*)(Args...), f> {
+    static constexpr StringLiteral Name{name};
     static R PS4_SYSV_ABI wrap(Args... args) {
         u32 ret = f(args...);
         if (ret != 0) {
@@ -31,10 +43,10 @@ struct WrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
     }
 };
 
-template <class F, F f>
-constexpr auto OrbisWrapper = WrapperImpl<F, f>::wrap;
+template <StringLiteral name, class F, F f>
+constexpr auto OrbisWrapper = WrapperImpl<name, F, f>::wrap;
 
-#define ORBIS(func) OrbisWrapper<decltype(&func), func>
+#define ORBIS(func) WrapperImpl<#func, decltype(&func), func>::wrap
 
 int* PS4_SYSV_ABI __Error();
 

@@ -127,6 +127,22 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     // we can skip the whole dispatch and update the tracked state instead. Also, it is not
     // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
     // will need its full emulation anyways. For cases of metadata read a warning will be logged.
+    for (const auto& desc : info->buffers) {
+        if (desc.is_gds_buffer) {
+            continue;
+        }
+        const VAddr address = desc.GetSharp(*info).base_address;
+        if (desc.is_written) {
+            if (texture_cache.TouchMeta(address, true)) {
+                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                return false;
+            }
+        } else {
+            if (texture_cache.IsMeta(address)) {
+                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
+            }
+        }
+    }
     for (const auto& desc : info->texture_buffers) {
         const VAddr address = desc.GetSharp(*info).base_address;
         if (desc.is_written) {

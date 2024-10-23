@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -95,7 +95,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         LOG_ERROR(Lib_VideoOut, "Addresses are null");
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
-
+    VAddr ret_addr = (VAddr)__builtin_return_address(0);
     auto* port = driver->GetPort(handle);
     if (!port || !port->is_open) {
         LOG_ERROR(Lib_VideoOut, "Invalid handle = {}", handle);

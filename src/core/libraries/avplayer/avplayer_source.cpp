@@ -252,11 +252,9 @@ bool AvPlayerSource::Start() {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
         return false;
     }
-    m_demuxer_thread = std::jthread([this](std::stop_token stop) { this->DemuxerThread(stop); });
-    m_video_decoder_thread =
-        std::jthread([this](std::stop_token stop) { this->VideoDecoderThread(stop); });
-    m_audio_decoder_thread =
-        std::jthread([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
+    m_demuxer_thread.Run([this](std::stop_token stop) { this->DemuxerThread(stop); });
+    m_video_decoder_thread.Run([this](std::stop_token stop) { this->VideoDecoderThread(stop); });
+    m_audio_decoder_thread.Run([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
     m_start_time = std::chrono::high_resolution_clock::now();
     return true;
 }
@@ -269,18 +267,10 @@ bool AvPlayerSource::Stop() {
         return false;
     }
 
-    m_video_decoder_thread.request_stop();
-    m_audio_decoder_thread.request_stop();
-    m_demuxer_thread.request_stop();
-    if (m_demuxer_thread.joinable()) {
-        m_demuxer_thread.join();
-    }
-    if (m_video_decoder_thread.joinable()) {
-        m_video_decoder_thread.join();
-    }
-    if (m_audio_decoder_thread.joinable()) {
-        m_audio_decoder_thread.join();
-    }
+    m_video_decoder_thread.Stop();
+    m_audio_decoder_thread.Stop();
+    m_demuxer_thread.Stop();
+
     if (m_current_audio_frame.has_value()) {
         m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
         m_current_audio_frame.reset();
@@ -504,12 +494,8 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     m_video_frames_cv.Notify();
     m_audio_frames_cv.Notify();
 
-    if (m_video_decoder_thread.joinable()) {
-        m_video_decoder_thread.join();
-    }
-    if (m_audio_decoder_thread.joinable()) {
-        m_audio_decoder_thread.join();
-    }
+    m_video_decoder_thread.Join();
+    m_audio_decoder_thread.Join();
     m_state.OnEOF();
 
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
@@ -802,8 +788,8 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
 }
 
 bool AvPlayerSource::HasRunningThreads() const {
-    return m_demuxer_thread.joinable() || m_video_decoder_thread.joinable() ||
-           m_audio_decoder_thread.joinable();
+    return m_demuxer_thread.Joinable() || m_video_decoder_thread.Joinable() ||
+           m_audio_decoder_thread.Joinable();
 }
 
 } // namespace Libraries::AvPlayer
