@@ -53,9 +53,7 @@ static int MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
             return POSIX_EINVAL;
         }
     }
-    auto* pmutex = (PthreadMutex*)malloc(sizeof(PthreadMutex));
-    std::memset(pmutex, 0, sizeof(PthreadMutex));
-    std::construct_at(pmutex);
+    auto* pmutex = new PthreadMutex{};
     if (pmutex == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -115,7 +113,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex) {
         return POSIX_EBUSY;
     }
     *mutex = THR_MUTEX_DESTROYED;
-    free(m);
+    delete m;
     return 0;
 }
 

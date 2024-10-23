@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include <cstring>
-#include "common/assert.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -21,10 +20,7 @@ static constexpr PthreadCondAttr PhreadCondattrDefault = {
 };
 
 static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const char* name) {
-    auto* cvp = (PthreadCond*)malloc(sizeof(PthreadCond));
-    std::memset(cvp, 0, sizeof(PthreadCond));
-    std::construct_at(cvp);
-
+    auto* cvp = new PthreadCond{};
     if (cvp == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -90,134 +86,9 @@ int PS4_SYSV_ABI posix_pthread_cond_destroy(PthreadCondT* cond) {
     }
     cvp = *cond;
     *cond = THR_COND_DESTROYED;
-    free(cvp);
+    delete cvp;
     return 0;
 }
-
-static std::mutex sc_lock;
-static std::unordered_map<void*, SleepQueue*> sc_table;
-
-void _sleepq_lock(void* wchan) {
-    sc_lock.lock();
-}
-
-void _sleepq_unlock(void* wchan) {
-    sc_lock.unlock();
-}
-
-SleepQueue* _sleepq_lookup(void* wchan) {
-    const auto it = sc_table.find(wchan);
-    if (it != sc_table.end()) {
-        return it->second;
-    }
-    return nullptr;
-}
-
-void _sleepq_add(void* wchan, Pthread* td) {
-    SleepQueue* sq = _sleepq_lookup(wchan);
-    if (sq != NULL) {
-        sq->sq_freeq.push_front(td->sleepqueue);
-    } else {
-        sc_table.emplace(wchan, td->sleepqueue);
-        td->sleepqueue->sq_wchan = wchan;
-    }
-    td->sleepqueue = nullptr;
-    td->wchan = wchan;
-    sq->sq_blocked.push_front(td);
-}
-
-bool _sleepq_remove(SleepQueue* sq, Pthread* td) {
-    std::erase(sq->sq_blocked, td);
-    if (sq->sq_blocked.empty()) {
-        sc_table.erase(td->wchan);
-        td->sleepqueue = sq;
-        td->wchan = nullptr;
-        return false;
-    } else {
-        td->sleepqueue = sq->sq_freeq.front();
-        sq->sq_freeq.pop_front();
-        td->wchan = nullptr;
-        return true;
-    }
-}
-
-void _sleepq_drop(SleepQueue* sq, void (*cb)(Pthread*, void* arg), void* arg) {
-    if (sq->sq_blocked.empty()) {
-        return;
-    }
-    Pthread* td = sq->sq_blocked.front();
-    sc_table.erase(td->wchan);
-    std::erase(sq->sq_blocked, td);
-
-    cb(td, arg);
-    td->sleepqueue = sq;
-    td->wchan = nullptr;
-
-    auto sq2 = sq->sq_freeq.begin();
-    for (Pthread* td : sq->sq_blocked) {
-        cb(td, arg);
-        td->sleepqueue = *sq2;
-        td->wchan = NULL;
-        sq2++;
-    }
-
-    sq->sq_blocked.clear();
-    sq->sq_freeq.clear();
-}
-
-/*static int cond_wait_user(PthreadCond *cvp, PthreadMutex* mp,
-                          const OrbisKernelTimespec *abstime, int cancel) {
-    Pthread* curthread = g_curthread;
-    int	recurse;
-    int	error;
-
-    ASSERT_MSG(curthread->wchan == nullptr, "Thread was already on queue");
-    //if (cancel)
-        //_thr_testcancel(curthread);
-
-    _sleepq_lock(cvp);
-    cvp->has_user_waiters = 1;
-    curthread->will_sleep = 1;
-    _mutex_cv_unlock(mp, &recurse);
-    curthread->mutex_obj = mp;
-    _sleepq_add(cvp, curthread);
-    for(;;) {
-        _thr_clear_wake(curthread);
-        _sleepq_unlock(cvp);
-
-        if (cancel) {
-            //_thr_cancel_enter2(curthread, 0);
-            error = _thr_sleep(curthread, cvp->__clock_id, abstime);
-            //_thr_cancel_leave(curthread, 0);
-        } else {
-            error = _thr_sleep(curthread, cvp->__clock_id, abstime);
-        }
-
-        _sleepq_lock(cvp);
-        if (curthread->wchan == nullptr) {
-            error = 0;
-            break;
-        } else if (cancel && curthread->ShouldCancel()) {
-            SleepQueue* sq = _sleepq_lookup(cvp);
-            cvp->has_user_waiters = _sleepq_remove(sq, curthread);
-            _sleepq_unlock(cvp);
-            curthread->mutex_obj = NULL;
-            _mutex_cv_lock(mp, recurse);
-            if (!THR_IN_CRITICAL(curthread))
-                _pthread_exit(PTHREAD_CANCELED);
-            else
-                return (0);
-        } else if (error == POSIX_ETIMEDOUT) {
-            SleepQueue* sq = _sleepq_lookup(cvp);
-            cvp->has_user_waiters = _sleepq_remove(sq, curthread);
-            break;
-        }
-    }
-    _sleepq_unlock(cvp);
-    curthread->mutex_obj = NULL;
-    _mutex_cv_lock(mp, recurse);
-    return (error);
-}*/
 
 int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime) {
     PthreadMutex* mp = *mutex;
