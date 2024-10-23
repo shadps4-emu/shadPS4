@@ -102,8 +102,7 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         memset(thread, 0, sizeof(Pthread));
         std::construct_at(thread);
         thread->tcb = tcb;
-        // thread->sleepqueue = _sleepq_alloc();
-        // thread->wake_addr = _thr_alloc_wake_addr();
+        thread->sleepqueue = new SleepQueue{};
     } else {
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
@@ -122,8 +121,7 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     thread->tcb = nullptr;
     std::destroy_at(thread);
     if (free_threads.size() >= MaxCachedThreads) {
-        //_sleepq_free(thread->sleepqueue);
-        //_thr_release_wake_addr(thread->wake_addr);
+        delete thread->sleepqueue;
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
     } else {
