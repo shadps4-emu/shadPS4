@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "core/libraries/kernel/threads/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 
 namespace Core::Loader {
 class SymbolsResolver;

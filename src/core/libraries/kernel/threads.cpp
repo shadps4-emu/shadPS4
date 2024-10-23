@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/kernel/kernel.h"
-#include "core/libraries/kernel/thread_management.h"
-#include "core/libraries/kernel/threads/threads.h"
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 
 namespace Libraries::Kernel {
 

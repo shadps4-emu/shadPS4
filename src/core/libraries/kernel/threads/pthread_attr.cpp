@@ -3,8 +3,8 @@
 #pragma clang optimize off
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
-#include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {

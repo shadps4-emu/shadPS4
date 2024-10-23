@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
