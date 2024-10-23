@@ -9,7 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
-#include "libkernel.h"
+#include "kernel.h"
 
 namespace Libraries::Kernel {
 
