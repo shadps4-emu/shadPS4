@@ -3,7 +3,7 @@
 
 #include "common/assert.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 
