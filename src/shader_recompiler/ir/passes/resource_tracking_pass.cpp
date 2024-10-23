@@ -657,13 +657,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
 
-    // Patch image instruction if image is fmask.
+    // Patch image instruction if image is FMask.
     if (image.IsFmask()) {
-        // Ignore fmask writes. TODO: handle dimension queries.
-        if (is_storage && inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
-            inst.Invalidate();
-            return;
-        }
+        ASSERT_MSG(!is_storage, "FMask storage instructions are not supported");
 
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
         switch (inst.GetOpcode()) {
@@ -711,25 +707,27 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     // Now that we know the image type, adjust texture coordinate vector.
     IR::Inst* body = inst.Arg(1).InstRecursive();
-    const auto [coords, arg1, arg2] = [&] -> std::tuple<IR::Value, IR::Value, IR::Value> {
+    const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D: // x
-            return {body->Arg(0), body->Arg(1), body->Arg(2)};
+            return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice
             [[fallthrough]];
-        case AmdGpu::ImageType::Color2D: // x, y
+        case AmdGpu::ImageType::Color2D: // x, y, [lod]
             [[fallthrough]];
         case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2), body->Arg(3)};
-        case AmdGpu::ImageType::Color2DArray: // x, y, slice
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
+        case AmdGpu::ImageType::Color2DArray: // x, y, slice, [lod]
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
+                                                  // argument)
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3),
-                    body->Arg(4)};
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
                                    inst_info.is_array),
-                    body->Arg(3), body->Arg(4)};
+                    body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
@@ -738,12 +736,12 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
-        inst.SetArg(3, arg1);
-        if (image.GetType() == AmdGpu::ImageType::Color2DMsaa) {
-            inst.SetArg(4, arg2);
-        }
-    } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa) {
-        inst.SetArg(4, arg1);
+        ASSERT(image.GetType() == AmdGpu::ImageType::Color2D ||
+               image.GetType() == AmdGpu::ImageType::Color2DArray);
+        inst.SetArg(3, arg);
+    } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
+               image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
+        inst.SetArg(4, arg);
     }
 }
 
