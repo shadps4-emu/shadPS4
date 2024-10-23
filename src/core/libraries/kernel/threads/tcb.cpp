@@ -3,7 +3,7 @@
 
 #include "common/assert.h"
 #include "common/singleton.h"
-#include "core/libraries/kernel/threads/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/tls.h"

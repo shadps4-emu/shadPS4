@@ -4,7 +4,7 @@
 #include "controller.h"
 
 #include "common/assert.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 
 #include <SDL3/SDL.h>

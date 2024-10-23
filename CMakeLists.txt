@@ -208,22 +208,20 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB
+set(KERNEL_LIB src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
-               src/core/libraries/kernel/threads/event_flag.h
-               src/core/libraries/kernel/threads/thr_attr.cpp
-               src/core/libraries/kernel/threads/thr_cond.cpp
-               src/core/libraries/kernel/threads/thr_create.cpp
-               src/core/libraries/kernel/threads/threads.h
-               src/core/libraries/kernel/threads/thr_mutex.cpp
-               src/core/libraries/kernel/threads/thr_rwlock.cpp
-               src/core/libraries/kernel/threads/thr_sem.cpp
-               src/core/libraries/kernel/threads/thr_spec.cpp
-               src/core/libraries/kernel/threads/thr_stack.cpp
-               src/core/libraries/kernel/threads/thr_clean.cpp
+               src/core/libraries/kernel/threads/mutex.cpp
+               src/core/libraries/kernel/threads/pthread_attr.cpp
+               src/core/libraries/kernel/threads/pthread_clean.cpp
+               src/core/libraries/kernel/threads/pthread.cpp
+               src/core/libraries/kernel/threads/pthread_spec.cpp
+               src/core/libraries/kernel/threads/rwlock.cpp
+               src/core/libraries/kernel/threads/semaphore.cpp
+               src/core/libraries/kernel/threads/stack.cpp
+               src/core/libraries/kernel/threads/tcb.cpp
+               src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
                src/core/libraries/kernel/threads/thread_state.h
-               src/core/libraries/kernel/threads/thr_ctrdtr.cpp
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queues.cpp
@@ -232,12 +230,12 @@ set(KERNEL_LIB
                src/core/libraries/kernel/file_system.h
                src/core/libraries/kernel/kernel.cpp
                src/core/libraries/kernel/kernel.h
-               src/core/libraries/kernel/memory_management.cpp
-               src/core/libraries/kernel/memory_management.h
-               src/core/libraries/kernel/thread_management.cpp
-               src/core/libraries/kernel/thread_management.h
-               src/core/libraries/kernel/time_management.cpp
-               src/core/libraries/kernel/time_management.h
+               src/core/libraries/kernel/memory.cpp
+               src/core/libraries/kernel/memory.h
+               src/core/libraries/kernel/threads.cpp
+               src/core/libraries/kernel/threads.h
+               src/core/libraries/kernel/time.cpp
+               src/core/libraries/kernel/time.h
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp

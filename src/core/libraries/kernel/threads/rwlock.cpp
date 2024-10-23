@@ -3,7 +3,7 @@
 
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
-#include "core/libraries/kernel/threads/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -185,19 +185,6 @@ int PS4_SYSV_ABI posix_pthread_rwlock_unlock(PthreadRwlockT* rwlock) {
             curthread->rdlock_count--;
         }
     }
-
-    /*s32 state = prwlock->lock.rw_state;
-    if (state & URWLOCK_WRITE_OWNER) {
-        if (prwlock->owner != curthread) [[unlikely]] {
-            return POSIX_EPERM;
-        }
-        prwlock->owner = nullptr;
-    }
-
-    prwlock->lock.unlock();
-    if ((state & URWLOCK_WRITE_OWNER) == 0) {
-        curthread->rdlock_count--;
-    }*/
 
     return 0;
 }

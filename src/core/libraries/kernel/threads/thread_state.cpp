@@ -5,8 +5,8 @@
 #include "common/alignment.h"
 #include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
-#include "core/libraries/kernel/threads/threads.h"
 #include "core/memory.h"
 #include "core/tls.h"
 

@@ -14,7 +14,7 @@
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_common.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/threads.h"
 
 struct AVCodecContext;
 struct AVFormatContext;
