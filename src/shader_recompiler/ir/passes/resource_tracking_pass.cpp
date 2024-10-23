@@ -685,24 +685,24 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     // Now that we know the image type, adjust texture coordinate vector.
     IR::Inst* body = inst.Arg(1).InstRecursive();
-    const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
+    const auto [coords, arg1, arg2] = [&] -> std::tuple<IR::Value, IR::Value, IR::Value> {
         switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D: // x
-            return {body->Arg(0), body->Arg(1)};
+            return {body->Arg(0), body->Arg(1), body->Arg(2)};
         case AmdGpu::ImageType::Color1DArray: // x, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color2D: // x, y
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DMsaa: //x, y. (sample is passed on different argument)
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2), body->Arg(3)};
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             [[fallthrough]];
-        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
-            [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3), body->Arg(4)};
         case AmdGpu::ImageType::Cube: // x, y, face
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
                                    inst_info.is_array),
-                    body->Arg(3)};
+                    body->Arg(3), body->Arg(4)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
@@ -711,7 +711,12 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
-        inst.SetArg(3, arg);
+        inst.SetArg(3, arg1);
+        if (image.GetType() == AmdGpu::ImageType::Color2DMsaa) {
+            inst.SetArg(4, arg2);
+        }
+    } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa) {
+        inst.SetArg(4, arg1);
     }
 }
 
