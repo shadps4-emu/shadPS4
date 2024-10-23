@@ -5,7 +5,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/cpu_management.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/rtc/rtc.h"

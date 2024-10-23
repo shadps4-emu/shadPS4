@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/libraries/kernel/event_queues.h"
+#include "core/libraries/kernel/equeue.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
