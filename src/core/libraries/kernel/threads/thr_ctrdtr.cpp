@@ -25,7 +25,7 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
     // Initialize allocated memory and allocate DTV table.
     const u32 num_dtvs = linker->MaxTlsIndex();
     const auto static_tls_size = linker->StaticTlsSize();
-    auto* dtv_table = new Core::DtvEntry[num_dtvs + 2];
+    auto* dtv_table = new Core::DtvEntry[num_dtvs + 2]{};
 
     // Initialize thread control block
     u8* addr = reinterpret_cast<u8*>(addr_out);

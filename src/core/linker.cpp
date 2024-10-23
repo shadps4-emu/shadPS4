@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
+#include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/libraries/kernel/memory_management.h"
@@ -24,10 +25,8 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
 }
 
 #ifdef ARCH_X86_64
-static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (void* arg) {
-    EntryParams* params = (EntryParams*)arg;
+static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
     // Start shared library modules
-    params->linker->LoadSharedLibraries();
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
                  "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
 
@@ -43,7 +42,7 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (void* arg) {
                  "jmp *%0\n" // can't use call here, as that would mangle the prepared stack.
                              // there's no coming back
                  :
-                 : "r"(params->entry_addr), "r"(params), "r"(params->exit_func)
+                 : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
                  : "rax", "rsi", "rdi");
     UNREACHABLE();
 }
@@ -82,14 +81,17 @@ void Linker::Execute() {
         }
     }
 
-    // Start main module.
-    EntryParams* params = new EntryParams;
-    params->argc = 1;
-    params->argv[0] = "eboot.bin";
-    params->entry_addr = module->GetEntryAddress();
-    params->exit_func = ProgramExitFunc;
-    params->linker = this;
-    Libraries::Kernel::LaunchThread(RunMainEntry, params, "GAME_MainThread");
+    main_thread.Run([this, module](std::stop_token) {
+        Common::SetCurrentThreadName("GAME_MainThread");
+        LoadSharedLibraries();
+
+        // Start main module.
+        EntryParams params{};
+        params.argc = 1;
+        params.argv[0] = "eboot.bin";
+        params.entry_addr = module->GetEntryAddress();
+        RunMainEntry(&params);
+    });
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -122,10 +124,9 @@ Module* Linker::FindByAddress(VAddr address) {
 }
 
 void Linker::Relocate(Module* module) {
-    module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool isJmpRel) {
-        const u32 bit_idx =
-            (isJmpRel ? module->dynamic_info.relocation_table_size / sizeof(elf_relocation) : 0) +
-            i;
+    module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool is_jmp_rel) {
+        const u32 num_relocs = module->dynamic_info.relocation_table_size / sizeof(elf_relocation);
+        const u32 bit_idx = (is_jmp_rel ? num_relocs : 0) + i;
         if (module->TestRelaBit(bit_idx)) {
             return;
         }
@@ -133,7 +134,7 @@ void Linker::Relocate(Module* module) {
         auto symbol = rel->GetSymbol();
         auto addend = rel->rel_addend;
         auto* symbol_table = module->dynamic_info.symbol_table;
-        auto* namesTlb = module->dynamic_info.str_table;
+        auto* names_tlb = module->dynamic_info.str_table;
 
         const VAddr rel_base_virtual_addr = module->GetBaseAddress();
         const VAddr rel_virtual_addr = rel_base_virtual_addr + rel->rel_offset;
@@ -189,7 +190,7 @@ void Linker::Relocate(Module* module) {
                 break;
             case STB_GLOBAL:
             case STB_WEAK: {
-                rel_name = namesTlb + sym.st_name;
+                rel_name = names_tlb + sym.st_name;
                 if (Resolve(rel_name, rel_sym_type, module, &symrec)) {
                     // Only set the rela bit if the symbol was actually resolved and not stubbed.
                     module->SetRelaBit(bit_idx);
@@ -198,7 +199,7 @@ void Linker::Relocate(Module* module) {
                 break;
             }
             default:
-                ASSERT_MSG(0, "unknown bind type {}", sym_bind);
+                UNREACHABLE_MSG("Unknown bind type {}", sym_bind);
             }
             rel_is_resolved = (symbol_virtual_addr != 0);
             rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
@@ -212,7 +213,7 @@ void Linker::Relocate(Module* module) {
         if (rel_is_resolved) {
             VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
         } else {
-            LOG_INFO(Core_Linker, "function not patched! {}", rel_name);
+            LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });
 }
@@ -295,12 +296,13 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     }
 
     u8* addr = dtv_table[module_index + 1].pointer;
+    Module* module = m_modules[module_index - 1].get();
+    // LOG_INFO(Core_Linker, "Got DTV addr {} from module index {} with name {}",
+    //          fmt::ptr(addr), module_index, module->file.filename().string());
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
-        Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest =
-            reinterpret_cast<u8*>(ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
+        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);

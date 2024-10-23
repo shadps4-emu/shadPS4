@@ -305,7 +305,7 @@ void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("XC9wM+xULz8", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerJumpToTime);
     LIB_FUNCTION("9y5v+fGN4Wk", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPause);
     LIB_FUNCTION("HD1YKVU26-M", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPostInit);
-    LIB_FUNCTION("agig-iDRrTE", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPrintf);
+    // LIB_FUNCTION("agig-iDRrTE", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPrintf);
     LIB_FUNCTION("w5moABNwnRY", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerResume);
     LIB_FUNCTION("k-q+xOxdc3E", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
                  sceAvPlayerSetAvSyncMode);

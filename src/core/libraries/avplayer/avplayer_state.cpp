@@ -117,10 +117,7 @@ AvPlayerState::~AvPlayerState() {
         std::unique_lock lock(m_source_mutex);
         m_up_source.reset();
     }
-    if (m_controller_thread.joinable()) {
-        m_controller_thread.request_stop();
-        m_controller_thread.join();
-    }
+    m_controller_thread.Stop();
     m_event_queue.Clear();
 }
 
@@ -221,8 +218,7 @@ void AvPlayerState::WarningEvent(s32 id) {
 
 // Called inside GAME thread
 void AvPlayerState::StartControllerThread() {
-    m_controller_thread =
-        std::jthread([this](std::stop_token stop) { this->AvControllerThread(stop); });
+    m_controller_thread.Run([this](std::stop_token stop) { this->AvControllerThread(stop); });
 }
 
 // Called inside GAME thread

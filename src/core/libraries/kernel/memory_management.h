@@ -129,6 +129,10 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags);
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
 
+void* Malloc(size_t size);
+
+void Free(void* ptr);
+
 void RegisterMemory(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
