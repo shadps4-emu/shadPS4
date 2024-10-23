@@ -7,9 +7,9 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "common/polyfill_thread.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "core/libraries/kernel/thread_management.h"
 
 namespace Libraries::AvPlayer {
 
@@ -80,7 +80,7 @@ private:
     std::shared_mutex m_source_mutex{};
     std::mutex m_state_machine_mutex{};
     std::mutex m_event_handler_mutex{};
-    std::jthread m_controller_thread{};
+    Kernel::Thread m_controller_thread{};
     AvPlayerQueue<AvPlayerEvent> m_event_queue{};
 };
 

@@ -85,8 +85,6 @@ struct iovec {
 };
 
 size_t PS4_SYSV_ABI _writev(int fd, const struct iovec* iov, int iovcn) {
-    // weird it gives fd ==0 and writes to stdout , i am not sure if it that is valid (found in
-    // openorbis)
     size_t total_written = 0;
     for (int i = 0; i < iovcn; i++) {
         total_written += ::fwrite(iov[i].iov_base, 1, iov[i].iov_len, stdout);

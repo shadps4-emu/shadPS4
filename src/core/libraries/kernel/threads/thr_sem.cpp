@@ -27,9 +27,7 @@ public:
     OrbisSem(s32 init_count, s32 max_count, std::string_view name, bool is_fifo)
         : name{name}, token_count{init_count}, max_count{max_count}, init_count{init_count},
           is_fifo{is_fifo} {}
-    ~OrbisSem() {
-        ASSERT(wait_list.empty());
-    }
+    ~OrbisSem() = default;
 
     int Wait(bool can_block, s32 need_count, u32* timeout) {
         std::unique_lock lk{mutex};
@@ -91,6 +89,15 @@ public:
         wait_list.clear();
         token_count = set_count < 0 ? init_count : set_count;
         return ORBIS_OK;
+    }
+
+    void Delete() {
+        std::scoped_lock lk{mutex};
+        for (auto* waiter : wait_list) {
+            waiter->was_deleted = true;
+            waiter->cv.notify_one();
+        }
+        wait_list.clear();
     }
 
 public:
@@ -219,7 +226,7 @@ int PS4_SYSV_ABI sceKernelDeleteSema(OrbisKernelSema sem) {
     if (!sem) {
         return SCE_KERNEL_ERROR_ESRCH;
     }
-    delete sem;
+    sem->Delete();
     return ORBIS_OK;
 }
 

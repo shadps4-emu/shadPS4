@@ -11,10 +11,10 @@
 #include <string_view>
 
 #include "common/assert.h"
-#include "common/polyfill_thread.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_common.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
+#include "core/libraries/kernel/thread_management.h"
 
 struct AVCodecContext;
 struct AVFormatContext;
@@ -200,9 +200,9 @@ private:
     EventCV m_stop_cv{};
 
     std::mutex m_state_mutex{};
-    std::jthread m_demuxer_thread{};
-    std::jthread m_video_decoder_thread{};
-    std::jthread m_audio_decoder_thread{};
+    Kernel::Thread m_demuxer_thread{};
+    Kernel::Thread m_video_decoder_thread{};
+    Kernel::Thread m_audio_decoder_thread{};
 
     AVFormatContextPtr m_avformat_context{nullptr, &ReleaseAVFormatContext};
     AVCodecContextPtr m_video_codec_context{nullptr, &ReleaseAVCodecContext};

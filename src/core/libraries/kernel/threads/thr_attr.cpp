@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/threads/thread_state.h"
@@ -18,9 +18,9 @@ struct PthreadPrio {
 };
 
 static constexpr std::array<PthreadPrio, 3> ThrPriorities = {{
-    {0x2BC, 0x300, 0x3BF}, // Fifo
-    {0x384, 0x100, 0x2FF}, // Other
-    {0x2BC, 0, 1},         // Round-Robin
+    {0x100, 0x2FF, 0x2BC}, // Fifo
+    {0x300, 0x3BF, 0x384}, // Other
+    {0x100, 0x2FF, 0x2BC}, // Round-Robin
 }};
 
 PthreadAttr PthreadAttrDefault = {
@@ -33,13 +33,14 @@ PthreadAttr PthreadAttrDefault = {
     .stacksize_attr = ThrStackDefault,
     .guardsize_attr = 0,
     .cpusetsize = 0,
+    .cpuset = nullptr,
 };
 
 int PS4_SYSV_ABI posix_pthread_attr_destroy(PthreadAttrT* attr) {
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
-    free(*attr);
+    delete *attr;
     *attr = nullptr;
     return 0;
 }
@@ -112,7 +113,7 @@ int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const PthreadAttrT* attr, size_
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_init(PthreadAttrT* attr) {
-    PthreadAttrT pattr = (PthreadAttrT)malloc(sizeof(PthreadAttr));
+    PthreadAttrT pattr = new PthreadAttr{};
     if (pattr == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -180,7 +181,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setschedparam(PthreadAttrT* attr, const sche
     }
 
     const auto policy = (*attr)->sched_policy;
-    if (policy == SchedPolicy::Fifo || policy == SchedPolicy::RoundRobin) {
+    if (policy == SchedPolicy::RoundRobin) {
         if (param->sched_priority < ThrPriorities[u32(policy) - 1].pri_min ||
             param->sched_priority > ThrPriorities[u32(policy) - 1].pri_max) {
             return POSIX_ENOTSUP;
@@ -224,11 +225,61 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
     if (True(pthread->flags & ThreadFlags::Detached)) {
         attr.flags |= PthreadAttrFlags::Detached;
     }
-    pthread->lock->unlock();
+    pthread->lock.unlock();
     if (ret == 0) {
         memcpy(dst, &attr, sizeof(PthreadAttr));
     }
     return ret;
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, size_t cpusetsize,
+                                                   Cpuset* cpusetp) {
+    if (pattr == nullptr) {
+        return POSIX_EINVAL;
+    }
+    PthreadAttrT attr = *pattr;
+    if (attr == nullptr) {
+        return POSIX_EINVAL;
+    }
+    if (attr->cpuset != nullptr)
+        memcpy(cpusetp, attr->cpuset, std::min(cpusetsize, attr->cpusetsize));
+    else
+        memset(cpusetp, -1, sizeof(Cpuset));
+    return 0;
+}
+
+int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, Cpuset* mask) {
+    Cpuset cpuset;
+    const int ret = posix_pthread_attr_getaffinity_np(param_1, 0x10, &cpuset);
+    if (ret == 0) {
+        *mask = cpuset;
+    }
+    return ret;
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t cpusetsize,
+                                                   const Cpuset* cpusetp) {
+    if (pattr == nullptr) {
+        return POSIX_EINVAL;
+    }
+    PthreadAttrT attr = *pattr;
+    if (attr == nullptr) {
+        return POSIX_EINVAL;
+    }
+    if (cpusetsize == 0 || cpusetp == nullptr) {
+        if (attr->cpuset != nullptr) {
+            free(attr->cpuset);
+            attr->cpuset = NULL;
+            attr->cpusetsize = 0;
+        }
+        return 0;
+    }
+    if (attr->cpuset == nullptr) {
+        attr->cpuset = (Cpuset*)calloc(1, sizeof(Cpuset));
+        attr->cpusetsize = sizeof(Cpuset);
+    }
+    memcpy(attr->cpuset, cpusetp, sizeof(Cpuset));
+    return 0;
 }
 
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
@@ -280,6 +331,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_attr_setstackaddr));
     LIB_FUNCTION("El+cQ20DynU", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_attr_setguardsize));
+    LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(scePthreadAttrGetaffinity));
 }
 
 } // namespace Libraries::Kernel

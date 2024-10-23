@@ -821,6 +821,9 @@ else()
         src/core/libraries/kernel/threads/thr_clean.cpp
         src/core/libraries/kernel/threads/thread_state.h src/core/libraries/kernel/threads/thread_state.cpp
         src/core/libraries/kernel/threads/thr_ctrdtr.cpp
+        src/common/slab_heap.h
+        src/common/spin_lock.cpp
+        src/common/spin_lock.h
     )
 endif()
 

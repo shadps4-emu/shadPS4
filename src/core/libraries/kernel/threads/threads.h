@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <deque>
 #include <forward_list>
 #include <mutex>
 #include <shared_mutex>
@@ -53,16 +54,25 @@ struct PthreadMutex : public ListBaseHook {
     int m_spinloops;
     int m_yieldloops;
     PthreadMutexProt m_protocol;
+    std::string name;
 
     PthreadMutexType Type() const noexcept {
         return static_cast<PthreadMutexType>(m_flags & PthreadMutexFlags::TypeMask);
     }
 
+    void lock() {
+        Lock(nullptr);
+    }
+
+    void unlock() {
+        Unlock();
+    }
+
     int SelfTryLock();
-    int SelfLock(const OrbisKernelTimespec* abstime);
+    int SelfLock(const OrbisKernelTimespec* abstime, u64 usec);
 
     int TryLock();
-    int Lock(const OrbisKernelTimespec* abstime);
+    int Lock(const OrbisKernelTimespec* abstime, u64 usec = 0);
 
     int Unlock();
 
@@ -83,20 +93,38 @@ enum class PthreadCondFlags : u32 {
     Busy = 4,
 };
 
+enum class ClockId : u32 {
+    Realtime = 0,
+    Virtual = 1,
+    Prof = 2,
+    Monotonic = 4,
+    Uptime = 5,
+    UptimePrecise = 7,
+    UptimeFast = 8,
+    RealtimePrecise = 9,
+    RealtimeFast = 10,
+    MonotonicPrecise = 11,
+    MonotonicFast = 12,
+    Second = 13,
+    ThreadCputimeID = 14,
+};
+
 struct PthreadCond {
     std::condition_variable_any cond;
     u32 has_user_waiters;
     u32 has_kern_waiters;
     u32 flags;
-    u32 clock_id;
+    ClockId clock_id;
+    std::string name;
 
     int Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime);
+    int Wait(PthreadMutexT* mutex, u64 usec);
 };
 using PthreadCondT = PthreadCond*;
 
 struct PthreadCondAttr {
     int c_pshared;
-    int c_clockid;
+    ClockId c_clockid;
 };
 using PthreadCondAttrT = PthreadCondAttr*;
 
@@ -122,6 +150,10 @@ enum class SchedPolicy : u32 {
     RoundRobin = 3,
 };
 
+struct Cpuset {
+    u64 bits;
+};
+
 struct PthreadAttr {
     SchedPolicy sched_policy;
     int sched_inherit;
@@ -132,6 +164,7 @@ struct PthreadAttr {
     size_t stacksize_attr;
     size_t guardsize_attr;
     size_t cpusetsize;
+    Cpuset* cpuset;
 };
 using PthreadAttrT = PthreadAttr*;
 
@@ -198,17 +231,36 @@ using PthreadEntryFunc = void* (*)(void*);
 
 constexpr u32 TidTerminated = 1;
 
+struct WakeAddr {
+    WakeAddr* link;
+    u32 value;
+    char pad[12];
+};
+
+struct SleepQueue {
+    std::list<Pthread*> sq_blocked;
+    std::forward_list<SleepQueue*> sq_freeq;
+    std::list<SleepQueue*> sq_hash;
+    std::forward_list<SleepQueue*> sq_flink;
+    void* sq_wchan;
+    int sq_type;
+};
+
+struct SchedParam {
+    int sched_priority;
+};
+
 struct Pthread {
     static constexpr u32 ThrMagic = 0xd09ba115U;
 
     std::atomic<long> tid;
-    std::unique_ptr<std::mutex> lock;
+    std::mutex lock;
     u32 cycle;
     int locklevel;
     int critical_count;
     int sigblock;
     int refcount;
-    void PS4_SYSV_ABI* (*start_routine)(void*);
+    void* PS4_SYSV_ABI (*start_routine)(void*);
     void* arg;
     PthreadAttr attr;
     bool cancel_enable;
@@ -226,8 +278,8 @@ struct Pthread {
     Pthread* joiner;
     ThreadFlags flags;
     ThreadListFlags tlflags;
-    boost::intrusive::list<PthreadMutex> mutexq;
-    boost::intrusive::list<PthreadMutex> pp_mutexq;
+    std::list<PthreadMutex> mutexq;
+    std::list<PthreadMutex> pp_mutexq;
     void* ret;
     PthreadSpecificElem* specific;
     int specific_data_count;
@@ -240,6 +292,12 @@ struct Pthread {
     int report_events;
     int event_mask;
     std::string name;
+    WakeAddr* wake_addr;
+    SleepQueue* sleepqueue;
+    void* wchan;
+    PthreadMutex* mutex_obj;
+    bool will_sleep;
+    bool has_user_waiters;
 
     bool InCritical() const noexcept {
         return locklevel > 0 || critical_count > 0;
@@ -255,17 +313,17 @@ struct Pthread {
 
     void Enqueue(PthreadMutex* mutex) {
         mutex->m_owner = this;
-        mutexq.push_back(*mutex);
+        // mutexq.push_back(*mutex);
     }
 
     void Dequeue(PthreadMutex* mutex) {
         mutex->m_owner = nullptr;
-        mutexq.erase(decltype(mutexq)::s_iterator_to(*mutex));
+        // mutexq.erase(decltype(mutexq)::s_iterator_to(*mutex));
     }
 };
 using PthreadT = Pthread*;
 
-extern Pthread* g_curthread;
+extern thread_local Pthread* g_curthread;
 
 void RegisterMutex(Core::Loader::SymbolsResolver* sym);
 void RegisterCond(Core::Loader::SymbolsResolver* sym);

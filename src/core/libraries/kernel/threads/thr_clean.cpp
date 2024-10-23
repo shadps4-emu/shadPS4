@@ -15,7 +15,7 @@ void __pthread_cleanup_push_imp(PthreadCleanupFunc routine, void* arg, PthreadCl
 
 void PS4_SYSV_ABI posix_pthread_cleanup_push(PthreadCleanupFunc routine, void* arg) {
     Pthread* curthread = g_curthread;
-    PthreadCleanup* newbuf = (PthreadCleanup*)malloc(sizeof(PthreadCleanup));
+    PthreadCleanup* newbuf = new PthreadCleanup{};
     if (newbuf == nullptr) {
         return;
     }
@@ -35,7 +35,7 @@ void PS4_SYSV_ABI posix_pthread_cleanup_pop(int execute) {
             old->routine(old->routine_arg);
         }
         if (old->onheap) {
-            free(old);
+            delete old;
         }
     }
 }

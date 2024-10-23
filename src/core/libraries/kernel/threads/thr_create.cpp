@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include "common/assert.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
@@ -25,6 +25,13 @@ extern PthreadAttr PthreadAttrDefault;
 
 void _thread_cleanupspecific();
 
+using ThreadDtor = void (*)();
+static ThreadDtor* ThreadDtors{};
+
+void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor* dtor) {
+    ThreadDtors = dtor;
+}
+
 static void ExitThread() {
     Pthread* curthread = g_curthread;
 
@@ -37,7 +44,7 @@ static void ExitThread() {
     auto* thread_state = ThrState::Instance();
     ASSERT(thread_state->active_threads.fetch_sub(1) != 1);
 
-    curthread->lock->lock();
+    curthread->lock.lock();
     curthread->state = PthreadState::Dead;
     ASSERT(False(curthread->flags & ThreadFlags::NeedSuspend));
 
@@ -46,7 +53,7 @@ static void ExitThread() {
      * reference count to allow it to be garbage collected.
      */
     curthread->refcount--;
-    thread_state->TryCollect(curthread, curthread); /* thread lock released */
+    thread_state->TryCollect(curthread); /* thread lock released */
 
     /*
      * Kernel will do wakeup at the address, so joiner thread
@@ -80,10 +87,12 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
         curthread->cleanup.pop_front();
         old->routine(old->routine_arg);
         if (old->onheap) {
-            free(old);
+            delete old;
         }
     }
-
+    /*if (ThreadDtors && *ThreadDtors) {
+        (*ThreadDtors)();
+    }*/
     ExitThread();
 }
 
@@ -111,16 +120,16 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
         ret = POSIX_ENOTSUP;
     }
     if (ret) {
-        pthread->lock->unlock();
+        pthread->lock.unlock();
         return ret;
     }
     /* Set the running thread to be the joiner: */
     pthread->joiner = curthread;
-    pthread->lock->unlock();
+    pthread->lock.unlock();
 
     const auto backout_join = [](void* arg) {
         Pthread* pthread = (Pthread*)arg;
-        std::scoped_lock lk{*pthread->lock};
+        std::scoped_lock lk{pthread->lock};
         pthread->joiner = nullptr;
     };
 
@@ -145,10 +154,10 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     }
 
     void* tmp = pthread->ret;
-    pthread->lock->lock();
+    pthread->lock.lock();
     pthread->flags |= ThreadFlags::Detached;
     pthread->joiner = nullptr;
-    thread_state->TryCollect(curthread, pthread); /* thread lock released */
+    thread_state->TryCollect(pthread); /* thread lock released */
     if (thread_return != nullptr) {
         *thread_return = tmp;
     }
@@ -182,13 +191,13 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
 
     /* Check if the thread is already detached or has a joiner. */
     if (True(pthread->flags & ThreadFlags::Detached) || (pthread->joiner != NULL)) {
-        pthread->lock->unlock();
+        pthread->lock.unlock();
         return POSIX_EINVAL;
     }
 
     /* Flag the thread as detached. */
     pthread->flags |= ThreadFlags::Detached;
-    thread_state->TryCollect(g_curthread, pthread); /* thread lock released */
+    thread_state->TryCollect(pthread); /* thread lock released */
     return 0;
 }
 
@@ -231,7 +240,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         new_thread->attr.sched_policy = curthread->attr.sched_policy;
     }
 
-    new_thread->tid = TidTerminated;
+    static int TidCounter = 1;
+    new_thread->tid = ++TidCounter;
 
     if (thread_state->CreateStack(&new_thread->attr) != 0) {
         /* Insufficient memory to create a stack: */
@@ -248,9 +258,11 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->arg = arg;
     new_thread->cancel_enable = 1;
     new_thread->cancel_async = 0;
+    static std::atomic<int> counter = 0;
+    new_thread->name = fmt::format("NoName{}", counter++);
 
     auto* memory = Core::Memory::Instance();
-    if (name && (std::string_view{name} == "GAME_MainThread" || memory->IsValidAddress(name))) {
+    if (name && memory->IsValidAddress(name)) {
         new_thread->name = name;
     }
 
@@ -269,16 +281,22 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
+    pthread_t pthr;
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
-    pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr, new_thread->attr.stacksize_attr);
-    pthread_t pthr;
+    // pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr,
+    // new_thread->attr.stacksize_attr);
     int ret = pthread_create(&pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;
     }
     return ret;
+}
+
+int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr,
+                                      PthreadEntryFunc start_routine, void* arg) {
+    return posix_pthread_create_name_np(thread, attr, start_routine, arg, nullptr);
 }
 
 int PS4_SYSV_ABI posix_pthread_getthreadid_np() {
@@ -361,7 +379,51 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     return SCE_OK;
 }
 
+int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* policy,
+                                             SchedParam* param) {
+    if (policy == nullptr || param == nullptr) {
+        return POSIX_EINVAL;
+    }
+
+    if (pthread == g_curthread) {
+        /*
+         * Avoid searching the thread list when it is the current
+         * thread.
+         */
+        std::scoped_lock lk{g_curthread->lock};
+        *policy = g_curthread->attr.sched_policy;
+        param->sched_priority = g_curthread->attr.prio;
+        return 0;
+    }
+    auto* thread_state = ThrState::Instance();
+    /* Find the thread in the list of active threads. */
+    if (int ret = thread_state->RefAdd(pthread, /*include dead*/ 0); ret != 0) {
+        return ret;
+    }
+    pthread->lock.lock();
+    *policy = pthread->attr.sched_policy;
+    param->sched_priority = pthread->attr.prio;
+    pthread->lock.unlock();
+    thread_state->RefDelete(pthread);
+    return 0;
+}
+
+int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
+    SchedParam param;
+    SchedPolicy policy;
+
+    posix_pthread_getschedparam(thread, &policy, &param);
+    *priority = param.sched_priority;
+    return 0;
+}
+
+int sceNpWebApiTerminate() {
+    return 0;
+}
+
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("asz3TtIqGF8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiTerminate);
+
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);
@@ -370,9 +432,13 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EotR8a3ASf4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_self);
     LIB_FUNCTION("B5GmVDKwpn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_yield);
     LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_detach);
+    LIB_FUNCTION("h9CcP3J0oVM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_join);
+    LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
+    LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
 
     // Posix-Kernel
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
+    LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_create);
 
     // Orbis
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_once));
@@ -380,10 +446,14 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_create_name_np));
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_detach));
+    LIB_FUNCTION("onNY9Byn-W8", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_join));
+    LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_equal);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, posix_pthread_yield);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getthreadid_np);
+    LIB_FUNCTION("1tKyG7RlMJo", "libkernel", 1, "libkernel", 1, 1, scePthreadGetprio);
+    LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
 }
 
 } // namespace Libraries::Kernel

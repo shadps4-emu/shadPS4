@@ -9,6 +9,7 @@
 #include <set>
 #include <stack>
 #include "common/singleton.h"
+#include "common/slab_heap.h"
 #include "common/types.h"
 
 namespace Libraries::Kernel {
@@ -27,19 +28,25 @@ struct ThreadState {
     static constexpr size_t MaxThreads = 100000;
     static constexpr size_t MaxCachedThreads = 100;
 
+    explicit ThreadState();
+
     bool GcNeeded() const noexcept {
         return gc_list.size() >= GcThreshold;
     }
 
     void Collect(Pthread* curthread);
 
-    void TryCollect(Pthread* curthread, Pthread* thread);
+    void TryCollect(Pthread* thread);
 
     Pthread* Alloc(Pthread* curthread);
 
     void Free(Pthread* curthread, Pthread* thread);
 
     int FindThread(Pthread* thread, bool include_dead);
+
+    int RefAdd(Pthread* thread, bool include_dead);
+
+    void RefDelete(Pthread* thread);
 
     int CreateStack(PthreadAttr* attr);
 
@@ -61,6 +68,7 @@ struct ThreadState {
         active_threads.fetch_sub(1);
     }
 
+    Common::SlabHeap<Pthread> thread_heap;
     std::set<Pthread*> threads;
     std::list<Pthread*> free_threads;
     std::list<Pthread*> gc_list;

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <mutex>
 #include <vector>
+#include "core/libraries/kernel/thread_management.h"
 #include "core/module.h"
 
 namespace Core {
@@ -49,8 +50,6 @@ struct EntryParams {
     u32 padding;
     const char* argv[3];
     VAddr entry_addr;
-    ExitFunc exit_func;
-    Linker* linker;
 };
 
 struct HeapAPI {
@@ -141,6 +140,7 @@ private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
     MemoryManager* memory;
+    Libraries::Kernel::Thread main_thread;
     std::mutex mutex;
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};

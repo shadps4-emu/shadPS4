@@ -90,7 +90,7 @@ void _thread_cleanupspecific() {
             }
         }
     }
-    free(curthread->specific);
+    delete[] curthread->specific;
     curthread->specific = nullptr;
     ASSERT(curthread->specific_data_count == 0);
 }
@@ -100,8 +100,7 @@ int PS4_SYSV_ABI posix_pthread_setspecific(PthreadKeyT key, const void* value) {
     Pthread* pthread = g_curthread;
 
     if (!pthread->specific) {
-        pthread->specific =
-            (PthreadSpecificElem*)calloc(1, sizeof(PthreadSpecificElem) * PthreadKeysMax);
+        pthread->specific = new PthreadSpecificElem[PthreadKeysMax];
         if (!pthread->specific) {
             return POSIX_ENOMEM;
         }
