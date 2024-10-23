@@ -10,7 +10,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
 
 namespace Vulkan {
 class Rasterizer;

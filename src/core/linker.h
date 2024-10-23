@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <mutex>
 #include <vector>
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/module.h"
 
 namespace Core {

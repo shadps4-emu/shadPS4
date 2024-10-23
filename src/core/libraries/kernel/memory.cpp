@@ -9,7 +9,7 @@
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"

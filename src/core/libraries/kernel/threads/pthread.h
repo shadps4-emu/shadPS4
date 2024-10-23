@@ -4,7 +4,6 @@
 #pragma once
 
 #include <condition_variable>
-#include <deque>
 #include <forward_list>
 #include <mutex>
 #include <shared_mutex>
@@ -12,7 +11,7 @@
 #include <boost/thread/thread.hpp>
 
 #include "common/enum.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 #include "core/tls.h"
 
 namespace Core::Loader {
@@ -333,5 +332,6 @@ void RegisterSpec(Core::Loader::SymbolsResolver* sym);
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym);
 void RegisterThread(Core::Loader::SymbolsResolver* sym);
 void RegisterRtld(Core::Loader::SymbolsResolver* sym);
+void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

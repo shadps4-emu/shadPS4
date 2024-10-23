@@ -7,7 +7,7 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "core/address_space.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
 

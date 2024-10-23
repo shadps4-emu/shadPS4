@@ -6,7 +6,7 @@
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/cpu_patches.h"
-#include "core/libraries/kernel/threads/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/tls.h"
 
 #ifdef _WIN32

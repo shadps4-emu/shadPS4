@@ -9,7 +9,7 @@
 
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/threads.h"
 
 namespace Libraries::AvPlayer {
 
