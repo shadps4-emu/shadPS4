@@ -79,6 +79,8 @@ public:
         return m_modules.at(index).get();
     }
 
+    int GetNumberModules() const;
+
     void RelocateAnyImports(Module* m) {
         Relocate(m);
         for (auto& module : m_modules) {
