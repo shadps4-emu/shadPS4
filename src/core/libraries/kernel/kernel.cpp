@@ -13,11 +13,11 @@
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/cpu_management.h"
-#include "core/libraries/kernel/event_queues.h"
+#include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
@@ -67,11 +67,6 @@ static void KernelServiceThread(std::stop_token stoken) {
 
         asio_requests = 0;
     }
-}
-
-static void* PS4_SYSV_ABI sceKernelGetProcParam() {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
-    return reinterpret_cast<void*>(linker->GetProcParam());
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() {
@@ -277,10 +272,6 @@ int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     return 0;
 }
 
-int PS4_SYSV_ABI sceKernelGetCpumode() {
-    return 0;
-}
-
 void PS4_SYSV_ABI sched_yield() {
     return std::this_thread::yield();
 }
@@ -338,6 +329,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterKernelEventFlag(sym);
     Libraries::Kernel::RegisterMemory(sym);
     Libraries::Kernel::RegisterEventQueue(sym);
+    Libraries::Kernel::RegisterProcess(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
@@ -348,14 +340,10 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
     LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoForUnwind);
     LIB_FUNCTION("f7KBOafysXo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoFromAddr);
-    LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
-    LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, sceKernelIsNeoMode);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
-    LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
-    LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
     LIB_FUNCTION("k+AXqu2-eBc", "libkernel", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);

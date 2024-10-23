@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "core/libraries/kernel/event_queues.h"
+#include "core/libraries/kernel/equeue.h"
 #include "core/libraries/videoout/buffer.h"
 
 namespace Core::Loader {
