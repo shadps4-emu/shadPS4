@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-
+#include <sys/types.h>
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
