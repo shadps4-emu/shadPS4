@@ -5,10 +5,16 @@
 
 #include "common/types.h"
 
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
 namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelIsNeoMode();
 
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+
+void RegisterProcess(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

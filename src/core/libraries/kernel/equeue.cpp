@@ -5,7 +5,7 @@
 #include "common/debug.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/event_queues.h"
+#include "core/libraries/kernel/equeue.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
