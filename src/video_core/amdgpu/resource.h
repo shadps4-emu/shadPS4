@@ -296,7 +296,8 @@ struct Image {
     }
 
     bool IsFmask() const noexcept {
-        return GetDataFmt() >= DataFormat::FormatFmask8_1 && GetDataFmt() <= DataFormat::FormatFmask64_8;
+        return GetDataFmt() >= DataFormat::FormatFmask8_1 &&
+               GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
 
     bool IsPartialCubemap() const {

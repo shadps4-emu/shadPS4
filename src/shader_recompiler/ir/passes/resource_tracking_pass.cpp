@@ -719,12 +719,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             [[fallthrough]];
         case AmdGpu::ImageType::Color2D: // x, y
             [[fallthrough]];
-        case AmdGpu::ImageType::Color2DMsaa: //x, y. (sample is passed on different argument)
+        case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2), body->Arg(3)};
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3), body->Arg(4)};
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3),
+                    body->Arg(4)};
         case AmdGpu::ImageType::Cube: // x, y, face
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
                                    inst_info.is_array),
