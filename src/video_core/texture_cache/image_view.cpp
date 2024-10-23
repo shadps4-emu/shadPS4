@@ -80,7 +80,12 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
-    range.extent.levels = image.last_level - image.base_level + 1;
+    if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
+        image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
+        range.extent.levels = 1;
+    } else {
+        range.extent.levels = image.last_level - image.base_level + 1;
+    }
     range.extent.layers = image.last_array - image.base_array + 1;
     type = ConvertImageViewType(image.GetType());
 
