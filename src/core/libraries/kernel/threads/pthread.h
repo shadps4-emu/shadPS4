@@ -327,5 +327,6 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym);
 void RegisterThread(Core::Loader::SymbolsResolver* sym);
 void RegisterRtld(Core::Loader::SymbolsResolver* sym);
 void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym);
+void RegisterPthreadClean(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
