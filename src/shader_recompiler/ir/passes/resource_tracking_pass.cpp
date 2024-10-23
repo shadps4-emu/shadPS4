@@ -656,6 +656,32 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
+
+    // Patch image instruction if image is fmask.
+    if (image.IsFmask()) {
+        // Ignore fmask writes. TODO: handle dimension queries.
+        if (is_storage && inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
+            inst.Invalidate();
+            return;
+        }
+
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        switch (inst.GetOpcode()) {
+        case IR::Opcode::ImageFetch:
+        case IR::Opcode::ImageSampleRaw: {
+            IR::F32 fmaskx = ir.BitCast<IR::F32>(ir.Imm32(0x76543210));
+            IR::F32 fmasky = ir.BitCast<IR::F32>(ir.Imm32(0xfedcba98));
+            inst.ReplaceUsesWith(ir.CompositeConstruct(fmaskx, fmasky));
+            return;
+        }
+        case IR::Opcode::ImageQueryLod:
+            inst.ReplaceUsesWith(ir.Imm32(1));
+            return;
+        default:
+            UNREACHABLE_MSG("Can't patch fmask instruction {}", inst.GetOpcode());
+        }
+    }
+
     const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
