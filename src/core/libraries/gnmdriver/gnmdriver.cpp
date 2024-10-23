@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include "gnm_error.h"
 #include "gnmdriver.h"
 
@@ -8,7 +8,6 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
-#include "common/path_util.h"
 #include "common/slot_vector.h"
 #include "core/address_space.h"
 #include "core/debug_state.h"

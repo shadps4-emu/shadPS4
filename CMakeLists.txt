@@ -208,10 +208,9 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/event_flag/event_flag.cpp
-               src/core/libraries/kernel/event_flag/event_flag.h
-               src/core/libraries/kernel/event_flag/event_flag_obj.cpp
-               src/core/libraries/kernel/event_flag/event_flag_obj.h
+set(KERNEL_LIB
+               src/core/libraries/kernel/threads/event_flag.cpp
+               src/core/libraries/kernel/threads/event_flag.h
                src/core/libraries/kernel/threads/thr_attr.cpp
                src/core/libraries/kernel/threads/thr_cond.cpp
                src/core/libraries/kernel/threads/thr_create.cpp
@@ -220,16 +219,19 @@ set(KERNEL_LIB src/core/libraries/kernel/event_flag/event_flag.cpp
                src/core/libraries/kernel/threads/thr_rwlock.cpp
                src/core/libraries/kernel/threads/thr_sem.cpp
                src/core/libraries/kernel/threads/thr_spec.cpp
+               src/core/libraries/kernel/threads/thr_stack.cpp
+               src/core/libraries/kernel/threads/thr_clean.cpp
+               src/core/libraries/kernel/threads/thread_state.cpp
+               src/core/libraries/kernel/threads/thread_state.h
+               src/core/libraries/kernel/threads/thr_ctrdtr.cpp
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
-               src/core/libraries/kernel/event_queue.cpp
-               src/core/libraries/kernel/event_queue.h
                src/core/libraries/kernel/event_queues.cpp
                src/core/libraries/kernel/event_queues.h
                src/core/libraries/kernel/file_system.cpp
                src/core/libraries/kernel/file_system.h
-               src/core/libraries/kernel/libkernel.cpp
-               src/core/libraries/kernel/libkernel.h
+               src/core/libraries/kernel/kernel.cpp
+               src/core/libraries/kernel/kernel.h
                src/core/libraries/kernel/memory_management.cpp
                src/core/libraries/kernel/memory_management.h
                src/core/libraries/kernel/thread_management.cpp
@@ -457,7 +459,10 @@ set(COMMON src/common/logging/backend.cpp
            src/common/signal_context.h
            src/common/signal_context.cpp
            src/common/singleton.h
+           src/common/slab_heap.h
            src/common/slot_vector.h
+           src/common/spin_lock.cpp
+           src/common/spin_lock.h
            src/common/string_util.cpp
            src/common/string_util.h
            src/common/thread.cpp
@@ -816,14 +821,6 @@ else()
         src/emulator.h
         src/sdl_window.h
         src/sdl_window.cpp
-        src/core/libraries/kernel/threads/thr_stack.cpp
-        src/core/libraries/kernel/threads/thr_exit.cpp
-        src/core/libraries/kernel/threads/thr_clean.cpp
-        src/core/libraries/kernel/threads/thread_state.h src/core/libraries/kernel/threads/thread_state.cpp
-        src/core/libraries/kernel/threads/thr_ctrdtr.cpp
-        src/common/slab_heap.h
-        src/common/spin_lock.cpp
-        src/common/spin_lock.h
     )
 endif()
 
