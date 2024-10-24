@@ -16,11 +16,11 @@ using namespace Kernel;
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
-int PS4_SYSV_ABI sceGnmBeginWorkload(uint param_1, ulong* param_2);
+int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload);
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
                                             u32 cmp_func, u32 ref);
 int PS4_SYSV_ABI sceGnmComputeWaitSemaphore();
-int PS4_SYSV_ABI sceGnmCreateWorkloadStream();
+int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream);
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerHaltWavefront();
 int PS4_SYSV_ABI sceGnmDebuggerReadGds();
@@ -74,7 +74,7 @@ int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation();
 int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery();
 int PS4_SYSV_ABI sceGnmDriverTraceInProgress();
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture();
-int PS4_SYSV_ABI sceGnmEndWorkload(long param_1);
+int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload);
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic();
 void PS4_SYSV_ABI sceGnmFlushGarlic();
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress();
@@ -207,7 +207,9 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg);
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload();
+int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
+    u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
+    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, u32 flip_arg);
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes);
