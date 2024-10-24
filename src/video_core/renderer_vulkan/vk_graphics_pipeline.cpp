@@ -60,7 +60,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             }
 
             const auto buffer =
-                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -326,6 +326,15 @@ void GraphicsPipeline::BuildDescSetLayout() {
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
+        }
+
+        if (stage->has_readconst) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1,
+                .stageFlags = gp_stage_flags,
+            });
         }
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(*stage);

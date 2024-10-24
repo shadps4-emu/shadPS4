@@ -25,6 +25,15 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+
+    if (info->has_readconst) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     for (const auto& buffer : info->buffers) {
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({

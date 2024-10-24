@@ -8,6 +8,7 @@
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/passes/srt.h"
 
 namespace Shader {
 
@@ -52,6 +53,9 @@ struct StageSpecialization {
                                  Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         u32 binding{};
+        if (info->has_readconst) {
+            binding++;
+        }
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
@@ -90,6 +94,12 @@ struct StageSpecialization {
             return false;
         }
         u32 binding{};
+        if (info->has_readconst != other.info->has_readconst) {
+            return false;
+        }
+        if (info->has_readconst) {
+            binding++;
+        }
         for (u32 i = 0; i < buffers.size(); i++) {
             if (other.bitset[binding++] && buffers[i] != other.buffers[i]) {
                 return false;
