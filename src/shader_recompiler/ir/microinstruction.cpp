@@ -147,7 +147,7 @@ void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
 }
 
 void Inst::Invalidate() {
-    ASSERT(uses.empty());
+    ASSERT(users.list.empty());
     ClearArgs();
     ReplaceOpcode(Opcode::Void);
 }
@@ -175,13 +175,52 @@ void Inst::ClearArgs() {
     }
 }
 
+UseIterator Inst::UserList::UseBegin() {
+    return UseIterator(list.begin(), list.end());
+}
+
+UseIterator Inst::UserList::UseEnd() {
+    return UseIterator(list.end(), list.end());
+}
+
+boost::iterator_range<UseIterator> Inst::UserList::Uses() {
+    return boost::make_iterator_range(UseBegin(), UseEnd());
+}
+
+void Inst::UserList::AddUse(IR::Inst* user, u32 operand) {
+    DEBUG_ASSERT(operand < 31);
+    auto it = std::find_if(list.begin(), list.end(),
+                           [&](const UserNode& user_node) { return user_node.user == user; });
+    u32 operand_pos = 1 << operand;
+    if (it == list.end()) {
+        list.emplace_front(user, operand_pos);
+    } else {
+        DEBUG_ASSERT((it->operand_mask & operand_pos) == 0);
+        it->operand_mask |= operand_pos;
+    }
+    ++num_uses;
+}
+
+void Inst::UserList::RemoveUse(IR::Inst* user, u32 operand) {
+    auto it = std::find_if(list.begin(), list.end(),
+                           [&](const UserNode& user_node) { return user_node.user == user; });
+    DEBUG_ASSERT(it != list.end());
+    u32 operand_pos = 1 << operand;
+    DEBUG_ASSERT((it->operand_mask & operand_pos) != 0);
+    it->operand_mask &= ~operand_pos;
+    if (it->operand_mask == 0) {
+        list.erase(it);
+    }
+    --num_uses;
+}
+
 void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
     // Copy since user->SetArg will mutate this->uses
     // Could also do temp_uses = std::move(uses) but more readable
-    boost::container::list<IR::Use> temp_uses = uses;
-    for (auto& [user, operand] : temp_uses) {
-        DEBUG_ASSERT(user->Arg(operand).Inst() == this);
-        user->SetArg(operand, replacement);
+    UserList temp_users = users;
+    for (IR::Use use : temp_users.Uses()) {
+        DEBUG_ASSERT(use.user->Arg(use.operand).Inst() == this);
+        use.user->SetArg(use.operand, replacement);
     }
     Invalidate();
     if (preserve) {
@@ -205,14 +244,23 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
 }
 
 void Inst::Use(Inst* used, u32 operand) {
-    DEBUG_ASSERT(0 == std::count(used->uses.begin(), used->uses.end(), IR::Use(this, operand)));
-    used->uses.emplace_front(this, operand);
+    used->users.AddUse(this, operand);
 }
 
 void Inst::UndoUse(Inst* used, u32 operand) {
-    IR::Use use(this, operand);
-    DEBUG_ASSERT(1 == std::count(used->uses.begin(), used->uses.end(), use));
-    used->uses.remove(use);
+    used->users.RemoveUse(this, operand);
+}
+
+UseIterator Inst::UseBegin() {
+    return users.UseBegin();
+}
+
+UseIterator Inst::UseEnd() {
+    return users.UseEnd();
+}
+
+boost::iterator_range<UseIterator> Inst::Uses() {
+    return boost::make_iterator_range(UseBegin(), UseEnd());
 }
 
 } // namespace Shader::IR

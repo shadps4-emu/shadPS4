@@ -110,12 +110,9 @@ public:
 struct Use {
     Inst* user;
     u32 operand;
-
-    Use() = default;
-    Use(Inst* user_, u32 operand_) : user(user_), operand(operand_) {}
-    Use(const Use&) = default;
-    bool operator==(const Use&) const noexcept = default;
 };
+
+class UseIterator;
 
 class Inst : public boost::intrusive::list_base_hook<> {
 public:
@@ -130,12 +127,12 @@ public:
 
     /// Get the number of uses this instruction has.
     [[nodiscard]] int UseCount() const noexcept {
-        return uses.size();
+        return users.num_uses;
     }
 
     /// Determines whether this instruction has uses or not.
     [[nodiscard]] bool HasUses() const noexcept {
-        return uses.size() > 0;
+        return users.num_uses > 0;
     }
 
     /// Get the opcode this microinstruction represents.
@@ -213,20 +210,22 @@ public:
         return std::bit_cast<DefinitionType>(definition);
     }
 
-    auto users() {
+    auto Users() {
+        return boost::adaptors::transform(users.list,
+                                          [](UserList::UserNode& user) { return user.user; });
+    }
+
+    const auto Users() const {
         return boost::adaptors::transform(
-            boost::unique(uses,
-                          [](const IR::Use& a, const IR::Use& b) { return a.user == b.user; }),
-            [](const IR::Use& use) { return use.user; });
+            users.list,
+            [](const UserList::UserNode& user) -> const IR::Inst* { return user.user; });
     }
 
-    auto user_begin() {
-        return users().begin();
-    }
+    UseIterator UseBegin();
+    UseIterator UseEnd();
 
-    auto user_end() {
-        return users().end();
-    }
+    boost::iterator_range<UseIterator> Uses();
+    const boost::iterator_range<const UseIterator> Uses() const;
 
 private:
     struct NonTriviallyDummy {
@@ -246,9 +245,73 @@ private:
         std::array<Value, 6> args;
     };
 
-    boost::container::list<IR::Use> uses;
+    struct UserList {
+        struct UserNode {
+            IR::Inst* user;
+            u32 operand_mask;
+        };
+
+        boost::container::list<UserNode> list;
+        using UserIterator = boost::container::list<UserNode>::iterator;
+        u32 num_uses{};
+
+        void AddUse(IR::Inst* user, u32 operand);
+        void RemoveUse(IR::Inst* user, u32 operand);
+
+        UseIterator UseBegin();
+        UseIterator UseEnd();
+        boost::iterator_range<UseIterator> Uses();
+    } users;
+
+    friend class UseIterator;
 };
-static_assert(sizeof(Inst) <= 152, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 160, "Inst size unintentionally increased");
+
+class UseIterator
+    : public boost::iterator_facade<UseIterator, IR::Use, boost::forward_traversal_tag, IR::Use> {
+public:
+    UseIterator() : user_it(), user_end(), bitmask_pos(0) {};
+
+    explicit UseIterator(IR::Inst::UserList::UserIterator user_begin_,
+                         IR::Inst::UserList::UserIterator user_end_)
+        : user_it(user_begin_), user_end(user_end_), bitmask_pos(0) {
+        if (user_it != user_end) {
+            bitmask_pos = std::countr_zero(user_it->operand_mask);
+            DEBUG_ASSERT(user_it->operand_mask != 0);
+        }
+    };
+
+private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        // Assumes inst has less than 31 operands
+        u32 mask = 1 << (bitmask_pos + 1);
+        u32 use_mask = user_it->operand_mask & ~(mask - 1);
+        if (use_mask == 0) {
+            ++user_it;
+            if (user_it == user_end) {
+                bitmask_pos = 0;
+                return;
+            }
+            use_mask = user_it->operand_mask;
+            ASSERT(use_mask != 0);
+        }
+        bitmask_pos = std::countr_zero(use_mask);
+    };
+
+    bool equal(UseIterator const& other) const {
+        return user_it == other.user_it && bitmask_pos == other.bitmask_pos;
+    };
+
+    IR::Use dereference() const {
+        return IR::Use(user_it->user, bitmask_pos);
+    };
+
+    IR::Inst::UserList::UserIterator user_it;
+    IR::Inst::UserList::UserIterator user_end;
+    u32 bitmask_pos;
+}; // class UseIterator
 
 using U1 = TypedValue<Type::U1>;
 using U8 = TypedValue<Type::U8>;
