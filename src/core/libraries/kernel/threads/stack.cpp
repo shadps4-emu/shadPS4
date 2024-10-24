@@ -105,8 +105,10 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
                                 Core::MemoryMapFlags::NoFlags, Core::VMAType::Stack);
     ASSERT_MSG(ret == 0, "Unable to map stack memory");
 
-    ret = memory->Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
-    ASSERT_MSG(ret == 0, "Unable to protect guard page");
+    if (guardsize != 0) {
+        ret = memory->Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
+        ASSERT_MSG(ret == 0, "Unable to protect guard page");
+    }
 
     stackaddr += guardsize;
     attr->stackaddr_attr = (void*)stackaddr;

@@ -18,7 +18,7 @@ int PS4_SYSV_ABI posix_pthread_attr_init(PthreadAttrT* attr);
 int PS4_SYSV_ABI posix_pthread_attr_destroy(PthreadAttrT* attr);
 
 int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr,
-                                      PthreadEntryFunc start_routine, void* arg);
+                                      void* start_routine, void* arg);
 
 int PS4_SYSV_ABI posix_pthread_join(PthreadT pthread, void** thread_return);
 
@@ -35,7 +35,8 @@ public:
         this->func = std::move(func);
         PthreadAttrT attr{};
         posix_pthread_attr_init(&attr);
-        posix_pthread_create(&thread, &attr, RunWrapper, this);
+        attr->is_host_entry = true;
+        posix_pthread_create(&thread, &attr, (void*)RunWrapper, this);
         posix_pthread_attr_destroy(&attr);
     }
 

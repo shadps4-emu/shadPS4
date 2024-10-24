@@ -10,6 +10,7 @@ void PS4_SYSV_ABI __pthread_cleanup_push_imp(PthreadCleanupFunc routine, void* a
     newbuf->routine = routine;
     newbuf->routine_arg = arg;
     newbuf->onheap = 0;
+    newbuf->is_host = false;
     g_curthread->cleanup.push_front(newbuf);
 }
 
@@ -23,6 +24,7 @@ void PS4_SYSV_ABI posix_pthread_cleanup_push(PthreadCleanupFunc routine, void* a
     newbuf->routine = routine;
     newbuf->routine_arg = arg;
     newbuf->onheap = 1;
+    newbuf->is_host = false;
     curthread->cleanup.push_front(newbuf);
 }
 
@@ -32,7 +34,11 @@ void PS4_SYSV_ABI posix_pthread_cleanup_pop(int execute) {
         PthreadCleanup* old = curthread->cleanup.front();
         curthread->cleanup.pop_front();
         if (execute) {
-            old->routine(old->routine_arg);
+            if (old->is_host) {
+                old->routine(old->routine_arg);
+            } else {
+                Core::ExecuteGuest(old->routine, old->routine_arg);
+            }
         }
         if (old->onheap) {
             delete old;

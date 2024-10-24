@@ -114,10 +114,10 @@ public:
                 return;
             }
             // Retrieve calling thread priority for sorting into waiting threads list.
-            s32 policy;
-            sched_param param;
-            pthread_getschedparam(pthread_self(), &policy, &param);
-            priority = param.sched_priority;
+            //s32 policy;
+            //sched_param param;
+            //pthread_getschedparam(pthread_self(), &policy, &param);
+            //priority = param.sched_priority;
         }
 
         int GetResult(bool timed_out) {

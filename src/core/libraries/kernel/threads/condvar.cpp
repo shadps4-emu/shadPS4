@@ -203,7 +203,7 @@ int PS4_SYSV_ABI posix_pthread_condattr_getpshared(const PthreadCondAttrT* attr,
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
-    *pshared = PTHREAD_PROCESS_PRIVATE;
+    *pshared = SHAD_PTHREAD_PROCESS_PRIVATE;
     return 0;
 }
 
@@ -211,7 +211,7 @@ int PS4_SYSV_ABI posix_pthread_condattr_setpshared(PthreadCondAttrT* attr, int p
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
-    if (pshared != PTHREAD_PROCESS_PRIVATE) {
+    if (pshared != SHAD_PTHREAD_PROCESS_PRIVATE) {
         return POSIX_EINVAL;
     }
     return 0;
