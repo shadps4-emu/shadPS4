@@ -376,9 +376,12 @@ int PS4_SYSV_ABI sceGnmAreSubmitsAllowed() {
     return submission_lock == 0;
 }
 
-int PS4_SYSV_ABI sceGnmBeginWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmBeginWorkload(uint param_1, ulong* param_2) {
+    if (param_2 != (ulong*)0x0) {
+        *param_2 = (ulong)(-(uint)(param_1 < 0x10) & 1);
+        return 0xf < param_1;
+    }
+    return (bool)3;
 }
 
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
@@ -951,9 +954,11 @@ int PS4_SYSV_ABI sceGnmDriverTriggerCapture() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmEndWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmEndWorkload(long param_1) {
+    if (param_1 != 0) {
+        return (0xf < (u8)((ulong)param_1 >> 0x38)) * 2;
+    }
+    return 2;
 }
 
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic() {

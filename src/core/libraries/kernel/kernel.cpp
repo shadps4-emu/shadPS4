@@ -19,6 +19,7 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
@@ -153,17 +154,17 @@ void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
     info->getSegmentInfo = 0;
 }
 
-s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes) {
+s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
     if (d <= 2) { // stdin,stdout,stderr
-        char* str = strdup((const char*)buf);
-        if (str[nbytes - 1] == '\n')
-            str[nbytes - 1] = 0;
+        std::string_view str{buf};
+        if (str[nbytes - 1] == '\n') {
+            str = str.substr(0, nbytes - 1);
+        }
         LOG_INFO(Tty, "{}", str);
-        free(str);
         return nbytes;
     }
     LOG_ERROR(Kernel, "(STUBBED) called d = {} nbytes = {} ", d, nbytes);
-    UNREACHABLE(); // normal write , is it a posix call??
+    UNREACHABLE();
     return ORBIS_OK;
 }
 
@@ -330,6 +331,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterMemory(sym);
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
+    Libraries::Kernel::RegisterException(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);

@@ -6,7 +6,8 @@
 
 namespace Libraries::Kernel {
 
-void PS4_SYSV_ABI __pthread_cleanup_push_imp(PthreadCleanupFunc routine, void* arg, PthreadCleanup* newbuf) {
+void PS4_SYSV_ABI __pthread_cleanup_push_imp(PthreadCleanupFunc routine, void* arg,
+                                             PthreadCleanup* newbuf) {
     newbuf->routine = routine;
     newbuf->routine_arg = arg;
     newbuf->onheap = 0;

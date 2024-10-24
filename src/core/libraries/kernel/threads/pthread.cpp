@@ -281,12 +281,11 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
-    pthread_t pthr;
+    pthread_t* pthr = reinterpret_cast<pthread_t*>(&new_thread->native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
-    // pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr,
-    // new_thread->attr.stacksize_attr);
-    int ret = pthread_create(&pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
+    pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr, new_thread->attr.stacksize_attr);
+    int ret = pthread_create(pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;
@@ -301,6 +300,11 @@ int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr
 
 int PS4_SYSV_ABI posix_pthread_getthreadid_np() {
     return g_curthread->tid;
+}
+
+int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
+    std::memcpy(name, thread->name.data(), std::min(thread->name.size(), 32UL));
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_equal(PthreadT thread1, PthreadT thread2) {
@@ -417,13 +421,42 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     return 0;
 }
 
-int sceNpWebApiTerminate() {
+enum class PthreadCancelState : u32 {
+    Enable = 0,
+    Disable = 1,
+};
+
+#define POSIX_PTHREAD_CANCELED ((void*)1)
+
+static inline void TestCancel(Pthread* curthread) {
+    if (curthread->ShouldCancel() && !curthread->InCritical()) [[unlikely]] {
+        posix_pthread_exit(POSIX_PTHREAD_CANCELED);
+    }
+}
+
+int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
+                                              PthreadCancelState* oldstate) {
+    Pthread* curthread = g_curthread;
+    int oldval = curthread->cancel_enable;
+    switch (state) {
+    case PthreadCancelState::Disable:
+        curthread->cancel_enable = 0;
+        break;
+    case PthreadCancelState::Enable:
+        curthread->cancel_enable = 1;
+        TestCancel(curthread);
+        break;
+    default:
+        return POSIX_EINVAL;
+    }
+
+    if (oldstate) {
+        *oldstate = oldval ? PthreadCancelState::Enable : PthreadCancelState::Disable;
+    }
     return 0;
 }
 
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("asz3TtIqGF8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiTerminate);
-
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);
@@ -436,6 +469,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("h9CcP3J0oVM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_join);
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
+    LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
 
     // Posix-Kernel
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
@@ -448,6 +482,9 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_create_name_np));
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_detach));
     LIB_FUNCTION("onNY9Byn-W8", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_join));
+    LIB_FUNCTION("P41kTWUS3EI", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(posix_pthread_getschedparam));
+    LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_equal);

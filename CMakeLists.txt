@@ -210,6 +210,8 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
 
 set(KERNEL_LIB src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
+               src/core/libraries/kernel/threads/exception.cpp
+               src/core/libraries/kernel/threads/exception.h
                src/core/libraries/kernel/threads/mutex.cpp
                src/core/libraries/kernel/threads/pthread_attr.cpp
                src/core/libraries/kernel/threads/pthread_clean.cpp
