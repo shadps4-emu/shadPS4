@@ -15,7 +15,7 @@
 
 namespace Libraries::Fiber {
 
-constexpr static u64 kFiberSignature = 0x054ad954;
+static constexpr u64 kFiberSignature = 0x054ad954;
 
 thread_local SceFiber* gCurrentFiber = nullptr;
 thread_local void* gFiberThread = nullptr;
