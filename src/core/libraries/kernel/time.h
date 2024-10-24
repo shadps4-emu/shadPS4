@@ -33,7 +33,8 @@ struct OrbisKernelTimespec {
 
     std::chrono::system_clock::time_point TimePoint() const noexcept {
         using namespace std::chrono;
-        const auto duration = seconds{tv_sec} + nanoseconds{tv_nsec};
+        const auto duration =
+            duration_cast<system_clock::duration>(seconds{tv_sec} + nanoseconds{tv_nsec});
         return system_clock::time_point{duration};
     }
 };
