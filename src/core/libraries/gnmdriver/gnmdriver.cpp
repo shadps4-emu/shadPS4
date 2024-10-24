@@ -374,12 +374,12 @@ int PS4_SYSV_ABI sceGnmAreSubmitsAllowed() {
     return submission_lock == 0;
 }
 
-int PS4_SYSV_ABI sceGnmBeginWorkload(uint param_1, ulong* param_2) {
-    if (param_2 != (ulong*)0x0) {
-        *param_2 = (ulong)(-(uint)(param_1 < 0x10) & 1);
-        return 0xf < param_1;
+int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload) {
+    if (workload) {
+        *workload = (-(u32)(workload_stream < 0x10) & 1);
+        return 0xf < workload_stream;
     }
-    return (bool)3;
+    return 3;
 }
 
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
@@ -413,9 +413,12 @@ int PS4_SYSV_ABI sceGnmComputeWaitSemaphore() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmCreateWorkloadStream() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream) {
+    if (param1 != 0 && workload_stream) {
+        *workload_stream = 1;
+        return 0;
+    }
+    return 3;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch() {
@@ -919,9 +922,9 @@ int PS4_SYSV_ABI sceGnmDriverTriggerCapture() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmEndWorkload(long param_1) {
-    if (param_1 != 0) {
-        return (0xf < (u8)((ulong)param_1 >> 0x38)) * 2;
+int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload) {
+    if (workload != 0) {
+        return (0xf < ((workload >> 0x38) & 0xff)) * 2;
     }
     return 2;
 }
@@ -2093,6 +2096,14 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg) {
+    return sceGnmSubmitAndFlipCommandBuffersForWorkload(
+        count, count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs, ccb_sizes_in_bytes,
+        vo_handle, buf_idx, flip_mode, flip_arg);
+}
+
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
+    u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
+    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, u32 flip_arg) {
     LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
     auto* cmdbuf = dcb_gpu_addrs[count - 1];
@@ -2107,11 +2118,6 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
     return sceGnmSubmitCommandBuffers(count, const_cast<const u32**>(dcb_gpu_addrs),
                                       dcb_sizes_in_bytes, const_cast<const u32**>(ccb_gpu_addrs),
                                       ccb_sizes_in_bytes);
-}
-
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
