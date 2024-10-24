@@ -4,6 +4,7 @@
 #pragma once
 
 #include <functional>
+#include "common/polyfill_thread.h"
 #include "core/libraries/kernel/threads/pthread.h"
 
 namespace Core::Loader {

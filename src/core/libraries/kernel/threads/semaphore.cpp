@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
+#include <semaphore>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"

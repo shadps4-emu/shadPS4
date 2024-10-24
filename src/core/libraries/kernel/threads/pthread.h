@@ -7,6 +7,7 @@
 #include <forward_list>
 #include <list>
 #include <mutex>
+#include <semaphore>
 #include <shared_mutex>
 #include <boost/intrusive/list.hpp>
 

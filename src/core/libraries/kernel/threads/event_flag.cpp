@@ -3,6 +3,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
