@@ -25,7 +25,7 @@ void LowerSharedMemToRegisters(IR::Program& program) {
                 });
                 ASSERT(it != ds_writes.end());
                 // Replace data read with value written.
-                inst.ReplaceUsesWith((*it)->Arg(1));
+                inst.ReplaceUsesWithAndRemove((*it)->Arg(1));
             }
         }
     }

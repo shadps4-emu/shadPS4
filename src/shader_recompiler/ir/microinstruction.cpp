@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <any>
 #include <memory>
 
 #include "shader_recompiler/exception.h"
@@ -116,10 +117,10 @@ void Inst::SetArg(size_t index, Value value) {
     }
     const IR::Value arg{Arg(index)};
     if (!arg.IsImmediate()) {
-        UndoUse(arg);
+        UndoUse(arg.Inst(), index);
     }
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), index);
     }
     if (op == Opcode::Phi) {
         phi_args[index].second = value;
@@ -140,29 +141,32 @@ Block* Inst::PhiBlock(size_t index) const {
 
 void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), phi_args.size());
     }
     phi_args.emplace_back(predecessor, value);
 }
 
 void Inst::Invalidate() {
+    ASSERT(users.list.empty());
     ClearArgs();
     ReplaceOpcode(Opcode::Void);
 }
 
 void Inst::ClearArgs() {
     if (op == Opcode::Phi) {
-        for (auto& pair : phi_args) {
+        for (auto i = 0; i < phi_args.size(); i++) {
+            auto& pair = phi_args[i];
             IR::Value& value{pair.second};
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst(), i);
             }
         }
         phi_args.clear();
     } else {
-        for (auto& value : args) {
+        for (auto i = 0; i < args.size(); i++) {
+            auto& value = args[i];
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst(), i);
             }
         }
         // Reset arguments to null
@@ -171,13 +175,60 @@ void Inst::ClearArgs() {
     }
 }
 
-void Inst::ReplaceUsesWith(Value replacement) {
-    Invalidate();
-    ReplaceOpcode(Opcode::Identity);
-    if (!replacement.IsImmediate()) {
-        Use(replacement);
+UseIterator Inst::UserList::UseBegin() {
+    return UseIterator(list.begin(), list.end());
+}
+
+UseIterator Inst::UserList::UseEnd() {
+    return UseIterator(list.end(), list.end());
+}
+
+boost::iterator_range<UseIterator> Inst::UserList::Uses() {
+    return boost::make_iterator_range(UseBegin(), UseEnd());
+}
+
+void Inst::UserList::AddUse(IR::Inst* user, u32 operand) {
+    DEBUG_ASSERT(operand < 31);
+    auto it = std::find_if(list.begin(), list.end(),
+                           [&](const UserNode& user_node) { return user_node.user == user; });
+    u32 operand_pos = 1 << operand;
+    if (it == list.end()) {
+        list.emplace_front(user, operand_pos);
+    } else {
+        DEBUG_ASSERT((it->operand_mask & operand_pos) == 0);
+        it->operand_mask |= operand_pos;
     }
-    args[0] = replacement;
+    ++num_uses;
+}
+
+void Inst::UserList::RemoveUse(IR::Inst* user, u32 operand) {
+    auto it = std::find_if(list.begin(), list.end(),
+                           [&](const UserNode& user_node) { return user_node.user == user; });
+    DEBUG_ASSERT(it != list.end());
+    u32 operand_pos = 1 << operand;
+    DEBUG_ASSERT((it->operand_mask & operand_pos) != 0);
+    it->operand_mask &= ~operand_pos;
+    if (it->operand_mask == 0) {
+        list.erase(it);
+    }
+    --num_uses;
+}
+
+void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
+    // Copy since user->SetArg will mutate this->uses
+    // Could also do temp_uses = std::move(uses) but more readable
+    UserList temp_users = users;
+    for (IR::Use use : temp_users.Uses()) {
+        DEBUG_ASSERT(use.user->Arg(use.operand).Inst() == this);
+        use.user->SetArg(use.operand, replacement);
+    }
+    Invalidate();
+    if (preserve) {
+        // Still useful to have Identity for indirection.
+        // SSA pass would be more complicated without it
+        ReplaceOpcode(Opcode::Identity);
+        SetArg(0, replacement);
+    }
 }
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {
@@ -192,14 +243,24 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
     op = opcode;
 }
 
-void Inst::Use(const Value& value) {
-    Inst* const inst{value.Inst()};
-    ++inst->use_count;
+void Inst::Use(Inst* used, u32 operand) {
+    used->users.AddUse(this, operand);
 }
 
-void Inst::UndoUse(const Value& value) {
-    Inst* const inst{value.Inst()};
-    --inst->use_count;
+void Inst::UndoUse(Inst* used, u32 operand) {
+    used->users.RemoveUse(this, operand);
+}
+
+UseIterator Inst::UseBegin() {
+    return users.UseBegin();
+}
+
+UseIterator Inst::UseEnd() {
+    return users.UseEnd();
+}
+
+boost::iterator_range<UseIterator> Inst::Uses() {
+    return boost::make_iterator_range(UseBegin(), UseEnd());
 }
 
 } // namespace Shader::IR
