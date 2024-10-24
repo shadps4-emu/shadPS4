@@ -262,7 +262,8 @@ struct AddressSpace::Impl {
         }
 
         // Use assert to ensure success in debug builds
-        DEBUG_ASSERT(success && "Failed to change virtual memory protection");
+        //DEBUG_ASSERT(success && "Failed to change virtual memory protection");
+        ASSERT_MSG(success, "Failed to change virtual memory protection: {}", Common::GetLastErrorMsg());
     }
 
     HANDLE process{};

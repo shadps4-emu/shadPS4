@@ -85,7 +85,11 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
     while (!curthread->cleanup.empty()) {
         PthreadCleanup* old = curthread->cleanup.front();
         curthread->cleanup.pop_front();
-        old->routine(old->routine_arg);
+        if (old->is_host) {
+            old->routine(old->routine_arg);
+        } else {
+            Core::ExecuteGuest(old->routine, old->routine_arg);
+        }
         if (old->onheap) {
             delete old;
         }
@@ -133,7 +137,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
         pthread->joiner = nullptr;
     };
 
-    PthreadCleanup cup{backout_join, pthread, 0};
+    PthreadCleanup cup{nullptr, backout_join, pthread, true};
     curthread->cleanup.push_front(&cup);
 
     //_thr_cancel_enter(curthread);
@@ -207,7 +211,12 @@ static void RunThread(Pthread* curthread) {
     DebugState.AddCurrentThreadToGuestList();
 
     /* Run the current thread's start routine with argument: */
-    void* ret = Core::ExecuteGuest(curthread->start_routine, curthread->arg);
+    void* ret = nullptr;
+    if (curthread->attr.is_host_entry) {
+        curthread->host_routine(curthread->arg);
+    } else {
+        Core::ExecuteGuest(curthread->start_routine, curthread->arg);
+    }
 
     /* Remove thread from tracking */
     DebugState.RemoveCurrentThreadFromGuestList();
@@ -215,13 +224,17 @@ static void RunThread(Pthread* curthread) {
 }
 
 int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAttrT* attr,
-                                              PthreadEntryFunc start_routine, void* arg,
+                                              void* start_routine, void* arg,
                                               const char* name) {
     Pthread* curthread = g_curthread;
     auto* thread_state = ThrState::Instance();
     Pthread* new_thread = thread_state->Alloc(curthread);
     if (new_thread == nullptr) {
         return POSIX_EAGAIN;
+    }
+
+    if (curthread == nullptr) {
+        curthread = new_thread;
     }
 
     if (attr == nullptr || *attr == nullptr) {
@@ -254,12 +267,18 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
      * to help identify valid ones:
      */
     new_thread->magic = Pthread::ThrMagic;
-    new_thread->start_routine = start_routine;
+    new_thread->start_routine = (PthreadEntryFunc)start_routine;
     new_thread->arg = arg;
     new_thread->cancel_enable = 1;
     new_thread->cancel_async = 0;
     static std::atomic<int> counter = 0;
     new_thread->name = fmt::format("NoName{}", counter++);
+
+    if (new_thread->attr.is_host_entry) {
+        PthreadEntryHostFunc entry = reinterpret_cast<PthreadEntryHostFunc>(start_routine);
+        new_thread->host_routine = entry;
+        new_thread->start_routine = nullptr;
+    }
 
     auto* memory = Core::Memory::Instance();
     if (name && memory->IsValidAddress(name)) {
@@ -286,7 +305,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     pthread_attr_init(&pattr);
     // pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr,
     // new_thread->attr.stacksize_attr);
-    int ret = pthread_create(&pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
+    int ret = pthread_create(&pthr, &pattr, (PthreadEntryHostFunc)RunThread, new_thread);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;
@@ -295,7 +314,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
 }
 
 int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr,
-                                      PthreadEntryFunc start_routine, void* arg) {
+                                      void* start_routine, void* arg) {
     return posix_pthread_create_name_np(thread, attr, start_routine, arg, nullptr);
 }
 
@@ -350,7 +369,7 @@ int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control, void (*init_routi
         once_control->state.notify_all();
     };
 
-    PthreadCleanup cup{once_cancel_handler, once_control, 0};
+    PthreadCleanup cup{nullptr, once_cancel_handler, once_control, 0, true};
     g_curthread->cleanup.push_front(&cup);
     init_routine();
     g_curthread->cleanup.pop_front();
@@ -417,13 +436,7 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     return 0;
 }
 
-int sceNpWebApiTerminate() {
-    return 0;
-}
-
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("asz3TtIqGF8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiTerminate);
-
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);

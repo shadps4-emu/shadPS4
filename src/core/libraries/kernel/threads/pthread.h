@@ -23,6 +23,9 @@ namespace Libraries::Kernel {
 
 struct Pthread;
 
+#define SHAD_PTHREAD_PROCESS_PRIVATE (0)
+#define	SHAD_PTHREAD_INHERIT_SCHED (4)
+
 using ListBaseHook =
     boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
@@ -44,6 +47,10 @@ enum class PthreadMutexProt : u32 {
     None = 0,
     Inherit = 1,
     Protect = 2,
+};
+
+struct PthreadSchedParam {
+    int sched_priority;
 };
 
 struct PthreadMutex : public ListBaseHook {
@@ -129,11 +136,14 @@ struct PthreadCondAttr {
 using PthreadCondAttrT = PthreadCondAttr*;
 
 using PthreadCleanupFunc = void PS4_SYSV_ABI (*)(void*);
+using PthreadCleanupHostFunc = void (*)(void*);
 
 struct PthreadCleanup {
     PthreadCleanupFunc routine;
+    PthreadCleanupHostFunc host_routine;
     void* routine_arg;
     int onheap;
+    bool is_host;
 };
 
 enum class PthreadAttrFlags : u32 {
@@ -165,6 +175,7 @@ struct PthreadAttr {
     size_t guardsize_attr;
     size_t cpusetsize;
     Cpuset* cpuset;
+    bool is_host_entry;
 };
 using PthreadAttrT = PthreadAttr*;
 
@@ -227,7 +238,8 @@ enum class ThreadListFlags : u32 {
     InGcList = 4,
 };
 
-using PthreadEntryFunc = void* (*)(void*);
+using PthreadEntryFunc = void* PS4_SYSV_ABI (*)(void*);
+using PthreadEntryHostFunc = void* (*)(void*);
 
 constexpr u32 TidTerminated = 1;
 
@@ -255,6 +267,7 @@ struct Pthread {
     int sigblock;
     int refcount;
     void* PS4_SYSV_ABI (*start_routine)(void*);
+    void* (*host_routine)(void*);
     void* arg;
     PthreadAttr attr;
     bool cancel_enable;
@@ -263,7 +276,8 @@ struct Pthread {
     bool no_cancel;
     bool cancel_async;
     bool cancelling;
-    sigset_t sigmask;
+    // Unused
+    // sigset_t sigmask;
     bool unblock_sigcancel;
     bool in_sigsuspend;
     bool force_exit;
