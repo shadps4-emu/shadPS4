@@ -54,8 +54,13 @@ Tcb* GetTcbBase() {
 // Reserve space in the 32-bit address range for allocating TCB pages.
 asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
 
-static constexpr u64 ldt_region_base = 0x4000;
-static constexpr u64 ldt_region_size = 0x3FC000;
+struct LdtPage {
+    void* tcb;
+    u16 index;
+};
+
+static constexpr uintptr_t ldt_region_base = 0x4000;
+static constexpr size_t ldt_region_size = 0x3FC000;
 static constexpr u16 ldt_block_size = 0x1000;
 static constexpr u16 ldt_index_base = 8;
 static constexpr u16 ldt_index_total = (ldt_region_size - ldt_region_base) / ldt_block_size;
@@ -63,11 +68,13 @@ static constexpr u16 ldt_index_total = (ldt_region_size - ldt_region_base) / ldt
 static boost::icl::interval_set<u16> free_ldts{};
 static std::mutex free_ldts_lock;
 static std::once_flag ldt_region_init_flag;
+static pthread_key_t ldt_page_slot = 0;
 
-static u16 GetLdtIndex() {
-    sel_t selector;
-    asm volatile("mov %%fs, %0" : "=r"(selector));
-    return selector.index;
+static void FreeLdtPage(void* raw) {
+    const auto* ldt_page = static_cast<LdtPage*>(raw);
+
+    std::unique_lock lock{free_ldts_lock};
+    free_ldts += ldt_page->index;
 }
 
 static void InitLdtRegion() {
@@ -78,10 +85,19 @@ static void InitLdtRegion() {
 
     free_ldts +=
         boost::icl::interval<u16>::right_open(ldt_index_base, ldt_index_base + ldt_index_total);
+    ASSERT_MSG(pthread_key_create(&ldt_page_slot, FreeLdtPage) == 0,
+               "Failed to create thread LDT page key: {}", errno);
 }
 
-static void** SetupThreadLdt() {
+void SetTcbBase(void* image_address) {
     std::call_once(ldt_region_init_flag, InitLdtRegion);
+
+    auto* ldt_page = static_cast<LdtPage*>(pthread_getspecific(ldt_page_slot));
+    if (ldt_page != nullptr) {
+        // Update TCB pointer in existing page.
+        ldt_page->tcb = image_address;
+        return;
+    }
 
     // Allocate a new LDT index for the current thread.
     u16 ldt_index;
@@ -91,10 +107,12 @@ static void** SetupThreadLdt() {
         ldt_index = first(*free_ldts.begin());
         free_ldts -= ldt_index;
     }
-    const u64 addr = ldt_region_base + (ldt_index - ldt_index_base) * ldt_block_size;
+
+    const uintptr_t addr = ldt_region_base + (ldt_index - ldt_index_base) * ldt_block_size;
 
     // Create an LDT entry for the TCB.
-    const ldt_entry ldt{.data{
+    ldt_entry ldt{};
+    ldt.data = {
         .base00 = static_cast<u16>(addr),
         .base16 = static_cast<u8>(addr >> 16),
         .base24 = static_cast<u8>(addr >> 24),
@@ -105,34 +123,27 @@ static void** SetupThreadLdt() {
         .present = 1, // Segment present
         .stksz = DESC_DATA_32B,
         .granular = DESC_GRAN_BYTE,
-    }};
+    };
     int ret = i386_set_ldt(ldt_index, &ldt, 1);
     ASSERT_MSG(ret == ldt_index,
-               "Failed to set LDT for TLS area: expected {}, but syscall returned {}", ldt_index,
-               ret);
+               "Failed to set LDT {} at {:#x} for TLS area: syscall returned {}, errno {}",
+               ldt_index, addr, ret, errno);
 
     // Set the FS segment to the created LDT.
-    const sel_t sel{
+    const sel_t new_selector{
         .rpl = USER_PRIV,
         .ti = SEL_LDT,
         .index = ldt_index,
     };
-    asm volatile("mov %0, %%fs" ::"r"(sel));
+    asm volatile("mov %0, %%fs" ::"r"(new_selector));
 
-    return reinterpret_cast<void**>(addr);
-}
+    // Store the TCB base pointer and index in the created LDT area.
+    ldt_page = reinterpret_cast<LdtPage*>(addr);
+    ldt_page->tcb = image_address;
+    ldt_page->index = ldt_index;
 
-static void FreeThreadLdt() {
-    std::unique_lock lock{free_ldts_lock};
-    free_ldts += GetLdtIndex();
-}
-
-void SetTcbBase(void* image_address) {
-    if (image_address != nullptr) {
-        *SetupThreadLdt() = image_address;
-    } else {
-        FreeThreadLdt();
-    }
+    ASSERT_MSG(pthread_setspecific(ldt_page_slot, ldt_page) == 0,
+               "Failed to store thread LDT page pointer: {}", errno);
 }
 
 Tcb* GetTcbBase() {
