@@ -87,6 +87,14 @@ struct SamplerResource {
 };
 using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
+struct FMaskResource {
+    u32 sgpr_base;
+    u32 dword_offset;
+
+    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
+};
+using FMaskResourceList = boost::container::small_vector<FMaskResource, 16>;
+
 struct PushData {
     static constexpr u32 BufOffsetIndex = 2;
     static constexpr u32 UdRegsIndex = 4;
@@ -179,6 +187,7 @@ struct Info {
     TextureBufferResourceList texture_buffers;
     ImageResourceList images;
     SamplerResourceList samplers;
+    FMaskResourceList fmasks;
 
     std::span<const u32> user_data;
     Stage stage;
@@ -261,6 +270,10 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
 
 constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
     return inline_sampler ? inline_sampler : info.ReadUd<AmdGpu::Sampler>(sgpr_base, dword_offset);
+}
+
+constexpr AmdGpu::Image FMaskResource::GetSharp(const Info& info) const noexcept {
+    return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
 }
 
 } // namespace Shader

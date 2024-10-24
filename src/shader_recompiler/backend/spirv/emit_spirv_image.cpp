@@ -176,6 +176,7 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const
     ImageOperands operands;
     operands.AddOffset(ctx, offset);
     operands.Add(spv::ImageOperandsMask::Lod, lod);
+    operands.Add(spv::ImageOperandsMask::Sample, ms);
     const Id texel =
         texture.is_storage
             ? ctx.OpImageRead(result_type, image, coords, operands.mask, operands.operands)

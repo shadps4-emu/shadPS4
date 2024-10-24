@@ -31,6 +31,13 @@ struct ImageSpecialization {
     auto operator<=>(const ImageSpecialization&) const = default;
 };
 
+struct FMaskSpecialization {
+    u32 width;
+    u32 height;
+
+    auto operator<=>(const FMaskSpecialization&) const = default;
+};
+
 /**
  * Alongside runtime information, this structure also checks bound resources
  * for compatibility. Can be used as a key for storing shader permutations.
@@ -46,6 +53,7 @@ struct StageSpecialization {
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
+    boost::container::small_vector<FMaskSpecialization, 8> fmasks;
     Backend::Bindings start{};
 
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
@@ -66,6 +74,11 @@ struct StageSpecialization {
                          spec.type = sharp.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray
                                                               : sharp.GetType();
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
+                     });
+        ForEachSharp(binding, fmasks, info->fmasks,
+                     [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
+                         spec.width = sharp.width;
+                         spec.height = sharp.height;
                      });
     }
 
@@ -102,6 +115,11 @@ struct StageSpecialization {
         }
         for (u32 i = 0; i < images.size(); i++) {
             if (other.bitset[binding++] && images[i] != other.images[i]) {
+                return false;
+            }
+        }
+        for (u32 i = 0; i < fmasks.size(); i++) {
+            if (other.bitset[binding++] && fmasks[i] != other.fmasks[i]) {
                 return false;
             }
         }
