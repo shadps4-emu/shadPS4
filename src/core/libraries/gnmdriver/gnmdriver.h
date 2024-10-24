@@ -16,7 +16,7 @@ using namespace Kernel;
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
-int PS4_SYSV_ABI sceGnmBeginWorkload();
+int PS4_SYSV_ABI sceGnmBeginWorkload(uint param_1, ulong* param_2);
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
                                             u32 cmp_func, u32 ref);
 int PS4_SYSV_ABI sceGnmComputeWaitSemaphore();
@@ -74,7 +74,7 @@ int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation();
 int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery();
 int PS4_SYSV_ABI sceGnmDriverTraceInProgress();
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture();
-int PS4_SYSV_ABI sceGnmEndWorkload();
+int PS4_SYSV_ABI sceGnmEndWorkload(long param_1);
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic();
 void PS4_SYSV_ABI sceGnmFlushGarlic();
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress();
