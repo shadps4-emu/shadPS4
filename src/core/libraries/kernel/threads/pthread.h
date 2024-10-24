@@ -255,6 +255,7 @@ struct Pthread {
     int refcount;
     void* PS4_SYSV_ABI (*start_routine)(void*);
     void* arg;
+    uintptr_t native_handle;
     PthreadAttr attr;
     bool cancel_enable;
     bool cancel_pending;

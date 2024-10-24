@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+#pragma clang optimize off
+#include <cryptopp/sha.h>
 
 #include "common/alignment.h"
 #include "common/arch.h"
@@ -54,6 +56,30 @@ static std::string EncodeId(u64 nVal) {
         }
     }
     return enc;
+}
+
+static std::string StringToNid(std::string_view symbol) {
+    static constexpr std::array<u8, 16> Salt = {0x51, 0x8D, 0x64, 0xA6, 0x35, 0xDE, 0xD8, 0xC1,
+                                                0xE6, 0xB0, 0x39, 0xB1, 0xC3, 0xE5, 0x52, 0x30};
+    std::vector<u8> input(symbol.size() + Salt.size());
+    std::memcpy(input.data(), symbol.data(), symbol.size());
+    std::memcpy(input.data() + symbol.size(), Salt.data(), Salt.size());
+
+    std::array<u8, CryptoPP::SHA1::DIGESTSIZE> hash;
+    CryptoPP::SHA1().CalculateDigest(hash.data(), input.data(), input.size());
+
+    u64 digest;
+    std::memcpy(&digest, hash.data(), sizeof(digest));
+
+    static constexpr std::string_view codes =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+    std::string dst(11, '\0');
+
+    for (int i = 0; i < 10; i++) {
+        dst[i] = codes[(digest >> (58 - i * 6)) & 0x3f];
+    }
+    dst[10] = codes[(digest & 0xf) * 4];
+    return dst;
 }
 
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
@@ -485,6 +511,17 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
             return &export_libs[i];
         }
         i++;
+    }
+    return nullptr;
+}
+
+void* Module::FindByName(std::string_view name) {
+    const auto nid_str = StringToNid(name);
+    const auto symbols = export_sym.GetSymbols();
+    const auto it = std::ranges::find_if(
+        symbols, [&](const Loader::SymbolRecord& record) { return record.name.contains(nid_str); });
+    if (it != symbols.end()) {
+        return reinterpret_cast<void*>(it->virtual_address);
     }
     return nullptr;
 }
