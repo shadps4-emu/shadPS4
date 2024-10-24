@@ -147,8 +147,8 @@ void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
 }
 
 void Inst::Invalidate() {
-    ASSERT(users.list.empty());
     ClearArgs();
+    ASSERT(users.list.empty());
     ReplaceOpcode(Opcode::Void);
 }
 
