@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/net_ctl_obj.h"
 #include "core/tls.h"

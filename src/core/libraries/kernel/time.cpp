@@ -16,6 +16,9 @@
 #include "common/ntapi.h"
 
 #else
+#if __APPLE__
+#include <date/tz.h>
+#endif
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
