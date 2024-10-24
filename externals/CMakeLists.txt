@@ -3,10 +3,7 @@
 
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_TESTING OFF)
-set_directory_properties(PROPERTIES
-    EXCLUDE_FROM_ALL ON
-    SYSTEM ON
-)
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL ON SYSTEM ON)
 
 if (MSVC)
     # Silence "deprecation" warnings
@@ -20,11 +17,6 @@ if (NOT TARGET Boost::headers)
     add_subdirectory(ext-boost)
 endif()
 
-# fmtlib
-if (NOT TARGET fmt::fmt)
-    add_subdirectory(fmt)
-endif()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     # If it is clang and MSVC we will add a static lib
     # CryptoPP
@@ -35,51 +27,52 @@ else()
     if (NOT TARGET cryptopp::cryptopp)
         set(CRYPTOPP_INSTALL OFF)
         set(CRYPTOPP_BUILD_TESTING OFF)
-        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
+        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp)
         add_subdirectory(cryptopp-cmake)
         file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
         target_include_directories(cryptopp INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
     endif()
 endif()
 
+if (APPLE)
+    # Date
+    if (NOT TARGET date::date-tz)
+        option(BUILD_TZ_LIB "" ON)
+        option(USE_SYSTEM_TZ_DB "" ON)
+        add_subdirectory(date)
+    endif()
+endif()
+
+# Dear ImGui
+add_library(Dear_ImGui
+        dear_imgui/imgui.cpp
+        dear_imgui/imgui_demo.cpp
+        dear_imgui/imgui_draw.cpp
+        dear_imgui/imgui_internal.h
+        dear_imgui/imgui_tables.cpp
+        dear_imgui/imgui_widgets.cpp)
+target_include_directories(Dear_ImGui INTERFACE dear_imgui)
+
+# Discord RPC
+if (ENABLE_DISCORD_RPC)
+    set(BUILD_EXAMPLES OFF)
+    add_subdirectory(discord-rpc)
+    target_include_directories(discord-rpc INTERFACE discord-rpc/include)
+endif()
+
+# FFmpeg
 if (NOT TARGET FFmpeg::ffmpeg)
     add_subdirectory(ffmpeg-core)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
 endif()
 
-# Zlib-Ng
-if (NOT TARGET zlib-ng::zlib)
-    set(ZLIB_ENABLE_TESTS OFF)
-    set(WITH_GTEST OFF)
-    set(WITH_NEW_STRATEGIES ON)
-    set(WITH_NATIVE_INSTRUCTIONS ON)
-    add_subdirectory(zlib-ng)
-    add_library(zlib-ng::zlib ALIAS zlib)
+# fmt
+if (NOT TARGET fmt::fmt)
+    add_subdirectory(fmt)
 endif()
 
-# SDL3
-if (NOT TARGET SDL3::SDL3)
-    set(SDL_PIPEWIRE OFF)
-    add_subdirectory(sdl3)
-endif()
-
-# vulkan-headers
-if (NOT TARGET Vulkan::Headers)
-    set(VULKAN_HEADERS_ENABLE_MODULE OFF)
-    add_subdirectory(vulkan-headers)
-endif()
-
-# VMA
-if (NOT TARGET GPUOpen::VulkanMemoryAllocator)
-    add_subdirectory(vma)
-endif()
-
-# RenderDoc
-if (NOT TARGET RenderDoc::API)
-    add_library(renderdoc INTERFACE)
-    target_include_directories(renderdoc INTERFACE ./renderdoc)
-    add_library(RenderDoc::API ALIAS renderdoc)
-endif()
+# GCN Headers
+add_subdirectory(gcn)
 
 # glslang
 if (NOT TARGET glslang::glslang)
@@ -95,44 +88,40 @@ if (NOT TARGET glslang::glslang)
     target_include_directories(SPIRV INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
 endif()
 
-# Robin-map
-if (NOT TARGET tsl::robin_map)
-    add_subdirectory(robin-map)
-endif()
-
-# Xbyak
-if (NOT TARGET xbyak::xbyak)
-    add_subdirectory(xbyak)
+# half
+if (NOT TARGET half::half)
+    add_library(half INTERFACE)
+    target_include_directories(half INTERFACE half/include)
+    add_library(half::half ALIAS half)
 endif()
 
 # MagicEnum
 if (NOT TARGET magic_enum::magic_enum)
     add_subdirectory(magic_enum)
+    target_include_directories(magic_enum INTERFACE magic_enum/include/magic_enum)
 endif()
 
-# Toml11
-if (NOT TARGET toml11::toml11)
-    add_subdirectory(toml11)
+# pugixml
+if (NOT TARGET pugixml::pugixml)
+    add_subdirectory(pugixml)
 endif()
 
-# xxHash
-if (NOT TARGET xxHash::xxhash)
-    add_library(xxhash xxhash/xxhash.h xxhash/xxhash.c)
-    target_include_directories(xxhash PUBLIC xxhash)
-    add_library(xxHash::xxhash ALIAS xxhash)
+# RenderDoc
+if (NOT TARGET RenderDoc::API)
+    add_library(renderdoc INTERFACE)
+    target_include_directories(renderdoc INTERFACE renderdoc)
+    add_library(RenderDoc::API ALIAS renderdoc)
 endif()
 
-# Zydis
-if (NOT TARGET Zydis::Zydis)
-    option(ZYDIS_BUILD_TOOLS "" OFF)
-    option(ZYDIS_BUILD_EXAMPLES "" OFF)
-    add_subdirectory(zydis)
+# Robin-map
+if (NOT TARGET tsl::robin_map)
+    add_subdirectory(robin-map)
 endif()
 
-# Winpthreads
-if (WIN32)
-    add_subdirectory(winpthreads)
-    target_include_directories(winpthreads INTERFACE winpthreads/include)
+# SDL3
+if (NOT TARGET SDL3::SDL3)
+    set(SDL_PIPEWIRE OFF)
+    add_subdirectory(sdl3)
 endif()
 
 # sirit
@@ -141,32 +130,10 @@ if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
-# half
-if (NOT TARGET half::half)
-    add_library(half INTERFACE)
-    target_include_directories(half INTERFACE half/include)
-    add_library(half::half ALIAS half)
+# Toml11
+if (NOT TARGET toml11::toml11)
+    add_subdirectory(toml11)
 endif()
-
-if (APPLE)
-    # date
-    if (NOT TARGET date::date-tz)
-        option(BUILD_TZ_LIB "" ON)
-        option(USE_SYSTEM_TZ_DB "" ON)
-        add_subdirectory(date)
-    endif()
-endif()
-
-# Dear ImGui
-add_library(Dear_ImGui
-        dear_imgui/imgui.cpp
-        dear_imgui/imgui_demo.cpp
-        dear_imgui/imgui_draw.cpp
-        dear_imgui/imgui_internal.h
-        dear_imgui/imgui_tables.cpp
-        dear_imgui/imgui_widgets.cpp
-)
-target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
 
 # Tracy
 option(TRACY_ENABLE "" ON)
@@ -182,17 +149,48 @@ option(TRACY_ONLY_LOCALHOST "" ON)
 option(TRACY_NO_CONTEXT_SWITCH "" ON)
 add_subdirectory(tracy)
 
-# pugixml
-if (NOT TARGET pugixml::pugixml)
-    add_subdirectory(pugixml)
+# VMA
+if (NOT TARGET GPUOpen::VulkanMemoryAllocator)
+    add_subdirectory(vma)
 endif()
 
-# Discord RPC
-if (ENABLE_DISCORD_RPC)
-    set(BUILD_EXAMPLES OFF)
-    add_subdirectory(discord-rpc/)
-    target_include_directories(discord-rpc INTERFACE discord-rpc/include)
+# vulkan-headers
+if (NOT TARGET Vulkan::Headers)
+    set(VULKAN_HEADERS_ENABLE_MODULE OFF)
+    add_subdirectory(vulkan-headers)
 endif()
 
-# GCN Headers
-add_subdirectory(gcn)
+# Winpthreads
+if (WIN32)
+    add_subdirectory(winpthreads)
+    target_include_directories(winpthreads INTERFACE winpthreads/include)
+endif()
+
+# Xbyak
+if (NOT TARGET xbyak::xbyak)
+    add_subdirectory(xbyak)
+endif()
+
+# xxHash
+if (NOT TARGET xxHash::xxhash)
+    add_library(xxhash xxhash/xxhash.h xxhash/xxhash.c)
+    target_include_directories(xxhash PUBLIC xxhash)
+    add_library(xxHash::xxhash ALIAS xxhash)
+endif()
+
+# Zlib-Ng
+if (NOT TARGET zlib-ng::zlib)
+    set(ZLIB_ENABLE_TESTS OFF)
+    set(WITH_GTEST OFF)
+    set(WITH_NEW_STRATEGIES ON)
+    set(WITH_NATIVE_INSTRUCTIONS ON)
+    add_subdirectory(zlib-ng)
+    add_library(zlib-ng::zlib ALIAS zlib)
+endif()
+
+# Zydis
+if (NOT TARGET Zydis::Zydis)
+    option(ZYDIS_BUILD_TOOLS "" OFF)
+    option(ZYDIS_BUILD_EXAMPLES "" OFF)
+    add_subdirectory(zydis)
+endif()
