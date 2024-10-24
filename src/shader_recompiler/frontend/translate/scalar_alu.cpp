@@ -81,9 +81,9 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_MUL_I32:
             return S_MUL_I32(inst);
         case Opcode::S_BFE_I32:
-            return S_BFE_I32(inst);
+            return S_BFE(inst, true);
         case Opcode::S_BFE_U32:
-            return S_BFE_U32(inst);
+            return S_BFE(inst, false);
         case Opcode::S_ABSDIFF_I32:
             return S_ABSDIFF_I32(inst);
 
@@ -438,30 +438,12 @@ void Translator::S_MUL_I32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
 }
 
-void Translator::S_BFE_U32(const GcnInst& inst) {
+void Translator::S_BFE(const GcnInst& inst, bool is_signed) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 offset{ir.BitwiseAnd(src1, ir.Imm32(0x1F))};
     const IR::U32 count{ir.BitFieldExtract(src1, ir.Imm32(16), ir.Imm32(7))};
-    const IR::U32 result{ir.BitFieldExtract(src0, offset, count)};
-    SetDst(inst.dst[0], result);
-    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
-}
-
-void Translator::S_BFE_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    IR::U32 result;
-
-    ASSERT_MSG(src1.IsImmediate(), "Unhandled S_BFE_I32 with non-immediate mask");
-    u32 mask = src1.U32();
-    ASSERT(mask != 0);
-    u32 offset = std::countr_zero(mask);
-    u32 count = std::popcount(mask);
-    mask = mask >> offset;
-    ASSERT_MSG((mask & (mask + 1)) == 0, "mask {} has non-adjacent bits set");
-
-    result = ir.BitFieldExtract(src0, ir.Imm32(offset), ir.Imm32(count), true);
+    const IR::U32 result{ir.BitFieldExtract(src0, offset, count, is_signed)};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }

@@ -97,15 +97,15 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
     }
     case Stage::Hull: {
         BuildCommon(regs.hs_program);
-        info.hs_info.output_control_points = regs.ls_hs_config.hs_output_control_points.Value();
-        info.hs_info.input_control_points = regs.ls_hs_config.hs_input_control_points;
-        info.hs_info.num_patches = regs.ls_hs_config.num_patches;
-        // Suspicious about this in apparently "passthrough" hull shader. Probably not releva
-        info.hs_info.num_instances = regs.num_instances.NumInstances();
-        info.hs_info.tess_factor_memory_base = regs.vgt_tf_memory_base.MemoryBase();
-        info.hs_info.tess_type = regs.tess_config.type;
-        info.hs_info.tess_topology = regs.tess_config.topology;
-        info.hs_info.tess_partitioning = regs.tess_config.partitioning;
+        // TODO: ls_hs_config.output_control_points seems to be == 1 when doing passthrough
+        // instead of the real number which matches the input patch topology
+        // info.hs_info.output_control_points = regs.ls_hs_config.hs_output_control_points.Value();
+
+        // TODO dont rely on HullStateConstants
+        info.hs_info.output_control_points = regs.hs_constants.num_output_cp;
+        info.hs_info.tess_factor_stride = regs.hs_constants.tess_factor_stride;
+
+        // We need to initialize most hs_info fields after finding the V# with tess constants
         break;
     }
     case Stage::Export: {
@@ -244,27 +244,6 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     return it->second.get();
 }
 
-bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
-    static std::vector<u64> skip_hashes = {
-        0xbc234799 /* passthrough */,
-        0x8453cd1c /* passthrough */,
-        0xd67db0ef /* passthrough */,
-        0x34121ac6 /* passthrough*/,
-        0xa26750c1 /* passthrough, warp */,
-        0xbb88db5f /* passthrough */,
-        0x90c6fb05 /* passthrough */,
-        0x9fd272d7 /* forbidden woods (not PS) */,
-        0x2807dd6c /* forbidden woods, down elevator (not PS) */,
-        0x627ac5b9 /* ayyylmao*, passthrough */,
-        0xb5fb5174 /* rom (not PS) */,
-    };
-    if (std::ranges::contains(skip_hashes, shader_hash)) {
-        LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
-        return true;
-    }
-    return false;
-}
-
 bool PipelineCache::RefreshGraphicsKey() {
     std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
 
@@ -321,6 +300,11 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
+    key.patch_control_points = 0;
+    if (regs.stage_enable.hs_en.Value() && !instance.IsPatchControlPointsDynamicState()) {
+        key.patch_control_points = regs.ls_hs_config.hs_input_control_points.Value();
+    }
+
     // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
     // recompiler.
     for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
@@ -370,10 +354,6 @@ bool PipelineCache::RefreshGraphicsKey() {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
             key.stage_hashes[stage_out_idx] = 0;
             infos[stage_out_idx] = nullptr;
-            return false;
-        }
-
-        if (ShouldSkipShader(bininfo->shader_hash, "graphics")) {
             return false;
         }
 
@@ -497,8 +477,7 @@ bool PipelineCache::RefreshComputeKey() {
     return true;
 }
 
-vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
-                                              const Shader::RuntimeInfo& runtime_info,
+vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                               std::span<const u32> code, size_t perm_idx,
                                               Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
@@ -532,7 +511,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
 PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stage,
                                                 Shader::ShaderParams params,
                                                 Shader::Backend::Bindings& binding) {
-    const auto runtime_info = BuildRuntimeInfo(stage, l_stage);
+    auto runtime_info = BuildRuntimeInfo(stage, l_stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
         it_pgm.value() = std::make_unique<Program>(stage, l_stage, params);
@@ -548,6 +527,15 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
     auto& program = it_pgm.value();
     auto& info = program->info;
     info.RefreshFlatBuf();
+    if (l_stage == LogicalStage::TessellationControl || l_stage == LogicalStage::TessellationEval) {
+        Shader::TessellationDataConstantBuffer tess_constants;
+        info.ReadTessConstantBuffer(tess_constants);
+        if (l_stage == LogicalStage::TessellationControl) {
+            runtime_info.hs_info.InitFromTessConstants(tess_constants);
+        } else {
+            runtime_info.vs_info.InitFromTessConstants(tess_constants);
+        }
+    }
     const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};

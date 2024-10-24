@@ -143,6 +143,22 @@ struct Liverpool {
         }
     };
 
+    struct HsStageRegisters {
+        u32 vgt_tf_param;
+        u32 vgt_hos_max_tess_level;
+        u32 vgt_hos_min_tess_level;
+    };
+
+    struct HsConstants {
+        u32 num_input_cp;
+        u32 num_output_cp;
+        u32 num_patch_const;
+        u32 cp_stride;
+        u32 num_threads;
+        u32 tess_factor_stride;
+        u32 first_edge_tess_factor_index;
+    };
+
     struct ComputeProgram {
         u32 dispatch_initiator;
         u32 dim_x;
@@ -974,7 +990,8 @@ struct Liverpool {
         BitField<2, 1, u32> hs_en;
         BitField<3, 2, u32> es_en;
         BitField<5, 1, u32> gs_en;
-        BitField<6, 1, u32> vs_en;
+        BitField<6, 2, u32> vs_en;
+        BitField<8, 24, u32> dynamic_hs; // TODO testing
 
         bool IsStageEnabled(u32 stage) const {
             switch (stage) {
@@ -1145,7 +1162,11 @@ struct Liverpool {
             ShaderProgram es_program;
             INSERT_PADDING_WORDS(0x2C);
             ShaderProgram hs_program;
-            INSERT_PADDING_WORDS(0x2C);
+            // TODO delete. These don't actually correspond to real registers, but I'll stash them
+            // here to debug
+            HsStageRegisters hs_registers;
+            HsConstants hs_constants;
+            INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20 - 3 - 7);
             ShaderProgram ls_program;
             INSERT_PADDING_WORDS(0xA4);
             ComputeProgram cs_program;
@@ -1432,6 +1453,8 @@ static_assert(GFX6_3D_REG_INDEX(vs_program.user_data) == 0x2C4C);
 static_assert(GFX6_3D_REG_INDEX(gs_program) == 0x2C88);
 static_assert(GFX6_3D_REG_INDEX(es_program) == 0x2CC8);
 static_assert(GFX6_3D_REG_INDEX(hs_program) == 0x2D08);
+static_assert(GFX6_3D_REG_INDEX(hs_registers) == 0x2D1C);
+static_assert(GFX6_3D_REG_INDEX(hs_constants) == 0x2D1F);
 static_assert(GFX6_3D_REG_INDEX(ls_program) == 0x2D48);
 static_assert(GFX6_3D_REG_INDEX(cs_program) == 0x2E00);
 static_assert(GFX6_3D_REG_INDEX(cs_program.dim_z) == 0x2E03);

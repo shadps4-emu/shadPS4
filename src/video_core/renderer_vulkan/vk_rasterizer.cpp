@@ -50,9 +50,9 @@ void Rasterizer::CpSync() {
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
     // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
-        return false;
-    }
+    //    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
+    //        return false;
+    //    }
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
     // actual draw hence can skip pipeline creation.
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {

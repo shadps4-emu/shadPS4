@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
@@ -10,79 +9,11 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 
-namespace {
-
-// TODO clean this up. Maybe remove
-// from https://github.com/chaotic-cx/mesa-mirror/blob/main/src/amd/compiler/README.md
-// basically logical stage x hw stage permutations
-enum class SwHwStagePerm {
-    vertex_vs,
-    fragment_fs,
-    vertex_ls,
-    tess_control_hs,
-    tess_eval_vs,
-    vertex_es,
-    geometry_gs,
-    gs_copy_vs,
-    tess_eval_es,
-    compute_cs,
-};
-
-static SwHwStagePerm GetSwHwStagePerm(Shader::Stage hw_stage, Shader::LogicalStage sw_stage) {
-    using namespace Shader;
-    switch (sw_stage) {
-    case LogicalStage::Fragment:
-        ASSERT(hw_stage == Stage::Fragment);
-        return SwHwStagePerm::fragment_fs;
-    case LogicalStage::Vertex: {
-        switch (hw_stage) {
-        case Stage::Vertex:
-            return SwHwStagePerm::vertex_vs;
-        case Stage::Export:
-            return SwHwStagePerm::vertex_es;
-        case Stage::Local:
-            return SwHwStagePerm::vertex_ls;
-        default:
-            UNREACHABLE();
-        }
-    } break;
-    case LogicalStage::TessellationControl:
-        ASSERT(hw_stage == Stage::Hull);
-        return SwHwStagePerm::tess_control_hs;
-    case LogicalStage::TessellationEval: {
-        switch (hw_stage) {
-        case Stage::Vertex:
-            return SwHwStagePerm::tess_eval_vs;
-        case Stage::Export:
-            return SwHwStagePerm::tess_eval_es;
-        default:
-            UNREACHABLE();
-        }
-    }
-    case LogicalStage::Geometry:
-        ASSERT(hw_stage == Stage::Geometry);
-        return SwHwStagePerm::geometry_gs;
-    case LogicalStage::GsCopy:
-        ASSERT(hw_stage == Stage::Vertex);
-        return SwHwStagePerm::gs_copy_vs;
-    case LogicalStage::Compute:
-        ASSERT(hw_stage == Stage::Compute);
-        return SwHwStagePerm::compute_cs;
-    default:
-        UNREACHABLE();
-    }
-}
-
-}; // namespace
-
 namespace Shader::Optimization {
 
-void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info) {
+void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
+                           Stage stage) {
     auto& info = program.info;
-
-    Stage stage = info.stage;
-    LogicalStage l_stage = info.l_stage;
-    SwHwStagePerm stage_perm = GetSwHwStagePerm(stage, l_stage);
 
     const auto& ForEachInstruction = [&](auto func) {
         for (IR::Block* block : program.blocks) {
@@ -93,8 +24,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         }
     };
 
-    switch (stage_perm) {
-    case SwHwStagePerm::vertex_ls: {
+    switch (stage) {
+    case Stage::Local: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -126,7 +57,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case SwHwStagePerm::vertex_es: {
+    case Stage::Export: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -157,7 +88,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case SwHwStagePerm::geometry_gs: {
+    case Stage::Geometry: {
         const auto& gs_info = runtime_info.gs_info;
         info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
 
@@ -171,7 +102,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 }
 
                 const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = shl_inst->Arg(0).Resolve().U32() >> 2;
+                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
                 const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
                 const auto bucket = offset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0

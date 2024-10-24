@@ -73,7 +73,7 @@ private:
                     std::string_view ext);
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
                                                    std::string_view ext);
-    vk::ShaderModule CompileModule(Shader::Info& info, const Shader::RuntimeInfo& runtime_info,
+    vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
     Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);

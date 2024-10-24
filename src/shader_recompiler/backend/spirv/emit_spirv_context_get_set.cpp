@@ -47,15 +47,24 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     }
 }
 
-Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
+Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, Id array_index, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& info{ctx.output_params.at(index)};
         ASSERT(info.num_components > 0);
-        if (info.num_components == 1) {
+        Id base = info.id;
+        boost::container::small_vector<Id, 2> indices;
+        if (ctx.l_stage == LogicalStage::TessellationControl) {
+            indices.push_back(array_index);
+        }
+        if (info.num_components > 1) {
+            indices.push_back(ctx.ConstU32(element));
+        }
+
+        if (indices.empty()) {
             return info.id;
         } else {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+            return ctx.OpAccessChain(info.pointer_type, info.id, indices);
         }
     }
     if (IR::IsMrt(attr)) {
@@ -82,6 +91,10 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     default:
         throw NotImplementedException("Write attribute {}", attr);
     }
+}
+
+Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
+    return OutputAttrPointer(ctx, attr, {}, element);
 }
 
 std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
@@ -175,12 +188,11 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
-Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
+Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{
-            ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, ctx.ConstU32(index), ctx.ConstU32(0u))};
+        const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, index, ctx.ConstU32(0u))};
         const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
@@ -190,7 +202,7 @@ Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u
         const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
         const auto param = ctx.input_params.at(param_id).id;
         const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, ctx.ConstU32(index))};
+        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
         const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
@@ -198,9 +210,27 @@ Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u
     UNREACHABLE();
 }
 
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (ctx.info.stage == Stage::Geometry) {
         return EmitGetAttributeForGeometry(ctx, attr, comp, index);
+    } else if (ctx.info.l_stage == LogicalStage::TessellationControl ||
+               ctx.info.l_stage == LogicalStage::TessellationEval) {
+        if (IR::IsTessCoord(attr)) {
+            const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+            const auto pointer{
+                ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
+            return ctx.OpLoad(ctx.F32[1], pointer);
+        } else if (IR::IsParam(attr)) {
+            const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
+            const auto param = ctx.input_params.at(param_id).id;
+            const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
+            const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
+            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+            return ctx.OpLoad(ctx.F32[1],
+                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+        }
+        UNREACHABLE();
     }
 
     if (IR::IsParam(attr)) {
@@ -276,6 +306,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
     case IR::Attribute::PrimitiveId:
+    case IR::Attribute::TessPatchIdInVgt: // TODO see why this isnt DCEd
         ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
                ctx.info.l_stage == LogicalStage::TessellationControl ||
                ctx.info.l_stage == LogicalStage::TessellationEval);
@@ -301,7 +332,13 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
         return;
     }
-    const Id pointer{OutputAttrPointer(ctx, attr, element)};
+
+    Id pointer;
+    if (ctx.l_stage == LogicalStage::TessellationControl) {
+        pointer = OutputAttrPointer(ctx, attr, ctx.OpLoad(ctx.U32[1], ctx.invocation_id), element);
+    } else {
+        pointer = OutputAttrPointer(ctx, attr, element);
+    }
     const auto component_type{OutputAttrComponentType(ctx, attr)};
     if (component_type.second) {
         ctx.OpStore(pointer, ctx.OpBitcast(component_type.first, value));

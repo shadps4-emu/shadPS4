@@ -16,6 +16,10 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(_DEBUG)
+endif()
+
 project(shadPS4)
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.

@@ -52,6 +52,7 @@ struct GraphicsPipelineKey {
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
     std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
+    u32 patch_control_points;
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;

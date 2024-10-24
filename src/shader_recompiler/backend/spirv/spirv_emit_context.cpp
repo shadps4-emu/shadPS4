@@ -388,13 +388,52 @@ void EmitContext::DefineInputs() {
     }
     case LogicalStage::TessellationControl: {
         invocation_id =
-            DefineVariable(U32[3], spv::BuiltIn::InvocationId, spv::StorageClass::Input);
+            DefineVariable(U32[1], spv::BuiltIn::InvocationId, spv::StorageClass::Input);
         patch_vertices =
             DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
+        primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
+
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            const IR::Attribute param{IR::Attribute::Param0 + i};
+            if (!info.loads.GetAny(param)) {
+                continue;
+            }
+            const u32 num_components = info.loads.NumComponents(param);
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id type{TypeArray(F32[4], ConstU32(32u))};
+            const Id id{DefineInput(type, i)};
+            Name(id, fmt::format("in_attr{}", i));
+            input_params[i] = {id, input_f32, F32[1], 4};
+        }
         break;
     }
     case LogicalStage::TessellationEval: {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
+        primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
+
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            const IR::Attribute param{IR::Attribute::Param0 + i};
+            if (!info.loads.GetAny(param)) {
+                continue;
+            }
+            const u32 num_components = info.loads.NumComponents(param);
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id type{TypeArray(F32[4], ConstU32(32u))};
+            const Id id{DefineInput(type, i)};
+            Name(id, fmt::format("in_attr{}", i));
+            input_params[i] = {id, input_f32, F32[1], 4};
+        }
+
+        u32 patch_base_location = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        for (size_t index = 0; index < 30; ++index) {
+            if (!(info.uses_patches & (1U << index))) {
+                continue;
+            }
+            const Id id{DefineInput(F32[4], patch_base_location + index)};
+            Decorate(id, spv::Decoration::Patch);
+            Name(id, fmt::format("patch_in{}", index));
+            patches[index] = id;
+        }
         break;
     }
     default:
@@ -405,6 +444,9 @@ void EmitContext::DefineInputs() {
 void EmitContext::DefineOutputs() {
     switch (l_stage) {
     case LogicalStage::Vertex: {
+        // No point in defining builtin outputs (i.e. position) unless next stage is fragment?
+        // Might cause problems linking with tcs
+
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
         const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
                                           info.stores.Get(IR::Attribute::Position2) ||
@@ -442,13 +484,55 @@ void EmitContext::DefineOutputs() {
                 DefineOutput(type, std::nullopt, spv::BuiltIn::TessLevelInner);
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
+
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            const IR::Attribute param{IR::Attribute::Param0 + i};
+            if (!info.stores.GetAny(param)) {
+                continue;
+            }
+            const u32 num_components = info.stores.NumComponents(param);
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id type{TypeArray(F32[4], ConstU32(runtime_info.hs_info.output_control_points))};
+            const Id id{DefineOutput(type, i)};
+            Name(id, fmt::format("out_attr{}", i));
+            output_params[i] = {id, output_f32, F32[1], 4};
+        }
+
+        u32 patch_base_location = runtime_info.hs_info.hs_output_cp_stride >> 4;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
             }
-            const Id id{DefineOutput(F32[4], index)};
+            const Id id{DefineOutput(F32[4], patch_base_location + index)};
             Decorate(id, spv::Decoration::Patch);
+            Name(id, fmt::format("patch_out{}", index));
             patches[index] = id;
+        }
+        break;
+    }
+    case LogicalStage::TessellationEval: {
+        // TODO copied from logical vertex, figure this out
+        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
+                                          info.stores.Get(IR::Attribute::Position2) ||
+                                          info.stores.Get(IR::Attribute::Position3);
+        if (has_extra_pos_stores) {
+            const Id type{TypeArray(F32[1], ConstU32(8U))};
+            clip_distances =
+                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
+            cull_distances =
+                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
+        }
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            const IR::Attribute param{IR::Attribute::Param0 + i};
+            if (!info.stores.GetAny(param)) {
+                continue;
+            }
+            const u32 num_components = info.stores.NumComponents(param);
+            const Id id{DefineOutput(F32[num_components], i)};
+            Name(id, fmt::format("out_attr{}", i));
+            output_params[i] =
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
         }
         break;
     }

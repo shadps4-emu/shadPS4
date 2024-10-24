@@ -294,6 +294,9 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::IMul32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a * b; });
         return;
+    case IR::Opcode::UDiv32:
+        FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a / b; });
+        return;
     case IR::Opcode::FPCmpClass32:
         FoldCmpClass(block, inst);
         return;

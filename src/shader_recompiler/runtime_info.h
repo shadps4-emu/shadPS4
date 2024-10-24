@@ -7,6 +7,7 @@
 #include <span>
 #include <boost/container/static_vector.hpp>
 #include "common/types.h"
+#include "shader_recompiler/frontend/tessellation.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/types.h"
 
@@ -74,30 +75,56 @@ struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
+    // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
     AmdGpu::TessellationPartitioning tess_partitioning;
+    u32 hs_output_cp_stride{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
         return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
                tess_type == other.tess_type && tess_topology == other.tess_topology &&
-               tess_partitioning == other.tess_partitioning;
+               tess_partitioning == other.tess_partitioning &&
+               hs_output_cp_stride == other.hs_output_cp_stride;
+    }
+
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        hs_output_cp_stride = tess_constants.m_hsCpStride;
     }
 };
 
 struct HullRuntimeInfo {
+    // from registers
     u32 output_control_points;
-    // trying to debug TODO probably delete this
-    u32 input_control_points;
-    u32 num_patches;
-    u32 num_instances;
-    u64 tess_factor_memory_base;
-    AmdGpu::TessellationType tess_type;
-    AmdGpu::TessellationTopology tess_topology;
-    AmdGpu::TessellationPartitioning tess_partitioning;
 
-    bool operator==(const HullRuntimeInfo& other) const noexcept {
-        return output_control_points == other.output_control_points;
+    // from HullStateConstants in HsProgram (TODO dont rely on this)
+    u32 tess_factor_stride;
+
+    // from tess constants buffer
+    u32 ls_stride;
+    u32 hs_output_cp_stride;
+    u32 hs_num_patch;
+    u32 hs_output_base;
+    u32 patch_const_size;
+    u32 patch_const_base;
+    u32 patch_output_size;
+    u32 first_edge_tess_factor_index;
+
+    auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
+
+    bool IsPassthrough() {
+        return hs_output_base == 0;
+    };
+
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        ls_stride = tess_constants.m_lsStride;
+        hs_output_cp_stride = tess_constants.m_hsCpStride;
+        hs_num_patch = tess_constants.m_hsNumPatch;
+        hs_output_base = tess_constants.m_hsOutputBase;
+        patch_const_size = tess_constants.m_patchConstSize;
+        patch_const_base = tess_constants.m_patchConstBase;
+        patch_output_size = tess_constants.m_patchOutputSize;
+        first_edge_tess_factor_index = tess_constants.m_firstEdgeTessFactorIndex;
     }
 };
 

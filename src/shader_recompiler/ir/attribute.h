@@ -75,11 +75,23 @@ enum class Attribute : u64 {
     InstanceId0 = 78,  // step rate 0
     InstanceId1 = 79,  // step rate 1
     InvocationId = 80, // TCS id in output patch and instanced geometry shader id
+    PatchVertices = 81,
+    TessellationEvaluationPointU = 82,
+    TessellationEvaluationPointV = 83,
     PackedHullInvocationInfo =
-        81, // PrimitiveId (patch id) and InvocationId (output control point id)
-    PatchVertices = 82,
-    TessellationEvaluationPointU = 83,
-    TessellationEvaluationPointV = 84,
+        84, // PrimitiveId (patch id) and InvocationId (output control point id)
+    // Probably don't need all these.
+    // Most should be dead after hull shader transform
+    TcsLsStride = 85,
+    TcsCpStride = 86,
+    TcsNumPatches = 87,
+    TcsOutputBase = 88,
+    TcsPatchConstSize = 89,
+    TcsPatchConstBase = 90,
+    TcsPatchOutputSize = 91,
+    TcsOffChipTessellationFactorThreshold = 92,
+    TcsFirstEdgeTessFactorIndex = 93,
+    TessPatchIdInVgt = 94,
     Max,
 };
 
@@ -89,6 +101,11 @@ constexpr size_t NumParams = 32;
 
 constexpr bool IsPosition(Attribute attribute) noexcept {
     return attribute >= Attribute::Position0 && attribute <= Attribute::Position3;
+}
+
+constexpr bool IsTessCoord(Attribute attribute) noexcept {
+    return attribute >= Attribute::TessellationEvaluationPointU &&
+           attribute <= Attribute::TessellationEvaluationPointV;
 }
 
 constexpr bool IsParam(Attribute attribute) noexcept {

@@ -82,7 +82,8 @@ public:
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
-    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
+    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0,
+                                   IR::Value index = IR::Value(u32(0u)));
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
@@ -338,6 +339,7 @@ private:
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {
         auto it{block->PrependNewInst(insertion_point, op, {Value{args}...})};
+        it->SetParent(block);
         return T{Value{&*it}};
     }
 
@@ -355,6 +357,7 @@ private:
         u32 raw_flags{};
         std::memcpy(&raw_flags, &flags.proxy, sizeof(flags.proxy));
         auto it{block->PrependNewInst(insertion_point, op, {Value{args}...}, raw_flags)};
+        it->SetParent(block);
         return T{Value{&*it}};
     }
 };

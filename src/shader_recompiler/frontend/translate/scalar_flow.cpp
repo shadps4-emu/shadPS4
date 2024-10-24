@@ -35,7 +35,12 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
 }
 
 void Translator::S_BARRIER() {
-    ir.Barrier();
+    if (info.l_stage == LogicalStage::TessellationControl) {
+        // TODO: ASSERT that we're in uniform control flow
+        ir.TcsOutputBarrier();
+    } else {
+        ir.Barrier();
+    }
 }
 
 void Translator::S_GETPC_B64(u32 pc, const GcnInst& inst) {
