@@ -147,7 +147,7 @@ public:
     explicit Descriptors(Info& info_)
         : info{info_}, buffer_resources{info_.buffers},
           texture_buffer_resources{info_.texture_buffers}, image_resources{info_.images},
-          sampler_resources{info_.samplers} {}
+          sampler_resources{info_.samplers}, fmask_resources(info_.fmasks) {}
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
@@ -193,6 +193,14 @@ public:
         return index;
     }
 
+    u32 Add(const FMaskResource& desc) {
+        u32 index = Add(fmask_resources, desc, [&desc](const auto& existing) {
+            return desc.sgpr_base == existing.sgpr_base &&
+                   desc.dword_offset == existing.dword_offset;
+        });
+        return index;
+    }
+
 private:
     template <typename Descriptors, typename Descriptor, typename Func>
     static u32 Add(Descriptors& descriptors, const Descriptor& desc, Func&& pred) {
@@ -209,6 +217,7 @@ private:
     TextureBufferResourceList& texture_buffer_resources;
     ImageResourceList& image_resources;
     SamplerResourceList& sampler_resources;
+    FMaskResourceList& fmask_resources;
 };
 
 } // Anonymous namespace
@@ -673,6 +682,19 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case IR::Opcode::ImageQueryLod:
             inst.ReplaceUsesWith(ir.Imm32(1));
             return;
+        case IR::Opcode::ImageQueryDimensions: {
+            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)), // x
+                                                   ir.Imm32(static_cast<u32>(image.width)), // y
+                                                   ir.Imm32(1), ir.Imm32(1)); // depth, mip
+            inst.ReplaceUsesWith(dims);
+
+            // Track FMask resource to do specialization.
+            descriptors.Add(FMaskResource{
+                .sgpr_base = tsharp.sgpr_base,
+                .dword_offset = tsharp.dword_offset,
+            });
+            return;
+        }
         default:
             UNREACHABLE_MSG("Can't patch fmask instruction {}", inst.GetOpcode());
         }
