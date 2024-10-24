@@ -160,7 +160,7 @@ int PthreadMutex::SelfLock(const OrbisKernelTimespec* abstime, u64 usec) {
          * POSIX specifies that mutexes should return
          * EDEADLK if a recursive lock is detected.
          */
-        UNREACHABLE_MSG("Mutex deadlock occured");
+        LOG_ERROR(Lib_Kernel, "Mutex deadlock possibly occured");
         return POSIX_EDEADLK;
     }
     case PthreadMutexType::Normal: {
