@@ -37,7 +37,7 @@ struct WrapperImpl<name, PS4_SYSV_ABI R (*)(Args...), f> {
     static R PS4_SYSV_ABI wrap(Args... args) {
         u32 ret = f(args...);
         if (ret != 0) {
-            LOG_ERROR(Lib_Kernel, "Function {} returned {}", std::string_view{name.value}, ret);
+            // LOG_ERROR(Lib_Kernel, "Function {} returned {}", std::string_view{name.value}, ret);
             ret += SCE_KERNEL_ERROR_UNKNOWN;
         }
         return ret;

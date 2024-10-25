@@ -2120,9 +2120,11 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
                                       ccb_sizes_in_bytes);
 }
 
-s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
-                                            u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
-                                            u32* ccb_sizes_in_bytes) {
+int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
+                                                       const u32* dcb_gpu_addrs[],
+                                                       u32* dcb_sizes_in_bytes,
+                                                       const u32* ccb_gpu_addrs[],
+                                                       u32* ccb_sizes_in_bytes) {
     LOG_DEBUG(Lib_GnmDriver, "called");
 
     if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
@@ -2207,9 +2209,11 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
+                                            u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
+                                            u32* ccb_sizes_in_bytes) {
+    return sceGnmSubmitCommandBuffersForWorkload(count, count, dcb_gpu_addrs, dcb_sizes_in_bytes,
+                                                 ccb_gpu_addrs, ccb_sizes_in_bytes);
 }
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {

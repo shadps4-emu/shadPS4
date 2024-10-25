@@ -239,7 +239,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
     if (!info) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    if (info->st_size <= sizeof(OrbisModuleInfoForUnwind)) {
+    if (info->st_size < sizeof(OrbisModuleInfoForUnwind)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -250,6 +250,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
     const auto mod_info = module->GetModuleInfoEx();
 
     // Fill in module info.
+    std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
     info->name = mod_info.name;
     info->eh_frame_hdr_addr = mod_info.eh_frame_hdr_addr;
     info->eh_frame_addr = mod_info.eh_frame_addr;

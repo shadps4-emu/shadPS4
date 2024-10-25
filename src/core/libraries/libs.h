@@ -45,8 +45,8 @@ struct wrapper_impl<name, PS4_SYSV_ABI R (*)(Args...), f> {
 template <StringLiteral name, class F, F f>
 constexpr auto wrapper = wrapper_impl<name, F, f>::wrap;
 
-#define W(foo) wrapper<#foo, decltype(&foo), foo>
-// #define W(foo) foo
+// #define W(foo) wrapper<#foo, decltype(&foo), foo>
+#define W(foo) foo
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, f)         \
     {                                                                                              \
