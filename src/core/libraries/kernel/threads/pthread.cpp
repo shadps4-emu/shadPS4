@@ -127,7 +127,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     pthread->joiner = curthread;
     pthread->lock.unlock();
 
-    const auto backout_join = [](void* arg) {
+    const auto backout_join = [](void* arg) PS4_SYSV_ABI {
         Pthread* pthread = (Pthread*)arg;
         std::scoped_lock lk{pthread->lock};
         pthread->joiner = nullptr;
@@ -258,12 +258,12 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->arg = arg;
     new_thread->cancel_enable = 1;
     new_thread->cancel_async = 0;
-    static std::atomic<int> counter = 0;
-    new_thread->name = fmt::format("NoName{}", counter++);
 
     auto* memory = Core::Memory::Instance();
     if (name && memory->IsValidAddress(name)) {
         new_thread->name = name;
+    } else {
+        new_thread->name = fmt::format("Thread{}", new_thread->tid.load());
     }
 
     ASSERT(new_thread->attr.suspend == 0);
@@ -284,7 +284,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     pthread_t* pthr = reinterpret_cast<pthread_t*>(&new_thread->native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
-    pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr, new_thread->attr.stacksize_attr);
+    // pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr,
+    // new_thread->attr.stacksize_attr);
     int ret = pthread_create(pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
@@ -303,7 +304,7 @@ int PS4_SYSV_ABI posix_pthread_getthreadid_np() {
 }
 
 int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
-    std::memcpy(name, thread->name.data(), std::min(thread->name.size(), 32UL));
+    std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
     return 0;
 }
 

@@ -194,10 +194,12 @@ struct PthreadSpecificElem {
     int seqno;
 };
 
+using PthreadKeyDestructor = void PS4_SYSV_ABI (*)(const void*);
+
 struct PthreadKey {
     int allocated;
     int seqno;
-    void PS4_SYSV_ABI (*destructor)(const void*);
+    PthreadKeyDestructor destructor;
 };
 using PthreadKeyT = s32;
 
@@ -227,7 +229,7 @@ enum class ThreadListFlags : u32 {
     InGcList = 4,
 };
 
-using PthreadEntryFunc = void* (*)(void*);
+using PthreadEntryFunc = void* PS4_SYSV_ABI (*)(void*);
 
 constexpr u32 TidTerminated = 1;
 
@@ -254,7 +256,7 @@ struct Pthread {
     int critical_count;
     int sigblock;
     int refcount;
-    void* PS4_SYSV_ABI (*start_routine)(void*);
+    PthreadEntryFunc start_routine;
     void* arg;
     uintptr_t native_handle;
     PthreadAttr attr;
@@ -264,7 +266,7 @@ struct Pthread {
     bool no_cancel;
     bool cancel_async;
     bool cancelling;
-    sigset_t sigmask;
+    Cpuset sigmask;
     bool unblock_sigcancel;
     bool in_sigsuspend;
     bool force_exit;

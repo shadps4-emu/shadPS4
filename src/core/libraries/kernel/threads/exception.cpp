@@ -15,6 +15,7 @@ namespace Libraries::Kernel {
 
 static std::array<SceKernelExceptionHandler, 32> Handlers{};
 
+#ifndef _WIN64
 void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
     const auto handler = Handlers[POSIX_SIGUSR1];
     if (handler) {
@@ -63,12 +64,14 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         handler(POSIX_SIGUSR1, &ctx);
     }
 }
+#endif
 
 int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelExceptionHandler handler) {
-    if (signum == POSIX_SIGSEGV) {
+    if (signum != POSIX_SIGUSR1) {
+        LOG_ERROR(Lib_Kernel, "Installing non-supported exception handler for signal {}", signum);
         return 0;
     }
-    ASSERT_MSG(signum == POSIX_SIGUSR1 && !Handlers[POSIX_SIGUSR1], "Invalid parameters");
+    ASSERT_MSG(!Handlers[POSIX_SIGUSR1], "Invalid parameters");
     Handlers[POSIX_SIGUSR1] = handler;
 #ifdef _WIN64
     UNREACHABLE_MSG("Missing exception implementation");
@@ -82,10 +85,11 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelException
 }
 
 int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
-    if (signum == 8) {
+    if (signum != POSIX_SIGUSR1) {
+        LOG_ERROR(Lib_Kernel, "Installing non-supported exception handler for signal {}", signum);
         return 0;
     }
-    ASSERT_MSG(signum == POSIX_SIGUSR1 && Handlers[POSIX_SIGUSR1], "Invalid parameters");
+    ASSERT_MSG(Handlers[POSIX_SIGUSR1], "Invalid parameters");
     Handlers[POSIX_SIGUSR1] = nullptr;
 #ifdef _WIN64
     UNREACHABLE_MSG("Missing exception implementation");
@@ -98,14 +102,11 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     return 0;
 }
 
-static std::mutex mtx;
-
 int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
-    std::scoped_lock lk{mtx};
     LOG_ERROR(Lib_Kernel, "Raising exception");
     ASSERT_MSG(signum == POSIX_SIGUSR1, "Attempting to raise non user defined signal!");
 #ifdef _WIN64
-    UNREACHABLE("Missing exception implementation");
+    UNREACHABLE_MSG("Missing exception implementation");
 #else
     pthread_t pthr = *reinterpret_cast<pthread_t*>(thread->native_handle);
     pthread_kill(pthr, SIGUSR2);

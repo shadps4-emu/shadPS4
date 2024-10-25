@@ -5,10 +5,10 @@
 #include <list>
 #include <mutex>
 #include <semaphore>
-#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
@@ -110,14 +110,10 @@ public:
         bool was_cancled{};
 
         explicit WaitingThread(s32 need_count, bool is_fifo) : need_count{need_count} {
-            if (is_fifo) {
-                return;
-            }
             // Retrieve calling thread priority for sorting into waiting threads list.
-            s32 policy;
-            sched_param param;
-            pthread_getschedparam(pthread_self(), &policy, &param);
-            priority = param.sched_priority;
+            if (!is_fifo) {
+                priority = g_curthread->attr.prio;
+            }
         }
 
         int GetResult(bool timed_out) {

@@ -15,7 +15,7 @@ static constexpr u32 PthreadDestructorIterations = 4;
 static std::array<PthreadKey, PthreadKeysMax> ThreadKeytable{};
 static std::mutex KeytableLock;
 
-int PS4_SYSV_ABI posix_pthread_key_create(PthreadKeyT* key, void (*destructor)(const void*)) {
+int PS4_SYSV_ABI posix_pthread_key_create(PthreadKeyT* key, PthreadKeyDestructor destructor) {
     std::scoped_lock lk{KeytableLock};
     const auto it = std::ranges::find(ThreadKeytable, 0, &PthreadKey::allocated);
     if (it != ThreadKeytable.end()) {
@@ -44,7 +44,7 @@ int PS4_SYSV_ABI posix_pthread_key_delete(PthreadKeyT key) {
 
 void _thread_cleanupspecific() {
     Pthread* curthread = g_curthread;
-    void (*destructor)(const void*);
+    PthreadKeyDestructor destructor;
     const void* data = NULL;
 
     if (curthread->specific == nullptr) {
