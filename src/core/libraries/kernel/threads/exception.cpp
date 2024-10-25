@@ -19,6 +19,27 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
     const auto handler = Handlers[POSIX_SIGUSR1];
     if (handler) {
         auto ctx = Ucontext{};
+#ifdef __APPLE__
+        auto& regs = raw_context->uc_mcontext->__ss;
+        ctx.uc_mcontext.mc_r8 = regs.__r8;
+        ctx.uc_mcontext.mc_r9 = regs.__r9;
+        ctx.uc_mcontext.mc_r10 = regs.__r10;
+        ctx.uc_mcontext.mc_r11 = regs.__r11;
+        ctx.uc_mcontext.mc_r12 = regs.__r12;
+        ctx.uc_mcontext.mc_r13 = regs.__r13;
+        ctx.uc_mcontext.mc_r14 = regs.__r14;
+        ctx.uc_mcontext.mc_r15 = regs.__r15;
+        ctx.uc_mcontext.mc_rdi = regs.__rdi;
+        ctx.uc_mcontext.mc_rsi = regs.__rsi;
+        ctx.uc_mcontext.mc_rbp = regs.__rbp;
+        ctx.uc_mcontext.mc_rbx = regs.__rbx;
+        ctx.uc_mcontext.mc_rdx = regs.__rdx;
+        ctx.uc_mcontext.mc_rax = regs.__rax;
+        ctx.uc_mcontext.mc_rcx = regs.__rcx;
+        ctx.uc_mcontext.mc_rsp = regs.__rsp;
+        ctx.uc_mcontext.mc_fs = regs.__fs;
+        ctx.uc_mcontext.mc_gs = regs.__gs;
+#else
         auto& regs = raw_context->uc_mcontext.gregs;
         ctx.uc_mcontext.mc_r8 = regs[REG_R8];
         ctx.uc_mcontext.mc_r9 = regs[REG_R9];
@@ -38,6 +59,7 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         ctx.uc_mcontext.mc_rsp = regs[REG_RSP];
         ctx.uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
         ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
+#endif
         handler(POSIX_SIGUSR1, &ctx);
     }
 }
