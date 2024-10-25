@@ -29,7 +29,7 @@ public:
     void UpdatePlayTime(const std::string& serial);
 
 private:
-    void LoadSystemModules(const std::filesystem::path& file);
+    void LoadSystemModules(const std::filesystem::path& file, std::string game_serial);
 
     Core::MemoryManager* memory;
     Input::GameController* controller;

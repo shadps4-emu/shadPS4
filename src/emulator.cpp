@@ -229,7 +229,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     linker->LoadModule(eboot_path);
 
     // check if we have system modules to load
-    LoadSystemModules(eboot_path);
+    LoadSystemModules(eboot_path, game_info.game_serial);
 
     // Load all prx from game's sce_module folder
     std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
@@ -273,8 +273,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::exit(0);
 }
 
-void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 13> ModulesToLoad{
+void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
+    constexpr std::array<SysModules, 12> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
          {"libSceUlt.sprx", nullptr},
@@ -284,7 +284,6 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceJpegEnc.sprx", nullptr},
-         {"libSceFont.sprx", nullptr},
          {"libSceRazorCpu.sprx", nullptr},
          {"libSceCesCs.sprx", nullptr},
          {"libSceRudp.sprx", nullptr}}};
@@ -308,6 +307,10 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
         } else {
             LOG_INFO(Loader, "No HLE available for {} module", module_name);
         }
+    }
+    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path / game_serial)) {
+        LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(), game_serial);
+        linker->LoadModule(entry.path());
     }
 }
 
