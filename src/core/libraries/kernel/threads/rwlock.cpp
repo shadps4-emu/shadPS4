@@ -218,14 +218,14 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_init(PthreadRwlockAttrT* rwlockattr) {
         return POSIX_ENOMEM;
     }
 
-    prwlockattr->pshared = PTHREAD_PROCESS_PRIVATE;
+    prwlockattr->pshared = 0;
     *rwlockattr = prwlockattr;
     return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlockattr_setpshared(PthreadRwlockAttrT* rwlockattr, int pshared) {
     /* Only PTHREAD_PROCESS_PRIVATE is supported. */
-    if (pshared != PTHREAD_PROCESS_PRIVATE) {
+    if (pshared != 0) {
         return POSIX_EINVAL;
     }
 

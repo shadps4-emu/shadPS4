@@ -25,7 +25,7 @@ static constexpr std::array<PthreadPrio, 3> ThrPriorities = {{
 
 PthreadAttr PthreadAttrDefault = {
     .sched_policy = SchedPolicy::Fifo,
-    .sched_inherit = PTHREAD_INHERIT_SCHED,
+    .sched_inherit = 0,
     .prio = 0,
     .suspend = false,
     .flags = PthreadAttrFlags::ScopeSystem,
@@ -69,8 +69,7 @@ int PS4_SYSV_ABI posix_pthread_attr_getinheritsched(const PthreadAttrT* attr, in
     return 0;
 }
 
-int PS4_SYSV_ABI posix_pthread_attr_getschedparam(const PthreadAttrT* attr,
-                                                  struct sched_param* param) {
+int PS4_SYSV_ABI posix_pthread_attr_getschedparam(const PthreadAttrT* attr, SchedParam* param) {
     if (attr == nullptr || *attr == nullptr || param == nullptr) {
         return POSIX_EINVAL;
     }
@@ -172,7 +171,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setdetachstate(PthreadAttrT* attr, int detac
     return 0;
 }
 
-int PS4_SYSV_ABI posix_pthread_attr_setschedparam(PthreadAttrT* attr, const sched_param* param) {
+int PS4_SYSV_ABI posix_pthread_attr_setschedparam(PthreadAttrT* attr, SchedParam* param) {
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
@@ -248,15 +247,6 @@ int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, si
     return 0;
 }
 
-int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, Cpuset* mask) {
-    Cpuset cpuset;
-    const int ret = posix_pthread_attr_getaffinity_np(param_1, 0x10, &cpuset);
-    if (ret == 0) {
-        *mask = cpuset;
-    }
-    return ret;
-}
-
 int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t cpusetsize,
                                                    const Cpuset* cpusetp) {
     if (pattr == nullptr) {
@@ -280,6 +270,24 @@ int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t c
     }
     memcpy(attr->cpuset, cpusetp, sizeof(Cpuset));
     return 0;
+}
+
+int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, Cpuset* mask) {
+    Cpuset cpuset;
+    const int ret = posix_pthread_attr_getaffinity_np(param_1, 0x10, &cpuset);
+    if (ret == 0) {
+        *mask = cpuset;
+    }
+    return ret;
+}
+
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const Cpuset mask) {
+    if (attr == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // posix_pthread_attr_setaffinity_np(attr, 0x10, &mask);
+    return ORBIS_OK;
 }
 
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
@@ -335,6 +343,7 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_attr_setguardsize));
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(scePthreadAttrGetaffinity));
+    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
 }
 
 } // namespace Libraries::Kernel

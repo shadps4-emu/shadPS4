@@ -57,7 +57,7 @@ public:
         }
     }
 
-    static void* RunWrapper(void* arg) {
+    static void* PS4_SYSV_ABI RunWrapper(void* arg) {
         Thread* thr = (Thread*)arg;
         thr->func(thr->stop.get_token());
         return nullptr;
