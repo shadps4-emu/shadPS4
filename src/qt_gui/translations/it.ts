@@ -18,7 +18,7 @@
 		<message>
 			<location filename="../about_dialog.ui" line="78"/>
 			<source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-			<translation>shadPS4 è un emulatore sperimentale open source per PlayStation 4.</translation>
+			<translation>shadPS4 è un emulatore sperimentale open-source per PlayStation 4.</translation>
 		</message>
 		<message>
 			<location filename="../about_dialog.ui" line="99"/>
@@ -1420,7 +1420,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="198"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Verifica aggiornamenti all’avvio</translation>
+			<translation>Controlla aggiornamenti all’avvio</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="199"/>
