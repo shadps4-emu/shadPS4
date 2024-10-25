@@ -99,7 +99,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Image
         if (cache_info.resources == requested_info.resources) {
             return cache_image_id;
         } else {
-            UNREACHABLE();
+            // UNREACHABLE();
         }
     }
 
