@@ -91,9 +91,24 @@ struct Image {
         return image_view_ids[std::distance(image_view_infos.begin(), it)];
     }
 
+    void ForEachSubresource(VAddr addr, size_t size, auto&& func) {
+        const u32 num_layers = info.resources.layers;
+        for (u32 m = 0; const auto& mip : info.mips_layout) {
+            for (u32 l = 0; l < num_layers; l++) {
+                const VAddr mip_addr = info.guest_address + mip.offset * num_layers + mip.size * l;
+                const VAddr mip_addr_end = mip_addr + mip.size;
+                if (mip_addr < addr + size && addr < mip_addr_end) {
+                    func(m * num_layers + l);
+                }
+            }
+            m++;
+        }
+    }
+
     boost::container::small_vector<vk::ImageMemoryBarrier2, 32> GetBarriers(
         vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
         vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range);
+
     void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
                  std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
@@ -111,6 +126,7 @@ struct Image {
     VAddr cpu_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
+    u64 subres_state{};
 
     // Resource state tracking
     vk::ImageUsageFlags usage;

@@ -46,8 +46,10 @@ TextureCache::~TextureCache() = default;
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        // Ensure image is reuploaded when accessed again.
+        // Mark any subresources as dirty.
         image.flags |= ImageFlagBits::CpuDirty;
+        image.ForEachSubresource(address, size,
+                                 [&](u32 index) { image.subres_state |= 1ULL << index; });
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
@@ -57,12 +59,13 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
         // Only consider images that match base address.
-        // TODO: Maybe also consider subresources
         if (image.info.guest_address != address) {
             return;
         }
-        // Ensure image is reuploaded when accessed again.
+        // Mark any subresources as dirty.
         image.flags |= ImageFlagBits::GpuDirty;
+        image.ForEachSubresource(address, max_size,
+                                 [&](u32 index) { image.subres_state |= 1ULL << index; });
     });
 }
 
@@ -375,12 +378,18 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         return;
     }
 
-    const auto& num_layers = image.info.resources.layers;
-    const auto& num_mips = image.info.resources.levels;
+    const u32 num_layers = image.info.resources.layers;
+    const u32 num_mips = image.info.resources.levels;
     ASSERT(num_mips == image.info.mips_layout.size());
 
     boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
     for (u32 m = 0; m < num_mips; m++) {
+        const u32 mask = (1 << num_layers) - 1;
+        const u64 subres_state = (image.subres_state >> (m * num_layers)) & mask;
+        if (subres_state == 0) {
+            continue;
+        }
+
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =
@@ -399,19 +408,40 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.mip_hashes[m] = hash;
         }
 
-        image_copy.push_back({
-            .bufferOffset = mip_ofs * num_layers,
-            .bufferRowLength = static_cast<u32>(mip_pitch),
-            .bufferImageHeight = static_cast<u32>(mip_height),
-            .imageSubresource{
-                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = m,
-                .baseArrayLayer = 0,
-                .layerCount = num_layers,
-            },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
-        });
+        if (subres_state == mask) {
+            image_copy.push_back({
+                .bufferOffset = mip_ofs * num_layers,
+                .bufferRowLength = static_cast<u32>(mip_pitch),
+                .bufferImageHeight = static_cast<u32>(mip_height),
+                .imageSubresource{
+                    .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                    .mipLevel = m,
+                    .baseArrayLayer = 0,
+                    .layerCount = num_layers,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {width, height, depth},
+            });
+        } else {
+            for (u32 l = 0; l < num_layers; l++) {
+                if (!(subres_state & (1 << l))) {
+                    continue;
+                }
+                image_copy.push_back({
+                    .bufferOffset = mip_ofs * num_layers + mip_size * l,
+                    .bufferRowLength = static_cast<u32>(mip_pitch),
+                    .bufferImageHeight = static_cast<u32>(mip_height),
+                    .imageSubresource{
+                        .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                        .mipLevel = m,
+                        .baseArrayLayer = l,
+                        .layerCount = 1,
+                    },
+                    .imageOffset = {0, 0, 0},
+                    .imageExtent = {width, height, depth},
+                });
+            }
+        }
     }
 
     if (image_copy.empty()) {
@@ -447,6 +477,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
     image.flags &= ~ImageFlagBits::Dirty;
+    image.subres_state = 0;
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
