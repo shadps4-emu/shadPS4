@@ -15,6 +15,8 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+include(CMakeDependentOption)
+
 project(shadPS4)
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
@@ -31,6 +33,7 @@ endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
+CMAKE_DEPENDENT_OPTION(ENABLE_USERFAULTFD "Enable write tracking using userfaultfd on unix" ON "NOT LINUX" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -831,6 +834,10 @@ endif()
 if (ENABLE_QT_GUI)
    target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
    add_definitions(-DENABLE_QT_GUI)
+endif()
+
+if (ENABLE_USERFAULTFD)
+    add_definitions(-DENABLE_USERFAULTFD)
 endif()
 
 if (WIN32)
