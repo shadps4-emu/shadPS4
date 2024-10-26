@@ -11,8 +11,6 @@
 #include "core/libraries/libs.h"
 #include "core/memory.h"
 
-#include <pthread.h>
-
 namespace Libraries::Kernel {
 
 constexpr int PthreadInheritSched = 4;
@@ -62,7 +60,7 @@ static void ExitThread() {
     curthread->tid.store(TidTerminated);
     curthread->tid.notify_all();
 
-    pthread_exit(nullptr);
+    curthread->native_thr.Exit();
     UNREACHABLE();
     /* Never reach! */
 }
@@ -201,7 +199,8 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     return 0;
 }
 
-static void RunThread(Pthread* curthread) {
+static void RunThread(void* arg) {
+    Pthread* curthread = (Pthread*)arg;
     g_curthread = curthread;
     Common::SetCurrentThreadName(curthread->name.c_str());
     DebugState.AddCurrentThreadToGuestList();
@@ -281,12 +280,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
-    pthread_t* pthr = reinterpret_cast<pthread_t*>(&new_thread->native_handle);
-    pthread_attr_t pattr;
-    pthread_attr_init(&pattr);
-    // pthread_attr_setstack(&pattr, new_thread->attr.stackaddr_attr,
-    // new_thread->attr.stacksize_attr);
-    int ret = pthread_create(pthr, &pattr, (PthreadEntryFunc)RunThread, new_thread);
+    new_thread->native_thr = Core::Thread();
+    int ret = new_thread->native_thr.Create(RunThread, new_thread);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;
@@ -343,7 +338,7 @@ int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control, void (*init_routi
         }
     }
 
-    const auto once_cancel_handler = [](void* arg) {
+    const auto once_cancel_handler = [](void* arg) PS4_SYSV_ABI {
         PthreadOnce* once_control = (PthreadOnce*)arg;
         auto state = PthreadOnceState::InProgress;
         if (once_control->state.compare_exchange_strong(state, PthreadOnceState::NeverDone,

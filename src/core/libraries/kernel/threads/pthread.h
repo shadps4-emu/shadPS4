@@ -13,6 +13,7 @@
 
 #include "common/enum.h"
 #include "core/libraries/kernel/time.h"
+#include "core/thread.h"
 #include "core/tls.h"
 
 namespace Core::Loader {
@@ -258,7 +259,7 @@ struct Pthread {
     int refcount;
     PthreadEntryFunc start_routine;
     void* arg;
-    uintptr_t native_handle;
+    Core::Thread native_thr;
     PthreadAttr attr;
     bool cancel_enable;
     bool cancel_pending;

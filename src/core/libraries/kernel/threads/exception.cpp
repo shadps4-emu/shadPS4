@@ -108,7 +108,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
 #ifdef _WIN64
     UNREACHABLE_MSG("Missing exception implementation");
 #else
-    pthread_t pthr = *reinterpret_cast<pthread_t*>(thread->native_handle);
+    pthread_t pthr = *reinterpret_cast<pthread_t*>(thread->native_thr.GetHandle());
     pthread_kill(pthr, SIGUSR2);
 #endif
     return 0;

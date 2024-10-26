@@ -550,6 +550,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
+         src/core/thread.cpp
+         src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
          src/core/virtual_memory.cpp

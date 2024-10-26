@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <imgui.h>
-#include <pthread.h>
 
 #include "common/assert.h"
 #include "common/config.h"
