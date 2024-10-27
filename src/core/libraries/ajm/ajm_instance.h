@@ -54,6 +54,12 @@ struct AjmSidebandFormat {
     u32 reserved;
 };
 
+struct AjmSidebandGaplessDecode {
+    u32 total_samples;
+    u16 skip_samples;
+    u16 skipped_samples;
+};
+
 struct AjmInstance {
     AjmCodecType codec_type;
     u32 decoded_samples{};
@@ -69,6 +75,7 @@ struct AjmInstance {
     virtual void Initialize(const void* buffer, u32 buffer_size) = 0;
 
     virtual void GetCodecInfo(void* out_info) = 0;
+    virtual u32 GetCodecInfoSize() = 0;
 
     virtual std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
                                              u32 out_size) = 0;

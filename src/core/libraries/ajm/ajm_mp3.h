@@ -70,6 +70,9 @@ struct AjmMp3Decoder : public AjmInstance {
     void Initialize(const void* buffer, u32 buffer_size) override {}
 
     void GetCodecInfo(void* out_info) override {}
+    u32 GetCodecInfoSize() override {
+        return sizeof(AjmSidebandDecMp3CodecInfo);
+    }
 
     std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
                                      u32 out_size) override;

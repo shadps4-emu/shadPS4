@@ -31,9 +31,9 @@ void AjmAt9Decoder::Reset() {
 void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
     Atrac9ReleaseHandle(handle);
     handle = Atrac9GetHandle();
-    ASSERT_MSG(buffer_size == sizeof(SceAjmDecAt9InitializeParameters),
+    ASSERT_MSG(buffer_size == sizeof(AjmDecAt9InitializeParameters),
                "Incorrect At9 initialization buffer size {}", buffer_size);
-    const auto params = reinterpret_cast<const SceAjmDecAt9InitializeParameters*>(buffer);
+    const auto params = reinterpret_cast<const AjmDecAt9InitializeParameters*>(buffer);
     std::memcpy(config_data, params->config_data, SCE_AT9_CONFIG_DATA_SIZE);
     Atrac9InitDecoder(handle, config_data);
 }
@@ -42,7 +42,7 @@ void AjmAt9Decoder::GetCodecInfo(void* out_info) {
     Atrac9CodecInfo decoder_codec_info;
     Atrac9GetCodecInfo(handle, &decoder_codec_info);
 
-    auto* codec_info = reinterpret_cast<SceAjmSidebandDecAt9CodecInfo*>(out_info);
+    auto* codec_info = reinterpret_cast<AjmSidebandDecAt9CodecInfo*>(out_info);
     codec_info->uiFrameSamples = decoder_codec_info.frameSamples;
     codec_info->uiFramesInSuperFrame = decoder_codec_info.framesInSuperframe;
     codec_info->uiNextFrameSize = static_cast<Atrac9Handle*>(handle)->Config.FrameBytes;
