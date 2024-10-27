@@ -83,19 +83,19 @@ int PS4_SYSV_ABI sceAjmBatchErrorDump() {
 }
 
 template <class ChunkType, class CursorType>
-ChunkType& AjmGetChunk(CursorType& p_cursor) {
+ChunkType& AjmBufferExtract(CursorType& p_cursor) {
     auto* const result = reinterpret_cast<ChunkType*>(p_cursor);
     p_cursor += sizeof(ChunkType);
     return *result;
 }
 
 template <class ChunkType, class CursorType>
-void AjmSkipChunk(CursorType& p_cursor) {
+void AjmBufferSkip(CursorType& p_cursor) {
     p_cursor += sizeof(ChunkType);
 }
 
 template <class ChunkType, class CursorType>
-ChunkType& AjmPeekChunk(CursorType p_cursor) {
+ChunkType& AjmBufferPeek(CursorType p_cursor) {
     return *reinterpret_cast<ChunkType*>(p_cursor);
 }
 
@@ -108,21 +108,21 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
 
     u8* p_current = (u8*)p_buffer;
 
-    auto& header = AjmGetChunk<AjmChunkHeader>(p_current);
+    auto& header = AjmBufferExtract<AjmChunkHeader>(p_current);
     header.ident = AjmIdentJob;
     header.payload = instance_id;
 
     const u8* const p_begin = p_current;
 
     if (p_return_address != nullptr) {
-        auto& chunk_ra = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
 
     {
-        auto& chunk_input = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputControlBuf;
         chunk_input.header.size = sideband_input_size;
         chunk_input.p_address = p_sideband_input;
@@ -141,14 +141,14 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
         const bool is_statistics = instance_id == AJM_INSTANCE_STATISTICS;
         flags &= is_statistics ? 0x0000'0000'C001'8007 : 0x0000'6000'0000'E7FF;
 
-        auto& chunk_flags = AjmGetChunk<AjmChunkHeader>(p_current);
+        auto& chunk_flags = AjmBufferExtract<AjmChunkHeader>(p_current);
         chunk_flags.ident = AjmIdentControlFlags;
         chunk_flags.payload = u32(flags >> 32);
         chunk_flags.size = u32(flags);
     }
 
     {
-        auto& chunk_output = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
@@ -165,7 +165,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(void* p_buffer, const void* p_data
 
     u8* p_current = (u8*)p_buffer;
 
-    auto& header = AjmGetChunk<AjmChunkHeader>(p_current);
+    auto& header = AjmBufferExtract<AjmChunkHeader>(p_current);
     header.ident = AjmIdentInlineBuf;
     header.size = Common::AlignUp(data_input_size, 8);
     *pp_batch_address = p_current;
@@ -183,21 +183,21 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
 
     u8* p_current = (u8*)p_buffer;
 
-    auto& header = AjmGetChunk<AjmChunkHeader>(p_current);
+    auto& header = AjmBufferExtract<AjmChunkHeader>(p_current);
     header.ident = AjmIdentJob;
     header.payload = instance_id;
 
     const u8* const p_begin = p_current;
 
     if (p_return_address != nullptr) {
-        auto& chunk_ra = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
 
     {
-        auto& chunk_input = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputRunBuf;
         chunk_input.header.size = data_input_size;
         chunk_input.p_address = p_data_input;
@@ -209,21 +209,21 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
         // | 111      | 00000000000000000000000000000 | 000     | 11  | 11111111 | 111      |
         flags &= 0x0000'E000'0000'1FFF;
 
-        auto& chunk_flags = AjmGetChunk<AjmChunkHeader>(p_current);
+        auto& chunk_flags = AjmBufferExtract<AjmChunkHeader>(p_current);
         chunk_flags.ident = AjmIdentRunFlags;
         chunk_flags.payload = u32(flags >> 32);
         chunk_flags.size = u32(flags);
     }
 
     {
-        auto& chunk_output = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputRunBuf;
         chunk_output.header.size = data_output_size;
         chunk_output.p_address = p_data_output;
     }
 
     {
-        auto& chunk_output = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
@@ -242,21 +242,21 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
 
     u8* p_current = (u8*)p_buffer;
 
-    auto& header = AjmGetChunk<AjmChunkHeader>(p_current);
+    auto& header = AjmBufferExtract<AjmChunkHeader>(p_current);
     header.ident = AjmIdentJob;
     header.payload = instance_id;
 
     const u8* const p_begin = p_current;
 
     if (p_return_address != nullptr) {
-        auto& chunk_ra = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
 
     for (s32 i = 0; i < num_data_input_buffers; i++) {
-        auto& chunk_input = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputRunBuf;
         chunk_input.header.size = p_data_input_buffers[i].size;
         chunk_input.p_address = p_data_input_buffers[i].p_address;
@@ -268,21 +268,21 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
         // | 111      | 00000000000000000000000000000 | 000     | 11  | 11111111 | 111      |
         flags &= 0x0000'E000'0000'1FFF;
 
-        auto& chunk_flags = AjmGetChunk<AjmChunkHeader>(p_current);
+        auto& chunk_flags = AjmBufferExtract<AjmChunkHeader>(p_current);
         chunk_flags.ident = AjmIdentRunFlags;
         chunk_flags.payload = u32(flags >> 32);
         chunk_flags.size = u32(flags);
     }
 
     for (s32 i = 0; i < num_data_output_buffers; i++) {
-        auto& chunk_output = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputRunBuf;
         chunk_output.header.size = p_data_output_buffers[i].size;
         chunk_output.p_address = p_data_output_buffers[i].p_address;
     }
 
     {
-        auto& chunk_output = AjmGetChunk<AjmChunkBuffer>(p_current);
+        auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
@@ -315,7 +315,7 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
     const u8* p_batch_end = batch + batch_size;
 
     while (p_current < p_batch_end) {
-        auto& header = AjmGetChunk<const AjmChunkHeader>(p_current);
+        auto& header = AjmBufferExtract<const AjmChunkHeader>(p_current);
         ASSERT(header.ident == AjmIdentJob);
 
         std::optional<AjmJobFlags> job_flags = {};
@@ -327,23 +327,23 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
         // Read parameters of a job
         auto* const p_job_end = p_current + header.size;
         while (p_current < p_job_end) {
-            auto& header = AjmPeekChunk<const AjmChunkHeader>(p_current);
+            auto& header = AjmBufferPeek<const AjmChunkHeader>(p_current);
             switch (header.ident) {
             case Identifier::AjmIdentInputRunBuf: {
-                input_run_buffers.emplace_back(AjmGetChunk<const AjmChunkBuffer>(p_current));
+                input_run_buffers.emplace_back(AjmBufferExtract<const AjmChunkBuffer>(p_current));
                 break;
             }
             case Identifier::AjmIdentInputControlBuf: {
                 ASSERT_MSG(!input_control_buffer.has_value(),
                            "Only one instance of input control buffer is allowed per job");
-                input_control_buffer = AjmGetChunk<const AjmChunkBuffer>(p_current);
+                input_control_buffer = AjmBufferExtract<const AjmChunkBuffer>(p_current);
                 break;
             }
             case Identifier::AjmIdentControlFlags:
             case Identifier::AjmIdentRunFlags: {
                 ASSERT_MSG(!job_flags.has_value(),
                            "Only one instance of job flags is allowed per job");
-                auto& flags_chunk = AjmGetChunk<const AjmChunkHeader>(p_current);
+                auto& flags_chunk = AjmBufferExtract<const AjmChunkHeader>(p_current);
                 job_flags = AjmJobFlags{
                     .raw = (u64(flags_chunk.payload) << 32) + flags_chunk.size,
                 };
@@ -351,17 +351,17 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             }
             case Identifier::AjmIdentReturnAddressBuf: {
                 // Ignore return address buffers.
-                AjmSkipChunk<const AjmChunkBuffer>(p_current);
+                AjmBufferSkip<const AjmChunkBuffer>(p_current);
                 break;
             }
             case Identifier::AjmIdentOutputRunBuf: {
-                output_run_buffers.emplace_back(AjmGetChunk<const AjmChunkBuffer>(p_current));
+                output_run_buffers.emplace_back(AjmBufferExtract<const AjmChunkBuffer>(p_current));
                 break;
             }
             case Identifier::AjmIdentOutputControlBuf: {
                 ASSERT_MSG(!output_control_buffer.has_value(),
                            "Only one instance of output control buffer is allowed per job");
-                output_control_buffer = AjmGetChunk<const AjmChunkBuffer>(p_current);
+                output_control_buffer = AjmBufferExtract<const AjmChunkBuffer>(p_current);
                 break;
             }
             default:
@@ -391,19 +391,48 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             LOG_ERROR(Lib_Ajm, "Unimplemented: Set resample params of instance {}", instance);
         }
 
-        // Write sideband structures.
-        auto* p_sideband = reinterpret_cast<u8*>(output_control_buffer.value().p_address);
-        auto* result = reinterpret_cast<AjmSidebandResult*>(p_sideband);
-        result->result = 0;
-        result->internal_result = 0;
-        p_sideband += sizeof(AjmSidebandResult);
+        AjmSidebandResult* p_result = nullptr;
+        AjmSidebandStream* p_stream = nullptr;
+        AjmSidebandFormat* p_format = nullptr;
+        AjmSidebandGaplessDecode* p_gapless_decode = nullptr;
+        AjmSidebandMFrame* p_mframe = nullptr;
+        u8* p_codec_info = nullptr;
+
+        // Initialize sideband structures.
+        if (output_control_buffer.has_value()) {
+            auto* p_sideband = reinterpret_cast<u8*>(output_control_buffer.value().p_address);
+            p_result = &AjmBufferExtract<AjmSidebandResult>(p_sideband);
+            *p_result = AjmSidebandResult{};
+
+            const auto sideband_flags = job_flags.value().sideband_flags;
+            if (True(sideband_flags & AjmJobSidebandFlags::Stream)) {
+                p_stream = &AjmBufferExtract<AjmSidebandStream>(p_sideband);
+                *p_stream = AjmSidebandStream{};
+            }
+            if (True(sideband_flags & AjmJobSidebandFlags::Format)) {
+                LOG_ERROR(Lib_Ajm, "SIDEBAND_FORMAT is not implemented");
+                p_format = &AjmBufferExtract<AjmSidebandFormat>(p_sideband);
+                *p_format = AjmSidebandFormat{};
+            }
+            if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode)) {
+                LOG_ERROR(Lib_Ajm, "SIDEBAND_GAPLESS_DECODE is not implemented");
+                p_gapless_decode = &AjmBufferExtract<AjmSidebandGaplessDecode>(p_sideband);
+                *p_gapless_decode = AjmSidebandGaplessDecode{};
+            }
+            const auto run_flags = job_flags.value().run_flags;
+            if (True(run_flags & AjmJobRunFlags::MultipleFrames)) {
+                p_mframe = &AjmBufferExtract<AjmSidebandMFrame>(p_sideband);
+                *p_mframe = AjmSidebandMFrame{};
+            }
+            if (True(run_flags & AjmJobRunFlags::GetCodecInfo)) {
+                p_codec_info = p_sideband;
+                p_sideband += p_instance->GetCodecInfoSize();
+            }
+        }
 
         // Perform operation requested by run flags.
         ASSERT_MSG(input_run_buffers.size() == output_run_buffers.size(),
-                   "Run operation with uneven input/output of buffers.");
-
-        const auto run_flags = job_flags.value().run_flags;
-        const auto sideband_flags = job_flags.value().sideband_flags;
+                   "Run operation with uneven input/output buffers.");
 
         for (size_t i = 0; i < input_run_buffers.size(); ++i) {
             // Decode as much of the input bitstream as possible.
@@ -414,24 +443,22 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
                 reinterpret_cast<u8*>(in_buffer.p_address), in_buffer.header.size,
                 reinterpret_cast<u8*>(out_buffer.p_address), out_buffer.header.size);
 
-            // Check sideband flags for decoding
-            if (True(sideband_flags & AjmJobSidebandFlags::Stream)) {
-                auto* stream = reinterpret_cast<AjmSidebandStream*>(p_sideband);
-                stream->input_consumed = in_buffer.header.size - in_remain;
-                stream->output_written = out_buffer.header.size - out_remain;
-                stream->total_decoded_samples = p_instance->decoded_samples;
-                p_sideband += sizeof(AjmSidebandStream);
+            if (p_stream != nullptr) {
+                p_stream->input_consumed += in_buffer.header.size - in_remain;
+                p_stream->output_written += out_buffer.header.size - out_remain;
+                p_stream->total_decoded_samples += p_instance->decoded_samples;
             }
-            if (True(run_flags & AjmJobRunFlags::MultipleFrames)) {
-                auto* mframe = reinterpret_cast<AjmSidebandMFrame*>(p_sideband);
-                mframe->num_frames = num_frames;
-                p_sideband += sizeof(AjmSidebandMFrame);
+            if (p_mframe != nullptr) {
+                p_mframe->num_frames += num_frames;
             }
         }
 
-        if (True(run_flags & AjmJobRunFlags::GetCodecInfo)) {
-            p_instance->GetCodecInfo(p_sideband);
+        if (p_codec_info) {
+            p_instance->GetCodecInfo(p_codec_info);
         }
+
+        p_result->result = 0;
+        p_result->internal_result = 0;
     }
 
     batch_info->finished = true;

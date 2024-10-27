@@ -18,12 +18,12 @@ namespace Libraries::Ajm {
 constexpr u32 SCE_AT9_CONFIG_DATA_SIZE = 4;
 constexpr s32 SCE_AJM_DEC_AT9_MAX_CHANNELS = 8;
 
-struct SceAjmDecAt9InitializeParameters {
+struct AjmDecAt9InitializeParameters {
     u8 config_data[SCE_AT9_CONFIG_DATA_SIZE];
     u32 reserved;
 };
 
-struct SceAjmSidebandDecAt9CodecInfo {
+struct AjmSidebandDecAt9CodecInfo {
     u32 uiSuperFrameSize;
     u32 uiFramesInSuperFrame;
     u32 uiNextFrameSize;
@@ -45,6 +45,9 @@ struct AjmAt9Decoder final : AjmInstance {
     void Initialize(const void* buffer, u32 buffer_size) override;
 
     void GetCodecInfo(void* out_info) override;
+    u32 GetCodecInfoSize() override {
+        return sizeof(AjmSidebandDecAt9CodecInfo);
+    }
 
     std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
                                      u32 out_size) override;
