@@ -92,7 +92,9 @@ void _thread_cleanupspecific() {
     }
     delete[] curthread->specific;
     curthread->specific = nullptr;
-    ASSERT(curthread->specific_data_count == 0);
+    if (curthread->specific_data_count > 0) {
+        LOG_WARNING(Lib_Kernel, "Thread has exited with leftover thread-specific data");
+    }
 }
 
 int PS4_SYSV_ABI posix_pthread_setspecific(PthreadKeyT key, const void* value) {
