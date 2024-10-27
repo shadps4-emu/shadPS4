@@ -74,11 +74,11 @@ void AjmMp3Decoder::Reset() {
     int ret = avcodec_open2(c, codec, nullptr);
     ASSERT_MSG(ret >= 0, "Could not open codec");
     decoded_samples = 0;
+    num_frames = 0;
 }
 
 std::tuple<u32, u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_buf,
                                                 u32 out_size) {
-    u32 num_frames = 0;
     AVPacket* pkt = av_packet_alloc();
     while (in_size > 0 && out_size > 0) {
         int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, buf, in_size, AV_NOPTS_VALUE,

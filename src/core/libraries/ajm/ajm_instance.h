@@ -62,10 +62,13 @@ struct AjmSidebandGaplessDecode {
 
 struct AjmInstance {
     AjmCodecType codec_type;
-    u32 decoded_samples{};
     AjmFormatEncoding fmt{};
     u32 num_channels{};
     u32 index{};
+    u32 bytes_remain{};
+    u32 num_frames{};
+    u32 decoded_samples{};
+    AjmSidebandGaplessDecode gapless{};
 
     explicit AjmInstance() = default;
     virtual ~AjmInstance() = default;

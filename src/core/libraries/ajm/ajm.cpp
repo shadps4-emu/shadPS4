@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <condition_variable>
 #include <mutex>
 #include <numeric>
+#include <semaphore>
 #include <boost/container/small_vector.hpp>
 #include <magic_enum.hpp>
 
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/scope_exit.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/ajm/ajm_at9.h"
 #include "core/libraries/ajm/ajm_error.h"
@@ -40,9 +41,7 @@ struct BatchInfo {
     u16 instance{};
     u16 offset_in_qwords{}; // Needed for AjmBatchError?
     bool waiting{};
-    bool finished{};
-    std::mutex mtx;
-    std::condition_variable cv;
+    std::binary_semaphore finished{0};
     int result{};
 };
 
@@ -377,11 +376,11 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
         // Perform operation requested by control flags.
         const auto control_flags = job_flags.value().control_flags;
         if (True(control_flags & AjmJobControlFlags::Reset)) {
-            LOG_TRACE(Lib_Ajm, "Resetting instance {}", instance);
+            LOG_INFO(Lib_Ajm, "Resetting instance {}", instance);
             p_instance->Reset();
         }
         if (True(control_flags & AjmJobControlFlags::Initialize)) {
-            LOG_TRACE(Lib_Ajm, "Initializing instance {}", instance);
+            LOG_INFO(Lib_Ajm, "Initializing instance {}", instance);
             ASSERT_MSG(input_control_buffer.has_value(),
                        "Initialize called without control buffer");
             const auto& in_buffer = input_control_buffer.value();
@@ -417,6 +416,17 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode)) {
                 LOG_ERROR(Lib_Ajm, "SIDEBAND_GAPLESS_DECODE is not implemented");
                 p_gapless_decode = &AjmBufferExtract<AjmSidebandGaplessDecode>(p_sideband);
+                if (input_control_buffer) {
+                    memcpy(&p_instance->gapless, input_control_buffer->p_address,
+                           sizeof(AjmSidebandGaplessDecode));
+                    LOG_INFO(Lib_Ajm,
+                             "Setting gapless params instance = {}, total_samples = {}, "
+                             "skip_samples = {}",
+                             instance, p_instance->gapless.total_samples,
+                             p_instance->gapless.skip_samples);
+                } else {
+                    LOG_ERROR(Lib_Ajm, "Requesting gapless structure!");
+                }
                 *p_gapless_decode = AjmSidebandGaplessDecode{};
             }
             const auto run_flags = job_flags.value().run_flags;
@@ -461,7 +471,7 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
         p_result->internal_result = 0;
     }
 
-    batch_info->finished = true;
+    batch_info->finished.release();
 
     return ORBIS_OK;
 }
@@ -480,14 +490,14 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
     if (batch->waiting) {
         return ORBIS_AJM_ERROR_BUSY;
     }
-    batch->waiting = true;
 
-    {
-        std::unique_lock lk{batch->mtx};
-        if (!batch->cv.wait_for(lk, std::chrono::milliseconds(timeout),
-                                [&] { return batch->finished; })) {
-            return ORBIS_AJM_ERROR_IN_PROGRESS;
-        }
+    batch->waiting = true;
+    SCOPE_EXIT {
+        batch->waiting = false;
+    };
+
+    if (!batch->finished.try_acquire_for(std::chrono::milliseconds(timeout))) {
+        return ORBIS_AJM_ERROR_IN_PROGRESS;
     }
 
     dev->batches.erase(dev->batches.begin() + batch_id);

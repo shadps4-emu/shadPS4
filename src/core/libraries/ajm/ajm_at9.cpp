@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vector>
 #include <fmt/format.h>
 #include "common/assert.h"
 #include "core/libraries/ajm/ajm_at9.h"
@@ -25,17 +26,25 @@ AjmAt9Decoder::~AjmAt9Decoder() {
 }
 
 void AjmAt9Decoder::Reset() {
+    num_frames = 0;
     decoded_samples = 0;
+    gapless = {};
+
+    Atrac9ReleaseHandle(handle);
+    handle = Atrac9GetHandle();
+    Atrac9InitDecoder(handle, config_data);
+
+    Atrac9CodecInfo codec_info;
+    Atrac9GetCodecInfo(handle, &codec_info);
+    bytes_remain = codec_info.superframeSize;
 }
 
 void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
-    Atrac9ReleaseHandle(handle);
-    handle = Atrac9GetHandle();
     ASSERT_MSG(buffer_size == sizeof(AjmDecAt9InitializeParameters),
                "Incorrect At9 initialization buffer size {}", buffer_size);
     const auto params = reinterpret_cast<const AjmDecAt9InitializeParameters*>(buffer);
     std::memcpy(config_data, params->config_data, SCE_AT9_CONFIG_DATA_SIZE);
-    Atrac9InitDecoder(handle, config_data);
+    AjmAt9Decoder::Reset();
 }
 
 void AjmAt9Decoder::GetCodecInfo(void* out_info) {
@@ -51,36 +60,48 @@ void AjmAt9Decoder::GetCodecInfo(void* out_info) {
 
 std::tuple<u32, u32, u32> AjmAt9Decoder::Decode(const u8* in_buf, u32 in_size, u8* out_buf,
                                                 u32 out_size) {
-    if (in_size <= 0 || out_size <= 0) {
-        return std::tuple(in_size, out_size, 0);
-    }
-
     const auto decoder_handle = static_cast<Atrac9Handle*>(handle);
     Atrac9CodecInfo codec_info;
     Atrac9GetCodecInfo(handle, &codec_info);
 
     int bytes_used = 0;
-    int frame_count = 0;
-    int bytes_remain = codec_info.superframeSize;
+
+    const auto ShouldDecode = [&] {
+        if (in_size <= 0 || out_size <= 0) {
+            return false;
+        }
+        if (gapless.total_samples != 0 && gapless.total_samples < decoded_samples) {
+            return false;
+        }
+        return true;
+    };
 
     const auto written_size = codec_info.channels * codec_info.frameSamples * sizeof(u16);
-    for (frame_count = 0;
-         frame_count < decoder_handle->Config.FramesPerSuperframe && in_size > 0 && out_size > 0;
-         frame_count++) {
-        u32 ret = Atrac9Decode(decoder_handle, in_buf, (short*)out_buf, &bytes_used);
+    std::vector<s16> pcm_buffer(written_size >> 1);
+    while (ShouldDecode()) {
+        u32 ret = Atrac9Decode(decoder_handle, in_buf, pcm_buffer.data(), &bytes_used);
         ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
         in_buf += bytes_used;
         in_size -= bytes_used;
+        num_frames++;
         bytes_remain -= bytes_used;
-        out_buf += written_size;
-        out_size -= written_size;
-        decoded_samples += decoder_handle->Config.FrameSamples;
+        if (gapless.skip_samples != 0) {
+            gapless.skip_samples -= decoder_handle->Config.FrameSamples;
+        } else {
+            memcpy(out_buf, pcm_buffer.data(), written_size);
+            out_buf += written_size;
+            out_size -= written_size;
+            decoded_samples += decoder_handle->Config.FrameSamples;
+        }
+        if ((num_frames % codec_info.framesInSuperframe) == 0) {
+            in_buf += bytes_remain;
+            in_size -= bytes_remain;
+            bytes_remain = codec_info.superframeSize;
+        }
     }
 
-    in_size -= bytes_remain;
-
-    LOG_TRACE(Lib_Ajm, "Decoded {} samples, frame count: {}", decoded_samples, frame_count);
-    return std::tuple(in_size, out_size, frame_count);
+    LOG_TRACE(Lib_Ajm, "Decoded {} samples, frame count: {}", decoded_samples, frame_index);
+    return std::tuple(in_size, out_size, num_frames);
 }
 
 } // namespace Libraries::Ajm
