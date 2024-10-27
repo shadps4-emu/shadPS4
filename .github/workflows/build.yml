@@ -43,6 +43,7 @@ jobs:
     outputs:
       date: ${{ steps.vars.outputs.date }}
       shorthash: ${{ steps.vars.outputs.shorthash }}
+      fullhash: ${{ steps.vars.outputs.fullhash }}
     steps:
     - uses: actions/checkout@v4
     - name: Get date and git hash
@@ -50,8 +51,10 @@ jobs:
       run: |
         echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
         echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_ENV
         echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
         echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   windows-sdl:
     runs-on: windows-latest
@@ -420,9 +423,62 @@ jobs:
         tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         draft: false
         prerelease: true
-        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/shadps4-emu/shadPS4/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }})"
+        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/shadps4-emu/shadPS4/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
         artifacts: ./artifacts/*.zip
-    
+
+    - name: Publish to Release Repository
+      env:
+        GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
+      run: |
+        ARTIFACTS_DIR=./artifacts
+        REPO_WINDOWS="shadps4-emu/shadps4-binaries-Windows"
+        REPO_LINUX="shadps4-emu/shadps4-binaries-Linux"
+        REPO_MAC="shadps4-emu/shadps4-binaries-Mac"
+
+        for file in "$ARTIFACTS_DIR"/*.zip; do
+          filename=$(basename "$file")
+          REPO=""
+
+          # Determine repository based on file name
+          if [[ "$filename" == *"win64"* ]]; then
+            REPO=$REPO_WINDOWS
+          elif [[ "$filename" == *"linux"* ]] || [[ "$filename" == *"ubuntu64"* ]]; then
+            REPO=$REPO_LINUX
+          elif [[ "$filename" == *"macos"* ]]; then
+            REPO=$REPO_MAC
+          fi
+
+          # If REPO is empty, skip file
+          if [[ -z "$REPO" ]]; then
+            echo "No matching repository for $filename"
+            continue
+          fi
+
+          # Check if release already exists and get ID
+          release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/releases/tags/Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}" | jq -r '.id')
+
+          if [[ "$release_id" == "null" ]]; then
+            echo "Creating release in $REPO for $filename"
+            release_id=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d '{
+                "tag_name": "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
+                "name": "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
+                "draft": false,
+                "prerelease": true,
+                "body": "Commit: [${{ needs.get-info.outputs.fullhash }}](https://github.com/shadps4-emu/shadPS4/commit/${{ needs.get-info.outputs.fullhash }})"
+              }' "https://api.github.com/repos/$REPO/releases" | jq -r '.id')
+          else
+            echo "Release already exists in $REPO with ID $release_id"
+          fi
+
+          # Artifact upload
+          echo "Uploading $filename to release $release_id in $REPO"
+          upload_url="https://uploads.github.com/repos/$REPO/releases/$release_id/assets?name=$filename"
+          curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" --data-binary @"$file" "$upload_url"
+        done
+        
     - name: Get current pre-release information
       env:
         GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
