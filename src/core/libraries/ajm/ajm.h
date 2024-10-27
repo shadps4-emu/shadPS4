@@ -27,25 +27,32 @@ struct AjmBatchError {
 };
 
 struct AjmBuffer {
-    u8* addr;
+    u8* p_address;
     u64 size;
 };
 
-enum class Identifier : u32 {
-    InputRunBuf = 1,
-    InputControlBuf = 2,
-    ControlFlags = 3,
-    RunFlags = 4,
-    ReturnAddrBuf = 6,
-    OutputMultijobBuf = 17,
-    OutputRunControlBuf = 18,
-    IdentMask = 0xff,
+enum Identifier : u8 {
+    AjmIdentJob = 0,
+    AjmIdentInputRunBuf = 1,
+    AjmIdentInputControlBuf = 2,
+    AjmIdentControlFlags = 3,
+    AjmIdentRunFlags = 4,
+    AjmIdentReturnAddressBuf = 6,
+    AjmIdentInlineBuf = 7,
+    AjmIdentOutputRunBuf = 17,
+    AjmIdentOutputControlBuf = 18,
 };
 
-struct AjmJobBuffer {
-    Identifier ident;
-    u32 buf_size;
-    u8* buffer;
+struct AjmChunkHeader {
+    u32 ident : 6;
+    u32 payload : 20;
+    u32 reserved : 6;
+    u32 size;
+};
+
+struct AjmChunkBuffer {
+    AjmChunkHeader header;
+    void* p_address;
 };
 
 enum class AjmJobControlFlags : u64 {
@@ -68,7 +75,7 @@ enum class AjmJobSidebandFlags : u64 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(AjmJobSidebandFlags)
 
-union AjmFlags {
+union AjmJobFlags {
     u64 raw;
     struct {
         u64 version : 3;
@@ -77,74 +84,6 @@ union AjmFlags {
         AjmJobControlFlags control_flags : 3;
         u64 reserved : 29;
         AjmJobSidebandFlags sideband_flags : 3;
-    };
-};
-
-struct AjmFlagsIdentifier {
-    union {
-        u32 raw1;
-        BitField<0, 4, Identifier> identifier;
-        BitField<19, 3, u32> sideband_flags;
-    };
-    union {
-        u32 raw2;
-        BitField<0, 3, u32> version;
-        BitField<3, 8, u32> codec;
-        BitField<11, 2, u32> run_flags;
-        BitField<13, 3, u32> control_flags;
-    };
-};
-
-struct AjmControlJobInner {
-    AjmJobBuffer input;
-    AjmFlagsIdentifier flags;
-    AjmJobBuffer output;
-};
-
-struct AjmRunJobInner : public AjmControlJobInner {
-    AjmJobBuffer sideband;
-};
-
-struct AjmJobHeader {
-    struct {
-        u32 : 6;
-        u32 instance : 16;
-    };
-    u32 job_size;
-};
-
-struct AjmControlJob {
-    AjmJobHeader header;
-    union {
-        AjmControlJobInner job;
-        struct {
-            AjmJobBuffer ret_buf;
-            AjmControlJobInner job;
-        } ret;
-    };
-};
-static_assert(sizeof(AjmControlJob) == 64);
-
-struct AjmRunJob {
-    AjmJobHeader header;
-    union {
-        AjmRunJobInner job;
-        struct {
-            AjmJobBuffer ret_buf;
-            AjmRunJobInner job;
-        } ret;
-    };
-};
-static_assert(sizeof(AjmRunJob) == 80);
-
-struct AjmMultiJob {
-    AjmJobHeader header;
-    union {
-        u32 job[];
-        struct {
-            AjmJobBuffer ret_buf;
-            u32 job[];
-        } ret;
     };
 };
 
@@ -164,21 +103,24 @@ enum class AjmCodecType : u32;
 
 int PS4_SYSV_ABI sceAjmBatchCancel();
 int PS4_SYSV_ABI sceAjmBatchErrorDump();
-void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmControlJob* batch_pos, u32 instance,
-                                                 AjmFlags flags, u8* in_buffer, u32 in_size,
-                                                 u8* out_buffer, u32 out_size, void* ret_addr);
-void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(u8* batch_pos, const void* in_buffer, u64 in_size,
-                                              const void** batch_address);
-void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(AjmRunJob* batch_pos, u32 instance, AjmFlags flags,
-                                             u8* in_buffer, u32 in_size, u8* out_buffer,
-                                             const u32 out_size, u8* sideband_output,
-                                             const u32 sideband_output_size, void* ret_addr);
-void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 instance,
-                                                  AjmFlags flags, const AjmBuffer* input_buffers,
-                                                  u64 num_input_buffers,
-                                                  const AjmBuffer* output_buffers,
-                                                  u64 num_output_buffers, void* sideband_output,
-                                                  u64 sideband_output_size, void* ret_addr);
+void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id, u64 flags,
+                                                 void* p_sideband_input, size_t sideband_input_size,
+                                                 void* p_sideband_output,
+                                                 size_t sideband_output_size,
+                                                 void* p_return_address);
+void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(void* p_buffer, const void* p_data_input,
+                                              size_t data_input_size,
+                                              const void** pp_batch_address);
+void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u64 flags,
+                                             void* p_data_input, size_t data_input_size,
+                                             void* p_data_output, size_t data_output_size,
+                                             void* p_sideband_output, size_t sideband_output_size,
+                                             void* p_return_address);
+void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
+    void* p_buffer, u32 instance_id, u64 flags, const AjmBuffer* p_data_input_buffers,
+    size_t num_data_input_buffers, const AjmBuffer* p_data_output_buffers,
+    size_t num_data_output_buffers, void* p_sideband_output, size_t sideband_output_size,
+    void* p_return_address);
 int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size,
                                         const int priority, AjmBatchError* batch_error,
                                         u32* out_batch_id);
