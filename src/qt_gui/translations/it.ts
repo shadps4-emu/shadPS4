@@ -18,7 +18,7 @@
 		<message>
 			<location filename="../about_dialog.ui" line="78"/>
 			<source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-			<translation>shadPS4 è un emulatore sperimentale open source per PlayStation 4.</translation>
+			<translation>shadPS4 è un emulatore sperimentale open-source per PlayStation 4.</translation>
 		</message>
 		<message>
 			<location filename="../about_dialog.ui" line="99"/>
@@ -62,7 +62,7 @@
 		<message>
 			<location filename="../install_dir_select.cpp" line="37"/>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Seleziona in quale cartella vuoi effettuare l'installazione.</translation>
 		</message>
 	</context>
 	<context>
@@ -143,22 +143,22 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="72"/>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Elimina...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="73"/>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Elimina Gioco</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="74"/>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>Elimina Aggiornamento</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Elimina DLC</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
@@ -188,7 +188,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="299"/>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Gioco</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
@@ -198,7 +198,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>Questo gioco non ha alcun aggiornamento da eliminare!</translation>
 		</message>
 			<message>
 			<location filename="../gui_context_menus.h" line="316"/>
@@ -208,7 +208,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="321"/>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>Questo gioco non ha alcun DLC da eliminare!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="325"/>
@@ -218,12 +218,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="332"/>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Elimina %1</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="333"/>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Sei sicuro di eliminale la cartella %2 di %1?</translation>
 		</message>
 	</context>
 	<context>
@@ -336,7 +336,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="343"/>
 			<source>Download Cheats/Patches</source>
-			<translation>Scarica Trucchi / Patch</translation>
+			<translation>Scarica Trucchi/Patch</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
@@ -480,7 +480,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Abilità Cartella Aggiornamenti Separata</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -490,7 +490,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
-			<translation>Modalità Ps4Pro</translation>
+			<translation>Modalità Ps4 Pro</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="154"/>
@@ -530,12 +530,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="635"/>
 			<source>Hide Cursor</source>
-			<translation>Nascondi cursore</translation>
+			<translation>Nascondi Cursore</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>Timeout inattivo per nascondere il cursore</translation>
+			<translation>Timeout inattività per nascondere il cursore</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -555,7 +555,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="282"/>
 			<source>Graphics Device</source>
-			<translation>Adattatore grafico</translation>
+			<translation>Scheda Grafica</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="326"/>
@@ -575,7 +575,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="453"/>
 			<source>Advanced</source>
-			<translation>Avanzato</translation>
+			<translation>Avanzate</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="462"/>
@@ -614,8 +614,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="537"/>
-			<source>Enable Debug Dumping</source>
-			<translation>Abilita Dump Debug</translation>
+			<source>Enable</source>
+			<translation>Abilita Debug Dumping</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="560"/>
@@ -630,7 +630,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="574"/>
 			<source>Enable RenderDoc Debugging</source>
-			<translation>Abilita Debugging RenderDoc</translation>
+			<translation>Abilita RenderDoc Debugging</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="274"/>
@@ -693,7 +693,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="363"/>
 			<source>Download Complete</source>
-			<translation>Scaricamento completato</translation>
+			<translation>Download completato</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="364"/>
@@ -748,7 +748,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>PKG and Game versions match: </source>
-			<translation>Le versioni di PKG e del gioco corrispondono: </translation>
+			<translation>Le versioni di PKG e del Gioco corrispondono: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="647"/>
@@ -1144,7 +1144,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Abilita Cartella Aggiornamenti Separata:\nAbilita l'installazione degli aggiornamenti in una cartella separata per una più facile gestione.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
@@ -1420,7 +1420,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="198"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Verifica aggiornamenti all’avvio</translation>
+			<translation>Controlla aggiornamenti all’avvio</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="199"/>
