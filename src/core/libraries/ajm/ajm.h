@@ -70,7 +70,7 @@ DECLARE_ENUM_FLAG_OPERATORS(AjmJobRunFlags)
 
 enum class AjmJobSidebandFlags : u64 {
     GaplessDecode = 1 << 0,
-    GetInfo = 1 << 1,
+    Format = 1 << 1,
     Stream = 1 << 2,
 };
 DECLARE_ENUM_FLAG_OPERATORS(AjmJobSidebandFlags)
