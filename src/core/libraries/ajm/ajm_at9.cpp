@@ -65,6 +65,7 @@ std::tuple<u32, u32, u32> AjmAt9Decoder::Decode(const u8* in_buf, u32 in_size, u
     Atrac9GetCodecInfo(handle, &codec_info);
 
     int bytes_used = 0;
+    int num_superframes = 0;
 
     const auto ShouldDecode = [&] {
         if (in_size <= 0 || out_size <= 0) {
@@ -97,11 +98,12 @@ std::tuple<u32, u32, u32> AjmAt9Decoder::Decode(const u8* in_buf, u32 in_size, u
             in_buf += bytes_remain;
             in_size -= bytes_remain;
             bytes_remain = codec_info.superframeSize;
+            num_superframes++;
         }
     }
 
     LOG_TRACE(Lib_Ajm, "Decoded {} samples, frame count: {}", decoded_samples, frame_index);
-    return std::tuple(in_size, out_size, num_frames);
+    return std::tuple(in_size, out_size, num_superframes);
 }
 
 } // namespace Libraries::Ajm

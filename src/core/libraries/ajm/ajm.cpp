@@ -449,9 +449,10 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             const auto& in_buffer = input_run_buffers[i];
             const auto& out_buffer = output_run_buffers[i];
 
-            const auto [in_remain, out_remain, num_frames] = p_instance->Decode(
-                reinterpret_cast<u8*>(in_buffer.p_address), in_buffer.header.size,
-                reinterpret_cast<u8*>(out_buffer.p_address), out_buffer.header.size);
+            const u8* in_address = reinterpret_cast<u8*>(in_buffer.p_address);
+            u8* out_address = reinterpret_cast<u8*>(out_buffer.p_address);
+            const auto [in_remain, out_remain, num_frames] = p_instance->Decode(in_address, in_buffer.header.size,
+                                                                                out_address, out_buffer.header.size);
 
             if (p_stream != nullptr) {
                 p_stream->input_consumed += in_buffer.header.size - in_remain;
