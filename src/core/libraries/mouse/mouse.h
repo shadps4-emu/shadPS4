@@ -16,13 +16,13 @@ struct OrbisMouseOpenParam {
 };
 
 struct OrbisMouseData {
-    u64 timestamp;
-    bool connected;
-    u32 buttons;
-    s32 xAxis;
-    s32 yAxis;
-    s32 wheel;
-    s32 tilt;
+    u64 timestamp{};
+    bool connected{};
+    u32 buttons{};
+    s32 xAxis{};
+    s32 yAxis{};
+    s32 wheel{};
+    s32 tilt{};
     std::array<u8, 8> reserve{};
 };
 
