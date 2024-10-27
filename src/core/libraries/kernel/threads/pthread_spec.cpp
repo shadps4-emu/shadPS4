@@ -102,7 +102,7 @@ int PS4_SYSV_ABI posix_pthread_setspecific(PthreadKeyT key, const void* value) {
     Pthread* pthread = g_curthread;
 
     if (!pthread->specific) {
-        pthread->specific = new PthreadSpecificElem[PthreadKeysMax];
+        pthread->specific = new PthreadSpecificElem[PthreadKeysMax]{};
         if (!pthread->specific) {
             return POSIX_ENOMEM;
         }
