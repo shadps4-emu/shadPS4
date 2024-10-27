@@ -185,6 +185,12 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/ajm/ajm.cpp
               src/core/libraries/ajm/ajm.h
+              src/core/libraries/ajm/ajm_instance.h
+              src/core/libraries/ajm/ajm_error.h
+              src/core/libraries/ajm/ajm_mp3.cpp
+              src/core/libraries/ajm/ajm_mp3.h
+              src/core/libraries/ajm/ajm_at9.cpp
+              src/core/libraries/ajm/ajm_at9.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
@@ -194,8 +200,7 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB
-               src/core/libraries/kernel/event_flag/event_flag.cpp
+set(KERNEL_LIB src/core/libraries/kernel/event_flag/event_flag.cpp
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
                src/core/libraries/kernel/event_flag/event_flag_obj.h
@@ -795,7 +800,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
