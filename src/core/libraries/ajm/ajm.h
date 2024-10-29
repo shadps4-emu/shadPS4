@@ -7,6 +7,8 @@
 #include "common/enum.h"
 #include "common/types.h"
 
+#include "core/libraries/ajm/ajm_instance.h"
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
@@ -87,21 +89,10 @@ union AjmJobFlags {
     };
 };
 
-union AjmInstanceFlags {
-    u64 raw;
-    struct {
-        u64 version : 3;
-        u64 channels : 4;
-        u64 format : 3;
-        u64 pad : 22;
-        u64 codec : 28;
-    };
-};
-
 struct AjmDecMp3ParseFrame;
 enum class AjmCodecType : u32;
 
-int PS4_SYSV_ABI sceAjmBatchCancel();
+int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id);
 int PS4_SYSV_ABI sceAjmBatchErrorDump();
 void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id, u64 flags,
                                                  void* p_sideband_input, size_t sideband_input_size,
@@ -121,9 +112,8 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     size_t num_data_input_buffers, const AjmBuffer* p_data_output_buffers,
     size_t num_data_output_buffers, void* p_sideband_output, size_t sideband_output_size,
     void* p_return_address);
-int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size,
-                                        const int priority, AjmBatchError* batch_error,
-                                        u32* out_batch_id);
+int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, u8* batch, u32 batch_size, const int priority,
+                                        AjmBatchError* batch_error, u32* out_batch_id);
 int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u32 timeout,
                                  AjmBatchError* const batch_error);
 int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData();

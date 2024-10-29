@@ -15,13 +15,7 @@ extern "C" {
 
 namespace Libraries::Ajm {
 
-constexpr u32 SCE_AT9_CONFIG_DATA_SIZE = 4;
-constexpr s32 SCE_AJM_DEC_AT9_MAX_CHANNELS = 8;
-
-struct AjmDecAt9InitializeParameters {
-    u8 config_data[SCE_AT9_CONFIG_DATA_SIZE];
-    u32 reserved;
-};
+constexpr s32 ORBIS_AJM_DEC_AT9_MAX_CHANNELS = 8;
 
 struct AjmSidebandDecAt9CodecInfo {
     u32 uiSuperFrameSize;
@@ -35,7 +29,7 @@ struct AjmAt9Decoder final : AjmInstance {
     bool decoder_initialized = false;
     std::fstream file;
     int length;
-    u8 config_data[SCE_AT9_CONFIG_DATA_SIZE];
+    u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE];
 
     explicit AjmAt9Decoder();
     ~AjmAt9Decoder() override;
@@ -49,8 +43,8 @@ struct AjmAt9Decoder final : AjmInstance {
         return sizeof(AjmSidebandDecAt9CodecInfo);
     }
 
-    std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
-                                     u32 out_size) override;
+    std::tuple<u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf, u32 out_size,
+                                AjmJobOutput* output) override;
 };
 
 } // namespace Libraries::Ajm

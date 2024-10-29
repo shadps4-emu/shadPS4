@@ -1,14 +1,20 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <condition_variable>
 #include <mutex>
 #include <numeric>
 #include <semaphore>
+#include <span>
+#include <thread>
 #include <boost/container/small_vector.hpp>
 #include <magic_enum.hpp>
+#include <queue>
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/indexed_resources.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "core/libraries/ajm/ajm.h"
@@ -31,19 +37,43 @@ namespace Libraries::Ajm {
 
 static constexpr u32 AJM_INSTANCE_STATISTICS = 0x80000;
 
-static constexpr u32 SCE_AJM_WAIT_INFINITE = -1;
+static constexpr u32 ORBIS_AJM_WAIT_INFINITE = -1;
 
 static constexpr u32 MaxInstances = 0x2fff;
 
 static constexpr u32 MaxBatches = 1000;
 
-struct BatchInfo {
-    u16 instance{};
-    u16 offset_in_qwords{}; // Needed for AjmBatchError?
-    bool waiting{};
-    std::binary_semaphore finished{0};
-    int result{};
+struct AjmJob {
+    u32 instance_id = 0;
+    AjmJobFlags flags = {.raw = 0};
+    AjmJobInput input;
+    AjmJobOutput output;
 };
+
+struct BatchInfo {
+    u32 id;
+    std::atomic_bool waiting{};
+    std::atomic_bool canceled{};
+    std::binary_semaphore finished{0};
+    boost::container::small_vector<AjmJob, 8> jobs;
+};
+
+template <class ChunkType>
+ChunkType& AjmBufferExtract(u8*& p_cursor) {
+    auto* const result = reinterpret_cast<ChunkType*>(p_cursor);
+    p_cursor += sizeof(ChunkType);
+    return *result;
+}
+
+template <class ChunkType>
+void AjmBufferSkip(u8*& p_cursor) {
+    p_cursor += sizeof(ChunkType);
+}
+
+template <class ChunkType>
+ChunkType& AjmBufferPeek(u8* p_cursor) {
+    return *reinterpret_cast<ChunkType*>(p_cursor);
+}
 
 struct AjmDevice {
     u32 max_prio{};
@@ -53,8 +83,14 @@ struct AjmDevice {
     std::array<bool, NumAjmCodecs> is_registered{};
     std::array<u32, MaxInstances> free_instances{};
     std::array<std::unique_ptr<AjmInstance>, MaxInstances> instances;
-    std::vector<std::shared_ptr<BatchInfo>> batches{};
+    Common::IndexedResources<u32, std::shared_ptr<BatchInfo>, MaxBatches> batches;
     std::mutex batches_mutex;
+
+    std::jthread worker_thread{};
+    std::queue<std::shared_ptr<BatchInfo>> batch_queue{};
+    std::mutex batch_queue_mutex{};
+    std::mutex batch_queue_cv_mutex{};
+    std::condition_variable_any batch_queue_cv{};
 
     [[nodiscard]] bool IsRegistered(AjmCodecType type) const {
         return is_registered[static_cast<u32>(type)];
@@ -66,36 +102,122 @@ struct AjmDevice {
 
     AjmDevice() {
         std::iota(free_instances.begin(), free_instances.end(), 1);
+        worker_thread = std::jthread([this](std::stop_token stop) { this->WorkerThread(stop); });
+    }
+
+    void WorkerThread(std::stop_token stop) {
+        while (!stop.stop_requested()) {
+            {
+                std::unique_lock lock(batch_queue_cv_mutex);
+                if (!batch_queue_cv.wait(lock, stop, [this] { return !batch_queue.empty(); })) {
+                    continue;
+                }
+            }
+
+            std::shared_ptr<BatchInfo> batch;
+            {
+                std::lock_guard lock(batch_queue_mutex);
+                batch = batch_queue.front();
+                batch_queue.pop();
+            }
+            ProcessBatch(batch->id, batch->jobs);
+            batch->finished.release();
+        }
+    }
+
+    void ProcessBatch(u32 id, std::span<AjmJob> jobs) {
+        // Perform operation requested by control flags.
+        for (auto& job : jobs) {
+            LOG_DEBUG(Lib_Ajm, "Processing job {} for instance {}. flags = {:#x}", id,
+                      job.instance_id, job.flags.raw);
+
+            AjmInstance* p_instance = instances[job.instance_id].get();
+
+            const auto control_flags = job.flags.control_flags;
+            if (True(control_flags & AjmJobControlFlags::Reset)) {
+                LOG_INFO(Lib_Ajm, "Resetting instance {}", job.instance_id);
+                p_instance->Reset();
+            }
+            if (True(control_flags & AjmJobControlFlags::Initialize)) {
+                LOG_INFO(Lib_Ajm, "Initializing instance {}", job.instance_id);
+                ASSERT_MSG(job.input.init_params.has_value(),
+                           "Initialize called without control buffer");
+                auto& params = job.input.init_params.value();
+                p_instance->Initialize(&params, sizeof(params));
+            }
+            if (True(control_flags & AjmJobControlFlags::Resample)) {
+                LOG_ERROR(Lib_Ajm, "Unimplemented: resample params");
+                ASSERT_MSG(job.input.resample_parameters.has_value(),
+                           "Resample paramters are absent");
+                p_instance->resample_parameters = job.input.resample_parameters.value();
+            }
+
+            const auto sideband_flags = job.flags.sideband_flags;
+            if (True(sideband_flags & AjmJobSidebandFlags::Format)) {
+                ASSERT_MSG(job.input.format.has_value(), "Format parameters are absent");
+                p_instance->format = job.input.format.value();
+            }
+            if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode)) {
+                ASSERT_MSG(job.input.gapless_decode.has_value(),
+                           "Gapless decode parameters are absent");
+                auto& params = job.input.gapless_decode.value();
+                p_instance->gapless.total_samples = params.total_samples;
+                p_instance->gapless.skip_samples = params.skip_samples;
+            }
+
+            ASSERT_MSG(job.input.buffers.size() <= job.output.buffers.size(),
+                       "Unsupported combination of input/output buffers.");
+
+            for (size_t i = 0; i < job.input.buffers.size(); ++i) {
+                // Decode as much of the input bitstream as possible.
+                const auto& in_buffer = job.input.buffers[i];
+                auto& out_buffer = job.output.buffers[i];
+
+                const u8* in_address = in_buffer.data();
+                u8* out_address = out_buffer.data();
+                const auto [in_remain, out_remain] = p_instance->Decode(
+                    in_address, in_buffer.size(), out_address, out_buffer.size(), &job.output);
+
+                if (job.output.p_stream != nullptr) {
+                    job.output.p_stream->input_consumed += in_buffer.size() - in_remain;
+                    job.output.p_stream->output_written += out_buffer.size() - out_remain;
+                    job.output.p_stream->total_decoded_samples += p_instance->decoded_samples;
+                }
+            }
+
+            if (job.output.p_gapless_decode != nullptr) {
+                *job.output.p_gapless_decode = p_instance->gapless;
+            }
+
+            if (job.output.p_codec_info != nullptr) {
+                p_instance->GetCodecInfo(job.output.p_codec_info);
+            }
+        }
     }
 };
 
 static std::unique_ptr<AjmDevice> dev{};
 
-int PS4_SYSV_ABI sceAjmBatchCancel() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
+int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id) {
+    std::shared_ptr<BatchInfo> batch{};
+    {
+        std::lock_guard guard(dev->batches_mutex);
+        const auto opt_batch = dev->batches.Get(batch_id);
+        if (!opt_batch.has_value()) {
+            return ORBIS_AJM_ERROR_INVALID_BATCH;
+        }
+
+        batch = opt_batch.value().get();
+    }
+
+    batch->canceled = true;
+
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAjmBatchErrorDump() {
     LOG_ERROR(Lib_Ajm, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-template <class ChunkType, class CursorType>
-ChunkType& AjmBufferExtract(CursorType& p_cursor) {
-    auto* const result = reinterpret_cast<ChunkType*>(p_cursor);
-    p_cursor += sizeof(ChunkType);
-    return *result;
-}
-
-template <class ChunkType, class CursorType>
-void AjmBufferSkip(CursorType& p_cursor) {
-    p_cursor += sizeof(ChunkType);
-}
-
-template <class ChunkType, class CursorType>
-ChunkType& AjmBufferPeek(CursorType p_cursor) {
-    return *reinterpret_cast<ChunkType*>(p_cursor);
 }
 
 void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id, u64 flags,
@@ -116,6 +238,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
     if (p_return_address != nullptr) {
         auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
+        chunk_ra.header.payload = 0;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
@@ -123,6 +246,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
     {
         auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputControlBuf;
+        chunk_input.header.payload = 0;
         chunk_input.header.size = sideband_input_size;
         chunk_input.p_address = p_sideband_input;
     }
@@ -149,6 +273,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
     {
         auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
+        chunk_output.header.payload = 0;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
     }
@@ -166,6 +291,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobInlineBuffer(void* p_buffer, const void* p_data
 
     auto& header = AjmBufferExtract<AjmChunkHeader>(p_current);
     header.ident = AjmIdentInlineBuf;
+    header.payload = 0;
     header.size = Common::AlignUp(data_input_size, 8);
     *pp_batch_address = p_current;
 
@@ -191,6 +317,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
     if (p_return_address != nullptr) {
         auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
+        chunk_ra.header.payload = 0;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
@@ -198,6 +325,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
     {
         auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputRunBuf;
+        chunk_input.header.payload = 0;
         chunk_input.header.size = data_input_size;
         chunk_input.p_address = p_data_input;
     }
@@ -217,6 +345,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
     {
         auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputRunBuf;
+        chunk_output.header.payload = 0;
         chunk_output.header.size = data_output_size;
         chunk_output.p_address = p_data_output;
     }
@@ -224,6 +353,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
     {
         auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
+        chunk_output.header.payload = 0;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
     }
@@ -250,6 +380,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     if (p_return_address != nullptr) {
         auto& chunk_ra = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_ra.header.ident = AjmIdentReturnAddressBuf;
+        chunk_ra.header.payload = 0;
         chunk_ra.header.size = 0;
         chunk_ra.p_address = p_return_address;
     }
@@ -257,6 +388,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     for (s32 i = 0; i < num_data_input_buffers; i++) {
         auto& chunk_input = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_input.header.ident = AjmIdentInputRunBuf;
+        chunk_input.header.payload = 0;
         chunk_input.header.size = p_data_input_buffers[i].size;
         chunk_input.p_address = p_data_input_buffers[i].p_address;
     }
@@ -276,6 +408,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     for (s32 i = 0; i < num_data_output_buffers; i++) {
         auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputRunBuf;
+        chunk_output.header.payload = 0;
         chunk_output.header.size = p_data_output_buffers[i].size;
         chunk_output.p_address = p_data_output_buffers[i].p_address;
     }
@@ -283,6 +416,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     {
         auto& chunk_output = AjmBufferExtract<AjmChunkBuffer>(p_current);
         chunk_output.header.ident = AjmIdentOutputControlBuf;
+        chunk_output.header.payload = 0;
         chunk_output.header.size = sideband_output_size;
         chunk_output.p_address = p_sideband_output;
     }
@@ -291,58 +425,67 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     return p_current;
 }
 
-int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_size,
+int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, u8* p_batch, u32 batch_size,
                                         const int priority, AjmBatchError* batch_error,
                                         u32* out_batch_id) {
     LOG_INFO(Lib_Ajm, "called context = {}, batch_size = {:#x}, priority = {}", context, batch_size,
              priority);
 
     if ((batch_size & 7) != 0) {
+        LOG_ERROR(Lib_Ajm, "ORBIS_AJM_ERROR_MALFORMED_BATCH");
         return ORBIS_AJM_ERROR_MALFORMED_BATCH;
     }
 
     const auto batch_info = std::make_shared<BatchInfo>();
-    if (dev->batches.size() >= MaxBatches) {
+    auto batch_id = dev->batches.Create(batch_info);
+    if (!batch_id.has_value()) {
         LOG_ERROR(Lib_Ajm, "Too many batches in job!");
         return ORBIS_AJM_ERROR_OUT_OF_MEMORY;
     }
+    batch_info->id = batch_id.value();
+    *out_batch_id = batch_id.value();
 
-    *out_batch_id = static_cast<u32>(dev->batches.size());
-    dev->batches.push_back(batch_info);
-
-    const u8* p_current = batch;
-    const u8* p_batch_end = batch + batch_size;
+    u8* p_current = p_batch;
+    u8* const p_batch_end = p_current + batch_size;
 
     while (p_current < p_batch_end) {
         auto& header = AjmBufferExtract<const AjmChunkHeader>(p_current);
         ASSERT(header.ident == AjmIdentJob);
 
+        batch_info->jobs.push_back(AjmJob{});
+        auto& job = batch_info->jobs.back();
+        job.instance_id = header.payload;
+
         std::optional<AjmJobFlags> job_flags = {};
         std::optional<AjmChunkBuffer> input_control_buffer = {};
         std::optional<AjmChunkBuffer> output_control_buffer = {};
+        std::optional<AjmChunkBuffer> inline_buffer = {};
         boost::container::small_vector<AjmChunkBuffer, 16> input_run_buffers;
         boost::container::small_vector<AjmChunkBuffer, 16> output_run_buffers;
 
         // Read parameters of a job
         auto* const p_job_end = p_current + header.size;
         while (p_current < p_job_end) {
-            auto& header = AjmBufferPeek<const AjmChunkHeader>(p_current);
+            auto& header = AjmBufferPeek<AjmChunkHeader>(p_current);
             switch (header.ident) {
             case Identifier::AjmIdentInputRunBuf: {
-                input_run_buffers.emplace_back(AjmBufferExtract<const AjmChunkBuffer>(p_current));
+                auto& buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
+                u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
+                job.input.buffers.emplace_back(
+                    std::vector<u8>(p_begin, p_begin + buffer.header.size));
                 break;
             }
             case Identifier::AjmIdentInputControlBuf: {
                 ASSERT_MSG(!input_control_buffer.has_value(),
                            "Only one instance of input control buffer is allowed per job");
-                input_control_buffer = AjmBufferExtract<const AjmChunkBuffer>(p_current);
+                input_control_buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
                 break;
             }
             case Identifier::AjmIdentControlFlags:
             case Identifier::AjmIdentRunFlags: {
                 ASSERT_MSG(!job_flags.has_value(),
                            "Only one instance of job flags is allowed per job");
-                auto& flags_chunk = AjmBufferExtract<const AjmChunkHeader>(p_current);
+                auto& flags_chunk = AjmBufferExtract<AjmChunkHeader>(p_current);
                 job_flags = AjmJobFlags{
                     .raw = (u64(flags_chunk.payload) << 32) + flags_chunk.size,
                 };
@@ -350,129 +493,113 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             }
             case Identifier::AjmIdentReturnAddressBuf: {
                 // Ignore return address buffers.
-                AjmBufferSkip<const AjmChunkBuffer>(p_current);
+                AjmBufferSkip<AjmChunkBuffer>(p_current);
+                break;
+            }
+            case Identifier::AjmIdentInlineBuf: {
+                ASSERT_MSG(!output_control_buffer.has_value(),
+                           "Only one instance of inline buffer is allowed per job");
+                inline_buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
                 break;
             }
             case Identifier::AjmIdentOutputRunBuf: {
-                output_run_buffers.emplace_back(AjmBufferExtract<const AjmChunkBuffer>(p_current));
+                auto& buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
+                u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
+                job.output.buffers.emplace_back(
+                    std::span<u8>(p_begin, p_begin + buffer.header.size));
                 break;
             }
             case Identifier::AjmIdentOutputControlBuf: {
                 ASSERT_MSG(!output_control_buffer.has_value(),
                            "Only one instance of output control buffer is allowed per job");
-                output_control_buffer = AjmBufferExtract<const AjmChunkBuffer>(p_current);
+                output_control_buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
                 break;
             }
             default:
-                LOG_ERROR(Lib_Ajm, "Unknown chunk: {}", header.ident);
-                p_current += header.size;
-                break;
+                UNREACHABLE_MSG("Unknown chunk: {}", header.ident);
             }
         }
 
-        const u32 instance = header.payload;
-        AjmInstance* p_instance = dev->instances[instance].get();
+        job.flags = job_flags.value();
 
         // Perform operation requested by control flags.
         const auto control_flags = job_flags.value().control_flags;
-        if (True(control_flags & AjmJobControlFlags::Reset)) {
-            LOG_INFO(Lib_Ajm, "Resetting instance {}", instance);
-            p_instance->Reset();
-        }
         if (True(control_flags & AjmJobControlFlags::Initialize)) {
-            LOG_INFO(Lib_Ajm, "Initializing instance {}", instance);
             ASSERT_MSG(input_control_buffer.has_value(),
                        "Initialize called without control buffer");
             const auto& in_buffer = input_control_buffer.value();
-            p_instance->Initialize(in_buffer.p_address, in_buffer.header.size);
+            job.input.init_params = AjmDecAt9InitializeParameters{};
+            std::memcpy(&job.input.init_params.value(), in_buffer.p_address, in_buffer.header.size);
         }
         if (True(control_flags & AjmJobControlFlags::Resample)) {
-            LOG_ERROR(Lib_Ajm, "Unimplemented: Set resample params of instance {}", instance);
+            ASSERT_MSG(inline_buffer.has_value(),
+                       "Resample paramters are stored in the inline buffer");
+            auto* p_buffer = reinterpret_cast<u8*>(inline_buffer.value().p_address);
+            job.input.resample_parameters =
+                AjmBufferExtract<AjmSidebandResampleParameters>(p_buffer);
         }
 
-        AjmSidebandResult* p_result = nullptr;
-        AjmSidebandStream* p_stream = nullptr;
-        AjmSidebandFormat* p_format = nullptr;
-        AjmSidebandGaplessDecode* p_gapless_decode = nullptr;
-        AjmSidebandMFrame* p_mframe = nullptr;
-        u8* p_codec_info = nullptr;
-
-        // Initialize sideband structures.
-        if (output_control_buffer.has_value()) {
-            auto* p_sideband = reinterpret_cast<u8*>(output_control_buffer.value().p_address);
-            p_result = &AjmBufferExtract<AjmSidebandResult>(p_sideband);
-            *p_result = AjmSidebandResult{};
+        // Initialize sideband input parameters
+        if (input_control_buffer.has_value()) {
+            auto* p_sideband = reinterpret_cast<u8*>(input_control_buffer.value().p_address);
+            auto* const p_end = p_sideband + input_control_buffer.value().header.size;
 
             const auto sideband_flags = job_flags.value().sideband_flags;
-            if (True(sideband_flags & AjmJobSidebandFlags::Stream)) {
-                p_stream = &AjmBufferExtract<AjmSidebandStream>(p_sideband);
-                *p_stream = AjmSidebandStream{};
+            if (True(sideband_flags & AjmJobSidebandFlags::Format) && p_sideband < p_end) {
+                job.input.format = AjmBufferExtract<AjmSidebandFormat>(p_sideband);
             }
-            if (True(sideband_flags & AjmJobSidebandFlags::Format)) {
+            if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode) && p_sideband < p_end) {
+                job.input.gapless_decode = AjmBufferExtract<AjmSidebandGaplessDecode>(p_sideband);
+            }
+
+            ASSERT_MSG(p_sideband <= p_end, "Input sideband out of bounds");
+        }
+
+        // Initialize sideband output parameters
+        if (output_control_buffer.has_value()) {
+            auto* p_sideband = reinterpret_cast<u8*>(output_control_buffer.value().p_address);
+            auto* const p_end = p_sideband + output_control_buffer.value().header.size;
+            job.output.p_result = &AjmBufferExtract<AjmSidebandResult>(p_sideband);
+            *job.output.p_result = AjmSidebandResult{};
+
+            const auto sideband_flags = job_flags.value().sideband_flags;
+            if (True(sideband_flags & AjmJobSidebandFlags::Stream) && p_sideband < p_end) {
+                job.output.p_stream = &AjmBufferExtract<AjmSidebandStream>(p_sideband);
+                *job.output.p_stream = AjmSidebandStream{};
+            }
+            if (True(sideband_flags & AjmJobSidebandFlags::Format) && p_sideband < p_end) {
                 LOG_ERROR(Lib_Ajm, "SIDEBAND_FORMAT is not implemented");
-                p_format = &AjmBufferExtract<AjmSidebandFormat>(p_sideband);
-                *p_format = AjmSidebandFormat{};
+                job.output.p_format = &AjmBufferExtract<AjmSidebandFormat>(p_sideband);
+                *job.output.p_format = AjmSidebandFormat{};
             }
-            if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode)) {
-                LOG_ERROR(Lib_Ajm, "SIDEBAND_GAPLESS_DECODE is not implemented");
-                p_gapless_decode = &AjmBufferExtract<AjmSidebandGaplessDecode>(p_sideband);
-                if (input_control_buffer) {
-                    memcpy(&p_instance->gapless, input_control_buffer->p_address,
-                           sizeof(AjmSidebandGaplessDecode));
-                    LOG_INFO(Lib_Ajm,
-                             "Setting gapless params instance = {}, total_samples = {}, "
-                             "skip_samples = {}",
-                             instance, p_instance->gapless.total_samples,
-                             p_instance->gapless.skip_samples);
-                } else {
-                    LOG_ERROR(Lib_Ajm, "Requesting gapless structure!");
-                }
-                *p_gapless_decode = AjmSidebandGaplessDecode{};
+            if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode) && p_sideband < p_end) {
+                job.output.p_gapless_decode =
+                    &AjmBufferExtract<AjmSidebandGaplessDecode>(p_sideband);
+                *job.output.p_gapless_decode = AjmSidebandGaplessDecode{};
             }
+
             const auto run_flags = job_flags.value().run_flags;
-            if (True(run_flags & AjmJobRunFlags::MultipleFrames)) {
-                p_mframe = &AjmBufferExtract<AjmSidebandMFrame>(p_sideband);
-                *p_mframe = AjmSidebandMFrame{};
+            if (True(run_flags & AjmJobRunFlags::MultipleFrames) && p_sideband < p_end) {
+                job.output.p_mframe = &AjmBufferExtract<AjmSidebandMFrame>(p_sideband);
+                *job.output.p_mframe = AjmSidebandMFrame{};
             }
-            if (True(run_flags & AjmJobRunFlags::GetCodecInfo)) {
-                p_codec_info = p_sideband;
-                p_sideband += p_instance->GetCodecInfoSize();
+            if (True(run_flags & AjmJobRunFlags::GetCodecInfo) && p_sideband < p_end) {
+                job.output.p_codec_info = p_sideband;
             }
+
+            ASSERT_MSG(p_sideband <= p_end, "Output sideband out of bounds");
         }
-
-        // Perform operation requested by run flags.
-        ASSERT_MSG(input_run_buffers.size() == output_run_buffers.size(),
-                   "Run operation with uneven input/output buffers.");
-
-        for (size_t i = 0; i < input_run_buffers.size(); ++i) {
-            // Decode as much of the input bitstream as possible.
-            const auto& in_buffer = input_run_buffers[i];
-            const auto& out_buffer = output_run_buffers[i];
-
-            const u8* in_address = reinterpret_cast<u8*>(in_buffer.p_address);
-            u8* out_address = reinterpret_cast<u8*>(out_buffer.p_address);
-            const auto [in_remain, out_remain, num_frames] = p_instance->Decode(in_address, in_buffer.header.size,
-                                                                                out_address, out_buffer.header.size);
-
-            if (p_stream != nullptr) {
-                p_stream->input_consumed += in_buffer.header.size - in_remain;
-                p_stream->output_written += out_buffer.header.size - out_remain;
-                p_stream->total_decoded_samples += p_instance->decoded_samples;
-            }
-            if (p_mframe != nullptr) {
-                p_mframe->num_frames += num_frames;
-            }
-        }
-
-        if (p_codec_info) {
-            p_instance->GetCodecInfo(p_codec_info);
-        }
-
-        p_result->result = 0;
-        p_result->internal_result = 0;
     }
 
-    batch_info->finished.release();
+    {
+        std::lock_guard lock(dev->batch_queue_mutex);
+        dev->batch_queue.push(batch_info);
+    }
+
+    {
+        std::unique_lock lock(dev->batch_queue_cv_mutex);
+        dev->batch_queue_cv.notify_all();
+    }
 
     return ORBIS_OK;
 }
@@ -482,27 +609,44 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
     LOG_INFO(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context, batch_id,
              timeout);
 
-    if (batch_id > 0xFF || batch_id >= dev->batches.size()) {
-        return ORBIS_AJM_ERROR_INVALID_BATCH;
+    std::shared_ptr<BatchInfo> batch{};
+    {
+        std::lock_guard guard(dev->batches_mutex);
+        const auto opt_batch = dev->batches.Get(batch_id);
+        if (!opt_batch.has_value()) {
+            LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_INVALID_BATCH");
+            return ORBIS_AJM_ERROR_INVALID_BATCH;
+        }
+
+        batch = opt_batch.value().get();
     }
 
-    const auto& batch = dev->batches[batch_id];
-
-    if (batch->waiting) {
+    bool expected = false;
+    if (!batch->waiting.compare_exchange_strong(expected, true)) {
+        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_BUSY");
         return ORBIS_AJM_ERROR_BUSY;
     }
 
-    batch->waiting = true;
-    SCOPE_EXIT {
+    if (timeout == ORBIS_AJM_WAIT_INFINITE) {
+        batch->finished.acquire();
+    } else if (!batch->finished.try_acquire_for(std::chrono::milliseconds(timeout))) {
         batch->waiting = false;
-    };
-
-    if (!batch->finished.try_acquire_for(std::chrono::milliseconds(timeout))) {
+        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_IN_PROGRESS");
         return ORBIS_AJM_ERROR_IN_PROGRESS;
     }
 
-    dev->batches.erase(dev->batches.begin() + batch_id);
-    return 0;
+    {
+        std::lock_guard guard(dev->batches_mutex);
+        dev->batches.Destroy(batch_id);
+    }
+
+    if (batch->canceled) {
+        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_CANCELLED");
+        return ORBIS_AJM_ERROR_CANCELLED;
+    }
+
+    LOG_INFO(Lib_Ajm, "ORBIS_OK");
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData() {
@@ -573,6 +717,7 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmI
     instance->index = index;
     instance->codec_type = codec_type;
     instance->num_channels = flags.channels;
+    instance->flags = flags;
     dev->instances[index] = std::move(instance);
     *out_instance = index;
     LOG_INFO(Lib_Ajm, "called codec_type = {}, flags = {:#x}, instance = {}",

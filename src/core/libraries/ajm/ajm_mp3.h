@@ -74,8 +74,8 @@ struct AjmMp3Decoder : public AjmInstance {
         return sizeof(AjmSidebandDecMp3CodecInfo);
     }
 
-    std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf,
-                                     u32 out_size) override;
+    std::tuple<u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf, u32 out_size,
+                                AjmJobOutput* output) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
