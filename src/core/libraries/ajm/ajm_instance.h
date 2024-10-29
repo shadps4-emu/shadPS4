@@ -101,7 +101,7 @@ struct AjmJobInput {
     std::optional<AjmSidebandResampleParameters> resample_parameters;
     std::optional<AjmSidebandFormat> format;
     std::optional<AjmSidebandGaplessDecode> gapless_decode;
-    boost::container::small_vector<std::vector<u8>, 4> buffers;
+    std::vector<u8> buffer;
 };
 
 struct AjmJobOutput {
@@ -132,9 +132,8 @@ struct AjmInstance {
     AjmInstanceFlags flags{.raw = 0};
     u32 num_channels{};
     u32 index{};
-    u32 bytes_remain{};
-    u32 num_frames{};
-    u32 decoded_samples{};
+    u32 gapless_decoded_samples{};
+    u32 total_decoded_samples{};
     AjmSidebandFormat format{};
     AjmSidebandGaplessDecode gapless{};
     AjmSidebandResampleParameters resample_parameters{};
@@ -149,8 +148,7 @@ struct AjmInstance {
     virtual void GetCodecInfo(void* out_info) = 0;
     virtual u32 GetCodecInfoSize() = 0;
 
-    virtual std::tuple<u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf, u32 out_size,
-                                        AjmJobOutput* output) = 0;
+    virtual void Decode(const AjmJobInput* input, AjmJobOutput* output) = 0;
 };
 
 } // namespace Libraries::Ajm

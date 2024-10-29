@@ -165,24 +165,8 @@ struct AjmDevice {
                 p_instance->gapless.skip_samples = params.skip_samples;
             }
 
-            ASSERT_MSG(job.input.buffers.size() <= job.output.buffers.size(),
-                       "Unsupported combination of input/output buffers.");
-
-            for (size_t i = 0; i < job.input.buffers.size(); ++i) {
-                // Decode as much of the input bitstream as possible.
-                const auto& in_buffer = job.input.buffers[i];
-                auto& out_buffer = job.output.buffers[i];
-
-                const u8* in_address = in_buffer.data();
-                u8* out_address = out_buffer.data();
-                const auto [in_remain, out_remain] = p_instance->Decode(
-                    in_address, in_buffer.size(), out_address, out_buffer.size(), &job.output);
-
-                if (job.output.p_stream != nullptr) {
-                    job.output.p_stream->input_consumed += in_buffer.size() - in_remain;
-                    job.output.p_stream->output_written += out_buffer.size() - out_remain;
-                    job.output.p_stream->total_decoded_samples += p_instance->decoded_samples;
-                }
+            if (!job.input.buffer.empty()) {
+                p_instance->Decode(&job.input, &job.output);
             }
 
             if (job.output.p_gapless_decode != nullptr) {
@@ -439,7 +423,6 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, u8* p_batch, u32 batch_size
     const auto batch_info = std::make_shared<BatchInfo>();
     auto batch_id = dev->batches.Create(batch_info);
     if (!batch_id.has_value()) {
-        LOG_ERROR(Lib_Ajm, "Too many batches in job!");
         return ORBIS_AJM_ERROR_OUT_OF_MEMORY;
     }
     batch_info->id = batch_id.value();
@@ -471,7 +454,7 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, u8* p_batch, u32 batch_size
             case Identifier::AjmIdentInputRunBuf: {
                 auto& buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
                 u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
-                job.input.buffers.emplace_back(
+                job.input.buffer.append_range(
                     std::vector<u8>(p_begin, p_begin + buffer.header.size));
                 break;
             }
@@ -614,7 +597,6 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
         std::lock_guard guard(dev->batches_mutex);
         const auto opt_batch = dev->batches.Get(batch_id);
         if (!opt_batch.has_value()) {
-            LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_INVALID_BATCH");
             return ORBIS_AJM_ERROR_INVALID_BATCH;
         }
 
@@ -623,7 +605,6 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
 
     bool expected = false;
     if (!batch->waiting.compare_exchange_strong(expected, true)) {
-        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_BUSY");
         return ORBIS_AJM_ERROR_BUSY;
     }
 
@@ -631,7 +612,6 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
         batch->finished.acquire();
     } else if (!batch->finished.try_acquire_for(std::chrono::milliseconds(timeout))) {
         batch->waiting = false;
-        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_IN_PROGRESS");
         return ORBIS_AJM_ERROR_IN_PROGRESS;
     }
 
@@ -641,11 +621,9 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context, const u32 batch_id, const u3
     }
 
     if (batch->canceled) {
-        LOG_INFO(Lib_Ajm, "ORBIS_AJM_ERROR_CANCELLED");
         return ORBIS_AJM_ERROR_CANCELLED;
     }
 
-    LOG_INFO(Lib_Ajm, "ORBIS_OK");
     return ORBIS_OK;
 }
 
@@ -656,7 +634,7 @@ int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData() {
 
 int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* buf, u32 stream_size, int parse_ofl,
                                         AjmDecMp3ParseFrame* frame) {
-    LOG_INFO(Lib_Ajm, "called parse_ofl = {}", parse_ofl);
+    LOG_INFO(Lib_Ajm, "called stream_size = {} parse_ofl = {}", stream_size, parse_ofl);
     if (buf == nullptr || stream_size < 4 || frame == nullptr) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
@@ -688,6 +666,9 @@ int PS4_SYSV_ABI sceAjmInstanceCodecType() {
 
 int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags,
                                       u32* out_instance) {
+    LOG_INFO(Lib_Ajm, "called context = {}, codec_type = {}, flags = {:#x}", context,
+             magic_enum::enum_name(codec_type), flags.raw);
+
     if (codec_type >= AjmCodecType::Max) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
@@ -720,8 +701,8 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmI
     instance->flags = flags;
     dev->instances[index] = std::move(instance);
     *out_instance = index;
-    LOG_INFO(Lib_Ajm, "called codec_type = {}, flags = {:#x}, instance = {}",
-             magic_enum::enum_name(codec_type), flags.raw, index);
+
+    LOG_INFO(Lib_Ajm, "instance = {}", index);
 
     return ORBIS_OK;
 }

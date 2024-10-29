@@ -73,20 +73,51 @@ void AjmMp3Decoder::Reset() {
     ASSERT_MSG(c, "Could not allocate audio codec context");
     int ret = avcodec_open2(c, codec, nullptr);
     ASSERT_MSG(ret >= 0, "Could not open codec");
-    decoded_samples = 0;
-    num_frames = 0;
+    total_decoded_samples = 0;
 }
 
-std::tuple<u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_buf, u32 out_size,
-                                           AjmJobOutput* output) {
+void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
     AVPacket* pkt = av_packet_alloc();
-    while (in_size > 0 && out_size > 0) {
-        int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, buf, in_size, AV_NOPTS_VALUE,
-                                   AV_NOPTS_VALUE, 0);
-        ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
-        buf += ret;
-        in_size -= ret;
 
+    size_t out_buffer_index = 0;
+    std::span<const u8> in_buf(input->buffer);
+    std::span<u8> out_buf = output->buffers[out_buffer_index];
+    const auto should_decode = [&] {
+        if (in_buf.empty() || out_buf.empty()) {
+            return false;
+        }
+        if (gapless.total_samples != 0 && gapless.total_samples < gapless_decoded_samples) {
+            return false;
+        }
+        return true;
+    };
+
+    const auto write_output = [&](std::span<s16> pcm) {
+        while (!pcm.empty()) {
+            auto size = std::min(pcm.size() * sizeof(u16), out_buf.size());
+            std::memcpy(out_buf.data(), pcm.data(), size);
+            pcm = pcm.subspan(size >> 1);
+            out_buf = out_buf.subspan(size);
+            if (out_buf.empty()) {
+                out_buffer_index += 1;
+                if (out_buffer_index >= output->buffers.size()) {
+                    return pcm.empty();
+                }
+                out_buf = output->buffers[out_buffer_index];
+            }
+        }
+        return true;
+    };
+
+    while (should_decode()) {
+        int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, in_buf.data(), in_buf.size(),
+                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+        ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
+        in_buf = in_buf.subspan(ret);
+
+        if (output->p_stream) {
+            output->p_stream->input_consumed += ret;
+        }
         if (pkt->size) {
             // Send the packet with the compressed data to the decoder
             pkt->pts = parser->pts;
@@ -107,22 +138,43 @@ std::tuple<u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_b
                 if (frame->format != AV_SAMPLE_FMT_S16) {
                     frame = ConvertAudioFrame(frame);
                 }
-                const auto size = frame->ch_layout.nb_channels * frame->nb_samples * sizeof(u16);
-                std::memcpy(out_buf, frame->data[0], size);
-                file.write((const char*)frame->data[0], size);
-                out_buf += size;
-                out_size -= size;
-                decoded_samples += frame->nb_samples;
-                num_frames++;
+                const auto frame_samples = frame->ch_layout.nb_channels * frame->nb_samples;
+                const auto size = frame_samples * sizeof(u16);
+                if (gapless.skipped_samples < gapless.skip_samples) {
+                    gapless.skipped_samples += frame_samples;
+                    if (gapless.skipped_samples > gapless.skip_samples) {
+                        const u32 nsamples = gapless.skipped_samples - gapless.skip_samples;
+                        const auto start = frame_samples - nsamples;
+                        write_output({reinterpret_cast<s16*>(frame->data[0]), nsamples});
+                        gapless.skipped_samples = gapless.skip_samples;
+                        total_decoded_samples += nsamples;
+                        gapless_decoded_samples += nsamples;
+                    }
+                } else {
+                    write_output({reinterpret_cast<s16*>(frame->data[0]), size >> 1});
+                    total_decoded_samples += frame_samples;
+                    gapless_decoded_samples += frame_samples;
+                }
                 av_frame_free(&frame);
+                if (output->p_stream) {
+                    output->p_stream->output_written += size;
+                }
+                if (output->p_mframe) {
+                    output->p_mframe->num_frames += 1;
+                }
             }
         }
     }
     av_packet_free(&pkt);
-    if (output->p_mframe) {
-        output->p_mframe->num_frames += num_frames;
+    if (gapless_decoded_samples >= gapless.total_samples) {
+        if (flags.gapless_loop) {
+            gapless.skipped_samples = 0;
+            gapless_decoded_samples = 0;
+        }
     }
-    return std::make_tuple(in_size, out_size);
+    if (output->p_stream) {
+        output->p_stream->total_decoded_samples = total_decoded_samples;
+    }
 }
 
 int AjmMp3Decoder::ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,

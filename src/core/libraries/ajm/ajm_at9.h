@@ -30,6 +30,8 @@ struct AjmAt9Decoder final : AjmInstance {
     std::fstream file;
     int length;
     u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE];
+    u32 superframe_bytes_remain{};
+    u32 num_frames{};
 
     explicit AjmAt9Decoder();
     ~AjmAt9Decoder() override;
@@ -43,8 +45,10 @@ struct AjmAt9Decoder final : AjmInstance {
         return sizeof(AjmSidebandDecAt9CodecInfo);
     }
 
-    std::tuple<u32, u32> Decode(const u8* in_buf, u32 in_size, u8* out_buf, u32 out_size,
-                                AjmJobOutput* output) override;
+    void Decode(const AjmJobInput* input, AjmJobOutput* output) override;
+
+private:
+    void ResetCodec();
 };
 
 } // namespace Libraries::Ajm

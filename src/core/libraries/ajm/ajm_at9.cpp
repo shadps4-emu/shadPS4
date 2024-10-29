@@ -26,17 +26,23 @@ AjmAt9Decoder::~AjmAt9Decoder() {
 }
 
 void AjmAt9Decoder::Reset() {
-    num_frames = 0;
-    decoded_samples = 0;
+    total_decoded_samples = 0;
     gapless = {};
 
+    ResetCodec();
+}
+
+void AjmAt9Decoder::ResetCodec() {
     Atrac9ReleaseHandle(handle);
     handle = Atrac9GetHandle();
     Atrac9InitDecoder(handle, config_data);
 
     Atrac9CodecInfo codec_info;
     Atrac9GetCodecInfo(handle, &codec_info);
-    bytes_remain = codec_info.superframeSize;
+    num_frames = 0;
+    superframe_bytes_remain = codec_info.superframeSize;
+    gapless.skipped_samples = 0;
+    gapless_decoded_samples = 0;
 }
 
 void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
@@ -58,72 +64,106 @@ void AjmAt9Decoder::GetCodecInfo(void* out_info) {
     codec_info->uiSuperFrameSize = decoder_codec_info.superframeSize;
 }
 
-std::tuple<u32, u32> AjmAt9Decoder::Decode(const u8* in_buf, u32 in_size_in, u8* out_buf,
-                                           u32 out_size_in, AjmJobOutput* output) {
-    const auto decoder_handle = static_cast<Atrac9Handle*>(handle);
+void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
+    LOG_TRACE(Lib_Ajm, "Decoding with instance {} in size = {}", index, input->buffer.size());
     Atrac9CodecInfo codec_info;
     Atrac9GetCodecInfo(handle, &codec_info);
 
-    int bytes_used = 0;
-    int num_superframes = 0;
-
-    u32 in_size = in_size_in;
-    u32 out_size = out_size_in;
-
-    const auto ShouldDecode = [&] {
-        if (in_size == 0 || out_size == 0) {
+    size_t out_buffer_index = 0;
+    std::span<const u8> in_buf(input->buffer);
+    std::span<u8> out_buf = output->buffers[out_buffer_index];
+    const auto should_decode = [&] {
+        if (in_buf.empty() || out_buf.empty()) {
             return false;
         }
-        if (gapless.total_samples != 0 && gapless.total_samples < decoded_samples) {
+        if (gapless.total_samples != 0 && gapless.total_samples < gapless_decoded_samples) {
             return false;
         }
         return true;
     };
 
-    const auto written_size = codec_info.channels * codec_info.frameSamples * sizeof(u16);
-    std::vector<s16> pcm_buffer(written_size >> 1);
-    while (ShouldDecode()) {
-        u32 ret = Atrac9Decode(decoder_handle, in_buf, pcm_buffer.data(), &bytes_used);
-        ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
-        in_buf += bytes_used;
-        in_size -= bytes_used;
-        if (output->p_mframe) {
-            ++output->p_mframe->num_frames;
+    const auto write_output = [&](std::span<s16> pcm) {
+        while (!pcm.empty()) {
+            auto size = std::min(pcm.size() * sizeof(u16), out_buf.size());
+            std::memcpy(out_buf.data(), pcm.data(), size);
+            pcm = pcm.subspan(size >> 1);
+            out_buf = out_buf.subspan(size);
+            if (out_buf.empty()) {
+                out_buffer_index += 1;
+                if (out_buffer_index >= output->buffers.size()) {
+                    return pcm.empty();
+                }
+                out_buf = output->buffers[out_buffer_index];
+            }
         }
-        num_frames++;
-        bytes_remain -= bytes_used;
+        return true;
+    };
+
+    int num_superframes = 0;
+    const auto pcm_frame_size = codec_info.channels * codec_info.frameSamples * sizeof(u16);
+    std::vector<s16> pcm_buffer(pcm_frame_size >> 1);
+    while (should_decode()) {
+        int bytes_used = 0;
+        u32 ret = Atrac9Decode(handle, in_buf.data(), pcm_buffer.data(), &bytes_used);
+        ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
+        in_buf = in_buf.subspan(bytes_used);
+        superframe_bytes_remain -= bytes_used;
+        const size_t samples_remain = gapless.total_samples != 0
+                                          ? gapless.total_samples - gapless_decoded_samples
+                                          : std::numeric_limits<size_t>::max();
+        bool written = false;
         if (gapless.skipped_samples < gapless.skip_samples) {
-            gapless.skipped_samples += decoder_handle->Config.FrameSamples;
+            gapless.skipped_samples += codec_info.frameSamples;
             if (gapless.skipped_samples > gapless.skip_samples) {
-                const auto size = gapless.skipped_samples - gapless.skip_samples;
-                const auto start = decoder_handle->Config.FrameSamples - size;
-                memcpy(out_buf, pcm_buffer.data() + start, size * sizeof(s16));
-                out_buf += size * sizeof(s16);
-                out_size -= size * sizeof(s16);
+                const u32 nsamples = gapless.skipped_samples - gapless.skip_samples;
+                const auto start = codec_info.frameSamples - nsamples;
+                written = write_output({pcm_buffer.data() + start, nsamples});
+                gapless.skipped_samples = gapless.skip_samples;
+                total_decoded_samples += nsamples;
+                gapless_decoded_samples += nsamples;
             }
         } else {
-            memcpy(out_buf, pcm_buffer.data(), written_size);
-            out_buf += written_size;
-            out_size -= written_size;
+            written =
+                write_output({pcm_buffer.data(), std::min(pcm_buffer.size(), samples_remain)});
+            total_decoded_samples += codec_info.frameSamples;
+            gapless_decoded_samples += codec_info.frameSamples;
         }
-        decoded_samples += decoder_handle->Config.FrameSamples;
+
+        num_frames += 1;
         if ((num_frames % codec_info.framesInSuperframe) == 0) {
-            in_buf += bytes_remain;
-            in_size -= bytes_remain;
-            bytes_remain = codec_info.superframeSize;
-            num_superframes++;
+            if (superframe_bytes_remain) {
+                if (output->p_stream) {
+                    output->p_stream->input_consumed += superframe_bytes_remain;
+                }
+                in_buf = in_buf.subspan(superframe_bytes_remain);
+            }
+            superframe_bytes_remain = codec_info.superframeSize;
+            num_superframes += 1;
+        }
+        if (output->p_stream) {
+            output->p_stream->input_consumed += bytes_used;
+            if (written) {
+                output->p_stream->output_written +=
+                    std::min(pcm_frame_size, samples_remain * sizeof(16));
+            }
+        }
+        if (output->p_mframe) {
+            output->p_mframe->num_frames += 1;
         }
     }
 
-    if (gapless.total_samples == decoded_samples) {
-        decoded_samples = 0;
+    if (gapless_decoded_samples >= gapless.total_samples) {
         if (flags.gapless_loop) {
-            gapless.skipped_samples = 0;
+            ResetCodec();
         }
     }
 
-    LOG_TRACE(Lib_Ajm, "Decoded {} samples, frame count: {}", decoded_samples, num_frames);
-    return std::tuple(in_size, out_size);
+    if (output->p_stream) {
+        output->p_stream->total_decoded_samples = total_decoded_samples;
+    }
+
+    LOG_TRACE(Lib_Ajm, "Decoded buffer, in remain = {}, out remain = {}", in_buf.size(),
+              out_buf.size());
 }
 
 } // namespace Libraries::Ajm
