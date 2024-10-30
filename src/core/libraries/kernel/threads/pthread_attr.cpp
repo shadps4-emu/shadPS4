@@ -343,7 +343,7 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_attr_setguardsize));
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(scePthreadAttrGetaffinity));
-    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
+    LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
 }
 
 } // namespace Libraries::Kernel
