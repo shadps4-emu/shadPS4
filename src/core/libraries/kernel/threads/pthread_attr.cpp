@@ -282,12 +282,7 @@ int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, Cpuset* mask) 
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const Cpuset mask) {
-    if (attr == nullptr) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    // posix_pthread_attr_setaffinity_np(attr, 0x10, &mask);
-    return ORBIS_OK;
+    return posix_pthread_attr_setaffinity_np(attr, 0x10, &mask);
 }
 
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
@@ -343,7 +338,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_attr_setguardsize));
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(scePthreadAttrGetaffinity));
-    LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
+    LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(scePthreadAttrSetaffinity));
 }
 
 } // namespace Libraries::Kernel
