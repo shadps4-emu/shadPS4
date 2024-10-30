@@ -3,18 +3,20 @@
 
 #pragma once
 
+#include "core/libraries/ngs2/ngs2_impl.h"
+
 #include <atomic>
 #include "common/types.h"
 #include <memory>
+#include <mutex>
 #include <stddef.h>
+#include <vector>
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::Ngs2 {
-
-class Ngs2;
 
 typedef s32 (*OrbisNgs2ParseReadHandler)(uintptr_t userData, u32 offset, void* data, size_t size);
 
@@ -28,12 +30,8 @@ enum class OrbisNgs2HandleType : u32 {
 
 static const int ORBIS_NGS2_MAX_VOICE_CHANNELS = 8;
 static const int ORBIS_NGS2_WAVEFORM_INFO_MAX_BLOCKS = 4;
-static const int ORBIS_NGS2_SYSTEM_NAME_LENGTH = 16;
-static const int ORBIS_NGS2_RACK_NAME_LENGTH = 16;
 static const int ORBIS_NGS2_MAX_MATRIX_LEVELS =
     (ORBIS_NGS2_MAX_VOICE_CHANNELS * ORBIS_NGS2_MAX_VOICE_CHANNELS);
-
-using OrbisNgs2Handle = Ngs2*;
 
 struct OrbisNgs2WaveformFormat {
     u32 waveformType;
@@ -149,50 +147,10 @@ struct OrbisNgs2UserFx2ProcessContext {
 
 typedef s32 (*OrbisNgs2UserFx2ProcessHandler)(OrbisNgs2UserFx2ProcessContext* context);
 
-struct OrbisNgs2ContextBufferInfo {
-    void* hostBuffer;
-    size_t hostBufferSize;
-    uintptr_t reserved[5];
-    uintptr_t userData;
-};
-
-typedef s32 (*OrbisNgs2BufferAllocHandler)(OrbisNgs2ContextBufferInfo* ioBufferInfo);
-typedef s32 (*OrbisNgs2BufferFreeHandler)(OrbisNgs2ContextBufferInfo* ioBufferInfo);
-
 struct OrbisNgs2BufferAllocator {
     OrbisNgs2BufferAllocHandler allocHandler;
     OrbisNgs2BufferFreeHandler freeHandler;
     uintptr_t userData;
-};
-
-struct OrbisNgs2SystemOption {
-    size_t size;
-    char name[ORBIS_NGS2_SYSTEM_NAME_LENGTH];
-
-    u32 flags;
-    u32 maxGrainSamples;
-    u32 numGrainSamples;
-    u32 sampleRate;
-    u32 aReserved[6];
-};
-
-struct OrbisNgs2SystemInfo {
-    char name[ORBIS_NGS2_SYSTEM_NAME_LENGTH];
-
-    OrbisNgs2Handle systemHandle;
-    OrbisNgs2ContextBufferInfo bufferInfo;
-
-    u32 uid;
-    u32 minGrainSamples;
-    u32 maxGrainSamples;
-
-    u32 stateFlags;
-    u32 rackCount;
-    float lastRenderRatio;
-    s64 lastRenderTick;
-    s64 renderCount;
-    u32 sampleRate;
-    u32 numGrainSamples;
 };
 
 struct OrbisNgs2RenderBufferInfo {
@@ -213,33 +171,6 @@ struct OrbisNgs2RackOption {
     u32 maxMatrices;
     u32 maxPorts;
     u32 aReserved[20];
-};
-
-struct OrbisNgs2RackInfo {
-    char name[ORBIS_NGS2_RACK_NAME_LENGTH];
-
-    OrbisNgs2Handle rackHandle;
-    OrbisNgs2ContextBufferInfo bufferInfo;
-
-    OrbisNgs2Handle ownerSystemHandle;
-
-    u32 type;
-    u32 rackId;
-    u32 uid;
-    u32 minGrainSamples;
-    u32 maxGrainSamples;
-    u32 maxVoices;
-    u32 maxChannelWorks;
-    u32 maxInputs;
-    u32 maxMatrices;
-    u32 maxPorts;
-
-    u32 stateFlags;
-    float lastProcessRatio;
-    u64 lastProcessTick;
-    u64 renderCount;
-    u32 activeVoiceCount;
-    u32 activeChannelWorkCount;
 };
 
 struct OrbisNgs2VoiceParamHeader {
