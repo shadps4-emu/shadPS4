@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "common/types.h"
+
 namespace Core {
 
 class Thread {
@@ -16,12 +18,16 @@ public:
     int Create(ThreadFunc func, void* arg);
     void Exit();
 
-    void* GetHandle() {
-        return native_handle;
+    uintptr_t GetHandle() {
+        return reinterpret_cast<uintptr_t>(native_handle);
     }
 
 private:
+#if _WIN64
     void* native_handle;
+#else
+    uintptr_t native_handle;
+#endif
 };
 
 } // namespace Core

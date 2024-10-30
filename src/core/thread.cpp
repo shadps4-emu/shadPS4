@@ -11,7 +11,7 @@
 
 namespace Core {
 
-Thread::Thread() : native_handle{nullptr} {}
+Thread::Thread() : native_handle{0} {}
 
 Thread::~Thread() {}
 
@@ -20,7 +20,7 @@ int Thread::Create(ThreadFunc func, void* arg) {
     native_handle = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, nullptr);
     return native_handle ? 0 : -1;
 #else
-    pthread_t* pthr = reinterpret_cast<pthread_t*>(native_handle);
+    pthread_t* pthr = reinterpret_cast<pthread_t*>(&native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
     return pthread_create(pthr, &pattr, (PthreadFunc)func, arg);
