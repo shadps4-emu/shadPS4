@@ -23,7 +23,7 @@ int Thread::Create(ThreadFunc func, void* arg) {
     pthread_t* pthr = reinterpret_cast<pthread_t*>(native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
-    return pthread_create(pthr, &pattr, func, arg);
+    return pthread_create(pthr, &pattr, (PthreadFunc)func, arg);
 #endif
 }
 

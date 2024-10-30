@@ -8,6 +8,7 @@ namespace Core {
 class Thread {
 public:
     using ThreadFunc = void (*)(void*);
+    using PthreadFunc = void* (*)(void*);
 
     Thread();
     ~Thread();
