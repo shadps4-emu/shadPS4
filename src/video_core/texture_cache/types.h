@@ -38,6 +38,10 @@ struct Extent3D {
     u32 depth;
 
     auto operator<=>(const Extent3D&) const = default;
+
+    bool operator==(const Extent3D& other) const {
+        return width == other.width && height == other.height && depth == other.depth;
+    }
 };
 
 struct SubresourceLayers {
