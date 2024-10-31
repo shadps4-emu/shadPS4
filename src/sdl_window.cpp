@@ -139,6 +139,9 @@ float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.125;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
+// A vector to store delayed actions by event ID
+std::vector<DelayedAction> delayedActions;
+
 KeyBinding::KeyBinding(const SDL_Event* event) {
     modifier = getCustomModState();
     key = 0;
@@ -384,6 +387,36 @@ Uint32 WindowSDL::keyRepeatCallback(void* param, Uint32 id, Uint32 interval) {
     return 0; // Return 0 to stop the timer after firing once
 }
 
+void WindowSDL::handleDelayedActions() {
+    // Uncomment at your own terminal's risk
+    // std::cout << "I fear the amount of spam this line will generate\n"; 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    Uint32 currentTime = SDL_GetTicks();
+    for (auto it = delayedActions.begin(); it != delayedActions.end();) {
+        if (currentTime >= it->triggerTime) {
+            if (it->event.type == SDL_EVENT_MOUSE_WHEEL) {
+                SDL_Event* mouseEvent = &(it->event);
+                KeyBinding binding(mouseEvent);
+
+                auto button_it = button_map.find(binding);
+                auto axis_it = axis_map.find(binding);
+
+                if (button_it != button_map.end()) {
+                    updateButton(binding, button_it->second, false);
+                } else if (axis_it != axis_map.end()) {
+                    controller->Axis(0, axis_it->second.axis, Input::GetAxis(-0x80, 0x80, 0));
+                }
+            } else {
+                KeyBinding b(&(it->event));
+                updateModKeyedInputsManually(b);
+            }
+            it = delayedActions.erase(it); // Erase returns the next iterator
+        } else {
+            ++it;
+        }
+    }
+}
+
 Uint32 WindowSDL::mousePolling(void* param, Uint32 id, Uint32 interval) {
     auto* data = (WindowSDL*)param;
     data->updateMouse();
@@ -491,18 +524,22 @@ WindowSDL::~WindowSDL() = default;
 
 void WindowSDL::waitEvent() {
     // Called on main thread
+
+    handleDelayedActions();
+
     SDL_Event event{};
 
-    if (!SDL_WaitEvent(&event)) {
+    // waitEvent locks the execution here until the next event,
+    // but we want to poll handleDelayedActions too
+    if (!SDL_PollEvent(&event)) {
         return;
     }
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
-    SDL_Event* event_copy = new SDL_Event();
-    *event_copy = event;
-    std::pair<WindowSDL*, SDL_Event*>* payload_to_timer =
-        new std::pair<WindowSDL*, SDL_Event*>(this, event_copy);
+
+    // Set execution time to 33 ms later than 'now'
+    DelayedAction d = {SDL_GetTicks() + 33, event};
 
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
@@ -522,7 +559,7 @@ void WindowSDL::waitEvent() {
         // as seen in pr #633
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        SDL_AddTimer(33, keyRepeatCallback, (void*)payload_to_timer);
+        delayedActions.push_back(d);
         onKeyboardMouseEvent(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:

@@ -46,6 +46,12 @@ struct AxisMapping {
     int value; // Value to set for key press (+127 or -127 for movement)
 };
 
+// Define a struct to hold any necessary timing information for delayed actions
+struct DelayedAction {
+    Uint64 triggerTime; // When the action should be triggered
+    SDL_Event event;    //  Event data
+};
+
 std::string getDefaultKeyboardConfig();
 void parseInputConfig(const std::string game_id);
 
@@ -270,6 +276,7 @@ private:
     void updateButton(KBMConfig::KeyBinding& binding, u32 button, bool isPressed);
     static Uint32 keyRepeatCallback(void* param, Uint32 id, Uint32 interval);
     static Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
+    void handleDelayedActions();
 
 private:
     s32 width;
