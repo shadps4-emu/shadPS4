@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <span>
+#include <vector>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
@@ -17,7 +18,6 @@
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
-#include "xbyak/xbyak.h"
 
 namespace Shader {
 
@@ -204,9 +204,6 @@ struct Info {
     bool has_readconst{};
     u8 mrt_mask{0u};
 
-    // just for logging, TODO delete
-    size_t perm_idx;
-
     explicit Info(Stage stage_, ShaderParams params)
         : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
           user_data{params.user_data} {}
@@ -263,9 +260,8 @@ struct Info {
         ASSERT(user_data.size() <= NumUserDataRegs);
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        PFN_SrtWalker pfn = srt_info.walker.getCode<PFN_SrtWalker>();
-        if (pfn) {
-            pfn(user_data.data(), flattened_ud_buf.data());
+        if (srt_info.walker_func) {
+            srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
         }
     }
 };

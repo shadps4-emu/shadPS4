@@ -10,7 +10,6 @@
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
@@ -24,7 +23,9 @@
 
 using namespace Xbyak::util;
 
-// TODO make sure no problems with identity and Insts being used in maps
+static Xbyak::CodeGenerator g_srt_codegen(32_MB);
+
+namespace {
 
 static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t codesize) {
 #ifdef ARCH_X86_64
@@ -34,8 +35,7 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename =
-        fmt::format("{}_{:#018x}_{}.srtprogram.txt", info.stage, info.pgm_hash, info.perm_idx);
+    const auto filename = fmt::format("{}_{:#018x}.srtprogram.txt", info.stage, info.pgm_hash);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write, FileType::TextFile};
 
     u64 address = reinterpret_cast<u64>(code);
@@ -53,12 +53,6 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
     }
 #endif
 }
-
-namespace {
-class SrtCodegen : public Xbyak::CodeGenerator {
-public:
-    SrtCodegen() : CodeGenerator(1_MB) {}
-};
 
 using namespace Shader;
 
@@ -141,11 +135,13 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
 }
 
 static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
-    Xbyak::CodeGenerator& c = *Common::Singleton<SrtCodegen>::Instance();
+    Xbyak::CodeGenerator& c = g_srt_codegen;
 
     if (info.srt_info.srt_reservations.empty() && pass_info.srt_roots.empty()) {
         return;
     }
+
+    info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
 
     pass_info.dst_off_dw = NumUserDataRegs;
 
@@ -174,14 +170,10 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     c.ret();
     c.ready();
 
-    size_t codesize = c.getSize();
-    info.srt_info.walker = SmallCodeArray(c.getCode(), codesize);
-
     if (Config::dumpShaders()) {
-        DumpSrtProgram(info, c.getCode(), codesize);
+        size_t codesize = c.getCurr() - reinterpret_cast<const u8*>(info.srt_info.walker_func);
+        DumpSrtProgram(info, reinterpret_cast<const u8*>(info.srt_info.walker_func), codesize);
     }
-
-    c.reset();
 
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }

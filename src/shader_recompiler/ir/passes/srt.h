@@ -3,68 +3,13 @@
 
 #pragma once
 
-#include <vector>
-#include <boost/align/aligned_allocator.hpp>
-#include <boost/align/aligned_delete.hpp>
-#include <boost/container/map.hpp>
 #include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
-
-#include <memory>
-#include "common/alignment.h"
-#include "common/assert.h"
 #include "common/types.h"
-#include "xbyak/xbyak.h"
 
 namespace Shader {
 
 using PFN_SrtWalker = void PS4_SYSV_ABI (*)(const u32* /*user_data*/, u32* /*flat_dst*/);
-
-// Utility for copying a simple relocatable function from a Xbyak code generator to manage memory
-// separately
-class SmallCodeArray {
-public:
-    SmallCodeArray() : bufsize(0), codebuf(nullptr) {}
-    SmallCodeArray& operator=(SmallCodeArray&& other) = default;
-    SmallCodeArray(SmallCodeArray&& other) = default;
-
-    SmallCodeArray& operator=(const SmallCodeArray& other) {
-        *this = SmallCodeArray(reinterpret_cast<u8*>(codebuf.get()), bufsize);
-        return *this;
-    }
-    SmallCodeArray(const SmallCodeArray& other) {
-        *this = other;
-    };
-
-    SmallCodeArray(const u8* code, size_t codesize) : SmallCodeArray() {
-        size_t pagesize = Xbyak::inner::getPageSize();
-        bufsize = Common::AlignUp(codesize, pagesize);
-        if (bufsize > 0) {
-            auto fn = reinterpret_cast<u8*>(boost::alignment::aligned_alloc(pagesize, bufsize));
-            ASSERT(fn);
-            codebuf = aligned_unique_ptr(fn);
-            memcpy(codebuf.get(), code, codesize);
-            Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RE);
-        }
-    }
-
-    ~SmallCodeArray() {
-        if (bufsize > 0) {
-            Xbyak::CodeArray::protect(codebuf.get(), bufsize, Xbyak::CodeArray::PROTECT_RW);
-        }
-    }
-
-    template <class F>
-    F getCode() const {
-        return reinterpret_cast<F>(codebuf.get());
-    }
-
-private:
-    using aligned_unique_ptr = std::unique_ptr<u8, boost::alignment::aligned_delete>;
-
-    size_t bufsize;
-    aligned_unique_ptr codebuf;
-};
 
 struct PersistentSrtInfo {
     // Special case when fetch shader uses step rates.
@@ -74,7 +19,7 @@ struct PersistentSrtInfo {
         u32 num_dwords;
     };
 
-    SmallCodeArray walker;
+    PFN_SrtWalker walker_func{};
     boost::container::small_vector<SrtSharpReservation, 2> srt_reservations;
     u32 flattened_bufsize_dw = 16; // NumUserDataRegs
 

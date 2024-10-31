@@ -396,7 +396,6 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
-    info.perm_idx = perm_idx;
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     const auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
