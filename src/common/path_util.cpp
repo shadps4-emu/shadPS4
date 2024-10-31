@@ -86,30 +86,27 @@ static std::filesystem::path GetBundleParentDirectory() {
 
 static auto UserPaths = [] {
 #ifdef __APPLE__
-    // Start by assuming the base directory is the bundle's parent directory.
-    std::filesystem::path base_dir = GetBundleParentDirectory();
-    std::filesystem::path user_dir = base_dir / PORTABLE_DIR;
-    // Check if the "user" directory exists in the current path:
+    // Set the current path to the directory containing the app bundle.
+    std::filesystem::current_path(GetBundleParentDirectory());
+#endif
+
+    // Try the portable user directory first.
+    auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
     if (!std::filesystem::exists(user_dir)) {
-        // If it doesn't exist, use the new hardcoded path:
+        // If it doesn't exist, use the standard path for the platform instead.
+        // NOTE: On Windows we currently just create the portable directory instead.
+#ifdef __APPLE__
         user_dir =
             std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadPS4";
-    }
 #elif defined(__linux__)
-    auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
-    // Check if the "user" directory exists in the current path:
-    if (!std::filesystem::exists(user_dir)) {
-        // If it doesn't exist, use XDG_DATA_HOME if it is set, and provide a standard default
         const char* xdg_data_home = getenv("XDG_DATA_HOME");
         if (xdg_data_home != nullptr && strlen(xdg_data_home) > 0) {
             user_dir = std::filesystem::path(xdg_data_home) / "shadPS4";
         } else {
             user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
         }
-    }
-#else
-    const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 #endif
+    }
 
     std::unordered_map<PathType, fs::path> paths;
 
