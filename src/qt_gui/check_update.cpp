@@ -145,7 +145,9 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             return;
         }
 
-        QString currentRev = QString::fromStdString(Common::g_scm_rev).left(7);
+        QString currentRev = (updateChannel == "Nightly")
+                                 ? QString::fromStdString(Common::g_scm_rev).left(7)
+                                 : "v." + QString::fromStdString(Common::VERSION);
         QString currentDate = Common::g_scm_date;
 
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
