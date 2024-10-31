@@ -274,7 +274,6 @@ private:
 
     void updateModKeyedInputsManually(KBMConfig::KeyBinding& binding);
     void updateButton(KBMConfig::KeyBinding& binding, u32 button, bool isPressed);
-    static Uint32 keyRepeatCallback(void* param, Uint32 id, Uint32 interval);
     static Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
     void handleDelayedActions();
 
