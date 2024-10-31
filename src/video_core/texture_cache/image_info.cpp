@@ -219,6 +219,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers(desc.is_array);
+    num_samples = image.NumSamples();
     num_bits = NumBits(image.GetDataFmt());
     usage.texture = true;
 

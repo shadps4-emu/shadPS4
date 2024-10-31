@@ -275,6 +275,9 @@ private:
     void CollectDeviceParameters();
     void CollectToolingInfo();
 
+    /// Gets the supported feature flags for a format.
+    [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 

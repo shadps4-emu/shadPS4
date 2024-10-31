@@ -41,8 +41,42 @@ void Rasterizer::CpSync() {
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
 }
 
+bool Rasterizer::FilterDraw() {
+    const auto& regs = liverpool->regs;
+    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
+    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
+        return false;
+    }
+    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
+    // actual draw hence can skip pipeline creation.
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
+        return false;
+    }
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
+        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
+        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
+        return false;
+    }
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::Resolve) {
+        LOG_TRACE(Render_Vulkan, "Resolve pass");
+        Resolve();
+        return false;
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::None) {
+        LOG_TRACE(Render_Vulkan, "Primitive type 'None' skipped");
+        return false;
+    }
+
+    return true;
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
+
+    if (!FilterDraw()) {
+        return;
+    }
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
@@ -79,6 +113,10 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
 void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
+
+    if (!FilterDraw()) {
+        return;
+    }
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
@@ -256,6 +294,54 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
                             AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
     scheduler.BeginRendering(state);
+}
+
+void Rasterizer::Resolve() {
+    const auto cmdbuf = scheduler.CommandBuffer();
+
+    // Read from MRT0, average all samples, and write to MRT1, which is one-sample
+    const auto& mrt0_hint = liverpool->last_cb_extent[0];
+    const auto& mrt1_hint = liverpool->last_cb_extent[1];
+    VideoCore::ImageInfo mrt0_info{liverpool->regs.color_buffers[0], mrt0_hint};
+    VideoCore::ImageInfo mrt1_info{liverpool->regs.color_buffers[1], mrt1_hint};
+    auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_info));
+    auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_info));
+
+    VideoCore::SubresourceRange mrt0_range;
+    mrt0_range.base.layer = liverpool->regs.color_buffers[0].view.slice_start;
+    mrt0_range.extent.layers = liverpool->regs.color_buffers[0].NumSlices() - mrt0_range.base.layer;
+    VideoCore::SubresourceRange mrt1_range;
+    mrt1_range.base.layer = liverpool->regs.color_buffers[1].view.slice_start;
+    mrt1_range.extent.layers = liverpool->regs.color_buffers[1].NumSlices() - mrt1_range.base.layer;
+
+    vk::ImageResolve region = {
+        .srcSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = mrt0_range.base.layer,
+                .layerCount = mrt0_range.extent.layers,
+            },
+        .srcOffset = {0, 0, 0},
+        .dstSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = mrt1_range.base.layer,
+                .layerCount = mrt1_range.extent.layers,
+            },
+        .dstOffset = {0, 0, 0},
+        .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
+    };
+
+    mrt0_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
+                       mrt0_range);
+
+    mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
+                       mrt1_range);
+
+    cmdbuf.resolveImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal, mrt1_image.image,
+                        vk::ImageLayout::eTransferDstOptimal, region);
 }
 
 void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {

@@ -19,6 +19,7 @@ using namespace Core::Devtools;
 using L = Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
+static bool visibility_toggled = false;
 
 static float fps_scale = 1.0f;
 static bool show_advanced_debug = false;
@@ -296,20 +297,24 @@ void L::Draw() {
         const auto fn = DebugState.flip_frame_count.load();
         frame_graph.AddFrame(fn, io.DeltaTime);
     }
-
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
             show_advanced_debug = !show_advanced_debug;
         } else {
             show_simple_fps = !show_simple_fps;
         }
+        visibility_toggled = true;
     }
 
     if (show_simple_fps) {
         if (Begin("Video Info", nullptr,
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-            SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_FirstUseEver);
+            // Set window position to top left if it was toggled on
+            if (visibility_toggled) {
+                SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_Always);
+                visibility_toggled = false;
+            }
             if (BeginPopupContextWindow()) {
 #define M(label, value)                                                                            \
     if (MenuItem(label, nullptr, fps_scale == value))                                              \

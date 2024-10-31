@@ -290,8 +290,6 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d_error.h
                 src/core/libraries/audio3d/audio3d_impl.cpp
                 src/core/libraries/audio3d/audio3d_impl.h
-                src/core/libraries/ime/ime.cpp
-                src/core/libraries/ime/ime.h
                 src/core/libraries/game_live_streaming/gamelivestreaming.cpp
                 src/core/libraries/game_live_streaming/gamelivestreaming.h
                 src/core/libraries/remote_play/remoteplay.cpp
@@ -311,13 +309,17 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
 )
 
-set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
-                src/core/libraries/dialogs/error_dialog.h
-                src/core/libraries/dialogs/ime_dialog_ui.cpp
-                src/core/libraries/dialogs/ime_dialog_ui.h
-                src/core/libraries/dialogs/ime_dialog.cpp
-                src/core/libraries/dialogs/ime_dialog.h
-                src/core/libraries/dialogs/error_codes.h
+set(IME_LIB src/core/libraries/ime/error_dialog.cpp
+            src/core/libraries/ime/error_dialog.h
+            src/core/libraries/ime/ime_common.h
+            src/core/libraries/ime/ime_dialog_ui.cpp
+            src/core/libraries/ime/ime_dialog_ui.h
+            src/core/libraries/ime/ime_dialog.cpp
+            src/core/libraries/ime/ime_dialog.h
+            src/core/libraries/ime/ime_ui.cpp
+            src/core/libraries/ime/ime_ui.h
+            src/core/libraries/ime/ime.cpp
+            src/core/libraries/ime/ime.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
@@ -344,6 +346,13 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
 
 set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
               src/core/libraries/fiber/fiber.h
+)
+
+set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
+             src/core/libraries/videodec/videodec2_impl.h
+             src/core/libraries/videodec/videodec2.cpp
+             src/core/libraries/videodec/videodec2.h
+             src/core/libraries/videodec/videodec2_avc.h
 )
 
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
@@ -499,8 +508,9 @@ set(CORE src/core/aerolib/stubs.cpp
          ${RANDOM_LIB}
          ${USBD_LIB}
          ${MISC_LIBS}
-         ${DIALOGS_LIB}
+         ${IME_LIB}
          ${FIBER_LIB}
+         ${VDEC_LIB}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h

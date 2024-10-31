@@ -261,6 +261,13 @@ struct Image {
         return last_level + 1;
     }
 
+    u32 NumSamples() const {
+        if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
+            return 1u << last_level;
+        }
+        return 1;
+    }
+
     ImageType GetType() const noexcept {
         return static_cast<ImageType>(type);
     }
