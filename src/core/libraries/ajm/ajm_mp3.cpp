@@ -77,8 +77,8 @@ void AjmMp3Decoder::Reset() {
     num_frames = 0;
 }
 
-std::tuple<u32, u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_buf,
-                                                u32 out_size) {
+std::tuple<u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* out_buf, u32 out_size,
+                                           AjmJobOutput* output) {
     AVPacket* pkt = av_packet_alloc();
     while (in_size > 0 && out_size > 0) {
         int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, buf, in_size, AV_NOPTS_VALUE,
@@ -119,7 +119,10 @@ std::tuple<u32, u32, u32> AjmMp3Decoder::Decode(const u8* buf, u32 in_size, u8* 
         }
     }
     av_packet_free(&pkt);
-    return std::make_tuple(in_size, out_size, num_frames);
+    if (output->p_mframe) {
+        output->p_mframe->num_frames += num_frames;
+    }
+    return std::make_tuple(in_size, out_size);
 }
 
 int AjmMp3Decoder::ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
