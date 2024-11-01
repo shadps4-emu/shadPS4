@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
@@ -146,9 +147,14 @@ void EmitGetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
-Id EmitReadConst(EmitContext& ctx) {
-    return ctx.u32_zero_value;
-    UNREACHABLE_MSG("Unreachable instruction");
+Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
+    u32 flatbuf_off_dw = inst->Flags<u32>();
+    ASSERT(ctx.srt_flatbuf.binding >= 0);
+    ASSERT(flatbuf_off_dw > 0);
+    Id index = ctx.ConstU32(flatbuf_off_dw);
+    auto& buffer = ctx.srt_flatbuf;
+    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+    return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {

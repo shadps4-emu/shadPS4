@@ -13,6 +13,15 @@ DecoderImpl::DecoderImpl() {
 
 DecoderImpl::~DecoderImpl() = default;
 
+std::string DecoderImpl::disassembleInst(ZydisDecodedInstruction& inst,
+                                         ZydisDecodedOperand* operands, u64 address) {
+    const int bufLen = 256;
+    char szBuffer[bufLen];
+    ZydisFormatterFormatInstruction(&m_formatter, &inst, operands, inst.operand_count_visible,
+                                    szBuffer, sizeof(szBuffer), address, ZYAN_NULL);
+    return szBuffer;
+}
+
 void DecoderImpl::printInstruction(void* code, u64 address) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
@@ -27,11 +36,8 @@ void DecoderImpl::printInstruction(void* code, u64 address) {
 
 void DecoderImpl::printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,
                             u64 address) {
-    const int bufLen = 256;
-    char szBuffer[bufLen];
-    ZydisFormatterFormatInstruction(&m_formatter, &inst, operands, inst.operand_count_visible,
-                                    szBuffer, sizeof(szBuffer), address, ZYAN_NULL);
-    fmt::print("instruction: {}\n", szBuffer);
+    std::string s = disassembleInst(inst, operands, address);
+    fmt::print("instruction: {}\n", s);
 }
 
 ZyanStatus DecoderImpl::decodeInstruction(ZydisDecodedInstruction& inst,

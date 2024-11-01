@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/scope_exit.h"
+#include "common/types.h"
 #include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -156,7 +157,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
             continue;
         }
 
-        const auto& buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto& buffer = vs_info.ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         if (buffer.GetSize() == 0) {
             continue;
         }
@@ -299,6 +300,14 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
         .pBufferMemoryBarriers = &buf_barrier,
     });
     cmdbuf.updateBuffer(buffer->Handle(), buf_barrier.offset, num_bytes, value);
+}
+
+std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(std::span<const u32> data) {
+    static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
+    ASSERT(data.size_bytes() <= StreamThreshold);
+    const u64 offset = stream_buffer.Copy(reinterpret_cast<VAddr>(data.data()), data.size_bytes(),
+                                          instance.UniformMinAlignment());
+    return {&stream_buffer, offset};
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,

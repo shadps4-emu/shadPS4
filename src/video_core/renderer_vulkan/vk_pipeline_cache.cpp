@@ -4,6 +4,7 @@
 #include <ranges>
 
 #include "common/config.h"
+#include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -21,10 +22,6 @@ extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 namespace Vulkan {
 
 using Shader::VsOutput;
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
 
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
@@ -351,7 +348,7 @@ bool PipelineCache::RefreshGraphicsKey() {
                 continue;
             }
             const auto& buffer =
-                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -424,7 +421,8 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
     }
 
     Program* program = it_pgm->second;
-    const auto& info = program->info;
+    auto& info = program->info;
+    info.RefreshFlatBuf();
     const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
