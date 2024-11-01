@@ -170,14 +170,15 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
                "127.0.0.1"); // placeholder in case gethostbyname can't find another ip
         char devname[80];
         gethostname(devname, 80);
-        struct hostent* resolved = gethostbyname(devname);
-        for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
-            struct in_addr addrIn;
-            memcpy(&addrIn, resolved->h_addr_list[i], sizeof(u32));
-            char* addr = inet_ntoa(addrIn);
-            if (strcmp(addr, "127.0.0.1") != 0) {
-                strcpy(info->ip_address, addr);
-                break;
+        if (struct hostent* resolved = gethostbyname(devname)) {
+            for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
+                struct in_addr addrIn;
+                memcpy(&addrIn, resolved->h_addr_list[i], sizeof(u32));
+                char* addr = inet_ntoa(addrIn);
+                if (strcmp(addr, "127.0.0.1") != 0) {
+                    strcpy(info->ip_address, addr);
+                    break;
+                }
             }
         }
         break;
