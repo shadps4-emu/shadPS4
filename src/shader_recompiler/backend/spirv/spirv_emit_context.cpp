@@ -4,12 +4,14 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/passes/srt.h"
 #include "video_core/amdgpu/types.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 
 #include <numbers>
+#include <string_view>
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -435,14 +437,16 @@ void EmitContext::DefinePushDataBlock() {
 
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
-    const auto define_struct = [&](Id record_array_type, bool is_instance_data) {
+    const auto define_struct = [&](Id record_array_type, bool is_instance_data,
+                                   std::optional<std::string_view> explicit_name = {}) {
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
             return struct_type;
         }
         Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-        const auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
-                                           : fmt::format("{}_cbuf_block_f32", stage);
+        auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
+                                     : fmt::format("{}_cbuf_block_f32", stage);
+        name = explicit_name.value_or(name);
         Name(struct_type, name);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
@@ -450,6 +454,29 @@ void EmitContext::DefineBuffers() {
         type_ids.push_back(record_array_type);
         return struct_type;
     };
+
+    if (info.has_readconst) {
+        const Id data_type = U32[1];
+        const auto storage_class = spv::StorageClass::Uniform;
+        const Id pointer_type = TypePointer(storage_class, data_type);
+        const Id record_array_type{
+            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.size())))};
+
+        const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
+
+        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, "srt_flatbuf_ubo");
+
+        srt_flatbuf = {
+            .id = id,
+            .binding = binding.buffer++,
+            .pointer_type = pointer_type,
+        };
+        interfaces.push_back(id);
+    }
 
     for (const auto& desc : info.buffers) {
         const auto sharp = desc.GetSharp(info);
@@ -471,7 +498,7 @@ void EmitContext::DefineBuffers() {
         if (is_storage && !desc.is_written) {
             Decorate(id, spv::Decoration::NonWritable);
         }
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sgpr_base));
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sharp_idx));
 
         buffers.push_back({
             .id = id,
@@ -495,7 +522,7 @@ void EmitContext::DefineTextureBuffers() {
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sgpr_base));
+        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sharp_idx));
         texture_buffers.push_back({
             .id = id,
             .binding = binding.buffer++,
@@ -582,7 +609,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUd<AmdGpu::Image>(desc.sgpr_base, desc.dword_offset);
+    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
@@ -618,8 +645,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
-                             image_desc.dword_offset));
+        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -643,8 +669,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "samp", samp_desc.sgpr_base,
-                             samp_desc.dword_offset));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sharp_idx));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

@@ -29,6 +29,7 @@ class Value {
 public:
     Value() noexcept = default;
     explicit Value(IR::Inst* value) noexcept;
+    explicit Value(const IR::Inst* value) noexcept;
     explicit Value(IR::ScalarReg reg) noexcept;
     explicit Value(IR::VectorReg reg) noexcept;
     explicit Value(IR::Attribute value) noexcept;
@@ -82,6 +83,8 @@ private:
         f64 imm_f64;
         const char* string_literal;
     };
+
+    friend class std::hash<Value>;
 };
 static_assert(static_cast<u32>(IR::Type::Void) == 0, "memset relies on IR::Type being zero");
 static_assert(std::is_trivially_copyable_v<Value>);
@@ -364,3 +367,10 @@ inline const char* Value::StringLiteral() const {
 }
 
 } // namespace Shader::IR
+
+namespace std {
+template <>
+struct hash<Shader::IR::Value> {
+    std::size_t operator()(const Shader::IR::Value& v) const;
+};
+} // namespace std
