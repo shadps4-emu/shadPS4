@@ -65,7 +65,6 @@ void AjmAt9Decoder::GetCodecInfo(void* out_info) {
 }
 
 void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
-    LOG_TRACE(Lib_Ajm, "Decoding with instance {} in size = {}", index, input->buffer.size());
     Atrac9CodecInfo codec_info;
     Atrac9GetCodecInfo(handle, &codec_info);
 
@@ -125,16 +124,18 @@ void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
                 }
             }
         } else {
-            written =
-                write_output({pcm_buffer.data(), std::min(pcm_buffer.size(), samples_remain)});
-            total_decoded_samples += codec_info.frameSamples;
+            const auto pcm_size = std::min(pcm_buffer.size(), samples_remain);
+            const auto nsamples = pcm_size / codec_info.channels;
+            written = write_output({pcm_buffer.data(), pcm_size});
+            total_decoded_samples += nsamples;
             if (gapless.total_samples != 0) {
-                gapless_decoded_samples += codec_info.frameSamples;
+                gapless_decoded_samples += nsamples;
             }
         }
 
         num_frames += 1;
         if ((num_frames % codec_info.framesInSuperframe) == 0) {
+            num_frames = 0;
             if (superframe_bytes_remain) {
                 if (output->p_stream) {
                     output->p_stream->input_consumed += superframe_bytes_remain;
@@ -156,10 +157,9 @@ void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
         }
     }
 
-    if (gapless.total_samples != 0 && gapless_decoded_samples >= gapless.total_samples) {
-        if (flags.gapless_loop) {
-            ResetCodec();
-        }
+    if (flags.gapless_loop && gapless.total_samples != 0 &&
+        gapless_decoded_samples >= gapless.total_samples) {
+        ResetCodec();
     }
 
     if (output->p_stream) {

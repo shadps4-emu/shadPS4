@@ -25,11 +25,8 @@ struct AjmSidebandDecAt9CodecInfo {
 };
 
 struct AjmAt9Decoder final : AjmInstance {
-    void* handle;
-    bool decoder_initialized = false;
-    std::fstream file;
-    int length;
-    u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE];
+    void* handle{};
+    u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
     u32 superframe_bytes_remain{};
     u32 num_frames{};
 

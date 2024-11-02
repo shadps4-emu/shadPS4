@@ -74,6 +74,7 @@ void AjmMp3Decoder::Reset() {
     int ret = avcodec_open2(c, codec, nullptr);
     ASSERT_MSG(ret >= 0, "Could not open codec");
     total_decoded_samples = 0;
+    gapless_decoded_samples = 0;
 }
 
 void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
@@ -138,13 +139,12 @@ void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
                 if (frame->format != AV_SAMPLE_FMT_S16) {
                     frame = ConvertAudioFrame(frame);
                 }
-                const auto frame_samples = frame->ch_layout.nb_channels * frame->nb_samples;
-                const auto size = frame_samples * sizeof(u16);
+                const auto size = frame->ch_layout.nb_channels * frame->nb_samples * sizeof(u16);
                 if (gapless.skipped_samples < gapless.skip_samples) {
-                    gapless.skipped_samples += frame_samples;
+                    gapless.skipped_samples += frame->nb_samples;
                     if (gapless.skipped_samples > gapless.skip_samples) {
                         const u32 nsamples = gapless.skipped_samples - gapless.skip_samples;
-                        const auto start = frame_samples - nsamples;
+                        const auto start = frame->nb_samples - nsamples;
                         write_output({reinterpret_cast<s16*>(frame->data[0]), nsamples});
                         gapless.skipped_samples = gapless.skip_samples;
                         total_decoded_samples += nsamples;
@@ -154,9 +154,9 @@ void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
                     }
                 } else {
                     write_output({reinterpret_cast<s16*>(frame->data[0]), size >> 1});
-                    total_decoded_samples += frame_samples;
+                    total_decoded_samples += frame->nb_samples;
                     if (gapless.total_samples != 0) {
-                        gapless_decoded_samples += frame_samples;
+                        gapless_decoded_samples += frame->nb_samples;
                     }
                 }
                 av_frame_free(&frame);
