@@ -91,7 +91,11 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 #ifdef Q_OS_WIN
         platformString = "win64-qt";
 #elif defined(Q_OS_LINUX)
-        platformString = "linux-qt";
+        if (std::getenv("container")) {
+            platformString = "linux-flatpak";
+        } else if (std::getenv("APPIMAGE")) {
+            platformString = "linux-qt";
+        }
 #elif defined(Q_OS_MAC)
         platformString = "macos-qt";
 #endif
@@ -462,23 +466,53 @@ void CheckUpdate::Install() {
         "        exit 1\n"
         "    fi\n"
         "}\n"
+        "set_package_type() {\n"
+        "    if pgrep -f \"Shadps4-qt.AppImage\" > /dev/null; then\n"
+        "        TYPE=\"appimage\"\n"
+        "    else\n"
+        "        TYPE=\"flatpak\"\n"
+        "    fi\n"
+        "}\n"
+        "kill_process() {\n"
+        "    if [ \"$TYPE\" == \"appimage\" ]; then\n"
+        "        pkill -f \"Shadps4-qt.AppImage\"\n"
+        "        sleep 2\n"
+        "    else\n"
+        "        pkill -f \"Shadps4\"\n"
+        "        sleep 2\n"
+        "    fi\n"
+        "}\n"
+        "update_package() {\n"
+        "   if [ \"$TYPE\" == \"appimage\" ]; then\n"
+        "        cp -r \"$1/\"* \"$2/\"\n"
+        "        chmod +x \"$2/Shadps4-qt.AppImage\"\n"
+        "   else\n"
+        "        flatpak install -u \"$2/shadps4.flatpak\"\n"
+        "   fi\n"
+        "}\n"
+        "restart_app() {\n"
+        "   if [ \"$TYPE\" == \"appimage\" ]; then\n"
+        "        cd \"$1\" && ./Shadps4-qt.AppImage\n"
+        "   else\n"
+        "        flatpak run -u net.shadps4.shadPS4\n"
+        "   fi\n"
+        "}\n"
         "main() {\n"
         "    check_unzip\n"
         "    echo \"%1\"\n"
         "    sleep 2\n"
         "    extract_file\n"
         "    sleep 2\n"
-        "    if pgrep -f \"Shadps4-qt.AppImage\" > /dev/null; then\n"
-        "        pkill -f \"Shadps4-qt.AppImage\"\n"
-        "        sleep 2\n"
-        "    fi\n"
-        "    cp -r \"%2/\"* \"%3/\"\n"
+        "    set_package_type\n"
         "    sleep 2\n"
+        "    kill_process\n"
+        "    sleep 2\n"
+        "    update_package \"%2\" \"%3\"\n"
+        "    sleep 2\n"
+        "    restart_app \"%3\"\n"
         "    rm \"%3/update.sh\"\n"
         "    rm \"%3/temp_download_update.zip\"\n"
-        "    chmod +x \"%3/Shadps4-qt.AppImage\"\n"
         "    rm -r \"%2\"\n"
-        "    cd \"%3\" && ./Shadps4-qt.AppImage\n"
         "}\n"
         "main\n");
     arguments << scriptFileName;

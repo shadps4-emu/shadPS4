@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+id: net.shadps4.shadPS4
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: shadps4
+rename-icon: shadps4
+rename-desktop-file: shadps4.desktop
+rename-appdata-file: shadps4.metainfo.xml
+separate-locales: false
+finish-args:
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --allow=bluetooth
+  - --filesystem=home
+  - --device=dri
+  - --device=input
+  - --filesystem=/media
+  - --filesystem=/run/media
+  - --talk-name=org.kde.StatusNotifierWatcher
+add-extensions:
+  org.freedesktop.Platform.ffmpeg-full:
+    directory: lib/ffmpeg
+    add-ld-path: .
+    version: '24.08'
+    autodownload: true
+    autodelete: false
+cleanup-commands:
+  - mkdir -p ${FLATPAK_DEST}/lib/ffmpeg
+modules:
+  - name: rapidjson
+    buildsystem: cmake
+    config-opts:
+      - -DRAPIDJSON_BUILD_CXX11=OFF
+      - -DRAPIDJSON_BUILD_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/Tencent/rapidjson.git
+        commit: 858451e5b7d1c56cf8f6d58f88cf958351837e53
+    cleanup:
+      - '*'
+  - name: libfmt
+    buildsystem: cmake
+    config-opts:
+      - -DFMT_TEST=OFF
+    sources:
+      - type: git
+        url: https://github.com/fmtlib/fmt.git
+        commit: 56ce41ef6368dfbe7d6aefe19d20365bd601a3b0
+    cleanup:
+      - '*'
+  - name: shadPS4
+    buildsystem: cmake
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_QT_GUI=ON
+    build-options:
+      env:
+        CMAKE_C_COMPILER: clang
+        CMAKE_CXX_COMPILER: clang++
+    sources:
+      - type: dir
+        path: .
