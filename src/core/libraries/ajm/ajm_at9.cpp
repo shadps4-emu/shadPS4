@@ -107,16 +107,17 @@ void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
         ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
         in_buf = in_buf.subspan(bytes_used);
         superframe_bytes_remain -= bytes_used;
-        const size_t samples_remain = gapless.total_samples != 0
-                                          ? gapless.total_samples - gapless_decoded_samples
-                                          : std::numeric_limits<size_t>::max();
+        const size_t samples_remain =
+            gapless.total_samples != 0
+                ? (gapless.total_samples - gapless_decoded_samples) * codec_info.channels
+                : std::numeric_limits<size_t>::max();
         bool written = false;
         if (gapless.skipped_samples < gapless.skip_samples) {
             gapless.skipped_samples += codec_info.frameSamples;
             if (gapless.skipped_samples > gapless.skip_samples) {
                 const u32 nsamples = gapless.skipped_samples - gapless.skip_samples;
                 const auto start = codec_info.frameSamples - nsamples;
-                written = write_output({pcm_buffer.data() + start, nsamples});
+                written = write_output({pcm_buffer.data() + start, nsamples * codec_info.channels});
                 gapless.skipped_samples = gapless.skip_samples;
                 total_decoded_samples += nsamples;
                 if (gapless.total_samples != 0) {

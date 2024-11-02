@@ -145,7 +145,8 @@ void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
                     if (gapless.skipped_samples > gapless.skip_samples) {
                         const u32 nsamples = gapless.skipped_samples - gapless.skip_samples;
                         const auto start = frame->nb_samples - nsamples;
-                        write_output({reinterpret_cast<s16*>(frame->data[0]), nsamples});
+                        write_output({reinterpret_cast<s16*>(frame->data[0]),
+                                      nsamples * frame->ch_layout.nb_channels});
                         gapless.skipped_samples = gapless.skip_samples;
                         total_decoded_samples += nsamples;
                         if (gapless.total_samples != 0) {
