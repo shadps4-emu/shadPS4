@@ -454,8 +454,8 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, u8* p_batch, u32 batch_size
             case Identifier::AjmIdentInputRunBuf: {
                 auto& buffer = AjmBufferExtract<AjmChunkBuffer>(p_current);
                 u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
-                job.input.buffer.append_range(
-                    std::vector<u8>(p_begin, p_begin + buffer.header.size));
+                job.input.buffer.insert(job.input.buffer.end(), p_begin,
+                                        p_begin + buffer.header.size);
                 break;
             }
             case Identifier::AjmIdentInputControlBuf: {

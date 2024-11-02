@@ -148,12 +148,16 @@ void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
                         write_output({reinterpret_cast<s16*>(frame->data[0]), nsamples});
                         gapless.skipped_samples = gapless.skip_samples;
                         total_decoded_samples += nsamples;
-                        gapless_decoded_samples += nsamples;
+                        if (gapless.total_samples != 0) {
+                            gapless_decoded_samples += nsamples;
+                        }
                     }
                 } else {
                     write_output({reinterpret_cast<s16*>(frame->data[0]), size >> 1});
                     total_decoded_samples += frame_samples;
-                    gapless_decoded_samples += frame_samples;
+                    if (gapless.total_samples != 0) {
+                        gapless_decoded_samples += frame_samples;
+                    }
                 }
                 av_frame_free(&frame);
                 if (output->p_stream) {
@@ -166,7 +170,7 @@ void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
         }
     }
     av_packet_free(&pkt);
-    if (gapless_decoded_samples >= gapless.total_samples) {
+    if (gapless.total_samples != 0 && gapless_decoded_samples >= gapless.total_samples) {
         if (flags.gapless_loop) {
             gapless.skipped_samples = 0;
             gapless_decoded_samples = 0;
