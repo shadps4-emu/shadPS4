@@ -9,22 +9,29 @@
 
 namespace Libraries::Videodec {
 
-int PS4_SYSV_ABI sceVideodecCreateDecoder() {
+int PS4_SYSV_ABI sceVideodecCreateDecoder(const OrbisVideodecConfigInfo* pCfgInfoIn,
+                                          const OrbisVideodecResourceInfo* pRsrcInfoIn,
+                                          OrbisVideodecCtrl* pCtrlOut) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideodecDecode() {
+int PS4_SYSV_ABI sceVideodecDecode(OrbisVideodecCtrl* pCtrlIn,
+                                   const OrbisVideodecInputData* pInputDataIn,
+                                   OrbisVideodecFrameBuffer* pFrameBufferInOut,
+                                   OrbisVideodecPictureInfo* pPictureInfoOut) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideodecDeleteDecoder() {
+int PS4_SYSV_ABI sceVideodecDeleteDecoder(OrbisVideodecCtrl* pCtrlIn) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideodecFlush() {
+int PS4_SYSV_ABI sceVideodecFlush(OrbisVideodecCtrl* pCtrlIn,
+                                  OrbisVideodecFrameBuffer* pFrameBufferInOut,
+                                  OrbisVideodecPictureInfo* pPictureInfoOut) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -34,12 +41,13 @@ int PS4_SYSV_ABI sceVideodecMapMemory() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideodecQueryResourceInfo() {
+int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCfgInfoIn,
+                                              OrbisVideodecResourceInfo* pRsrcInfoOut) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideodecReset() {
+int PS4_SYSV_ABI sceVideodecReset(OrbisVideodecCtrl* pCtrlIn) {
     LOG_ERROR(Lib_Videodec, "(STUBBED) called");
     return ORBIS_OK;
 }
