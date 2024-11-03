@@ -64,7 +64,7 @@ void AjmAt9Decoder::GetCodecInfo(void* out_info) {
     codec_info->uiSuperFrameSize = decoder_codec_info.superframeSize;
 }
 
-void AjmAt9Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
+void AjmAt9Decoder::Decode(const AjmJob::Input* input, AjmJob::Output* output) {
     Atrac9CodecInfo codec_info;
     Atrac9GetCodecInfo(handle, &codec_info);
 

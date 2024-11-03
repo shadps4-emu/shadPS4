@@ -42,7 +42,7 @@ struct AjmAt9Decoder final : AjmInstance {
         return sizeof(AjmSidebandDecAt9CodecInfo);
     }
 
-    void Decode(const AjmJobInput* input, AjmJobOutput* output) override;
+    void Decode(const AjmJob::Input* input, AjmJob::Output* output) override;
 
 private:
     void ResetCodec();

@@ -179,18 +179,24 @@ set(AUDIO_CORE src/audio_core/sdl_audio.cpp
                src/audio_core/sdl_audio.h
 )
 
+set(AJM_LIB src/core/libraries/ajm/ajm.cpp
+            src/core/libraries/ajm/ajm.h
+            src/core/libraries/ajm/ajm_at9.cpp
+            src/core/libraries/ajm/ajm_at9.h
+            src/core/libraries/ajm/ajm_batch.cpp
+            src/core/libraries/ajm/ajm_batch.h
+            src/core/libraries/ajm/ajm_context.cpp
+            src/core/libraries/ajm/ajm_context.h
+            src/core/libraries/ajm/ajm_error.h
+            src/core/libraries/ajm/ajm_instance.h
+            src/core/libraries/ajm/ajm_mp3.cpp
+            src/core/libraries/ajm/ajm_mp3.h
+)
+
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
-              src/core/libraries/ajm/ajm.cpp
-              src/core/libraries/ajm/ajm.h
-              src/core/libraries/ajm/ajm_instance.h
-              src/core/libraries/ajm/ajm_error.h
-              src/core/libraries/ajm/ajm_mp3.cpp
-              src/core/libraries/ajm/ajm_mp3.h
-              src/core/libraries/ajm/ajm_at9.cpp
-              src/core/libraries/ajm/ajm_at9.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
@@ -499,6 +505,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/libraries/error_codes.h
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
+         ${AJM_LIB}
          ${AUDIO_LIB}
          ${GNM_LIB}
          ${KERNEL_LIB}

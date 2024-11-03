@@ -77,7 +77,7 @@ void AjmMp3Decoder::Reset() {
     gapless_decoded_samples = 0;
 }
 
-void AjmMp3Decoder::Decode(const AjmJobInput* input, AjmJobOutput* output) {
+void AjmMp3Decoder::Decode(const AjmJob::Input* input, AjmJob::Output* output) {
     AVPacket* pkt = av_packet_alloc();
 
     size_t out_buffer_index = 0;

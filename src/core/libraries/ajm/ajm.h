@@ -7,13 +7,14 @@
 #include "common/enum.h"
 #include "common/types.h"
 
-#include "core/libraries/ajm/ajm_instance.h"
-
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::Ajm {
+
+constexpr u32 ORBIS_AT9_CONFIG_DATA_SIZE = 4;
+constexpr u32 AJM_INSTANCE_STATISTICS = 0x80000;
 
 struct AjmBatchInfo {
     void* pBuffer;
@@ -31,30 +32,6 @@ struct AjmBatchError {
 struct AjmBuffer {
     u8* p_address;
     u64 size;
-};
-
-enum Identifier : u8 {
-    AjmIdentJob = 0,
-    AjmIdentInputRunBuf = 1,
-    AjmIdentInputControlBuf = 2,
-    AjmIdentControlFlags = 3,
-    AjmIdentRunFlags = 4,
-    AjmIdentReturnAddressBuf = 6,
-    AjmIdentInlineBuf = 7,
-    AjmIdentOutputRunBuf = 17,
-    AjmIdentOutputControlBuf = 18,
-};
-
-struct AjmChunkHeader {
-    u32 ident : 6;
-    u32 payload : 20;
-    u32 reserved : 6;
-    u32 size;
-};
-
-struct AjmChunkBuffer {
-    AjmChunkHeader header;
-    void* p_address;
 };
 
 enum class AjmJobControlFlags : u64 {
@@ -86,6 +63,65 @@ union AjmJobFlags {
         AjmJobControlFlags control_flags : 3;
         u64 reserved : 29;
         AjmJobSidebandFlags sideband_flags : 3;
+    };
+};
+
+struct AjmSidebandResult {
+    s32 result;
+    s32 internal_result;
+};
+
+struct AjmSidebandMFrame {
+    u32 num_frames;
+    u32 reserved;
+};
+
+struct AjmSidebandStream {
+    s32 input_consumed;
+    s32 output_written;
+    u64 total_decoded_samples;
+};
+
+enum class AjmFormatEncoding : u32 {
+    S16 = 0,
+    S32 = 1,
+    Float = 2,
+};
+
+struct AjmSidebandFormat {
+    u32 num_channels;
+    u32 channel_mask;
+    u32 sampl_freq;
+    AjmFormatEncoding sample_encoding;
+    u32 bitrate;
+    u32 reserved;
+};
+
+struct AjmSidebandGaplessDecode {
+    u32 total_samples;
+    u16 skip_samples;
+    u16 skipped_samples;
+};
+
+struct AjmSidebandResampleParameters {
+    float ratio;
+    uint32_t flags;
+};
+
+struct AjmDecAt9InitializeParameters {
+    u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE];
+    u32 reserved;
+};
+
+union AjmInstanceFlags {
+    u64 raw;
+    struct {
+        u64 version : 3;
+        u64 channels : 4;
+        u64 format : 3;
+        u64 gapless_loop : 1;
+        u64 : 21;
+        u64 codec : 28;
     };
 };
 
