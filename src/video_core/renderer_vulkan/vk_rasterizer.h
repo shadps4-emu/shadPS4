@@ -19,6 +19,7 @@ class MemoryManager;
 namespace Vulkan {
 
 class Scheduler;
+class RenderState;
 class GraphicsPipeline;
 
 class Rasterizer {
@@ -54,7 +55,8 @@ public:
     void Finish();
 
 private:
-    void BeginRendering(const GraphicsPipeline& pipeline);
+    RenderState PrepareRenderState(u32 mrt_mask);
+    void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
@@ -72,6 +74,11 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     PipelineCache pipeline_cache;
+
+    boost::container::static_vector<
+        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
+        cb_descs;
+    std::optional<std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc>> db_desc;
 };
 
 } // namespace Vulkan

@@ -15,6 +15,7 @@ namespace Vulkan {
 boost::container::static_vector<vk::DescriptorImageInfo, 32> Pipeline::image_infos;
 boost::container::static_vector<vk::BufferView, 8> Pipeline::buffer_views;
 boost::container::static_vector<vk::DescriptorBufferInfo, 32> Pipeline::buffer_infos;
+boost::container::static_vector<VideoCore::ImageId, 32> Pipeline::bound_images;
 
 Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
                    vk::PipelineCache pipeline_cache)
@@ -160,31 +161,43 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache,
 void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
                             Shader::Backend::Bindings& binding,
                             DescriptorWrites& set_writes) const {
-
-    using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, Shader::ImageResource>;
+    using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
     static boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 
     image_bindings.clear();
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
-        if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-            VideoCore::ImageInfo image_info{tsharp, image_desc};
-            const auto image_id = texture_cache.FindImage(image_info);
-            auto& image = texture_cache.GetImage(image_id);
-            image.flags |= VideoCore::ImageFlagBits::Bound;
-            image_bindings.emplace_back(image_id, tsharp, image_desc);
-        } else {
-            image_bindings.emplace_back(VideoCore::ImageId{}, tsharp, image_desc);
+        if (texture_cache.IsMeta(tsharp.Address())) {
+            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
         }
 
-        if (texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (texture)");
+        if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
+            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            continue;
         }
+
+        auto& [image_id, desc] = image_bindings.emplace_back(std::piecewise_construct, std::tuple{},
+                                                             std::tuple{tsharp, image_desc});
+        image_id = texture_cache.FindImage(desc);
+        auto& image = texture_cache.GetImage(image_id);
+        ASSERT(False(image.flags & VideoCore::ImageFlagBits::Virtual));
+        if (image.binding.is_bound) {
+            // The image is already bound. In case if it is about to be used as storage we need
+            // to force general layout on it.
+            image.binding.force_general |= image_desc.is_storage;
+        }
+        if (image.binding.is_target) {
+            // The image is already bound as target. Since we read and output to it need to force
+            // general layout too.
+            image.binding.force_general = 1u;
+        }
+        image.binding.is_bound = 1u;
     }
 
     // Second pass to re-bind images that were updated after binding
-    for (auto [image_id, tsharp, desc] : image_bindings) {
+    for (auto& [image_id, desc] : image_bindings) {
+        bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
@@ -194,16 +207,43 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
                                          vk::ImageLayout::eGeneral);
             }
         } else {
-            auto& image = texture_cache.GetImage(image_id);
-            if (True(image.flags & VideoCore::ImageFlagBits::NeedsRebind)) {
-                image_id = texture_cache.FindImage(image.info);
+            if (auto& old_image = texture_cache.GetImage(image_id);
+                old_image.binding.needs_rebind) {
+                old_image.binding.Reset(); // clean up previous image binding state
+                image_id = texture_cache.FindImage(desc);
             }
-            VideoCore::ImageViewInfo view_info{tsharp, desc};
-            auto& image_view = texture_cache.FindTexture(image_id, view_info);
+
+            bound_images.emplace_back(image_id);
+
+            auto& image = texture_cache.GetImage(image_id);
+            auto& image_view = texture_cache.FindTexture(image_id, desc.view_info);
+
+            if (image.binding.force_general || image.binding.is_target) {
+                image.Transit(vk::ImageLayout::eGeneral,
+                              vk::AccessFlagBits2::eShaderRead |
+                                  (image.info.IsDepthStencil()
+                                       ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                                       : vk::AccessFlagBits2::eColorAttachmentWrite),
+                              {});
+            } else {
+                if (is_storage) {
+                    image.Transit(vk::ImageLayout::eGeneral,
+                                  vk::AccessFlagBits2::eShaderRead |
+                                      vk::AccessFlagBits2::eShaderWrite,
+                                  desc.view_info.range);
+                } else {
+                    const auto new_layout = image.info.IsDepthStencil()
+                                                ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                                : vk::ImageLayout::eShaderReadOnlyOptimal;
+                    image.Transit(new_layout, vk::AccessFlagBits2::eShaderRead,
+                                  desc.view_info.range);
+                }
+            }
+            image.usage.storage |= is_storage;
+            image.usage.texture |= !is_storage;
+
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     texture_cache.GetImage(image_id).last_state.layout);
-            image.flags &=
-                ~(VideoCore::ImageFlagBits::NeedsRebind | VideoCore::ImageFlagBits::Bound);
+                                     image.last_state.layout);
         }
 
         set_writes.push_back({
@@ -211,8 +251,8 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
             .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = desc.is_storage ? vk::DescriptorType::eStorageImage
-                                              : vk::DescriptorType::eSampledImage,
+            .descriptorType =
+                is_storage ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage,
             .pImageInfo = &image_infos.back(),
         });
     }

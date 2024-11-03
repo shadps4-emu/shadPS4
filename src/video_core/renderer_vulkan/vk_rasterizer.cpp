@@ -75,6 +75,105 @@ bool Rasterizer::FilterDraw() {
     return true;
 }
 
+RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
+    // Prefetch color and depth buffers to let texture cache handle possible overlaps with bound
+    // textures (e.g. mipgen)
+    RenderState state;
+
+    cb_descs.clear();
+    db_desc.reset();
+
+    const auto& regs = liverpool->regs;
+
+    if (regs.color_control.degamma_enable) {
+        LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
+    }
+
+    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
+        const auto& col_buf = regs.color_buffers[col_buf_id];
+        if (!col_buf) {
+            continue;
+        }
+
+        // If the color buffer is still bound but rendering to it is disabled by the target
+        // mask, we need to prevent the render area from being affected by unbound render target
+        // extents.
+        if (!regs.color_target_mask.GetMask(col_buf_id)) {
+            continue;
+        }
+
+        // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
+        // an unnecessary transition and may result in state conflict if the resource is already
+        // bound for reading.
+        if ((mrt_mask & (1 << col_buf_id)) == 0) {
+            continue;
+        }
+
+        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
+
+        const auto& hint = liverpool->last_cb_extent[col_buf_id];
+        auto& [image_id, desc] = cb_descs.emplace_back(std::piecewise_construct, std::tuple{},
+                                                       std::tuple{col_buf, hint});
+        const auto& image_view = texture_cache.FindRenderTarget(desc);
+        image_id = image_view.image_id;
+        auto& image = texture_cache.GetImage(image_id);
+        image.binding.is_target = 1u;
+
+        const auto mip = image_view.info.range.base.level;
+        state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
+        state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
+        state.color_images[state.num_color_attachments] = image.image;
+        state.color_attachments[state.num_color_attachments++] = {
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eUndefined,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue =
+                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
+        };
+    }
+
+    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
+    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
+    if (regs.depth_buffer.Address() != 0 &&
+        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
+         (regs.depth_control.stencil_enable &&
+          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
+        const auto htile_address = regs.depth_htile_data_base.GetAddress();
+        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
+                              texture_cache.IsMetaCleared(htile_address);
+        const auto& hint = liverpool->last_db_extent;
+        auto& [image_id, desc] =
+            db_desc.emplace(std::piecewise_construct, std::tuple{},
+                            std::tuple{regs.depth_buffer, regs.depth_view, regs.depth_control,
+                                       htile_address, hint});
+        const auto& image_view = texture_cache.FindDepthTarget(desc);
+        image_id = image_view.image_id;
+        auto& image = texture_cache.GetImage(image_id);
+        image.binding.is_target = 1u;
+
+        state.width = std::min<u32>(state.width, image.info.size.width);
+        state.height = std::min<u32>(state.height, image.info.size.height);
+        state.depth_image = image.image;
+        state.depth_attachment = {
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eUndefined,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
+                                                          .stencil = regs.stencil_clear}},
+        };
+        texture_cache.TouchMeta(htile_address, false);
+        state.has_depth =
+            regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
+        state.has_stencil = regs.depth_buffer.stencil_info.format !=
+                            AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
+    }
+
+    return state;
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
@@ -89,6 +188,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
+    auto state = PrepareRenderState(pipeline->GetMrtMask());
+
     try {
         pipeline->BindResources(regs, buffer_cache, texture_cache);
     } catch (...) {
@@ -99,7 +200,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
 
-    BeginRendering(*pipeline);
+    BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
     const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
@@ -113,6 +214,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
+
+    pipeline->ResetBindings(texture_cache);
 }
 
 void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 stride,
@@ -123,12 +226,14 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    const auto& regs = liverpool->regs;
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
     }
 
+    auto state = PrepareRenderState(pipeline->GetMrtMask());
+
+    const auto& regs = liverpool->regs;
     ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
                "Unsupported primitive type for indirect draw");
 
@@ -151,7 +256,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
     }
 
-    BeginRendering(*pipeline);
+    BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
@@ -177,6 +282,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
             cmdbuf.drawIndirect(buffer->Handle(), base, max_count, stride);
         }
     }
+
+    pipeline->ResetBindings(texture_cache);
 }
 
 void Rasterizer::DispatchDirect() {
@@ -201,6 +308,8 @@ void Rasterizer::DispatchDirect() {
     scheduler.EndRendering();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+
+    pipeline->ResetBindings(texture_cache);
 }
 
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
@@ -226,6 +335,8 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
+
+    pipeline->ResetBindings(texture_cache);
 }
 
 u64 Rasterizer::Flush() {
@@ -239,86 +350,75 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
-    const auto& regs = liverpool->regs;
-    RenderState state;
+void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& state) {
+    int cb_index = 0;
+    for (auto& [image_id, desc] : cb_descs) {
+        if (auto& old_img = texture_cache.GetImage(image_id); old_img.binding.needs_rebind) {
+            auto& view = texture_cache.FindRenderTarget(desc);
+            ASSERT(view.image_id != image_id);
+            image_id = view.image_id;
+            auto& image = texture_cache.GetImage(view.image_id);
+            state.color_attachments[cb_index].imageView = *view.image_view;
+            state.color_attachments[cb_index].imageLayout = image.last_state.layout;
+            state.color_images[cb_index] = image.image;
 
-    if (regs.color_control.degamma_enable) {
-        LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
+            const auto mip = view.info.range.base.level;
+            state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
+            state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
+            ASSERT(old_img.info.size.width == state.width);
+            ASSERT(old_img.info.size.height == state.height);
+            old_img.binding.Reset();
+        }
+        auto& image = texture_cache.GetImage(image_id);
+        if (image.binding.force_general) {
+            image.Transit(
+                vk::ImageLayout::eGeneral,
+                vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eShaderRead, {});
+
+        } else {
+            image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
+                          vk::AccessFlagBits2::eColorAttachmentWrite |
+                              vk::AccessFlagBits2::eColorAttachmentRead,
+                          desc.view_info.range);
+        }
+        image.usage.render_target = 1u;
+        state.color_attachments[cb_index].imageLayout = image.last_state.layout;
+        image.binding.Reset();
+        ++cb_index;
     }
 
-    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
-        const auto& col_buf = regs.color_buffers[col_buf_id];
-        if (!col_buf) {
-            continue;
+    if (db_desc) {
+        const auto& image_id = std::get<0>(*db_desc);
+        const auto& desc = std::get<1>(*db_desc);
+        auto& image = texture_cache.GetImage(image_id);
+        ASSERT(image.binding.needs_rebind == 0);
+        const bool has_stencil = image.usage.stencil;
+        if (has_stencil) {
+            image.aspect_mask |= vk::ImageAspectFlagBits::eStencil;
         }
-
-        // If the color buffer is still bound but rendering to it is disabled by the target mask,
-        // we need to prevent the render area from being affected by unbound render target extents.
-        if (!regs.color_target_mask.GetMask(col_buf_id)) {
-            continue;
+        if (image.binding.force_general) {
+            image.Transit(vk::ImageLayout::eGeneral,
+                          vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                              vk::AccessFlagBits2::eShaderRead,
+                          {});
+        } else {
+            const auto new_layout = desc.view_info.is_storage
+                                        ? has_stencil
+                                              ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                              : vk::ImageLayout::eDepthAttachmentOptimal
+                                    : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                                  : vk::ImageLayout::eDepthReadOnlyOptimal;
+            image.Transit(new_layout,
+                          vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                              vk::AccessFlagBits2::eDepthStencilAttachmentRead,
+                          desc.view_info.range);
         }
-
-        // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
-        // an unnecessary transition and may result in state conflict if the resource is already
-        // bound for reading.
-        if ((pipeline.GetMrtMask() & (1 << col_buf_id)) == 0) {
-            continue;
-        }
-
-        const auto& hint = liverpool->last_cb_extent[col_buf_id];
-        VideoCore::ImageInfo image_info{col_buf, hint};
-        VideoCore::ImageViewInfo view_info{col_buf};
-        const auto& image_view = texture_cache.FindRenderTarget(image_info, view_info);
-        const auto& image = texture_cache.GetImage(image_view.image_id);
-        state.width = std::min<u32>(state.width, image.info.size.width);
-        state.height = std::min<u32>(state.height, image.info.size.height);
-
-        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
-        state.color_images[state.num_color_attachments] = image.image;
-        state.color_attachments[state.num_color_attachments++] = {
-            .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-            .clearValue =
-                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
-        };
-        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
+        state.depth_attachment.imageLayout = image.last_state.layout;
+        image.usage.depth_target = true;
+        image.usage.stencil = has_stencil;
+        image.binding.Reset();
     }
 
-    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
-    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
-    if (regs.depth_buffer.Address() != 0 &&
-        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
-         (regs.depth_control.stencil_enable &&
-          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
-        const auto htile_address = regs.depth_htile_data_base.GetAddress();
-        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
-                              texture_cache.IsMetaCleared(htile_address);
-        const auto& hint = liverpool->last_db_extent;
-        VideoCore::ImageInfo image_info{regs.depth_buffer, regs.depth_view.NumSlices(),
-                                        htile_address, hint};
-        VideoCore::ImageViewInfo view_info{regs.depth_buffer, regs.depth_view, regs.depth_control};
-        const auto& image_view = texture_cache.FindDepthTarget(image_info, view_info);
-        const auto& image = texture_cache.GetImage(image_view.image_id);
-        state.width = std::min<u32>(state.width, image.info.size.width);
-        state.height = std::min<u32>(state.height, image.info.size.height);
-        state.depth_image = image.image;
-        state.depth_attachment = {
-            .imageView = *image_view.image_view,
-            .imageLayout = image.last_state.layout,
-            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
-            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
-                                                          .stencil = regs.stencil_clear}},
-        };
-        texture_cache.TouchMeta(htile_address, false);
-        state.has_depth =
-            regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
-        state.has_stencil = regs.depth_buffer.stencil_info.format !=
-                            AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
-    }
     scheduler.BeginRendering(state);
 }
 
@@ -328,10 +428,12 @@ void Rasterizer::Resolve() {
     // Read from MRT0, average all samples, and write to MRT1, which is one-sample
     const auto& mrt0_hint = liverpool->last_cb_extent[0];
     const auto& mrt1_hint = liverpool->last_cb_extent[1];
-    VideoCore::ImageInfo mrt0_info{liverpool->regs.color_buffers[0], mrt0_hint};
-    VideoCore::ImageInfo mrt1_info{liverpool->regs.color_buffers[1], mrt1_hint};
-    auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_info));
-    auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_info));
+    VideoCore::TextureCache::RenderTargetDesc mrt0_desc{liverpool->regs.color_buffers[0],
+                                                        mrt0_hint};
+    VideoCore::TextureCache::RenderTargetDesc mrt1_desc{liverpool->regs.color_buffers[1],
+                                                        mrt1_hint};
+    auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_desc));
+    auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_desc));
 
     VideoCore::SubresourceRange mrt0_range;
     mrt0_range.base.layer = liverpool->regs.color_buffers[0].view.slice_start;

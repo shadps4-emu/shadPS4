@@ -6,10 +6,10 @@
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/texture_cache.h"
 
 namespace VideoCore {
 class BufferCache;
-class TextureCache;
 } // namespace VideoCore
 
 namespace Vulkan {
@@ -42,6 +42,12 @@ public:
 
     void BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
                       Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const;
+    void ResetBindings(VideoCore::TextureCache& texture_cache) const {
+        for (auto& image_id : bound_images) {
+            texture_cache.GetImage(image_id).binding.Reset();
+        }
+        bound_images.clear();
+    }
 
 protected:
     const Instance& instance;
@@ -53,6 +59,7 @@ protected:
     static boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     static boost::container::static_vector<vk::BufferView, 8> buffer_views;
     static boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
+    static boost::container::static_vector<VideoCore::ImageId, 32> bound_images;
 };
 
 } // namespace Vulkan

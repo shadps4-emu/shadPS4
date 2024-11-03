@@ -77,14 +77,60 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     }
 }
 
-ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, ImageId cache_image_id) {
-    const auto& cache_info = slot_images[cache_image_id].info;
+ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
+                                          ImageId cache_image_id) {
+    const auto& cache_image = slot_images[cache_image_id];
 
-    const bool was_bound_as_texture =
-        !cache_info.usage.depth_target && (cache_info.usage.texture || cache_info.usage.storage);
-    if (requested_info.usage.depth_target && was_bound_as_texture) {
-        auto new_image_id = slot_images.insert(instance, scheduler, requested_info);
+    if (!cache_image.info.IsDepthStencil() && !requested_info.IsDepthStencil()) {
+        return {};
+    }
+
+    const bool stencil_match = requested_info.HasStencil() == cache_image.info.HasStencil();
+    const bool bpp_match = requested_info.num_bits == cache_image.info.num_bits;
+
+    // If an image in the cache has less slices we need to expand it
+    bool recreate = cache_image.info.resources < requested_info.resources;
+
+    switch (binding) {
+    case BindingType::Texture:
+        // The guest requires a depth sampled texture, but cache can offer only Rxf. Need to
+        // recreate the image.
+        recreate |= requested_info.IsDepthStencil() && !cache_image.info.IsDepthStencil();
+        break;
+    case BindingType::Storage:
+        // If the guest is going to use previously created depth as storage, the image needs to be
+        // recreated. (TODO: Probably a case with linear rgba8 aliasing is legit)
+        recreate |= cache_image.info.IsDepthStencil();
+        break;
+    case BindingType::RenderTarget:
+        // Render target can have only Rxf format. If the cache contains only Dx[S8] we need to
+        // re-create the image.
+        ASSERT(!requested_info.IsDepthStencil());
+        recreate |= cache_image.info.IsDepthStencil();
+        break;
+    case BindingType::DepthTarget:
+        // The guest has requested previously allocated texture to be bound as a depth target.
+        // In this case we need to convert Rx float to a Dx[S8] as requested
+        recreate |= !cache_image.info.IsDepthStencil();
+
+        // The guest is trying to bind a depth target and cache has it. Need to be sure that aspects
+        // and bpp match
+        recreate |= cache_image.info.IsDepthStencil() && !(stencil_match && bpp_match);
+        break;
+    default:
+        break;
+    }
+
+    if (recreate) {
+        auto new_info{requested_info};
+        new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
+        new_info.UpdateSize();
+        const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
         RegisterImage(new_image_id);
+
+        // Inherit image usage
+        auto& new_image = GetImage(new_image_id);
+        new_image.usage = cache_image.usage;
 
         // TODO: perform a depth copy here
 
@@ -92,69 +138,88 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Image
         return new_image_id;
     }
 
-    const bool should_bind_as_texture =
-        !requested_info.usage.depth_target &&
-        (requested_info.usage.texture || requested_info.usage.storage);
-    if (cache_info.usage.depth_target && should_bind_as_texture) {
-        if (cache_info.resources == requested_info.resources) {
-            return cache_image_id;
-        } else {
-            // UNREACHABLE();
-        }
-    }
-
-    return {};
+    // Will be handled by view
+    return cache_image_id;
 }
 
-ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_image_id,
-                                     ImageId merged_image_id) {
+std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& image_info,
+                                                           BindingType binding,
+                                                           ImageId cache_image_id,
+                                                           ImageId merged_image_id) {
     auto& tex_cache_image = slot_images[cache_image_id];
+    // We can assume it is safe to delete the image if it wasn't accessed in some number of frames.
+    const bool safe_to_delete =
+        scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
         if (image_info.size != tex_cache_image.info.size) {
-            // Very likely this kind of overlap is caused by allocation from a pool. We can assume
-            // it is safe to delete the image if it wasn't accessed in some amount of frames.
-            if (scheduler.CurrentTick() - tex_cache_image.tick_accessed_last >
-                NumFramesBeforeRemoval) {
-
+            // Very likely this kind of overlap is caused by allocation from a pool.
+            if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
-            return merged_image_id;
+            return {merged_image_id, -1, -1};
         }
 
-        if (auto depth_image_id = ResolveDepthOverlap(image_info, cache_image_id)) {
-            return depth_image_id;
+        if (const auto depth_image_id = ResolveDepthOverlap(image_info, binding, cache_image_id)) {
+            return {depth_image_id, -1, -1};
         }
 
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
             image_info.guest_size_bytes <= tex_cache_image.info.guest_size_bytes) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
-            return IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
-                       ? result_id
-                       : ImageId{};
+            return {
+                IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
+                    ? result_id
+                    : ImageId{},
+                -1, -1};
         }
 
         ImageId new_image_id{};
         if (image_info.type == tex_cache_image.info.type) {
+            ASSERT(image_info.resources > tex_cache_image.info.resources);
             new_image_id = ExpandImage(image_info, cache_image_id);
         } else {
             UNREACHABLE();
         }
-        return new_image_id;
+        return {new_image_id, -1, -1};
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
     if (image_info.guest_address > tex_cache_image.info.guest_address) {
-        // Should be handled by view. No additional actions needed.
+        if (auto mip = image_info.IsMipOf(tex_cache_image.info); mip >= 0) {
+            return {cache_image_id, mip, -1};
+        }
+
+        if (auto slice = image_info.IsSliceOf(tex_cache_image.info); slice >= 0) {
+            return {cache_image_id, -1, slice};
+        }
+
+        // TODO: slice and mip
+
+        if (safe_to_delete) {
+            FreeImage(cache_image_id);
+        }
+
+        return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
         if (!merged_image_id) {
             // We need to have a larger, already allocated image to copy this one into
-            return {};
+            return {{}, -1, -1};
         }
 
-        if (tex_cache_image.info.IsMipOf(image_info)) {
+        if (auto mip = tex_cache_image.info.IsMipOf(image_info); mip >= 0) {
+            if (tex_cache_image.binding.is_target) {
+                // We have a larger image created and a separate one, representing a subres of it,
+                // bound as render target. In this case we need to rebind render target.
+                tex_cache_image.binding.needs_rebind = 1u;
+                GetImage(merged_image_id).binding.is_target = 1u;
+
+                FreeImage(cache_image_id);
+                return {merged_image_id, -1, -1};
+            }
+
             tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
                                     vk::AccessFlagBits2::eTransferRead, {});
 
@@ -162,13 +227,13 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
             ASSERT(num_mips_to_copy == 1);
 
             auto& merged_image = slot_images[merged_image_id];
-            merged_image.CopyMip(tex_cache_image, image_info.resources.levels - 1);
+            merged_image.CopyMip(tex_cache_image, mip);
 
             FreeImage(cache_image_id);
         }
     }
 
-    return merged_image_id;
+    return {merged_image_id, -1, -1};
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
@@ -181,8 +246,8 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     new_image.CopyImage(src_image);
 
-    if (True(src_image.flags & ImageFlagBits::Bound)) {
-        src_image.flags |= ImageFlagBits::NeedsRebind;
+    if (src_image.binding.is_bound || src_image.binding.is_target) {
+        src_image.binding.needs_rebind = 1u;
     }
 
     FreeImage(image_id);
@@ -192,9 +257,11 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
+ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
+    const auto& info = desc.info;
+
     if (info.guest_address == 0) [[unlikely]] {
-        return NULL_IMAGE_VIEW_ID;
+        return NULL_IMAGE_ID;
     }
 
     std::scoped_lock lock{mutex};
@@ -231,10 +298,16 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
     }
 
     // Try to resolve overlaps (if any)
+    int view_mip{-1};
+    int view_slice{-1};
     if (!image_id) {
         for (const auto& cache_id : image_ids) {
+            view_mip = -1;
+            view_slice = -1;
+
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
-            image_id = ResolveOverlap(merged_info, cache_id, image_id);
+            std::tie(image_id, view_mip, view_slice) =
+                ResolveOverlap(merged_info, desc.type, cache_id, image_id);
         }
     }
 
@@ -252,6 +325,10 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
     if (!image_id) {
         image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
+    }
+
+    if (view_mip > 0) {
+        desc.view_info.range.base.level = view_mip;
     }
 
     Image& image = slot_images[image_id];
@@ -275,100 +352,58 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageViewInfo& view_info) {
     Image& image = slot_images[image_id];
     UpdateImage(image_id);
-    auto& usage = image.info.usage;
-
-    if (view_info.is_storage) {
-        image.Transit(vk::ImageLayout::eGeneral,
-                      vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
-                      view_info.range);
-        usage.storage = true;
-    } else {
-        const auto new_layout = image.info.IsDepthStencil()
-                                    ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                                    : vk::ImageLayout::eShaderReadOnlyOptimal;
-        image.Transit(new_layout, vk::AccessFlagBits2::eShaderRead, view_info.range);
-        usage.texture = true;
-    }
-
     return RegisterImageView(image_id, view_info);
 }
 
-ImageView& TextureCache::FindRenderTarget(const ImageInfo& image_info,
-                                          const ImageViewInfo& view_info) {
-    const ImageId image_id = FindImage(image_info);
+ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
+    const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    image.usage.render_target = 1u;
     UpdateImage(image_id);
-
-    image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
-                  vk::AccessFlagBits2::eColorAttachmentWrite |
-                      vk::AccessFlagBits2::eColorAttachmentRead,
-                  view_info.range);
 
     // Register meta data for this color buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
-        if (image_info.meta_info.cmask_addr) {
+        if (desc.info.meta_info.cmask_addr) {
             surface_metas.emplace(
-                image_info.meta_info.cmask_addr,
+                desc.info.meta_info.cmask_addr,
                 MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
-            image.info.meta_info.cmask_addr = image_info.meta_info.cmask_addr;
+            image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
 
-        if (image_info.meta_info.fmask_addr) {
+        if (desc.info.meta_info.fmask_addr) {
             surface_metas.emplace(
-                image_info.meta_info.fmask_addr,
+                desc.info.meta_info.fmask_addr,
                 MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
-            image.info.meta_info.fmask_addr = image_info.meta_info.fmask_addr;
+            image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
     }
 
-    // Update tracked image usage
-    image.info.usage.render_target = true;
-
-    return RegisterImageView(image_id, view_info);
+    return RegisterImageView(image_id, desc.view_info);
 }
 
-ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
-                                         const ImageViewInfo& view_info) {
-    const ImageId image_id = FindImage(image_info);
+ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
+    const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.flags &= ~ImageFlagBits::Dirty;
-    image.aspect_mask = vk::ImageAspectFlagBits::eDepth;
-
-    const bool has_stencil = image_info.usage.stencil;
-    if (has_stencil) {
-        image.aspect_mask |= vk::ImageAspectFlagBits::eStencil;
-    }
-
-    const auto new_layout = view_info.is_storage
-                                ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-                                              : vk::ImageLayout::eDepthAttachmentOptimal
-                            : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                                          : vk::ImageLayout::eDepthReadOnlyOptimal;
-    image.Transit(new_layout,
-                  vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
-                      vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-                  view_info.range);
+    image.usage.depth_target = 1u;
+    image.usage.stencil = image.info.HasStencil();
 
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
-        if (image_info.meta_info.htile_addr) {
+        if (desc.info.meta_info.htile_addr) {
             surface_metas.emplace(
-                image_info.meta_info.htile_addr,
+                desc.info.meta_info.htile_addr,
                 MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
-            image.info.meta_info.htile_addr = image_info.meta_info.htile_addr;
+            image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
     }
 
-    // Update tracked image usage
-    image.info.usage.depth_target = true;
-    image.info.usage.stencil = has_stencil;
-
-    return RegisterImageView(image_id, view_info);
+    return RegisterImageView(image_id, desc.view_info);
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
@@ -472,7 +507,7 @@ void TextureCache::RegisterImage(ImageId image_id) {
 void TextureCache::UnregisterImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
-               "Trying to unregister an already registered image");
+               "Trying to unregister an already unregistered image");
     image.flags &= ~ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
