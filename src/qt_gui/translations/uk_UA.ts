@@ -1129,7 +1129,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>Мова консолі:\nВстановіть мову, яка буде використовуватись у іграх PS4.\nРекомендується встановити мову котра підтримується грою, оскільк вона може відрізнятися в залежності від регіону.</translation>
+			<translation>Мова консолі:\nВстановіть мову, яка буде використовуватись у іграх PS4.\nРекомендується встановити мову котра підтримується грою, оскільки вона може відрізнятися в залежності від регіону.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
