@@ -3,49 +3,39 @@
 
 #pragma once
 
-#include <cstring>
-#include <fstream>
-#include "common/assert.h"
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
-extern "C" {
-#include <structures.h>
-}
+#include "libatrac9.h"
 
 namespace Libraries::Ajm {
 
 constexpr s32 ORBIS_AJM_DEC_AT9_MAX_CHANNELS = 8;
 
 struct AjmSidebandDecAt9CodecInfo {
-    u32 uiSuperFrameSize;
-    u32 uiFramesInSuperFrame;
-    u32 uiNextFrameSize;
-    u32 uiFrameSamples;
+    u32 super_frame_size;
+    u32 frames_in_super_frame;
+    u32 next_frame_size;
+    u32 frame_samples;
 };
 
-struct AjmAt9Decoder final : AjmInstance {
-    void* handle{};
-    u8 config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
-    u32 superframe_bytes_remain{};
-    u32 num_frames{};
-
+struct AjmAt9Decoder final : AjmCodec {
     explicit AjmAt9Decoder();
     ~AjmAt9Decoder() override;
 
     void Reset() override;
-
     void Initialize(const void* buffer, u32 buffer_size) override;
-
-    void GetCodecInfo(void* out_info) override;
-    u32 GetCodecInfoSize() override {
-        return sizeof(AjmSidebandDecAt9CodecInfo);
-    }
-
-    void Decode(const AjmJob::Input* input, AjmJob::Output* output) override;
+    void GetInfo(void* out_info) override;
+    u32 ProcessFrame(std::span<u8>& input, SparseOutputBuffer& output,
+                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
 
 private:
-    void ResetCodec();
+    void* m_handle{};
+    u8 m_config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
+    u32 m_superframe_bytes_remain{};
+    u32 m_num_frames{};
+    Atrac9CodecInfo m_codec_info{};
+    std::vector<s16> m_pcm_buffer;
 };
 
 } // namespace Libraries::Ajm

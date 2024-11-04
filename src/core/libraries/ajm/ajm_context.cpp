@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "core/libraries/ajm/ajm.h"
 #include "core/libraries/ajm/ajm_at9.h"
 #include "core/libraries/ajm/ajm_context.h"
 #include "core/libraries/ajm/ajm_error.h"
@@ -64,7 +65,7 @@ void AjmContext::WorkerThread(std::stop_token stop) {
 void AjmContext::ProcessBatch(u32 id, std::span<AjmJob> jobs) {
     // Perform operation requested by control flags.
     for (auto& job : jobs) {
-        LOG_DEBUG(Lib_Ajm, "Processing job {} for instance {}. flags = {:#x}", id, job.instance_id,
+        LOG_TRACE(Lib_Ajm, "Processing job {} for instance {}. flags = {:#x}", id, job.instance_id,
                   job.flags.raw);
 
         std::shared_ptr<AjmInstance> instance;
@@ -75,48 +76,7 @@ void AjmContext::ProcessBatch(u32 id, std::span<AjmJob> jobs) {
             instance = *p_instance;
         }
 
-        const auto control_flags = job.flags.control_flags;
-        if (True(control_flags & AjmJobControlFlags::Reset)) {
-            LOG_INFO(Lib_Ajm, "Resetting instance {}", job.instance_id);
-            instance->Reset();
-        }
-        if (True(control_flags & AjmJobControlFlags::Initialize)) {
-            LOG_INFO(Lib_Ajm, "Initializing instance {}", job.instance_id);
-            ASSERT_MSG(job.input.init_params.has_value(),
-                       "Initialize called without control buffer");
-            auto& params = job.input.init_params.value();
-            instance->Initialize(&params, sizeof(params));
-        }
-        if (True(control_flags & AjmJobControlFlags::Resample)) {
-            LOG_ERROR(Lib_Ajm, "Unimplemented: resample params");
-            ASSERT_MSG(job.input.resample_parameters.has_value(), "Resample paramters are absent");
-            instance->resample_parameters = job.input.resample_parameters.value();
-        }
-
-        const auto sideband_flags = job.flags.sideband_flags;
-        if (True(sideband_flags & AjmJobSidebandFlags::Format)) {
-            ASSERT_MSG(job.input.format.has_value(), "Format parameters are absent");
-            instance->format = job.input.format.value();
-        }
-        if (True(sideband_flags & AjmJobSidebandFlags::GaplessDecode)) {
-            ASSERT_MSG(job.input.gapless_decode.has_value(),
-                       "Gapless decode parameters are absent");
-            auto& params = job.input.gapless_decode.value();
-            instance->gapless.total_samples = params.total_samples;
-            instance->gapless.skip_samples = params.skip_samples;
-        }
-
-        if (!job.input.buffer.empty()) {
-            instance->Decode(&job.input, &job.output);
-        }
-
-        if (job.output.p_gapless_decode != nullptr) {
-            *job.output.p_gapless_decode = instance->gapless;
-        }
-
-        if (job.output.p_codec_info != nullptr) {
-            instance->GetCodecInfo(job.output.p_codec_info);
-        }
+        instance->ExecuteJob(job);
     }
 }
 
@@ -190,25 +150,10 @@ s32 AjmContext::InstanceCreate(AjmCodecType codec_type, AjmInstanceFlags flags, 
         return ORBIS_AJM_ERROR_CODEC_NOT_REGISTERED;
     }
     ASSERT_MSG(flags.format == 0, "Only signed 16-bit PCM output is supported currently!");
-    std::unique_ptr<AjmInstance> instance;
-    switch (codec_type) {
-    case AjmCodecType::Mp3Dec:
-        instance = std::make_unique<AjmMp3Decoder>();
-        break;
-    case AjmCodecType::At9Dec:
-        instance = std::make_unique<AjmAt9Decoder>();
-        break;
-    default:
-        UNREACHABLE_MSG("Codec #{} not implemented", u32(codec_type));
-    }
-    instance->codec_type = codec_type;
-    instance->num_channels = flags.channels;
-    instance->flags = flags;
-
     std::optional<u32> opt_index;
     {
         std::unique_lock lock(instances_mutex);
-        opt_index = instances.Create(std::move(instance));
+        opt_index = instances.Create(std::move(std::make_unique<AjmInstance>(codec_type, flags)));
     }
     if (!opt_index.has_value()) {
         return ORBIS_AJM_ERROR_OUT_OF_RESOURCES;

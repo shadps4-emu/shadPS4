@@ -72,7 +72,7 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context_id, u8* p_batch, u32 batch_s
 
 int PS4_SYSV_ABI sceAjmBatchWait(const u32 context_id, const u32 batch_id, const u32 timeout,
                                  AjmBatchError* const batch_error) {
-    LOG_INFO(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context_id, batch_id,
+    LOG_TRACE(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context_id, batch_id,
              timeout);
     return context->BatchWait(batch_id, timeout, batch_error);
 }
@@ -84,13 +84,6 @@ int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData() {
 
 int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* buf, u32 stream_size, int parse_ofl,
                                         AjmDecMp3ParseFrame* frame) {
-    LOG_INFO(Lib_Ajm, "called stream_size = {} parse_ofl = {}", stream_size, parse_ofl);
-    if (buf == nullptr || stream_size < 4 || frame == nullptr) {
-        return ORBIS_AJM_ERROR_INVALID_PARAMETER;
-    }
-    if ((buf[0] & SYNCWORDH) != SYNCWORDH || (buf[1] & SYNCWORDL) != SYNCWORDL) {
-        return ORBIS_AJM_ERROR_INVALID_PARAMETER;
-    }
     return AjmMp3Decoder::ParseMp3Header(buf, stream_size, parse_ofl, frame);
 }
 
@@ -101,6 +94,7 @@ int PS4_SYSV_ABI sceAjmFinalize() {
 
 int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     LOG_INFO(Lib_Ajm, "called reserved = {}", reserved);
+    ASSERT_MSG(context == nullptr, "Multiple contexts are currently unsupported.");
     if (p_context_id == nullptr || reserved != 0) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }

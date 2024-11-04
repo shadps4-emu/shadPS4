@@ -16,6 +16,14 @@ namespace Libraries::Ajm {
 constexpr u32 ORBIS_AT9_CONFIG_DATA_SIZE = 4;
 constexpr u32 AJM_INSTANCE_STATISTICS = 0x80000;
 
+enum class AjmCodecType : u32 {
+    Mp3Dec = 0,
+    At9Dec = 1,
+    M4aacDec = 2,
+    Max = 23,
+};
+DECLARE_ENUM_FLAG_OPERATORS(AjmCodecType);
+
 struct AjmBatchInfo {
     void* pBuffer;
     u64 offset;
@@ -113,6 +121,11 @@ struct AjmDecAt9InitializeParameters {
     u32 reserved;
 };
 
+union AjmSidebandInitParameters {
+    AjmDecAt9InitializeParameters at9;
+    u8 reserved[8];
+};
+
 union AjmInstanceFlags {
     u64 raw;
     struct {
@@ -126,7 +139,6 @@ union AjmInstanceFlags {
 };
 
 struct AjmDecMp3ParseFrame;
-enum class AjmCodecType : u32;
 
 int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id);
 int PS4_SYSV_ABI sceAjmBatchErrorDump();

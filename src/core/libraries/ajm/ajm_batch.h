@@ -28,7 +28,7 @@ struct AjmJob {
     };
 
     struct Output {
-        boost::container::small_vector<std::span<u8>, 4> buffers;
+        boost::container::small_vector<std::span<u8>, 8> buffers;
         AjmSidebandResult* p_result = nullptr;
         AjmSidebandStream* p_stream = nullptr;
         AjmSidebandFormat* p_format = nullptr;
@@ -48,7 +48,7 @@ struct AjmBatch {
     std::atomic_bool waiting{};
     std::atomic_bool canceled{};
     std::binary_semaphore finished{0};
-    boost::container::small_vector<AjmJob, 8> jobs;
+    boost::container::small_vector<AjmJob, 16> jobs;
 
     static std::shared_ptr<AjmBatch> FromBatchBuffer(std::span<u8> buffer);
 };

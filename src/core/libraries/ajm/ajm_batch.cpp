@@ -46,18 +46,18 @@ static_assert(sizeof(AjmChunkBuffer) == 16);
 
 class AjmBatchBuffer {
 public:
-    static constexpr size_t DynamicExtent = std::numeric_limits<size_t>::max();
+    static constexpr size_t s_dynamic_extent = std::numeric_limits<size_t>::max();
 
     AjmBatchBuffer(u8* begin, u8* end)
         : m_p_begin(begin), m_p_current(begin), m_size(end - begin) {}
-    AjmBatchBuffer(u8* begin, size_t size = DynamicExtent)
+    AjmBatchBuffer(u8* begin, size_t size = s_dynamic_extent)
         : m_p_begin(begin), m_p_current(m_p_begin), m_size(size) {}
     AjmBatchBuffer(std::span<u8> data)
         : m_p_begin(data.data()), m_p_current(m_p_begin), m_size(data.size()) {}
 
-    AjmBatchBuffer SubBuffer(size_t size = DynamicExtent) {
+    AjmBatchBuffer SubBuffer(size_t size = s_dynamic_extent) {
         auto current = m_p_current;
-        if (size != DynamicExtent) {
+        if (size != s_dynamic_extent) {
             m_p_current += size;
         }
         return AjmBatchBuffer(current, size);
@@ -65,7 +65,8 @@ public:
 
     template <class T>
     T& Peek() const {
-        DEBUG_ASSERT(m_size == DynamicExtent || (m_p_current + sizeof(T)) <= (m_p_begin + m_size));
+        DEBUG_ASSERT(m_size == s_dynamic_extent ||
+                     (m_p_current + sizeof(T)) <= (m_p_begin + m_size));
         return *reinterpret_cast<T*>(m_p_current);
     }
 
@@ -73,7 +74,7 @@ public:
     T& Consume() {
         auto* const result = reinterpret_cast<T*>(m_p_current);
         m_p_current += sizeof(T);
-        DEBUG_ASSERT(m_size == DynamicExtent || m_p_current <= (m_p_begin + m_size));
+        DEBUG_ASSERT(m_size == s_dynamic_extent || m_p_current <= (m_p_begin + m_size));
         return *result;
     }
 
@@ -84,11 +85,11 @@ public:
 
     void Advance(size_t size) {
         m_p_current += size;
-        DEBUG_ASSERT(m_size == DynamicExtent || m_p_current <= (m_p_begin + m_size));
+        DEBUG_ASSERT(m_size == s_dynamic_extent || m_p_current <= (m_p_begin + m_size));
     }
 
     bool IsEmpty() {
-        return m_size != DynamicExtent && m_p_current >= (m_p_begin + m_size);
+        return m_size != s_dynamic_extent && m_p_current >= (m_p_begin + m_size);
     }
 
     size_t BytesConsumed() const {
@@ -96,8 +97,8 @@ public:
     }
 
     size_t BytesRemaining() const {
-        if (m_size == DynamicExtent) {
-            return DynamicExtent;
+        if (m_size == s_dynamic_extent) {
+            return s_dynamic_extent;
         }
         return m_size - (m_p_current - m_p_begin);
     }
@@ -221,7 +222,6 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
             *job.output.p_stream = AjmSidebandStream{};
         }
         if (True(sideband_flags & AjmJobSidebandFlags::Format) && !output_batch.IsEmpty()) {
-            LOG_ERROR(Lib_Ajm, "SIDEBAND_FORMAT is not implemented");
             job.output.p_format = &output_batch.Consume<AjmSidebandFormat>();
             *job.output.p_format = AjmSidebandFormat{};
         }

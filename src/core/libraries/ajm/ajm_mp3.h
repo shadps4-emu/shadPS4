@@ -56,25 +56,19 @@ struct AjmDecMp3GetCodecInfoResult {
     AjmSidebandDecMp3CodecInfo codec_info;
 };
 
-struct AjmMp3Decoder : public AjmInstance {
+struct AjmMp3Decoder : public AjmCodec {
     const AVCodec* codec = nullptr;
-    AVCodecContext* c = nullptr;
+    AVCodecContext* codec_context = nullptr;
     AVCodecParserContext* parser = nullptr;
-    std::ofstream file;
 
     explicit AjmMp3Decoder();
     ~AjmMp3Decoder() override;
 
     void Reset() override;
-
     void Initialize(const void* buffer, u32 buffer_size) override {}
-
-    void GetCodecInfo(void* out_info) override {}
-    u32 GetCodecInfoSize() override {
-        return sizeof(AjmSidebandDecMp3CodecInfo);
-    }
-
-    void Decode(const AjmJob::Input* input, AjmJob::Output* output) override;
+    void GetInfo(void* out_info) override {}
+    u32 ProcessFrame(std::span<u8>& input, SparseOutputBuffer& output,
+                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);

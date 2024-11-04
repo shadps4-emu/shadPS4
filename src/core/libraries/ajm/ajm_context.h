@@ -15,6 +15,7 @@
 #include <shared_mutex>
 #include <span>
 #include <thread>
+#include <utility>
 
 namespace Libraries::Ajm {
 
@@ -37,7 +38,7 @@ public:
 private:
     static constexpr u32 MaxInstances = 0x2fff;
     static constexpr u32 MaxBatches = 0x0400;
-    static constexpr u32 NumAjmCodecs = u32(AjmCodecType::Max);
+    static constexpr u32 NumAjmCodecs = std::to_underlying(AjmCodecType::Max);
 
     [[nodiscard]] bool IsRegistered(AjmCodecType type) const;
 
