@@ -10,6 +10,7 @@
 
 #include "common/concepts.h"
 #include "common/types.h"
+#include "enum.h"
 
 namespace Common::FS {
 
@@ -42,6 +43,7 @@ enum class FileAccessMode {
      */
     ReadAppend = Read | Append,
 };
+DECLARE_ENUM_FLAG_OPERATORS(FileAccessMode);
 
 enum class FileType {
     BinaryFile,
