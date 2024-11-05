@@ -142,7 +142,7 @@ public:
     explicit Descriptors(Info& info_)
         : info{info_}, buffer_resources{info_.buffers},
           texture_buffer_resources{info_.texture_buffers}, image_resources{info_.images},
-          sampler_resources{info_.samplers} {}
+          sampler_resources{info_.samplers}, fmask_resources(info_.fmasks) {}
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
@@ -183,6 +183,14 @@ public:
         return index;
     }
 
+    u32 Add(const FMaskResource& desc) {
+        u32 index = Add(fmask_resources, desc, [&desc](const auto& existing) {
+            return desc.sgpr_base == existing.sgpr_base &&
+                   desc.dword_offset == existing.dword_offset;
+        });
+        return index;
+    }
+
 private:
     template <typename Descriptors, typename Descriptor, typename Func>
     static u32 Add(Descriptors& descriptors, const Descriptor& desc, Func&& pred) {
@@ -199,6 +207,7 @@ private:
     TextureBufferResourceList& texture_buffer_resources;
     ImageResourceList& image_resources;
     SamplerResourceList& sampler_resources;
+    FMaskResourceList& fmask_resources;
 };
 
 } // Anonymous namespace
@@ -618,6 +627,41 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
+
+    // Patch image instruction if image is FMask.
+    if (image.IsFmask()) {
+        ASSERT_MSG(!is_storage, "FMask storage instructions are not supported");
+
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        switch (inst.GetOpcode()) {
+        case IR::Opcode::ImageFetch:
+        case IR::Opcode::ImageSampleRaw: {
+            IR::F32 fmaskx = ir.BitCast<IR::F32>(ir.Imm32(0x76543210));
+            IR::F32 fmasky = ir.BitCast<IR::F32>(ir.Imm32(0xfedcba98));
+            inst.ReplaceUsesWith(ir.CompositeConstruct(fmaskx, fmasky));
+            return;
+        }
+        case IR::Opcode::ImageQueryLod:
+            inst.ReplaceUsesWith(ir.Imm32(1));
+            return;
+        case IR::Opcode::ImageQueryDimensions: {
+            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)), // x
+                                                   ir.Imm32(static_cast<u32>(image.width)), // y
+                                                   ir.Imm32(1), ir.Imm32(1)); // depth, mip
+            inst.ReplaceUsesWith(dims);
+
+            // Track FMask resource to do specialization.
+            descriptors.Add(FMaskResource{
+                .sgpr_base = tsharp.sgpr_base,
+                .dword_offset = tsharp.dword_offset,
+            });
+            return;
+        }
+        default:
+            UNREACHABLE_MSG("Can't patch fmask instruction {}", inst.GetOpcode());
+        }
+    }
+
     const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sharp_idx = tsharp,
@@ -652,11 +696,14 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice
             [[fallthrough]];
-        case AmdGpu::ImageType::Color2D: // x, y
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
-        case AmdGpu::ImageType::Color2DArray: // x, y, slice
+        case AmdGpu::ImageType::Color2D: // x, y, [lod]
             [[fallthrough]];
-        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
+        case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
+        case AmdGpu::ImageType::Color2DArray: // x, y, slice, [lod]
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
+                                                  // argument)
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
@@ -672,7 +719,12 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
+        ASSERT(image.GetType() == AmdGpu::ImageType::Color2D ||
+               image.GetType() == AmdGpu::ImageType::Color2DArray);
         inst.SetArg(3, arg);
+    } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
+               image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
+        inst.SetArg(4, arg);
     }
 }
 
