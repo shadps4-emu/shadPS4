@@ -658,7 +658,7 @@ void save(const std::filesystem::path& path) {
     // TODO Migration code, after a major release this should be removed.
     data.at("GUI").as_table().erase("installDir");
 
-    std::ofstream file(path, std::ios::out);
+    std::ofstream file(path, std::ios::binary);
     file << data;
     file.close();
 }
