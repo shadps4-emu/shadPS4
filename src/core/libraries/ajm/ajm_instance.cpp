@@ -65,8 +65,9 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             const u32 samples_remain = m_gapless.total_samples != 0
                                            ? m_gapless.total_samples - m_gapless_samples
                                            : std::numeric_limits<u32>::max();
-            const auto nsamples = m_codec->ProcessFrame(in_buf, out_buf, m_gapless, samples_remain);
-            ++frames_decoded;
+            const auto [nframes, nsamples] =
+                m_codec->ProcessData(in_buf, out_buf, m_gapless, samples_remain);
+            frames_decoded += nframes;
             m_total_samples += nsamples;
             m_gapless_samples += nsamples;
         }

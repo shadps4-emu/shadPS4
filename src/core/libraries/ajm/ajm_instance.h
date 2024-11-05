@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <optional>
+#include <tuple>
 
 namespace Libraries::Ajm {
 
@@ -76,8 +77,9 @@ public:
     virtual void Initialize(const void* buffer, u32 buffer_size) = 0;
     virtual void Reset() = 0;
     virtual void GetInfo(void* out_info) = 0;
-    virtual u32 ProcessFrame(std::span<u8>& input, SparseOutputBuffer& output,
-                             AjmSidebandGaplessDecode& gapless, u32 max_samples) = 0;
+    virtual std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                             AjmSidebandGaplessDecode& gapless,
+                                             u32 max_samples) = 0;
 };
 
 class AjmInstance {

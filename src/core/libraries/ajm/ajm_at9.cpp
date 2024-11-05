@@ -51,8 +51,9 @@ void AjmAt9Decoder::GetInfo(void* out_info) {
     info->next_frame_size = static_cast<Atrac9Handle*>(m_handle)->Config.FrameBytes;
 }
 
-u32 AjmAt9Decoder::ProcessFrame(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                AjmSidebandGaplessDecode& gapless, u32 max_samples_per_channel) {
+std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
+                                                AjmSidebandGaplessDecode& gapless,
+                                                u32 max_samples_per_channel) {
     int bytes_used = 0;
     u32 ret = Atrac9Decode(m_handle, in_buf.data(), m_pcm_buffer.data(), &bytes_used);
     ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
@@ -84,7 +85,7 @@ u32 AjmAt9Decoder::ProcessFrame(std::span<u8>& in_buf, SparseOutputBuffer& outpu
         m_num_frames = 0;
     }
 
-    return (written / m_codec_info.channels) / sizeof(s16);
+    return {1, (written / m_codec_info.channels) / sizeof(s16)};
 }
 
 } // namespace Libraries::Ajm

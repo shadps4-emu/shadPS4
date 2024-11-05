@@ -26,8 +26,8 @@ struct AjmAt9Decoder final : AjmCodec {
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override;
     void GetInfo(void* out_info) override;
-    u32 ProcessFrame(std::span<u8>& input, SparseOutputBuffer& output,
-                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
+    std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
 
 private:
     void* m_handle{};

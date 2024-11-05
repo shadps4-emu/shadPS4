@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <fstream>
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
@@ -11,6 +10,8 @@ extern "C" {
 struct AVCodec;
 struct AVCodecContext;
 struct AVCodecParserContext;
+struct AVFrame;
+struct AVPacket;
 }
 
 namespace Libraries::Ajm {
@@ -51,27 +52,24 @@ struct AjmSidebandDecMp3CodecInfo {
     u16 reserved[3];
 };
 
-struct AjmDecMp3GetCodecInfoResult {
-    AjmSidebandResult result;
-    AjmSidebandDecMp3CodecInfo codec_info;
-};
-
-struct AjmMp3Decoder : public AjmCodec {
-    const AVCodec* codec = nullptr;
-    AVCodecContext* codec_context = nullptr;
-    AVCodecParserContext* parser = nullptr;
-
+class AjmMp3Decoder : public AjmCodec {
+public:
     explicit AjmMp3Decoder();
     ~AjmMp3Decoder() override;
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override {}
-    void GetInfo(void* out_info) override {}
-    u32 ProcessFrame(std::span<u8>& input, SparseOutputBuffer& output,
-                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
+    void GetInfo(void* out_info) override;
+    std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
+
+private:
+    const AVCodec* m_codec = nullptr;
+    AVCodecContext* m_codec_context = nullptr;
+    AVCodecParserContext* m_parser = nullptr;
 };
 
 } // namespace Libraries::Ajm
