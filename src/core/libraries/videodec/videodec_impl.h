@@ -14,12 +14,9 @@ extern "C" {
 }
 
 namespace Libraries::Videodec {
-#if 0
-extern std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
-#endif
+
 class VdecDecoder {
 public:
-
     VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
                 const OrbisVideodecResourceInfo& pRsrcInfoIn);
     ~VdecDecoder();
@@ -38,4 +35,4 @@ private:
     SwsContext* mSwsContext = nullptr;
 };
 
-} // namespace Libraries::Vdec2
+} // namespace Libraries::Videodec
