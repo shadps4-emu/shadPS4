@@ -137,6 +137,7 @@ union AjmInstanceFlags {
         u64 codec : 28;
     };
 };
+static_assert(sizeof(AjmInstanceFlags) == 8);
 
 struct AjmDecMp3ParseFrame;
 
