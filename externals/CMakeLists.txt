@@ -47,6 +47,11 @@ if (NOT TARGET FFmpeg::ffmpeg)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
 endif()
 
+# LibAtrac9
+file(GLOB LIBATRAC9_SOURCES LibAtrac9/C/src/*.c)
+add_library(LibAtrac9 STATIC ${LIBATRAC9_SOURCES})
+target_include_directories(LibAtrac9 INTERFACE LibAtrac9/C/src)
+
 # Zlib-Ng
 if (NOT TARGET zlib-ng::zlib)
     set(ZLIB_ENABLE_TESTS OFF)
