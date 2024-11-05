@@ -23,8 +23,6 @@ constexpr int ORBIS_AJM_RESULT_CODEC_ERROR = 0x40000000;
 constexpr int ORBIS_AJM_RESULT_FATAL = 0x80000000;
 
 AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_flags(flags) {
-    LOG_CRITICAL(Lib_Ajm, "Creating instance with format {}",
-                 magic_enum::enum_name(AjmFormatEncoding(flags.format)));
     switch (codec_type) {
     case AjmCodecType::At9Dec: {
         m_codec = std::make_unique<AjmAt9Decoder>(AjmFormatEncoding(flags.format));
