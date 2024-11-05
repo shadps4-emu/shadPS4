@@ -368,6 +368,8 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_avc.h
              src/core/libraries/videodec/videodec.cpp
              src/core/libraries/videodec/videodec.h
+             src/core/libraries/videodec/videodec_impl.cpp
+             src/core/libraries/videodec/videodec_impl.h
 )
 
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp

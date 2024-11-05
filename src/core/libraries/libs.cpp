@@ -41,6 +41,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/usbd/usbd.h"
+#include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
 
@@ -87,6 +88,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::GameLiveStreaming::RegisterlibSceGameLiveStreaming(sym);
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
+    Libraries::Videodec::RegisterlibSceVideodec(sym);
 }
 
 } // namespace Libraries

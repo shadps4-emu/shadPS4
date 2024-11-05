@@ -34,7 +34,7 @@ struct OrbisVideodecResourceInfo {
 
 struct OrbisVideodecCtrl {
     u64 thisSize;
-    u64 handle;
+    void* handle;
     u64 version;
 };
 
