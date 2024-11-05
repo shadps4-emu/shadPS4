@@ -185,8 +185,7 @@ public:
 
     u32 Add(const FMaskResource& desc) {
         u32 index = Add(fmask_resources, desc, [&desc](const auto& existing) {
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+            return desc.sharp_idx == existing.sharp_idx;
         });
         return index;
     }
@@ -652,8 +651,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
             // Track FMask resource to do specialization.
             descriptors.Add(FMaskResource{
-                .sgpr_base = tsharp.sgpr_base,
-                .dword_offset = tsharp.dword_offset,
+                .sharp_idx = tsharp,
             });
             return;
         }

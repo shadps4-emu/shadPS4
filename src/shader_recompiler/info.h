@@ -87,8 +87,7 @@ struct SamplerResource {
 using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
 struct FMaskResource {
-    u32 sgpr_base;
-    u32 dword_offset;
+    u32 sharp_idx;
 
     constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
@@ -292,7 +291,7 @@ constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noex
 }
 
 constexpr AmdGpu::Image FMaskResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
+    return info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
 }
 
 } // namespace Shader
