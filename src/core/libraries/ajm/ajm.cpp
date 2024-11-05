@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context_id, u8* p_batch, u32 batch_s
 int PS4_SYSV_ABI sceAjmBatchWait(const u32 context_id, const u32 batch_id, const u32 timeout,
                                  AjmBatchError* const batch_error) {
     LOG_TRACE(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context_id, batch_id,
-             timeout);
+              timeout);
     return context->BatchWait(batch_id, timeout, batch_error);
 }
 
