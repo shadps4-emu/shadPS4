@@ -434,7 +434,9 @@ QCheckBox* CheatsPatches::findCheckBoxByName(const QString& name) {
             QWidget* widget = item->widget();
             QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget);
             if (checkBox) {
-                if (checkBox->text().toStdString().find(name.toStdString()) != std::string::npos) {
+                const auto patchName = checkBox->property("patchName");
+                if (patchName.isValid() && patchName.toString().toStdString().find(
+                                               name.toStdString()) != std::string::npos) {
                     return checkBox;
                 }
             }
@@ -1176,6 +1178,7 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
 
                 if (!patchName.isEmpty() && !patchLines.isEmpty()) {
                     QCheckBox* patchCheckBox = new QCheckBox(patchName);
+                    patchCheckBox->setProperty("patchName", patchName);
                     patchCheckBox->setChecked(isEnabled);
                     patchesGroupBoxLayout->addWidget(patchCheckBox);
 
@@ -1349,8 +1352,10 @@ bool CheatsPatches::eventFilter(QObject* obj, QEvent* event) {
 
 void CheatsPatches::onPatchCheckBoxHovered(QCheckBox* checkBox, bool hovered) {
     if (hovered) {
-        QString text = checkBox->text();
-        updateNoteTextEdit(text);
+        const auto patchName = checkBox->property("patchName");
+        if (patchName.isValid()) {
+            updateNoteTextEdit(patchName.toString());
+        }
     } else {
         instructionsTextEdit->setText(defaultTextEdit);
     }
