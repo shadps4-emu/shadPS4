@@ -129,4 +129,15 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     return {1, samples_written / m_codec_info.channels};
 }
 
+AjmSidebandFormat AjmAt9Decoder::GetFormat() {
+    return AjmSidebandFormat{
+        .num_channels = u32(m_codec_info.channels),
+        .channel_mask = GetChannelMask(u32(m_codec_info.channels)),
+        .sampl_freq = u32(m_codec_info.samplingRate),
+        .sample_encoding = m_format,
+        .bitrate = u32(m_codec_info.samplingRate * GetPointCodeSize() * 8),
+        .reserved = 0,
+    };
+}
+
 } // namespace Libraries::Ajm

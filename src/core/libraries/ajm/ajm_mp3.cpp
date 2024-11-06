@@ -192,4 +192,9 @@ int AjmMp3Decoder::ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
     return ORBIS_OK;
 }
 
+AjmSidebandFormat AjmMp3Decoder::GetFormat() {
+    LOG_ERROR(Lib_Ajm, "Unimplemented");
+    return AjmSidebandFormat{};
+};
+
 } // namespace Libraries::Ajm

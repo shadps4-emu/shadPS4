@@ -60,6 +60,7 @@ public:
     virtual void Initialize(const void* buffer, u32 buffer_size) = 0;
     virtual void Reset() = 0;
     virtual void GetInfo(void* out_info) = 0;
+    virtual AjmSidebandFormat GetFormat() = 0;
     virtual std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
                                              AjmSidebandGaplessDecode& gapless,
                                              std::optional<u32> max_samples_per_channel) = 0;

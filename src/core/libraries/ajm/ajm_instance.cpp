@@ -102,6 +102,9 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         m_gapless.skipped_samples = 0;
         m_codec->Reset();
     }
+    if (job.output.p_format != nullptr) {
+        *job.output.p_format = m_codec->GetFormat();
+    }
     if (job.output.p_gapless_decode != nullptr) {
         *job.output.p_gapless_decode = m_gapless;
     }
