@@ -14,8 +14,8 @@ extern "C" {
 
 namespace Libraries::Ajm {
 
-AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format)
-    : m_format(format), m_handle(Atrac9GetHandle()) {
+AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags)
+    : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {
     ASSERT_MSG(m_handle, "Atrac9GetHandle failed");
     AjmAt9Decoder::Reset();
 }
@@ -72,15 +72,16 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     switch (m_format) {
     case AjmFormatEncoding::S16:
         ret = Atrac9Decode(m_handle, in_buf.data(), reinterpret_cast<s16*>(m_pcm_buffer.data()),
-                           &bytes_used);
+                           &bytes_used, True(m_flags & AjmAt9CodecFlags::NonInterleavedOutput));
         break;
     case AjmFormatEncoding::S32:
         ret = Atrac9DecodeS32(m_handle, in_buf.data(), reinterpret_cast<s32*>(m_pcm_buffer.data()),
-                              &bytes_used);
+                              &bytes_used, True(m_flags & AjmAt9CodecFlags::NonInterleavedOutput));
         break;
     case AjmFormatEncoding::Float:
-        ret = Atrac9DecodeF32(m_handle, in_buf.data(),
-                              reinterpret_cast<float*>(m_pcm_buffer.data()), &bytes_used);
+        ret =
+            Atrac9DecodeF32(m_handle, in_buf.data(), reinterpret_cast<float*>(m_pcm_buffer.data()),
+                            &bytes_used, True(m_flags & AjmAt9CodecFlags::NonInterleavedOutput));
         break;
     default:
         UNREACHABLE();

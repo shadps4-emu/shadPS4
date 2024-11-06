@@ -14,6 +14,12 @@ namespace Libraries::Ajm {
 
 constexpr s32 ORBIS_AJM_DEC_AT9_MAX_CHANNELS = 8;
 
+enum AjmAt9CodecFlags : u32 {
+    ParseRiffHeader = 1 << 0,
+    NonInterleavedOutput = 1 << 8,
+};
+DECLARE_ENUM_FLAG_OPERATORS(AjmAt9CodecFlags)
+
 struct AjmSidebandDecAt9CodecInfo {
     u32 super_frame_size;
     u32 frames_in_super_frame;
@@ -22,7 +28,7 @@ struct AjmSidebandDecAt9CodecInfo {
 };
 
 struct AjmAt9Decoder final : AjmCodec {
-    explicit AjmAt9Decoder(AjmFormatEncoding format);
+    explicit AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags);
     ~AjmAt9Decoder() override;
 
     void Reset() override;
@@ -45,6 +51,7 @@ private:
     }
 
     const AjmFormatEncoding m_format;
+    const AjmAt9CodecFlags m_flags;
     void* m_handle{};
     u8 m_config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
     u32 m_superframe_bytes_remain{};
