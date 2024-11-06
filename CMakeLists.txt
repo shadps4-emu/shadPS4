@@ -31,6 +31,7 @@ endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
+option(ENABLE_UPDATER "Enables the options to updater" ON)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -732,6 +733,12 @@ set(EMULATOR src/emulator.cpp
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 
+if (ENABLE_UPDATER)
+    set(UPDATER src/qt_gui/check_update.cpp
+                src/qt_gui/check_update.h
+    )
+endif()
+
 set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.h
            src/qt_gui/about_dialog.ui
@@ -739,8 +746,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/background_music_player.h
            src/qt_gui/cheats_patches.cpp
            src/qt_gui/cheats_patches.h
-           src/qt_gui/check_update.cpp
-           src/qt_gui/check_update.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -771,6 +776,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}
+           ${UPDATER}
 )
 endif()
 
@@ -843,8 +849,11 @@ else()
 endif()
 
 if (ENABLE_QT_GUI)
-   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
-   add_definitions(-DENABLE_QT_GUI)
+    target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
+    add_definitions(-DENABLE_QT_GUI)
+    if (ENABLE_UPDATER)
+        add_definitions(-DENABLE_UPDATER)
+    endif()
 endif()
 
 if (WIN32)

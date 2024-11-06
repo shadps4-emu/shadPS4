@@ -6,7 +6,9 @@
 #include <QHoverEvent>
 
 #include <common/version.h>
+#ifdef ENABLE_UPDATER
 #include "check_update.h"
+#endif
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "main_window.h"
@@ -143,6 +145,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setLogFilter(text.toStdString()); });
 
+#ifdef ENABLE_UPDATER
         connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
                 [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
 
@@ -153,6 +156,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             auto checkUpdate = new CheckUpdate(true);
             checkUpdate->exec();
         });
+#else
+        ui->updaterGroupBox->setVisible(false);
+        ui->GUIgroupBox->setMaximumSize(265, 16777215);
+#endif
 
         connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this, [](int val) {
             Config::setPlayBGM(val);
@@ -278,7 +285,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
+#ifdef ENABLE_UPDATER
         ui->updaterGroupBox->installEventFilter(this);
+#endif
         ui->GUIgroupBox->installEventFilter(this);
 
         // Input
@@ -340,6 +349,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(Config::vkValidationSyncEnabled());
     ui->rdocCheckBox->setChecked(Config::isRdocEnabled());
 
+#ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(Config::autoUpdate());
     std::string updateChannel = Config::getUpdateChannel();
     if (updateChannel != "Release" && updateChannel != "Nightly") {
@@ -350,6 +360,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         }
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+#endif
 
     for (const auto& dir : Config::getGameInstallDirs()) {
         QString path_string;
@@ -451,8 +462,10 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("logTypeGroupBox");
     } else if (elementName == "logFilter") {
         text = tr("logFilter");
+#ifdef ENABLE_UPDATER
     } else if (elementName == "updaterGroupBox") {
         text = tr("updaterGroupBox");
+#endif
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
     }
