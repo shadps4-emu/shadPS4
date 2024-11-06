@@ -7,11 +7,7 @@
 #include "core/libraries/ajm/ajm_instance.h"
 
 extern "C" {
-struct AVCodec;
-struct AVCodecContext;
-struct AVCodecParserContext;
-struct AVFrame;
-struct AVPacket;
+#include <libavcodec/avcodec.h>
 }
 
 namespace Libraries::Ajm {
@@ -54,19 +50,35 @@ struct AjmSidebandDecMp3CodecInfo {
 
 class AjmMp3Decoder : public AjmCodec {
 public:
-    explicit AjmMp3Decoder();
+    explicit AjmMp3Decoder(AjmFormatEncoding format);
     ~AjmMp3Decoder() override;
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override {}
     void GetInfo(void* out_info) override;
+    AjmSidebandFormat GetFormat() override;
     std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmSidebandGaplessDecode& gapless, u32 max_samples) override;
+                                     AjmSidebandGaplessDecode& gapless,
+                                     std::optional<u32> max_samples_per_channel) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
 
 private:
+    template <class T>
+    size_t WriteOutputSamples(AVFrame* frame, SparseOutputBuffer& output, u32 skipped_samples,
+                              u32 max_samples) {
+        const auto size = frame->ch_layout.nb_channels * frame->nb_samples * sizeof(T);
+        std::span<T> pcm_data(reinterpret_cast<T*>(frame->data[0]), size >> 1);
+        pcm_data = pcm_data.subspan(skipped_samples * frame->ch_layout.nb_channels);
+        const auto pcm_size = std::min(u32(pcm_data.size()), max_samples);
+        const auto samples_written = output.Write(pcm_data.subspan(0, pcm_size));
+        return samples_written / frame->ch_layout.nb_channels;
+    }
+
+    AVFrame* ConvertAudioFrame(AVFrame* frame);
+
+    const AjmFormatEncoding m_format;
     const AVCodec* m_codec = nullptr;
     AVCodecContext* m_codec_context = nullptr;
     AVCodecParserContext* m_parser = nullptr;

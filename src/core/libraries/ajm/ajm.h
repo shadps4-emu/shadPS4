@@ -137,8 +137,11 @@ union AjmInstanceFlags {
         u64 codec : 28;
     };
 };
+static_assert(sizeof(AjmInstanceFlags) == 8);
 
 struct AjmDecMp3ParseFrame;
+
+u32 GetChannelMask(u32 num_channels);
 
 int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id);
 int PS4_SYSV_ABI sceAjmBatchErrorDump();

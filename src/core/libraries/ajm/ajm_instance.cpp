@@ -9,14 +9,28 @@
 
 namespace Libraries::Ajm {
 
+constexpr int ORBIS_AJM_RESULT_NOT_INITIALIZED = 0x00000001;
+constexpr int ORBIS_AJM_RESULT_INVALID_DATA = 0x00000002;
+constexpr int ORBIS_AJM_RESULT_INVALID_PARAMETER = 0x00000004;
+constexpr int ORBIS_AJM_RESULT_PARTIAL_INPUT = 0x00000008;
+constexpr int ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM = 0x00000010;
+constexpr int ORBIS_AJM_RESULT_STREAM_CHANGE = 0x00000020;
+constexpr int ORBIS_AJM_RESULT_TOO_MANY_CHANNELS = 0x00000040;
+constexpr int ORBIS_AJM_RESULT_UNSUPPORTED_FLAG = 0x00000080;
+constexpr int ORBIS_AJM_RESULT_SIDEBAND_TRUNCATED = 0x00000100;
+constexpr int ORBIS_AJM_RESULT_PRIORITY_PASSED = 0x00000200;
+constexpr int ORBIS_AJM_RESULT_CODEC_ERROR = 0x40000000;
+constexpr int ORBIS_AJM_RESULT_FATAL = 0x80000000;
+
 AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_flags(flags) {
     switch (codec_type) {
     case AjmCodecType::At9Dec: {
-        m_codec = std::make_unique<AjmAt9Decoder>();
+        m_codec = std::make_unique<AjmAt9Decoder>(AjmFormatEncoding(flags.format),
+                                                  AjmAt9CodecFlags(flags.codec));
         break;
     }
     case AjmCodecType::Mp3Dec: {
-        m_codec = std::make_unique<AjmMp3Decoder>();
+        m_codec = std::make_unique<AjmMp3Decoder>(AjmFormatEncoding(flags.format));
         break;
     }
     default:
@@ -62,9 +76,10 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         auto in_size = in_buf.size();
         auto out_size = out_buf.Size();
         while (!in_buf.empty() && !out_buf.IsEmpty() && !IsGaplessEnd()) {
-            const u32 samples_remain = m_gapless.total_samples != 0
-                                           ? m_gapless.total_samples - m_gapless_samples
-                                           : std::numeric_limits<u32>::max();
+            const auto samples_remain =
+                m_gapless.total_samples != 0
+                    ? std::optional<u32>{m_gapless.total_samples - m_gapless_samples}
+                    : std::optional<u32>{};
             const auto [nframes, nsamples] =
                 m_codec->ProcessData(in_buf, out_buf, m_gapless, samples_remain);
             frames_decoded += nframes;
@@ -86,6 +101,9 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         m_gapless_samples = 0;
         m_gapless.skipped_samples = 0;
         m_codec->Reset();
+    }
+    if (job.output.p_format != nullptr) {
+        *job.output.p_format = m_codec->GetFormat();
     }
     if (job.output.p_gapless_decode != nullptr) {
         *job.output.p_gapless_decode = m_gapless;

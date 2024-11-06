@@ -13,7 +13,30 @@
 
 namespace Libraries::Ajm {
 
+constexpr int ORBIS_AJM_CHANNELMASK_MONO = 0x0004;
+constexpr int ORBIS_AJM_CHANNELMASK_STEREO = 0x0003;
+constexpr int ORBIS_AJM_CHANNELMASK_QUAD = 0x0033;
+constexpr int ORBIS_AJM_CHANNELMASK_5POINT1 = 0x060F;
+constexpr int ORBIS_AJM_CHANNELMASK_7POINT1 = 0x063F;
+
 static std::unique_ptr<AjmContext> context{};
+
+u32 GetChannelMask(u32 num_channels) {
+    switch (num_channels) {
+    case 1:
+        return ORBIS_AJM_CHANNELMASK_MONO;
+    case 2:
+        return ORBIS_AJM_CHANNELMASK_STEREO;
+    case 4:
+        return ORBIS_AJM_CHANNELMASK_QUAD;
+    case 6:
+        return ORBIS_AJM_CHANNELMASK_5POINT1;
+    case 8:
+        return ORBIS_AJM_CHANNELMASK_7POINT1;
+    default:
+        UNREACHABLE();
+    }
+}
 
 int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id) {
     LOG_INFO(Lib_Ajm, "called context_id = {} batch_id = {}", context_id, batch_id);

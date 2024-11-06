@@ -149,7 +149,6 @@ s32 AjmContext::InstanceCreate(AjmCodecType codec_type, AjmInstanceFlags flags, 
     if (!IsRegistered(codec_type)) {
         return ORBIS_AJM_ERROR_CODEC_NOT_REGISTERED;
     }
-    ASSERT_MSG(flags.format == 0, "Only signed 16-bit PCM output is supported currently!");
     std::optional<u32> opt_index;
     {
         std::unique_lock lock(instances_mutex);
