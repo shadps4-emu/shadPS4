@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Shadps4
+Name=shadPS4
 Exec=shadps4
 Terminal=false
 Type=Application
 Icon=shadps4
-Comment=shadps4 emulator
+Comment=shadPS4 Emulator
 Categories=Game;
 StartupWMClass=shadps4;
