@@ -104,7 +104,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
 
         CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
-        pPictureInfoOut.codecType = 1;
+        pPictureInfoOut.codecType = 0;
         pPictureInfoOut.frameWidth = frame->width;
         pPictureInfoOut.frameHeight = frame->height;
         pPictureInfoOut.framePitch = frame->linesize[0];
@@ -149,7 +149,7 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
 
         CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
-        pPictureInfoOut.codecType = 1;
+        pPictureInfoOut.codecType = 0;
         pPictureInfoOut.frameWidth = frame->width;
         pPictureInfoOut.frameHeight = frame->height;
         pPictureInfoOut.framePitch = frame->linesize[0];
