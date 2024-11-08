@@ -44,6 +44,7 @@ int PS4_SYSV_ABI sceVideodecDecode(OrbisVideodecCtrl* pCtrlIn,
         pFrameBufferInOut->thisSize != sizeof(OrbisVideodecFrameBuffer)) {
         return ORBIS_VIDEODEC_ERROR_STRUCT_SIZE;
     }
+
     VdecDecoder* decoder = (VdecDecoder*)pCtrlIn->handle;
     if (!decoder) {
         return ORBIS_VIDEODEC_ERROR_HANDLE;
@@ -53,6 +54,7 @@ int PS4_SYSV_ABI sceVideodecDecode(OrbisVideodecCtrl* pCtrlIn,
 
 int PS4_SYSV_ABI sceVideodecDeleteDecoder(OrbisVideodecCtrl* pCtrlIn) {
     LOG_INFO(Lib_Videodec, "(STUBBED) called");
+
     VdecDecoder* decoder = (VdecDecoder*)pCtrlIn->handle;
     if (!decoder) {
         return ORBIS_VIDEODEC_ERROR_HANDLE;
@@ -73,6 +75,7 @@ int PS4_SYSV_ABI sceVideodecFlush(OrbisVideodecCtrl* pCtrlIn,
         pPictureInfoOut->thisSize != sizeof(OrbisVideodecPictureInfo)) {
         return ORBIS_VIDEODEC_ERROR_STRUCT_SIZE;
     }
+
     VdecDecoder* decoder = (VdecDecoder*)pCtrlIn->handle;
     if (!decoder) {
         return ORBIS_VIDEODEC_ERROR_HANDLE;
@@ -112,6 +115,7 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
 
 int PS4_SYSV_ABI sceVideodecReset(OrbisVideodecCtrl* pCtrlIn) {
     LOG_INFO(Lib_Videodec, "(STUBBED) called");
+
     VdecDecoder* decoder = (VdecDecoder*)pCtrlIn->handle;
     decoder->Reset();
     return ORBIS_OK;

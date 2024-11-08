@@ -156,6 +156,16 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
 
         pPictureInfoOut.isValid = true;
         pPictureInfoOut.isErrorPic = false;
+
+        u32 width = Common::AlignUp((u32)frame->width, 16);
+        u32 height = Common::AlignUp((u32)frame->height, 16);
+        pPictureInfoOut.codec.avc.frameCropLeftOffset = u32(frame->crop_left);
+        pPictureInfoOut.codec.avc.frameCropRightOffset =
+            u32(frame->crop_right + (width - frame->width));
+        pPictureInfoOut.codec.avc.frameCropTopOffset = u32(frame->crop_top);
+        pPictureInfoOut.codec.avc.frameCropBottomOffset =
+            u32(frame->crop_bottom + (height - frame->height));
+        // TODO maybe more avc?
     }
 
     av_frame_free(&frame);
