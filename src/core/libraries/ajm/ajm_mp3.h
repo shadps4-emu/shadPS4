@@ -8,6 +8,7 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+struct SwrContext;
 }
 
 namespace Libraries::Ajm {
@@ -82,6 +83,7 @@ private:
     const AVCodec* m_codec = nullptr;
     AVCodecContext* m_codec_context = nullptr;
     AVCodecParserContext* m_parser = nullptr;
+    SwrContext* m_swr_context = nullptr;
 };
 
 } // namespace Libraries::Ajm
