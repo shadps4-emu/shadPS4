@@ -20,17 +20,33 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
+    // Check if an ELF or eboot.bin path was passed as a command line argument
+    bool has_command_line_argument = argc > 1;
+
+    if (has_command_line_argument) {
+        for (int i = 1; i < argc; i++) {
+            std::string curArg = argv[i];
+            if (curArg == "-p" && i + 1 < argc) {
+                std::string patchFile = argv[i + 1];
+                MemoryPatcher::patchFile = patchFile;
+                i++;  // Skip the next argument as it’s the patch file
+            }
+        }
+        // Run the emulator directly with the provided argument
+        Core::Emulator emulator;
+        emulator.Run(argv[1]);
+        return 0;
+    }
+
+    // Initialize QApplication and run the GUI if no command-line argument is provided
     QApplication a(argc, argv);
 
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
-    // Check if elf or eboot.bin path was passed as a command line argument
-    bool has_command_line_argument = argc > 1;
-
     // Check if the game install directory is set
-    if (Config::getGameInstallDirs().empty() && !has_command_line_argument) {
+    if (Config::getGameInstallDirs().empty()) {
         GameInstallDialog dlg;
         dlg.exec();
     }
@@ -42,19 +58,7 @@ int main(int argc, char* argv[]) {
     MainWindow* m_main_window = new MainWindow(nullptr);
     m_main_window->Init();
 
-    // Check for command line arguments
-    if (has_command_line_argument) {
-        Core::Emulator emulator;
-        for (int i = 0; i < argc; i++) {
-            std::string curArg = argv[i];
-            if (curArg == "-p") {
-                std::string patchFile = argv[i + 1];
-                MemoryPatcher::patchFile = patchFile;
-            }
-        }
-        emulator.Run(argv[1]);
-    }
-
     // Run the Qt application
     return a.exec();
 }
+
