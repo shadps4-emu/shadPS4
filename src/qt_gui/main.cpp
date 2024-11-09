@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
             if (curArg == "-p" && i + 1 < argc) {
                 std::string patchFile = argv[i + 1];
                 MemoryPatcher::patchFile = patchFile;
-                i++;  // Skip the next argument as it’s the patch file
+                i++; // Skip the next argument as it’s the patch file
             }
         }
         // Run the emulator directly with the provided argument
@@ -61,4 +61,3 @@ int main(int argc, char* argv[]) {
     // Run the Qt application
     return a.exec();
 }
-
