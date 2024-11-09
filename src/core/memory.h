@@ -133,6 +133,10 @@ public:
         rasterizer = rasterizer_;
     }
 
+    AddressSpace& GetAddressSpace() {
+        return impl;
+    }
+
     u64 GetTotalDirectSize() const {
         return total_direct_size;
     }

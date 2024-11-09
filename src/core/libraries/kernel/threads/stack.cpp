@@ -22,8 +22,6 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         return 0;
     }
 
-    VAddr stackaddr;
-
     /*
      * Round up stack size to nearest multiple of _thr_page_size so
      * that mmap() * will work.  If the stack size is not an even
@@ -83,7 +81,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     }
 
     /* Allocate a new stack. */
-    stackaddr = last_stack - stacksize - guardsize;
+    VAddr stackaddr = last_stack - stacksize - guardsize;
 
     /*
      * Even if stack allocation fails, we don't want to try to

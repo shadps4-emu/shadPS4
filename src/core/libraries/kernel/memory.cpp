@@ -5,6 +5,7 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/scope_exit.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -145,11 +146,6 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
                                                s64 directMemoryStart, u64 alignment,
                                                const char* name) {
-    LOG_INFO(Kernel_Vmm,
-             "addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, "
-             "alignment = {:#x}",
-             fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
-
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
@@ -168,6 +164,13 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    SCOPE_EXIT {
+        LOG_INFO(Kernel_Vmm,
+                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, "
+                 "alignment = {:#x}",
+                 in_addr, fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
+    };
+
     auto* memory = Core::Memory::Instance();
     return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
                              false, directMemoryStart, alignment);
@@ -201,13 +204,13 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    SCOPE_EXIT {
+        LOG_INFO(Kernel_Vmm, "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
+                 in_addr, fmt::ptr(*addr_in_out), len, prot, flags);
+    };
     auto* memory = Core::Memory::Instance();
-    const int ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
-                                      Core::VMAType::Flexible, name);
-
-    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
-             fmt::ptr(*addr_in_out), len, prot, flags);
-    return ret;
+    return memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
+                             Core::VMAType::Flexible, name);
 }
 
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
