@@ -24,8 +24,8 @@ namespace Libraries::Videodec {
 static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
     u32 width = Common::AlignUp((u32)src.width, 16);
     u32 height = Common::AlignUp((u32)src.height, 16);
-    std::memcpy(dst, src.data[0], width * height);
-    std::memcpy(dst + (width * height), src.data[1], (width * height) / 2);
+    std::memcpy(dst, src.data[0], src.width * src.height);
+    std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
 }
 
 VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
@@ -85,7 +85,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
         av_packet_free(&packet);
         return ORBIS_VIDEODEC_ERROR_API_FAIL;
     }
-
+    int frameCount = 0;
     while (true) {
         ret = avcodec_receive_frame(mCodecContext, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
@@ -113,6 +113,10 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
 
         pPictureInfoOut.isValid = true;
         pPictureInfoOut.isErrorPic = false;
+        frameCount++;
+        if (frameCount > 1) {
+            LOG_WARNING(Lib_Videodec, "We have more than 1 frame");
+        }
     }
 
     av_packet_free(&packet);
@@ -184,8 +188,8 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     nv12_frame->pts = frame.pts;
     nv12_frame->pkt_dts = frame.pkt_dts < 0 ? 0 : frame.pkt_dts;
     nv12_frame->format = AV_PIX_FMT_NV12;
-    nv12_frame->width = Common::AlignUp((u32)frame.width, 16);
-    nv12_frame->height = Common::AlignUp((u32)frame.height, 16);
+    nv12_frame->width = frame.width;
+    nv12_frame->height = frame.height;
     nv12_frame->sample_aspect_ratio = frame.sample_aspect_ratio;
     nv12_frame->crop_top = frame.crop_top;
     nv12_frame->crop_bottom = frame.crop_bottom;
