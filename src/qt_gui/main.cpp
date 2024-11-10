@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
              std::cout << "Usage: emulator [options]\n"
                           "Options:\n"
                           "  No arguments: Opens the GUI.\n"
-                          "  -g, --game <path|ID>       Specify game path or ID to launch\n"
+                          "  -g, --game <path|ID>       Specify <eboot.bin or elf path> or <game ID (CUSAXXXXX)> to launch\n"
                           "  -p, --patch <patch_file>   Apply specified patch file\n"
                           "  -s, --show-gui             Show the GUI\n"
                           "  -h, --help                 Display this help message\n";
