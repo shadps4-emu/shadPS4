@@ -18,8 +18,6 @@
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
-
-
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -37,51 +35,54 @@ int main(int argc, char* argv[]) {
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
-        {"-h", [&](int&) {
-            std::cout << "Usage: emulator [options]\n"
-                            "Options:\n"
-                            "  No arguments: Opens the GUI.\n"
-                            "  -g, --game <path|ID>       Specify game path or ID to launch\n"
-                            "  -p, --patch <patch_file>   Apply specified patch file\n"
-                            "  -s, --show-gui             Show the GUI\n"
-                            "  -h, --help                 Display this help message\n";
-            exit(0);
-        }},
+        {"-h",
+         [&](int&) {
+             std::cout << "Usage: emulator [options]\n"
+                          "Options:\n"
+                          "  No arguments: Opens the GUI.\n"
+                          "  -g, --game <path|ID>       Specify game path or ID to launch\n"
+                          "  -p, --patch <patch_file>   Apply specified patch file\n"
+                          "  -s, --show-gui             Show the GUI\n"
+                          "  -h, --help                 Display this help message\n";
+             exit(0);
+         }},
         {"--help", [&](int& i) { arg_map["-h"](i); }}, // Redirect --help to -h
 
         {"-s", [&](int&) { show_gui = true; }},
         {"--show-gui", [&](int& i) { arg_map["-s"](i); }},
 
-        {"-g", [&](int& i) {
-            if (i + 1 < argc) {
-                gamePath = argv[++i];
-                has_game_argument = true;
-            } else {
-                std::cerr << "Error: Missing argument for -g/--game\n";
-                exit(1);
-            }
-        }},
+        {"-g",
+         [&](int& i) {
+             if (i + 1 < argc) {
+                 gamePath = argv[++i];
+                 has_game_argument = true;
+             } else {
+                 std::cerr << "Error: Missing argument for -g/--game\n";
+                 exit(1);
+             }
+         }},
         {"--game", [&](int& i) { arg_map["-g"](i); }},
 
-        {"-p", [&](int& i) {
-            if (i + 1 < argc) {
-                MemoryPatcher::patchFile = argv[++i];
-            } else {
-                std::cerr << "Error: Missing argument for -p\n";
-                exit(1);
-            }
-        }},
+        {"-p",
+         [&](int& i) {
+             if (i + 1 < argc) {
+                 MemoryPatcher::patchFile = argv[++i];
+             } else {
+                 std::cerr << "Error: Missing argument for -p\n";
+                 exit(1);
+             }
+         }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
     };
 
     // Parse command-line arguments using the map
     for (int i = 1; i < argc; ++i) {
-        std::string curArg = argv[i];
-        auto it = arg_map.find(curArg);
+        std::string cur_arg = argv[i];
+        auto it = arg_map.find(cur_arg);
         if (it != arg_map.end()) {
-            it->second(i);  // Call the associated lambda function
+            it->second(i); // Call the associated lambda function
         } else {
-            std::cerr << "Unknown argument: " << curArg << "\n";
+            std::cerr << "Unknown argument: " << cur_arg << "\n";
             return 1;
         }
     }
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
 
     // Initialize the main window
     MainWindow* m_main_window = new MainWindow(nullptr);
-    if((has_command_line_argument && show_gui) || !has_command_line_argument) {
+    if ((has_command_line_argument && show_gui) || !has_command_line_argument) {
         m_main_window->Init();
     }
 
@@ -130,7 +131,6 @@ int main(int argc, char* argv[]) {
             return 0; // Exit after running the emulator without showing the GUI
         }
     }
-
 
     // Show the main window and run the Qt application
     m_main_window->show();
