@@ -22,8 +22,10 @@ av_always_inline std::string av_err2string(int errnum) {
 namespace Libraries::Videodec {
 
 static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + (src.width * src.height), src.data[1], (src.width * src.height) / 2);
+    u32 width = Common::AlignUp((u32)src.width, 16);
+    u32 height = Common::AlignUp((u32)src.height, 16);
+    std::memcpy(dst, src.data[0], width * height);
+    std::memcpy(dst + (width * height), src.data[1], (width * height) / 2);
 }
 
 VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
