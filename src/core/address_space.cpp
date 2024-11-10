@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <boost/icl/separate_interval_set.hpp>
+#include <map>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -277,13 +277,14 @@ struct AddressSpace::Impl {
             }
 
             it_prev->second.size = total_size;
-            it = regions.erase(it);
+            regions.erase(it);
+            it = it_prev;
         }
 
         // Check if a placeholder exists right after us.
         auto it_next = std::next(it);
         if (it_next != regions.end() && !it_next->second.is_mapped) {
-            const size_t total_size = size + it_next->second.size;
+            const size_t total_size = it->second.size + it_next->second.size;
             if (!VirtualFreeEx(process, LPVOID(it->first), total_size, MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
