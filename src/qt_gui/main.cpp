@@ -37,14 +37,16 @@ int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
         {"-h",
          [&](int&) {
-             std::cout << "Usage: emulator [options]\n"
+             std::cout << "Usage: shadps4 [options]\n"
                           "Options:\n"
                           "  No arguments: Opens the GUI.\n"
-                          "  -g, --game <path|ID>       Specify <eboot.bin or elf path> or <game "
-                          "ID (CUSAXXXXX)> to launch\n"
-                          "  -p, --patch <patch_file>   Apply specified patch file\n"
-                          "  -s, --show-gui             Show the GUI\n"
-                          "  -h, --help                 Display this help message\n";
+                          "  -g, --game <path|ID>          Specify <eboot.bin or elf path> or "
+                          "<game ID (CUSAXXXXX)> to launch\n"
+                          "  -p, --patch <patch_file>      Apply specified patch file\n"
+                          "  -s, --show-gui                Show the GUI\n"
+                          "  -f, --fullscreen <true|false> Specify window initial fullscreen "
+                          "state. Does not overwrite the config file."
+                          "  -h, --help                    Display this help message\n";
              exit(0);
          }},
         {"--help", [&](int& i) { arg_map["-h"](i); }}, // Redirect --help to -h
@@ -77,7 +79,8 @@ int main(int argc, char* argv[]) {
         {"-f",
          [&](int& i) {
              if (++i >= argc) {
-                 std::cerr << "Error: Missing argument for -f/--fullscreen\n";
+                 std::cerr
+                     << "Error: Invalid argument for -f/--fullscreen. Use 'true' or 'false'.\n";
                  exit(1);
              }
              std::string f_param(argv[i]);

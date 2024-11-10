@@ -29,9 +29,11 @@ int main(int argc, char* argv[]) {
          [&](int&) {
              std::cout << "Usage: shadps4 [options] <elf or eboot.bin path>\n"
                           "Options:\n"
-                          "  -g, --game <path|ID>       Specify game path to launch\n"
-                          "  -p, --patch <patch_file>   Apply specified patch file\n"
-                          "  -h, --help                 Display this help message\n";
+                          "  -g, --game <path|ID>          Specify game path to launch\n"
+                          "  -p, --patch <patch_file>      Apply specified patch file\n"
+                          "  -f, --fullscreen <true|false> Specify window initial fullscreen "
+                          "state. Does not overwrite the config file."
+                          "  -h, --help                    Display this help message\n";
              exit(0);
          }},
         {"--help", [&](int& i) { arg_map["-h"](i); }},
