@@ -7,6 +7,7 @@
 #include "unordered_map"
 
 #include <fmt/core.h>
+#include "common/config.h"
 #include "common/memory_patcher.h"
 #include "emulator.h"
 
@@ -57,6 +58,27 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
+        {"-f",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for -f/--fullscreen\n";
+                 exit(1);
+             }
+             std::string f_param(argv[i]);
+             bool is_fullscreen;
+             if (f_param == "true") {
+                 is_fullscreen = true;
+             } else if (f_param == "false") {
+                 is_fullscreen = false;
+             } else {
+                 std::cerr
+                     << "Error: Invalid argument for -f/--fullscreen. Use 'true' or 'false'.\n";
+                 exit(1);
+             }
+             // Set fullscreen mode without saving it to config file
+             Config::setFullscreenMode(is_fullscreen);
+         }},
+        {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
     };
 
     if (argc == 1) {
@@ -76,13 +98,18 @@ int main(int argc, char* argv[]) {
             game_path = argv[i];
             has_game_argument = true;
         } else {
-            std::cerr << "Unknown argument: " << cur_arg << "\n";
+            std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
         }
     }
 
+    if (!has_game_argument) {
+        std::cerr << "Error: Please provide a game path or ID.\n";
+        exit(1);
+    }
+
     // Check if the game path or ID exists
-    if (!has_game_argument || !std::filesystem::exists(game_path)) {
+    if (!std::filesystem::exists(game_path)) {
         std::cerr << "Error: Game file not found\n";
         return -1;
     }

@@ -74,6 +74,27 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
+        {"-f",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for -f/--fullscreen\n";
+                 exit(1);
+             }
+             std::string f_param(argv[i]);
+             bool is_fullscreen;
+             if (f_param == "true") {
+                 is_fullscreen = true;
+             } else if (f_param == "false") {
+                 is_fullscreen = false;
+             } else {
+                 std::cerr
+                     << "Error: Invalid argument for -f/--fullscreen. Use 'true' or 'false'.\n";
+                 exit(1);
+             }
+             // Set fullscreen mode without saving it to config file
+             Config::setFullscreenMode(is_fullscreen);
+         }},
+        {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
     };
 
     // Parse command-line arguments using the map
@@ -83,7 +104,7 @@ int main(int argc, char* argv[]) {
         if (it != arg_map.end()) {
             it->second(i); // Call the associated lambda function
         } else {
-            std::cerr << "Unknown argument: " << cur_arg << "\n";
+            std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
         }
     }
@@ -101,6 +122,11 @@ int main(int argc, char* argv[]) {
     MainWindow* m_main_window = new MainWindow(nullptr);
     if ((has_command_line_argument && show_gui) || !has_command_line_argument) {
         m_main_window->Init();
+    }
+
+    if (has_command_line_argument && !has_game_argument) {
+        std::cerr << "Error: Please provide a game path or ID.\n";
+        exit(1);
     }
 
     // Process game path or ID if provided
