@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "iostream"
+#include "unordered_map"
+
 #include "common/config.h"
 #include "common/memory_patcher.h"
 #include "core/file_sys/fs.h"
@@ -15,38 +18,76 @@
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
+
+
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    // Check if an ELF or eboot.bin path was passed as a command line argument
-    bool has_command_line_argument = argc > 1;
-
-    if (has_command_line_argument) {
-        for (int i = 1; i < argc; i++) {
-            std::string curArg = argv[i];
-            if (curArg == "-p" && i + 1 < argc) {
-                std::string patchFile = argv[i + 1];
-                MemoryPatcher::patchFile = patchFile;
-                i++; // Skip the next argument as it’s the patch file
-            }
-        }
-        // Run the emulator directly with the provided argument
-        Core::Emulator emulator;
-        emulator.Run(argv[1]);
-        return 0;
-    }
-
-    // Initialize QApplication and run the GUI if no command-line argument is provided
     QApplication a(argc, argv);
 
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
-    // Check if the game install directory is set
-    if (Config::getGameInstallDirs().empty()) {
+    bool has_command_line_argument = argc > 1;
+    bool show_gui = false, has_game_argument = false;
+    std::string gamePath;
+
+    // Map of argument strings to lambda functions
+    std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
+        {"-h", [&](int&) {
+            std::cout << "Usage: emulator [options]\n"
+                            "Options:\n"
+                            "  No arguments: Opens the GUI.\n"
+                            "  -g, --game <path|ID>       Specify game path or ID to launch\n"
+                            "  -p, --patch <patch_file>   Apply specified patch file\n"
+                            "  -s, --show-gui             Show the GUI\n"
+                            "  -h, --help                 Display this help message\n";
+            exit(0);
+        }},
+        {"--help", [&](int& i) { arg_map["-h"](i); }}, // Redirect --help to -h
+
+        {"-s", [&](int&) { show_gui = true; }},
+        {"--show-gui", [&](int& i) { arg_map["-s"](i); }},
+
+        {"-g", [&](int& i) {
+            if (i + 1 < argc) {
+                gamePath = argv[++i];
+                has_game_argument = true;
+            } else {
+                std::cerr << "Error: Missing argument for -g/--game\n";
+                exit(1);
+            }
+        }},
+        {"--game", [&](int& i) { arg_map["-g"](i); }},
+
+        {"-p", [&](int& i) {
+            if (i + 1 < argc) {
+                MemoryPatcher::patchFile = argv[++i];
+            } else {
+                std::cerr << "Error: Missing argument for -p\n";
+                exit(1);
+            }
+        }},
+        {"--patch", [&](int& i) { arg_map["-p"](i); }},
+    };
+
+    // Parse command-line arguments using the map
+    for (int i = 1; i < argc; ++i) {
+        std::string curArg = argv[i];
+        auto it = arg_map.find(curArg);
+        if (it != arg_map.end()) {
+            it->second(i);  // Call the associated lambda function
+        } else {
+            std::cerr << "Unknown argument: " << curArg << "\n";
+            return 1;
+        }
+    }
+
+    // If no game directory is set and no command line argument, prompt for it
+    if (Config::getGameInstallDirs().empty() && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }
@@ -56,8 +97,42 @@ int main(int argc, char* argv[]) {
 
     // Initialize the main window
     MainWindow* m_main_window = new MainWindow(nullptr);
-    m_main_window->Init();
+    if((has_command_line_argument && show_gui) || !has_command_line_argument) {
+        m_main_window->Init();
+    }
 
-    // Run the Qt application
+    // Process game path or ID if provided
+    if (has_game_argument) {
+        std::filesystem::path game_file_path(gamePath);
+
+        // Check if the provided path is a valid file
+        if (!std::filesystem::exists(game_file_path)) {
+            // If not a file, treat it as a game ID and search in install directories
+            bool game_found = false;
+            for (const auto& install_dir : Config::getGameInstallDirs()) {
+                auto potential_game_path = install_dir / gamePath / "eboot.bin";
+                if (std::filesystem::exists(potential_game_path)) {
+                    game_file_path = potential_game_path;
+                    game_found = true;
+                    break;
+                }
+            }
+            if (!game_found) {
+                std::cerr << "Error: Game ID or file path not found: " << gamePath << std::endl;
+                return 1;
+            }
+        }
+
+        // Run the emulator with the resolved game path
+        Core::Emulator emulator;
+        emulator.Run(game_file_path.string());
+        if (!show_gui) {
+            return 0; // Exit after running the emulator without showing the GUI
+        }
+    }
+
+
+    // Show the main window and run the Qt application
+    m_main_window->show();
     return a.exec();
 }
