@@ -101,11 +101,6 @@
 			<translation>Utwórz skrót</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Otwórz katalog gry</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Kody / poprawki</translation>
@@ -121,9 +116,29 @@
 			<translation>Menedżer trofeów</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Otwórz Folder...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Otwórz Katalog Gry</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Otwórz Folder Danych Zapisów</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Otwórz Folder Dziennika</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Kopiuj informacje</translation>
+			<source>Copy info...</source>
+			<translation>Kopiuj informacje...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

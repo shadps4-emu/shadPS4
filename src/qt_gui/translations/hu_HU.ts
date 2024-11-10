@@ -101,11 +101,6 @@
 			<translation>Parancsikon Létrehozása</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="40"/>
-			<source>Open Game Folder</source>
-			<translation>Játék Mappa Megnyitása</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Csalások / Javítások</translation>
@@ -121,9 +116,29 @@
 			<translation>Trófeák Megtekintése</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Mappa megnyitása...</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
-			<source>Copy info</source>
-			<translation>Információ Másolása</translation>
+			<source>Open Game Folder</source>
+			<translation>Játék Mappa Megnyitása</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Mentési adatok mappa megnyitása</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Napló mappa megnyitása</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Copy info...</source>
+			<translation>Információ Másolása...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>

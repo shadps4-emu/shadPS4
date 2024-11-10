@@ -101,11 +101,6 @@
 			<translation>Kısayol Oluştur</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Oyun Klasörünü Aç</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Hileler / Yamanlar</translation>
@@ -121,9 +116,29 @@
 			<translation>Kupa Görüntüleyici</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Klasörü Aç...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Oyun Klasörünü Aç</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Kaydetme Verileri Klasörünü Aç</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Log Klasörünü Aç</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Bilgiyi Kopyala</translation>
+			<source>Copy info...</source>
+			<translation>Bilgiyi Kopyala...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

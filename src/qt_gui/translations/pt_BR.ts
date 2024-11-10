@@ -101,11 +101,6 @@
 			<translation>Criar Atalho</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Abrir Pasta do Jogo</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Cheats / Patches</translation>
@@ -121,9 +116,29 @@
 			<translation>Visualizador de Troféu</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Abrir Pasta...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Abrir Pasta do Jogo</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Abrir Pasta de Save</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Abrir Pasta de Log</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Copiar informação</translation>
+			<source>Copy info...</source>
+			<translation>Copiar informação...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

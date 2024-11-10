@@ -101,11 +101,6 @@
 			<translation>Створити Ярлик</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Відкрити папку з грою</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Чити та Патчі</translation>
@@ -121,9 +116,29 @@
 			<translation>Перегляд трофеїв</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Відкрити Папку...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Відкрити папку з грою</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Відкрити Папку Збережених Даних</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Відкрити Папку Логів</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Копіювати інформацію</translation>
+			<source>Copy info...</source>
+			<translation>Копіювати інформацію...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>
