@@ -101,11 +101,6 @@
 			<translation>إنشاء اختصار</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>فتح مجلد اللعبة</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>الغش / التصحيحات</translation>
@@ -121,9 +116,29 @@
 			<translation>عارض الجوائز</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>فتح المجلد...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>فتح مجلد اللعبة</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>فتح مجلد بيانات الحفظ</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>فتح مجلد السجل</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>نسخ المعلومات</translation>
+			<source>Copy info...</source>
+			<translation>...نسخ المعلومات</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>
