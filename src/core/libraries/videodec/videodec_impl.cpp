@@ -136,6 +136,7 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
         return ORBIS_VIDEODEC_ERROR_API_FAIL;
     }
 
+    int frameCount = 0;
     while (true) {
         int ret = avcodec_receive_frame(mCodecContext, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
@@ -172,6 +173,10 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
         pPictureInfoOut.codec.avc.frameCropBottomOffset =
             u32(frame->crop_bottom + (height - frame->height));
         // TODO maybe more avc?
+
+        if (frameCount > 1) {
+            LOG_WARNING(Lib_Videodec, "We have more than 1 frame");
+        }
     }
 
     av_frame_free(&frame);
