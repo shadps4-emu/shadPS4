@@ -107,8 +107,8 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
         CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
         pPictureInfoOut.codecType = 0;
-        pPictureInfoOut.frameWidth = frame->width;
-        pPictureInfoOut.frameHeight = frame->height;
+        pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
+        pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
         pPictureInfoOut.framePitch = frame->linesize[0];
 
         pPictureInfoOut.isValid = true;
@@ -152,8 +152,8 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
         CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
         pPictureInfoOut.codecType = 0;
-        pPictureInfoOut.frameWidth = frame->width;
-        pPictureInfoOut.frameHeight = frame->height;
+        pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
+        pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
         pPictureInfoOut.framePitch = frame->linesize[0];
 
         pPictureInfoOut.isValid = true;
@@ -184,8 +184,8 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     nv12_frame->pts = frame.pts;
     nv12_frame->pkt_dts = frame.pkt_dts < 0 ? 0 : frame.pkt_dts;
     nv12_frame->format = AV_PIX_FMT_NV12;
-    nv12_frame->width = frame.width;
-    nv12_frame->height = frame.height;
+    nv12_frame->width = Common::AlignUp((u32)frame.width, 16);
+    nv12_frame->height = Common::AlignUp((u32)frame.height, 16);
     nv12_frame->sample_aspect_ratio = frame.sample_aspect_ratio;
     nv12_frame->crop_top = frame.crop_top;
     nv12_frame->crop_bottom = frame.crop_bottom;
