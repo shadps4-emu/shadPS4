@@ -6,10 +6,10 @@
 #include "core/file_sys/file.h"
 
 #ifdef _WIN64
-#include "common/ntapi.h"
 #include <io.h>
 #include <share.h>
 #include <windows.h>
+#include "common/ntapi.h"
 #endif
 
 namespace Core::FileSys {
@@ -27,7 +27,8 @@ int File::Open(const std::filesystem::path& path, Common::FS::FileAccessMode f_a
     } else {
         UNREACHABLE();
     }
-    handle = CreateFileW(path.native().c_str(), access, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    handle = CreateFileW(path.native().c_str(), access, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                         FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
         return ENOENT;
     }

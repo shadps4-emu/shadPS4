@@ -5,8 +5,8 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
-#include "common/scope_exit.h"
 #include "common/logging/log.h"
+#include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
@@ -166,7 +166,8 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     SCOPE_EXIT {
         LOG_INFO(Kernel_Vmm,
-                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, "
+                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
+                 "directMemoryStart = {:#x}, "
                  "alignment = {:#x}",
                  in_addr, fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
     };
@@ -205,7 +206,8 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     SCOPE_EXIT {
-        LOG_INFO(Kernel_Vmm, "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
+        LOG_INFO(Kernel_Vmm,
+                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
                  in_addr, fmt::ptr(*addr_in_out), len, prot, flags);
     };
     auto* memory = Core::Memory::Instance();

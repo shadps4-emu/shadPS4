@@ -103,7 +103,7 @@ struct AddressSpace::Impl {
         const uintptr_t system_reserved_addr = reinterpret_cast<uintptr_t>(system_reserved_base);
         const uintptr_t user_addr = reinterpret_cast<uintptr_t>(user_base);
         regions.emplace(system_managed_addr,
-                             MemoryRegion{system_managed_addr, virtual_size - reduction, false});
+                        MemoryRegion{system_managed_addr, virtual_size - reduction, false});
 
         // Allocate backing file that represents the total physical memory.
         backing_handle =
@@ -157,8 +157,7 @@ struct AddressSpace::Impl {
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
                 ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot,
-                                     nullptr, 0);
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
             }
         } else {
             ptr =
@@ -211,7 +210,8 @@ struct AddressSpace::Impl {
                        region_size, size);
 
             // Split the placeholder.
-            if (!VirtualFreeEx(process, LPVOID(address), size, MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
+            if (!VirtualFreeEx(process, LPVOID(address), size,
+                               MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
                 UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
                 return nullptr;
             }
@@ -220,7 +220,7 @@ struct AddressSpace::Impl {
             region.size = size;
             const VAddr new_mapping_start = address + size;
             regions.emplace_hint(std::next(it), new_mapping_start,
-                                      MemoryRegion(new_mapping_start, region_size - size, false));
+                                 MemoryRegion(new_mapping_start, region_size - size, false));
             return &region;
         }
 
@@ -232,7 +232,8 @@ struct AddressSpace::Impl {
         ASSERT(region_size >= minimum_size);
 
         // Split the placeholder.
-        if (!VirtualFreeEx(process, LPVOID(address), size, MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
+        if (!VirtualFreeEx(process, LPVOID(address), size,
+                           MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
             UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
             return nullptr;
         }
@@ -241,8 +242,7 @@ struct AddressSpace::Impl {
         if (region_size == minimum_size) {
             // Split into two; update tracked mappings and return the second one
             region.size = offset_in_region;
-            it = regions.emplace_hint(std::next(it), address,
-                                           MemoryRegion(address, size, false));
+            it = regions.emplace_hint(std::next(it), address, MemoryRegion(address, size, false));
             return &it->second;
         } else {
             // Split into three; update tracked mappings and return the middle one
@@ -251,10 +251,11 @@ struct AddressSpace::Impl {
             const size_t middle_mapping_size = size;
             const VAddr after_mapping_start = address + size;
             const size_t after_mapping_size = region_size - minimum_size;
-            it = regions.emplace_hint(std::next(it),
-                         after_mapping_start, MemoryRegion(after_mapping_start, after_mapping_size, false));
-            it = regions.emplace_hint(it, middle_mapping_start,
-                           MemoryRegion(middle_mapping_start, middle_mapping_size, false));
+            it = regions.emplace_hint(std::next(it), after_mapping_start,
+                                      MemoryRegion(after_mapping_start, after_mapping_size, false));
+            it = regions.emplace_hint(
+                it, middle_mapping_start,
+                MemoryRegion(middle_mapping_start, middle_mapping_size, false));
             return &it->second;
         }
     }
@@ -266,13 +267,13 @@ struct AddressSpace::Impl {
                    "Invalid address/size given to unmap.");
         auto& [base, region] = *it;
         region.is_mapped = false;
-        
+
         // Check if a placeholder exists right before us.
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         if (it_prev != regions.end() && !it_prev->second.is_mapped) {
             const size_t total_size = it_prev->second.size + size;
             if (!VirtualFreeEx(process, LPVOID(it_prev->first), total_size,
-                             MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
+                               MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
 
@@ -285,7 +286,8 @@ struct AddressSpace::Impl {
         auto it_next = std::next(it);
         if (it_next != regions.end() && !it_next->second.is_mapped) {
             const size_t total_size = it->second.size + it_next->second.size;
-            if (!VirtualFreeEx(process, LPVOID(it->first), total_size, MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
+            if (!VirtualFreeEx(process, LPVOID(it->first), total_size,
+                               MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
 
@@ -325,8 +327,9 @@ struct AddressSpace::Impl {
             const size_t range_size = std::min(region.base + region.size, virtual_end) - range_addr;
             DWORD old_flags{};
             if (!VirtualProtectEx(process, LPVOID(range_addr), range_size, new_flags, &old_flags)) {
-                UNREACHABLE_MSG("Failed to change virtual memory protection for address {:#x}, size {}",
-                                range_addr, range_size);
+                UNREACHABLE_MSG(
+                    "Failed to change virtual memory protection for address {:#x}, size {}",
+                    range_addr, range_size);
             }
         }
     }
