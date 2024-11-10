@@ -101,11 +101,6 @@
 			<translation>ساخت شورتکات</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="40"/>
-			<source>Open Game Folder</source>
-			<translation>بازکردن محل نصب بازی</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>چیت/پچ ها</translation>
@@ -121,9 +116,29 @@
 			<translation>مشاهده تروفی ها</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>باز کردن پوشه...</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
-			<source>Copy info</source>
-			<translation>کپی کردن اطلاعات</translation>
+			<source>Open Game Folder</source>
+			<translation>باز کردن پوشه بازی</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>پوشه ذخیره داده را باز کنید</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>باز کردن پوشه لاگ</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Copy info...</source>
+			<translation>...کپی کردن اطلاعات</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>

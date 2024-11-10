@@ -101,11 +101,6 @@
 			<translation>Krijo Shkurtore</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Hap Dosjen e Lojës</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Mashtrime / Arna</translation>
@@ -121,9 +116,29 @@
 			<translation>Shikuesi i Trofeve</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Hapni Dosjen...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Hapni Dosjen e Lojës</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Hapni Dosjen e të Dhënave të Ruajtura</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Hapni Dosjen e Regjistrimeve</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Kopjo informacionin</translation>
+			<source>Copy info...</source>
+			<translation>Kopjo informacionin...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

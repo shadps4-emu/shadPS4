@@ -68,7 +68,7 @@ public:
         menu.addAction(&openTrophyViewer);
 
         // "Copy" submenu.
-        QMenu* copyMenu = new QMenu(tr("Copy info"), widget);
+        QMenu* copyMenu = new QMenu(tr("Copy info..."), widget);
         QAction* copyName = new QAction(tr("Copy Name"), widget);
         QAction* copySerial = new QAction(tr("Copy Serial"), widget);
         QAction* copyNameAll = new QAction(tr("Copy All"), widget);
