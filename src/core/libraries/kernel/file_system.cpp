@@ -14,11 +14,13 @@
 #include <map>
 #include <ranges>
 
+#include "core/devices/hid_device.h"
 
 using FactoryDevice = std::function<Core::Devices::BaseDevice*(u32, const char*, int, u16)>;
 
 // prefix path
 static std::map<std::string, FactoryDevice> available_device = {
+    {"/dev/hid", &Core::Devices::HidDevice::Create},
 };
 
 namespace Libraries::Kernel {

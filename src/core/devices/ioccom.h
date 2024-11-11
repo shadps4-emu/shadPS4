@@ -65,3 +65,13 @@ def parse(v):
   print('group', chr(v >> 8 & 0xFF))
   print('num', hex(v & 0xFF))
 */
+
+template <typename T>
+struct DeviceInfo {
+    int handle;
+    std::array<u8, 4> _pad1;
+    T* data;
+};
+static_assert(sizeof(DeviceInfo<void>) == 0x10);
+
+constexpr auto HID_CMD_READ_DEVICE_INFO = _IOW('H', 0x1, DeviceInfo<void>);

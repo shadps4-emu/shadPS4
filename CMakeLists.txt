@@ -490,6 +490,9 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/crypto/keys.h
          src/core/devices/base_device.cpp
          src/core/devices/base_device.h
+         src/core/devices/hid_device.cpp
+         src/core/devices/hid_device.h
+         src/core/devices/hid_device_mouse.cpp
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h

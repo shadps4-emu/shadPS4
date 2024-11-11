@@ -12,9 +12,17 @@ GameMouse::GameMouse() {
 }
 
 int GameMouse::ReadStates(MouseState* states, int states_num) {
+    if (states_num == 0) {
+        return 0;
+    }
     std::scoped_lock lock{m_mutex};
 
     const u32 count = std::min(m_states_num, u32(states_num));
+
+    if (count == 0) {
+        states[0] = m_last_state;
+        return 1;
+    }
 
     u32 begin = (m_index - m_states_num + 1) % MAX_MOUSE_STATES;
     for (u32 i = 0; i < count; i++) {

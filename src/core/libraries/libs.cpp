@@ -90,7 +90,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
-    Libraries::Mouse::RegisterlibSceMouse(sym);
+    // Libraries::Mouse::RegisterlibSceMouse(sym);
 }
 
 } // namespace Libraries

@@ -117,10 +117,10 @@ void Emulator::Run(const std::filesystem::path& file) {
     auto& game_info = Common::ElfInfo::Instance();
 
     // Loading param.sfo file if exists
-    std::string id;
-    std::string title;
-    std::string app_version;
-    u32 fw_version;
+    std::string id = "unknown_serial";
+    std::string title = "unknown_title";
+    std::string app_version = "unknown_version";
+    u32 fw_version = 0x4700000;
 
     std::filesystem::path sce_sys_folder = eboot_path.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
@@ -274,18 +274,20 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
-    constexpr std::array<SysModules, 11> ModulesToLoad{
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
-         {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
-         {"libSceUlt.sprx", nullptr},
-         {"libSceJson.sprx", nullptr},
-         {"libSceJson2.sprx", nullptr},
-         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
-         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
-         {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
-         {"libSceRazorCpu.sprx", nullptr},
-         {"libSceCesCs.sprx", nullptr}}};
+    constexpr std::array<SysModules, 12> ModulesToLoad{{
+        {"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+        {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
+        {"libSceUlt.sprx", nullptr},
+        {"libSceJson.sprx", nullptr},
+        {"libSceJson2.sprx", nullptr},
+        {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+        {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
+        {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
+        {"libSceJpegEnc.sprx", nullptr},
+        {"libSceRazorCpu.sprx", nullptr},
+        {"libSceCesCs.sprx", nullptr},
+        {"libSceMouse.sprx", nullptr},
+    }};
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);

@@ -408,7 +408,6 @@ int PS4_SYSV_ABI kernel_ioctl(int fd, u64 cmd, VA_ARGS) {
     }
     VA_CTX(ctx);
     int result = file->device->ioctl(cmd, &ctx);
-    LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
     if (result < 0) {
         ErrSceToPosix(result);
         return -1;
