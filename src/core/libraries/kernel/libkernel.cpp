@@ -13,6 +13,7 @@
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "common/va_ctx.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
@@ -258,7 +259,7 @@ int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
     int version = Common::ElfInfo::Instance().RawFirmwareVer();
     LOG_DEBUG(Kernel, "returned system version = {:#x}", version);
     *ver = version;
-    return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
+    return (version >= 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
@@ -392,6 +393,29 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
     return 0;
 }
 
+int PS4_SYSV_ABI kernel_ioctl(int fd, u64 cmd, VA_ARGS) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
+        g_posix_errno = POSIX_EBADF;
+        return -1;
+    }
+    if (file->type != Core::FileSys::FileType::Device) {
+        LOG_WARNING(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file->type != Device", fd, cmd);
+        g_posix_errno = ENOTTY;
+        return -1;
+    }
+    VA_CTX(ctx);
+    int result = file->device->ioctl(cmd, &ctx);
+    LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
     const char* path = "sys";
     return path;
@@ -416,6 +440,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
 
     // misc
+    LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", 1, 1, _sigprocmask);

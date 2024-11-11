@@ -135,7 +135,6 @@ int HandleTable::CreateHandle() {
     std::scoped_lock lock{m_mutex};
 
     auto* file = new File{};
-    file->is_directory = false;
     file->is_opened = false;
 
     int existingFilesNum = m_files.size();
