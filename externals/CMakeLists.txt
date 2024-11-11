@@ -153,6 +153,23 @@ if (NOT TARGET half::half)
     add_library(half::half ALIAS half)
 endif()
 
+# libpng
+set(PNG_SHARED ON CACHE BOOL "" FORCE)
+set(PNG_STATIC OFF CACHE BOOL "" FORCE)
+set(PNG_EXECUTABLES OFF CACHE BOOL "" FORCE) 
+set(PNG_TESTS OFF CACHE BOOL "" FORCE) 
+set(PNG_TOOLS OFF CACHE BOOL "" FORCE) 
+set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
+set(ZLIB_LIBRARY STRING "${INSTALL_DIR}/lib/zlib-ng.lib" FORCE)
+set(ZLIB_INCLUDE_DIR STRING "${INSTALL_DIR}/include" FORCE)
+
+include_directories(libpng)
+# generated files from libpng during build
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/libpng)
+
+add_subdirectory(libpng)
+
+
 if (APPLE)
     # date
     if (NOT TARGET date::date-tz)
