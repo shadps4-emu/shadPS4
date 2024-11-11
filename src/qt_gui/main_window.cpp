@@ -267,6 +267,11 @@ void MainWindow::CreateConnects() {
     });
 #endif
 
+    connect(ui->keys_shortcuts, &QAction::triggered, this, [this]() {
+        auto aboutDialog = new AboutDialog(this);
+        aboutDialog->exec();
+    });
+
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
         auto aboutDialog = new AboutDialog(this);
         aboutDialog->exec();
@@ -947,6 +952,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->downloadCheatsPatchesAct->setIcon(
         RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
     ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
+    ui->keys_shortcuts->setIcon(RecolorIcon(ui->keys_shortcuts->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));

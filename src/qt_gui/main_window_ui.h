@@ -30,6 +30,7 @@ public:
     QAction* updaterAct;
 #endif
     QAction* aboutAct;
+    QAction* keys_shortcuts;
     QAction* configureAct;
     QAction* setThemeDark;
     QAction* setThemeLight;
@@ -140,6 +141,9 @@ public:
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
         aboutAct->setIcon(QIcon(":images/about_icon.png"));
+        keys_shortcuts = new QAction(MainWindow);
+        keys_shortcuts->setObjectName("keys_shortcuts");
+        keys_shortcuts->setIcon(QIcon(":images/about_icon.png"));
         configureAct = new QAction(MainWindow);
         configureAct->setObjectName("configureAct");
         configureAct->setIcon(QIcon(":images/settings_icon.png"));
@@ -298,6 +302,7 @@ public:
 #ifdef ENABLE_UPDATER
         menuHelp->addAction(updaterAct);
 #endif
+        menuHelp->addAction(keys_shortcuts);
         menuHelp->addAction(aboutAct);
 
         retranslateUi(MainWindow);
@@ -317,6 +322,8 @@ public:
             QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
 #endif
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
+        keys_shortcuts->setText(
+            QCoreApplication::translate("MainWindow", "Keys and Shortcuts", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(

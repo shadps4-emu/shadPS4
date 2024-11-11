@@ -3,7 +3,11 @@
 
 #pragma once
 
+#include <QDesktopServices>
 #include <QDialog>
+#include <QLabel>
+#include <QPixmap>
+#include <QUrl>
 
 namespace Ui {
 class AboutDialog;
@@ -15,7 +19,12 @@ class AboutDialog : public QDialog {
 public:
     explicit AboutDialog(QWidget* parent = nullptr);
     ~AboutDialog();
+    bool eventFilter(QObject* obj, QEvent* event);
 
 private:
     Ui::AboutDialog* ui;
+
+    void preloadImages();
+    QPixmap originalImages[4];
+    QPixmap invertedImages[4];
 };
