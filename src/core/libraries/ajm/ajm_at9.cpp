@@ -40,23 +40,11 @@ void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
     const auto params = reinterpret_cast<const AjmDecAt9InitializeParameters*>(buffer);
     std::memcpy(m_config_data, params->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
     AjmAt9Decoder::Reset();
-    m_pcm_buffer.resize(m_codec_info.frameSamples * m_codec_info.channels * GetPointCodeSize(), 0);
+    m_pcm_buffer.resize(m_codec_info.frameSamples * m_codec_info.channels * GetPCMSize(m_format),
+                        0);
 }
 
-u8 AjmAt9Decoder::GetPointCodeSize() {
-    switch (m_format) {
-    case AjmFormatEncoding::S16:
-        return sizeof(s16);
-    case AjmFormatEncoding::S32:
-        return sizeof(s32);
-    case AjmFormatEncoding::Float:
-        return sizeof(float);
-    default:
-        UNREACHABLE();
-    }
-}
-
-void AjmAt9Decoder::GetInfo(void* out_info) {
+void AjmAt9Decoder::GetInfo(void* out_info) const {
     auto* info = reinterpret_cast<AjmSidebandDecAt9CodecInfo*>(out_info);
     info->super_frame_size = m_codec_info.superframeSize;
     info->frames_in_super_frame = m_codec_info.framesInSuperframe;
@@ -129,15 +117,20 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     return {1, samples_written / m_codec_info.channels};
 }
 
-AjmSidebandFormat AjmAt9Decoder::GetFormat() {
+AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
     return AjmSidebandFormat{
         .num_channels = u32(m_codec_info.channels),
         .channel_mask = GetChannelMask(u32(m_codec_info.channels)),
         .sampl_freq = u32(m_codec_info.samplingRate),
         .sample_encoding = m_format,
-        .bitrate = u32(m_codec_info.samplingRate * GetPointCodeSize() * 8),
+        .bitrate = u32(m_codec_info.samplingRate * GetPCMSize(m_format) * 8),
         .reserved = 0,
     };
+}
+
+u32 AjmAt9Decoder::GetNextFrameSize(u32 max_samples) const {
+    return std::min(u32(m_codec_info.frameSamples), max_samples) * m_codec_info.channels *
+           GetPCMSize(m_format);
 }
 
 } // namespace Libraries::Ajm

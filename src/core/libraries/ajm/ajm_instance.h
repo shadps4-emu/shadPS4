@@ -14,6 +14,8 @@
 
 namespace Libraries::Ajm {
 
+u8 GetPCMSize(AjmFormatEncoding format);
+
 class SparseOutputBuffer {
 public:
     SparseOutputBuffer(std::span<std::span<u8>> chunks)
@@ -33,14 +35,17 @@ public:
                 ++m_current;
             }
         }
+        if (!pcm.empty()) {
+            LOG_ERROR(Lib_Ajm, "Could not write {} samples", pcm.size());
+        }
         return samples_written;
     }
 
-    bool IsEmpty() {
+    bool IsEmpty() const {
         return m_current == m_chunks.end();
     }
 
-    size_t Size() {
+    size_t Size() const {
         size_t result = 0;
         for (auto it = m_current; it != m_chunks.end(); ++it) {
             result += it->size();
@@ -59,8 +64,9 @@ public:
 
     virtual void Initialize(const void* buffer, u32 buffer_size) = 0;
     virtual void Reset() = 0;
-    virtual void GetInfo(void* out_info) = 0;
-    virtual AjmSidebandFormat GetFormat() = 0;
+    virtual void GetInfo(void* out_info) const = 0;
+    virtual AjmSidebandFormat GetFormat() const = 0;
+    virtual u32 GetNextFrameSize(u32 max_samples) const = 0;
     virtual std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
                                              AjmSidebandGaplessDecode& gapless,
                                              std::optional<u32> max_samples_per_channel) = 0;
@@ -73,7 +79,9 @@ public:
     void ExecuteJob(AjmJob& job);
 
 private:
-    bool IsGaplessEnd();
+    bool IsGaplessEnd() const;
+    bool HasEnoughSpace(const SparseOutputBuffer& output, std::optional<u32> samples_remain) const;
+    std::optional<u32> GetNumRemainingSamples() const;
 
     AjmInstanceFlags m_flags{};
     AjmSidebandFormat m_format{};
