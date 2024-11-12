@@ -417,6 +417,25 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
     }
 }
 
+bool ShouldPatchNormalization(const AmdGpu::Image& image) {
+    if (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Snorm) {
+        switch (image.GetDataFmt()) {
+        case AmdGpu::DataFormat::Format32:
+        case AmdGpu::DataFormat::Format32_32:
+        case AmdGpu::DataFormat::Format32_32_32:
+        case AmdGpu::DataFormat::Format32_32_32_32:
+            return true;
+        default:
+            return false;
+        }
+    }
+    return false;
+}
+
+void PatchNormalization(IR::Inst& inst, IR::IREmitter& ir, const AmdGpu::Image& image,
+                        bool is_write) {}
+
 void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                  Descriptors& descriptors, const IR::Inst* producer,
                                  const u32 image_binding, const AmdGpu::Image& image) {
@@ -598,6 +617,10 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
     }();
     inst.ReplaceUsesWith(new_inst);
+
+    if (ShouldPatchNormalization(image)) {
+        PatchNormalization(*new_inst.Inst(), ir, image, false);
+    }
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -723,6 +746,10 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
         inst.SetArg(4, arg);
+    }
+
+    if (ShouldPatchNormalization(image)) {
+        PatchNormalization(inst, ir, image, inst.GetOpcode() == IR::Opcode::ImageWrite);
     }
 }
 
