@@ -635,6 +635,33 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eBc7UnormBlock),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc7, AmdGpu::NumberFormat::Srgb,
                                 vk::Format::eBc7SrgbBlock),
+
+        /*
+         * Shaders reading/writing these formats need to be patched to normalize/unnormalize the
+         * values This is because the Vulkan doesn't support these formats directly
+         *
+         * see shader_recompiler/ir/passes/resource_tracking_pass.cpp
+         */
+        // 32
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32, AmdGpu::NumberFormat::Unorm,
+                                vk::Format::eR32Uint),
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32, AmdGpu::NumberFormat::Snorm,
+                                vk::Format::eR32Uint),
+        // 32_32
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32, AmdGpu::NumberFormat::Unorm,
+                                vk::Format::eR32G32Uint),
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32, AmdGpu::NumberFormat::Snorm,
+                                vk::Format::eR32G32Uint),
+        // 32_32_32
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32_32, AmdGpu::NumberFormat::Unorm,
+                                vk::Format::eR32G32B32Uint),
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32_32, AmdGpu::NumberFormat::Snorm,
+                                vk::Format::eR32G32B32Uint),
+        // 32_32_32_32
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32_32_32, AmdGpu::NumberFormat::Unorm,
+                                vk::Format::eR32G32B32A32Uint),
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format32_32_32_32, AmdGpu::NumberFormat::Snorm,
+                                vk::Format::eR32G32B32A32Uint),
     };
     return formats;
 }
