@@ -66,7 +66,7 @@ public:
     virtual void Reset() = 0;
     virtual void GetInfo(void* out_info) const = 0;
     virtual AjmSidebandFormat GetFormat() const = 0;
-    virtual u32 GetNextFrameSize(u32 max_samples) const = 0;
+    virtual u32 GetNextFrameSize(u32 skip_samples, u32 max_samples) const = 0;
     virtual std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
                                              AjmSidebandGaplessDecode& gapless,
                                              std::optional<u32> max_samples_per_channel) = 0;
@@ -80,7 +80,7 @@ public:
 
 private:
     bool IsGaplessEnd() const;
-    bool HasEnoughSpace(const SparseOutputBuffer& output, std::optional<u32> samples_remain) const;
+    bool HasEnoughSpace(const SparseOutputBuffer& output) const;
     std::optional<u32> GetNumRemainingSamples() const;
 
     AjmInstanceFlags m_flags{};

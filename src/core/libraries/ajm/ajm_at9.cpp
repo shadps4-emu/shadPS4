@@ -123,14 +123,16 @@ AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
         .channel_mask = GetChannelMask(u32(m_codec_info.channels)),
         .sampl_freq = u32(m_codec_info.samplingRate),
         .sample_encoding = m_format,
-        .bitrate = u32(m_codec_info.samplingRate * GetPCMSize(m_format) * 8),
+        .bitrate = u32((m_codec_info.samplingRate * m_codec_info.superframeSize * 8) /
+                       (m_codec_info.framesInSuperframe * m_codec_info.frameSamples)),
         .reserved = 0,
     };
 }
 
-u32 AjmAt9Decoder::GetNextFrameSize(u32 max_samples) const {
-    return std::min(u32(m_codec_info.frameSamples), max_samples) * m_codec_info.channels *
-           GetPCMSize(m_format);
+u32 AjmAt9Decoder::GetNextFrameSize(u32 skip_samples, u32 max_samples) const {
+    skip_samples = std::min({skip_samples, u32(m_codec_info.frameSamples), max_samples});
+    return (std::min(u32(m_codec_info.frameSamples), max_samples) - skip_samples) *
+           m_codec_info.channels * GetPCMSize(m_format);
 }
 
 } // namespace Libraries::Ajm

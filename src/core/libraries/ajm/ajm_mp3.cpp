@@ -219,9 +219,10 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     return {frames_decoded, samples_decoded / m_codec_context->ch_layout.nb_channels};
 }
 
-u32 AjmMp3Decoder::GetNextFrameSize(u32 max_samples) const {
-    return std::min(m_frame_samples, max_samples) * m_codec_context->ch_layout.nb_channels *
-           GetPCMSize(m_format);
+u32 AjmMp3Decoder::GetNextFrameSize(u32 skip_samples, u32 max_samples) const {
+    skip_samples = std::min({skip_samples, m_frame_samples, max_samples});
+    return (std::min(m_frame_samples, max_samples) - skip_samples) *
+           m_codec_context->ch_layout.nb_channels * GetPCMSize(m_format);
 }
 
 class BitReader {

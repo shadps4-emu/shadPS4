@@ -78,8 +78,12 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
     }
     if (job.input.gapless_decode.has_value()) {
         auto& params = job.input.gapless_decode.value();
-        m_gapless.total_samples = params.total_samples;
-        m_gapless.skip_samples = params.skip_samples;
+        if (params.total_samples != 0) {
+            m_gapless.total_samples = std::max(params.total_samples, m_gapless.total_samples);
+        }
+        if (params.skip_samples != 0) {
+            m_gapless.skip_samples = std::max(params.skip_samples, m_gapless.skip_samples);
+        }
     }
 
     if (!job.input.buffer.empty() && !job.output.buffers.empty()) {
@@ -90,16 +94,14 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         auto in_size = in_buf.size();
         auto out_size = out_buf.Size();
         while (!in_buf.empty() && !out_buf.IsEmpty() && !IsGaplessEnd()) {
-            const auto samples_remain = GetNumRemainingSamples();
-            if (!HasEnoughSpace(out_buf, samples_remain)) {
-                if (job.output.p_mframe == nullptr) {
-                    LOG_ERROR(Lib_Ajm, "Single-frame job buffer too small.");
+            if (!HasEnoughSpace(out_buf)) {
+                if (job.output.p_mframe == nullptr || frames_decoded == 0) {
                     job.output.p_result->result = ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM;
+                    break;
                 }
-                break;
             }
             const auto [nframes, nsamples] =
-                m_codec->ProcessData(in_buf, out_buf, m_gapless, samples_remain);
+                m_codec->ProcessData(in_buf, out_buf, m_gapless, GetNumRemainingSamples());
             frames_decoded += nframes;
             m_total_samples += nsamples;
             m_gapless_samples += nsamples;
@@ -138,10 +140,11 @@ bool AjmInstance::IsGaplessEnd() const {
     return m_gapless.total_samples != 0 && m_gapless_samples >= m_gapless.total_samples;
 }
 
-bool AjmInstance::HasEnoughSpace(const SparseOutputBuffer& output,
-                                 std::optional<u32> opt_samples_remain) const {
-    const auto remain = opt_samples_remain.value_or(std::numeric_limits<u32>::max());
-    return output.Size() >= m_codec->GetNextFrameSize(remain);
+bool AjmInstance::HasEnoughSpace(const SparseOutputBuffer& output) const {
+    const auto skip =
+        m_gapless.skip_samples - std::min(m_gapless.skip_samples, m_gapless.skipped_samples);
+    const auto remain = GetNumRemainingSamples().value_or(std::numeric_limits<u32>::max());
+    return output.Size() >= m_codec->GetNextFrameSize(skip, remain);
 }
 
 std::optional<u32> AjmInstance::GetNumRemainingSamples() const {
