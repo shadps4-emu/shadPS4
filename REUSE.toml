@@ -35,6 +35,7 @@ path = [
     "src/images/stop_icon.png",
     "src/images/shadPS4.icns",
     "src/images/shadps4.ico",
+    "src/images/net.shadps4.shadPS4.svg",
     "src/images/themes_icon.png",
     "src/images/update_icon.png",
     "src/shadps4.qrc",
