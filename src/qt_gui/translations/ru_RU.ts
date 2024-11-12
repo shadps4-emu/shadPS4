@@ -101,11 +101,6 @@
 			<translation>Создать ярлык</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Открыть папку с игрой</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Читы и патчи</translation>
@@ -121,9 +116,29 @@
 			<translation>Просмотр трофеев</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Открыть Папку...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Открыть папку с игрой</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Открыть Папку Сохранений</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Открыть Папку Логов</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Копировать информацию</translation>
+			<source>Copy info...</source>
+			<translation>Копировать информацию...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

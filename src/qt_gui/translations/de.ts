@@ -101,11 +101,6 @@
 			<translation>Verknüpfung erstellen</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Spieleordner öffnen</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Cheats / Patches</translation>
@@ -121,9 +116,29 @@
 			<translation>Trophäen anzeigen</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Ordner öffnen...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Spielordner öffnen</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Speicherordner öffnen</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Protokollordner öffnen</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Infos kopieren</translation>
+			<source>Copy info...</source>
+			<translation>Infos kopieren...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

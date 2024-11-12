@@ -101,11 +101,6 @@
 			<translation>Crear acceso directo</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Abrir carpeta del juego</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Trucos / Parches</translation>
@@ -121,9 +116,29 @@
 			<translation>Ver trofeos</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Abrir Carpeta...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Abrir Carpeta del Juego</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Abrir Carpeta de Datos Guardados</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Abrir Carpeta de Registros</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Copiar información</translation>
+			<source>Copy info...</source>
+			<translation>Copiar información...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>
