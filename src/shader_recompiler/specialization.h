@@ -26,8 +26,15 @@ struct TextureBufferSpecialization {
 };
 
 struct ImageSpecialization {
+    enum class Normalization : u8 {
+        None,
+        Signed,
+        Unsigned,
+    };
+
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
+    Normalization normalization = Normalization::None;
 
     auto operator<=>(const ImageSpecialization&) const = default;
 };
@@ -73,12 +80,18 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                      });
-        ForEachSharp(binding, images, info->images,
-                     [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
-                         spec.type = sharp.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray
-                                                              : sharp.GetType();
-                         spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                     });
+        ForEachSharp(
+            binding, images, info->images, [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
+                spec.type =
+                    sharp.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : sharp.GetType();
+                spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
+
+                if (sharp.NeedsNormalizationPatch()) {
+                    spec.normalization = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Snorm
+                                             ? ImageSpecialization::Normalization::Signed
+                                             : ImageSpecialization::Normalization::Unsigned;
+                }
+            });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.width = sharp.width;
