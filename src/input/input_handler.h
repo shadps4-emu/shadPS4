@@ -7,6 +7,7 @@
 #include "map"
 #include "string"
 #include "common/types.h"
+#include "common/logging/log.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 
@@ -174,9 +175,8 @@ void parseInputConfig(const std::string game_id);
 class InputBinding {
 public:
     u32 key1, key2, key3;
-    int axis_value;
-    InputBinding(int v, u32 k1 = SDLK_UNKNOWN, u32 k2 = SDLK_UNKNOWN, u32 k3 = SDLK_UNKNOWN) {
-        // we format the keys so comaring them will be very fast, because we will only have to compare 3 sorted elements, 
+    InputBinding(u32 k1 = SDLK_UNKNOWN, u32 k2 = SDLK_UNKNOWN, u32 k3 = SDLK_UNKNOWN) {
+        // we format the keys so comparing them will be very fast, because we will only have to compare 3 sorted elements, 
         // where the only possible duplicate item is 0
 
         // duplicate entries get changed to one original, one null
@@ -198,6 +198,8 @@ public:
             else { key2 = k2; key3 = k1; }
         }
     }
+    // copy ctor
+    InputBinding(const InputBinding& o) : key1(o.key1), key2(o.key2), key3(o.key3) {}
     
     inline bool operator==(const InputBinding& o) {
         // 0 = SDLK_UNKNOWN aka unused slot
@@ -209,6 +211,7 @@ public:
         // potenially skipping the later expressions of the three-way AND
     }
 
+    // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
     static u32 getInputIDFromEvent(const SDL_Event& e) {
         switch(e.type) {
         case SDL_EVENT_KEY_DOWN:
@@ -229,43 +232,44 @@ class ControllerOutput {
 public:
     static void setControllerOutputController(GameController* c);
 
-    std::string name;
     u32 button;
-    Input::Axis axis;
-    int axis_value;
-    bool active;
-    ControllerOutput(const std::string& n, u32 b, Axis a = Axis::AxisMax, int v = 0, bool ac = false) {
-        name = n;
+    Axis axis;
+
+    ControllerOutput(u32 b, Axis a = Axis::AxisMax) {
         button = b;
         axis = a;
-        axis_value = v;
-        active = ac;
     }
-    ControllerOutput(const ControllerOutput& o);
+    ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {}
     void update(bool pressed, int axis_direction = 0);
 };
-class InputData {
+class BindingConnection {
+public:
     InputBinding binding;
+    ControllerOutput* output;
     int axis_value;
-    bool flag;
-    InputData(InputBinding b, int v = 0) : binding(b), axis_value(v), flag(false) {}
+    BindingConnection(InputBinding b, ControllerOutput* out, int a_v = 0) {
+        binding = b;
+        axis_value = 0;
+
+        // todo: check if out is in the allowed array
+        output = out;
+    }
 
 };
 
 // todo
 // don't forget to change the number too
-const std::array<ControllerOutput, 4> input_state = {
-// buttons and axes rolled into one
-ControllerOutput("up", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
-ControllerOutput("down", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
-// etc.
-ControllerOutput("axis_left_x_plus", 0, Axis::LeftX, 127),
-ControllerOutput("axis_left_x_minus", 0, Axis::LeftX, -127),
+const std::array<ControllerOutput, 4> output_array = {
+ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
+ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
+
+ControllerOutput(0, Axis::TriggerLeft),
+ControllerOutput(0, Axis::LeftY),
 // etc.
 };
 
 
-extern std::map<InputData, ControllerOutput&> new_binding_map;
+extern std::map<BindingConnection, ControllerOutput&> new_binding_map;
 extern u32 pressed_keys[];
 
 // Check if the 3 key input is currently active.

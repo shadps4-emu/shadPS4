@@ -44,122 +44,16 @@ float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
-std::string_view getDefaultKeyboardConfig() {
-    static std::string_view default_config =
-        R"(## SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-## SPDX-License-Identifier: GPL-2.0-or-later
- 
-#This is the default keybinding config
-#To change per-game configs, modify the CUSAXXXXX.ini files
-#To change the default config that applies to new games without already existing configs, modify default.ini
-#If you don't like certain mappings, delete, change or comment them out.
-#You can add any amount of KBM keybinds to a single controller input,
-#but you can use each KBM keybind for one controller input.
-
-#Keybinds used by the emulator (these are unchangeable):
-#F11 : fullscreen
-#F10 : FPS counter
-#F9  : toggle mouse-to-joystick input 
-#       (it overwrites everything else to that joystick, so this is required)
-#F8  : reparse keyboard input(this)
-
-#This is a mapping for Bloodborne, inspired by other Souls titles on PC.
-
-#Specifies which joystick the mouse movement controls.
-mouse_to_joystick = right;
-
-#Use healing item, change status in inventory
-triangle = f;
-#Dodge, back in inventory
-circle = space;
-#Interact, select item in inventory
-cross = e;
-#Use quick item, remove item in inventory
-square = r;
-
-#Emergency extra bullets
-up = w, lalt;
-up = mousewheelup;
-#Change quick item
-down = s, lalt;
-down = mousewheeldown;
-#Change weapon in left hand
-left = a, lalt;
-left = mousewheelleft;
-#Change weapon in right hand
-right = d, lalt;
-right = mousewheelright;
-#Change into 'inventory mode', so you don't have to hold lalt every time you go into menus
-modkey_toggle = i, lalt;
-
-#Menu
-options = escape;
-#Gestures
-touchpad = g;
-
-#Transform
-l1 = rightbutton, lshift;
-#Shoot
-r1 = leftbutton;
-#Light attack
-l2 = rightbutton;
-#Heavy attack
-r2 = leftbutton, lshift;
-#Does nothing
-l3 = x;
-#Center cam, lock on
-r3 = q;
-r3 = middlebutton;
-
-#Axis mappings
-#Move
-axis_left_x_minus = a;
-axis_left_x_plus = d;
-axis_left_y_minus = w;
-axis_left_y_plus = s;
-#Change to 'walk mode' by holding the following key:
-leftjoystick_halfmode = lctrl;
-)";
-    return default_config;
-}
-
 void parseInputConfig(const std::string game_id = "") {
-    // Read configuration file of the game, and if it doesn't exist, generate it from default
-    // If that doesn't exist either, generate that from getDefaultConfig() and try again
-    // If even the folder is missing, we start with that.
+    
+    const auto config_file = Config::getFoolproofKbmConfigFile(game_id);
 
-    // maybe extract this?
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "kbmConfig";
-    const auto config_file = config_dir / (game_id + ".ini");
-    const auto default_config_file = config_dir / "default.ini";
-
-    // Ensure the config directory exists
-    if (!std::filesystem::exists(config_dir)) {
-        std::filesystem::create_directories(config_dir);
-    }
-
-    // Try loading the game-specific config file
-    if (!std::filesystem::exists(config_file)) {
-        // If game-specific config doesn't exist, check for the default config
-        if (!std::filesystem::exists(default_config_file)) {
-            // If the default config is also missing, create it from getDefaultConfig()
-            const auto default_config = getDefaultKeyboardConfig();
-            std::ofstream default_config_stream(default_config_file);
-            if (default_config_stream) {
-                default_config_stream << default_config;
-            }
-        }
-
-        // If default config now exists, copy it to the game-specific config file
-        if (std::filesystem::exists(default_config_file) && !game_id.empty()) {
-            std::filesystem::copy(default_config_file, config_file);
-        }
-    }
-    // if we just called the function to generate the directory and the default .ini
-    if (game_id.empty()) {
+    // todo: change usages of this to getFoolproofKbmConfigFile (gui)
+    if(game_id == "") {
         return;
     }
 
+    // todo
     // we reset these here so in case the user fucks up or doesn't include this we can fall back to
     // default
     mouse_deadzone_offset = 0.5;
@@ -293,17 +187,18 @@ void ControllerOutput::setControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
-void ControllerOutput::update(bool pressed, int axis_direction) {
+void ControllerOutput::update(bool pressed, int axis_value) {
     float touchpad_x = 0;
-    Input::Axis axis = Input::Axis::AxisMax;
     if(button != 0){
         switch (button) {
+        /* todo
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2:
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2:
-            axis = (button == OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2) ? Input::Axis::TriggerRight
-                                                                            : Input::Axis::TriggerLeft;
-            controller->Axis(0, axis, Input::GetAxis(0, 0x80, pressed ? 255 : 0));
+            axis = (button == OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2) ? Axis::TriggerRight
+                                                                            : Axis::TriggerLeft;
+            controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
             break;
+        */
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD:
             touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
                         : Config::getBackButtonBehavior() == "right" ? 0.75f
@@ -311,26 +206,37 @@ void ControllerOutput::update(bool pressed, int axis_direction) {
             controller->SetTouchpadState(0, true, touchpad_x, 0.5f);
             controller->CheckButton(0, button, pressed);
             break;
-        default: // is a normal key
+        case LEFTJOYSTICK_HALFMODE:
+            leftjoystick_halfmode ^= pressed; // toggle if pressed, don't change otherwise
+            break;
+        case RIGHTJOYSTICK_HALFMODE:
+            rightjoystick_halfmode ^= pressed;
+            break;
+        default: // is a normal key (hopefully)
             controller->CheckButton(0, button, pressed);
             break;
         }
     } else if (axis != Axis::AxisMax) {
         float multiplier = 1.0;
         switch (axis) {
-        case Input::Axis::LeftX:
-        case Input::Axis::LeftY:
+        case Axis::LeftX:
+        case Axis::LeftY:
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
             break;
-        case Input::Axis::RightX:
-        case Input::Axis::RightY:
+        case Axis::RightX:
+        case Axis::RightY:
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
+            break;
+        case Axis::TriggerLeft:
+        case Axis::TriggerRight:
+            // todo: verify this works
+            controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
             break;
         default:
             break;
         }
         int output_value = (pressed ? axis_value : 0) * multiplier;
-        int ax = Input::GetAxis(-0x80, 0x80, output_value);
+        int ax = GetAxis(-0x80, 0x80, output_value);
         controller->Axis(0, axis, ax);
     } else {
         LOG_ERROR(Input, "Controller output with no values detected!");
@@ -366,11 +272,11 @@ void updateMouse(GameController* controller) {
     float a_x = cos(angle) * output_speed, a_y = sin(angle) * output_speed;
 
     if (d_x != 0 && d_y != 0) {
-        controller->Axis(0, axis_x, Input::GetAxis(-0x80, 0x80, a_x));
-        controller->Axis(0, axis_y, Input::GetAxis(-0x80, 0x80, a_y));
+        controller->Axis(0, axis_x, GetAxis(-0x80, 0x80, a_x));
+        controller->Axis(0, axis_y, GetAxis(-0x80, 0x80, a_y));
     } else {
-        controller->Axis(0, axis_x, Input::GetAxis(-0x80, 0x80, 0));
-        controller->Axis(0, axis_y, Input::GetAxis(-0x80, 0x80, 0));
+        controller->Axis(0, axis_x, GetAxis(-0x80, 0x80, 0));
+        controller->Axis(0, axis_y, GetAxis(-0x80, 0x80, 0));
     }
 }
 
