@@ -72,7 +72,7 @@ public:
 
 private:
     void onResize();
-    void onKeyPress(const SDL_Event* event);
+    void onKeyboardMouseInput(const SDL_Event* event);
     void onGamepadEvent(const SDL_Event* event);
 
     int sdlGamepadToOrbisButton(u8 button);

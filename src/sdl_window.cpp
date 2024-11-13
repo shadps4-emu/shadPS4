@@ -12,6 +12,7 @@
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
+#include "input/input_handler.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
 
@@ -76,6 +77,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.type = WindowSystemType::Metal;
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
+    // input handler init-s
+    Input::ControllerOutput::setControllerOutputController(controller);
 }
 
 WindowSDL::~WindowSDL() = default;
@@ -103,9 +106,10 @@ void WindowSDL::waitEvent() {
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
         onResize();
         break;
+    
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        onKeyPress(&event);
+        onKeyboardMouseInput(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -127,6 +131,8 @@ void WindowSDL::waitEvent() {
 
 void WindowSDL::initTimers() {
     SDL_AddTimer(100, &PollController, controller);
+    // todo: add back mouse polling here
+    SDL_AddTimer(33, Input::mousePolling, (void*)controller);
 }
 
 void WindowSDL::onResize() {
@@ -134,9 +140,18 @@ void WindowSDL::onResize() {
     ImGui::Core::OnResize();
 }
 
-void WindowSDL::onKeyPress(const SDL_Event* event) {
+void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
+    // get the event's id, if it's keyup or keydown
+
+    // add/remove it from the list
+
+    // update bindings and buttons
+
+    // update axes
+
+/* og function
 #ifdef __APPLE__
     // Use keys that are more friendly for keyboards without a keypad.
     // Once there are key binding options this won't be necessary.
@@ -323,6 +338,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
     }
+*/
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {
