@@ -53,8 +53,7 @@ void AjmAt9Decoder::GetInfo(void* out_info) const {
 }
 
 std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                                AjmSidebandGaplessDecode& gapless,
-                                                std::optional<u32> max_samples_per_channel) {
+                                                AjmInstanceGapless& gapless) {
     int ret = 0;
     int bytes_used = 0;
     switch (m_format) {
@@ -79,30 +78,35 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
 
     m_superframe_bytes_remain -= bytes_used;
 
-    u32 skipped_samples = 0;
-    if (gapless.skipped_samples < gapless.skip_samples) {
-        skipped_samples = std::min(u32(m_codec_info.frameSamples),
-                                   u32(gapless.skip_samples - gapless.skipped_samples));
-        gapless.skipped_samples += skipped_samples;
+    u32 skip_samples = 0;
+    if (gapless.current.skip_samples > 0) {
+        skip_samples = std::min(u16(m_codec_info.frameSamples), gapless.current.skip_samples);
+        gapless.current.skip_samples -= skip_samples;
     }
 
-    const auto max_samples = max_samples_per_channel.has_value()
-                                 ? max_samples_per_channel.value() * m_codec_info.channels
-                                 : std::numeric_limits<u32>::max();
+    const auto max_pcm = gapless.init.total_samples != 0
+                             ? gapless.current.total_samples * m_codec_info.channels
+                             : std::numeric_limits<u32>::max();
 
-    size_t samples_written = 0;
+    size_t pcm_written = 0;
     switch (m_format) {
     case AjmFormatEncoding::S16:
-        samples_written = WriteOutputSamples<s16>(output, skipped_samples, max_samples);
+        pcm_written = WriteOutputSamples<s16>(output, skip_samples, max_pcm);
         break;
     case AjmFormatEncoding::S32:
-        samples_written = WriteOutputSamples<s32>(output, skipped_samples, max_samples);
+        pcm_written = WriteOutputSamples<s32>(output, skip_samples, max_pcm);
         break;
     case AjmFormatEncoding::Float:
-        samples_written = WriteOutputSamples<float>(output, skipped_samples, max_samples);
+        pcm_written = WriteOutputSamples<float>(output, skip_samples, max_pcm);
         break;
     default:
         UNREACHABLE();
+    }
+
+    const auto samples_written = pcm_written / m_codec_info.channels;
+    gapless.current.skipped_samples += m_codec_info.frameSamples - samples_written;
+    if (gapless.init.total_samples != 0) {
+        gapless.current.total_samples -= samples_written;
     }
 
     m_num_frames += 1;
@@ -114,7 +118,7 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
         m_num_frames = 0;
     }
 
-    return {1, samples_written / m_codec_info.channels};
+    return {1, samples_written};
 }
 
 AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
@@ -129,10 +133,13 @@ AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
     };
 }
 
-u32 AjmAt9Decoder::GetNextFrameSize(u32 skip_samples, u32 max_samples) const {
-    skip_samples = std::min({skip_samples, u32(m_codec_info.frameSamples), max_samples});
-    return (std::min(u32(m_codec_info.frameSamples), max_samples) - skip_samples) *
-           m_codec_info.channels * GetPCMSize(m_format);
+u32 AjmAt9Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
+    const auto max_samples =
+        gapless.init.total_samples != 0
+            ? std::min(gapless.current.total_samples, u32(m_codec_info.frameSamples))
+            : m_codec_info.frameSamples;
+    const auto skip_samples = std::min(u32(gapless.current.skip_samples), max_samples);
+    return (max_samples - skip_samples) * m_codec_info.channels * GetPCMSize(m_format);
 }
 
 } // namespace Libraries::Ajm

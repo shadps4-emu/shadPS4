@@ -70,22 +70,21 @@ public:
     void Initialize(const void* buffer, u32 buffer_size) override {}
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
-    u32 GetNextFrameSize(u32 skip_samples, u32 max_samples) const override;
+    u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
     std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmSidebandGaplessDecode& gapless,
-                                     std::optional<u32> max_samples_per_channel) override;
+                                     AjmInstanceGapless& gapless) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
 
 private:
     template <class T>
-    size_t WriteOutputSamples(AVFrame* frame, SparseOutputBuffer& output, u32 skipped_samples,
-                              u32 max_samples) {
+    size_t WriteOutputPCM(AVFrame* frame, SparseOutputBuffer& output, u32 skipped_samples,
+                          u32 max_pcm) {
         std::span<T> pcm_data(reinterpret_cast<T*>(frame->data[0]),
                               frame->nb_samples * frame->ch_layout.nb_channels);
         pcm_data = pcm_data.subspan(skipped_samples * frame->ch_layout.nb_channels);
-        return output.Write(pcm_data.subspan(0, std::min(u32(pcm_data.size()), max_samples)));
+        return output.Write(pcm_data.subspan(0, std::min(u32(pcm_data.size()), max_pcm)));
     }
 
     AVFrame* ConvertAudioFrame(AVFrame* frame);

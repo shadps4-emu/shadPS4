@@ -137,8 +137,7 @@ void AjmMp3Decoder::GetInfo(void* out_info) const {
 }
 
 std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                                AjmSidebandGaplessDecode& gapless,
-                                                std::optional<u32> max_samples_per_channel) {
+                                                AjmInstanceGapless& gapless) {
     AVPacket* pkt = av_packet_alloc();
 
     if ((!m_header.has_value() || m_frame_samples == 0) && in_buf.size() >= 4) {
@@ -154,12 +153,7 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     in_buf = in_buf.subspan(ret);
 
     u32 frames_decoded = 0;
-    u32 samples_decoded = 0;
-
-    auto max_samples =
-        max_samples_per_channel.has_value()
-            ? max_samples_per_channel.value() * m_codec_context->ch_layout.nb_channels
-            : std::numeric_limits<u32>::max();
+    u32 samples_written = 0;
 
     if (pkt->size) {
         // Send the packet with the compressed data to the decoder
@@ -182,32 +176,37 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
             frame = ConvertAudioFrame(frame);
 
             frames_decoded += 1;
-            u32 skipped_samples = 0;
-            if (gapless.skipped_samples < gapless.skip_samples) {
-                skipped_samples = std::min(u32(frame->nb_samples),
-                                           u32(gapless.skip_samples - gapless.skipped_samples));
-                gapless.skipped_samples += skipped_samples;
+            u32 skip_samples = 0;
+            if (gapless.current.skip_samples > 0) {
+                skip_samples = std::min(u16(frame->nb_samples), gapless.current.skip_samples);
+                gapless.current.skip_samples -= skip_samples;
             }
 
+            const auto max_pcm =
+                gapless.init.total_samples != 0
+                    ? gapless.current.total_samples * m_codec_context->ch_layout.nb_channels
+                    : std::numeric_limits<u32>::max();
+
+            u32 pcm_written = 0;
             switch (m_format) {
             case AjmFormatEncoding::S16:
-                samples_decoded +=
-                    WriteOutputSamples<s16>(frame, output, skipped_samples, max_samples);
+                pcm_written = WriteOutputPCM<s16>(frame, output, skip_samples, max_pcm);
                 break;
             case AjmFormatEncoding::S32:
-                samples_decoded +=
-                    WriteOutputSamples<s32>(frame, output, skipped_samples, max_samples);
+                pcm_written = WriteOutputPCM<s32>(frame, output, skip_samples, max_pcm);
                 break;
             case AjmFormatEncoding::Float:
-                samples_decoded +=
-                    WriteOutputSamples<float>(frame, output, skipped_samples, max_samples);
+                pcm_written = WriteOutputPCM<float>(frame, output, skip_samples, max_pcm);
                 break;
             default:
                 UNREACHABLE();
             }
 
-            if (max_samples_per_channel.has_value()) {
-                max_samples -= samples_decoded;
+            const auto samples = pcm_written / m_codec_context->ch_layout.nb_channels;
+            samples_written += samples;
+            gapless.current.skipped_samples += frame->nb_samples - samples;
+            if (gapless.init.total_samples != 0) {
+                gapless.current.total_samples -= samples;
             }
 
             av_frame_free(&frame);
@@ -216,13 +215,16 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
 
     av_packet_free(&pkt);
 
-    return {frames_decoded, samples_decoded / m_codec_context->ch_layout.nb_channels};
+    return {frames_decoded, samples_written};
 }
 
-u32 AjmMp3Decoder::GetNextFrameSize(u32 skip_samples, u32 max_samples) const {
-    skip_samples = std::min({skip_samples, m_frame_samples, max_samples});
-    return (std::min(m_frame_samples, max_samples) - skip_samples) *
-           m_codec_context->ch_layout.nb_channels * GetPCMSize(m_format);
+u32 AjmMp3Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
+    const auto max_samples = gapless.init.total_samples != 0
+                                 ? std::min(gapless.current.total_samples, m_frame_samples)
+                                 : m_frame_samples;
+    const auto skip_samples = std::min(u32(gapless.current.skip_samples), max_samples);
+    return (max_samples - skip_samples) * m_codec_context->ch_layout.nb_channels *
+           GetPCMSize(m_format);
 }
 
 class BitReader {

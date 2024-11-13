@@ -59,7 +59,6 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         m_format = {};
         m_gapless = {};
         m_resample_parameters = {};
-        m_gapless_samples = 0;
         m_total_samples = 0;
         m_codec->Reset();
     }
@@ -79,10 +78,14 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
     if (job.input.gapless_decode.has_value()) {
         auto& params = job.input.gapless_decode.value();
         if (params.total_samples != 0) {
-            m_gapless.total_samples = std::max(params.total_samples, m_gapless.total_samples);
+            const auto max = std::max(params.total_samples, m_gapless.init.total_samples);
+            m_gapless.current.total_samples += max - m_gapless.init.total_samples;
+            m_gapless.init.total_samples = max;
         }
         if (params.skip_samples != 0) {
-            m_gapless.skip_samples = std::max(params.skip_samples, m_gapless.skip_samples);
+            const auto max = std::max(params.skip_samples, m_gapless.init.skip_samples);
+            m_gapless.current.skip_samples += max - m_gapless.init.skip_samples;
+            m_gapless.init.skip_samples = max;
         }
     }
 
@@ -93,21 +96,28 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         u32 frames_decoded = 0;
         auto in_size = in_buf.size();
         auto out_size = out_buf.Size();
-        while (!in_buf.empty() && !out_buf.IsEmpty() && !IsGaplessEnd()) {
+        while (!in_buf.empty() && !out_buf.IsEmpty() && !m_gapless.IsEnd()) {
             if (!HasEnoughSpace(out_buf)) {
                 if (job.output.p_mframe == nullptr || frames_decoded == 0) {
                     job.output.p_result->result = ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM;
                     break;
                 }
             }
-            const auto [nframes, nsamples] =
-                m_codec->ProcessData(in_buf, out_buf, m_gapless, GetNumRemainingSamples());
+
+            const auto [nframes, nsamples] = m_codec->ProcessData(in_buf, out_buf, m_gapless);
             frames_decoded += nframes;
             m_total_samples += nsamples;
-            m_gapless_samples += nsamples;
-            if (job.output.p_mframe == nullptr) {
+
+            if (False(job.flags.run_flags & AjmJobRunFlags::MultipleFrames)) {
                 break;
             }
+        }
+
+        if (m_gapless.IsEnd()) {
+            in_buf = in_buf.subspan(in_buf.size());
+            m_gapless.current.total_samples = m_gapless.init.total_samples;
+            m_gapless.current.skip_samples = m_gapless.init.skip_samples;
+            m_codec->Reset();
         }
         if (job.output.p_mframe) {
             job.output.p_mframe->num_frames = frames_decoded;
@@ -119,38 +129,19 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         }
     }
 
-    if (m_flags.gapless_loop && m_gapless.total_samples != 0 &&
-        m_gapless_samples >= m_gapless.total_samples) {
-        m_gapless_samples = 0;
-        m_gapless.skipped_samples = 0;
-        m_codec->Reset();
-    }
     if (job.output.p_format != nullptr) {
         *job.output.p_format = m_codec->GetFormat();
     }
     if (job.output.p_gapless_decode != nullptr) {
-        *job.output.p_gapless_decode = m_gapless;
+        *job.output.p_gapless_decode = m_gapless.current;
     }
     if (job.output.p_codec_info != nullptr) {
         m_codec->GetInfo(job.output.p_codec_info);
     }
 }
 
-bool AjmInstance::IsGaplessEnd() const {
-    return m_gapless.total_samples != 0 && m_gapless_samples >= m_gapless.total_samples;
-}
-
 bool AjmInstance::HasEnoughSpace(const SparseOutputBuffer& output) const {
-    const auto skip =
-        m_gapless.skip_samples - std::min(m_gapless.skip_samples, m_gapless.skipped_samples);
-    const auto remain = GetNumRemainingSamples().value_or(std::numeric_limits<u32>::max());
-    return output.Size() >= m_codec->GetNextFrameSize(skip, remain);
-}
-
-std::optional<u32> AjmInstance::GetNumRemainingSamples() const {
-    return m_gapless.total_samples != 0
-               ? std::optional<u32>{m_gapless.total_samples - m_gapless_samples}
-               : std::optional<u32>{};
+    return output.Size() >= m_codec->GetNextFrameSize(m_gapless);
 }
 
 } // namespace Libraries::Ajm
