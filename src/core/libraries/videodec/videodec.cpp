@@ -36,7 +36,7 @@ int PS4_SYSV_ABI sceVideodecDecode(OrbisVideodecCtrl* pCtrlIn,
                                    const OrbisVideodecInputData* pInputDataIn,
                                    OrbisVideodecFrameBuffer* pFrameBufferInOut,
                                    OrbisVideodecPictureInfo* pPictureInfoOut) {
-    LOG_INFO(Lib_Videodec, "called");
+    LOG_TRACE(Lib_Videodec, "called");
     if (!pCtrlIn || !pInputDataIn || !pPictureInfoOut) {
         return ORBIS_VIDEODEC_ERROR_ARGUMENT_POINTER;
     }
