@@ -3,15 +3,16 @@
 
 #include "input_handler.h"
 
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "fstream"
+#include "iostream"
+#include "map"
+#include "list"
+#include "sstream"
+#include "string"
+#include "vector"
 
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_timer.h>
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_timer.h"
 
 #include "common/config.h"
 #include "common/io_file.h"
@@ -44,11 +45,66 @@ float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
+// todo
+ControllerOutput output_array[] = {
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
+
+    ControllerOutput(0, Axis::TriggerLeft),
+    ControllerOutput(0, Axis::LeftY),
+    // etc.
+
+    // signifies the end of the array
+    ControllerOutput(0, Axis::AxisMax),
+};
+std::list<BindingConnection> connections = std::list<BindingConnection>();
+
+// parsing related functions
+
+// syntax: 'name, name,name' or 'name,name' or 'name'
+InputBinding getBindingFromString(std::string& line) {
+    u32 key1 = 0, key2 = 0, key3 = 0;
+
+    // Split the string by commas
+    std::vector<std::string> tokens;
+    std::stringstream ss(line);
+    std::string token;
+
+    while (std::getline(ss, token, ',')) {
+        tokens.push_back(token);
+    }
+
+    // Check for invalid tokens and map valid ones to keys
+    for (const auto& t : tokens) {
+        if (string_to_keyboard_key_map.find(t) == string_to_keyboard_key_map.end()) {
+            return InputBinding(0, 0, 0); // Skip by setting all keys to 0
+        }
+    }
+
+    // Assign values to keys if all tokens were valid
+    if (tokens.size() > 0) key1 = string_to_keyboard_key_map.at(tokens[0]);
+    if (tokens.size() > 1) key2 = string_to_keyboard_key_map.at(tokens[1]);
+    if (tokens.size() > 2) key3 = string_to_keyboard_key_map.at(tokens[2]);
+
+    return InputBinding(key1, key2, key3);
+}
+
+// function that takes a controlleroutput, and returns the array's corresponding element's pointer
+ControllerOutput* getOutputPointer(const ControllerOutput& parsed) {
+    // i wonder how long until someone notices this or I get rid of it
+    for (int i = 0; i[output_array] != ControllerOutput(0, Axis::AxisMax); i++) {
+        if(i[output_array] == parsed) {
+            return &output_array[i];
+        }
+    }
+    return nullptr;
+}
+
 void parseInputConfig(const std::string game_id = "") {
     
     const auto config_file = Config::getFoolproofKbmConfigFile(game_id);
 
-    // todo: change usages of this to getFoolproofKbmConfigFile (gui)
+    // todo: change usages of this to getFoolproofKbmConfigFile (in the gui)
     if(game_id == "") {
         return;
     }
@@ -80,8 +136,7 @@ void parseInputConfig(const std::string game_id = "") {
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
-            std::cerr << "Invalid line format at line: " << lineCount << " data: " << line
-                      << std::endl;
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
 
@@ -89,8 +144,6 @@ void parseInputConfig(const std::string game_id = "") {
         std::string after_equals = line.substr(equal_pos + 1);
         std::size_t comma_pos = after_equals.find(',');
         
-        // new data type construcor here
-        // todo
 
         // special check for mouse to joystick input
         if (before_equals == "mouse_to_joystick") {
@@ -108,12 +161,34 @@ void parseInputConfig(const std::string game_id = "") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
                 // todo
+                LOG_ERROR(Input, "todo");
+                continue;
             }
-            std::cerr << "Invalid line format at line: " << lineCount << " data: " << line
-                      << std::endl;
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
-        // todo
+
+        // normal cases
+        InputBinding binding = getBindingFromString(after_equals);
+        BindingConnection connection(0, nullptr);
+        auto button_it = string_to_cbutton_map.find(before_equals);
+        auto axis_it = string_to_axis_map.find(before_equals);
+
+        if(binding.isEmpty()) {
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
+            continue;
+        }
+        if (button_it != string_to_cbutton_map.end()) {
+            connection = BindingConnection(binding, getOutputPointer(ControllerOutput(button_it->second)));
+            connections.push_back(connection);
+        } else if (axis_it != string_to_axis_map.end()) {
+            connection = BindingConnection(binding, getOutputPointer(ControllerOutput(0, axis_it->second.axis)), axis_it->second.value);
+            connections.push_back(connection);
+        } else {
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
+            continue;
+        }
+        LOG_INFO(Input, "Succesfully parsed line {}", lineCount);
         /* og parsing
         // first we parse the binding, and if its wrong, we skip to the next line
         if (comma_pos != std::string::npos) {
@@ -241,6 +316,11 @@ void ControllerOutput::update(bool pressed, int axis_value) {
     } else {
         LOG_ERROR(Input, "Controller output with no values detected!");
     }
+}
+
+void activateOutputsFromInputs() {
+    // iterates over the connections, and updates them depending on whether the corresponding input trio is found
+
 }
 
 void updateMouse(GameController* controller) {

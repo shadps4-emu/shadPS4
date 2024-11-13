@@ -5,14 +5,15 @@
 
 #include "array"
 #include "map"
+#include "unordered_set"
 #include "string"
 #include "common/types.h"
 #include "common/logging/log.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_timer.h>
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_timer.h"
 
 // +1 and +2 is taken
 #define SDL_MOUSE_WHEEL_UP SDL_EVENT_MOUSE_WHEEL + 3
@@ -210,6 +211,9 @@ public:
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
     }
+    inline bool isEmpty() {
+        return key1 == 0 && key2 == 0 && key3 == 0;
+    }
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
     static u32 getInputIDFromEvent(const SDL_Event& e) {
@@ -235,11 +239,17 @@ public:
     u32 button;
     Axis axis;
 
-    ControllerOutput(u32 b, Axis a = Axis::AxisMax) {
+    ControllerOutput(const u32 b, Axis a = Axis::AxisMax) {
         button = b;
         axis = a;
     }
     ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {}
+    inline bool operator==(const ControllerOutput& o) const { // fucking consts everywhere
+        return button == o.button && axis == o.axis;
+    }
+    inline bool operator!=(const ControllerOutput& o) const {
+        return button != o.button || axis != o.axis;
+    }
     void update(bool pressed, int axis_direction = 0);
 };
 class BindingConnection {
@@ -258,18 +268,8 @@ public:
 };
 
 // todo
-// don't forget to change the number too
-const std::array<ControllerOutput, 4> output_array = {
-ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
-ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
-
-ControllerOutput(0, Axis::TriggerLeft),
-ControllerOutput(0, Axis::LeftY),
-// etc.
-};
-
-
-extern std::map<BindingConnection, ControllerOutput&> new_binding_map;
+//extern ControllerOutput output_array[];
+//extern std::map<BindingConnection, ControllerOutput&> new_binding_map;
 extern u32 pressed_keys[];
 
 // Check if the 3 key input is currently active.

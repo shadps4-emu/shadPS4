@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_init.h>
-#include <SDL3/SDL_properties.h>
-#include <SDL3/SDL_timer.h>
-#include <SDL3/SDL_video.h>
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_init.h"
+#include "SDL3/SDL_properties.h"
+#include "SDL3/SDL_timer.h"
+#include "SDL3/SDL_video.h"
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/version.h"
+#include "common/elf_info.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
@@ -17,7 +18,7 @@
 #include "video_core/renderdoc.h"
 
 #ifdef __APPLE__
-#include <SDL3/SDL_metal.h>
+#include "SDL3/SDL_metal.h"
 #endif
 
 namespace Frontend {
@@ -79,6 +80,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 #endif
     // input handler init-s
     Input::ControllerOutput::setControllerOutputController(controller);
+    Input::parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
 }
 
 WindowSDL::~WindowSDL() = default;
