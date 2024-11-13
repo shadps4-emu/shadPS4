@@ -291,6 +291,22 @@ struct Image {
         return static_cast<TilingMode>(tiling_index);
     }
 
+    bool NeedsNormalizationPatch() const {
+        if (GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
+            GetNumberFmt() == AmdGpu::NumberFormat::Snorm) {
+            switch (GetDataFmt()) {
+            case AmdGpu::DataFormat::Format32:
+            case AmdGpu::DataFormat::Format32_32:
+            case AmdGpu::DataFormat::Format32_32_32:
+            case AmdGpu::DataFormat::Format32_32_32_32:
+                return true;
+            default:
+                return false;
+            }
+        }
+        return false;
+    }
+
     bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
     }

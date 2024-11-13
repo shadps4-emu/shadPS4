@@ -8,6 +8,7 @@
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
@@ -417,24 +418,54 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
     }
 }
 
-bool ShouldPatchNormalization(const AmdGpu::Image& image) {
-    if (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-        image.GetNumberFmt() == AmdGpu::NumberFormat::Snorm) {
-        switch (image.GetDataFmt()) {
-        case AmdGpu::DataFormat::Format32:
-        case AmdGpu::DataFormat::Format32_32:
-        case AmdGpu::DataFormat::Format32_32_32:
-        case AmdGpu::DataFormat::Format32_32_32_32:
-            return true;
-        default:
-            return false;
-        }
-    }
-    return false;
-}
-
 void PatchNormalization(IR::Inst& inst, IR::IREmitter& ir, const AmdGpu::Image& image,
-                        bool is_write) {}
+                        bool is_write) {
+    if (!image.NeedsNormalizationPatch()) {
+        return;
+    }
+
+    bool is_signed = image.GetNumberFmt() == AmdGpu::NumberFormat::Snorm;
+    int num_components = AmdGpu::NumComponents(image.GetDataFmt());
+
+    IR::F32 multipier = ir.Imm32(is_signed ? 2147483647.0f : 4294967295.0f);
+
+    if (!is_write)
+        multipier = ir.FPRecip(multipier);
+
+    switch (num_components) {
+    case 1:
+        break;
+    case 2:
+        multipier = IR::F32{ir.CompositeConstruct(multipier, multipier)};
+    case 3:
+        multipier = IR::F32{ir.CompositeConstruct(multipier, multipier, multipier)};
+    case 4:
+        multipier = IR::F32{ir.CompositeConstruct(multipier, multipier, multipier, multipier)};
+    default:
+        UNREACHABLE();
+    }
+
+    if (is_write) {
+        IR::F32 data = IR::F32{inst.Arg(2)};
+        data = ir.FPMul(data, multipier);
+
+        if (is_signed) {
+            inst.SetArg(2, ir.ConvertFToS(32, data));
+        } else {
+            inst.SetArg(2, ir.ConvertFToU(32, data));
+        }
+    } else {
+        IR::Value data = IR::Value(ir.CopyInst(inst));
+        if (is_signed) {
+            data = ir.ConvertSToF(32, 32, data);
+        } else {
+            data = ir.ConvertUToF(32, 32, data);
+        }
+
+        data = ir.FPMul(IR::F32(data), multipier);
+        inst.ReplaceUsesWith(data);
+    }
+}
 
 void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                  Descriptors& descriptors, const IR::Inst* producer,
@@ -618,9 +649,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     }();
     inst.ReplaceUsesWith(new_inst);
 
-    if (ShouldPatchNormalization(image)) {
-        PatchNormalization(*new_inst.Inst(), ir, image, false);
-    }
+    PatchNormalization(*new_inst.Inst(), ir, image, false);
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -748,9 +777,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         inst.SetArg(4, arg);
     }
 
-    if (ShouldPatchNormalization(image)) {
-        PatchNormalization(inst, ir, image, inst.GetOpcode() == IR::Opcode::ImageWrite);
-    }
+    PatchNormalization(inst, ir, image, inst.GetOpcode() == IR::Opcode::ImageWrite);
 }
 
 void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
