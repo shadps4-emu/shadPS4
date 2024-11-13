@@ -101,11 +101,6 @@
 			<translation>Créer un raccourci</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Ouvrir le dossier du jeu</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Cheats/Patchs</translation>
@@ -121,9 +116,29 @@
 			<translation>Visionneuse de trophées</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Ouvrir le Dossier...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Ouvrir le Dossier du Jeu</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Ouvrir le Dossier des Données de Sauvegarde</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Ouvrir le Dossier des Logs</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Copier infos</translation>
+			<source>Copy info...</source>
+			<translation>Copier infos...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

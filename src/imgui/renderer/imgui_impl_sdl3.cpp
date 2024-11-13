@@ -11,6 +11,7 @@
 #include <SDL3/SDL.h>
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
+#include <dispatch/dispatch.h>
 #endif
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -71,7 +72,14 @@ static void PlatformSetImeData(ImGuiContext*, ImGuiViewport* viewport, ImGuiPlat
     auto window_id = (SDL_WindowID)(intptr_t)viewport->PlatformHandle;
     SDL_Window* window = SDL_GetWindowFromID(window_id);
     if ((!data->WantVisible || bd->ime_window != window) && bd->ime_window != nullptr) {
-        SDL_StopTextInput(bd->ime_window);
+        auto stop_input = [&bd] { SDL_StopTextInput(bd->ime_window); };
+#ifdef __APPLE__
+        dispatch_sync(dispatch_get_main_queue(), ^{
+          stop_input();
+        });
+#else
+        stop_input();
+#endif
         bd->ime_window = nullptr;
     }
     if (data->WantVisible) {
@@ -80,8 +88,17 @@ static void PlatformSetImeData(ImGuiContext*, ImGuiViewport* viewport, ImGuiPlat
         r.y = (int)data->InputPos.y;
         r.w = 1;
         r.h = (int)data->InputLineHeight;
-        SDL_SetTextInputArea(window, &r, 0);
-        SDL_StartTextInput(window);
+        const auto start_input = [&window, &r] {
+            SDL_SetTextInputArea(window, &r, 0);
+            SDL_StartTextInput(window);
+        };
+#ifdef __APPLE__
+        dispatch_sync(dispatch_get_main_queue(), ^{
+          start_input();
+        });
+#else
+        start_input();
+#endif
         bd->ime_window = window;
     }
 }

@@ -101,11 +101,6 @@
 			<translation>ショートカットを作成</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>ゲームフォルダを開く</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>チート / パッチ</translation>
@@ -121,9 +116,29 @@
 			<translation>トロフィービューワー</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>フォルダを開く...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>ゲームフォルダを開く</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>セーブデータフォルダを開く</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>ログフォルダを開く</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>情報をコピー</translation>
+			<source>Copy info...</source>
+			<translation>情報をコピー...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

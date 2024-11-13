@@ -690,9 +690,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (image.GetType()) {
-        case AmdGpu::ImageType::Color1D: // x
+        case AmdGpu::ImageType::Color1D: // x, [lod]
             return {body->Arg(0), body->Arg(1)};
-        case AmdGpu::ImageType::Color1DArray: // x, slice
+        case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
             [[fallthrough]];
         case AmdGpu::ImageType::Color2D: // x, y, [lod]
             [[fallthrough]];
@@ -703,9 +703,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
                                                   // argument)
             [[fallthrough]];
-        case AmdGpu::ImageType::Color3D: // x, y, z
+        case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube: // x, y, face
+        case AmdGpu::ImageType::Cube: // x, y, face, [lod]
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
                                    inst_info.is_array),
                     body->Arg(3)};
@@ -717,8 +717,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
-        ASSERT(image.GetType() == AmdGpu::ImageType::Color2D ||
-               image.GetType() == AmdGpu::ImageType::Color2DArray);
+        ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
+               image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
         inst.SetArg(3, arg);
     } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {

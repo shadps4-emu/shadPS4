@@ -101,11 +101,6 @@
 			<translation>Crea scorciatoia</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>Apri cartella del gioco</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>Trucchi / Patch</translation>
@@ -121,9 +116,29 @@
 			<translation>Visualizzatore Trofei</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>Apri Cartella...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>Apri Cartella del Gioco</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>Apri Cartella dei Dati di Salvataggio</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>Apri Cartella dei Log</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>Copia informazioni</translation>
+			<source>Copy info...</source>
+			<translation>Copia informazioni...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

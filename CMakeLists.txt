@@ -366,6 +366,10 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
              src/core/libraries/videodec/videodec2_avc.h
+             src/core/libraries/videodec/videodec.cpp
+             src/core/libraries/videodec/videodec.h
+             src/core/libraries/videodec/videodec_impl.cpp
+             src/core/libraries/videodec/videodec_impl.h
 )
 
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
@@ -941,4 +945,5 @@ install(TARGETS shadps4 BUNDLE DESTINATION .)
 if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES ".github/shadps4.desktop" DESTINATION "share/applications")
     install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps")
+    install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")
 endif()
