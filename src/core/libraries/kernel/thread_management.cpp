@@ -477,6 +477,10 @@ int PS4_SYSV_ABI scePthreadMutexDestroy(ScePthreadMutex* mutex) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
+    if (*mutex == ORBIS_PTHREAD_MUTEX_ADAPTIVE_INITIALIZER) {
+        return ORBIS_OK;
+    }
+
     int result = pthread_mutex_destroy(&(*mutex)->pth_mutex);
 
     LOG_DEBUG(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
