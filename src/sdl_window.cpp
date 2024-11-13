@@ -108,7 +108,9 @@ void WindowSDL::waitEvent() {
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
         onResize();
         break;
-    
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+    case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         onKeyboardMouseInput(&event);
@@ -146,201 +148,41 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
     // get the event's id, if it's keyup or keydown
+    bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
+                      event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+                      event->type == SDL_EVENT_MOUSE_WHEEL;
+    u32 input_id = Input::InputBinding::getInputIDFromEvent(*event);
 
-    // add/remove it from the list
-
-    // update bindings and buttons
-
-    // update axes
-
-/* og function
-#ifdef __APPLE__
-    // Use keys that are more friendly for keyboards without a keypad.
-    // Once there are key binding options this won't be necessary.
-    constexpr SDL_Keycode CrossKey = SDLK_N;
-    constexpr SDL_Keycode CircleKey = SDLK_B;
-    constexpr SDL_Keycode SquareKey = SDLK_V;
-    constexpr SDL_Keycode TriangleKey = SDLK_C;
-#else
-    constexpr SDL_Keycode CrossKey = SDLK_KP_2;
-    constexpr SDL_Keycode CircleKey = SDLK_KP_6;
-    constexpr SDL_Keycode SquareKey = SDLK_KP_4;
-    constexpr SDL_Keycode TriangleKey = SDLK_KP_8;
-#endif
-
-    u32 button = 0;
-    Input::Axis axis = Input::Axis::AxisMax;
-    int axisvalue = 0;
-    int ax = 0;
-    std::string backButtonBehavior = Config::getBackButtonBehavior();
-    switch (event->key.key) {
-    case SDLK_UP:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
-        break;
-    case SDLK_DOWN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
-        break;
-    case SDLK_LEFT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
-        break;
-    case SDLK_RIGHT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
-        break;
-    case TriangleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
-        break;
-    case CircleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
-        break;
-    case CrossKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
-        break;
-    case SquareKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
-        break;
-    case SDLK_RETURN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
-        break;
-    case SDLK_A:
-        axis = Input::Axis::LeftX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
+    // Handle window controls outside of the input maps
+    if (event->type == SDL_EVENT_KEY_DOWN) {
+        // Reparse kbm inputs
+        if (input_id == SDLK_F8) {
+            Input::parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
         }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_D:
-        axis = Input::Axis::LeftX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
+        // Toggle mouse capture and movement input
+        else if (input_id == SDLK_F7) {
+            Input::toggleMouseEnabled();
+            SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
+                                           !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
         }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_W:
-        axis = Input::Axis::LeftY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
+        // Toggle fullscreen
+        else if (input_id == SDLK_F11) {
+            SDL_WindowFlags flag = SDL_GetWindowFlags(window);
+            bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
+            SDL_SetWindowFullscreen(window, !is_fullscreen);
         }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_S:
-        axis = Input::Axis::LeftY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_J:
-        axis = Input::Axis::RightX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_L:
-        axis = Input::Axis::RightX;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_I:
-        axis = Input::Axis::RightY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += -127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_K:
-        axis = Input::Axis::RightY;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 127;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
-        break;
-    case SDLK_X:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
-        break;
-    case SDLK_M:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
-        break;
-    case SDLK_Q:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
-        break;
-    case SDLK_U:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
-        break;
-    case SDLK_E:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
-        axis = Input::Axis::TriggerLeft;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 255;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(0, 0x80, axisvalue);
-        break;
-    case SDLK_O:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
-        axis = Input::Axis::TriggerRight;
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            axisvalue += 255;
-        } else {
-            axisvalue = 0;
-        }
-        ax = Input::GetAxis(0, 0x80, axisvalue);
-        break;
-    case SDLK_SPACE:
-        if (backButtonBehavior != "none") {
-            float x = backButtonBehavior == "left" ? 0.25f
-                                                   : (backButtonBehavior == "right" ? 0.75f : 0.5f);
-            // trigger a touchpad event so that the touchpad emulation for back button works
-            controller->SetTouchpadState(0, true, x, 0.5f);
-            button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
-        } else {
-            button = 0;
-        }
-        break;
-    case SDLK_F11:
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            {
-                SDL_WindowFlags flag = SDL_GetWindowFlags(window);
-                bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
-                SDL_SetWindowFullscreen(window, !is_fullscreen);
-            }
-        }
-        break;
-    case SDLK_F12:
-        if (event->type == SDL_EVENT_KEY_DOWN) {
-            // Trigger rdoc capture
+        // Trigger rdoc capture
+        else if (input_id == SDLK_F12) {
             VideoCore::TriggerCapture();
         }
-        break;
-    default:
-        break;
     }
-    if (button != 0) {
-        controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
-    }
-    if (axis != Input::Axis::AxisMax) {
-        controller->Axis(0, axis, ax);
-    }
-*/
+
+    // add/remove it from the list
+    Input::updatePressedKeys(input_id, input_down);
+
+    // update bindings
+    Input::activateOutputsFromInputs();
+    
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {

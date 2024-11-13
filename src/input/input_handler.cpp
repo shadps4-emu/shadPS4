@@ -6,6 +6,7 @@
 #include "fstream"
 #include "iostream"
 #include "map"
+#include "unordered_map"
 #include "list"
 #include "sstream"
 #include "string"
@@ -45,19 +46,45 @@ float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
 Uint32 mouse_polling_id = 0;
 bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
-// todo
+std::list<u32> pressed_keys = std::list<u32>();
+std::list<BindingConnection> connections = std::list<BindingConnection>();
+
+void toggleMouseEnabled() {
+    mouse_enabled ^= true;
+}
 ControllerOutput output_array[] = {
+    // Button mappings
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT),
 
-    ControllerOutput(0, Axis::TriggerLeft),
-    ControllerOutput(0, Axis::LeftY),
-    // etc.
+    // Axis mappings
+    ControllerOutput(0, Input::Axis::LeftX),
+    ControllerOutput(0, Input::Axis::LeftY),
+    ControllerOutput(0, Input::Axis::RightX),
+    ControllerOutput(0, Input::Axis::RightY),
+    ControllerOutput(0, Input::Axis::TriggerLeft),
+    ControllerOutput(0, Input::Axis::TriggerRight),
 
-    // signifies the end of the array
-    ControllerOutput(0, Axis::AxisMax),
+    ControllerOutput(LEFTJOYSTICK_HALFMODE),
+    ControllerOutput(RIGHTJOYSTICK_HALFMODE),
+
+    // End marker to signify the end of the array
+    ControllerOutput(0, Input::Axis::AxisMax)
 };
-std::list<BindingConnection> connections = std::list<BindingConnection>();
 
 // parsing related functions
 
@@ -167,6 +194,10 @@ void parseInputConfig(const std::string game_id = "") {
             LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
+        if (before_equals == "mouse_movement_params") {
+            LOG_ERROR(Input, "todo");
+            continue;
+        }
 
         // normal cases
         InputBinding binding = getBindingFromString(after_equals);
@@ -180,78 +211,15 @@ void parseInputConfig(const std::string game_id = "") {
         }
         if (button_it != string_to_cbutton_map.end()) {
             connection = BindingConnection(binding, getOutputPointer(ControllerOutput(button_it->second)));
-            connections.push_back(connection);
+            connections.insert(connections.end(),  connection);
         } else if (axis_it != string_to_axis_map.end()) {
             connection = BindingConnection(binding, getOutputPointer(ControllerOutput(0, axis_it->second.axis)), axis_it->second.value);
-            connections.push_back(connection);
+            connections.insert(connections.end(),  connection);
         } else {
             LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
-        LOG_INFO(Input, "Succesfully parsed line {}", lineCount);
-        /* og parsing
-        // first we parse the binding, and if its wrong, we skip to the next line
-        if (comma_pos != std::string::npos) {
-            // Handle key + modifier
-            std::string key = after_equals.substr(0, comma_pos);
-            std::string mod = after_equals.substr(comma_pos + 1);
-
-            auto key_it = string_to_keyboard_key_map.find(key);
-            auto mod_it = string_to_keyboard_mod_key_map.find(mod);
-
-            if (key_it != string_to_keyboard_key_map.end() &&
-                mod_it != string_to_keyboard_mod_key_map.end()) {
-                binding.key = key_it->second;
-                binding.modifier = mod_it->second;
-            } else if (before_equals == "mouse_movement_params") {
-                // handle mouse movement params
-                float p1 = 0.5, p2 = 1, p3 = 0.125;
-                std::size_t second_comma_pos = after_equals.find(',');
-                try {
-                    p1 = std::stof(key);
-                    p2 = std::stof(mod.substr(0, second_comma_pos));
-                    p3 = std::stof(mod.substr(second_comma_pos + 1));
-                    mouse_deadzone_offset = p1;
-                    mouse_speed = p2;
-                    mouse_speed_offset = p3;
-                } catch (...) {
-                    // fallback to default values
-                    mouse_deadzone_offset = 0.5;
-                    mouse_speed = 1;
-                    mouse_speed_offset = 0.125;
-                    std::cerr << "Parsing error while parsing kbm inputs at line " << lineCount
-                              << " line data: " << line << "\n";
-                }
-                continue;
-            } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
-                          << " line data: " << line << "\n";
-                continue; // skip
-            }
-        } else {
-            // Just a key without modifier
-            auto key_it = string_to_keyboard_key_map.find(after_equals);
-            if (key_it != string_to_keyboard_key_map.end()) {
-                binding.key = key_it->second;
-            } else {
-                std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
-                          << " line data: " << line << "\n";
-                continue; // skip
-            }
-        }
-
-        // Check for axis mapping (example: axis_left_x_plus)
-        auto axis_it = string_to_axis_map.find(before_equals);
-        auto button_it = string_to_cbutton_map.find(before_equals);
-        if (axis_it != string_to_axis_map.end()) {
-            old_axis_map[binding] = axis_it->second;
-        } else if (button_it != string_to_cbutton_map.end()) {
-            old_button_map[binding] = button_it->second;
-        } else {
-            std::cerr << "Syntax error while parsing kbm inputs at line " << lineCount
-                      << " line data: " << line << "\n";
-        }
-        */
+        //LOG_INFO(Input, "Succesfully parsed line {}", lineCount);
     }
     file.close();
 }
@@ -262,18 +230,23 @@ void ControllerOutput::setControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
+
+
 void ControllerOutput::update(bool pressed, int axis_value) {
+    if(controller == nullptr) {
+        LOG_ERROR(Input, "No controller found!");
+        return;
+    }
     float touchpad_x = 0;
     if(button != 0){
         switch (button) {
-        /* todo
+        // todo: check if l2 and r2 can be moved to the axis section
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2:
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2:
             axis = (button == OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2) ? Axis::TriggerRight
                                                                             : Axis::TriggerLeft;
             controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
             break;
-        */
         case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD:
             touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
                         : Config::getBackButtonBehavior() == "right" ? 0.75f
@@ -318,9 +291,68 @@ void ControllerOutput::update(bool pressed, int axis_value) {
     }
 }
 
+void updatePressedKeys(u32 value, bool is_pressed) {
+    if (is_pressed) {
+        // Find the correct position for insertion to maintain order
+        auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), value);
+        
+        // Insert only if 'value' is not already in the list
+        if (it == pressed_keys.end() || *it != value) {
+            pressed_keys.insert(it, value);
+        }
+    } else {
+        // Remove 'value' from the list if it's not pressed
+        pressed_keys.remove(value);
+    }
+}
+
+// Check if a given binding's all keys are currently active.
+bool isInputActive(const InputBinding& i) {
+    /* how to check if a binding is currently held down:
+        iterate until connection.InputBinding.key3 is found or we reach the end
+            iterate from that point until connection.InputBinding.key2 is found or we reach the end
+                iterate from that point until connection.InputBinding.key1 is found or we reach the end
+        if we ever reach the end, return false
+        if the next key to find would be 0, return true
+        if all three are found return true
+    */
+    auto it = pressed_keys.begin();
+
+    // Check for key1 if it's set
+    if (i.key1 != 0) {
+        it = std::find(it, pressed_keys.end(), i.key1);
+        if (it == pressed_keys.end()) return false;
+        ++it;  // Move to the next element for subsequent checks
+    }
+
+    // Check for key2 if it's set
+    if (i.key2 != 0) {
+        it = std::find(it, pressed_keys.end(), i.key2);
+        if (it == pressed_keys.end()) return false;
+        ++it;
+    }
+
+    // Check for key3 if it's set
+    if (i.key3 != 0) {
+        it = std::find(it, pressed_keys.end(), i.key3);
+        if (it == pressed_keys.end()) return false;
+    }
+
+    // All required keys were found in order
+    LOG_INFO(Input, "A valid held input is found!");
+    return true;
+}
+
 void activateOutputsFromInputs() {
     // iterates over the connections, and updates them depending on whether the corresponding input trio is found
-
+    for(auto it = connections.begin(); it != connections.end(); it++) {
+        if (it->output) {  // Check if output is not nullptr
+            it->output->update(isInputActive(it->binding), it->axis_value);
+            LOG_INFO(Input, "Updating an output");
+        } else {
+            LOG_ERROR(Input, "Null output in BindingConnection at position {}", std::distance(connections.begin(), it));
+        }
+    }
 }
 
 void updateMouse(GameController* controller) {

@@ -168,6 +168,9 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"capslock", SDLK_CAPSLOCK},
 };
 
+// literally the only flag that needs external access
+void toggleMouseEnabled();
+
 // i wrapped it in a function so I can collapse it
 std::string_view getDefaultKeyboardConfig();
 
@@ -267,16 +270,13 @@ public:
 
 };
 
-// todo
-//extern ControllerOutput output_array[];
-//extern std::map<BindingConnection, ControllerOutput&> new_binding_map;
-extern u32 pressed_keys[];
-
 // Check if the 3 key input is currently active.
 bool checkForInputDown(InputBinding i);
 
 // Add/remove the input that generated the event to/from the held keys container.
 void updatePressedKeys(u32 button, bool is_pressed);
+
+void activateOutputsFromInputs();
 
 
 void updateMouse(GameController* controller);
