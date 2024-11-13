@@ -21,6 +21,9 @@
 #define SDL_MOUSE_WHEEL_LEFT SDL_EVENT_MOUSE_WHEEL + 5
 #define SDL_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 7
 
+// idk who already used what where so I just chose a big number
+#define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10 
+
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
 
@@ -219,19 +222,7 @@ public:
     }
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
-    static u32 getInputIDFromEvent(const SDL_Event& e) {
-        switch(e.type) {
-        case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP:
-            return e.key.key;
-        case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        case SDL_EVENT_MOUSE_BUTTON_UP:
-            return (u32)e.button.button;
-        default:
-            // todo: add the rest (wheel)
-            return 0;
-        }
-    }
+    static u32 getInputIDFromEvent(const SDL_Event& e);
 
 };
 class ControllerOutput {
@@ -241,10 +232,12 @@ public:
 
     u32 button;
     Axis axis;
+    int axis_value;
 
     ControllerOutput(const u32 b, Axis a = Axis::AxisMax) {
         button = b;
         axis = a;
+        axis_value = 0;
     }
     ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {}
     inline bool operator==(const ControllerOutput& o) const { // fucking consts everywhere
@@ -254,6 +247,8 @@ public:
         return button != o.button || axis != o.axis;
     }
     void update(bool pressed, int axis_direction = 0);
+    // Off events are not counted
+    void addUpdate(bool pressed, int axis_direction = 0);
 };
 class BindingConnection {
 public:
@@ -262,7 +257,7 @@ public:
     int axis_value;
     BindingConnection(InputBinding b, ControllerOutput* out, int a_v = 0) {
         binding = b;
-        axis_value = 0;
+        axis_value = a_v; // bruh this accidentally set to be 0 no wonder it didn't do anything
 
         // todo: check if out is in the allowed array
         output = out;

@@ -139,12 +139,10 @@ void parseInputConfig(const std::string game_id = "") {
     // todo
     // we reset these here so in case the user fucks up or doesn't include this we can fall back to
     // default
+    connections.clear();
     mouse_deadzone_offset = 0.5;
     mouse_speed = 1;
     mouse_speed_offset = 0.125;
-    //old_button_map.clear();
-    //old_axis_map.clear();
-    //old_key_to_modkey_toggle_map.clear();
     int lineCount = 0;
 
     std::ifstream file(config_file);
@@ -187,7 +185,6 @@ void parseInputConfig(const std::string game_id = "") {
         if (before_equals == "modkey_toggle") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
-                // todo
                 LOG_ERROR(Input, "todo");
                 continue;
             }
@@ -211,10 +208,10 @@ void parseInputConfig(const std::string game_id = "") {
         }
         if (button_it != string_to_cbutton_map.end()) {
             connection = BindingConnection(binding, getOutputPointer(ControllerOutput(button_it->second)));
-            connections.insert(connections.end(),  connection);
+            connections.insert(connections.end(), connection);
         } else if (axis_it != string_to_axis_map.end()) {
             connection = BindingConnection(binding, getOutputPointer(ControllerOutput(0, axis_it->second.axis)), axis_it->second.value);
-            connections.insert(connections.end(),  connection);
+            connections.insert(connections.end(), connection);
         } else {
             LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
@@ -224,19 +221,43 @@ void parseInputConfig(const std::string game_id = "") {
     file.close();
 }
 
-// todo: add an init for this
+Uint32 getMouseWheelEvent(const SDL_Event& event) {
+    if (event.type != SDL_EVENT_MOUSE_WHEEL || event.type != SDL_EVENT_MOUSE_WHEEL_OFF)
+        return 0;
+    if (event.wheel.y > 0) {
+        return SDL_MOUSE_WHEEL_UP;
+    } else if (event.wheel.y < 0) {
+        return SDL_MOUSE_WHEEL_DOWN;
+    } else if (event.wheel.x > 0) {
+        return SDL_MOUSE_WHEEL_RIGHT;
+    } else if (event.wheel.x < 0) {
+        return SDL_MOUSE_WHEEL_LEFT;
+    }
+    return 0;
+}
+
+u32 InputBinding::getInputIDFromEvent(const SDL_Event& e) {
+    switch(e.type) {
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP:
+        return e.key.key;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+        return (u32)e.button.button;
+    case SDL_EVENT_MOUSE_WHEEL:
+    case SDL_EVENT_MOUSE_WHEEL_OFF:
+        return getMouseWheelEvent(e);
+    default:
+        return (u32)-1;
+    }
+}
+
 GameController* ControllerOutput::controller = nullptr;
 void ControllerOutput::setControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
-
-
-void ControllerOutput::update(bool pressed, int axis_value) {
-    if(controller == nullptr) {
-        LOG_ERROR(Input, "No controller found!");
-        return;
-    }
+void ControllerOutput::update(bool pressed, int a_value) {
     float touchpad_x = 0;
     if(button != 0){
         switch (button) {
@@ -278,14 +299,73 @@ void ControllerOutput::update(bool pressed, int axis_value) {
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
             // todo: verify this works
-            controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
+            //controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
             break;
         default:
             break;
         }
-        int output_value = (pressed ? axis_value : 0) * multiplier;
-        int ax = GetAxis(-0x80, 0x80, output_value);
+        axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier, -127, 127);
+        int ax = GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
+    } else {
+        LOG_ERROR(Input, "Controller output with no values detected!");
+    }
+}
+void ControllerOutput::addUpdate(bool pressed, int a_value) {
+    
+    float touchpad_x = 0;
+    if(button != 0){
+        if(!pressed) {
+            return;
+        }
+        switch (button) {
+        // todo: check if l2 and r2 can be moved to the axis section
+        case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2:
+        case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2:
+            axis = (button == OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2) ? Axis::TriggerRight
+                                                                            : Axis::TriggerLeft;
+            controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
+            break;
+        case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD:
+            touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
+                        : Config::getBackButtonBehavior() == "right" ? 0.75f
+                                                                    : 0.5f;
+            controller->SetTouchpadState(0, true, touchpad_x, 0.5f);
+            controller->CheckButton(0, button, pressed);
+            break;
+        case LEFTJOYSTICK_HALFMODE:
+            leftjoystick_halfmode ^= pressed; // toggle if pressed, don't change otherwise
+            break;
+        case RIGHTJOYSTICK_HALFMODE:
+            rightjoystick_halfmode ^= pressed;
+            break;
+        default: // is a normal key (hopefully)
+            controller->CheckButton(0, button, pressed);
+            break;
+        }
+    } else if (axis != Axis::AxisMax) {
+        float multiplier = 1.0;
+        switch (axis) {
+        case Axis::LeftX:
+        case Axis::LeftY:
+            multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
+            break;
+        case Axis::RightX:
+        case Axis::RightY:
+            multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
+            break;
+        case Axis::TriggerLeft:
+        case Axis::TriggerRight:
+            // todo: verify this works
+            //controller->Axis(0, axis, GetAxis(0, 0x80, pressed ? 128 : 0));
+            break;
+        default:
+            break;
+        }
+        axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier + axis_value, -127, 127);
+        int ax = GetAxis(-0x80, 0x80, axis_value);
+        controller->Axis(0, axis, ax);
+        LOG_INFO(Input, "Axis value delta: {} final value: {}", a_value, axis_value);
     } else {
         LOG_ERROR(Input, "Controller output with no values detected!");
     }
@@ -344,13 +424,20 @@ bool isInputActive(const InputBinding& i) {
 }
 
 void activateOutputsFromInputs() {
-    // iterates over the connections, and updates them depending on whether the corresponding input trio is found
+    // reset everything
     for(auto it = connections.begin(); it != connections.end(); it++) {
-        if (it->output) {  // Check if output is not nullptr
-            it->output->update(isInputActive(it->binding), it->axis_value);
-            LOG_INFO(Input, "Updating an output");
+        if (it->output) {
+            it->output->update(false, 0);
         } else {
             LOG_ERROR(Input, "Null output in BindingConnection at position {}", std::distance(connections.begin(), it));
+        }
+    }
+    // iterates over the connections, and updates them depending on whether the corresponding input trio is found
+    for(auto it = connections.begin(); it != connections.end(); it++) {
+        if (it->output) {
+            it->output->addUpdate(isInputActive(it->binding), it->axis_value);
+        } else {
+            //LOG_ERROR(Input, "Null output in BindingConnection at position {}", std::distance(connections.begin(), it));
         }
     }
 }

@@ -111,6 +111,7 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
     case SDL_EVENT_MOUSE_WHEEL:
+    case SDL_EVENT_MOUSE_WHEEL_OFF:
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         onKeyboardMouseInput(&event);
@@ -144,6 +145,14 @@ void WindowSDL::onResize() {
     ImGui::Core::OnResize();
 }
 
+Uint32 wheelOffCallback(void* og_event, Uint32 timer_id, Uint32 interval) {
+    SDL_Event off_event = *(SDL_Event*)og_event;
+    off_event.type = SDL_EVENT_MOUSE_WHEEL_OFF;
+    SDL_PushEvent(&off_event);
+    delete (SDL_Event*)og_event;
+    return 0;
+}
+
 void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
@@ -175,6 +184,12 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
         else if (input_id == SDLK_F12) {
             VideoCore::TriggerCapture();
         }
+    }
+    
+    // if it's a wheel event, make a timer that turns it off after a set time
+    if(event->type == SDL_EVENT_MOUSE_WHEEL) {
+        const SDL_Event* copy = new SDL_Event(*event);
+        SDL_AddTimer(33, wheelOffCallback, (void*)copy);
     }
 
     // add/remove it from the list
