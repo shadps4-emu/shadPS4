@@ -26,7 +26,7 @@ struct TextureBufferSpecialization {
 };
 
 struct ImageSpecialization {
-    enum class Normalization : u8 {
+    enum class NormalizationSign : u8 {
         None,
         Signed,
         Unsigned,
@@ -34,7 +34,8 @@ struct ImageSpecialization {
 
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
-    Normalization normalization = Normalization::None;
+    NormalizationSign normalization = NormalizationSign::None;
+    u32 normalized_components = 0;
 
     auto operator<=>(const ImageSpecialization&) const = default;
 };
@@ -88,8 +89,9 @@ struct StageSpecialization {
 
                 if (sharp.NeedsNormalizationPatch()) {
                     spec.normalization = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Snorm
-                                             ? ImageSpecialization::Normalization::Signed
-                                             : ImageSpecialization::Normalization::Unsigned;
+                                             ? ImageSpecialization::NormalizationSign::Signed
+                                             : ImageSpecialization::NormalizationSign::Unsigned;
+                    spec.normalized_components = AmdGpu::NumComponents(sharp.GetDataFmt());
                 }
             });
         ForEachSharp(binding, fmasks, info->fmasks,
