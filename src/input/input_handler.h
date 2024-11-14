@@ -28,6 +28,8 @@
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
 
+#define KEY_TOGGLE 0x00200000
+
 namespace Input {
 using Input::Axis;
 using Libraries::Pad::OrbisPadButtonDataOffset;
@@ -260,18 +262,18 @@ public:
     std::string toString() const {
         return fmt::format("({}, {}, {})", button, (int)axis, axis_value);
     }
-    void update(bool pressed, int axis_direction = 0);
+    void update(bool pressed, u32 param = 0);
     // Off events are not counted
-    void addUpdate(bool pressed, int axis_direction = 0);
+    void addUpdate(bool pressed, u32 param = 0);
 };
 class BindingConnection {
 public:
     InputBinding binding;
     ControllerOutput* output;
-    int axis_value;
-    BindingConnection(InputBinding b, ControllerOutput* out, int a_v = 0) {
+    u32 parameter;
+    BindingConnection(InputBinding b, ControllerOutput* out, u32 param = 0) {
         binding = b;
-        axis_value = a_v; // bruh this accidentally set to be 0 no wonder it didn't do anything
+        parameter = param; // bruh this accidentally set to be 0 no wonder it didn't do anything
 
         // todo: check if out is in the allowed array
         output = out;

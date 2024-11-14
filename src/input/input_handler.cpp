@@ -47,11 +47,10 @@ Uint32 mouse_polling_id = 0;
 bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
 std::list<std::pair<u32, bool>> pressed_keys;
+std::list<u32> toggled_keys;
 std::list<BindingConnection> connections = std::list<BindingConnection>();
 
-void toggleMouseEnabled() {
-    mouse_enabled ^= true;
-}
+
 ControllerOutput output_array[] = {
     // Button mappings
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE),
@@ -81,11 +80,16 @@ ControllerOutput output_array[] = {
 
     ControllerOutput(LEFTJOYSTICK_HALFMODE),
     ControllerOutput(RIGHTJOYSTICK_HALFMODE),
+    ControllerOutput(KEY_TOGGLE),
 
     // End marker to signify the end of the array
     ControllerOutput(0, Input::Axis::AxisMax)
 };
 
+// We had to go through 3 files of indirection just to update a flag
+void toggleMouseEnabled() {
+    mouse_enabled ^= true;
+}
 // parsing related functions
 
 // syntax: 'name, name,name' or 'name,name' or 'name'
@@ -161,46 +165,54 @@ void parseInputConfig(const std::string game_id = "") {
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
-            LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
 
-        std::string before_equals = line.substr(0, equal_pos);
-        std::string after_equals = line.substr(equal_pos + 1);
-        std::size_t comma_pos = after_equals.find(',');
+        std::string output_string = line.substr(0, equal_pos);
+        std::string input_string = line.substr(equal_pos + 1);
+        std::size_t comma_pos = input_string.find(',');
         
 
         // special check for mouse to joystick input
-        if (before_equals == "mouse_to_joystick") {
-            if (after_equals == "left") {
+        if (output_string == "mouse_to_joystick") {
+            if (input_string == "left") {
                 mouse_joystick_binding = 1;
-            } else if (after_equals == "right") {
+            } else if (input_string == "right") {
                 mouse_joystick_binding = 2;
             } else {
                 mouse_joystick_binding = 0; // default to 'none' or invalid
             }
             continue;
         }
-        // mod key toggle
-        if (before_equals == "modkey_toggle") {
+        // key toggle
+        if (output_string == "key_toggle") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
-                LOG_DEBUG(Input, "todo: {}", line);
+                InputBinding toggle_keys = getBindingFromString(input_string);
+                if(toggle_keys.keyCount() != 2) {
+                    LOG_ERROR(Input, "Syntax error: Please provide exactly 2 keys: "
+                            "first is the toggler, the second is the key to toggle: {}", line);
+                    continue;
+                }
+                ControllerOutput* toggle_out = getOutputPointer(ControllerOutput(KEY_TOGGLE));
+                BindingConnection toggle_connection = BindingConnection(InputBinding(toggle_keys.key2), toggle_out, toggle_keys.key3); 
+                connections.insert(connections.end(), toggle_connection);
                 continue;
             }
-            LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
+            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
             continue;
         }
-        if (before_equals == "mouse_movement_params") {
+        if (output_string == "mouse_movement_params") {
             LOG_DEBUG(Input, "todo: {}", line);
             continue;
         }
 
         // normal cases
-        InputBinding binding = getBindingFromString(after_equals);
+        InputBinding binding = getBindingFromString(input_string);
         BindingConnection connection(0, nullptr);
-        auto button_it = string_to_cbutton_map.find(before_equals);
-        auto axis_it = string_to_axis_map.find(before_equals);
+        auto button_it = string_to_cbutton_map.find(output_string);
+        auto axis_it = string_to_axis_map.find(output_string);
 
         if(binding.isEmpty()) {
             LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount, line);
@@ -262,7 +274,18 @@ void ControllerOutput::setControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
-void ControllerOutput::update(bool pressed, int a_value) {
+void toggleKeyInList(u32 key) {
+    auto it = std::find(toggled_keys.begin(), toggled_keys.end(), key);
+    if(it == toggled_keys.end()) {
+        toggled_keys.insert(toggled_keys.end(), key);
+        LOG_DEBUG(Input, "Added {} to toggled keys", key);
+    } else {
+        toggled_keys.erase(it);
+        LOG_DEBUG(Input, "Removed {} from toggled keys", key);
+    }
+}
+
+void ControllerOutput::update(bool pressed, u32 param) {
     float touchpad_x = 0;
     if(button != 0){
         switch (button) {
@@ -278,6 +301,11 @@ void ControllerOutput::update(bool pressed, int a_value) {
             break;
         case RIGHTJOYSTICK_HALFMODE:
             rightjoystick_halfmode = pressed;
+            break;
+        case KEY_TOGGLE:
+            if(pressed) {
+                toggleKeyInList(param);
+            }
             break;
         default: // is a normal key (hopefully)
             controller->CheckButton(0, button, pressed);
@@ -298,20 +326,20 @@ void ControllerOutput::update(bool pressed, int a_value) {
         case Axis::TriggerRight:
             // todo: verify this works (This probably works from testing, 
             // but needs extra info (multiple input to the same trigger?))
-            axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier, 0, 127);
+            axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier, 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier, -127, 127);
+        axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier, -127, 127);
         int ax = GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
     } else {
         LOG_DEBUG(Input, "Controller output with no values detected!");
     }
 }
-void ControllerOutput::addUpdate(bool pressed, int a_value) {
+void ControllerOutput::addUpdate(bool pressed, u32 param) {
     
     float touchpad_x = 0;
     if(button != 0){
@@ -332,6 +360,11 @@ void ControllerOutput::addUpdate(bool pressed, int a_value) {
         case RIGHTJOYSTICK_HALFMODE:
             rightjoystick_halfmode = pressed;
             break;
+        case KEY_TOGGLE:
+            if(pressed) {
+                toggleKeyInList(param);
+            }
+            break;
         default: // is a normal key (hopefully)
             controller->CheckButton(0, button, pressed);
             break;
@@ -350,13 +383,13 @@ void ControllerOutput::addUpdate(bool pressed, int a_value) {
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
             // todo: verify this works
-            axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier + axis_value, 0, 127);
+            axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier + axis_value, 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? a_value : 0) * multiplier + axis_value, -127, 127);
+        axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier + axis_value, -127, 127);
         controller->Axis(0, axis, GetAxis(-0x80, 0x80, axis_value));
         //LOG_INFO(Input, "Axis value delta: {} final value: {}", (pressed ? a_value : 0), axis_value);
     } else {
@@ -390,16 +423,20 @@ bool isInputActive(const InputBinding& i) {
     bool* flag2 = nullptr;
     bool* flag3 = nullptr;
 
+    bool key1_pressed = std::find(toggled_keys.begin(), toggled_keys.end(), i.key1) != toggled_keys.end();
+    bool key2_pressed = std::find(toggled_keys.begin(), toggled_keys.end(), i.key2) != toggled_keys.end();
+    bool key3_pressed = std::find(toggled_keys.begin(), toggled_keys.end(), i.key3) != toggled_keys.end();
+
     // First pass: locate each key and save pointers to their flags if found
     for (auto& entry : pressed_keys) {
         u32 key = entry.first;
         bool& is_active = entry.second;
 
-        if (i.key1 != 0 && key == i.key1 && !flag1) {
+        if (key1_pressed || (i.key1 != 0 && key == i.key1 && !flag1)) {
             flag1 = &is_active;
-        } else if (i.key2 != 0 && key == i.key2 && !flag2) {
+        } else if (key2_pressed || (i.key2 != 0 && key == i.key2 && !flag2)) {
             flag2 = &is_active;
-        } else if (i.key3 != 0 && key == i.key3 && !flag3) {
+        } else if (key3_pressed || (i.key3 != 0 && key == i.key3 && !flag3)) {
             flag3 = &is_active;
             break;
         } else {
@@ -420,9 +457,9 @@ bool isInputActive(const InputBinding& i) {
     }
 
     // Set flags to true only after confirming all keys are present and not overridden
-    if (flag1) *flag1 = true;
-    if (flag2) *flag2 = true;
-    if (flag3) *flag3 = true;
+    if (flag1 && !key1_pressed) *flag1 = true;
+    if (flag2 && !key2_pressed) *flag2 = true;
+    if (flag3 && !key3_pressed) *flag3 = true;
 
     LOG_DEBUG(Input, "A valid held input is found: {}, flag ptrs: {} {} {}", i.toString(), fmt::ptr(flag1), fmt::ptr(flag2), fmt::ptr(flag3));
     return true;
@@ -444,7 +481,7 @@ void activateOutputsFromInputs() {
     // iterates over the connections, and updates them depending on whether the corresponding input trio is found
     for(auto it = connections.begin(); it != connections.end(); it++) {
         if (it->output) {
-            it->output->addUpdate(isInputActive(it->binding), it->axis_value);
+            it->output->addUpdate(isInputActive(it->binding), it->parameter);
         } else {
             //LOG_DEBUG(Input, "Null output in BindingConnection at position {}", std::distance(connections.begin(), it));
         }
