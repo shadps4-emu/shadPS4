@@ -10,6 +10,7 @@
 #include "common/types.h"
 #include "common/logging/log.h"
 #include "core/libraries/pad/pad.h"
+#include "fmt/format.h"
 #include "input/controller.h"
 
 #include "SDL3/SDL_events.h"
@@ -43,9 +44,7 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"cross", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS},
     {"square", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE},
     {"l1", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1},
-    {"l2", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2},
     {"r1", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1},
-    {"r2", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2},
     {"l3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3},
     {"r3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3},
     {"options", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS},
@@ -66,6 +65,8 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_right_x_minus", {Input::Axis::RightX, -127}},
     {"axis_right_y_plus", {Input::Axis::RightY, 127}},
     {"axis_right_y_minus", {Input::Axis::RightY, -127}},
+    {"l2", {Axis::TriggerLeft, 127}},
+    {"r2", {Axis::TriggerRight, 127}},
 };
 const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"a", SDLK_A},
@@ -220,6 +221,9 @@ public:
     inline bool isEmpty() {
         return key1 == 0 && key2 == 0 && key3 == 0;
     }
+    std::string toString() {
+        return fmt::format("({}, {}, {})", key1, key2, key3);
+    }
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
     static u32 getInputIDFromEvent(const SDL_Event& e);
@@ -245,6 +249,9 @@ public:
     }
     inline bool operator!=(const ControllerOutput& o) const {
         return button != o.button || axis != o.axis;
+    }
+    std::string toString() const {
+        return fmt::format("({}, {}, {})", button, (int)axis, axis_value);
     }
     void update(bool pressed, int axis_direction = 0);
     // Off events are not counted

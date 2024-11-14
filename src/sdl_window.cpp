@@ -167,22 +167,26 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
         // Reparse kbm inputs
         if (input_id == SDLK_F8) {
             Input::parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            return;
         }
         // Toggle mouse capture and movement input
         else if (input_id == SDLK_F7) {
             Input::toggleMouseEnabled();
             SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
                                            !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
+            return;
         }
         // Toggle fullscreen
         else if (input_id == SDLK_F11) {
             SDL_WindowFlags flag = SDL_GetWindowFlags(window);
             bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
             SDL_SetWindowFullscreen(window, !is_fullscreen);
+            return;
         }
         // Trigger rdoc capture
         else if (input_id == SDLK_F12) {
             VideoCore::TriggerCapture();
+            return;
         }
     }
     
