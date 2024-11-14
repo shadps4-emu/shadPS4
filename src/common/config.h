@@ -123,6 +123,9 @@ std::string getEmulatorLanguage();
 
 void setDefaultValues();
 
+// todo: name and function location pending
+std::filesystem::path getFoolproofKbmConfigFile(const std::string& game_id = "");
+
 // settings
 u32 GetLanguage();
 }; // namespace Config
