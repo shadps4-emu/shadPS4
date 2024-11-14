@@ -33,15 +33,13 @@ struct AjmAt9Decoder final : AjmCodec {
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override;
-    void GetInfo(void* out_info) override;
-    AjmSidebandFormat GetFormat() override;
+    void GetInfo(void* out_info) const override;
+    AjmSidebandFormat GetFormat() const override;
+    u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
     std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmSidebandGaplessDecode& gapless,
-                                     std::optional<u32> max_samples) override;
+                                     AjmInstanceGapless& gapless) override;
 
 private:
-    u8 GetPointCodeSize();
-
     template <class T>
     size_t WriteOutputSamples(SparseOutputBuffer& output, u32 skipped_samples, u32 max_samples) {
         std::span<T> pcm_data{reinterpret_cast<T*>(m_pcm_buffer.data()),

@@ -135,7 +135,10 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         case Identifier::AjmIdentInputControlBuf: {
             ASSERT_MSG(!input_control_buffer.has_value(),
                        "Only one instance of input control buffer is allowed per job");
-            input_control_buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            if (buffer.p_address != nullptr && buffer.size != 0) {
+                input_control_buffer = buffer;
+            }
             break;
         }
         case Identifier::AjmIdentControlFlags:
@@ -155,19 +158,27 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         case Identifier::AjmIdentInlineBuf: {
             ASSERT_MSG(!output_control_buffer.has_value(),
                        "Only one instance of inline buffer is allowed per job");
-            inline_buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            if (buffer.p_address != nullptr && buffer.size != 0) {
+                inline_buffer = buffer;
+            }
             break;
         }
         case Identifier::AjmIdentOutputRunBuf: {
             auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
             u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
-            job.output.buffers.emplace_back(std::span<u8>(p_begin, p_begin + buffer.size));
+            if (p_begin != nullptr && buffer.size != 0) {
+                job.output.buffers.emplace_back(std::span<u8>(p_begin, p_begin + buffer.size));
+            }
             break;
         }
         case Identifier::AjmIdentOutputControlBuf: {
             ASSERT_MSG(!output_control_buffer.has_value(),
                        "Only one instance of output control buffer is allowed per job");
-            output_control_buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            if (buffer.p_address != nullptr && buffer.size != 0) {
+                output_control_buffer = buffer;
+            }
             break;
         }
         default:

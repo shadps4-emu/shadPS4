@@ -13,7 +13,19 @@ struct SwrContext;
 
 namespace Libraries::Ajm {
 
-enum class AjmDecMp3OflType : u32 { None = 0, Lame = 1, Vbri = 2, Fgh = 3, VbriAndFgh = 4 };
+enum class AjmDecMp3OflType : u32 {
+    None = 0,
+    Lame = 1,
+    Vbri = 2,
+    Fgh = 3,
+    VbriAndFgh = 4,
+};
+
+enum AjmMp3CodecFlags : u32 {
+    IgnoreOfl = 1 << 0,
+    VlcRewind = 1 << 8,
+};
+DECLARE_ENUM_FLAG_OPERATORS(AjmMp3CodecFlags)
 
 // 11-bit syncword if MPEG 2.5 extensions are enabled
 static constexpr u8 SYNCWORDH = 0xff;
@@ -51,39 +63,40 @@ struct AjmSidebandDecMp3CodecInfo {
 
 class AjmMp3Decoder : public AjmCodec {
 public:
-    explicit AjmMp3Decoder(AjmFormatEncoding format);
+    explicit AjmMp3Decoder(AjmFormatEncoding format, AjmMp3CodecFlags flags);
     ~AjmMp3Decoder() override;
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override {}
-    void GetInfo(void* out_info) override;
-    AjmSidebandFormat GetFormat() override;
+    void GetInfo(void* out_info) const override;
+    AjmSidebandFormat GetFormat() const override;
+    u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
     std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmSidebandGaplessDecode& gapless,
-                                     std::optional<u32> max_samples_per_channel) override;
+                                     AjmInstanceGapless& gapless) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
 
 private:
     template <class T>
-    size_t WriteOutputSamples(AVFrame* frame, SparseOutputBuffer& output, u32 skipped_samples,
-                              u32 max_samples) {
-        const auto size = frame->ch_layout.nb_channels * frame->nb_samples * sizeof(T);
-        std::span<T> pcm_data(reinterpret_cast<T*>(frame->data[0]), size >> 1);
+    size_t WriteOutputPCM(AVFrame* frame, SparseOutputBuffer& output, u32 skipped_samples,
+                          u32 max_pcm) {
+        std::span<T> pcm_data(reinterpret_cast<T*>(frame->data[0]),
+                              frame->nb_samples * frame->ch_layout.nb_channels);
         pcm_data = pcm_data.subspan(skipped_samples * frame->ch_layout.nb_channels);
-        const auto pcm_size = std::min(u32(pcm_data.size()), max_samples);
-        const auto samples_written = output.Write(pcm_data.subspan(0, pcm_size));
-        return samples_written / frame->ch_layout.nb_channels;
+        return output.Write(pcm_data.subspan(0, std::min(u32(pcm_data.size()), max_pcm)));
     }
 
     AVFrame* ConvertAudioFrame(AVFrame* frame);
 
     const AjmFormatEncoding m_format;
+    const AjmMp3CodecFlags m_flags;
     const AVCodec* m_codec = nullptr;
     AVCodecContext* m_codec_context = nullptr;
     AVCodecParserContext* m_parser = nullptr;
     SwrContext* m_swr_context = nullptr;
+    std::optional<u32> m_header;
+    u32 m_frame_samples = 0;
 };
 
 } // namespace Libraries::Ajm
