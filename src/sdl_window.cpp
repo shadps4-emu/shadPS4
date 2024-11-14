@@ -19,7 +19,6 @@
 #include <SDL3/SDL_metal.h>
 #endif
 #include <common/singleton.h>
-#include <core/libraries/mouse/mouse.h>
 #include <input/mouse.h>
 
 namespace Frontend {
@@ -156,19 +155,17 @@ void WindowSDL::onMouseAction(const SDL_Event* event) {
         pressed_down = true;
         [[fallthrough]];
     case SDL_EVENT_MOUSE_BUTTON_UP: {
-        using Libraries::Mouse::OrbisMouseButtonDataOffset;
-
         auto btn = event->button.button;
         if (btn < 1 || btn > 5) { // 1..5 range
             return;
         }
         constexpr static std::array sdl_to_orbis_buttons = {
-            static_cast<OrbisMouseButtonDataOffset>(0x00),
-            OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_PRIMARY,
-            OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_OPTIONAL,
-            OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_SECONDARY,
-            OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_OPTIONAL2,
-            OrbisMouseButtonDataOffset::ORBIS_MOUSE_BUTTON_OPTIONAL3,
+            static_cast<Input::OrbisMouseButtonDataOffset>(0x00),
+            Input::ORBIS_MOUSE_BUTTON_PRIMARY,
+            Input::ORBIS_MOUSE_BUTTON_OPTIONAL,
+            Input::ORBIS_MOUSE_BUTTON_SECONDARY,
+            Input::ORBIS_MOUSE_BUTTON_OPTIONAL2,
+            Input::ORBIS_MOUSE_BUTTON_OPTIONAL3,
         };
         mouse.CheckButton(sdl_to_orbis_buttons[btn], pressed_down);
     } break;

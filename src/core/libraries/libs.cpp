@@ -44,7 +44,6 @@
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
-#include "src/core/libraries/mouse/mouse.h"
 
 namespace Libraries {
 
@@ -90,7 +89,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
-    // Libraries::Mouse::RegisterlibSceMouse(sym);
 }
 
 } // namespace Libraries
