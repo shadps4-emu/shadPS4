@@ -101,11 +101,6 @@
 			<translation>创建快捷方式</translation>
 		</message>
 		<message>
-			<location filename="../gui_context_menus.h" line="47"/>
-			<source>Open Game Folder</source>
-			<translation>打开游戏文件夹</translation>
-		</message>
-		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
 			<translation>作弊码 / 补丁</translation>
@@ -121,9 +116,29 @@
 			<translation>Trophy 查看器</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="49"/>
+			<source>Open Folder...</source>
+			<translation>打开文件夹...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="50"/>
+			<source>Open Game Folder</source>
+			<translation>打开游戏文件夹</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="51"/>
+			<source>Open Save Data Folder</source>
+			<translation>打开保存数据文件夹</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="52"/>
+			<source>Open Log Folder</source>
+			<translation>打开日志文件夹</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
-			<source>Copy info</source>
-			<translation>复制信息</translation>
+			<source>Copy info...</source>
+			<translation>复制信息...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>

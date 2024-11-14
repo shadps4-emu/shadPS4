@@ -26,7 +26,9 @@ public:
     QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
+#ifdef ENABLE_UPDATER
     QAction* updaterAct;
+#endif
     QAction* aboutAct;
     QAction* configureAct;
     QAction* setThemeDark;
@@ -130,9 +132,11 @@ public:
         pkgViewerAct = new QAction(MainWindow);
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
+#ifdef ENABLE_UPDATER
         updaterAct = new QAction(MainWindow);
         updaterAct->setObjectName("updaterAct");
         updaterAct->setIcon(QIcon(":images/update_icon.png"));
+#endif
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
         aboutAct->setIcon(QIcon(":images/about_icon.png"));
@@ -291,7 +295,9 @@ public:
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
+#ifdef ENABLE_UPDATER
         menuHelp->addAction(updaterAct);
+#endif
         menuHelp->addAction(aboutAct);
 
         retranslateUi(MainWindow);
@@ -306,8 +312,10 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
+#ifdef ENABLE_UPDATER
         updaterAct->setText(
             QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
+#endif
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)

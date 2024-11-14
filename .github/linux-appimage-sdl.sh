@@ -17,5 +17,5 @@ chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 # Build AppImage
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
-./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/.github/shadps4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/.github/shadps4.png --output appimage
-mv Shadps4-x86_64.AppImage Shadps4-sdl.AppImage
+./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/dist/net.shadps4.shadPS4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/src/images/net.shadps4.shadPS4.svg --output appimage
+mv shadPS4-x86_64.AppImage Shadps4-sdl.AppImage

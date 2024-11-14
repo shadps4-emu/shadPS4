@@ -44,20 +44,31 @@ public:
 
         // Setup menu.
         QMenu menu(widget);
+
+        // "Open Folder..." submenu
+        QMenu* openFolderMenu = new QMenu(tr("Open Folder..."), widget);
+        QAction* openGameFolder = new QAction(tr("Open Game Folder"), widget);
+        QAction* openSaveDataFolder = new QAction(tr("Open Save Data Folder"), widget);
+        QAction* openLogFolder = new QAction(tr("Open Log Folder"), widget);
+
+        openFolderMenu->addAction(openGameFolder);
+        openFolderMenu->addAction(openSaveDataFolder);
+        openFolderMenu->addAction(openLogFolder);
+
+        menu.addMenu(openFolderMenu);
+
         QAction createShortcut(tr("Create Shortcut"), widget);
-        QAction openFolder(tr("Open Game Folder"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
-        menu.addAction(&openFolder);
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
         menu.addAction(&openTrophyViewer);
 
         // "Copy" submenu.
-        QMenu* copyMenu = new QMenu(tr("Copy info"), widget);
+        QMenu* copyMenu = new QMenu(tr("Copy info..."), widget);
         QAction* copyName = new QAction(tr("Copy Name"), widget);
         QAction* copySerial = new QAction(tr("Copy Serial"), widget);
         QAction* copyNameAll = new QAction(tr("Copy All"), widget);
@@ -86,10 +97,27 @@ public:
             return;
         }
 
-        if (selected == &openFolder) {
+        if (selected == openGameFolder) {
             QString folderPath;
             Common::FS::PathToQString(folderPath, m_games[itemID].path);
             QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
+        }
+
+        if (selected == openSaveDataFolder) {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+            QString saveDataPath =
+                userPath + "/savedata/1/" + QString::fromStdString(m_games[itemID].serial);
+            QDir(saveDataPath).mkpath(saveDataPath);
+            QDesktopServices::openUrl(QUrl::fromLocalFile(saveDataPath));
+        }
+
+        if (selected == openLogFolder) {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
         }
 
         if (selected == &openSfoViewer) {
