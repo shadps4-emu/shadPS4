@@ -4,14 +4,14 @@
 #pragma once
 
 #include "array"
-#include "map"
-#include "unordered_set"
-#include "string"
-#include "common/types.h"
 #include "common/logging/log.h"
+#include "common/types.h"
 #include "core/libraries/pad/pad.h"
 #include "fmt/format.h"
 #include "input/controller.h"
+#include "map"
+#include "string"
+#include "unordered_set"
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
@@ -23,7 +23,7 @@
 #define SDL_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 7
 
 // idk who already used what where so I just chose a big number
-#define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10 
+#define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
@@ -186,37 +186,58 @@ class InputBinding {
 public:
     u32 key1, key2, key3;
     InputBinding(u32 k1 = SDLK_UNKNOWN, u32 k2 = SDLK_UNKNOWN, u32 k3 = SDLK_UNKNOWN) {
-        // we format the keys so comparing them will be very fast, because we will only have to compare 3 sorted elements, 
-        // where the only possible duplicate item is 0
+        // we format the keys so comparing them will be very fast, because we will only have to
+        // compare 3 sorted elements, where the only possible duplicate item is 0
 
         // duplicate entries get changed to one original, one null
-        if(k1 == k2 && k1 != SDLK_UNKNOWN) { k2 = 0; }
-        if(k1 == k3 && k1 != SDLK_UNKNOWN) { k3 = 0; }
-        if(k3 == k2 && k2 != SDLK_UNKNOWN) { k2 = 0; }
+        if (k1 == k2 && k1 != SDLK_UNKNOWN) {
+            k2 = 0;
+        }
+        if (k1 == k3 && k1 != SDLK_UNKNOWN) {
+            k3 = 0;
+        }
+        if (k3 == k2 && k2 != SDLK_UNKNOWN) {
+            k2 = 0;
+        }
         // this sorts them
         if (k1 <= k2 && k1 <= k3) {
             key1 = k1;
-            if (k2 <= k3) { key2 = k2; key3 = k3; }
-            else { key2 = k3; key3 = k2; }
+            if (k2 <= k3) {
+                key2 = k2;
+                key3 = k3;
+            } else {
+                key2 = k3;
+                key3 = k2;
+            }
         } else if (k2 <= k1 && k2 <= k3) {
             key1 = k2;
-            if (k1 <= k3) { key2 = k1; key3 = k3; }
-            else { key2 = k3; key3 = k1; }
+            if (k1 <= k3) {
+                key2 = k1;
+                key3 = k3;
+            } else {
+                key2 = k3;
+                key3 = k1;
+            }
         } else {
             key1 = k3;
-            if (k1 <= k2) { key2 = k1; key3 = k2; }
-            else { key2 = k2; key3 = k1; }
+            if (k1 <= k2) {
+                key2 = k1;
+                key3 = k2;
+            } else {
+                key2 = k2;
+                key3 = k1;
+            }
         }
     }
     // copy ctor
     InputBinding(const InputBinding& o) : key1(o.key1), key2(o.key2), key3(o.key3) {}
-    
+
     inline bool operator==(const InputBinding& o) {
         // 0 = SDLK_UNKNOWN aka unused slot
         return (key3 == o.key3 || key3 == 0 || o.key3 == 0) &&
                (key2 == o.key2 || key2 == 0 || o.key2 == 0) &&
                (key1 == o.key1 || key1 == 0 || o.key1 == 0);
-        // it is already very fast, 
+        // it is already very fast,
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
     }
@@ -236,10 +257,10 @@ public:
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
     static u32 getInputIDFromEvent(const SDL_Event& e);
-
 };
 class ControllerOutput {
     static GameController* controller;
+
 public:
     static void setControllerOutputController(GameController* c);
 
@@ -291,13 +312,9 @@ void updatePressedKeys(u32 button, bool is_pressed);
 
 void activateOutputsFromInputs();
 
-
 void updateMouse(GameController* controller);
 
 // Polls the mouse for changes, and simulates joystick movement from it.
 Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
 
-
-
-
-}
+} // namespace Input

@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "string"
 #include "common/types.h"
+#include "string"
 
 struct SDL_Window;
 struct SDL_Gamepad;

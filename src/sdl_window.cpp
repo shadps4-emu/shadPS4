@@ -8,8 +8,8 @@
 #include "SDL3/SDL_video.h"
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/version.h"
 #include "common/elf_info.h"
+#include "common/version.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
@@ -188,9 +188,9 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
             return;
         }
     }
-    
+
     // if it's a wheel event, make a timer that turns it off after a set time
-    if(event->type == SDL_EVENT_MOUSE_WHEEL) {
+    if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         const SDL_Event* copy = new SDL_Event(*event);
         SDL_AddTimer(33, wheelOffCallback, (void*)copy);
     }
@@ -200,7 +200,6 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
 
     // update bindings
     Input::activateOutputsFromInputs();
-    
 }
 
 void WindowSDL::onGamepadEvent(const SDL_Event* event) {
