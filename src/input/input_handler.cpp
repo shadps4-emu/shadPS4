@@ -204,7 +204,19 @@ void parseInputConfig(const std::string game_id = "") {
             continue;
         }
         if (output_string == "mouse_movement_params") {
-            LOG_DEBUG(Input, "todo: {}", line);
+            std::stringstream ss(input_string);
+            char comma;  // To hold the comma separators between the floats
+            ss >> mouse_deadzone_offset >> comma
+            >> mouse_speed >> comma
+            >> mouse_speed_offset;
+
+            // Check for invalid input (in case there's an unexpected format)
+            if (ss.fail()) {
+                LOG_ERROR(Input, "Failed to parse mouse movement parameters from line: {}", line);
+            } else {
+                //LOG_DEBUG(Input, "Mouse movement parameters parsed: {} {} {}", mouse_deadzone_offset, mouse_speed, mouse_speed_offset);
+            }
+
             continue;
         }
 
