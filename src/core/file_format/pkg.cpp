@@ -7,8 +7,7 @@
 #include "core/file_format/pkg.h"
 #include "core/file_format/pkg_type.h"
 
-static void DecompressPFSC(std::span<char> compressed_data,
-                           std::span<char> decompressed_data) {
+static void DecompressPFSC(std::span<char> compressed_data, std::span<char> decompressed_data) {
     z_stream decompressStream;
     decompressStream.zalloc = Z_NULL;
     decompressStream.zfree = Z_NULL;
