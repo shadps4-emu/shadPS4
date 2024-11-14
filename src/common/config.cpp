@@ -801,10 +801,10 @@ std::filesystem::path getFoolproofKbmConfigFile(const std::string& game_id) {
     }
 
     // if empty, we only need to execute the function up until this point
-    if(game_id.empty()) {
+    if (game_id.empty()) {
         return default_config_file;
     }
-    
+
     // If game-specific config doesn't exist, create it from the default config
     if (!std::filesystem::exists(config_file)) {
         std::filesystem::copy(default_config_file, config_file);

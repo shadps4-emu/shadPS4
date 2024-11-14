@@ -343,13 +343,13 @@ void ControllerOutput::update(bool pressed, u32 param) {
         case Axis::TriggerRight:
             // todo: verify this works (This probably works from testing,
             // but needs extra info (multiple input to the same trigger?))
-            axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier, 0, 127);
+            axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier, 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier, -127, 127);
+        axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier, -127, 127);
         int ax = GetAxis(-0x80, 0x80, axis_value);
         controller->Axis(0, axis, ax);
     } else {
@@ -400,13 +400,13 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
             // todo: verify this works
-            axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier + axis_value, 0, 127);
+            axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier + axis_value, 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? (int)param : 0) * multiplier + axis_value, -127, 127);
+        axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier + axis_value, -127, 127);
         controller->Axis(0, axis, GetAxis(-0x80, 0x80, axis_value));
         // LOG_INFO(Input, "Axis value delta: {} final value: {}", (pressed ? a_value : 0),
         // axis_value);

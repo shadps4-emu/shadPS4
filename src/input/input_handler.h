@@ -299,7 +299,7 @@ public:
         // todo: check if out is in the allowed array
         output = out;
     }
-    bool operator<(const BindingConnection& other) {
+    bool operator<(const BindingConnection& other) const {
         return binding < other.binding;
     }
 };
