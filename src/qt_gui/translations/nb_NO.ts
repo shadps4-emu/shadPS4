@@ -103,7 +103,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
-			<translation>Juks / Programfiks</translation>
+			<translation>Juks / Programrettelse</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
@@ -351,7 +351,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="343"/>
 			<source>Download Cheats/Patches</source>
-			<translation>Last ned Juks /Programfiks </translation>
+			<translation>Last ned Juks /Programrettelse </translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
@@ -698,7 +698,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="326"/>
 			<source>Download Cheats For All Installed Games</source>
-			<translation>Last ned jukser for alle installerte spill</translation>
+			<translation>Last ned juks for alle installerte spill</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="328"/>
@@ -713,17 +713,17 @@
 		<message>
 			<location filename="../main_window.cpp" line="364"/>
 			<source>You have downloaded cheats for all the games you have installed.</source>
-			<translation>Du har lastet ned jukser for alle spillene du har installert.</translation>
+			<translation>Du har lastet ned juks for alle spillene du har installert.</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="391"/>
 			<source>Patches Downloaded Successfully!</source>
-			<translation>Programfiks lastet ned vellykket!</translation>
+			<translation>Programrettelser lastet ned vellykket!</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="392"/>
 			<source>All Patches available for all games have been downloaded.</source>
-			<translation>Programfiksene tilgjengelige for alle spill har blitt lastet ned.</translation>
+			<translation>Programrettelser tilgjengelige for alle spill har blitt lastet ned.</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="549"/>
@@ -758,7 +758,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>Patch detected!</source>
-			<translation>Programfiks oppdaget!</translation>
+			<translation>Programrettelse oppdaget!</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
@@ -783,7 +783,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="660"/>
 			<source>Would you like to install Patch: </source>
-			<translation>Ønsker du å installere Programfiksen: </translation>
+			<translation>Ønsker du å installere programrettelsen: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="673"/>
@@ -841,12 +841,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches</source>
-			<translation>Juks / Programfiks</translation>
+			<translation>Juks / Programrettelse</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>Juks/Programfiks er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen Programfiks kan du laste ned alle programfiks samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programfiksene,\nvær vennlig å rapportere problemer til juks-utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til juks-utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
@@ -881,7 +881,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="149"/>
 			<source>Download Cheats</source>
-			<translation>Last ned jukser</translation>
+			<translation>Last ned juks</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="155"/>
@@ -906,12 +906,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="213"/>
 			<source>Select Patch File:</source>
-			<translation>Velg programfiks-filen:</translation>
+			<translation>Velg programrettelse-filen:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="241"/>
 			<source>Download Patches</source>
-			<translation>Last ned programfiks</translation>
+			<translation>Last ned programrettelse</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="248"/>
@@ -921,12 +921,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="256"/>
 			<source>Cheats</source>
-			<translation>Juks</translation>
+			<translation>Jukser</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="257"/>
 			<source>Patches</source>
-			<translation>Programfiks</translation>
+			<translation>Programrettelse</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="278"/>
@@ -936,7 +936,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="278"/>
 			<source>No patch selected.</source>
-			<translation>Ingen programfiks valgt.</translation>
+			<translation>Ingen programrettelse valgt.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="292"/>
@@ -946,7 +946,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="316"/>
 			<source>No patch file found for the current serial.</source>
-			<translation>Ingen programfiks-fil funnet for det aktuelle serienummeret.</translation>
+			<translation>Ingen programrettelse-fil funnet for det aktuelle serienummeret.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="323"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="594"/>
 			<source>CheatsDownloadedSuccessfully_MSG</source>
-			<translation>Du har lastet ned juks vellykket for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
+			<translation>Du har lastet ned jukser vellykket for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="747"/>
@@ -1041,7 +1041,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Oppdateringer lastet ned vellykket! Alle programfiks tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis Programfiksen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
+			<translation>Oppdateringer lastet ned vellykket! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="851"/>
 			<source>The downloaded patch only works on version: %1</source>
-			<translation>Den nedlastede programfiksen fungerer bare på versjon: %1</translation>
+			<translation>Den nedlastede programrettelsen fungerer bare på versjon: %1</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="856"/>
