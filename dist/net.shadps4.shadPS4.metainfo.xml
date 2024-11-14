@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id translate="no">net.shadps4.shadPS4</id>
+  <name translate="no">shadPS4</name>
+  <developer id="net.shadps4.shadPS4">
+    <name>shadPS4 Contributors</name>
+    <url translate="no">https://github.com/shadps4-emu/shadps4/graphs/contributors</url>
+  </developer>
+  <summary>PS4 Emulator</summary>
+  <metadata_license translate="no">CC0-1.0</metadata_license>
+  <project_license translate="no">GPL-2.0</project_license>
+  <launchable type="desktop-id" translate="no">net.shadps4.shadPS4.desktop</launchable>
+  <url type="homepage" translate="no">https://shadps4.net/</url>
+  <description>
+    <p>shadPS4 is an early PlayStation 4 emulator for Windows, Linux and macOS written in C++.</p>
+    <p>The emulator is still early in development, so don't expect a flawless experience. Nonetheless, the emulator can already run a number of commercial games.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image type="source" translate="no" >https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/1.png</image>
+      <caption>Bloodborne</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/2.png</image>
+      <caption>Hatsune Miku: Project DIVA Future Tone</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/3.png</image>
+      <caption>Yakuza Kiwami</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/4.png</image>
+      <caption>Persona 4 Golden</caption>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category translate="no">Game</category>
+  </categories>
+  <releases type="external" url="https://cdn.jsdelivr.net/gh/fpiesche/flatpak-builds/apps/net.shadps4.shadPS4/net.shadps4.shadPS4.releases.xml">
+    <release version="v.0.4.0" date="2024-11-03">
+      <description></description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control translate="no">keyboard</control>
+  </supports>
+  <recommends>
+    <control translate="no">gamepad</control>
+  </recommends>
+  <requires>
+    <internet translate="no">offline-only</internet>
+  </requires>
+  <provides>
+    <binary translate="no">shadps4</binary>
+  </provides>
+  <keywords>
+    <keyword>emulator</keyword>
+    <keyword>emulation</keyword>
+    <keyword translate="no">playstation</keyword>
+    <keyword translate="no">ps4</keyword>
+  </keywords>
+</component>
