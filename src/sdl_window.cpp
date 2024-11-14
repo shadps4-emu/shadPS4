@@ -136,7 +136,6 @@ void WindowSDL::waitEvent() {
 
 void WindowSDL::initTimers() {
     SDL_AddTimer(100, &PollController, controller);
-    // todo: add back mouse polling here
     SDL_AddTimer(33, Input::mousePolling, (void*)controller);
 }
 

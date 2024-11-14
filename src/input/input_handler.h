@@ -218,10 +218,17 @@ public:
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
     }
+    inline int keyCount() const {
+        return (key1 ? 1 : 0) + (key2 ? 1 : 0) + (key3 ? 1 : 0);
+    }
+    // Sorts by the amount of non zero keys - left side is 'bigger' here
+    bool operator<(const InputBinding& other) const {
+        return keyCount() > other.keyCount();
+    }
     inline bool isEmpty() {
         return key1 == 0 && key2 == 0 && key3 == 0;
     }
-    std::string toString() {
+    std::string toString() const {
         return fmt::format("({}, {}, {})", key1, key2, key3);
     }
 
@@ -269,7 +276,9 @@ public:
         // todo: check if out is in the allowed array
         output = out;
     }
-
+    bool operator<(const BindingConnection& other) {
+        return binding < other.binding;
+    }
 };
 
 // Check if the 3 key input is currently active.
