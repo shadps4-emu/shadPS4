@@ -439,62 +439,54 @@ void updatePressedKeys(u32 value, bool is_pressed) {
 
 // Check if a given binding's all keys are currently active.
 bool isInputActive(const InputBinding& i) {
-    bool* flag1 = nullptr;
-    bool* flag2 = nullptr;
-    bool* flag3 = nullptr;
+    // Extract keys from InputBinding and ignore unused (0) keys
+    std::list<uint32_t> input_keys = { i.key1, i.key2, i.key3 };
+    input_keys.remove(0);
 
-    bool key1_pressed =
-        std::find(toggled_keys.begin(), toggled_keys.end(), i.key1) != toggled_keys.end();
-    bool key2_pressed =
-        std::find(toggled_keys.begin(), toggled_keys.end(), i.key2) != toggled_keys.end();
-    bool key3_pressed =
-        std::find(toggled_keys.begin(), toggled_keys.end(), i.key3) != toggled_keys.end();
+    // Iterator for pressed_keys, starting from the beginning
+    auto pressed_it = pressed_keys.begin();
+    auto pressed_end = pressed_keys.end();
 
-    // First pass: locate each key and save pointers to their flags if found
-    for (auto& entry : pressed_keys) {
-        u32 key = entry.first;
-        bool& is_active = entry.second;
+    // Store pointers to flags in pressed_keys that need to be set if all keys are active
+    std::list<bool*> flags_to_set;
 
-        if (key1_pressed || (i.key1 != 0 && key == i.key1 && !flag1)) {
-            flag1 = &is_active;
-        } else if (key2_pressed || (i.key2 != 0 && key == i.key2 && !flag2)) {
-            flag2 = &is_active;
-        } else if (key3_pressed || (i.key3 != 0 && key == i.key3 && !flag3)) {
-            flag3 = &is_active;
-            break;
-        } else {
-            return false; // an all 0 input never gets activated
+    // Check if all keys in input_keys are active
+    for (uint32_t key : input_keys) {
+        bool key_found = false;
+
+        // Search for the current key in pressed_keys starting from the last checked position
+        while (pressed_it != pressed_end && pressed_it->first <= key) {
+            if (pressed_it->first == key) {
+                if (!pressed_it->second) {
+                    flags_to_set.push_back(&pressed_it->second);  // Collect pointer if flag is not already set
+                }
+                key_found = true;
+                ++pressed_it;  // Move to the next key in pressed_keys
+                break;
+            }
+            ++pressed_it;
+        }
+
+        // If not found in pressed_keys, check in toggled_keys
+        if (!key_found && std::find(toggled_keys.begin(), toggled_keys.end(), key) == toggled_keys.end()) {
+            return false;  // Key not found in either list
         }
     }
 
-    // If any required key was not found, return false without updating flags
-    if ((i.key1 != 0 && !flag1) || (i.key2 != 0 && !flag2) || (i.key3 != 0 && !flag3)) {
-        return false;
+    // Set all flags now that we've verified all keys are active
+    for (bool* flag : flags_to_set) {
+        *flag = true;
     }
 
-    // Check if all flags are already true, which indicates this input is overridden (only if the
-    // key is not 0)
-    if ((i.key1 == 0 || (flag1 && *flag1)) && (i.key2 == 0 || (flag2 && *flag2)) &&
-        (i.key3 == 0 || (flag3 && *flag3))) {
-        return false; // This input is overridden by another input
-    }
-
-    // Set flags to true only after confirming all keys are present and not overridden
-    if (flag1 && !key1_pressed)
-        *flag1 = true;
-    if (flag2 && !key2_pressed)
-        *flag2 = true;
-    if (flag3 && !key3_pressed)
-        *flag3 = true;
-
-    LOG_DEBUG(Input, "A valid held input is found: {}, flag ptrs: {} {} {}", i.toString(),
-              fmt::ptr(flag1), fmt::ptr(flag2), fmt::ptr(flag3));
-    return true;
+    return true;  // All keys are active
 }
 
 void activateOutputsFromInputs() {
-    LOG_DEBUG(Input, "Starting input scan...");
+    //LOG_DEBUG(Input, "Starting input scan... {} inputs active", std::distance(pressed_keys.begin(), pressed_keys.end()));
     // reset everything
+    for (auto& it : pressed_keys) {
+        it.second = false;
+    }
     for (auto it = connections.begin(); it != connections.end(); it++) {
         if (it->output) {
             it->output->update(false, 0);
@@ -503,17 +495,12 @@ void activateOutputsFromInputs() {
                       std::distance(connections.begin(), it));
         }
     }
-    for (auto it : pressed_keys) {
-        it.second = false;
-    }
     // iterates over the connections, and updates them depending on whether the corresponding input
     // trio is found
-    for (auto it = connections.begin(); it != connections.end(); it++) {
-        if (it->output) {
-            it->output->addUpdate(isInputActive(it->binding), it->parameter);
-        } else {
-            // LOG_DEBUG(Input, "Null output in BindingConnection at position {}",
-            // std::distance(connections.begin(), it));
+    for (auto& it : connections) {
+        if (it.output) {
+            bool active = isInputActive(it.binding);
+            it.output->addUpdate(active, it.parameter);
         }
     }
 }
