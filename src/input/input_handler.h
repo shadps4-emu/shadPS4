@@ -283,6 +283,12 @@ public:
     std::string toString() const {
         return fmt::format("({}, {}, {})", button, (int)axis, axis_value);
     }
+    inline bool isButton() const {
+        return axis == Axis::AxisMax && button != 0;
+    }
+    inline bool isAxis() const {
+        return axis != Axis::AxisMax && button == 0;
+    }
     void update(bool pressed, u32 param = 0);
     // Off events are not counted
     void addUpdate(bool pressed, u32 param = 0);
@@ -300,7 +306,12 @@ public:
         output = out;
     }
     bool operator<(const BindingConnection& other) const {
-        return binding < other.binding;
+        if (binding < other.binding) {
+            return true;
+        }
+        // false, except if the first is a button and second is an axis,
+        // in which case the button is higher priority
+        return output->isButton() && other.output->isAxis();
     }
 };
 

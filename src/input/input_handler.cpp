@@ -334,23 +334,25 @@ void ControllerOutput::update(bool pressed, u32 param) {
         case Axis::LeftX:
         case Axis::LeftY:
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
+            //LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
             break;
         case Axis::RightX:
         case Axis::RightY:
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
+            //LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
             break;
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
             // todo: verify this works (This probably works from testing,
             // but needs extra info (multiple input to the same trigger?))
-            axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier, 0, 127);
+            axis_value = SDL_clamp((pressed ? (s32)param : 0), 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier, -127, 127);
-        int ax = GetAxis(-0x80, 0x80, axis_value);
+        axis_value = SDL_clamp((pressed ? (s32)param : 0), -127, 127);
+        int ax = GetAxis(-0x80, 0x80, axis_value * multiplier);
         controller->Axis(0, axis, ax);
     } else {
         LOG_DEBUG(Input, "Controller output with no values detected!");
@@ -372,10 +374,10 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
             controller->CheckButton(0, button, pressed);
             break;
         case LEFTJOYSTICK_HALFMODE:
-            leftjoystick_halfmode = pressed;
+            leftjoystick_halfmode |= pressed;
             break;
         case RIGHTJOYSTICK_HALFMODE:
-            rightjoystick_halfmode = pressed;
+            rightjoystick_halfmode |= pressed;
             break;
         case KEY_TOGGLE:
             if (pressed) {
@@ -392,22 +394,24 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
         case Axis::LeftX:
         case Axis::LeftY:
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
+            LOG_DEBUG(Input, "Left joystick multiplier set to {}", multiplier);
             break;
         case Axis::RightX:
         case Axis::RightY:
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
+            LOG_DEBUG(Input, " Right joystick multiplier set to {}", multiplier);
             break;
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
             // todo: verify this works
-            axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier + axis_value, 0, 127);
+            axis_value = SDL_clamp((pressed ? (s32)param : 0) + axis_value, 0, 127);
             controller->Axis(0, axis, GetAxis(0, 0x80, axis_value));
             return;
         default:
             break;
         }
-        axis_value = SDL_clamp((pressed ? (s32)param : 0) * multiplier + axis_value, -127, 127);
-        controller->Axis(0, axis, GetAxis(-0x80, 0x80, axis_value));
+        axis_value = SDL_clamp(((pressed ? (s32)param : 0)+ axis_value) , -127, 127);
+        controller->Axis(0, axis, GetAxis(-0x80, 0x80, axis_value * multiplier));
         // LOG_INFO(Input, "Axis value delta: {} final value: {}", (pressed ? a_value : 0),
         // axis_value);
     } else {
@@ -458,9 +462,9 @@ bool isInputActive(const InputBinding& i) {
         while (pressed_it != pressed_end && pressed_it->first <= key) {
             if (pressed_it->first == key) {
                 if (!pressed_it->second) {
+                    key_found = true;
                     flags_to_set.push_back(&pressed_it->second);  // Collect pointer if flag is not already set
                 }
-                key_found = true;
                 ++pressed_it;  // Move to the next key in pressed_keys
                 break;
             }
@@ -478,6 +482,7 @@ bool isInputActive(const InputBinding& i) {
         *flag = true;
     }
 
+    LOG_DEBUG(Input, "Input found: {}", i.toString());
     return true;  // All keys are active
 }
 
