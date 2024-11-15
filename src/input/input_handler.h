@@ -175,12 +175,9 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
 };
 
 // literally the only flag that needs external access
-void toggleMouseEnabled();
+void ToggleMouseEnabled();
 
-// i wrapped it in a function so I can collapse it
-std::string_view getDefaultKeyboardConfig();
-
-void parseInputConfig(const std::string game_id);
+void ParseInputConfig(const std::string game_id);
 
 class InputBinding {
 public:
@@ -241,28 +238,28 @@ public:
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
     }
-    inline int keyCount() const {
+    inline int KeyCount() const {
         return (key1 ? 1 : 0) + (key2 ? 1 : 0) + (key3 ? 1 : 0);
     }
     // Sorts by the amount of non zero keys - left side is 'bigger' here
     bool operator<(const InputBinding& other) const {
-        return keyCount() > other.keyCount();
+        return KeyCount() > other.KeyCount();
     }
-    inline bool isEmpty() {
+    inline bool IsEmpty() {
         return key1 == 0 && key2 == 0 && key3 == 0;
     }
-    std::string toString() const {
+    std::string ToString() const {
         return fmt::format("({}, {}, {})", key1, key2, key3);
     }
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
-    static u32 getInputIDFromEvent(const SDL_Event& e);
+    static u32 GetInputIDFromEvent(const SDL_Event& e);
 };
 class ControllerOutput {
     static GameController* controller;
 
 public:
-    static void setControllerOutputController(GameController* c);
+    static void GetControllerOutputController(GameController* c);
 
     u32 button;
     Axis axis;
@@ -280,18 +277,18 @@ public:
     inline bool operator!=(const ControllerOutput& o) const {
         return button != o.button || axis != o.axis;
     }
-    std::string toString() const {
+    std::string ToString() const {
         return fmt::format("({}, {}, {})", button, (int)axis, axis_value);
     }
-    inline bool isButton() const {
+    inline bool IsButton() const {
         return axis == Axis::AxisMax && button != 0;
     }
-    inline bool isAxis() const {
+    inline bool IsAxis() const {
         return axis != Axis::AxisMax && button == 0;
     }
-    void update(bool pressed, u32 param = 0);
+    void Update(bool pressed, u32 param = 0);
     // Off events are not counted
-    void addUpdate(bool pressed, u32 param = 0);
+    void AddUpdate(bool pressed, u32 param = 0);
 };
 class BindingConnection {
 public:
@@ -308,7 +305,7 @@ public:
     bool operator<(const BindingConnection& other) const {
         // a button is a higher priority than an axis, as buttons can influence axes
         // (e.g. joystick_halfmode)
-        if (output->isButton() && other.output->isAxis()) {
+        if (output->IsButton() && other.output->IsAxis()) {
             return true;
         }
         if (binding < other.binding) {
@@ -319,16 +316,16 @@ public:
 };
 
 // Check if the 3 key input is currently active.
-bool checkForInputDown(InputBinding i);
+bool IsInputActive(const InputBinding& i);
 
 // Add/remove the input that generated the event to/from the held keys container.
-void updatePressedKeys(u32 button, bool is_pressed);
+void UpdatePressedKeys(u32 button, bool is_pressed);
 
-void activateOutputsFromInputs();
+void ActivateOutputsFromInputs();
 
-void updateMouse(GameController* controller);
+void UpdateMouse(GameController* controller);
 
 // Polls the mouse for changes, and simulates joystick movement from it.
-Uint32 mousePolling(void* param, Uint32 id, Uint32 interval);
+Uint32 MousePolling(void* param, Uint32 id, Uint32 interval);
 
 } // namespace Input

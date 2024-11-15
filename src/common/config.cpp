@@ -701,7 +701,7 @@ void setDefaultValues() {
     gpuId = -1;
 }
 
-constexpr std::string_view getDefaultKeyboardConfig() {
+constexpr std::string_view GetDefaultKeyboardConfig() {
     return R"(#This is the default keybinding config
 #To change per-game configs, modify the CUSAXXXXX.ini files
 #To change the default config that applies to new games without modifying already existing configs, modify default.ini
@@ -780,7 +780,7 @@ axis_left_y_plus = s;
 
 )";
 }
-std::filesystem::path getFoolproofKbmConfigFile(const std::string& game_id) {
+std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
@@ -797,7 +797,7 @@ std::filesystem::path getFoolproofKbmConfigFile(const std::string& game_id) {
     // Check if the default config exists
     if (!std::filesystem::exists(default_config_file)) {
         // If the default config is also missing, create it from getDefaultConfig()
-        const auto default_config = getDefaultKeyboardConfig();
+        const auto default_config = GetDefaultKeyboardConfig();
         std::ofstream default_config_stream(default_config_file);
         if (default_config_stream) {
             default_config_stream << default_config;

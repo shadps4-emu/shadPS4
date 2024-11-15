@@ -81,13 +81,13 @@ ControllerOutput output_array[] = {
     ControllerOutput(0, Input::Axis::AxisMax)};
 
 // We had to go through 3 files of indirection just to update a flag
-void toggleMouseEnabled() {
+void ToggleMouseEnabled() {
     mouse_enabled ^= true;
 }
 // parsing related functions
 
 // syntax: 'name, name,name' or 'name,name' or 'name'
-InputBinding getBindingFromString(std::string& line) {
+InputBinding GetBindingFromString(std::string& line) {
     u32 key1 = 0, key2 = 0, key3 = 0;
 
     // Split the string by commas
@@ -118,7 +118,7 @@ InputBinding getBindingFromString(std::string& line) {
 }
 
 // function that takes a controlleroutput, and returns the array's corresponding element's pointer
-ControllerOutput* getOutputPointer(const ControllerOutput& parsed) {
+ControllerOutput* GetOutputPointer(const ControllerOutput& parsed) {
     // i wonder how long until someone notices this or I get rid of it
     for (int i = 0; i[output_array] != ControllerOutput(0, Axis::AxisMax); i++) {
         if (i[output_array] == parsed) {
@@ -128,11 +128,11 @@ ControllerOutput* getOutputPointer(const ControllerOutput& parsed) {
     return nullptr;
 }
 
-void parseInputConfig(const std::string game_id = "") {
+void ParseInputConfig(const std::string game_id = "") {
 
-    const auto config_file = Config::getFoolproofKbmConfigFile(game_id);
+    const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
 
-    // todo: change usages of this to getFoolproofKbmConfigFile (in the gui)
+    // todo: change usages of this to GetFoolproofKbmConfigFile (in the gui)
     if (game_id == "") {
         return;
     }
@@ -186,15 +186,15 @@ void parseInputConfig(const std::string game_id = "") {
         if (output_string == "key_toggle") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
-                InputBinding toggle_keys = getBindingFromString(input_string);
-                if (toggle_keys.keyCount() != 2) {
+                InputBinding toggle_keys = GetBindingFromString(input_string);
+                if (toggle_keys.KeyCount() != 2) {
                     LOG_ERROR(Input,
                               "Syntax error: Please provide exactly 2 keys: "
                               "first is the toggler, the second is the key to toggle: {}",
                               line);
                     continue;
                 }
-                ControllerOutput* toggle_out = getOutputPointer(ControllerOutput(KEY_TOGGLE));
+                ControllerOutput* toggle_out = GetOutputPointer(ControllerOutput(KEY_TOGGLE));
                 BindingConnection toggle_connection =
                     BindingConnection(InputBinding(toggle_keys.key2), toggle_out, toggle_keys.key3);
                 connections.insert(connections.end(), toggle_connection);
@@ -221,24 +221,24 @@ void parseInputConfig(const std::string game_id = "") {
         }
 
         // normal cases
-        InputBinding binding = getBindingFromString(input_string);
+        InputBinding binding = GetBindingFromString(input_string);
         BindingConnection connection(0, nullptr);
         auto button_it = string_to_cbutton_map.find(output_string);
         auto axis_it = string_to_axis_map.find(output_string);
 
-        if (binding.isEmpty()) {
+        if (binding.IsEmpty()) {
             LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
                       line);
             continue;
         }
         if (button_it != string_to_cbutton_map.end()) {
             connection =
-                BindingConnection(binding, getOutputPointer(ControllerOutput(button_it->second)));
+                BindingConnection(binding, GetOutputPointer(ControllerOutput(button_it->second)));
             connections.insert(connections.end(), connection);
 
         } else if (axis_it != string_to_axis_map.end()) {
             connection = BindingConnection(
-                binding, getOutputPointer(ControllerOutput(0, axis_it->second.axis)),
+                binding, GetOutputPointer(ControllerOutput(0, axis_it->second.axis)),
                 axis_it->second.value);
             connections.insert(connections.end(), connection);
         } else {
@@ -253,7 +253,7 @@ void parseInputConfig(const std::string game_id = "") {
     LOG_DEBUG(Input, "Done parsing the input config!");
 }
 
-u32 getMouseWheelEvent(const SDL_Event& event) {
+u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_DEBUG(Input, "Something went wrong with wheel input parsing!");
         return 0;
@@ -270,7 +270,7 @@ u32 getMouseWheelEvent(const SDL_Event& event) {
     return (u32)-1;
 }
 
-u32 InputBinding::getInputIDFromEvent(const SDL_Event& e) {
+u32 InputBinding::GetInputIDFromEvent(const SDL_Event& e) {
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
@@ -280,18 +280,18 @@ u32 InputBinding::getInputIDFromEvent(const SDL_Event& e) {
         return (u32)e.button.button;
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
-        return getMouseWheelEvent(e);
+        return GetMouseWheelEvent(e);
     default:
         return (u32)-1;
     }
 }
 
 GameController* ControllerOutput::controller = nullptr;
-void ControllerOutput::setControllerOutputController(GameController* c) {
+void ControllerOutput::GetControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
-void toggleKeyInList(u32 key) {
+void ToggleKeyInList(u32 key) {
     auto it = std::find(toggled_keys.begin(), toggled_keys.end(), key);
     if (it == toggled_keys.end()) {
         toggled_keys.insert(toggled_keys.end(), key);
@@ -302,7 +302,7 @@ void toggleKeyInList(u32 key) {
     }
 }
 
-void ControllerOutput::update(bool pressed, u32 param) {
+void ControllerOutput::Update(bool pressed, u32 param) {
     float touchpad_x = 0;
     if (button != 0) {
         switch (button) {
@@ -321,7 +321,7 @@ void ControllerOutput::update(bool pressed, u32 param) {
             break;
         case KEY_TOGGLE:
             if (pressed) {
-                toggleKeyInList(param);
+                ToggleKeyInList(param);
             }
             break;
         default: // is a normal key (hopefully)
@@ -358,7 +358,7 @@ void ControllerOutput::update(bool pressed, u32 param) {
         LOG_DEBUG(Input, "Controller output with no values detected!");
     }
 }
-void ControllerOutput::addUpdate(bool pressed, u32 param) {
+void ControllerOutput::AddUpdate(bool pressed, u32 param) {
 
     float touchpad_x = 0;
     if (button != 0) {
@@ -381,7 +381,7 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
             break;
         case KEY_TOGGLE:
             if (pressed) {
-                toggleKeyInList(param);
+                ToggleKeyInList(param);
             }
             break;
         default: // is a normal key (hopefully)
@@ -419,7 +419,7 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
     }
 }
 
-void updatePressedKeys(u32 value, bool is_pressed) {
+void UpdatePressedKeys(u32 value, bool is_pressed) {
     if (is_pressed) {
         // Find the correct position for insertion to maintain order
         auto it =
@@ -442,7 +442,7 @@ void updatePressedKeys(u32 value, bool is_pressed) {
 }
 
 // Check if a given binding's all keys are currently active.
-bool isInputActive(const InputBinding& i) {
+bool IsInputActive(const InputBinding& i) {
     // Extract keys from InputBinding and ignore unused (0) keys
     std::list<uint32_t> input_keys = {i.key1, i.key2, i.key3};
     input_keys.remove(0);
@@ -484,11 +484,11 @@ bool isInputActive(const InputBinding& i) {
         *flag = true;
     }
 
-    LOG_DEBUG(Input, "Input found: {}", i.toString());
+    LOG_DEBUG(Input, "Input found: {}", i.ToString());
     return true; // All keys are active
 }
 
-void activateOutputsFromInputs() {
+void ActivateOutputsFromInputs() {
     // LOG_DEBUG(Input, "Starting input scan... {} inputs active",
     // std::distance(pressed_keys.begin(), pressed_keys.end()));
     //  reset everything
@@ -497,7 +497,7 @@ void activateOutputsFromInputs() {
     }
     for (auto it = connections.begin(); it != connections.end(); it++) {
         if (it->output) {
-            it->output->update(false, 0);
+            it->output->Update(false, 0);
         } else {
             LOG_DEBUG(Input, "Null output in BindingConnection at position {}",
                       std::distance(connections.begin(), it));
@@ -507,13 +507,13 @@ void activateOutputsFromInputs() {
     // trio is found
     for (auto& it : connections) {
         if (it.output) {
-            bool active = isInputActive(it.binding);
-            it.output->addUpdate(active, it.parameter);
+            bool active = IsInputActive(it.binding);
+            it.output->AddUpdate(active, it.parameter);
         }
     }
 }
 
-void updateMouse(GameController* controller) {
+void UpdateMouse(GameController* controller) {
     if (!mouse_enabled)
         return;
     Axis axis_x, axis_y;
@@ -550,9 +550,9 @@ void updateMouse(GameController* controller) {
     }
 }
 
-Uint32 mousePolling(void* param, Uint32 id, Uint32 interval) {
+Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
     auto* data = (GameController*)param;
-    updateMouse(data);
+    UpdateMouse(data);
     return interval;
 }
 

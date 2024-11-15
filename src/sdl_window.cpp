@@ -79,8 +79,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
     // input handler init-s
-    Input::ControllerOutput::setControllerOutputController(controller);
-    Input::parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+    Input::ControllerOutput::GetControllerOutputController(controller);
+    Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
 }
 
 WindowSDL::~WindowSDL() = default;
@@ -101,12 +101,12 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
-        onResize();
+        OnResize();
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
     case SDL_EVENT_WINDOW_EXPOSED:
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
-        onResize();
+        OnResize();
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -114,7 +114,7 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_MOUSE_WHEEL_OFF:
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        onKeyboardMouseInput(&event);
+        OnKeyboardMouseInput(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -124,7 +124,7 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        onGamepadEvent(&event);
+        OnGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
         is_open = false;
@@ -136,10 +136,10 @@ void WindowSDL::waitEvent() {
 
 void WindowSDL::initTimers() {
     SDL_AddTimer(100, &PollController, controller);
-    SDL_AddTimer(33, Input::mousePolling, (void*)controller);
+    SDL_AddTimer(33, Input::MousePolling, (void*)controller);
 }
 
-void WindowSDL::onResize() {
+void WindowSDL::OnResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();
 }
@@ -152,25 +152,25 @@ Uint32 wheelOffCallback(void* og_event, Uint32 timer_id, Uint32 interval) {
     return 0;
 }
 
-void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
+void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
     // get the event's id, if it's keyup or keydown
     bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
                       event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                       event->type == SDL_EVENT_MOUSE_WHEEL;
-    u32 input_id = Input::InputBinding::getInputIDFromEvent(*event);
+    u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
 
     // Handle window controls outside of the input maps
     if (event->type == SDL_EVENT_KEY_DOWN) {
         // Reparse kbm inputs
         if (input_id == SDLK_F8) {
-            Input::parseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
             return;
         }
         // Toggle mouse capture and movement input
         else if (input_id == SDLK_F7) {
-            Input::toggleMouseEnabled();
+            Input::ToggleMouseEnabled();
             SDL_SetWindowRelativeMouseMode(this->GetSdlWindow(),
                                            !SDL_GetWindowRelativeMouseMode(this->GetSdlWindow()));
             return;
@@ -196,13 +196,13 @@ void WindowSDL::onKeyboardMouseInput(const SDL_Event* event) {
     }
 
     // add/remove it from the list
-    Input::updatePressedKeys(input_id, input_down);
+    Input::UpdatePressedKeys(input_id, input_down);
 
     // update bindings
-    Input::activateOutputsFromInputs();
+    Input::ActivateOutputsFromInputs();
 }
 
-void WindowSDL::onGamepadEvent(const SDL_Event* event) {
+void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
     u32 button = 0;
