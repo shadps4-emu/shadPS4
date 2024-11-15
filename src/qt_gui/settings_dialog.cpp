@@ -15,7 +15,8 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-QStringList languageNames = {"Arabic",
+QStringList languageNames = {"Albanian",
+                             "Arabic",
                              "Czech",
                              "Danish",
                              "Dutch",
@@ -47,7 +48,7 @@ QStringList languageNames = {"Arabic",
                              "Ukrainian",
                              "Vietnamese"};
 
-const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
+const QVector<int> languageIndexes = {31, 21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
