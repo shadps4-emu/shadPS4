@@ -8,7 +8,6 @@
 #include <mutex>
 #include <semaphore>
 #include <shared_mutex>
-#include <boost/intrusive/list.hpp>
 
 #include "common/enum.h"
 #include "core/libraries/kernel/time.h"
@@ -22,9 +21,6 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 struct Pthread;
-
-using ListBaseHook =
-    boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
@@ -46,7 +42,7 @@ enum class PthreadMutexProt : u32 {
     Protect = 2,
 };
 
-struct PthreadMutex : public ListBaseHook {
+struct PthreadMutex {
     std::timed_mutex m_lock;
     PthreadMutexFlags m_flags;
     Pthread* m_owner;
@@ -240,14 +236,7 @@ using PthreadEntryFunc = void* PS4_SYSV_ABI (*)(void*);
 
 constexpr u32 TidTerminated = 1;
 
-struct SleepQueue {
-    std::list<Pthread*> sq_blocked;
-    std::forward_list<SleepQueue*> sq_freeq;
-    std::list<SleepQueue*> sq_hash;
-    std::forward_list<SleepQueue*> sq_flink;
-    void* sq_wchan;
-    int sq_type;
-};
+struct SleepQueue;
 
 struct SchedParam {
     int sched_priority;

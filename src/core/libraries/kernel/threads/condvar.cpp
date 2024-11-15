@@ -7,6 +7,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/pthread.h"
+#include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -20,59 +21,6 @@ static constexpr PthreadCondAttr PhreadCondattrDefault = {
     .c_pshared = 0,
     .c_clockid = ClockId::Realtime,
 };
-
-static std::mutex sc_lock;
-static std::unordered_map<void*, SleepQueue*> sc_table;
-
-void SleepqAdd(void* wchan, Pthread* td) {
-    auto [it, is_new] = sc_table.try_emplace(wchan, td->sleepqueue);
-    if (!is_new) {
-        it->second->sq_freeq.push_front(td->sleepqueue);
-    }
-    td->sleepqueue = nullptr;
-    td->wchan = wchan;
-    it->second->sq_blocked.push_back(td);
-}
-
-int SleepqRemove(SleepQueue* sq, Pthread* td) {
-    std::erase(sq->sq_blocked, td);
-    if (sq->sq_blocked.empty()) {
-        td->sleepqueue = sq;
-        sc_table.erase(td->wchan);
-        td->wchan = nullptr;
-        return 0;
-    } else {
-        td->sleepqueue = sq->sq_freeq.front();
-        sq->sq_freeq.pop_front();
-        td->wchan = nullptr;
-        return 1;
-    }
-}
-
-void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
-    if (sq->sq_blocked.empty()) {
-        return;
-    }
-
-    sc_table.erase(sq);
-    Pthread* td = sq->sq_blocked.front();
-    sq->sq_blocked.pop_front();
-
-    callback(td, arg);
-
-    td->sleepqueue = sq;
-    td->wchan = nullptr;
-
-    auto sq2 = sq->sq_freeq.begin();
-    for (Pthread* td : sq->sq_blocked) {
-        callback(td, arg);
-        td->sleepqueue = *sq2;
-        td->wchan = nullptr;
-        ++sq2;
-    }
-    sq->sq_blocked.clear();
-    sq->sq_freeq.clear();
-}
 
 static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const char* name) {
     auto* cvp = new PthreadCond{};
@@ -154,7 +102,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     Pthread* curthread = g_curthread;
     ASSERT_MSG(curthread->wchan == nullptr, "Thread was already on queue.");
     // _thr_testcancel(curthread);
-    sc_lock.lock();
+    SleepqLock(this);
 
     /*
      * set __has_user_waiters before unlocking mutex, this allows
@@ -171,32 +119,32 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
 
     int error = 0;
     for (;;) {
-        curthread->wake_sema.try_acquire();
-        sc_lock.unlock();
+        void(curthread->wake_sema.try_acquire());
+        SleepqUnlock(this);
 
         //_thr_cancel_enter2(curthread, 0);
         int error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
         //_thr_cancel_leave(curthread, 0);
 
-        sc_lock.lock();
+        SleepqLock(this);
         if (curthread->wchan == nullptr) {
             error = 0;
             break;
         } else if (curthread->ShouldCancel()) {
-            SleepQueue* sq = sc_table[this];
+            SleepQueue* sq = SleepqLookup(this);
             has_user_waiters = SleepqRemove(sq, curthread);
-            sc_lock.unlock();
+            SleepqUnlock(this);
             curthread->mutex_obj = nullptr;
             mp->CvLock(recurse);
             return 0;
         } else if (error == POSIX_ETIMEDOUT) {
-            SleepQueue* sq = sc_table[this];
+            SleepQueue* sq = SleepqLookup(this);
             has_user_waiters = SleepqRemove(sq, curthread);
             break;
         }
         UNREACHABLE();
     }
-    sc_lock.unlock();
+    SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
     mp->CvLock(recurse);
     return error;
@@ -230,14 +178,13 @@ int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadM
 int PthreadCond::Signal() {
     Pthread* curthread = g_curthread;
 
-    sc_lock.lock();
-    auto it = sc_table.find(this);
-    if (it == sc_table.end()) {
-        sc_lock.unlock();
+    SleepqLock(this);
+    SleepQueue* sq = SleepqLookup(this);
+    if (sq == nullptr) {
+        SleepqUnlock(this);
         return 0;
     }
 
-    SleepQueue* sq = it->second;
     Pthread* td = sq->sq_blocked.front();
     PthreadMutex* mp = td->mutex_obj;
     has_user_waiters = SleepqRemove(sq, td);
@@ -253,7 +200,7 @@ int PthreadCond::Signal() {
         waddr = &td->wake_sema;
     }
 
-    sc_lock.unlock();
+    SleepqUnlock(this);
     if (waddr != nullptr) {
         waddr->release();
     }
@@ -293,16 +240,16 @@ int PthreadCond::Broadcast() {
         }
     };
 
-    sc_lock.lock();
-    auto it = sc_table.find(this);
-    if (it == sc_table.end()) {
-        sc_lock.unlock();
+    SleepqLock(this);
+    SleepQueue* sq = SleepqLookup(this);
+    if (sq == nullptr) {
+        SleepqUnlock(this);
         return 0;
     }
 
-    SleepqDrop(it->second, drop_cb, &ba);
+    SleepqDrop(sq, drop_cb, &ba);
     has_user_waiters = 0;
-    sc_lock.unlock();
+    SleepqUnlock(this);
 
     for (int i = 0; i < ba.count; i++) {
         ba.waddrs[i]->release();

@@ -6,6 +6,7 @@
 #include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/threads/pthread.h"
+#include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/memory.h"
 #include "core/tls.h"

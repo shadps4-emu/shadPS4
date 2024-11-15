@@ -219,6 +219,8 @@ set(KERNEL_LIB src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/pthread_spec.cpp
                src/core/libraries/kernel/threads/rwlock.cpp
                src/core/libraries/kernel/threads/semaphore.cpp
+               src/core/libraries/kernel/threads/sleepq.cpp
+               src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
