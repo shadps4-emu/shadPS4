@@ -18,7 +18,6 @@ static std::mutex MutxStaticLock;
 #define THR_MUTEX_INITIALIZER ((PthreadMutex*)NULL)
 #define THR_ADAPTIVE_MUTEX_INITIALIZER ((PthreadMutex*)1)
 #define THR_MUTEX_DESTROYED ((PthreadMutex*)2)
-#define THR_MUTEX_RELTIME (const OrbisKernelTimespec*)-1
 
 #define CPU_SPINWAIT __asm__ volatile("pause")
 
@@ -138,7 +137,7 @@ int PthreadMutex::SelfTryLock() {
 
 int PthreadMutex::SelfLock(const OrbisKernelTimespec* abstime, u64 usec) {
     const auto DoSleep = [&] {
-        if (abstime == THR_MUTEX_RELTIME) {
+        if (abstime == THR_RELTIME) {
             std::this_thread::sleep_for(std::chrono::microseconds(usec));
             return POSIX_ETIMEDOUT;
         } else {
@@ -225,11 +224,11 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
 
     if (abstime == nullptr) {
         m_lock.lock();
-    } else if (abstime != THR_MUTEX_RELTIME &&
-               (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)) [[unlikely]] {
+    } else if (abstime != THR_RELTIME && (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000))
+        [[unlikely]] {
         ret = POSIX_EINVAL;
     } else {
-        if (THR_MUTEX_RELTIME) {
+        if (THR_RELTIME) {
             ret = m_lock.try_lock_for(std::chrono::microseconds(usec)) ? 0 : POSIX_ETIMEDOUT;
         } else {
             ret = m_lock.try_lock_until(abstime->TimePoint()) ? 0 : POSIX_ETIMEDOUT;
@@ -269,7 +268,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_timedlock(PthreadMutexT* mutex,
 
 int PS4_SYSV_ABI posix_pthread_mutex_reltimedlock_np(PthreadMutexT* mutex, u64 usec) {
     CHECK_AND_INIT_MUTEX
-    return (*mutex)->Lock(THR_MUTEX_RELTIME, usec);
+    return (*mutex)->Lock(THR_RELTIME, usec);
 }
 
 int PthreadMutex::Unlock() {
@@ -284,8 +283,15 @@ int PthreadMutex::Unlock() {
     if (Type() == PthreadMutexType::Recursive && m_count > 0) [[unlikely]] {
         m_count--;
     } else {
+        int defered = True(m_flags & PthreadMutexFlags::Defered);
+        m_flags &= ~PthreadMutexFlags::Defered;
+
         curthread->Dequeue(this);
         m_lock.unlock();
+
+        if (curthread->will_sleep == 0 && defered) {
+            curthread->WakeAll();
+        }
     }
     return 0;
 }

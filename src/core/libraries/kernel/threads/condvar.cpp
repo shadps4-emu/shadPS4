@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <unordered_map>
+#include "common/assert.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -18,6 +20,59 @@ static constexpr PthreadCondAttr PhreadCondattrDefault = {
     .c_pshared = 0,
     .c_clockid = ClockId::Realtime,
 };
+
+static std::mutex sc_lock;
+static std::unordered_map<void*, SleepQueue*> sc_table;
+
+void SleepqAdd(void* wchan, Pthread* td) {
+    auto [it, is_new] = sc_table.try_emplace(wchan, td->sleepqueue);
+    if (!is_new) {
+        it->second->sq_freeq.push_front(td->sleepqueue);
+    }
+    td->sleepqueue = nullptr;
+    td->wchan = wchan;
+    it->second->sq_blocked.push_back(td);
+}
+
+int SleepqRemove(SleepQueue* sq, Pthread* td) {
+    std::erase(sq->sq_blocked, td);
+    if (sq->sq_blocked.empty()) {
+        td->sleepqueue = sq;
+        sc_table.erase(td->wchan);
+        td->wchan = nullptr;
+        return 0;
+    } else {
+        td->sleepqueue = sq->sq_freeq.front();
+        sq->sq_freeq.pop_front();
+        td->wchan = nullptr;
+        return 1;
+    }
+}
+
+void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
+    if (sq->sq_blocked.empty()) {
+        return;
+    }
+
+    sc_table.erase(sq);
+    Pthread* td = sq->sq_blocked.front();
+    sq->sq_blocked.pop_front();
+
+    callback(td, arg);
+
+    td->sleepqueue = sq;
+    td->wchan = nullptr;
+
+    auto sq2 = sq->sq_freeq.begin();
+    for (Pthread* td : sq->sq_blocked) {
+        callback(td, arg);
+        td->sleepqueue = *sq2;
+        td->wchan = nullptr;
+        ++sq2;
+    }
+    sq->sq_blocked.clear();
+    sq->sq_freeq.clear();
+}
 
 static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const char* name) {
     auto* cvp = new PthreadCond{};
@@ -90,35 +145,61 @@ int PS4_SYSV_ABI posix_pthread_cond_destroy(PthreadCondT* cond) {
     return 0;
 }
 
-int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime) {
+int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, u64 usec) {
     PthreadMutex* mp = *mutex;
     if (int error = mp->IsOwned(g_curthread); error != 0) {
         return error;
     }
 
-    //_thr_testcancel(curthread);
-    //_thr_cancel_enter2(curthread, 0);
-    if (abstime) {
-        const auto status = cond.wait_until(*mp, abstime->TimePoint());
-        return status == std::cv_status::timeout ? POSIX_ETIMEDOUT : 0;
-    } else {
-        cond.wait(*mp);
-        return 0;
-    }
-    //_thr_cancel_leave(curthread, 0);
-}
+    Pthread* curthread = g_curthread;
+    ASSERT_MSG(curthread->wchan == nullptr, "Thread was already on queue.");
+    // _thr_testcancel(curthread);
+    sc_lock.lock();
 
-int PthreadCond::Wait(PthreadMutexT* mutex, u64 usec) {
-    PthreadMutex* mp = *mutex;
-    if (int error = mp->IsOwned(g_curthread); error != 0) {
-        return error;
-    }
+    /*
+     * set __has_user_waiters before unlocking mutex, this allows
+     * us to check it without locking in pthread_cond_signal().
+     */
+    has_user_waiters = 1;
+    curthread->will_sleep = 1;
 
-    //_thr_testcancel(curthread);
-    //_thr_cancel_enter2(curthread, 0);
-    const auto status = cond.wait_for(*mp, std::chrono::microseconds(usec));
-    return status == std::cv_status::timeout ? POSIX_ETIMEDOUT : 0;
-    //_thr_cancel_leave(curthread, 0);
+    int recurse;
+    mp->CvUnlock(&recurse);
+
+    curthread->mutex_obj = mp;
+    SleepqAdd(this, curthread);
+
+    int error = 0;
+    for (;;) {
+        curthread->wake_sema.try_acquire();
+        sc_lock.unlock();
+
+        //_thr_cancel_enter2(curthread, 0);
+        int error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
+        //_thr_cancel_leave(curthread, 0);
+
+        sc_lock.lock();
+        if (curthread->wchan == nullptr) {
+            error = 0;
+            break;
+        } else if (curthread->ShouldCancel()) {
+            SleepQueue* sq = sc_table[this];
+            has_user_waiters = SleepqRemove(sq, curthread);
+            sc_lock.unlock();
+            curthread->mutex_obj = nullptr;
+            mp->CvLock(recurse);
+            return 0;
+        } else if (error == POSIX_ETIMEDOUT) {
+            SleepQueue* sq = sc_table[this];
+            has_user_waiters = SleepqRemove(sq, curthread);
+            break;
+        }
+        UNREACHABLE();
+    }
+    sc_lock.unlock();
+    curthread->mutex_obj = nullptr;
+    mp->CvLock(recurse);
+    return error;
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_wait(PthreadCondT* cond, PthreadMutexT* mutex) {
@@ -143,20 +224,102 @@ int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadM
                                                     u64 usec) {
     PthreadCond* cvp{};
     CHECK_AND_INIT_COND
-    return cvp->Wait(mutex, usec);
+    return cvp->Wait(mutex, THR_RELTIME, usec);
+}
+
+int PthreadCond::Signal() {
+    Pthread* curthread = g_curthread;
+
+    sc_lock.lock();
+    auto it = sc_table.find(this);
+    if (it == sc_table.end()) {
+        sc_lock.unlock();
+        return 0;
+    }
+
+    SleepQueue* sq = it->second;
+    Pthread* td = sq->sq_blocked.front();
+    PthreadMutex* mp = td->mutex_obj;
+    has_user_waiters = SleepqRemove(sq, td);
+
+    std::binary_semaphore* waddr = nullptr;
+    if (mp->m_owner == curthread) {
+        if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
+            curthread->WakeAll();
+        }
+        curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+        mp->m_flags |= PthreadMutexFlags::Defered;
+    } else {
+        waddr = &td->wake_sema;
+    }
+
+    sc_lock.unlock();
+    if (waddr != nullptr) {
+        waddr->release();
+    }
+    return 0;
+}
+
+struct BroadcastArg {
+    Pthread* curthread;
+    std::binary_semaphore* waddrs[Pthread::MaxDeferWaiters];
+    int count;
+};
+
+int PthreadCond::Broadcast() {
+    BroadcastArg ba;
+    ba.curthread = g_curthread;
+    ba.count = 0;
+
+    const auto drop_cb = [](Pthread* td, void* arg) {
+        BroadcastArg* ba = reinterpret_cast<BroadcastArg*>(arg);
+        Pthread* curthread = ba->curthread;
+        PthreadMutex* mp = td->mutex_obj;
+
+        if (mp->m_owner == curthread) {
+            if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
+                curthread->WakeAll();
+            }
+            curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+            mp->m_flags |= PthreadMutexFlags::Defered;
+        } else {
+            if (ba->count >= Pthread::MaxDeferWaiters) {
+                for (int i = 0; i < ba->count; i++) {
+                    ba->waddrs[i]->release();
+                }
+                ba->count = 0;
+            }
+            ba->waddrs[ba->count++] = &td->wake_sema;
+        }
+    };
+
+    sc_lock.lock();
+    auto it = sc_table.find(this);
+    if (it == sc_table.end()) {
+        sc_lock.unlock();
+        return 0;
+    }
+
+    SleepqDrop(it->second, drop_cb, &ba);
+    has_user_waiters = 0;
+    sc_lock.unlock();
+
+    for (int i = 0; i < ba.count; i++) {
+        ba.waddrs[i]->release();
+    }
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_signal(PthreadCondT* cond) {
     PthreadCond* cvp{};
     CHECK_AND_INIT_COND
-    cvp->cond.notify_one();
-    return 0;
+    return cvp->Signal();
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(PthreadCondT* cond) {
     PthreadCond* cvp{};
     CHECK_AND_INIT_COND
-    cvp->cond.notify_all();
+    cvp->Broadcast();
     return 0;
 }
 

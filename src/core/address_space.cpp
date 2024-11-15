@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <boost/icl/separate_interval_set.hpp>
 #include <map>
 #include "common/alignment.h"
 #include "common/arch.h"

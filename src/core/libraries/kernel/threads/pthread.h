@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <forward_list>
 #include <list>
 #include <mutex>
@@ -61,21 +60,27 @@ struct PthreadMutex : public ListBaseHook {
         return static_cast<PthreadMutexType>(m_flags & PthreadMutexFlags::TypeMask);
     }
 
-    void lock() {
-        Lock(nullptr);
-    }
-
-    void unlock() {
-        Unlock();
-    }
-
     int SelfTryLock();
     int SelfLock(const OrbisKernelTimespec* abstime, u64 usec);
 
     int TryLock();
     int Lock(const OrbisKernelTimespec* abstime, u64 usec = 0);
 
+    int CvLock(int recurse) {
+        const int error = Lock(nullptr);
+        if (error == 0) {
+            m_count = recurse;
+        }
+        return error;
+    }
+
     int Unlock();
+
+    int CvUnlock(int* recurse) {
+        *recurse = m_count;
+        m_count = 0;
+        return Unlock();
+    }
 
     bool IsOwned(Pthread* curthread) const;
 };
@@ -111,15 +116,16 @@ enum class ClockId : u32 {
 };
 
 struct PthreadCond {
-    std::condition_variable_any cond;
     u32 has_user_waiters;
     u32 has_kern_waiters;
     u32 flags;
     ClockId clock_id;
     std::string name;
 
-    int Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime);
-    int Wait(PthreadMutexT* mutex, u64 usec);
+    int Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, u64 usec = 0);
+
+    int Signal();
+    int Broadcast();
 };
 using PthreadCondT = PthreadCond*;
 
@@ -247,8 +253,11 @@ struct SchedParam {
     int sched_priority;
 };
 
+#define THR_RELTIME (const OrbisKernelTimespec*)-1
+
 struct Pthread {
     static constexpr u32 ThrMagic = 0xd09ba115U;
+    static constexpr u32 MaxDeferWaiters = 50;
 
     std::atomic<long> tid;
     std::mutex lock;
@@ -296,6 +305,8 @@ struct Pthread {
     PthreadMutex* mutex_obj;
     bool will_sleep;
     bool has_user_waiters;
+    int nwaiter_defer;
+    std::binary_semaphore* defer_waiters[MaxDeferWaiters];
 
     bool InCritical() const noexcept {
         return locklevel > 0 || critical_count > 0;
@@ -307,6 +318,28 @@ struct Pthread {
 
     bool ShouldCancel() const noexcept {
         return cancel_pending && cancel_enable && no_cancel == 0;
+    }
+
+    void WakeAll() {
+        for (int i = 0; i < nwaiter_defer; i++) {
+            defer_waiters[i]->release();
+        }
+        nwaiter_defer = 0;
+    }
+
+    bool Sleep(const OrbisKernelTimespec* abstime, u64 usec) {
+        will_sleep = 0;
+        if (nwaiter_defer > 0) {
+            WakeAll();
+        }
+        if (abstime == THR_RELTIME) {
+            return wake_sema.try_acquire_for(std::chrono::microseconds(usec));
+        } else if (abstime != nullptr) {
+            return wake_sema.try_acquire_until(abstime->TimePoint());
+        } else {
+            wake_sema.acquire();
+            return true;
+        }
     }
 
     void Enqueue(PthreadMutex* mutex) {
