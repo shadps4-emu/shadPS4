@@ -514,7 +514,8 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_stack.Assign(vma.type == VMAType::Stack);
     info->is_pooled.Assign(vma.type == VMAType::Pooled);
-    info->is_committed.Assign(vma.type != VMAType::Free && vma.type != VMAType::Reserved);
+    info->is_committed.Assign(vma.type != VMAType::Free && vma.type != VMAType::Reserved &&
+                              vma.type != VMAType::PoolReserved);
     vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
