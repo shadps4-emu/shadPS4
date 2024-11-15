@@ -461,11 +461,10 @@ bool IsInputActive(const InputBinding& i) {
         // Search for the current key in pressed_keys starting from the last checked position
         while (pressed_it != pressed_end && pressed_it->first <= key) {
             if (pressed_it->first == key) {
-                if (!pressed_it->second) {
-                    key_found = true;
-                    flags_to_set.push_back(
-                        &pressed_it->second); // Collect pointer if flag is not already set
-                }
+                
+                key_found = true;
+                flags_to_set.push_back(&pressed_it->second);
+                
                 ++pressed_it; // Move to the next key in pressed_keys
                 break;
             }
@@ -479,7 +478,13 @@ bool IsInputActive(const InputBinding& i) {
         }
     }
 
-    // Set all flags now that we've verified all keys are active
+    bool is_fully_blocked = true;
+    for (bool* flag : flags_to_set) {
+        is_fully_blocked &= *flag;
+    }
+    if(is_fully_blocked) {
+        return false;
+    }
     for (bool* flag : flags_to_set) {
         *flag = true;
     }

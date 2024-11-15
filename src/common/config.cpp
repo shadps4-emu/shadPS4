@@ -756,9 +756,9 @@ touchpad = g;
 
 #Transform
 l1 = rightbutton, lshift;
-#Shoot
-r1 = leftbutton;
 #Light attack
+r1 = leftbutton;
+#Shoot
 l2 = rightbutton;
 #Heavy attack
 r2 = leftbutton, lshift;
