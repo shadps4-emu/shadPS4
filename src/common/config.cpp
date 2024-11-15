@@ -701,21 +701,24 @@ void setDefaultValues() {
     gpuId = -1;
 }
 
-std::string_view getDefaultKeyboardConfig() {
-    static std::string_view default_config =
-        R"(#This is the default keybinding config
+constexpr std::string_view getDefaultKeyboardConfig() {
+    return R"(#This is the default keybinding config
 #To change per-game configs, modify the CUSAXXXXX.ini files
-#To change the default config that applies to new games without already existing configs, modify default.ini
+#To change the default config that applies to new games without modifying already existing configs, modify default.ini
 #If you don't like certain mappings, delete, change or comment them out.
 #You can add any amount of KBM keybinds to a single controller input,
 #but you can use each KBM keybind for one controller input.
+#Every input consists of up to 3 different keys.
 
 #Keybinds used by the emulator (these are unchangeable):
-#F11 : fullscreen
+#F12 : Trigger Renderdoc capture
+#F11 : Fullscreen
 #F10 : FPS counter
-#F9  : toggle mouse-to-joystick input 
-#       (it overwrites everything else to that joystick, so this is required)
+#Ctrl + F10 : Debug overlay
+#F9  : Pause emulator, but only if the debug overlay is active
 #F8  : reparse keyboard input(this)
+#F7  : toggle mouse-to-joystick input 
+#       (it overwrites everything else to that joystick, so this is required)
 
 #This is a mapping for Bloodborne, inspired by other Souls titles on PC.
 
@@ -743,8 +746,8 @@ left = mousewheelleft;
 #Change weapon in right hand
 right = d, lalt;
 right = mousewheelright;
-#Change into 'inventory mode', so you don't have to hold lalt every time you go into menus
-modkey_toggle = i, lalt;
+#Change into 'inventory mode', so you don't have to hold the secondary key every time you go into menus
+key_toggle = i, lalt;
 
 #Menu
 options = escape;
@@ -767,14 +770,15 @@ r3 = middlebutton;
 
 #Axis mappings
 #Move
+#Change to 'walk mode' by holding the following key:
+#(halves the distance the inputs push the virtual joystick to a given direction)
+leftjoystick_halfmode = lctrl;
 axis_left_x_minus = a;
 axis_left_x_plus = d;
 axis_left_y_minus = w;
 axis_left_y_plus = s;
-#Change to 'walk mode' by holding the following key:
-leftjoystick_halfmode = lctrl;
+
 )";
-    return default_config;
 }
 std::filesystem::path getFoolproofKbmConfigFile(const std::string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
