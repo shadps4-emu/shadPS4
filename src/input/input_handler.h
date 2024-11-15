@@ -308,14 +308,13 @@ public:
     bool operator<(const BindingConnection& other) const {
         // a button is a higher priority than an axis, as buttons can influence axes
         // (e.g. joystick_halfmode)
-        if( output->isButton() && other.output->isAxis()) {
+        if (output->isButton() && other.output->isAxis()) {
             return true;
         }
         if (binding < other.binding) {
             return true;
         }
         return false;
-        
     }
 };
 
