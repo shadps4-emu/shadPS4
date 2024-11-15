@@ -71,8 +71,7 @@ public:
     struct RenderTargetDesc : public BaseDesc {
         RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
                          const AmdGpu::Liverpool::CbDbExtent& hint = {})
-            : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint},
-                       ImageViewInfo{buffer, false}} {}
+            : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
     };
 
     struct DepthTargetDesc : public BaseDesc {

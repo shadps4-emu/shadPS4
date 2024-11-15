@@ -14,6 +14,10 @@ class BufferCache;
 
 namespace Vulkan {
 
+static constexpr auto gp_stage_flags = vk::ShaderStageFlagBits::eVertex |
+                                       vk::ShaderStageFlagBits::eGeometry |
+                                       vk::ShaderStageFlagBits::eFragment;
+
 class Instance;
 class Scheduler;
 class DescriptorHeap;
@@ -21,7 +25,7 @@ class DescriptorHeap;
 class Pipeline {
 public:
     Pipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
-             vk::PipelineCache pipeline_cache);
+             vk::PipelineCache pipeline_cache, bool is_compute = false);
     virtual ~Pipeline();
 
     vk::Pipeline Handle() const noexcept {
@@ -32,22 +36,27 @@ public:
         return *pipeline_layout;
     }
 
+    auto GetStages() const {
+        if (is_compute) {
+            return std::span{stages.cend() - 1, stages.cend()};
+        } else {
+            return std::span{stages.cbegin(), stages.cend() - 1};
+        }
+    }
+
+    const Shader::Info& GetStage(Shader::Stage stage) const noexcept {
+        return *stages[u32(stage)];
+    }
+
+    bool IsCompute() const {
+        return is_compute;
+    }
+
     using DescriptorWrites = boost::container::small_vector<vk::WriteDescriptorSet, 16>;
     using BufferBarriers = boost::container::small_vector<vk::BufferMemoryBarrier2, 16>;
 
-    void BindBuffers(VideoCore::BufferCache& buffer_cache, VideoCore::TextureCache& texture_cache,
-                     const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                     Shader::PushData& push_data, DescriptorWrites& set_writes,
-                     BufferBarriers& buffer_barriers) const;
-
-    void BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                      Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const;
-    void ResetBindings(VideoCore::TextureCache& texture_cache) const {
-        for (auto& image_id : bound_images) {
-            texture_cache.GetImage(image_id).binding.Reset();
-        }
-        bound_images.clear();
-    }
+    void BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
+                       const Shader::PushData& push_data) const;
 
 protected:
     const Instance& instance;
@@ -56,10 +65,9 @@ protected:
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
-    static boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
-    static boost::container::static_vector<vk::BufferView, 8> buffer_views;
-    static boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
-    static boost::container::static_vector<VideoCore::ImageId, 32> bound_images;
+    std::array<const Shader::Info*, Shader::MaxStageTypes> stages{};
+    bool uses_push_descriptors{};
+    const bool is_compute;
 };
 
 } // namespace Vulkan

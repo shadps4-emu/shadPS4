@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <xxhash.h>
+
 #include "common/types.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -14,8 +15,8 @@ class TextureCache;
 
 namespace Vulkan {
 
-static constexpr u32 MaxVertexBufferCount = 32;
 static constexpr u32 MaxShaderStages = 5;
+static constexpr u32 MaxVertexBufferCount = 32;
 
 class Instance;
 class Scheduler;
@@ -61,13 +62,6 @@ public:
                      std::span<const vk::ShaderModule> modules);
     ~GraphicsPipeline();
 
-    void BindResources(const Liverpool::Regs& regs, VideoCore::BufferCache& buffer_cache,
-                       VideoCore::TextureCache& texture_cache) const;
-
-    const Shader::Info& GetStage(Shader::Stage stage) const noexcept {
-        return *stages[u32(stage)];
-    }
-
     bool IsEmbeddedVs() const noexcept {
         static constexpr size_t EmbeddedVsHash = 0x9b2da5cf47f8c29f;
         return key.stage_hashes[u32(Shader::Stage::Vertex)] == EmbeddedVsHash;
@@ -99,9 +93,7 @@ private:
     void BuildDescSetLayout();
 
 private:
-    std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
-    bool uses_push_descriptors{};
 };
 
 } // namespace Vulkan
