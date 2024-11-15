@@ -334,12 +334,12 @@ void ControllerOutput::update(bool pressed, u32 param) {
         case Axis::LeftX:
         case Axis::LeftY:
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
-            //LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
+            // LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
             break;
         case Axis::RightX:
         case Axis::RightY:
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
-            //LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
+            // LOG_DEBUG(Input, "Joystick multiplier set to {}", multiplier);
             break;
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
@@ -410,7 +410,7 @@ void ControllerOutput::addUpdate(bool pressed, u32 param) {
         default:
             break;
         }
-        axis_value = SDL_clamp(((pressed ? (s32)param : 0)+ axis_value) , -127, 127);
+        axis_value = SDL_clamp(((pressed ? (s32)param : 0) + axis_value), -127, 127);
         controller->Axis(0, axis, GetAxis(-0x80, 0x80, axis_value * multiplier));
         // LOG_INFO(Input, "Axis value delta: {} final value: {}", (pressed ? a_value : 0),
         // axis_value);
@@ -444,7 +444,7 @@ void updatePressedKeys(u32 value, bool is_pressed) {
 // Check if a given binding's all keys are currently active.
 bool isInputActive(const InputBinding& i) {
     // Extract keys from InputBinding and ignore unused (0) keys
-    std::list<uint32_t> input_keys = { i.key1, i.key2, i.key3 };
+    std::list<uint32_t> input_keys = {i.key1, i.key2, i.key3};
     input_keys.remove(0);
 
     // Iterator for pressed_keys, starting from the beginning
@@ -463,17 +463,19 @@ bool isInputActive(const InputBinding& i) {
             if (pressed_it->first == key) {
                 if (!pressed_it->second) {
                     key_found = true;
-                    flags_to_set.push_back(&pressed_it->second);  // Collect pointer if flag is not already set
+                    flags_to_set.push_back(
+                        &pressed_it->second); // Collect pointer if flag is not already set
                 }
-                ++pressed_it;  // Move to the next key in pressed_keys
+                ++pressed_it; // Move to the next key in pressed_keys
                 break;
             }
             ++pressed_it;
         }
 
         // If not found in pressed_keys, check in toggled_keys
-        if (!key_found && std::find(toggled_keys.begin(), toggled_keys.end(), key) == toggled_keys.end()) {
-            return false;  // Key not found in either list
+        if (!key_found &&
+            std::find(toggled_keys.begin(), toggled_keys.end(), key) == toggled_keys.end()) {
+            return false; // Key not found in either list
         }
     }
 
@@ -483,12 +485,13 @@ bool isInputActive(const InputBinding& i) {
     }
 
     LOG_DEBUG(Input, "Input found: {}", i.toString());
-    return true;  // All keys are active
+    return true; // All keys are active
 }
 
 void activateOutputsFromInputs() {
-    //LOG_DEBUG(Input, "Starting input scan... {} inputs active", std::distance(pressed_keys.begin(), pressed_keys.end()));
-    // reset everything
+    // LOG_DEBUG(Input, "Starting input scan... {} inputs active",
+    // std::distance(pressed_keys.begin(), pressed_keys.end()));
+    //  reset everything
     for (auto& it : pressed_keys) {
         it.second = false;
     }
