@@ -3,6 +3,7 @@
 
 #include <QDesktopServices>
 #include <QEvent>
+#include <QGraphicsDropShadowEffect>
 #include <QImage>
 #include <QLabel>
 #include <QPixmap>
@@ -55,22 +56,70 @@ bool AboutDialog::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::Enter) {
         if (obj == ui->image_1) {
             ui->image_1->setPixmap(invertedImages[0]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(5);
+            shadow->setXOffset(2);
+            shadow->setYOffset(2);
+            shadow->setColor(Qt::gray);
+            ui->image_1->setGraphicsEffect(shadow);
         } else if (obj == ui->image_2) {
             ui->image_2->setPixmap(invertedImages[1]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(5);
+            shadow->setXOffset(2);
+            shadow->setYOffset(2);
+            shadow->setColor(Qt::gray);
+            ui->image_2->setGraphicsEffect(shadow);
         } else if (obj == ui->image_3) {
             ui->image_3->setPixmap(invertedImages[2]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(5);
+            shadow->setXOffset(2);
+            shadow->setYOffset(2);
+            shadow->setColor(Qt::gray);
+            ui->image_3->setGraphicsEffect(shadow);
         } else if (obj == ui->image_4) {
             ui->image_4->setPixmap(invertedImages[3]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(5);
+            shadow->setXOffset(2);
+            shadow->setYOffset(2);
+            shadow->setColor(Qt::gray);
+            ui->image_4->setGraphicsEffect(shadow);
         }
     } else if (event->type() == QEvent::Leave) {
         if (obj == ui->image_1) {
             ui->image_1->setPixmap(originalImages[0]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(0);
+            shadow->setXOffset(0);
+            shadow->setYOffset(0);
+            shadow->setColor(Qt::gray);
+            ui->image_1->setGraphicsEffect(shadow);
         } else if (obj == ui->image_2) {
             ui->image_2->setPixmap(originalImages[1]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(0);
+            shadow->setXOffset(0);
+            shadow->setYOffset(0);
+            shadow->setColor(Qt::gray);
+            ui->image_2->setGraphicsEffect(shadow);
         } else if (obj == ui->image_3) {
             ui->image_3->setPixmap(originalImages[2]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(0);
+            shadow->setXOffset(0);
+            shadow->setYOffset(0);
+            shadow->setColor(Qt::gray);
+            ui->image_3->setGraphicsEffect(shadow);
         } else if (obj == ui->image_4) {
             ui->image_4->setPixmap(originalImages[3]);
+            QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(0);
+            shadow->setXOffset(0);
+            shadow->setYOffset(0);
+            shadow->setColor(Qt::gray);
+            ui->image_4->setGraphicsEffect(shadow);
         }
 
     } else if (event->type() == QEvent::MouseButtonPress) {
