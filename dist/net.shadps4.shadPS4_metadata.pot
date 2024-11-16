@@ -1,0 +1,65 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2024-11-08 09:07+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: component/name
+#: ./net.shadps4.shadPS4.metainfo.xml:4
+msgid "shadPS4"
+msgstr ""
+
+#. (itstool) path: developer/name
+#: ./net.shadps4.shadPS4.metainfo.xml:6
+msgid "shadPS4 Contributors"
+msgstr ""
+
+#. (itstool) path: component/summary
+#: ./net.shadps4.shadPS4.metainfo.xml:9
+msgid "PS4 Emulator"
+msgstr ""
+
+#. (itstool) path: description/p
+#: ./net.shadps4.shadPS4.metainfo.xml:16
+msgid "shadPS4 is an early PlayStation 4 emulator for Windows, Linux and macOS written in C++."
+msgstr ""
+
+#. (itstool) path: description/p
+#: ./net.shadps4.shadPS4.metainfo.xml:17
+msgid "The emulator is still early in development, so don't expect a flawless experience. Nonetheless, the emulator can already run a number of commercial games."
+msgstr ""
+
+#. (itstool) path: screenshot/caption
+#: ./net.shadps4.shadPS4.metainfo.xml:22
+msgid "Bloodborne"
+msgstr ""
+
+#. (itstool) path: screenshot/caption
+#: ./net.shadps4.shadPS4.metainfo.xml:26
+msgid "Hatsune Miku: Project DIVA Future Tone"
+msgstr ""
+
+#. (itstool) path: screenshot/caption
+#: ./net.shadps4.shadPS4.metainfo.xml:30
+msgid "Yakuza Kiwami"
+msgstr ""
+
+#. (itstool) path: screenshot/caption
+#: ./net.shadps4.shadPS4.metainfo.xml:34
+msgid "Persona 4 Golden"
+msgstr ""
+
+#. (itstool) path: keywords/keyword
+#: ./net.shadps4.shadPS4.metainfo.xml:59
+msgid "emulator"
+msgstr ""
+
+#. (itstool) path: keywords/keyword
+#: ./net.shadps4.shadPS4.metainfo.xml:60
+msgid "emulation"
+msgstr ""
