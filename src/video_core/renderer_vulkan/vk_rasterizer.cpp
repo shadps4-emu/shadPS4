@@ -393,14 +393,12 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     if (regs.depth_control.depth_bounds_enable) {
         cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
     }
-    if (regs.polygon_control.NeedsBias()) {
-        if (regs.polygon_control.enable_polygon_offset_front) {
-            cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
-                                regs.poly_offset.front_scale);
-        } else {
-            cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
-                                regs.poly_offset.back_scale);
-        }
+    if (regs.polygon_control.enable_polygon_offset_front) {
+        cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
+                            regs.poly_offset.front_scale / 16.f);
+    } else if (regs.polygon_control.enable_polygon_offset_back) {
+        cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
+                            regs.poly_offset.back_scale / 16.f);
     }
     if (regs.depth_control.stencil_enable) {
         const auto front = regs.stencil_ref_front;
