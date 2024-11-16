@@ -25,6 +25,12 @@ private:
     Ui::AboutDialog* ui;
 
     void preloadImages();
-    QPixmap originalImages[4];
-    QPixmap invertedImages[4];
+    void updateImagesForCurrentTheme();
+    void applyHoverEffect(QLabel* label);
+    void removeHoverEffect(QLabel* label);
+
+    bool isDarkTheme() const;
+
+    QPixmap originalImages[5];
+    QPixmap invertedImages[5];
 };

@@ -42,6 +42,7 @@ path = [
     "src/images/themes_icon.png",
     "src/images/update_icon.png",
     "src/images/youtube.png",
+    "src/images/website.png",
     "src/shadps4.qrc",
     "src/shadps4.rc",
 ]

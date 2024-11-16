@@ -171,7 +171,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>:/images/ko-fi.png</pixmap>
+    <pixmap>:/images/youtube.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -196,12 +196,37 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>:/images/youtube.png</pixmap>
+    <pixmap>:/images/ko-fi.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
    </property>
   </widget>
+   <widget class="QLabel" name="image_5">
+     <property name="geometry">
+       <rect>
+         <x>670</x>
+         <y>210</y>
+         <width>80</width>
+         <height>80</height>
+       </rect>
+     </property>
+     <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
+     </property>
+     <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+       <string/>
+     </property>
+     <property name="pixmap">
+       <pixmap>:/images/website.png</pixmap>
+     </property>
+     <property name="scaledContents">
+       <bool>true</bool>
+     </property>
+   </widget>
  </widget>
  <resources/>
  <connections/>
