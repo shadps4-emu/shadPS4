@@ -143,7 +143,7 @@ public:
         aboutAct->setIcon(QIcon(":images/about_icon.png"));
         keys_shortcuts = new QAction(MainWindow);
         keys_shortcuts->setObjectName("keys_shortcuts");
-        keys_shortcuts->setIcon(QIcon(":images/about_icon.png"));
+        keys_shortcuts->setIcon(QIcon(":images/keys_icon.png"));
         configureAct = new QAction(MainWindow);
         configureAct->setObjectName("configureAct");
         configureAct->setIcon(QIcon(":images/settings_icon.png"));
