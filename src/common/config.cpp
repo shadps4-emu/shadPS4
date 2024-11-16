@@ -702,82 +702,45 @@ void setDefaultValues() {
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {
-    return R"(#This is the default keybinding config
-#To change per-game configs, modify the CUSAXXXXX.ini files
-#To change the default config that applies to new games without modifying already existing configs, modify default.ini
-#If you don't like certain mappings, delete, change or comment them out.
-#You can add any amount of KBM keybinds to a single controller input,
-#but you can use each KBM keybind for one controller input.
-#Every input consists of up to 3 different keys.
+    return R"(#Feeling lost? Check out the Help section!
 
-#Keybinds used by the emulator (these are unchangeable):
-#F12 : Trigger Renderdoc capture
-#F11 : Fullscreen
-#F10 : FPS counter
-#Ctrl + F10 : Debug overlay
-#F9  : Pause emulator, but only if the debug overlay is active
-#F8  : reparse keyboard input(this)
-#F7  : toggle mouse-to-joystick input 
-#       (it overwrites everything else to that joystick, so this is required)
+triangle = f
+circle = space
+cross = e
+square = r
 
-#This is a mapping for Bloodborne, inspired by other Souls titles on PC.
+up = w, lalt
+up = mousewheelup
+down = s, lalt
+down = mousewheeldown
+left = a, lalt
+left = mousewheelleft
+right = d, lalt
+right = mousewheelright
 
-#Specifies which joystick the mouse movement controls.
-mouse_to_joystick = right;
+l1 = rightbutton, lshift
+r1 = leftbutton
+l2 = rightbutton
+r2 = leftbutton, lshift
+l3 = x
+r3 = q
+r3 = middlebutton
 
-#Use healing item, change status in inventory
-triangle = f;
-#Dodge, back in inventory
-circle = space;
-#Interact, select item in inventory
-cross = e;
-#Use quick item, remove item in inventory
-square = r;
+key_toggle = i, lalt
 
-#Emergency extra bullets
-up = w, lalt;
-up = mousewheelup;
-#Change quick item
-down = s, lalt;
-down = mousewheeldown;
-#Change weapon in left hand
-left = a, lalt;
-left = mousewheelleft;
-#Change weapon in right hand
-right = d, lalt;
-right = mousewheelright;
-#Change into 'inventory mode', so you don't have to hold the secondary key every time you go into menus
-key_toggle = i, lalt;
+options = escape
+touchpad = g
 
-#Menu
-options = escape;
-#Gestures
-touchpad = g;
 
-#Transform
-l1 = rightbutton, lshift;
-#Light attack
-r1 = leftbutton;
-#Shoot
-l2 = rightbutton;
-#Heavy attack
-r2 = leftbutton, lshift;
-#Does nothing
-l3 = x;
-#Center cam, lock on
-r3 = q;
-r3 = middlebutton;
+mouse_to_joystick = right
+mouse_movement_params = 1, 0.5, 0.125
 
-#Axis mappings
-#Move
-#Change to 'walk mode' by holding the following key:
-#(halves the distance the inputs push the virtual joystick to a given direction)
-leftjoystick_halfmode = lctrl;
-axis_left_x_minus = a;
-axis_left_x_plus = d;
-axis_left_y_minus = w;
-axis_left_y_plus = s;
+leftjoystick_halfmode = lctrl
 
+axis_left_x_minus = a
+axis_left_x_plus = d
+axis_left_y_minus = w
+axis_left_y_plus = s
 )";
 }
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {

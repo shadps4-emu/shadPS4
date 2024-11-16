@@ -338,7 +338,7 @@ void ControllerOutput::AddUpdate(bool pressed, u32 param) {
     }
 }
 void ControllerOutput::FinalizeUpdate() {
-    if(!state_changed || (old_button_state == new_button_state && old_param == new_param)) {
+    if (!state_changed || (old_button_state == new_button_state && old_param == new_param)) {
         return;
     }
     old_button_state = new_button_state;
@@ -434,10 +434,10 @@ bool IsInputActive(const InputBinding& i) {
         // Search for the current key in pressed_keys starting from the last checked position
         while (pressed_it != pressed_end && pressed_it->first <= key) {
             if (pressed_it->first == key) {
-                
+
                 key_found = true;
                 flags_to_set.push_back(&pressed_it->second);
-                
+
                 ++pressed_it; // Move to the next key in pressed_keys
                 break;
             }
@@ -455,7 +455,7 @@ bool IsInputActive(const InputBinding& i) {
     for (bool* flag : flags_to_set) {
         is_fully_blocked &= *flag;
     }
-    if(is_fully_blocked) {
+    if (is_fully_blocked) {
         return false;
     }
     for (bool* flag : flags_to_set) {
@@ -467,7 +467,7 @@ bool IsInputActive(const InputBinding& i) {
 }
 
 void ActivateOutputsFromInputs() {
-    
+
     for (auto& it : pressed_keys) {
         it.second = false;
     }

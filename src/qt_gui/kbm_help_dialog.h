@@ -48,7 +48,7 @@ This project started out because I didn't like the original unchangeable keybind
     QString faq() {
         return
             R"(Q: What are the emulator-wide keybinds?
-A: -F12: Triggers Rdoc capture
+A: -F12: Triggers Renderdoc capture
 -F11: Toggles fullscreen
 -F10: Toggles FPS counter
 -Ctrl F10: Open the debug menu
@@ -57,7 +57,7 @@ A: -F12: Triggers Rdoc capture
 -F7: Toggles mouse capture and mouse input
 
 Q: How do I change between mouse and controller joystick input, and why is it even required?
-A: You can switch between them with F9, and it is required, because mouse input is done with polling, which means mouse movement is checked every frame, and if it didn't move, the code manually sets the emulator's virtual controller to 0 (back to the center), even if other input devices would update it.
+A: You can switch between them with F7, and it is required, because mouse input is done with polling, which means mouse movement is checked every frame, and if it didn't move, the code manually sets the emulator's virtual controller to 0 (back to the center), even if other input devices would update it.
 
 Q: What happens if I accidentally make a typo in the config?
 A: The code recognises the line as wrong, and skip it, so the rest of the file will get parsed, but that line in question will be treated like a comment line.
@@ -69,7 +69,7 @@ A: Some keys are intentionally omitted, but if you read the bindings through, an
     QString syntax() {
         return
             R"(This is the full list of currently supported mouse and keyboard inputs, and how to use them.
-Emulator-reserved keys: F1 through F12, Insert, PrintScreen, Delete, Home, End, PgUp, PgDown
+Emulator-reserved keys: F1 through F12
 
 Syntax (aka how a line can look like):
 #Comment line
@@ -87,7 +87,7 @@ axis_left_y_minus = w;
 
 You can make a comment line by putting # as the first character.
 Whitespace doesn't matter, <button>=<key>; is just as valid as <button> = <key>;
-';' at the ends of lines is also optional.d
+';' at the ends of lines is also optional.
 )";
     }
     QString bindings() {
