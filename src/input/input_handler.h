@@ -263,12 +263,13 @@ public:
 
     u32 button;
     Axis axis;
-    int axis_value;
+    int old_param, new_param;
+    bool old_button_state, new_button_state, state_changed;
 
     ControllerOutput(const u32 b, Axis a = Axis::AxisMax) {
         button = b;
         axis = a;
-        axis_value = 0;
+        old_param = 0;
     }
     ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {}
     inline bool operator==(const ControllerOutput& o) const { // fucking consts everywhere
@@ -278,7 +279,7 @@ public:
         return button != o.button || axis != o.axis;
     }
     std::string ToString() const {
-        return fmt::format("({}, {}, {})", button, (int)axis, axis_value);
+        return fmt::format("({}, {}, {})", button, (int)axis, old_param);
     }
     inline bool IsButton() const {
         return axis == Axis::AxisMax && button != 0;
@@ -286,9 +287,10 @@ public:
     inline bool IsAxis() const {
         return axis != Axis::AxisMax && button == 0;
     }
-    void Update(bool pressed, u32 param = 0);
-    // Off events are not counted
+
+    void ResetUpdate();
     void AddUpdate(bool pressed, u32 param = 0);
+    void FinalizeUpdate();
 };
 class BindingConnection {
 public:
