@@ -287,7 +287,7 @@ u32 InputBinding::GetInputIDFromEvent(const SDL_Event& e) {
 }
 
 GameController* ControllerOutput::controller = nullptr;
-void ControllerOutput::GetControllerOutputController(GameController* c) {
+void ControllerOutput::SetControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
@@ -494,8 +494,6 @@ bool IsInputActive(const InputBinding& i) {
 }
 
 void ActivateOutputsFromInputs() {
-    // LOG_DEBUG(Input, "Starting input scan... {} inputs active",
-    // std::distance(pressed_keys.begin(), pressed_keys.end()));
     //  reset everything
     for (auto& it : pressed_keys) {
         it.second = false;

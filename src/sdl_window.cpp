@@ -79,7 +79,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
     // input handler init-s
-    Input::ControllerOutput::GetControllerOutputController(controller);
+    Input::ControllerOutput::SetControllerOutputController(controller);
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
 }
 

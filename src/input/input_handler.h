@@ -259,7 +259,7 @@ class ControllerOutput {
     static GameController* controller;
 
 public:
-    static void GetControllerOutputController(GameController* c);
+    static void SetControllerOutputController(GameController* c);
 
     u32 button;
     Axis axis;
