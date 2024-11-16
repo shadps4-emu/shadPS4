@@ -773,6 +773,10 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/trophy_viewer.h
            src/qt_gui/elf_viewer.cpp
            src/qt_gui/elf_viewer.h
+           src/qt_gui/kbm_config_dialog.cpp
+           src/qt_gui/kbm_config_dialog.h
+           src/qt_gui/kbm_help_dialog.cpp
+           src/qt_gui/kbm_help_dialog.h
            src/qt_gui/main_window_themes.cpp
            src/qt_gui/main_window_themes.h
            src/qt_gui/settings_dialog.cpp
