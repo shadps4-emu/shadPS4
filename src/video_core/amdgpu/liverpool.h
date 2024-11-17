@@ -57,6 +57,8 @@ struct Liverpool {
     static constexpr u32 ConfigRegWordOffset = 0x2000;
     static constexpr u32 ShRegWordOffset = 0x2C00;
     static constexpr u32 NumRegs = 0xD000;
+    static constexpr u32 DrawIndirectArgsSize = 0x10u;
+    static constexpr u32 DrawIndexedIndirectArgsSize = 0x14u;
 
     using UserData = std::array<u32, NumShaderUserData>;
 

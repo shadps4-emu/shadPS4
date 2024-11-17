@@ -308,6 +308,7 @@ struct AscQueueInfo {
 };
 static Common::SlotVector<AscQueueInfo> asc_queues{};
 static constexpr VAddr tessellation_factors_ring_addr = Core::SYSTEM_RESERVED_MAX - 0xFFFFFFF;
+static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
     std::unique_lock lock{m_submission};
@@ -672,18 +673,50 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset,
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 data_offset,
+                                                   u32 max_count, u64 count_addr, u32 shader_stage,
+                                                   u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
+                                                   u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && (size == 16) && (shader_stage < ShaderStages::Max) &&
+        (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u)) {
+
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 2);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+        cmdbuf += 1;
+
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexIndirectCountMulti>(
+            cmdbuf, 9, PM4ShaderType::ShaderGraphics, predicate);
+
+        const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
+
+        cmdbuf[0] = data_offset;
+        cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[2] = instance_sgpr_offset == 0 ? 0 : (instance_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[3] = (count_addr != 0 ? 1u : 0u) << 0x1e;
+        cmdbuf[4] = max_count;
+        *(u64*)(&cmdbuf[5]) = count_addr;
+        cmdbuf[7] = AmdGpu::Liverpool::DrawIndexedIndirectArgsSize;
+        cmdbuf[8] = 0;
+
+        cmdbuf += 9;
+        WriteTrailingNop<2>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti() {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    UNREACHABLE();
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced() {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    UNREACHABLE();
     return ORBIS_OK;
 }
 
@@ -730,11 +763,13 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 
 
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti() {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    UNREACHABLE();
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndirectMulti() {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    UNREACHABLE();
     return ORBIS_OK;
 }
 
@@ -992,8 +1027,8 @@ int PS4_SYSV_ABI sceGnmGetNumTcaUnits() {
 }
 
 int PS4_SYSV_ABI sceGnmGetOffChipTessellationBufferSize() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return tessellation_offchip_buffer_size;
 }
 
 int PS4_SYSV_ABI sceGnmGetOwnerName() {
@@ -2438,8 +2473,8 @@ int PS4_SYSV_ABI sceGnmValidateGetVersion() {
 }
 
 int PS4_SYSV_ABI sceGnmValidateOnSubmitEnabled() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return 0;
 }
 
 int PS4_SYSV_ABI sceGnmValidateResetState() {
