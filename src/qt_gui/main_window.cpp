@@ -6,6 +6,7 @@
 #include <QProgressDialog>
 
 #include "about_dialog.h"
+#include "keys_shortcuts_dialog.h"
 #include "cheats_patches.h"
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
@@ -268,8 +269,8 @@ void MainWindow::CreateConnects() {
 #endif
 
     connect(ui->keys_shortcuts, &QAction::triggered, this, [this]() {
-        auto aboutDialog = new AboutDialog(this);
-        aboutDialog->exec();
+        auto keysShortcutsDialog = new KeysShortcutsDialog(this);
+        keysShortcutsDialog->exec();
     });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
