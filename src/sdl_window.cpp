@@ -196,10 +196,12 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     }
 
     // add/remove it from the list
-    Input::UpdatePressedKeys(input_id, input_down);
+    bool inputs_changed = Input::UpdatePressedKeys(input_id, input_down);
 
     // update bindings
-    Input::ActivateOutputsFromInputs();
+    if (inputs_changed) {
+        Input::ActivateOutputsFromInputs();
+    }
 }
 
 void WindowSDL::OnGamepadEvent(const SDL_Event* event) {

@@ -263,7 +263,7 @@ public:
 
     u32 button;
     Axis axis;
-    int old_param, new_param;
+    s32 old_param, new_param;
     bool old_button_state, new_button_state, state_changed;
 
     ControllerOutput(const u32 b, Axis a = Axis::AxisMax) {
@@ -322,8 +322,9 @@ public:
 // Check if the 3 key input is currently active.
 bool IsInputActive(const InputBinding& i);
 
-// Add/remove the input that generated the event to/from the held keys container.
-void UpdatePressedKeys(u32 button, bool is_pressed);
+// Updates the list of pressed keys with the given input.
+// Returns whether the list was updated or not.
+bool UpdatePressedKeys(u32 button, bool is_pressed);
 
 void ActivateOutputsFromInputs();
 
