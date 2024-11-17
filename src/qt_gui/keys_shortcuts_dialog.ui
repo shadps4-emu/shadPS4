@@ -22,10 +22,10 @@
   <widget class="QLabel" name="image">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>220</y>
-     <width>740</width>
-     <height>350</height>
+     <width>780</width>
+     <height>380</height>
     </rect>
    </property>
    <property name="frameShape">

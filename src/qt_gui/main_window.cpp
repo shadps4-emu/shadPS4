@@ -6,8 +6,8 @@
 #include <QProgressDialog>
 
 #include "about_dialog.h"
-#include "keys_shortcuts_dialog.h"
 #include "cheats_patches.h"
+#include "keys_shortcuts_dialog.h"
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
 #endif
