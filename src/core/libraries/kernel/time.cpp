@@ -52,14 +52,7 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 
 int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 #ifdef _WIN64
-    if (microseconds < 1000u) {
-        LARGE_INTEGER interval{
-            .QuadPart = -1 * (microseconds * 10u),
-        };
-        NtDelayExecution(FALSE, &interval);
-    } else {
-        std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    }
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
     return 0;
 #else
     timespec start;

@@ -274,8 +274,6 @@ struct Pthread {
     Pthread* joiner;
     ThreadFlags flags;
     ThreadListFlags tlflags;
-    std::list<PthreadMutex> mutexq;
-    std::list<PthreadMutex> pp_mutexq;
     void* ret;
     PthreadSpecificElem* specific;
     int specific_data_count;
@@ -329,16 +327,6 @@ struct Pthread {
             wake_sema.acquire();
             return true;
         }
-    }
-
-    void Enqueue(PthreadMutex* mutex) {
-        mutex->m_owner = this;
-        // mutexq.push_back(*mutex);
-    }
-
-    void Dequeue(PthreadMutex* mutex) {
-        mutex->m_owner = nullptr;
-        // mutexq.erase(decltype(mutexq)::s_iterator_to(*mutex));
     }
 };
 using PthreadT = Pthread*;

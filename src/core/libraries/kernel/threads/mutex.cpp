@@ -191,13 +191,6 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         return SelfLock(abstime, usec);
     }
 
-    int ret = 0;
-    SCOPE_EXIT {
-        if (ret == 0) {
-            curthread->Enqueue(this);
-        }
-    };
-
     /*
      * For adaptive mutexes, spin for a bit in the expectation
      * that if the application requests this mutex type then
@@ -208,6 +201,7 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         int count = m_spinloops;
         while (count--) {
             if (m_lock.try_lock()) {
+                m_owner = curthread;
                 return 0;
             }
             CPU_SPINWAIT;
@@ -217,11 +211,13 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         while (count--) {
             std::this_thread::yield();
             if (m_lock.try_lock()) {
+                m_owner = curthread;
                 return 0;
             }
         }
     }
-
+    
+    int ret = 0;
     if (abstime == nullptr) {
         m_lock.lock();
     } else if (abstime != THR_RELTIME && (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000))
@@ -234,6 +230,9 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
             ret = m_lock.try_lock_until(abstime->TimePoint()) ? 0 : POSIX_ETIMEDOUT;
         }
     }
+    if (ret == 0) {
+        m_owner = curthread;
+    }
     return ret;
 }
 
@@ -244,7 +243,7 @@ int PthreadMutex::TryLock() {
     }
     const int ret = m_lock.try_lock() ? 0 : POSIX_EBUSY;
     if (ret == 0) {
-        curthread->Enqueue(this);
+        m_owner = curthread;
     }
     return ret;
 }
@@ -286,7 +285,7 @@ int PthreadMutex::Unlock() {
         int defered = True(m_flags & PthreadMutexFlags::Defered);
         m_flags &= ~PthreadMutexFlags::Defered;
 
-        curthread->Dequeue(this);
+        m_owner = nullptr;
         m_lock.unlock();
 
         if (curthread->will_sleep == 0 && defered) {
