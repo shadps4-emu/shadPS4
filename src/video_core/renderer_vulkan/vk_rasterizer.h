@@ -32,7 +32,8 @@ public:
     }
 
     void Draw(bool is_indexed, u32 index_offset = 0);
-    void DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size);
+    void DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 size, u32 max_count,
+                      VAddr count_address);
 
     void DispatchDirect();
     void DispatchIndirect(VAddr address, u32 offset, u32 size);
