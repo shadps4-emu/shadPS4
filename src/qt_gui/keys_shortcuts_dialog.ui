@@ -31,9 +31,6 @@
    <property name="frameShape">
     <enum>QFrame::Shape::NoFrame</enum>
    </property>
-   <property name="text">
-    <string/>
-   </property>
    <property name="pixmap">
     <pixmap>:/images/keys.png</pixmap>
    </property>
@@ -41,7 +38,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="shad_text">
+  <widget class="QGroupBox" name="textGroupBox">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -50,20 +47,33 @@
      <height>200</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>14</pointsize>
-    </font>
+   <property name="title">
+    <string/>
    </property>
-   <property name="text">
-    <string>KeysShortcutsDialog_MSG</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
+   <widget class="QLabel" name="text">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>720</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>KeysShortcutsDialog_MSG</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

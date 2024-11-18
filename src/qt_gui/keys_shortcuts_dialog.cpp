@@ -10,7 +10,7 @@
 KeysShortcutsDialog::KeysShortcutsDialog(QWidget* parent)
     : QDialog(parent), ui(new Ui::KeysShortcutsDialog) {
     ui->setupUi(this);
-    ui->shad_text->setText(tr("KeysShortcutsDialog_MSG").replace("\\n", "\n"));
+    ui->text->setText(tr("KeysShortcutsDialog_MSG").replace("\\n", "\n"));
 }
 
 KeysShortcutsDialog::~KeysShortcutsDialog() {
