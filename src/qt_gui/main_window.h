@@ -9,9 +9,6 @@
 
 #include "background_music_player.h"
 #include "common/config.h"
-#ifdef ENABLE_DISCORD_RPC
-#include "common/discord_rpc_handler.h"
-#endif
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
