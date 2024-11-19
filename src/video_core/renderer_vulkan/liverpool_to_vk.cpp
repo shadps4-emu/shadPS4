@@ -285,10 +285,10 @@ vk::SamplerMipmapMode MipFilter(AmdGpu::MipFilter filter) {
 
 vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
     switch (color) {
-    case AmdGpu::BorderColor::OpaqueBlack:
-        return vk::BorderColor::eFloatOpaqueBlack;
     case AmdGpu::BorderColor::TransparentBlack:
         return vk::BorderColor::eFloatTransparentBlack;
+    case AmdGpu::BorderColor::OpaqueBlack:
+        return vk::BorderColor::eFloatOpaqueBlack;
     case AmdGpu::BorderColor::White:
         return vk::BorderColor::eFloatOpaqueWhite;
     case AmdGpu::BorderColor::Custom:
