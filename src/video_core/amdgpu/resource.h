@@ -358,8 +358,8 @@ enum class MipFilter : u64 {
 };
 
 enum class BorderColor : u64 {
-    OpaqueBlack = 0,
-    TransparentBlack = 1,
+    TransparentBlack = 0,
+    OpaqueBlack = 1,
     White = 2,
     Custom = 3,
 };
