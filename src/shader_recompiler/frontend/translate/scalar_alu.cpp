@@ -132,6 +132,16 @@ void Translator::EmitSOPC(const GcnInst& inst) {
         return S_CMP(ConditionOp::LT, false, inst);
     case Opcode::S_CMP_LE_U32:
         return S_CMP(ConditionOp::LE, false, inst);
+
+    case Opcode::S_BITCMP0_B32:
+        return S_BITCMP(false, 32, inst);
+    case Opcode::S_BITCMP1_B32:
+        return S_BITCMP(true, 32, inst);
+    case Opcode::S_BITCMP0_B64:
+        return S_BITCMP(false, 64, inst);
+    case Opcode::S_BITCMP1_B64:
+        return S_BITCMP(true, 64, inst);
+
     default:
         LogMissingOpcode(inst);
     }
@@ -610,6 +620,35 @@ void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
             return ir.ILessThanEqual(lhs, rhs, is_signed);
         default:
             UNREACHABLE();
+        }
+    }();
+    ir.SetScc(result);
+}
+
+void Translator::S_BITCMP(bool compare_mode, u32 bits, const GcnInst& inst) {
+    const IR::U1 result = [&] {
+        const IR::U32 src0 = GetSrc(inst.src[0]);
+        const IR::U32 src1 = GetSrc(inst.src[1]);
+
+        IR::U32 mask;
+        switch (bits) {
+        case 32:
+            mask = ir.Imm32(0x1f);
+            break;
+        case 64:
+            mask = ir.Imm32(0x3f);
+            break;
+        default:
+            UNREACHABLE();
+        }
+
+        const IR::U32 bitpos{ir.BitwiseAnd(src1, mask)};
+        const IR::U32 bittest{ir.BitwiseAnd(ir.ShiftRightLogical(src0, bitpos), ir.Imm32(1))};
+
+        if (!compare_mode) {
+            return ir.IEqual(bittest, ir.Imm32(0));
+        } else {
+            return ir.IEqual(bittest, ir.Imm32(1));
         }
     }();
     ir.SetScc(result);
