@@ -65,12 +65,12 @@ int PS4_SYSV_ABI sceAudio3dPortFlush(OrbisAudio3dPortId uiPortId) {
 }
 
 int PS4_SYSV_ABI sceAudio3dPortAdvance(OrbisAudio3dPortId uiPortId) {
-    LOG_INFO(Lib_Audio3d, "uiPortId = {}", uiPortId);
+    LOG_TRACE(Lib_Audio3d, "uiPortId = {}", uiPortId);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudio3dPortPush(OrbisAudio3dPortId uiPortId, OrbisAudio3dBlocking eBlocking) {
-    LOG_INFO(Lib_Audio3d, "uiPortId = {}", uiPortId);
+    LOG_TRACE(Lib_Audio3d, "uiPortId = {}", uiPortId);
     return ORBIS_OK;
 }
 
@@ -110,7 +110,7 @@ int PS4_SYSV_ABI sceAudio3dObjectSetAttributes(OrbisAudio3dPortId uiPortId,
 int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId uiPortId, unsigned int uiNumChannels,
                                     OrbisAudio3dFormat eFormat, const void* pBuffer,
                                     unsigned int uiNumSamples) {
-    LOG_INFO(Lib_Audio3d, "uiPortId = {}, uiNumChannels = {}, uiNumSamples = {}", uiPortId,
+    LOG_TRACE(Lib_Audio3d, "uiPortId = {}, uiNumChannels = {}, uiNumSamples = {}", uiPortId,
              uiNumChannels, uiNumSamples);
     return ORBIS_OK;
 }
@@ -191,7 +191,7 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(s32 handle) {
 }
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(s32 handle, const void* ptr) {
-    LOG_INFO(Lib_Audio3d, "handle = {}", handle);
+    LOG_TRACE(Lib_Audio3d, "handle = {}", handle);
     if (ptr == nullptr) {
         LOG_ERROR(Lib_Audio3d, "invalid Output ptr");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;

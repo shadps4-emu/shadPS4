@@ -315,6 +315,10 @@ void PS4_SYSV_ABI posix_pthread_yield() {
     std::this_thread::yield();
 }
 
+void PS4_SYSV_ABI sched_yield() {
+    std::this_thread::yield();
+}
+
 int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control, void (*init_routine)()) {
     for (;;) {
         auto state = once_control->state.load();
@@ -466,6 +470,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
+    LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 
     // Posix-Kernel
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
@@ -488,6 +493,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getthreadid_np);
     LIB_FUNCTION("1tKyG7RlMJo", "libkernel", 1, "libkernel", 1, 1, scePthreadGetprio);
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
+    LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
 }
 
 } // namespace Libraries::Kernel
