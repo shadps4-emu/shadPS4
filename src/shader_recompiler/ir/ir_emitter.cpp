@@ -60,6 +60,11 @@ F64 IREmitter::Imm64(f64 value) const {
 }
 
 template <>
+IR::U32 IREmitter::BitCast<IR::U32, IR::U1>(const IR::U1& value) {
+    return IR::U32{Select(value, Imm32(1), Imm32(0))};
+}
+
+template <>
 IR::U32 IREmitter::BitCast<IR::U32, IR::F32>(const IR::F32& value) {
     return Inst<IR::U32>(Opcode::BitCastU32F32, value);
 }
