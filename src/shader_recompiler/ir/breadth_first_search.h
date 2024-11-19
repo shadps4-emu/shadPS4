@@ -14,8 +14,8 @@ namespace Shader::IR {
 // Use typename Instruction so the function can be used to return either const or mutable
 // Insts depending on the context.
 template <typename Instruction, typename Pred>
-auto BreadthFirstSearch(Instruction* inst, Pred&& pred)
-    -> std::invoke_result_t<Pred, Instruction*> {
+auto BreadthFirstSearch(Instruction* inst,
+                        Pred&& pred) -> std::invoke_result_t<Pred, Instruction*> {
     // Most often case the instruction is the desired already.
     if (std::optional result = pred(inst)) {
         return result;
@@ -53,8 +53,8 @@ auto BreadthFirstSearch(Instruction* inst, Pred&& pred)
 }
 
 template <typename Pred>
-auto BreadthFirstSearch(const Value& value, Pred&& pred)
-    -> std::invoke_result_t<Pred, const Inst*> {
+auto BreadthFirstSearch(const Value& value,
+                        Pred&& pred) -> std::invoke_result_t<Pred, const Inst*> {
     if (value.IsImmediate()) {
         // Nothing to do with immediates
         return std::nullopt;

@@ -22,7 +22,7 @@ public:
 
     EventFlagInternal(const std::string& name, ThreadMode thread_mode, QueueMode queue_mode,
                       uint64_t bits)
-        : m_name(name), m_thread_mode(thread_mode), m_queue_mode(queue_mode), m_bits(bits){};
+        : m_name(name), m_thread_mode(thread_mode), m_queue_mode(queue_mode), m_bits(bits) {};
 
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros);
     int Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result);
