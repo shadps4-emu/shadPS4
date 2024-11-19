@@ -174,6 +174,13 @@ T Translator::GetSrc(const InstOperand& operand) {
             value = ir.GetM0();
         }
         break;
+    case OperandField::Scc:
+        if constexpr (is_float) {
+            UNREACHABLE();
+        } else {
+            value = ir.BitCast<IR::U32>(ir.GetScc());
+        }
+        break;
     default:
         UNREACHABLE();
     }

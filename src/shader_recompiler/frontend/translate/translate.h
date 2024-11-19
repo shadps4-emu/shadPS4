@@ -114,6 +114,7 @@ public:
 
     // SOPC
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
+    void S_BITCMP(bool compare_mode, u32 bits, const GcnInst& inst);
 
     // SOPP
     void S_BARRIER();
