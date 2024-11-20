@@ -12,7 +12,11 @@
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/image.h"
+
+#include "video_core/host_shaders/fs_tri_vert.h"
+#include "video_core/host_shaders/post_process_frag.h"
 
 #include <vk_mem_alloc.h>
 
@@ -91,6 +95,202 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     return MakeImageBlit(frame_width, frame_height, dst_width, dst_height, offset_x, offset_y);
 }
 
+static vk::Format FormatToUnorm(vk::Format fmt) {
+    switch (fmt) {
+    case vk::Format::eR8G8B8A8Srgb:
+        return vk::Format::eR8G8B8A8Unorm;
+    case vk::Format::eB8G8R8A8Srgb:
+        return vk::Format::eB8G8R8A8Unorm;
+    default:
+        UNREACHABLE();
+    }
+}
+
+void Presenter::CreatePostProcessPipeline() {
+    static const std::array pp_shaders{
+        HostShaders::FS_TRI_VERT,
+        HostShaders::POST_PROCESS_FRAG,
+    };
+
+    boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
+        {
+            .binding = 0,
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        },
+    };
+
+    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = static_cast<u32>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+    auto desc_layout_result = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
+               "Failed to create descriptor set layout: {}",
+               vk::to_string(desc_layout_result.result));
+    pp_desc_set_layout = std::move(desc_layout_result.value);
+
+    const vk::PushConstantRange push_constants = {
+        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        .offset = 0,
+        .size = sizeof(PostProcessSettings),
+    };
+
+    const auto& vs_module =
+        Vulkan::Compile(pp_shaders[0], vk::ShaderStageFlagBits::eVertex, instance.GetDevice());
+    ASSERT(vs_module);
+    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "fs_tri.vert");
+
+    const auto& fs_module =
+        Vulkan::Compile(pp_shaders[1], vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
+    ASSERT(fs_module);
+    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "post_process.frag");
+
+    const std::array shaders_ci{
+        vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eVertex,
+            .module = vs_module,
+            .pName = "main",
+        },
+        vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eFragment,
+            .module = fs_module,
+            .pName = "main",
+        },
+    };
+
+    const vk::DescriptorSetLayout set_layout = *pp_desc_set_layout;
+    const vk::PipelineLayoutCreateInfo layout_info = {
+        .setLayoutCount = 1U,
+        .pSetLayouts = &set_layout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &push_constants,
+    };
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess, "Failed to create pipeline layout: {}",
+               vk::to_string(layout_result));
+    pp_pipeline_layout = std::move(layout);
+
+    const std::array pp_color_formats{
+        vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
+    };
+    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
+        .colorAttachmentCount = 1u,
+        .pColorAttachmentFormats = pp_color_formats.data(),
+    };
+
+    const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
+        .vertexBindingDescriptionCount = 0u,
+        .vertexAttributeDescriptionCount = 0u,
+    };
+
+    const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
+        .topology = vk::PrimitiveTopology::eTriangleList,
+    };
+
+    const vk::Viewport viewport = {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = 1.0f,
+        .height = 1.0f,
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    const vk::Rect2D scissor = {
+        .offset = {0, 0},
+        .extent = {1, 1},
+    };
+
+    const vk::PipelineViewportStateCreateInfo viewport_info = {
+        .viewportCount = 1,
+        .pViewports = &viewport,
+        .scissorCount = 1,
+        .pScissors = &scissor,
+    };
+
+    const vk::PipelineRasterizationStateCreateInfo raster_state = {
+        .depthClampEnable = false,
+        .rasterizerDiscardEnable = false,
+        .polygonMode = vk::PolygonMode::eFill,
+        .cullMode = vk::CullModeFlagBits::eBack,
+        .frontFace = vk::FrontFace::eClockwise,
+        .depthBiasEnable = false,
+        .lineWidth = 1.0f,
+    };
+
+    const vk::PipelineMultisampleStateCreateInfo multisampling = {
+        .rasterizationSamples = vk::SampleCountFlagBits::e1,
+    };
+
+    const std::array attachments{
+        vk::PipelineColorBlendAttachmentState{
+            .blendEnable = false,
+            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+        },
+    };
+
+    const vk::PipelineColorBlendStateCreateInfo color_blending = {
+        .logicOpEnable = false,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = attachments.size(),
+        .pAttachments = attachments.data(),
+        .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
+    };
+
+    const std::array dynamic_states = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor,
+    };
+
+    const vk::PipelineDynamicStateCreateInfo dynamic_info = {
+        .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
+        .pDynamicStates = dynamic_states.data(),
+    };
+
+    const vk::GraphicsPipelineCreateInfo pipeline_info = {
+        .pNext = &pipeline_rendering_ci,
+        .stageCount = static_cast<u32>(shaders_ci.size()),
+        .pStages = shaders_ci.data(),
+        .pVertexInputState = &vertex_input_info,
+        .pInputAssemblyState = &input_assembly,
+        .pViewportState = &viewport_info,
+        .pRasterizationState = &raster_state,
+        .pMultisampleState = &multisampling,
+        .pColorBlendState = &color_blending,
+        .pDynamicState = &dynamic_info,
+        .layout = *pp_pipeline_layout,
+    };
+
+    auto result = instance.GetDevice().createGraphicsPipelineUnique(
+        /*pipeline_cache*/ {}, pipeline_info);
+    if (result.result == vk::Result::eSuccess) {
+        pp_pipeline = std::move(result.value);
+    } else {
+        UNREACHABLE_MSG("Post process pipeline creation failed!");
+    }
+
+    // Once pipeline is compiled, we don't need the shader module anymore
+    instance.GetDevice().destroyShaderModule(vs_module);
+    instance.GetDevice().destroyShaderModule(fs_module);
+
+    // Create sampler resource
+    const vk::SamplerCreateInfo sampler_ci = {
+        .magFilter = vk::Filter::eLinear,
+        .minFilter = vk::Filter::eLinear,
+        .mipmapMode = vk::SamplerMipmapMode::eNearest,
+        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
+    };
+    auto [sampler_result, smplr] = instance.GetDevice().createSamplerUnique(sampler_ci);
+    ASSERT_MSG(sampler_result == vk::Result::eSuccess, "Failed to create sampler: {}",
+               vk::to_string(sampler_result));
+    pp_sampler = std::move(smplr);
+}
+
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
@@ -114,8 +314,11 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         free_queue.push(&frame);
     }
 
+    CreatePostProcessPipeline();
+
     // Setup ImGui
-    ImGui::Core::Initialize(instance, window, num_images, swapchain.GetSurfaceFormat().format);
+    ImGui::Core::Initialize(instance, window, num_images,
+                            FormatToUnorm(swapchain.GetSurfaceFormat().format));
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }
 
@@ -142,6 +345,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
 
     const vk::Format format = swapchain.GetSurfaceFormat().format;
     const vk::ImageCreateInfo image_info = {
+        .flags = vk::ImageCreateFlagBits::eMutableFormat,
         .imageType = vk::ImageType::e2D,
         .format = format,
         .extent = {width, height, 1},
@@ -176,7 +380,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
         .viewType = vk::ImageViewType::e2D,
-        .format = format,
+        .format = FormatToUnorm(format),
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,
@@ -216,13 +420,13 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
             splash_img.emplace(instance, present_scheduler, info);
             texture_cache.RefreshImage(*splash_img);
         }
-        frame = PrepareFrameInternal(*splash_img);
+        // frame = PrepareFrameInternal(*splash_img);
     }
     Present(frame);
     return true;
 }
 
-Frame* Presenter::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
+Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
@@ -233,9 +437,6 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {},
-                  cmdbuf);
-
     const auto frame_subresources = vk::ImageSubresourceRange{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -243,62 +444,114 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
         .baseArrayLayer = 0,
         .layerCount = VK_REMAINING_ARRAY_LAYERS,
     };
-    const std::array pre_barrier{
-        vk::ImageMemoryBarrier{
-            .srcAccessMask = vk::AccessFlagBits::eTransferRead,
-            .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-            .oldLayout = vk::ImageLayout::eUndefined,
-            .newLayout = vk::ImageLayout::eTransferDstOptimal,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = frame->image,
-            .subresourceRange{frame_subresources},
-        },
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, pre_barrier);
 
-    // Clear the frame image before blitting to avoid artifacts.
-    const vk::ClearColorValue clear_color{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
-    cmdbuf.clearColorImage(frame->image, vk::ImageLayout::eTransferDstOptimal, clear_color,
-                           frame_subresources);
-
-    const auto blitBarrier =
+    const auto pre_barrier =
         vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .oldLayout = vk::ImageLayout::eUndefined,
+                                .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
                                 .image = frame->image,
                                 .subresourceRange{frame_subresources}};
 
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &blitBarrier,
+        .pImageMemoryBarriers = &pre_barrier,
     });
 
-    // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-    cmdbuf.blitImage(image.image, image.last_state.layout, frame->image,
-                     vk::ImageLayout::eTransferDstOptimal,
-                     MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width,
-                                      frame->height),
-                     vk::Filter::eLinear);
+    if (image_id != VideoCore::NULL_IMAGE_ID) {
+        auto& image = texture_cache.GetImage(image_id);
+        image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
+                      cmdbuf);
 
-    const vk::ImageMemoryBarrier post_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-        .newLayout = vk::ImageLayout::eGeneral,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = frame->image,
-        .subresourceRange{frame_subresources},
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
-                           vk::PipelineStageFlagBits::eAllCommands,
-                           vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+        static vk::DescriptorImageInfo image_info{
+            .sampler = *pp_sampler,
+            .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        };
+
+        VideoCore::ImageViewInfo info{};
+        info.format = image.info.pixel_format;
+        if (auto view = image.FindView(info)) {
+            image_info.imageView = *texture_cache.GetImageView(view).image_view;
+        } else {
+            image_info.imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
+        }
+
+        static const std::array set_writes{
+            vk::WriteDescriptorSet{
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                .pImageInfo = &image_info,
+            },
+        };
+
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *pp_pipeline);
+
+        const std::array viewports = {
+            vk::Viewport{
+                .x = 0.0f,
+                .y = 0.0f,
+                .width = 1.0f * frame->width,
+                .height = 1.0f * frame->height,
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f,
+            },
+        };
+
+        const std::array scissors = {
+            vk::Rect2D{
+                .offset = {0, 0},
+                .extent = {frame->width, frame->height},
+            },
+        };
+        cmdbuf.setViewport(0, viewports);
+        cmdbuf.setScissor(0, scissors);
+
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pp_pipeline_layout, 0,
+                                    set_writes);
+        cmdbuf.pushConstants(*pp_pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0,
+                             sizeof(PostProcessSettings), &pp_settings);
+
+        const std::array attachments = {vk::RenderingAttachmentInfo{
+            .imageView = frame->image_view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        }};
+
+        vk::RenderingInfo rendering_info{
+            .renderArea =
+                vk::Rect2D{
+                    .offset = {0, 0},
+                    .extent = {frame->width, frame->height},
+                },
+            .layerCount = 1,
+            .colorAttachmentCount = attachments.size(),
+            .pColorAttachments = attachments.data(),
+        };
+        cmdbuf.beginRendering(rendering_info);
+        cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+    }
+
+    const auto post_barrier =
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+                                .newLayout = vk::ImageLayout::eGeneral,
+                                .image = frame->image,
+                                .subresourceRange{frame_subresources}};
+
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &post_barrier,
+    });
 
     // Flush frame creation commands.
     frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
