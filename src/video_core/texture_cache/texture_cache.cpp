@@ -376,6 +376,10 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         return;
     }
 
+    if (image.info.num_samples > 1) {
+        return;
+    }
+
     const auto& num_layers = image.info.resources.layers;
     const auto& num_mips = image.info.resources.levels;
     ASSERT(num_mips == image.info.mips_layout.size());
