@@ -225,6 +225,7 @@ public:
     void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);
     void V_MED3_I32(const GcnInst& inst);
+    void V_MED3_U32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_CVT_PK_U16_U32(const GcnInst& inst);
