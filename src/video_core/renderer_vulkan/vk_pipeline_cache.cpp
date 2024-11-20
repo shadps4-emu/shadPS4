@@ -265,9 +265,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
-        const bool is_vo_surface = presenter->IsVideoOutSurface(col_buf);
-        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_formats[remapped_cb] =
+            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
         key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();

@@ -652,7 +652,7 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
 }
 
 vk::Format AdjustColorBufferFormat(vk::Format base_format,
-                                   Liverpool::ColorBuffer::SwapMode comp_swap, bool is_vo_surface) {
+                                   Liverpool::ColorBuffer::SwapMode comp_swap) {
     const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
     const bool comp_swap_reverse = comp_swap == Liverpool::ColorBuffer::SwapMode::StandardReverse;
     const bool comp_swap_alt_reverse =
@@ -664,9 +664,9 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         case vk::Format::eB8G8R8A8Unorm:
             return vk::Format::eR8G8B8A8Unorm;
         case vk::Format::eR8G8B8A8Srgb:
-            return is_vo_surface ? vk::Format::eB8G8R8A8Unorm : vk::Format::eB8G8R8A8Srgb;
+            return vk::Format::eB8G8R8A8Srgb;
         case vk::Format::eB8G8R8A8Srgb:
-            return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
+            return vk::Format::eR8G8B8A8Srgb;
         case vk::Format::eA2B10G10R10UnormPack32:
             return vk::Format::eA2R10G10B10UnormPack32;
         default:
@@ -677,19 +677,9 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         case vk::Format::eR8G8B8A8Unorm:
             return vk::Format::eA8B8G8R8UnormPack32;
         case vk::Format::eR8G8B8A8Srgb:
-            return is_vo_surface ? vk::Format::eA8B8G8R8UnormPack32
-                                 : vk::Format::eA8B8G8R8SrgbPack32;
+            return vk::Format::eA8B8G8R8SrgbPack32;
         default:
             break;
-        }
-    } else if (comp_swap_alt_reverse) {
-        return base_format;
-    } else {
-        if (is_vo_surface && base_format == vk::Format::eR8G8B8A8Srgb) {
-            return vk::Format::eR8G8B8A8Unorm;
-        }
-        if (is_vo_surface && base_format == vk::Format::eB8G8R8A8Srgb) {
-            return vk::Format::eB8G8R8A8Unorm;
         }
     }
     return base_format;
