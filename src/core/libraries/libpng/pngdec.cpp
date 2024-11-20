@@ -148,9 +148,9 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         png_set_gray_to_rgb(pngh->png_ptr);
     if (param->pixelFormat == OrbisPngDecPixelFormat::ORBIS_PNG_DEC_PIXEL_FORMAT_B8G8R8A8)
         png_set_bgr(pngh->png_ptr);
-    //if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
-    //    color_type == PNG_COLOR_TYPE_PALETTE)
-    //    png_set_add_alpha(pngh->png_ptr, 0xFF, PNG_FILLER_AFTER);
+    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
+        color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_add_alpha(pngh->png_ptr, 0xFF, PNG_FILLER_AFTER);
     png_read_update_info(pngh->png_ptr, pngh->info_ptr);
 
     png_bytep* row_pointers = NULL;
