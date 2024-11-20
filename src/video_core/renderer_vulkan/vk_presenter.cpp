@@ -4,18 +4,17 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/singleton.h"
+#include "core/debug_state.h"
+#include "core/devtools/layer.h"
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
 
 #include <vk_mem_alloc.h>
-
-#include "core/debug_state.h"
-#include "core/devtools/layer.h"
 
 namespace Vulkan {
 
@@ -92,7 +91,7 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     return MakeImageBlit(frame_width, frame_height, dst_width, dst_height, offset_x, offset_y);
 }
 
-RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
+Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
                Config::vkCrashDiagnosticEnabled()},
@@ -120,7 +119,7 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }
 
-RendererVulkan::~RendererVulkan() {
+Presenter::~Presenter() {
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
     draw_scheduler.Finish();
     const vk::Device device = instance.GetDevice();
@@ -132,7 +131,7 @@ RendererVulkan::~RendererVulkan() {
     ImGui::Core::Shutdown(device);
 }
 
-void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
+void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::Device device = instance.GetDevice();
     if (frame->image_view) {
         device.destroyImageView(frame->image_view);
@@ -194,7 +193,7 @@ void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
     frame->height = height;
 }
 
-bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
+bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
     const auto* splash = Common::Singleton<Splash>::Instance();
     if (splash->GetImageData().empty()) {
         return false;
@@ -223,7 +222,7 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
     return true;
 }
 
-Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
+Frame* Presenter::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
@@ -309,7 +308,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
     return frame;
 }
 
-void RendererVulkan::Present(Frame* frame) {
+void Presenter::Present(Frame* frame) {
     // Recreate the swapchain if the window was resized.
     if (window.getWidth() != swapchain.GetExtent().width ||
         window.getHeight() != swapchain.GetExtent().height) {
@@ -423,7 +422,7 @@ void RendererVulkan::Present(Frame* frame) {
     DebugState.IncFlipFrameNum();
 }
 
-Frame* RendererVulkan::GetRenderFrame() {
+Frame* Presenter::GetRenderFrame() {
     // Wait for free presentation frames
     Frame* frame;
     {

@@ -40,10 +40,10 @@ enum SchedulerType {
 
 class Rasterizer;
 
-class RendererVulkan {
+class Presenter {
 public:
-    explicit RendererVulkan(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
-    ~RendererVulkan();
+    Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
+    ~Presenter();
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
