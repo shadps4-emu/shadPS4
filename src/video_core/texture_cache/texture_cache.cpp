@@ -43,11 +43,17 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
-void TextureCache::InvalidateMemory(VAddr address, size_t size) {
+void TextureCache::InvalidateMemory(VAddr addr, VAddr addr_aligned, size_t size) {
     std::scoped_lock lock{mutex};
-    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        // Ensure image is reuploaded when accessed again.
-        image.flags |= ImageFlagBits::CpuDirty;
+    ForEachImageInRegion(addr_aligned, size, [&](ImageId image_id, Image& image) {
+        const auto addr_begin = addr;
+        const auto addr_end = addr + size;
+        const auto image_begin = image.info.guest_address;
+        const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
+        if (addr_begin < image_end && image_begin < addr_end) {
+            // Ensure image is reuploaded when accessed again.
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });

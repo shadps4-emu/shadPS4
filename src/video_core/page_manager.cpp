@@ -158,7 +158,7 @@ struct PageManager::Impl {
         const bool is_write = Common::IsWriteError(context);
         if (is_write && owned_ranges.find(addr) != owned_ranges.end()) {
             const VAddr addr_aligned = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);
+            rasterizer->InvalidateMemory(addr, addr_aligned, PAGESIZE);
             return true;
         }
         return false;
