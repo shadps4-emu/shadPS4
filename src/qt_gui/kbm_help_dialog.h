@@ -104,8 +104,8 @@ Punctuation and misc:
         'space', 'comma', 'period', 'question', 'semicolon', 'minus', 'plus', 'lparenthesis', 'lbracket', 'lbrace', 'backslash', 'dash',
         'enter', 'tab', backspace', 'escape'
 Arrow keys: 'up', 'down', 'left', 'right'
-Modifier keys (these can be used both as normal and modifier keys):
-        'lctrl', 'lshift', 'lalt', 'lwin' = 'lmeta', 'none' (the same as not adding it at all)
+Modifier keys:
+        'lctrl', 'lshift', 'lalt', 'lwin' = 'lmeta' (same input, different names, so if you are not on Windows and don't like calling this the Windows key, there is an alternative)
 
 Mouse:
         'leftbutton', 'rightbutton', 'middlebutton', 'sidebuttonforward', 'sidebuttonback'
@@ -128,24 +128,27 @@ Controller (this is not for controller remappings (yet), but rather the buttons 
 You can find these here, with detailed comments, examples and suggestions for most of them.
 
 'leftjoystick_halfmode' and 'rightjoystick_halfmode' = <key>;
-    These are a pair of input modifiers, that change the way keyboard button bound axes work. By default, those push the joystick to the max in their respective direction, but if their respective joystick_halfmode modifier value is true, they only push it (wait for it)... halfway. With this, you can change from run to walk in games like Bloodborne.
+    These are a pair of input modifiers, that change the way keyboard button bound axes work. By default, those push the joystick to the max in their respective direction, but if their respective joystick_halfmode modifier value is true, they only push it... halfway. With this, you can change from run to walk in games like Bloodborne.
 
 'mouse_to_joystick' = 'none', 'left' or 'right';
     This binds the mouse movement to either joystick. If it recieves a value that is not 'left' or 'right', it defaults to 'none'.
 
 'mouse_movement_params' = float, float, float;
     (If you don't know what a float is, it is a data type that stores non-whole numbers.)
-    This controls mouse-to-joystick input smoothness. Let's break each parameter down:
+    Default values: 0.5, 1, 0.125
+    Let's break each parameter down:
         1st: mouse_deadzone_offset: this value should have a value between 0 and 1 (It gets clamped to that range anyway), with 0 being no offset and 1 being pushing the joystick to the max in the direction the mouse moved.
             This controls the minimum distance the joystick gets moved, when moving the mouse. If set to 0, it will emulate raw mouse input, which doesn't work very well due to deadzones preventing input if the movement is not large enough.
-            It defaults to 0.5.
-        2nd: mouse_speed: It's just a multiplier to the mouse input speed, which varies between people, so rather than adjusting the mouse speed globally, they can just do it here.
-            It defults to 1.0, which is just about fine for my mouse.
+        2nd: mouse_speed: It's just a standard multiplier to the mouse input speed.
             If you input a negative number, the axis directions get reversed.
         3rd: mouse_speed_offset: This also should be in the 0 to 1 range, with 0 being no offset and 1 being offsetting to the max possible value.
             This is best explained through an example: Let's set mouse_deadzone to 0.5, and this to 0: This means that if we move the mousevery slowly, it still inputs a half-strength joystick input, and if we increase the speed, it would stay that way until we move faster than half the max speed. If we instead set this to 0.25, we now only need to move the mouse faster than the 0.5-0.25=0.25=quarter of the max speed, to get an increase in joystick speed. If we set it to 0.5, then even moving the mouse at 1 pixel per frame will result in a faster-than-minimum speed.
+
 'key_toggle' = <key>, <key_to_toggle>; 
     This assigns a key to another key, and if pressed, toggles that key's virtual value. If it's on, then it doesn't matter if the key is pressed or not, the input handler will treat it as if it's pressed.
+    You can make an input toggleable with this, for example: Let's say we want to be able to toggle l1 with t. You can then bind l1 to a key you won't use, like kpenter, then bind t to toggle that, so you will end up with this:
+        l1 = kpenter;
+        key_toggle = t, kpenter;
 )";
     }
 };

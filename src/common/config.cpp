@@ -733,7 +733,7 @@ touchpad = g
 
 
 mouse_to_joystick = right
-mouse_movement_params = 1, 0.5, 0.125
+mouse_movement_params = 0.5, 1, 0.125
 
 leftjoystick_halfmode = lctrl
 
