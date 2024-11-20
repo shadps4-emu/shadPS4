@@ -116,9 +116,21 @@ static constexpr std::pair<u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 heigh
 }
 
 static constexpr std::pair<u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp,
-                                                            u32 num_samples, u32 tiling_idx) {
+                                                            u32 num_samples, u32 tiling_idx,
+                                                            u32 mip_n) {
     const auto& [pitch_align, height_align] = GetMacroTileExtents(tiling_idx, bpp, num_samples);
     ASSERT(pitch_align != 0 && height_align != 0);
+    bool downgrade_to_micro = false;
+    if (mip_n > 0) {
+        const bool is_less_than_tile = pitch < pitch_align || height < height_align;
+        // TODO: threshold check
+        downgrade_to_micro = is_less_than_tile;
+    }
+
+    if (downgrade_to_micro) {
+        return ImageSizeMicroTiled(pitch, height, bpp, num_samples);
+    }
+
     const auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
     const auto log_sz = pitch_aligned * height_aligned * num_samples;
@@ -276,7 +288,7 @@ void ImageInfo::UpdateSize() {
             ASSERT(!props.is_block);
             ASSERT(num_samples == 1);
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, tiling_idx);
+                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, tiling_idx, mip);
             break;
         }
         default: {
