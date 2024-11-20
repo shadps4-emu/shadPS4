@@ -1100,7 +1100,7 @@ void Translator::V_MED3_U32(const GcnInst& inst) {
     const IR::U32 src2{GetSrc(inst.src[2])};
     const IR::U32 mmx = ir.UMin(ir.UMax(src0, src1), src2);
     SetDst(inst.dst[0], ir.UMax(ir.UMin(src0, src1), mmx));
-    }
+}
 
 void Translator::V_SAD(const GcnInst& inst) {
     const IR::U32 abs_diff = ir.IAbs(ir.ISub(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
