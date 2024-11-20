@@ -345,7 +345,9 @@ static bool match(std::string_view str, std::string_view pattern) {
         if (*pat_it == '_') { // 1 character wildcard
             ++str_it;
             ++pat_it;
-        } else if (*pat_it != *str_it) {
+            continue;
+        }
+        if (*pat_it != *str_it) {
             return false;
         }
         ++str_it;
