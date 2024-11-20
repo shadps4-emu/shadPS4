@@ -149,7 +149,7 @@ struct OrbisSaveDataIcon {
     size_t dataSize;
     std::array<u8, 32> _reserved;
 
-    Error LoadIcon(const std::filesystem::path& icon_path) {
+    Error LoadIcon(const fs::path& icon_path) {
         try {
             const Common::FS::IOFile file(icon_path, Common::FS::FileAccessMode::Read);
             dataSize = file.GetSize();
@@ -1232,7 +1232,7 @@ Error PS4_SYSV_ABI sceSaveDataLoadIcon(const OrbisSaveDataMountPoint* mountPoint
         return Error::PARAMETER;
     }
     LOG_DEBUG(Lib_SaveData, "called");
-    std::filesystem::path path;
+    fs::path path;
     const std::string_view mount_point_str{mountPoint->data};
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetMountPoint() == mount_point_str) {
@@ -1377,7 +1377,7 @@ Error PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint
         return Error::PARAMETER;
     }
     LOG_DEBUG(Lib_SaveData, "called");
-    std::filesystem::path path;
+    fs::path path;
     const std::string_view mount_point_str{mountPoint->data};
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetMountPoint() == mount_point_str) {

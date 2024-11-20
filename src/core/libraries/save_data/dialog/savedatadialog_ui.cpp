@@ -98,12 +98,14 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = param_sfo.GetLastWrite();
-#if defined(_WIN32) && !defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__)
-            auto utc_time = std::chrono::file_clock::to_utc(last_write);
+#ifdef __APPLE__
+            // FIXME: Correct time zone
+            // zoned_time not available on macOS and date/tz.h requires having tzdb downloaded
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", last_write);
 #else
-            auto utc_time = std::chrono::file_clock::to_sys(last_write);
+            auto t = std::chrono::zoned_time{std::chrono::current_zone(), last_write};
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", t.get_local_time());
 #endif
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
@@ -592,7 +594,7 @@ void SaveDialogUi::DrawList() {
                 int idx = 0;
                 int max_idx = 0;
                 bool is_min = pos == FocusPos::DATAOLDEST;
-                std::filesystem::file_time_type max_write{};
+                std::chrono::system_clock::time_point max_write{};
                 if (state->new_item.has_value()) {
                     idx++;
                 }
