@@ -13,6 +13,33 @@
 #include "imgui/imgui_std.h"
 #include "savedatadialog_ui.h"
 
+#ifdef __APPLE__
+#include <date/tz.h>
+
+// Need to make a copy of the formatter for std::chrono::local_time for use with date::local_time
+template <typename Duration, typename Char>
+struct fmt::formatter<date::local_time<Duration>, Char> : formatter<std::tm, Char> {
+    FMT_CONSTEXPR formatter() {
+        this->format_str_ = fmt::detail::string_literal<Char, '%', 'F', ' ', '%', 'T'>();
+    }
+
+    template <typename FormatContext>
+    auto format(date::local_time<Duration> val, FormatContext& ctx) const -> decltype(ctx.out()) {
+        using period = typename Duration::period;
+        if (period::num == 1 && period::den == 1 &&
+            !std::is_floating_point<typename Duration::rep>::value) {
+            return formatter<std::tm, Char>::format(
+                localtime(fmt::detail::to_time_t(date::current_zone()->to_sys(val))), ctx);
+        }
+        auto epoch = val.time_since_epoch();
+        auto subsecs = fmt::detail::duration_cast<Duration>(
+            epoch - fmt::detail::duration_cast<std::chrono::seconds>(epoch));
+        return formatter<std::tm, Char>::do_format(
+            localtime(fmt::detail::to_time_t(date::current_zone()->to_sys(val))), ctx, &subsecs);
+    }
+};
+#endif
+
 using namespace ImGui;
 using namespace Libraries::CommonDialog;
 using Common::ElfInfo;
@@ -99,13 +126,11 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
 
             auto last_write = param_sfo.GetLastWrite();
 #ifdef __APPLE__
-            // FIXME: Correct time zone
-            // zoned_time not available on macOS and date/tz.h requires having tzdb downloaded
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", last_write);
+            auto t = date::zoned_time{date::current_zone(), last_write};
 #else
             auto t = std::chrono::zoned_time{std::chrono::current_zone(), last_write};
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", t.get_local_time());
 #endif
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", t.get_local_time());
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
