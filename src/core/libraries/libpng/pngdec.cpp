@@ -90,6 +90,11 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         LOG_ERROR(Lib_Png, "invalid image address!");
         return ORBIS_PNG_DEC_ERROR_INVALID_ADDR;
     }
+    LOG_ERROR(Lib_Png,
+              "pngMemSize = {} , imageMemSize = {} , pixelFormat = {} , alphaValue = {} , "
+              "imagePitch = {}",
+              param->pngMemSize, param->imageMemSize, param->pixelFormat, param->alphaValue,
+              param->imagePitch);
 
     auto pngh = (PngHandler*)handle;
 
@@ -113,15 +118,15 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
                         pngdata->offset += len;
                     });
 
-    u32 weight, height;
+    u32 width, height;
     int color_type, bit_depth, interlace_method;
     png_read_info(pngh->png_ptr, pngh->info_ptr);
-    png_get_IHDR(pngh->png_ptr, pngh->info_ptr, &weight, &height, &bit_depth, &color_type,
+    png_get_IHDR(pngh->png_ptr, pngh->info_ptr, &width, &height, &bit_depth, &color_type,
                  &interlace_method, nullptr, nullptr);
 
     if (imageInfo != nullptr) {
         imageInfo->bitDepth = bit_depth;
-        imageInfo->imageWidth = weight;
+        imageInfo->imageWidth = width;
         imageInfo->imageHeight = height;
         imageInfo->colorSpace = MapPngColor(color_type);
         imageInfo->imageFlag = 0;
@@ -143,9 +148,9 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         png_set_gray_to_rgb(pngh->png_ptr);
     if (param->pixelFormat == OrbisPngDecPixelFormat::ORBIS_PNG_DEC_PIXEL_FORMAT_B8G8R8A8)
         png_set_bgr(pngh->png_ptr);
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
-        color_type == PNG_COLOR_TYPE_PALETTE)
-        png_set_add_alpha(pngh->png_ptr, 0xFF, PNG_FILLER_AFTER);
+    //if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
+    //    color_type == PNG_COLOR_TYPE_PALETTE)
+    //    png_set_add_alpha(pngh->png_ptr, 0xFF, PNG_FILLER_AFTER);
     png_read_update_info(pngh->png_ptr, pngh->info_ptr);
 
     png_bytep* row_pointers = NULL;
@@ -160,9 +165,9 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
 
     auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
 
-    int stride = param->imagePitch > 0 ? (param->imagePitch - weight) : 0;
+    int stride = param->imagePitch > 0 ? (param->imagePitch - width) : 0;
     for (int y = 0; y < height; y++) {
-        for (int x = 0; x < numChannels * weight; x++) {
+        for (int x = 0; x < numChannels * width; x++) {
             *ptr++ = row_pointers[y][x];
         }
         // ptr += stride;//doesn't work??
@@ -170,7 +175,7 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
     }
     png_free(pngh->png_ptr, row_pointers);
 
-    return (weight > 32767 || height > 32767) ? 0 : ((u32)weight << 16) | (u32)height;
+    return (width > 32767 || height > 32767) ? 0 : ((u32)width << 16) | (u32)height;
 }
 
 s32 PS4_SYSV_ABI scePngDecDecodeWithInputControl() {
