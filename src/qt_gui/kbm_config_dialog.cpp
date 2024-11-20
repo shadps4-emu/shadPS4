@@ -20,6 +20,8 @@
 #include <QTextStream>
 #include <QVBoxLayout>
 
+QString previous_game = "default";
+
 EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
     setWindowTitle("Edit Config File");
@@ -76,7 +78,6 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
 void EditorDialog::loadFile(QString game) {
 
-    // to make sure the files and the directory do exist
     const auto config_file = Config::GetFoolproofKbmConfigFile(game.toStdString());
     QFile file(config_file);
 
@@ -92,7 +93,6 @@ void EditorDialog::loadFile(QString game) {
 
 void EditorDialog::saveFile(QString game) {
 
-    // to make sure the files and the directory do exist
     const auto config_file = Config::GetFoolproofKbmConfigFile(game.toStdString());
     QFile file(config_file);
 
@@ -166,6 +166,7 @@ bool EditorDialog::hasUnsavedChanges() {
     return editor->toPlainText() != originalConfig;
 }
 void EditorDialog::loadInstalledGames() {
+    previous_game = "default";
     QStringList filePaths;
     for (const auto& installLoc : Config::getGameInstallDirs()) {
         QString installDir;
@@ -179,9 +180,8 @@ void EditorDialog::loadInstalledGames() {
         }
     }
 }
-QString previousGame = "default";
 void EditorDialog::onGameSelectionChanged(const QString& game) {
-    saveFile(previousGame);
+    saveFile(previous_game);
     loadFile(gameComboBox->currentText()); // Reload file based on the selected game
-    previousGame = gameComboBox->currentText();
+    previous_game = gameComboBox->currentText();
 }
