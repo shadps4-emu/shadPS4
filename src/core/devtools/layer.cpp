@@ -11,8 +11,11 @@
 #include "imgui_internal.h"
 #include "layer.h"
 #include "options.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 using namespace Core::Devtools;
@@ -69,6 +72,13 @@ void L::DrawMenuBar() {
             }
             open_popup_options = MenuItem("Options");
             open_popup_help = MenuItem("Help & Tips");
+            ImGui::EndMenu();
+        }
+        if (BeginMenu("Display")) {
+            if (BeginMenu("Brightness")) {
+                SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
         EndMainMenuBar();

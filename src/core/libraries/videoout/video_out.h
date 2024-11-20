@@ -88,6 +88,11 @@ struct SceVideoOutDeviceCapabilityInfo {
     u64 capability;
 };
 
+struct SceVideoOutColorSettings {
+    float gamma;
+    u32 reserved[3];
+};
+
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);
@@ -106,6 +111,8 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle);
 int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev);
 int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data);
+s32 PS4_SYSV_ABI sceVideoOutColorSettingsSetGamma(SceVideoOutColorSettings* settings, float gamma);
+s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettings* settings);
 
 // Internal system functions
 void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr);

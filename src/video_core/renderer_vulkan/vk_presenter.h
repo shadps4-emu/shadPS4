@@ -41,9 +41,17 @@ enum SchedulerType {
 class Rasterizer;
 
 class Presenter {
+    struct PostProcessSettings {
+        float gamma = 1.0f;
+    };
+
 public:
     Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
     ~Presenter();
+
+    float& GetGammaRef() {
+        return pp_settings.gamma;
+    }
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
@@ -87,6 +95,7 @@ private:
     Frame* GetRenderFrame();
 
 private:
+    PostProcessSettings pp_settings{};
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;
