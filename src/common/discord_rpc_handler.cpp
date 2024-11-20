@@ -3,7 +3,7 @@
 
 #include <cstring>
 #include <ctime>
-#include "src/common/discord_rpc_handler.h"
+#include "discord_rpc_handler.h"
 
 namespace DiscordRPCHandler {
 

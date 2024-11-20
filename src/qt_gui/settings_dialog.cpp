@@ -173,6 +173,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             BackgroundMusicPlayer::getInstance().setVolume(val);
         });
 
+#ifdef ENABLE_DISCORD_RPC
         connect(ui->discordRPCCheckbox, &QCheckBox::stateChanged, this, [](int val) {
             Config::setEnableDiscordRPC(val);
             auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
@@ -183,6 +184,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 rpc->shutdown();
             }
         });
+#endif
     }
 
     // Input TAB
