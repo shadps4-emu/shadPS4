@@ -407,6 +407,9 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
         return false;
     }
 
+    draw_scheduler.EndRendering();
+    const auto cmdbuf = draw_scheduler.CommandBuffer();
+
     if (!frame) {
         if (!splash_img.has_value()) {
             VideoCore::ImageInfo info{};
@@ -417,11 +420,69 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
             info.pitch = splash->GetImageInfo().width;
             info.guest_address = VAddr(splash->GetImageData().data());
             info.guest_size_bytes = splash->GetImageData().size();
+            info.mips_layout.emplace_back(splash->GetImageData().size(),
+                                          splash->GetImageInfo().width,
+                                          splash->GetImageInfo().height, 0);
             splash_img.emplace(instance, present_scheduler, info);
             texture_cache.RefreshImage(*splash_img);
+
+            splash_img->Transit(vk::ImageLayout::eTransferSrcOptimal,
+                                vk::AccessFlagBits2::eTransferRead, {}, cmdbuf);
         }
-        // frame = PrepareFrameInternal(*splash_img);
+
+        frame = GetRenderFrame();
     }
+
+    const auto frame_subresources = vk::ImageSubresourceRange{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+
+    const auto pre_barrier =
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                                .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                                .oldLayout = vk::ImageLayout::eUndefined,
+                                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                                .image = frame->image,
+                                .subresourceRange{frame_subresources}};
+
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &pre_barrier,
+    });
+
+    cmdbuf.blitImage(splash_img->image, vk::ImageLayout::eTransferSrcOptimal, frame->image,
+                     vk::ImageLayout::eTransferDstOptimal,
+                     MakeImageBlitFit(splash->GetImageInfo().width, splash->GetImageInfo().height,
+                                      frame->width, frame->height),
+                     vk::Filter::eLinear);
+
+    const auto post_barrier =
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                                .newLayout = vk::ImageLayout::eGeneral,
+                                .image = frame->image,
+                                .subresourceRange{frame_subresources}};
+
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &post_barrier,
+    });
+
+    // Flush frame creation commands.
+    frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_tick = draw_scheduler.CurrentTick();
+    SubmitInfo info{};
+    draw_scheduler.Flush(info);
+
     Present(frame);
     return true;
 }

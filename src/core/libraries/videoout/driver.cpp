@@ -201,6 +201,9 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
+    if (presenter->ShowSplash(nullptr)) {
+        return;
+    }
     const auto empty_frame = presenter->PrepareBlankFrame(false);
     presenter->Present(empty_frame);
 }
