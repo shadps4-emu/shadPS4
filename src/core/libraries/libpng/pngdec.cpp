@@ -121,19 +121,25 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
     u32 width, height;
     int color_type, bit_depth, interlace_method;
     png_read_info(pngh->png_ptr, pngh->info_ptr);
-    png_get_IHDR(pngh->png_ptr, pngh->info_ptr, &width, &height, &bit_depth, &color_type,
-                 &interlace_method, nullptr, nullptr);
+
+    width = png_get_image_width(pngh->png_ptr, pngh->info_ptr);
+    height = png_get_image_height(pngh->png_ptr, pngh->info_ptr);
+    color_type = MapPngColor(png_get_color_type(pngh->png_ptr, pngh->info_ptr));
+    bit_depth = png_get_bit_depth(pngh->png_ptr, pngh->info_ptr);
 
     if (imageInfo != nullptr) {
         imageInfo->bitDepth = bit_depth;
         imageInfo->imageWidth = width;
         imageInfo->imageHeight = height;
-        imageInfo->colorSpace = MapPngColor(color_type);
+        imageInfo->colorSpace = color_type;
         imageInfo->imageFlag = 0;
-        if (interlace_method == 1)
+        if (png_get_interlace_type(pngh->png_ptr, pngh->info_ptr) == 1) {
             imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
-        if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS))
-            imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+        }
+        if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS)) {
+
+            imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+        }
     }
 
     if (bit_depth == 16)
