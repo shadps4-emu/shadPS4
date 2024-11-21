@@ -102,6 +102,9 @@ public:
         return slot_image_views[id];
     }
 
+    /// Registers an image view for provided image
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
+
     bool IsMeta(VAddr address) const {
         return surface_metas.contains(address);
     }
@@ -180,9 +183,6 @@ private:
             }
         }
     }
-
-    /// Registers an image view for provided image
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);

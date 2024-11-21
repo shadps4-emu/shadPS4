@@ -271,7 +271,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         VideoCore::ImageInfo image_info{col_buf, hint};
-        VideoCore::ImageViewInfo view_info{col_buf, false /*!!image.info.usage.vo_buffer*/};
+        VideoCore::ImageViewInfo view_info{col_buf};
         const auto& image_view = texture_cache.FindRenderTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);

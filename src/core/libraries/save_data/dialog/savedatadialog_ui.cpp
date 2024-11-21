@@ -13,6 +13,33 @@
 #include "imgui/imgui_std.h"
 #include "savedatadialog_ui.h"
 
+#ifdef __APPLE__
+#include <date/tz.h>
+
+// Need to make a copy of the formatter for std::chrono::local_time for use with date::local_time
+template <typename Duration, typename Char>
+struct fmt::formatter<date::local_time<Duration>, Char> : formatter<std::tm, Char> {
+    FMT_CONSTEXPR formatter() {
+        this->format_str_ = fmt::detail::string_literal<Char, '%', 'F', ' ', '%', 'T'>();
+    }
+
+    template <typename FormatContext>
+    auto format(date::local_time<Duration> val, FormatContext& ctx) const -> decltype(ctx.out()) {
+        using period = typename Duration::period;
+        if (period::num == 1 && period::den == 1 &&
+            !std::is_floating_point<typename Duration::rep>::value) {
+            return formatter<std::tm, Char>::format(
+                localtime(fmt::detail::to_time_t(date::current_zone()->to_sys(val))), ctx);
+        }
+        auto epoch = val.time_since_epoch();
+        auto subsecs = fmt::detail::duration_cast<Duration>(
+            epoch - fmt::detail::duration_cast<std::chrono::seconds>(epoch));
+        return formatter<std::tm, Char>::do_format(
+            localtime(fmt::detail::to_time_t(date::current_zone()->to_sys(val))), ctx, &subsecs);
+    }
+};
+#endif
+
 using namespace ImGui;
 using namespace Libraries::CommonDialog;
 using Common::ElfInfo;
@@ -98,12 +125,12 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = param_sfo.GetLastWrite();
-#if defined(_WIN32) && !defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__)
-            auto utc_time = std::chrono::file_clock::to_utc(last_write);
+#ifdef __APPLE__
+            auto t = date::zoned_time{date::current_zone(), last_write};
 #else
-            auto utc_time = std::chrono::file_clock::to_sys(last_write);
+            auto t = std::chrono::zoned_time{std::chrono::current_zone(), last_write};
 #endif
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", t.get_local_time());
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
@@ -592,7 +619,7 @@ void SaveDialogUi::DrawList() {
                 int idx = 0;
                 int max_idx = 0;
                 bool is_min = pos == FocusPos::DATAOLDEST;
-                std::filesystem::file_time_type max_write{};
+                std::chrono::system_clock::time_point max_write{};
                 if (state->new_item.has_value()) {
                     idx++;
                 }

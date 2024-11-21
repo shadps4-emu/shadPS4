@@ -1943,7 +1943,7 @@ int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event) {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called, event type = {:#x}", (int)event->eventType);
+    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
     if (event == nullptr) {
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
