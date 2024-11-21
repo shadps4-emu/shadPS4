@@ -929,7 +929,7 @@ struct MemoryEditor {
         default:
         case ImGuiDataType_COUNT:
             break;
-        }             // Switch
+        } // Switch
         IM_ASSERT(0); // Shouldn't reach
     }
 };

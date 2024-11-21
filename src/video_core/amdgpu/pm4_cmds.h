@@ -817,11 +817,25 @@ struct PM4CmdDrawIndexIndirect {
         BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
                                            ///< BaseVertexLocation it fetched from memory
     };
-    union { // NOTE: this one is undocumented in AMD spec, but Gnm driver writes this field
+    union {
         u32 dw3;
         BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
                                              ///< StartInstanceLocation it fetched from memory
     };
+
+    union {
+        u32 dw4;
+        struct {
+            BitField<0, 16, u32> drawIndexLoc; ///< register offset to write the Draw Index count
+            BitField<30, 1, u32>
+                countIndirectEnable; ///< Indicates the data structure count is in memory
+            BitField<31, 1, u32>
+                drawIndexEnable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
+        };
+    };
+    u32 count;          ///< Count of data structures to loop through before going to next packet
+    u64 countAddr;      ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
+    u32 stride;         ///< Stride in memory from one data structure to the next
     u32 draw_initiator; ///< Draw Initiator Register
 };
 

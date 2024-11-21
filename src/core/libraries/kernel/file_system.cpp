@@ -237,7 +237,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
 }
 
 s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
-    int result = sceKernelLseek(d, offset, whence);
+    s64 result = sceKernelLseek(d, offset, whence);
     if (result < 0) {
         LOG_ERROR(Kernel_Pthread, "posix_lseek: error = {}", result);
         ErrSceToPosix(result);
@@ -490,6 +490,16 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI posix_fsync(int fd) {
+    s32 result = sceKernelFsync(fd);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_fstat: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
@@ -642,6 +652,8 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
+    LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
+    LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);

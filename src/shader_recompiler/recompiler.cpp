@@ -32,7 +32,9 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
                              const RuntimeInfo& runtime_info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
-    ASSERT_MSG(code[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
+    if (code[0] != token_mov_vcchi) {
+        LOG_WARNING(Render_Recompiler, "First instruction is not s_mov_b32 vcc_hi, #imm");
+    }
 
     Gcn::GcnCodeSlice slice(code.data(), code.data() + code.size());
     Gcn::GcnDecodeContext decoder;

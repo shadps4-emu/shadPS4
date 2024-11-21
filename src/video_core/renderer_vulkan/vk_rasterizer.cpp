@@ -115,14 +115,14 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 }
 
-void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size) {
+void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 size,
+                              u32 max_count, VAddr count_address) {
     RENDERER_TRACE;
 
     if (!FilterDraw()) {
         return;
     }
 
-    const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
@@ -142,7 +142,13 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     buffer_cache.BindVertexBuffers(vs_info);
     buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(arg_address + offset, size, false);
+
+    VideoCore::Buffer* count_buffer{};
+    u32 count_base{};
+    if (count_address != 0) {
+        std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
+    }
 
     BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
@@ -150,10 +156,29 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
 
+    const auto cmdbuf = scheduler.CommandBuffer();
     if (is_indexed) {
-        cmdbuf.drawIndexedIndirect(buffer->Handle(), base, 1, 0);
+        static_assert(sizeof(VkDrawIndexedIndirectCommand) ==
+                      AmdGpu::Liverpool::DrawIndexedIndirectArgsSize);
+
+        if (count_address != 0) {
+            cmdbuf.drawIndexedIndirectCount(buffer->Handle(), base, count_buffer->Handle(),
+                                            count_base, max_count,
+                                            AmdGpu::Liverpool::DrawIndexedIndirectArgsSize);
+        } else {
+            cmdbuf.drawIndexedIndirect(buffer->Handle(), base, max_count,
+                                       AmdGpu::Liverpool::DrawIndexedIndirectArgsSize);
+        }
     } else {
-        cmdbuf.drawIndirect(buffer->Handle(), base, 1, 0);
+        static_assert(sizeof(VkDrawIndirectCommand) == AmdGpu::Liverpool::DrawIndirectArgsSize);
+
+        if (count_address != 0) {
+            cmdbuf.drawIndirectCount(buffer->Handle(), base, count_buffer->Handle(), count_base,
+                                     max_count, AmdGpu::Liverpool::DrawIndirectArgsSize);
+        } else {
+            cmdbuf.drawIndirect(buffer->Handle(), base, max_count,
+                                AmdGpu::Liverpool::DrawIndirectArgsSize);
+        }
     }
 }
 
@@ -246,7 +271,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         VideoCore::ImageInfo image_info{col_buf, hint};
-        VideoCore::ImageViewInfo view_info{col_buf, false /*!!image.info.usage.vo_buffer*/};
+        VideoCore::ImageViewInfo view_info{col_buf};
         const auto& image_view = texture_cache.FindRenderTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
@@ -393,14 +418,12 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     if (regs.depth_control.depth_bounds_enable) {
         cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
     }
-    if (regs.polygon_control.NeedsBias()) {
-        if (regs.polygon_control.enable_polygon_offset_front) {
-            cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
-                                regs.poly_offset.front_scale);
-        } else {
-            cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
-                                regs.poly_offset.back_scale);
-        }
+    if (regs.polygon_control.enable_polygon_offset_front) {
+        cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
+                            regs.poly_offset.front_scale / 16.f);
+    } else if (regs.polygon_control.enable_polygon_offset_back) {
+        cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
+                            regs.poly_offset.back_scale / 16.f);
     }
     if (regs.depth_control.stencil_enable) {
         const auto front = regs.stencil_ref_front;

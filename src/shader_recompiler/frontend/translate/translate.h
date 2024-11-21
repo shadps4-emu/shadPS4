@@ -114,6 +114,7 @@ public:
 
     // SOPC
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
+    void S_BITCMP(bool compare_mode, u32 bits, const GcnInst& inst);
 
     // SOPP
     void S_BARRIER();
@@ -220,10 +221,12 @@ public:
     void V_FMA_F64(const GcnInst& inst);
     void V_MIN3_F32(const GcnInst& inst);
     void V_MIN3_I32(const GcnInst& inst);
+    void V_MIN3_U32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
     void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);
     void V_MED3_I32(const GcnInst& inst);
+    void V_MED3_U32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_CVT_PK_U16_U32(const GcnInst& inst);
