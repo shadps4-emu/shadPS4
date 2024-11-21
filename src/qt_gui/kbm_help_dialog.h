@@ -33,9 +33,14 @@ private:
 class HelpDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit HelpDialog(QWidget* parent = nullptr);
+    explicit HelpDialog(bool* open_flag = nullptr, QWidget* parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private:
+    bool* help_open_ptr;
+
     QString quickstart() {
         return
             R"(The keyboard remapping backend, GUI and documentation have been written by kalaposfos

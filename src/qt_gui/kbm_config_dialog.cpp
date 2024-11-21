@@ -144,7 +144,7 @@ bool isHelpOpen = false;
 HelpDialog* helpDialog;
 void EditorDialog::onHelpClicked() {
     if (!isHelpOpen) {
-        helpDialog = new HelpDialog(this);
+        helpDialog = new HelpDialog(&isHelpOpen, this);
         helpDialog->setWindowTitle("Help");
         helpDialog->setAttribute(Qt::WA_DeleteOnClose); // Clean up on close
         // Get the position and size of the Config window
