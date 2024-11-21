@@ -13,9 +13,9 @@
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/platform.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
-extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
@@ -136,7 +136,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
             .address_right = 0,
         };
 
-        renderer->RegisterVideoOutSurface(group, address);
+        presenter->RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -164,9 +164,9 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 
 void VideoOutDriver::Flip(const Request& req) {
     // Whatever the game is rendering show splash if it is active
-    if (!renderer->ShowSplash(req.frame)) {
+    if (!presenter->ShowSplash(req.frame)) {
         // Present the frame.
-        renderer->Present(req.frame);
+        presenter->Present(req.frame);
     }
 
     // Update flip status.
@@ -201,8 +201,11 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    const auto empty_frame = renderer->PrepareBlankFrame(false);
-    renderer->Present(empty_frame);
+    if (presenter->ShowSplash(nullptr)) {
+        return;
+    }
+    const auto empty_frame = presenter->PrepareBlankFrame(false);
+    presenter->Present(empty_frame);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
@@ -226,7 +229,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         // point VO surface is ready to be presented, and we will need have an actual state of
         // Vulkan image at the time of frame presentation.
         liverpool->SendCommand([=, this]() {
-            renderer->FlushDraw();
+            presenter->FlushDraw();
             SubmitFlipInternal(port, index, flip_arg, is_eop);
         });
     } else {
@@ -240,11 +243,11 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
                                         bool is_eop /*= false*/) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = renderer->PrepareBlankFrame(is_eop);
+        frame = presenter->PrepareBlankFrame(is_eop);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
+        frame = presenter->PrepareFrame(group, buffer.address_left, is_eop);
     }
 
     std::scoped_lock lock{mutex};

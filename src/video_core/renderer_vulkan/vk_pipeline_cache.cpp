@@ -11,13 +11,13 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
-extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Vulkan {
 
@@ -265,9 +265,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
-        const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
-        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_formats[remapped_cb] =
+            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
         key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
