@@ -6,7 +6,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"

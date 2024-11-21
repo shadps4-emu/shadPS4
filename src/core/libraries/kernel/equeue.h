@@ -7,10 +7,13 @@
 #include <mutex>
 #include <string>
 #include <vector>
-
 #include <boost/asio/steady_timer.hpp>
 
 #include "common/types.h"
+
+namespace Core::Loader {
+class SymbolsResolver;
+}
 
 namespace Libraries::Kernel {
 
@@ -89,14 +92,12 @@ private:
 
 class EqueueInternal {
 public:
-    EqueueInternal() = default;
-    virtual ~EqueueInternal();
-    void setName(const std::string& m_name) {
-        this->m_name = m_name;
-    }
-    const auto& GetName() const {
+    explicit EqueueInternal(std::string_view name) : m_name(name) {}
+
+    std::string_view GetName() const {
         return m_name;
     }
+
     bool AddEvent(EqueueEvent& event);
     bool RemoveEvent(u64 id);
     int WaitForEvents(SceKernelEvent* ev, int num, u32 micros);
@@ -107,6 +108,7 @@ public:
     bool HasSmallTimer() const {
         return small_timer_event.event.data != 0;
     }
+
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
 private:
@@ -116,5 +118,10 @@ private:
     EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };
+
+using SceKernelUseconds = u32;
+using SceKernelEqueue = EqueueInternal*;
+
+void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

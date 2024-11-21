@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/singleton.h>
-#include <core/linker.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "np_manager.h"
+#include "core/libraries/np_manager/np_manager.h"
+#include "core/tls.h"
 
 namespace Libraries::NpManager {
 
@@ -2519,10 +2518,7 @@ struct NpStateCallbackForNpToolkit {
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    const auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->ExecuteGuest(NpStateCbForNp.func, 1, ORBIS_NP_STATE_SIGNED_OUT,
-                         NpStateCbForNp.userdata);
+    Core::ExecuteGuest(NpStateCbForNp.func, 1, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
     return ORBIS_OK;
 }
 

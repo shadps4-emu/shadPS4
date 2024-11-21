@@ -11,27 +11,22 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
-#include "core/cpu_patches.h"
-#include "core/libraries/kernel/memory_management.h"
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/memory.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
-#include "debug_state.h"
 
 namespace Core {
 
-using ExitFunc = PS4_SYSV_ABI void (*)();
-
 static PS4_SYSV_ABI void ProgramExitFunc() {
-    fmt::print("exit function called\n");
+    LOG_ERROR(Core_Linker, "Exit function called");
 }
 
 #ifdef ARCH_X86_64
-static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
-    // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
-    // a specific layout
+static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
+    // Start shared library modules
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
                  "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
 
@@ -47,8 +42,9 @@ static PS4_SYSV_ABI void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc 
                  "jmp *%0\n" // can't use call here, as that would mangle the prepared stack.
                              // there's no coming back
                  :
-                 : "r"(addr), "r"(params), "r"(exit_func)
+                 : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
                  : "rax", "rsi", "rdi");
+    UNREACHABLE();
 }
 #endif
 
@@ -62,10 +58,8 @@ void Linker::Execute() {
     }
 
     // Calculate static TLS size.
-    for (const auto& module : m_modules) {
-        static_tls_size += module->tls.image_size;
-        module->tls.offset = static_tls_size;
-    }
+    Module* module = m_modules[0].get();
+    static_tls_size = module->tls.offset = module->tls.image_size;
 
     // Relocate all modules
     for (const auto& m : m_modules) {
@@ -87,36 +81,17 @@ void Linker::Execute() {
         }
     }
 
-    // Init primary thread.
-    Common::SetCurrentThreadName("GAME_MainThread");
-    DebugState.AddCurrentThreadToGuestList();
-    Libraries::Kernel::pthreadInitSelfMainThread();
-    EnsureThreadInitialized(true);
+    main_thread.Run([this, module](std::stop_token) {
+        Common::SetCurrentThreadName("GAME_MainThread");
+        LoadSharedLibraries();
 
-    // Start shared library modules
-    for (auto& m : m_modules) {
-        if (m->IsSharedLib()) {
-            m->Start(0, nullptr, nullptr);
-        }
-    }
-
-    // Start main module.
-    EntryParams p{};
-    p.argc = 1;
-    p.argv[0] = "eboot.bin";
-
-    for (auto& m : m_modules) {
-        if (!m->IsSharedLib()) {
-#ifdef ARCH_X86_64
-            ExecuteGuest(RunMainEntry, m->GetEntryAddress(), &p, ProgramExitFunc);
-#else
-            UNIMPLEMENTED_MSG(
-                "Missing guest entrypoint implementation for target CPU architecture.");
-#endif
-        }
-    }
-
-    SetTcbBase(nullptr);
+        // Start main module.
+        EntryParams params{};
+        params.argc = 1;
+        params.argv[0] = "eboot.bin";
+        params.entry_addr = module->GetEntryAddress();
+        RunMainEntry(&params);
+    });
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -149,10 +124,9 @@ Module* Linker::FindByAddress(VAddr address) {
 }
 
 void Linker::Relocate(Module* module) {
-    module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool isJmpRel) {
-        const u32 bit_idx =
-            (isJmpRel ? module->dynamic_info.relocation_table_size / sizeof(elf_relocation) : 0) +
-            i;
+    module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool is_jmp_rel) {
+        const u32 num_relocs = module->dynamic_info.relocation_table_size / sizeof(elf_relocation);
+        const u32 bit_idx = (is_jmp_rel ? num_relocs : 0) + i;
         if (module->TestRelaBit(bit_idx)) {
             return;
         }
@@ -160,7 +134,7 @@ void Linker::Relocate(Module* module) {
         auto symbol = rel->GetSymbol();
         auto addend = rel->rel_addend;
         auto* symbol_table = module->dynamic_info.symbol_table;
-        auto* namesTlb = module->dynamic_info.str_table;
+        auto* names_tlb = module->dynamic_info.str_table;
 
         const VAddr rel_base_virtual_addr = module->GetBaseAddress();
         const VAddr rel_virtual_addr = rel_base_virtual_addr + rel->rel_offset;
@@ -216,7 +190,7 @@ void Linker::Relocate(Module* module) {
                 break;
             case STB_GLOBAL:
             case STB_WEAK: {
-                rel_name = namesTlb + sym.st_name;
+                rel_name = names_tlb + sym.st_name;
                 if (Resolve(rel_name, rel_sym_type, module, &symrec)) {
                     // Only set the rela bit if the symbol was actually resolved and not stubbed.
                     module->SetRelaBit(bit_idx);
@@ -225,7 +199,7 @@ void Linker::Relocate(Module* module) {
                 break;
             }
             default:
-                ASSERT_MSG(0, "unknown bind type {}", sym_bind);
+                UNREACHABLE_MSG("Unknown bind type {}", sym_bind);
             }
             rel_is_resolved = (symbol_virtual_addr != 0);
             rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
@@ -239,7 +213,7 @@ void Linker::Relocate(Module* module) {
         if (rel_is_resolved) {
             VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
         } else {
-            LOG_INFO(Core_Linker, "function not patched! {}", rel_name);
+            LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });
 }
@@ -310,7 +284,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         const u32 old_num_dtvs = dtv_table[1].counter;
         ASSERT_MSG(max_tls_index > old_num_dtvs, "Module unloading unsupported");
         // Module was loaded, increase DTV table size.
-        DtvEntry* new_dtv_table = new DtvEntry[max_tls_index + 2];
+        DtvEntry* new_dtv_table = new DtvEntry[max_tls_index + 2]{};
         std::memcpy(new_dtv_table + 2, dtv_table + 2, old_num_dtvs * sizeof(DtvEntry));
         new_dtv_table[0].counter = dtv_generation_counter;
         new_dtv_table[1].counter = max_tls_index;
@@ -322,13 +296,13 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     }
 
     u8* addr = dtv_table[module_index + 1].pointer;
+    Module* module = m_modules[module_index - 1].get();
+    // LOG_INFO(Core_Linker, "Got DTV addr {} from module index {} with name {}",
+    //          fmt::ptr(addr), module_index, module->file.filename().string());
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
-        Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
-        // TODO: Determine if Windows will crash from this
-        u8* dest =
-            reinterpret_cast<u8*>(ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
+        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -338,18 +312,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     return addr + offset;
 }
 
-thread_local std::once_flag init_tls_flag;
-
-void Linker::EnsureThreadInitialized(bool is_primary) const {
-    std::call_once(init_tls_flag, [this, is_primary] {
-#ifdef ARCH_X86_64
-        InitializeThreadPatchStack();
-#endif
-        InitTlsForThread(is_primary);
-    });
-}
-
-void Linker::InitTlsForThread(bool is_primary) const {
+void* Linker::AllocateTlsForThread(bool is_primary) {
     static constexpr size_t TcbSize = 0x40;
     static constexpr size_t TlsAllocAlign = 0x20;
     const size_t total_tls_size = Common::AlignUp(static_tls_size, TlsAllocAlign) + TcbSize;
@@ -370,54 +333,20 @@ void Linker::InitTlsForThread(bool is_primary) const {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
-#ifndef WIN32
-            addr_out = ExecuteGuestWithoutTls(heap_api->heap_malloc, total_tls_size);
+            addr_out = Core::ExecuteGuest(heap_api->heap_malloc, total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
-#else
-            // TODO: Windows tls malloc replacement, refer to rtld_tls_block_malloc
-            LOG_ERROR(Core_Linker, "TLS user malloc called, using std::malloc");
-            addr_out = std::malloc(total_tls_size);
-            if (!addr_out) {
-                auto pth_id = pthread_self();
-                auto handle = pthread_gethandle(pth_id);
-                ASSERT_MSG(addr_out,
-                           "Cannot allocate TLS block defined for handle=%x, index=%d size=%d",
-                           handle, pth_id, total_tls_size);
-            }
-#endif
         }
     }
+    return addr_out;
+}
 
-    // Initialize allocated memory and allocate DTV table.
-    const u32 num_dtvs = max_tls_index;
-    std::memset(addr_out, 0, total_tls_size);
-    DtvEntry* dtv_table = new DtvEntry[num_dtvs + 2];
-
-    // Initialize thread control block
-    u8* addr = reinterpret_cast<u8*>(addr_out);
-    Tcb* tcb = reinterpret_cast<Tcb*>(addr + static_tls_size);
-    tcb->tcb_self = tcb;
-    tcb->tcb_dtv = dtv_table;
-
-    // Dtv[0] is the generation counter. libkernel puts their number into dtv[1] (why?)
-    dtv_table[0].counter = dtv_generation_counter;
-    dtv_table[1].counter = num_dtvs;
-
-    // Copy init images to TLS thread blocks and map them to DTV slots.
-    for (u32 i = 0; i < num_static_modules; i++) {
-        auto* module = m_modules[i].get();
-        if (module->tls.image_size == 0) {
-            continue;
-        }
-        u8* dest = reinterpret_cast<u8*>(addr + static_tls_size - module->tls.offset);
-        const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
-        std::memcpy(dest, src, module->tls.init_image_size);
-        tcb->tcb_dtv[module->tls.modid + 1].pointer = dest;
+void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
+    if (heap_api) {
+        Core::ExecuteGuest(heap_api->heap_free, pointer);
+    } else {
+        std::free(pointer);
     }
-
-    // Set pointer to FS base
-    SetTcbBase(tcb);
 }
 
 void Linker::DebugDump() {
@@ -425,17 +354,18 @@ void Linker::DebugDump() {
     const std::filesystem::path debug(log_dir / "debugdump");
     std::filesystem::create_directory(debug);
     for (const auto& m : m_modules) {
-        // TODO make a folder with game id for being more unique?
-        const std::filesystem::path filepath(debug / m.get()->file.stem());
+        Module* module = m.get();
+        auto& elf = module->elf;
+        const std::filesystem::path filepath(debug / module->file.stem());
         std::filesystem::create_directory(filepath);
-        m.get()->import_sym.DebugDump(filepath / "imports.txt");
-        m.get()->export_sym.DebugDump(filepath / "exports.txt");
-        if (m.get()->elf.IsSelfFile()) {
-            m.get()->elf.SelfHeaderDebugDump(filepath / "selfHeader.txt");
-            m.get()->elf.SelfSegHeaderDebugDump(filepath / "selfSegHeaders.txt");
+        module->import_sym.DebugDump(filepath / "imports.txt");
+        module->export_sym.DebugDump(filepath / "exports.txt");
+        if (elf.IsSelfFile()) {
+            elf.SelfHeaderDebugDump(filepath / "selfHeader.txt");
+            elf.SelfSegHeaderDebugDump(filepath / "selfSegHeaders.txt");
         }
-        m.get()->elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
-        m.get()->elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
+        elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
+        elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
     }
 }
 

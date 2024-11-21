@@ -25,6 +25,7 @@ int PS4_SYSV_ABI scePadConnectPort() {
 int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     s32 handle, OrbisPadDeviceClassExtendedInformation* pExtInfo) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    std::memset(pExtInfo, 0, sizeof(OrbisPadDeviceClassExtendedInformation));
     if (Config::getUseSpecialPad()) {
         pExtInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
     }

@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include "avplayer.h"
-#include "avplayer_data_streamer.h"
-
 #include <string_view>
-#include <vector>
+#include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/avplayer/avplayer_data_streamer.h"
 
 struct AVIOContext;
 

@@ -151,7 +151,7 @@ int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal();
 int PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind();
 int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule();
 int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded();
-int PS4_SYSV_ABI sceSysmoduleIsLoaded();
+int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id);
 int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal();
 int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id);
 int PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal();

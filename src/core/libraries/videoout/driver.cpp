@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <imgui.h>
-#include <pthread.h>
 
 #include "common/assert.h"
 #include "common/config.h"
@@ -10,7 +9,7 @@
 #include "common/thread.h"
 #include "core/debug_state.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"

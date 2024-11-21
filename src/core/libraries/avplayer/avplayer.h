@@ -5,8 +5,8 @@
 
 #include "common/types.h"
 
-#include <stdarg.h> // va_list
-#include <stddef.h> // size_t
+#include <cstdarg> // va_list
+#include <cstddef> // size_t
 
 namespace Core::Loader {
 class SymbolsResolver;

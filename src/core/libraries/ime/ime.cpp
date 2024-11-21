@@ -70,21 +70,19 @@ public:
     }
 
     void Execute(OrbisImeEventHandler handler, OrbisImeEvent* event, bool use_param_handler) {
-        const auto* linker = Common::Singleton<Core::Linker>::Instance();
-
         if (m_ime_mode) {
             OrbisImeParam param = m_param.ime;
             if (use_param_handler) {
-                linker->ExecuteGuest(param.handler, param.arg, event);
+                Core::ExecuteGuest(param.handler, param.arg, event);
             } else {
-                linker->ExecuteGuest(handler, param.arg, event);
+                Core::ExecuteGuest(handler, param.arg, event);
             }
         } else {
             OrbisImeKeyboardParam param = m_param.key;
             if (use_param_handler) {
-                linker->ExecuteGuest(param.handler, param.arg, event);
+                Core::ExecuteGuest(param.handler, param.arg, event);
             } else {
-                linker->ExecuteGuest(handler, param.arg, event);
+                Core::ExecuteGuest(handler, param.arg, event);
             }
         }
     }
