@@ -430,12 +430,11 @@ int PS4_SYSV_ABI scePthreadSetprio(PthreadT thread, int prio) {
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (int ret = thread_state->FindThread(thread, /*include dead*/0)) {
+    } else if (int ret = thread_state->FindThread(thread, /*include dead*/ 0)) {
         return ret;
     }
 
-    if (thread->attr.sched_policy == SchedPolicy::Other ||
-        thread->attr.prio == prio) {
+    if (thread->attr.sched_policy == SchedPolicy::Other || thread->attr.prio == prio) {
         thread->attr.prio = prio;
         ret = 0;
     } else {

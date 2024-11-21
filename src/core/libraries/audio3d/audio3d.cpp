@@ -111,7 +111,7 @@ int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId uiPortId, unsigned int ui
                                     OrbisAudio3dFormat eFormat, const void* pBuffer,
                                     unsigned int uiNumSamples) {
     LOG_TRACE(Lib_Audio3d, "uiPortId = {}, uiNumChannels = {}, uiNumSamples = {}", uiPortId,
-             uiNumChannels, uiNumSamples);
+              uiNumChannels, uiNumSamples);
     return ORBIS_OK;
 }
 

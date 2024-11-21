@@ -216,7 +216,7 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
             }
         }
     }
-    
+
     int ret = 0;
     if (abstime == nullptr) {
         m_lock.lock();
