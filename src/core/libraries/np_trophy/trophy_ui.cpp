@@ -61,7 +61,11 @@ void TrophyUI::Draw() {
                                                       GetColorU32(ImVec4{0.7f}));
             ImGui::Indent(60);
         }
-        TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
+
+        TextWrapped(QString(QObject::tr("Trophy earned!\n%1"))
+                    .arg(QString::fromStdString(trophy_name))
+                    .toStdString()
+                    .c_str());
     }
     End();
 

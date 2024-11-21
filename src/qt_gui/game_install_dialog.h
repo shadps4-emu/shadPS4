@@ -4,16 +4,16 @@
 #pragma once
 
 #include <QDialog>
-
 #include "common/config.h"
 #include "common/path_util.h"
 
 class QLineEdit;
 
 class GameInstallDialog final : public QDialog {
-public:
-    GameInstallDialog();
-    ~GameInstallDialog();
+Q_OBJECT // Necessary macro for QObject-derived classes using Qt's meta-object system
+
+    public : GameInstallDialog();
+    ~GameInstallDialog() override;
 
 private slots:
     void BrowseGamesDirectory();

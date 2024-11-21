@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <variant>
+#include <QObject>
 #include <queue>
 
 #include "common/fixed_value.h"
@@ -15,9 +17,10 @@
 
 namespace Libraries::NpTrophy {
 
-class TrophyUI final : public ImGui::Layer {
-public:
-    TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
+// Ensure that TrophyUI is a QObject-derived class
+class TrophyUI final : public QObject, public ImGui::Layer {
+Q_OBJECT // This is the necessary macro for Qt's meta-object system
+    public : TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
     ~TrophyUI() override;
 
     void Finish();

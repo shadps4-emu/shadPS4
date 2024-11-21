@@ -749,6 +749,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                                            tr("PKG and Game versions match: ") + pkg_app_version +
                                            "\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    msgBox.setButtonText(QMessageBox::No, tr("No"));
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else if (pkgD < appD) {
                     msgBox.setText(QString(tr("Patch detected!") + "\n" +
@@ -757,6 +759,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                                            game_app_version + "\n" +
                                            tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    msgBox.setButtonText(QMessageBox::No, tr("No"));
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else {
                     msgBox.setText(QString(tr("Patch detected!") + "\n" +
@@ -764,6 +768,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                                            tr("Would you like to install Patch: ") +
                                            pkg_app_version + " ?"));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    msgBox.setButtonText(QMessageBox::No, tr("No"));
                     msgBox.setDefaultButton(QMessageBox::No);
                 }
                 int result = msgBox.exec();
@@ -781,6 +787,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
 
                     addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     addonMsgBox.setDefaultButton(QMessageBox::No);
+                    addonMsgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    addonMsgBox.setButtonText(QMessageBox::No, tr("No"));
                     int result = addonMsgBox.exec();
                     if (result == QMessageBox::Yes) {
                         game_update_path = addon_extract_path;
@@ -792,6 +800,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                                            "\n\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
+                    msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    msgBox.setButtonText(QMessageBox::No, tr("No"));
                     int result = msgBox.exec();
                     if (result == QMessageBox::Yes) {
                         game_update_path = addon_extract_path;
@@ -803,6 +813,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 msgBox.setText(QString(tr("Game already installed") + "\n" + gameDirPath + "\n" +
                                        tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                msgBox.setButtonText(QMessageBox::No, tr("No"));
                 msgBox.setDefaultButton(QMessageBox::No);
                 int result = msgBox.exec();
                 if (result == QMessageBox::Yes) {
