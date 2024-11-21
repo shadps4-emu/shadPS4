@@ -46,11 +46,8 @@ TextureCache::~TextureCache() = default;
 void TextureCache::InvalidateMemory(VAddr addr, VAddr addr_aligned, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(addr_aligned, size, [&](ImageId image_id, Image& image) {
-        const auto addr_begin = addr;
-        const auto addr_end = addr + size;
-        const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        if (addr_begin < image_end && image_begin < addr_end) {
+        if (addr < image_end) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuDirty;
         }
@@ -431,24 +428,11 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
-
-        // Protect GPU modified resources from accidental CPU reuploads.
-        const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-        const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
-        if (is_gpu_modified && !is_gpu_dirty) {
-            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-            const u64 hash = XXH3_64bits(addr + mip_ofs, mip_size);
-            if (image.mip_hashes[m] == hash) {
-                continue;
-            }
-            image.mip_hashes[m] = hash;
-        }
-
+        const auto& mip = image.info.mips_layout[m];
         image_copy.push_back({
-            .bufferOffset = mip_ofs * num_layers,
-            .bufferRowLength = static_cast<u32>(mip_pitch),
-            .bufferImageHeight = static_cast<u32>(mip_height),
+            .bufferOffset = mip.offset * num_layers,
+            .bufferRowLength = static_cast<u32>(mip.pitch),
+            .bufferImageHeight = static_cast<u32>(mip.height),
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,

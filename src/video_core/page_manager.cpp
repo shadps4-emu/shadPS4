@@ -115,7 +115,7 @@ struct PageManager::Impl {
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
             const VAddr addr_page = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_page, PAGESIZE);
+            rasterizer->InvalidateMemory(addr, addr_page, PAGESIZE);
         }
     }
 
