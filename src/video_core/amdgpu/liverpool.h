@@ -88,6 +88,32 @@ struct Liverpool {
         }
     };
 
+    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x1000) {
+        constexpr u32 token_mov_vcchi = 0xBEEB03FF;
+
+        if (code[0] == token_mov_vcchi) {
+            const auto* info = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
+            if (info->Valid()) {
+                return *info;
+            }
+        }
+
+        // First instruction is not s_mov_b32 vcc_hi, #imm,
+        // which means we cannot get the binary info via said instruction.
+        // The easiest solution is to iterate through each dword and break
+        // on the first instance of the binary info.
+        constexpr size_t signature_size = sizeof(BinaryInfo::signature_ref) / sizeof(u8);
+        const u32* end = code + search_limit;
+
+        for (const u32* it = code; it < end; ++it) {
+            if (const BinaryInfo* info = std::bit_cast<const BinaryInfo*>(it); info->Valid()) {
+                return *info;
+            }
+        }
+
+        UNREACHABLE_MSG("Shader binary info not found.");
+    }
+
     struct ShaderProgram {
         u32 address_lo;
         BitField<0, 8, u32> address_hi;
@@ -113,8 +139,7 @@ struct Liverpool {
 
         std::span<const u32> Code() const {
             const u32* code = Address<u32*>();
-            BinaryInfo bininfo;
-            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const BinaryInfo& bininfo = SearchBinaryInfo(code);
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
@@ -166,27 +191,24 @@ struct Liverpool {
 
         std::span<const u32> Code() const {
             const u32* code = Address<u32*>();
-            BinaryInfo bininfo;
-            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const BinaryInfo& bininfo = SearchBinaryInfo(code);
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
     };
 
     template <typename Shader>
-    static constexpr auto* GetBinaryInfo(const Shader& sh) {
+    static constexpr const BinaryInfo& GetBinaryInfo(const Shader& sh) {
         const auto* code = sh.template Address<u32*>();
-        const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        // ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
-        return bininfo;
+        return SearchBinaryInfo(code);
     }
 
     static constexpr Shader::ShaderParams GetParams(const auto& sh) {
-        auto* bininfo = GetBinaryInfo(sh);
+        auto& bininfo = GetBinaryInfo(sh);
         return {
             .user_data = sh.user_data,
             .code = sh.Code(),
-            .hash = bininfo->shader_hash,
+            .hash = bininfo.shader_hash,
         };
     }
 
