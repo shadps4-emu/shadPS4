@@ -421,6 +421,32 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     return 0;
 }
 
+int PS4_SYSV_ABI scePthreadSetprio(PthreadT thread, int prio) {
+    SchedParam param;
+    int ret;
+
+    param.sched_priority = prio;
+
+    auto* thread_state = ThrState::Instance();
+    if (thread == g_curthread) {
+        g_curthread->lock.lock();
+    } else if (int ret = thread_state->FindThread(thread, /*include dead*/0)) {
+        return ret;
+    }
+
+    if (thread->attr.sched_policy == SchedPolicy::Other ||
+        thread->attr.prio == prio) {
+        thread->attr.prio = prio;
+        ret = 0;
+    } else {
+        // TODO: _thr_setscheduler
+        thread->attr.prio = prio;
+    }
+
+    thread->lock.unlock();
+    return ret;
+}
+
 enum class PthreadCancelState : u32 {
     Enable = 0,
     Disable = 1,
@@ -492,6 +518,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, posix_pthread_yield);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getthreadid_np);
     LIB_FUNCTION("1tKyG7RlMJo", "libkernel", 1, "libkernel", 1, 1, scePthreadGetprio);
+    LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, scePthreadSetprio);
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
 }
