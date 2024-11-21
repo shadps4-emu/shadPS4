@@ -62,6 +62,10 @@ void HelpDialog::closeEvent(QCloseEvent* event) {
     *help_open_ptr = false;
     close();
 }
+void HelpDialog::reject() {
+    *help_open_ptr = false;
+    close();
+}
 
 HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
     help_open_ptr = open_flag;

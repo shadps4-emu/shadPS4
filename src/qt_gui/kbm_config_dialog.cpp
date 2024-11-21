@@ -21,6 +21,8 @@
 #include <QVBoxLayout>
 
 QString previous_game = "default";
+bool isHelpOpen = false;
+HelpDialog* helpDialog;
 
 EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
@@ -107,6 +109,11 @@ void EditorDialog::saveFile(QString game) {
 
 // Override the close event to show the save confirmation dialog only if changes were made
 void EditorDialog::closeEvent(QCloseEvent* event) {
+    if (isHelpOpen) {
+        helpDialog->close();
+        isHelpOpen = false;
+        // at this point I might have to add this flag and the help dialog to the class itself
+    }
     if (hasUnsavedChanges()) {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Save Changes", "Do you want to save changes?",
@@ -126,6 +133,10 @@ void EditorDialog::closeEvent(QCloseEvent* event) {
 }
 void EditorDialog::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_Escape) {
+        if (isHelpOpen) {
+            helpDialog->close();
+            isHelpOpen = false;
+        }
         close(); // Trigger the close action, same as pressing the close button
     } else {
         QDialog::keyPressEvent(event); // Call the base class implementation for other keys
@@ -133,15 +144,22 @@ void EditorDialog::keyPressEvent(QKeyEvent* event) {
 }
 
 void EditorDialog::onSaveClicked() {
+    if (isHelpOpen) {
+        helpDialog->close();
+        isHelpOpen = false;
+    }
     saveFile(gameComboBox->currentText());
     reject(); // Close the dialog
 }
 
 void EditorDialog::onCancelClicked() {
+    if (isHelpOpen) {
+        helpDialog->close();
+        isHelpOpen = false;
+    }
     reject(); // Close the dialog
 }
-bool isHelpOpen = false;
-HelpDialog* helpDialog;
+
 void EditorDialog::onHelpClicked() {
     if (!isHelpOpen) {
         helpDialog = new HelpDialog(&isHelpOpen, this);

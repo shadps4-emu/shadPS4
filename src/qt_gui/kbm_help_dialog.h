@@ -37,6 +37,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void reject() override;
 
 private:
     bool* help_open_ptr;
