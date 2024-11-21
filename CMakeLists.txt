@@ -917,6 +917,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
 add_dependencies(shadps4 ImGui_Resources)
 target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+target_compile_options(shadps4 PRIVATE $<$<CONFIG:Release>:-O3>)
+
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
