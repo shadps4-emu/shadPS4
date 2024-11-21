@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/signal_context.h"
+#include "core/memory.h"
 #include "core/signals.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -145,15 +146,11 @@ struct PageManager::Impl {
         ASSERT_MSG(owned_ranges.find(address) != owned_ranges.end(),
                    "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", address,
                    size);
-#ifdef _WIN32
-        DWORD prot = allow_write ? PAGE_READWRITE : PAGE_READONLY;
-        DWORD old_prot{};
-        BOOL result = VirtualProtect(std::bit_cast<LPVOID>(address), size, prot, &old_prot);
-        ASSERT_MSG(result != 0, "Region protection failed");
-#else
-        mprotect(reinterpret_cast<void*>(address), size,
-                 PROT_READ | (allow_write ? PROT_WRITE : 0));
-#endif
+        auto* memory = Core::Memory::Instance();
+        auto& impl = memory->GetAddressSpace();
+        impl.Protect(address, size,
+                     allow_write ? Core::MemoryPermission::ReadWrite
+                                 : Core::MemoryPermission::Read);
     }
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {

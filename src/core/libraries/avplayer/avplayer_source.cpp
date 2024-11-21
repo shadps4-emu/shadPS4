@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "avplayer_source.h"
-
-#include "avplayer_file_streamer.h"
-
 #include "common/alignment.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-
 #include "core/file_sys/fs.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/avplayer/avplayer_file_streamer.h"
+#include "core/libraries/avplayer/avplayer_source.h"
 
 #include <magic_enum.hpp>
 
@@ -34,8 +30,6 @@ av_always_inline std::string av_err2string(int errnum) {
 #endif // av_err2str
 
 namespace Libraries::AvPlayer {
-
-using namespace Kernel;
 
 AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2)
     : m_state(state), m_use_vdec2(use_vdec2) {}
@@ -258,11 +252,9 @@ bool AvPlayerSource::Start() {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
         return false;
     }
-    m_demuxer_thread = std::jthread([this](std::stop_token stop) { this->DemuxerThread(stop); });
-    m_video_decoder_thread =
-        std::jthread([this](std::stop_token stop) { this->VideoDecoderThread(stop); });
-    m_audio_decoder_thread =
-        std::jthread([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
+    m_demuxer_thread.Run([this](std::stop_token stop) { this->DemuxerThread(stop); });
+    m_video_decoder_thread.Run([this](std::stop_token stop) { this->VideoDecoderThread(stop); });
+    m_audio_decoder_thread.Run([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
     m_start_time = std::chrono::high_resolution_clock::now();
     return true;
 }
@@ -275,18 +267,10 @@ bool AvPlayerSource::Stop() {
         return false;
     }
 
-    m_video_decoder_thread.request_stop();
-    m_audio_decoder_thread.request_stop();
-    m_demuxer_thread.request_stop();
-    if (m_demuxer_thread.joinable()) {
-        m_demuxer_thread.join();
-    }
-    if (m_video_decoder_thread.joinable()) {
-        m_video_decoder_thread.join();
-    }
-    if (m_audio_decoder_thread.joinable()) {
-        m_audio_decoder_thread.join();
-    }
+    m_video_decoder_thread.Stop();
+    m_audio_decoder_thread.Stop();
+    m_demuxer_thread.Stop();
+
     if (m_current_audio_frame.has_value()) {
         m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
         m_current_audio_frame.reset();
@@ -510,12 +494,8 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     m_video_frames_cv.Notify();
     m_audio_frames_cv.Notify();
 
-    if (m_video_decoder_thread.joinable()) {
-        m_video_decoder_thread.join();
-    }
-    if (m_audio_decoder_thread.joinable()) {
-        m_audio_decoder_thread.join();
-    }
+    m_video_decoder_thread.Join();
+    m_audio_decoder_thread.Join();
     m_state.OnEOF();
 
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
@@ -808,8 +788,8 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
 }
 
 bool AvPlayerSource::HasRunningThreads() const {
-    return m_demuxer_thread.joinable() || m_video_decoder_thread.joinable() ||
-           m_audio_decoder_thread.joinable();
+    return m_demuxer_thread.Joinable() || m_video_decoder_thread.Joinable() ||
+           m_audio_decoder_thread.Joinable();
 }
 
 } // namespace Libraries::AvPlayer

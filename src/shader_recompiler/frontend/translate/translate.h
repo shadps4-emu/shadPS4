@@ -221,6 +221,7 @@ public:
     void V_FMA_F64(const GcnInst& inst);
     void V_MIN3_F32(const GcnInst& inst);
     void V_MIN3_I32(const GcnInst& inst);
+    void V_MIN3_U32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
     void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);

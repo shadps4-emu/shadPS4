@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "net_ctl_obj.h"
+#include "core/libraries/network/net_ctl_obj.h"
 
 namespace Core::Loader {
 class SymbolsResolver;

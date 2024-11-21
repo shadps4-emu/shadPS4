@@ -14,7 +14,7 @@
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
-#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
@@ -49,11 +49,9 @@ namespace Libraries {
 
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
-    Libraries::Kernel::LibKernel_Register(sym);
+    Libraries::Kernel::RegisterKernel(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
     Libraries::VideoOut::RegisterLib(sym);
-
-    // New libraries folder from autogen
     Libraries::UserService::RegisterlibSceUserService(sym);
     Libraries::SystemService::RegisterlibSceSystemService(sym);
     Libraries::CommonDialog::RegisterlibSceCommonDialog(sym);

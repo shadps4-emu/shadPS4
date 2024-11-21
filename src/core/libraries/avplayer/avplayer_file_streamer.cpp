@@ -1,20 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "avplayer_file_streamer.h"
-
-#include "avplayer_common.h"
-
+#include <algorithm> // std::max, std::min
 #include <magic_enum.hpp>
+#include "core/libraries/avplayer/avplayer_file_streamer.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 }
 
-#include <algorithm> // std::max, std::min
-
-#define AVPLAYER_AVIO_BUFFER_SIZE 4096
+constexpr u32 AVPLAYER_AVIO_BUFFER_SIZE = 4096;
 
 namespace Libraries::AvPlayer {
 

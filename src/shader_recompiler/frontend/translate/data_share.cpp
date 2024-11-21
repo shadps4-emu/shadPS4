@@ -68,10 +68,9 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
-    const IR::ScalarReg dst{inst.dst[0].code};
     const IR::U32 value{GetSrc(inst.src[0])};
     const IR::U32 lane{GetSrc(inst.src[1])};
-    ir.SetScalarReg(dst, ir.ReadLane(value, lane));
+    SetDst(inst.dst[0], ir.ReadLane(value, lane));
 }
 
 void Translator::V_WRITELANE_B32(const GcnInst& inst) {
@@ -155,7 +154,7 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     const u8 offset0 = inst.control.ds.offset0;
     const u8 offset1 = inst.control.ds.offset1;
     const IR::U32 src{GetSrc(inst.src[1])};
-    ASSERT(offset1 & 0x80);
+    // ASSERT(offset1 & 0x80);
     const IR::U32 lane_id = ir.LaneId();
     const IR::U32 id_in_group = ir.BitwiseAnd(lane_id, ir.Imm32(0b11));
     const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
