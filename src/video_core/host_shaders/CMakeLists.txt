@@ -7,6 +7,8 @@ set(SHADER_FILES
     detile_m32x1.comp
     detile_m32x2.comp
     detile_m32x4.comp
+    fs_tri.vert
+    post_process.frag
 )
 
 set(SHADER_INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include)

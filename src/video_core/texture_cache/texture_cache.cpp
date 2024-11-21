@@ -28,7 +28,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     info.num_bits = 32;
     info.UpdateSize();
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
-    ASSERT(null_id.index == 0);
+    ASSERT(null_id.index == NULL_IMAGE_ID.index);
     const vk::Image& null_image = slot_images[null_id].image;
     Vulkan::SetObjectName(instance.GetDevice(), null_image, "Null Image");
     slot_images[null_id].flags = ImageFlagBits::Tracked;
@@ -36,7 +36,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     ImageViewInfo view_info;
     const auto null_view_id =
         slot_image_views.insert(instance, view_info, slot_images[null_id], null_id);
-    ASSERT(null_view_id.index == 0);
+    ASSERT(null_view_id.index == NULL_IMAGE_VIEW_ID.index);
     const vk::ImageView& null_image_view = slot_image_views[null_view_id].image_view.get();
     Vulkan::SetObjectName(instance.GetDevice(), null_image_view, "Null Image View");
 }
@@ -373,6 +373,10 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
     if (False(image.flags & ImageFlagBits::Dirty)) {
+        return;
+    }
+
+    if (image.info.num_samples > 1) {
         return;
     }
 

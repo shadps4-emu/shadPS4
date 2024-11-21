@@ -14,7 +14,7 @@
 #include "imgui_internal.h"
 #include "sdl_window.h"
 #include "texture_manager.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"

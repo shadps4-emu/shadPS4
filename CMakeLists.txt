@@ -670,8 +670,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/buffer_cache/word_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
-               src/video_core/renderer_vulkan/renderer_vulkan.cpp
-               src/video_core/renderer_vulkan/renderer_vulkan.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
@@ -690,6 +688,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_pipeline_common.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
+               src/video_core/renderer_vulkan/vk_presenter.cpp
+               src/video_core/renderer_vulkan/vk_presenter.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
@@ -934,7 +934,10 @@ if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON
-        MACOSX_BUNDLE_ICON_FILE shadPS4.icns)
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
+        MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
+        )
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)

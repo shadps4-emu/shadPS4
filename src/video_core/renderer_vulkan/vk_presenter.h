@@ -40,23 +40,29 @@ enum SchedulerType {
 
 class Rasterizer;
 
-class RendererVulkan {
+class Presenter {
+    struct PostProcessSettings {
+        float gamma = 1.0f;
+    };
+
 public:
-    explicit RendererVulkan(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
-    ~RendererVulkan();
+    Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
+    ~Presenter();
+
+    float& GetGammaRef() {
+        return pp_settings.gamma;
+    }
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(info);
         texture_cache.UpdateImage(image_id, is_eop ? nullptr : &flip_scheduler);
-        auto& image = texture_cache.GetImage(image_id);
-        return PrepareFrameInternal(image, is_eop);
+        return PrepareFrameInternal(image_id, is_eop);
     }
 
     Frame* PrepareBlankFrame(bool is_eop) {
-        auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
-        return PrepareFrameInternal(image, is_eop);
+        return PrepareFrameInternal(VideoCore::NULL_IMAGE_ID, is_eop);
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
@@ -83,10 +89,16 @@ public:
     }
 
 private:
-    Frame* PrepareFrameInternal(VideoCore::Image& image, bool is_eop = true);
+    void CreatePostProcessPipeline();
+    Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
     Frame* GetRenderFrame();
 
 private:
+    PostProcessSettings pp_settings{};
+    vk::UniquePipeline pp_pipeline{};
+    vk::UniquePipelineLayout pp_pipeline_layout{};
+    vk::UniqueDescriptorSetLayout pp_desc_set_layout{};
+    vk::UniqueSampler pp_sampler{};
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;

@@ -18,7 +18,7 @@ jobs:
     continue-on-error: true
     steps:
     - uses: actions/checkout@v4
-    - uses: fsfe/reuse-action@v4
+    - uses: fsfe/reuse-action@v5
 
   clang-format:
     runs-on: ubuntu-latest
@@ -30,9 +30,9 @@ jobs:
     - name: Install
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main'
+        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
         sudo apt update
-        sudo apt install clang-format-17
+        sudo apt install clang-format-18
     - name: Build
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}

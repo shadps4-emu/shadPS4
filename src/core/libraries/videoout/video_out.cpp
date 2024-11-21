@@ -11,6 +11,9 @@
 #include "core/libraries/videoout/video_out.h"
 #include "core/loader/symbols_resolver.h"
 #include "core/platform.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Libraries::VideoOut {
 
@@ -297,6 +300,28 @@ s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutColorSettingsSetGamma(SceVideoOutColorSettings* settings, float gamma) {
+    if (gamma < 0.1f || gamma > 2.0f) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    settings->gamma = gamma;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettings* settings) {
+    if (settings == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    presenter->GetGammaRef() = settings->gamma;
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
@@ -329,6 +354,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("U2JJtSqNKZI", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetEventId);
     LIB_FUNCTION("rWUTcKdkUzQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetEventData);
+    LIB_FUNCTION("DYhhWbJSeRg", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutColorSettingsSetGamma);
+    LIB_FUNCTION("pv9CI5VC+R0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutAdjustColor);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);

@@ -11,13 +11,13 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
-extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Vulkan {
 
@@ -265,9 +265,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
-        const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
-        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_formats[remapped_cb] =
+            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
         key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
@@ -293,8 +292,8 @@ bool PipelineCache::RefreshGraphicsKey() {
             return false;
         }
 
-        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
-        if (!bininfo->Valid()) {
+        const auto& bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo.Valid()) {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
             key.stage_hashes[stage_out_idx] = 0;
             infos[stage_out_idx] = nullptr;
@@ -358,6 +357,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
     }
 
+    u32 num_samples = 1u;
+
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
@@ -374,8 +375,16 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
 
+        num_samples = std::max(num_samples, 1u << col_buf.attrib.num_samples_log2);
+
         ++remapped_cb;
     }
+
+    // It seems that the number of samples > 1 set in the AA config doesn't mean we're always
+    // rendering with MSAA, so we need to derive MS ratio from the CB settings.
+    num_samples = std::max(num_samples, regs.depth_buffer.NumSamples());
+    key.num_samples = num_samples;
+
     return true;
 }
 
