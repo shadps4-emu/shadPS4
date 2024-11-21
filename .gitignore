@@ -414,3 +414,6 @@ FodyWeavers.xsd
 
 # for macOS
 **/.DS_Store
+
+# JetBrains
+.idea

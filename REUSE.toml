@@ -7,6 +7,7 @@ path = [
     ".github/FUNDING.yml",
     ".github/shadps4.png",
     ".gitmodules",
+    "dist/MacOSBundleInfo.plist.in",
     "dist/net.shadps4.shadPS4.desktop",
     "dist/net.shadps4.shadPS4_metadata.pot",
     "dist/net.shadps4.shadPS4.metainfo.xml",
