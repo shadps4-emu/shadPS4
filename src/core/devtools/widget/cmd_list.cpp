@@ -3,6 +3,7 @@
 
 // Credits to https://github.com/psucien/tlg-emu-tools/
 
+#include <cinttypes>
 #include <string>
 #include <gcn/si_ci_vi_merged_offset.h>
 #include <imgui.h>
@@ -1224,12 +1225,12 @@ void CmdListViewer::Draw(bool only_batches_view) {
         }
 
         Text("queue    : %s", queue_name);
-        Text("base addr: %08llX", cmdb_addr);
+        Text("base addr: %08" PRIXPTR, cmdb_addr);
         SameLine();
         if (SmallButton("Memory >")) {
             cmdb_view.Open ^= true;
         }
-        Text("size     : %04llX", cmdb_size);
+        Text("size     : %04zX", cmdb_size);
         Separator();
 
         {
@@ -1292,12 +1293,12 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 if (batch.type == static_cast<AmdGpu::PM4ItOpcode>(0xFF)) {
                     ignore_header = true;
                 } else if (!batch.marker.empty()) {
-                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s | %s",
+                    snprintf(batch_hdr, sizeof(batch_hdr), "%08" PRIXPTR ": batch-%03d %s | %s",
                              cmdb_addr + batch.start_addr, batch.id,
                              Gcn::GetOpCodeName(static_cast<u32>(batch.type)),
                              batch.marker.c_str());
                 } else {
-                    snprintf(batch_hdr, sizeof(batch_hdr), "%08llX: batch-%03d %s",
+                    snprintf(batch_hdr, sizeof(batch_hdr), "%08" PRIXPTR ": batch-%03d %s",
                              cmdb_addr + batch.start_addr, batch.id,
                              Gcn::GetOpCodeName(static_cast<u32>(batch.type)));
                 }
@@ -1348,7 +1349,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 }
 
                 if (show_batch_content) {
-                    auto processed_size = 0ull;
+                    size_t processed_size = 0;
                     auto bb = ctx.LastItemData.Rect;
                     if (group_batches && !ignore_header) {
                         Indent();
@@ -1364,9 +1365,9 @@ void CmdListViewer::Draw(bool only_batches_view) {
                             op = pm4_t3->opcode;
 
                             char header_name[128];
-                            sprintf(header_name, "%08llX: %s",
-                                    cmdb_addr + batch.start_addr + processed_size,
-                                    Gcn::GetOpCodeName((u32)op));
+                            snprintf(header_name, sizeof(header_name), "%08" PRIXPTR ": %s",
+                                     cmdb_addr + batch.start_addr + processed_size,
+                                     Gcn::GetOpCodeName(static_cast<u32>(op)));
 
                             bool open_pm4 = TreeNode(header_name);
                             if (!group_batches) {
