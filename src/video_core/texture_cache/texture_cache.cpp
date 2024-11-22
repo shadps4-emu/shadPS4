@@ -429,6 +429,19 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto& mip = image.info.mips_layout[m];
+
+        // Protect GPU modified resources from accidental CPU reuploads.
+        const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
+        const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
+        if (is_gpu_modified && !is_gpu_dirty) {
+            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+            const u64 hash = XXH3_64bits(addr + mip.offset, mip.size);
+            if (image.mip_hashes[m] == hash) {
+                continue;
+            }
+            image.mip_hashes[m] = hash;
+        }
+
         image_copy.push_back({
             .bufferOffset = mip.offset * num_layers,
             .bufferRowLength = static_cast<u32>(mip.pitch),
