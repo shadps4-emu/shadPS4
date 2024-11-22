@@ -90,7 +90,7 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         LOG_ERROR(Lib_Png, "invalid image address!");
         return ORBIS_PNG_DEC_ERROR_INVALID_ADDR;
     }
-    LOG_ERROR(Lib_Png,
+    LOG_TRACE(Lib_Png,
               "pngMemSize = {} , imageMemSize = {} , pixelFormat = {} , alphaValue = {} , "
               "imagePitch = {}",
               param->pngMemSize, param->imageMemSize, param->pixelFormat, param->alphaValue,
@@ -243,7 +243,7 @@ s32 PS4_SYSV_ABI scePngDecParseHeader(const OrbisPngDecParseParam* param,
     }
 
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-    LOG_ERROR(
+    LOG_TRACE(
         Lib_Png,
         "imageWidth = {} , imageHeight = {} , colorSpace = {} , bitDepth = {} , imageFlag = {}",
         imageInfo->imageWidth, imageInfo->imageHeight, imageInfo->colorSpace, imageInfo->bitDepth,
