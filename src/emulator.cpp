@@ -162,8 +162,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 if (!playgo->Open(filepath)) {
                     LOG_ERROR(Loader, "PlayGo: unable to open file");
                 }
-            } else if (entry.path().filename() == "pic0.png" ||
-                       entry.path().filename() == "pic1.png") {
+            } else if (entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
                 if (splash->IsLoaded()) {
                     continue;
