@@ -158,17 +158,20 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         color_type == PNG_COLOR_TYPE_PALETTE)
         png_set_add_alpha(pngh->png_ptr, param->alphaValue, PNG_FILLER_AFTER);
 
+    int pass = png_set_interlace_handling(pngh->png_ptr);
     png_read_update_info(pngh->png_ptr, pngh->info_ptr);
-
-    auto ptr = (png_bytep)param->imageMemAddr;
 
     auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
     auto horizontal_bytes = numChannels * width;
 
     int stride = param->imagePitch > 0 ? param->imagePitch : horizontal_bytes;
-    for (int y = 0; y < height; y++) {
-        png_read_row(pngh->png_ptr, ptr, NULL);
-        ptr += stride;
+
+    for (int j = 0; j < pass; j++) { // interlaced
+        auto ptr = (png_bytep)param->imageMemAddr;
+        for (int y = 0; y < height; y++) {
+            png_read_row(pngh->png_ptr, ptr, nullptr);
+            ptr += stride;
+        }
     }
 
     return (width > 32767 || height > 32767) ? 0 : (width << 16) | height;
