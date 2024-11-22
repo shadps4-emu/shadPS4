@@ -6,10 +6,12 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/address_space.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
+#include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
 
@@ -144,11 +146,6 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
                                                s64 directMemoryStart, u64 alignment,
                                                const char* name) {
-    LOG_INFO(Kernel_Vmm,
-             "addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, "
-             "alignment = {:#x}",
-             fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
-
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
@@ -167,6 +164,14 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    SCOPE_EXIT {
+        LOG_INFO(Kernel_Vmm,
+                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
+                 "directMemoryStart = {:#x}, "
+                 "alignment = {:#x}",
+                 in_addr, fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
+    };
+
     auto* memory = Core::Memory::Instance();
     return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
                              false, directMemoryStart, alignment);
@@ -200,13 +205,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    SCOPE_EXIT {
+        LOG_INFO(Kernel_Vmm,
+                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
+                 in_addr, fmt::ptr(*addr_in_out), len, prot, flags);
+    };
     auto* memory = Core::Memory::Instance();
-    const int ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
-                                      Core::VMAType::Flexible, name);
-
-    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
-             fmt::ptr(*addr_in_out), len, prot, flags);
-    return ret;
+    return memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
+                             Core::VMAType::Flexible, name);
 }
 
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
@@ -264,8 +270,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEnt
     return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
                               MemoryFlags::SCE_KERNEL_MAP_FIXED); // 0x10, 0x410?
 }
-
-int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
 
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
                                     int* numEntriesOut, int flags) {
@@ -443,6 +447,96 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) 
     memory->PoolDecommit(pool_addr, len);
 
     return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
+                               void** res) {
+    LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",
+             fmt::ptr(addr), len, prot, flags, fd, offset);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* memory = Core::Memory::Instance();
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
+    if (fd == -1) {
+        return memory->MapMemory(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                 Core::VMAType::Flexible);
+    } else {
+        const uintptr_t handle = h->GetFile(fd)->f.GetFileMapping();
+        return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
+                               offset);
+    }
+}
+
+void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
+    void* ptr;
+    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap");
+    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
+    ASSERT(result == 0);
+    return ptr;
+}
+
+s32 PS4_SYSV_ABI sceKernelConfiguredFlexibleMemorySize(u64* sizeOut) {
+    if (sizeOut == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* memory = Core::Memory::Instance();
+    *sizeOut = memory->GetTotalFlexibleSize();
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
+    if (len == 0) {
+        return ORBIS_OK;
+    }
+    auto* memory = Core::Memory::Instance();
+    memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
+    return SCE_OK;
+}
+
+void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
+    LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelAllocateMainDirectMemory);
+    LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelAvailableDirectMemorySize);
+    LIB_FUNCTION("hwVSPCmp5tM", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelCheckedReleaseDirectMemory);
+    LIB_FUNCTION("rVjRvHJ0X6c", "libkernel", 1, "libkernel", 1, 1, sceKernelVirtualQuery);
+    LIB_FUNCTION("7oxv3PPCumo", "libkernel", 1, "libkernel", 1, 1, sceKernelReserveVirtualRange);
+    LIB_FUNCTION("BC+OG5m9+bw", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemoryType);
+    LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
+    LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
+    LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
+    LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
+    LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", 1, 1, sceKernelDirectMemoryQuery);
+    LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
+    LIB_FUNCTION("PGhQHd-dzv8", "libkernel", 1, "libkernel", 1, 1, sceKernelMmap);
+    LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", 1, 1, sceKernelMunmap);
+    LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
+    LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelAvailableFlexibleMemorySize);
+    LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
+    LIB_FUNCTION("p5EcQeEeJAE", "libkernel", 1, "libkernel", 1, 1,
+                 _sceKernelRtldSetApplicationHeapAPI);
+    LIB_FUNCTION("2SKEx6bSq-4", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap);
+    LIB_FUNCTION("kBJzF8x4SyE", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap2);
+    LIB_FUNCTION("DGMG3JshrZU", "libkernel", 1, "libkernel", 1, 1, sceKernelSetVirtualRangeName);
+    LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelConfiguredFlexibleMemorySize);
+
+    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMTypeProtect);
+    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMProtect);
+
+    // Memory pool
+    LIB_FUNCTION("qCSfqDILlns", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolExpand);
+    LIB_FUNCTION("pU-QydtGcGY", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolReserve);
+    LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolCommit);
+    LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolDecommit);
+
+    LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
+    LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
 }
 
 } // namespace Libraries::Kernel

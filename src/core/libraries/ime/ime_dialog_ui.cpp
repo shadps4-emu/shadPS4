@@ -11,7 +11,7 @@
 #include "common/singleton.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_dialog_ui.h"
-#include "core/linker.h"
+#include "core/tls.h"
 #include "imgui/imgui_std.h"
 
 using namespace ImGui;
@@ -124,9 +124,8 @@ bool ImeDialogState::CallTextFilter() {
         return false;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
     int ret =
-        linker->ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
+        Core::ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
 
     if (ret != 0) {
         return false;
@@ -147,15 +146,12 @@ bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16*
         return true;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
-    int ret = linker->ExecuteGuest(keyboard_filter, src_keycode, out_keycode, out_status, nullptr);
-
+    int ret = Core::ExecuteGuest(keyboard_filter, src_keycode, out_keycode, out_status, nullptr);
     return ret == 0;
 }
 
 bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
                                         char* utf8_text, std::size_t utf8_text_len) {
-
     std::fill(utf8_text, utf8_text + utf8_text_len, '\0');
     const ImWchar* orbis_text_ptr = reinterpret_cast<const ImWchar*>(orbis_text);
     ImTextStrToUtf8(utf8_text, utf8_text_len, orbis_text_ptr, orbis_text_ptr + orbis_text_len);
@@ -165,7 +161,6 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
 
 bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len,
                                         char16_t* orbis_text, std::size_t orbis_text_len) {
-
     std::fill(orbis_text, orbis_text + orbis_text_len, u'\0');
     ImTextStrFromUtf8(reinterpret_cast<ImWchar*>(orbis_text), orbis_text_len, utf8_text, nullptr);
 

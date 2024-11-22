@@ -13,13 +13,14 @@
 #endif
 
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
 
 namespace Libraries::NetCtl {
+
+static NetCtlInternal netctl;
 
 int PS4_SYSV_ABI sceNetBweCheckCallbackIpcInt() {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
@@ -92,8 +93,7 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackV6() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallback() {
-    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
-    netctl->checkCallback();
+    netctl.CheckCallback();
     return ORBIS_OK;
 }
 
@@ -298,8 +298,7 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, 
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
-    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
-    s32 result = netctl->registerCallback(func, arg);
+    s32 result = netctl.RegisterCallback(func, arg);
     if (result < 0) {
         return result;
     } else {
@@ -374,8 +373,7 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit() {
-    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
-    netctl->checkNpToolkitCallback();
+    netctl.CheckNpToolkitCallback();
     return ORBIS_OK;
 }
 
@@ -389,8 +387,7 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpT
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
-    auto* netctl = Common::Singleton<Libraries::NetCtl::NetCtlInternal>::Instance();
-    s32 result = netctl->registerNpToolkitCallback(func, arg);
+    s32 result = netctl.RegisterNpToolkitCallback(func, arg);
     if (result < 0) {
         return result;
     } else {

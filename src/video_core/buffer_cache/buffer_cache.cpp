@@ -362,7 +362,7 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
         if (buf_start_addr < end_addr && addr < buf_end_addr) {
             return true;
         }
-        page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
+        page = Common::DivCeil(buf_end_addr, CACHING_PAGESIZE);
     }
     return false;
 }

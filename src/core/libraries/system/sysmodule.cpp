@@ -32,8 +32,8 @@ int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleIsLoaded() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
+int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
+    LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
     return ORBIS_OK;
 }
 

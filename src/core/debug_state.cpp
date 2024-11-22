@@ -8,7 +8,7 @@
 #include "common/singleton.h"
 #include "debug_state.h"
 #include "devtools/widget/common.h"
-#include "libraries/kernel/time_management.h"
+#include "libraries/kernel/time.h"
 #include "libraries/system/msgdialog.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 

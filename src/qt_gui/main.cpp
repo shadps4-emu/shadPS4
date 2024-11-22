@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "iostream"
+#include "unordered_map"
+
 #include "common/config.h"
 #include "common/memory_patcher.h"
 #include "core/file_sys/fs.h"
@@ -26,10 +29,90 @@ int main(int argc, char* argv[]) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
-    // Check if elf or eboot.bin path was passed as a command line argument
     bool has_command_line_argument = argc > 1;
+    bool show_gui = false, has_game_argument = false;
+    std::string gamePath;
 
-    // Check if the game install directory is set
+    // Map of argument strings to lambda functions
+    std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
+        {"-h",
+         [&](int&) {
+             std::cout << "Usage: shadps4 [options]\n"
+                          "Options:\n"
+                          "  No arguments: Opens the GUI.\n"
+                          "  -g, --game <path|ID>          Specify <eboot.bin or elf path> or "
+                          "<game ID (CUSAXXXXX)> to launch\n"
+                          "  -p, --patch <patch_file>      Apply specified patch file\n"
+                          "  -s, --show-gui                Show the GUI\n"
+                          "  -f, --fullscreen <true|false> Specify window initial fullscreen "
+                          "state. Does not overwrite the config file."
+                          "  -h, --help                    Display this help message\n";
+             exit(0);
+         }},
+        {"--help", [&](int& i) { arg_map["-h"](i); }}, // Redirect --help to -h
+
+        {"-s", [&](int&) { show_gui = true; }},
+        {"--show-gui", [&](int& i) { arg_map["-s"](i); }},
+
+        {"-g",
+         [&](int& i) {
+             if (i + 1 < argc) {
+                 gamePath = argv[++i];
+                 has_game_argument = true;
+             } else {
+                 std::cerr << "Error: Missing argument for -g/--game\n";
+                 exit(1);
+             }
+         }},
+        {"--game", [&](int& i) { arg_map["-g"](i); }},
+
+        {"-p",
+         [&](int& i) {
+             if (i + 1 < argc) {
+                 MemoryPatcher::patchFile = argv[++i];
+             } else {
+                 std::cerr << "Error: Missing argument for -p\n";
+                 exit(1);
+             }
+         }},
+        {"--patch", [&](int& i) { arg_map["-p"](i); }},
+        {"-f",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr
+                     << "Error: Invalid argument for -f/--fullscreen. Use 'true' or 'false'.\n";
+                 exit(1);
+             }
+             std::string f_param(argv[i]);
+             bool is_fullscreen;
+             if (f_param == "true") {
+                 is_fullscreen = true;
+             } else if (f_param == "false") {
+                 is_fullscreen = false;
+             } else {
+                 std::cerr
+                     << "Error: Invalid argument for -f/--fullscreen. Use 'true' or 'false'.\n";
+                 exit(1);
+             }
+             // Set fullscreen mode without saving it to config file
+             Config::setFullscreenMode(is_fullscreen);
+         }},
+        {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
+    };
+
+    // Parse command-line arguments using the map
+    for (int i = 1; i < argc; ++i) {
+        std::string cur_arg = argv[i];
+        auto it = arg_map.find(cur_arg);
+        if (it != arg_map.end()) {
+            it->second(i); // Call the associated lambda function
+        } else {
+            std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
+            return 1;
+        }
+    }
+
+    // If no game directory is set and no command line argument, prompt for it
     if (Config::getGameInstallDirs().empty() && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
@@ -40,21 +123,46 @@ int main(int argc, char* argv[]) {
 
     // Initialize the main window
     MainWindow* m_main_window = new MainWindow(nullptr);
-    m_main_window->Init();
-
-    // Check for command line arguments
-    if (has_command_line_argument) {
-        Core::Emulator emulator;
-        for (int i = 0; i < argc; i++) {
-            std::string curArg = argv[i];
-            if (curArg == "-p") {
-                std::string patchFile = argv[i + 1];
-                MemoryPatcher::patchFile = patchFile;
-            }
-        }
-        emulator.Run(argv[1]);
+    if ((has_command_line_argument && show_gui) || !has_command_line_argument) {
+        m_main_window->Init();
     }
 
-    // Run the Qt application
+    if (has_command_line_argument && !has_game_argument) {
+        std::cerr << "Error: Please provide a game path or ID.\n";
+        exit(1);
+    }
+
+    // Process game path or ID if provided
+    if (has_game_argument) {
+        std::filesystem::path game_file_path(gamePath);
+
+        // Check if the provided path is a valid file
+        if (!std::filesystem::exists(game_file_path)) {
+            // If not a file, treat it as a game ID and search in install directories
+            bool game_found = false;
+            for (const auto& install_dir : Config::getGameInstallDirs()) {
+                auto potential_game_path = install_dir / gamePath / "eboot.bin";
+                if (std::filesystem::exists(potential_game_path)) {
+                    game_file_path = potential_game_path;
+                    game_found = true;
+                    break;
+                }
+            }
+            if (!game_found) {
+                std::cerr << "Error: Game ID or file path not found: " << gamePath << std::endl;
+                return 1;
+            }
+        }
+
+        // Run the emulator with the resolved game path
+        Core::Emulator emulator;
+        emulator.Run(game_file_path.string());
+        if (!show_gui) {
+            return 0; // Exit after running the emulator without showing the GUI
+        }
+    }
+
+    // Show the main window and run the Qt application
+    m_main_window->show();
     return a.exec();
 }

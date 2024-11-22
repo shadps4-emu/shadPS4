@@ -9,11 +9,11 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
-#include "libkernel.h"
+#include "kernel.h"
 
 namespace Libraries::Kernel {
 
-std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::filesystem::path& path) {
+auto GetDirectoryEntries(const std::filesystem::path& path) {
     std::vector<Core::FileSys::DirEntry> files;
     for (const auto& entry : std::filesystem::directory_iterator(path)) {
         auto& dir_entry = files.emplace_back();
@@ -618,7 +618,7 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return ORBIS_OK;
 }
 
-void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
