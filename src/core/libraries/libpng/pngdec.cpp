@@ -1,55 +1,47 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <png.h>
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "externals/stb_image.h"
 #include "pngdec.h"
 
 namespace Libraries::PngDec {
 
-void setImageInfoParams(OrbisPngDecImageInfo* imageInfo, int width, int height, int channels,
-                        bool isInterlaced, bool isTransparent) {
-    if (imageInfo != nullptr) {
-        imageInfo->imageWidth = width;
-        imageInfo->imageHeight = height;
-        imageInfo->bitDepth = 8; // always 8?
-        switch (channels) {      // clut missing
-        case 1:
-            imageInfo->colorSpace = OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE;
-            break;
-        case 2:
-            imageInfo->colorSpace =
-                OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE_ALPHA;
-            break;
-        case 3:
-            imageInfo->colorSpace = OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGB;
-            break;
-        case 4:
-            imageInfo->colorSpace = OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGBA;
-            break;
-        default:
-            imageInfo->colorSpace = OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGB;
-            break;
-        }
-        imageInfo->imageFlag = 0;
-        if (isInterlaced) {
-            imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
-        }
-        if (isTransparent) {
-            imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
-        }
+struct PngHandler {
+    png_structp png_ptr;
+    png_infop info_ptr;
+};
+
+static inline OrbisPngDecColorSpace MapPngColor(int color) {
+    switch (color) {
+    case PNG_COLOR_TYPE_GRAY:
+        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE;
+
+    case PNG_COLOR_TYPE_GRAY_ALPHA:
+        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE_ALPHA;
+
+    case PNG_COLOR_TYPE_PALETTE:
+        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_CLUT;
+
+    case PNG_COLOR_TYPE_RGB:
+        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGB;
+
+    case PNG_COLOR_TYPE_RGB_ALPHA:
+        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGBA;
     }
+
+    UNREACHABLE_MSG("unknown png color type");
 }
 
-bool checktRNS(const u8* png_raw, int size) {
-    for (int i = 30; i < size - 4; i += 4) {
-        if (std::memcmp(png_raw + i, "tRNS", 4) == 0) {
-            return true;
-        }
-    }
-    return false;
+void PngDecError(png_structp png_ptr, png_const_charp error_message) {
+    LOG_ERROR(Lib_Png, "PNG error {}", error_message);
+}
+
+void PngDecWarning(png_structp png_ptr, png_const_charp error_message) {
+    LOG_ERROR(Lib_Png, "PNG warning {}", error_message);
 }
 
 s32 PS4_SYSV_ABI scePngDecCreate(const OrbisPngDecCreateParam* param, void* memoryAddress,
@@ -66,11 +58,21 @@ s32 PS4_SYSV_ABI scePngDecCreate(const OrbisPngDecCreateParam* param, void* memo
         LOG_ERROR(Lib_Png, "Invalid size! width = {}", param->maxImageWidth);
         return ORBIS_PNG_DEC_ERROR_INVALID_SIZE;
     }
-    const OrbisPngDecCreateParam* nextParam = param + 1;
-    int ret = (8 << (reinterpret_cast<uintptr_t>(nextParam) & 0x1f)) *
-                  (param->maxImageWidth + 0x47U & 0xfffffff8) +
-              0xd000;
-    *handle = reinterpret_cast<OrbisPngDecHandle>(ret);
+    auto pngh = (PngHandler*)memoryAddress;
+
+    pngh->png_ptr =
+        png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngDecError, PngDecWarning);
+
+    if (pngh->png_ptr == nullptr)
+        return ORBIS_PNG_DEC_ERROR_FATAL;
+
+    pngh->info_ptr = png_create_info_struct(pngh->png_ptr);
+    if (pngh->info_ptr == nullptr) {
+        png_destroy_read_struct(&pngh->png_ptr, nullptr, nullptr);
+        return false;
+    }
+
+    *handle = pngh;
     return ORBIS_OK;
 }
 
@@ -88,22 +90,91 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
         LOG_ERROR(Lib_Png, "invalid image address!");
         return ORBIS_PNG_DEC_ERROR_INVALID_ADDR;
     }
+    LOG_TRACE(Lib_Png,
+              "pngMemSize = {} , imageMemSize = {} , pixelFormat = {} , alphaValue = {} , "
+              "imagePitch = {}",
+              param->pngMemSize, param->imageMemSize, param->pixelFormat, param->alphaValue,
+              param->imagePitch);
 
-    int width, height, channels;
-    const u8* png_raw = (const u8*)param->pngMemAddr;
-    u8* img = stbi_load_from_memory(png_raw, param->pngMemSize, &width, &height, &channels,
-                                    STBI_rgb_alpha); // STBI_rgb_alpha?
-    if (!img) {
-        LOG_ERROR(Lib_Png, "Decoding failed!");
-        return ORBIS_PNG_DEC_ERROR_DECODE_ERROR;
+    auto pngh = (PngHandler*)handle;
+
+    struct pngstruct {
+        const u8* data;
+        size_t size;
+        u64 offset;
+    } pngdata = {
+        .data = (const u8*)param->pngMemAddr,
+        .size = param->pngMemSize,
+        .offset = 0,
+    };
+
+    // Read png from memory
+    png_set_read_fn(pngh->png_ptr, (void*)&pngdata,
+                    [](png_structp ps, png_bytep data, png_size_t len) {
+                        if (len == 0)
+                            return;
+                        auto pngdata = (pngstruct*)png_get_io_ptr(ps);
+                        ::memcpy(data, pngdata->data + pngdata->offset, len);
+                        pngdata->offset += len;
+                    });
+
+    u32 width, height;
+    int color_type, bit_depth;
+    png_read_info(pngh->png_ptr, pngh->info_ptr);
+
+    width = png_get_image_width(pngh->png_ptr, pngh->info_ptr);
+    height = png_get_image_height(pngh->png_ptr, pngh->info_ptr);
+    color_type = MapPngColor(png_get_color_type(pngh->png_ptr, pngh->info_ptr));
+    bit_depth = png_get_bit_depth(pngh->png_ptr, pngh->info_ptr);
+
+    if (imageInfo != nullptr) {
+        imageInfo->bitDepth = bit_depth;
+        imageInfo->imageWidth = width;
+        imageInfo->imageHeight = height;
+        imageInfo->colorSpace = color_type;
+        imageInfo->imageFlag = 0;
+        if (png_get_interlace_type(pngh->png_ptr, pngh->info_ptr) == 1) {
+            imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
+        }
+        if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS)) {
+
+            imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+        }
     }
-    bool isInterlaced = (png_raw[28] == 1);
-    bool isTransparent = checktRNS(png_raw, param->pngMemSize);
-    setImageInfoParams(imageInfo, width, height, channels, isInterlaced, isTransparent);
-    u8* imageBuffer = (u8*)(param->imageMemAddr);
-    memcpy(imageBuffer, img, width * height * 4); // copy/pass decoded data
-    stbi_image_free(img);
-    return 0;
+
+    if (bit_depth == 16)
+        png_set_strip_16(pngh->png_ptr);
+    if (color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_palette_to_rgb(pngh->png_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+        png_set_expand_gray_1_2_4_to_8(pngh->png_ptr);
+    if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS))
+        png_set_tRNS_to_alpha(pngh->png_ptr);
+    if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+        png_set_gray_to_rgb(pngh->png_ptr);
+    if (param->pixelFormat == OrbisPngDecPixelFormat::ORBIS_PNG_DEC_PIXEL_FORMAT_B8G8R8A8)
+        png_set_bgr(pngh->png_ptr);
+    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
+        color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_add_alpha(pngh->png_ptr, param->alphaValue, PNG_FILLER_AFTER);
+
+    int pass = png_set_interlace_handling(pngh->png_ptr);
+    png_read_update_info(pngh->png_ptr, pngh->info_ptr);
+
+    auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
+    auto horizontal_bytes = numChannels * width;
+
+    int stride = param->imagePitch > 0 ? param->imagePitch : horizontal_bytes;
+
+    for (int j = 0; j < pass; j++) { // interlaced
+        auto ptr = (png_bytep)param->imageMemAddr;
+        for (int y = 0; y < height; y++) {
+            png_read_row(pngh->png_ptr, ptr, nullptr);
+            ptr += stride;
+        }
+    }
+
+    return (width > 32767 || height > 32767) ? 0 : (width << 16) | height;
 }
 
 s32 PS4_SYSV_ABI scePngDecDecodeWithInputControl() {
@@ -112,8 +183,8 @@ s32 PS4_SYSV_ABI scePngDecDecodeWithInputControl() {
 }
 
 s32 PS4_SYSV_ABI scePngDecDelete(OrbisPngDecHandle handle) {
-    handle = nullptr; // ?
-    LOG_ERROR(Lib_Png, "(STUBBED)called");
+    auto pngh = *(PngHandler**)handle;
+    png_destroy_read_struct(&pngh->png_ptr, &pngh->info_ptr, nullptr);
     return ORBIS_OK;
 }
 
@@ -123,16 +194,60 @@ s32 PS4_SYSV_ABI scePngDecParseHeader(const OrbisPngDecParseParam* param,
         LOG_ERROR(Lib_Png, "Invalid param!");
         return ORBIS_PNG_DEC_ERROR_INVALID_PARAM;
     }
-    int width, height, channels;
-    const u8* png_raw = (const u8*)(param->pngMemAddr);
-    int img = stbi_info_from_memory(png_raw, param->pngMemSize, &width, &height, &channels);
-    if (img == 0) {
-        LOG_ERROR(Lib_Png, "Decoding failed!");
-        return ORBIS_PNG_DEC_ERROR_DECODE_ERROR;
+
+    u8 header[8];
+    memcpy(header, param->pngMemAddr, 8);
+    // Check if the header indicates a valid PNG file
+    if (png_sig_cmp(header, 0, 8)) {
+        LOG_ERROR(Lib_Png, "Memory doesn't contain a valid png file");
+        return ORBIS_PNG_DEC_ERROR_INVALID_DATA;
     }
-    bool isInterlaced = (png_raw[28] == 1);
-    bool isTransparent = checktRNS(png_raw, param->pngMemSize);
-    setImageInfoParams(imageInfo, width, height, channels, isInterlaced, isTransparent);
+    // Create a libpng structure, also pass our custom error/warning functions
+    auto png_ptr =
+        png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngDecError, PngDecWarning);
+
+    // Create a libpng info structure
+    auto info_ptr = png_create_info_struct(png_ptr);
+
+    struct pngstruct {
+        const u8* data;
+        size_t size;
+        u64 offset;
+    } pngdata = {
+        .data = (const u8*)param->pngMemAddr,
+        .size = param->pngMemSize,
+        .offset = 0,
+    };
+
+    png_set_read_fn(png_ptr, (void*)&pngdata, [](png_structp ps, png_bytep data, png_size_t len) {
+        auto pngdata = (pngstruct*)png_get_io_ptr(ps);
+        ::memcpy(data, pngdata->data + pngdata->offset, len);
+        pngdata->offset += len;
+    });
+
+    // Now call png_read_info with our pngPtr as image handle, and infoPtr to receive the file
+    // info.
+    png_read_info(png_ptr, info_ptr);
+
+    imageInfo->imageWidth = png_get_image_width(png_ptr, info_ptr);
+    imageInfo->imageHeight = png_get_image_height(png_ptr, info_ptr);
+    imageInfo->colorSpace = MapPngColor(png_get_color_type(png_ptr, info_ptr));
+    imageInfo->bitDepth = png_get_bit_depth(png_ptr, info_ptr);
+    imageInfo->imageFlag = 0;
+    if (png_get_interlace_type(png_ptr, info_ptr) == 1) {
+        imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
+    }
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+
+        imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+    }
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+    LOG_TRACE(
+        Lib_Png,
+        "imageWidth = {} , imageHeight = {} , colorSpace = {} , bitDepth = {} , imageFlag = {}",
+        imageInfo->imageWidth, imageInfo->imageHeight, imageInfo->colorSpace, imageInfo->bitDepth,
+        imageInfo->imageFlag);
     return ORBIS_OK;
 }
 
@@ -149,9 +264,7 @@ s32 PS4_SYSV_ABI scePngDecQueryMemorySize(const OrbisPngDecCreateParam* param) {
         LOG_ERROR(Lib_Png, "Invalid size! width = {}", param->maxImageWidth);
         return ORBIS_PNG_DEC_ERROR_INVALID_SIZE;
     }
-    int ret =
-        (8 << ((u8)param->attribute & 0x1f)) * (param->maxImageWidth + 0x47U & 0xfffffff8) + 0xd090;
-    return ret;
+    return sizeof(PngHandler);
 }
 
 void RegisterlibScePngDec(Core::Loader::SymbolsResolver* sym) {
