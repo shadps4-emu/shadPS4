@@ -119,7 +119,7 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
                     });
 
     u32 width, height;
-    int color_type, bit_depth, interlace_method;
+    int color_type, bit_depth;
     png_read_info(pngh->png_ptr, pngh->info_ptr);
 
     width = png_get_image_width(pngh->png_ptr, pngh->info_ptr);
@@ -160,30 +160,18 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
 
     png_read_update_info(pngh->png_ptr, pngh->info_ptr);
 
-    png_bytep* row_pointers = NULL;
-    row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
-    for (int y = 0; y < height; y++) {
-        row_pointers[y] = (png_byte*)malloc(png_get_rowbytes(pngh->png_ptr, pngh->info_ptr));
-    }
-
-    png_read_image(pngh->png_ptr, row_pointers);
-
     auto ptr = (png_bytep)param->imageMemAddr;
 
     auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
     auto horizontal_bytes = numChannels * width;
 
-    int stride = param->imagePitch > 0 ? (param->imagePitch - horizontal_bytes) : 0;
+    int stride = param->imagePitch > 0 ? param->imagePitch : horizontal_bytes;
     for (int y = 0; y < height; y++) {
-        for (int x = 0; x < numChannels * width; x++) {
-            *ptr++ = row_pointers[y][x];
-        }
-        // ptr += stride;//doesn't work??
-        png_free(pngh->png_ptr, row_pointers[y]);
+        png_read_row(pngh->png_ptr, ptr, NULL);
+        ptr += stride;
     }
-    png_free(pngh->png_ptr, row_pointers);
 
-    return (width > 32767 || height > 32767) ? 0 : ((u32)width << 16) | (u32)height;
+    return (width > 32767 || height > 32767) ? 0 : (width << 16) | height;
 }
 
 s32 PS4_SYSV_ABI scePngDecDecodeWithInputControl() {
@@ -234,7 +222,8 @@ s32 PS4_SYSV_ABI scePngDecParseHeader(const OrbisPngDecParseParam* param,
         pngdata->offset += len;
     });
 
-    // Now call png_read_info with our pngPtr as image handle, and infoPtr to receive the file info.
+    // Now call png_read_info with our pngPtr as image handle, and infoPtr to receive the file
+    // info.
     png_read_info(png_ptr, info_ptr);
 
     imageInfo->imageWidth = png_get_image_width(png_ptr, info_ptr);
