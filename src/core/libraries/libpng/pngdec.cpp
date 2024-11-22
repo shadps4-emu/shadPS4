@@ -171,8 +171,9 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
     auto ptr = (png_bytep)param->imageMemAddr;
 
     auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
+    auto horizontal_bytes = numChannels * width;
 
-    int stride = param->imagePitch > 0 ? (param->imagePitch - width) : 0;
+    int stride = param->imagePitch > 0 ? (param->imagePitch - horizontal_bytes) : 0;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < numChannels * width; x++) {
             *ptr++ = row_pointers[y][x];
