@@ -195,7 +195,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         const u32 type = header->type;
 
         switch (type) {
-        case 0: LOG_ERROR(Lib_GnmDriver, "Continue hack Unsupported PM4 type 0"); dcb = NextPacket(dcb, header->type0.NumWords() + 1); continue;
+        case 0:
         case 1:
             UNREACHABLE_MSG("Unsupported PM4 type {}", type);
             break;
