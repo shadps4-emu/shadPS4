@@ -58,8 +58,10 @@ if (NOT TARGET zlib-ng::zlib)
     set(WITH_GTEST OFF)
     set(WITH_NEW_STRATEGIES ON)
     set(WITH_NATIVE_INSTRUCTIONS ON)
+    set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
     add_subdirectory(zlib-ng)
     add_library(zlib-ng::zlib ALIAS zlib)
+    add_library(ZLIB::ZLIB ALIAS zlib)
 endif()
 
 # SDL3
@@ -152,6 +154,17 @@ if (NOT TARGET half::half)
     target_include_directories(half INTERFACE half/include)
     add_library(half::half ALIAS half)
 endif()
+
+# libpng
+set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+set(PNG_STATIC ON CACHE BOOL "" FORCE)
+set(PNG_TESTS OFF CACHE BOOL "" FORCE) 
+set(PNG_TOOLS OFF CACHE BOOL "" FORCE) 
+set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
+set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib-ng" CACHE STRING "" FORCE)
+set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib-ng/zlibstatic-ngd" CACHE STRING "" FORCE)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/libpng/zlib.h" "#include \"../zlib-ng/zlib.h\"")
+add_subdirectory(libpng)
 
 if (APPLE)
     # date
