@@ -86,7 +86,8 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
 void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
-    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
     if (rtn) {
@@ -97,7 +98,8 @@ void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
 void Translator::DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
-    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, is_signed);
     if (rtn) {
@@ -108,7 +110,8 @@ void Translator::DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn) {
 void Translator::DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
-    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, is_signed);
     if (rtn) {
@@ -140,12 +143,14 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
                 addr1);
         }
     } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(
+            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
         const IR::Value data =
             ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1));
         ir.WriteShared(bit_size, data, addr0);
     } else {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(
+            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
         ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
     }
 }
@@ -187,26 +192,28 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data1, 1)});
         }
     } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(
+            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
         const IR::Value data = ir.LoadShared(bit_size, is_signed, addr0);
         ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(data, 0)});
         ir.SetVectorReg(dst_reg + 1, IR::U32{ir.CompositeExtract(data, 1)});
     } else {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(
+            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
         const IR::U32 data = IR::U32{ir.LoadShared(bit_size, is_signed, addr0)};
         ir.SetVectorReg(dst_reg, data);
     }
 }
 
 void Translator::DS_APPEND(const GcnInst& inst) {
-    const u32 inst_offset = inst.control.ds.offset0;
+    const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataAppend(gds_offset);
     SetDst(inst.dst[0], prev);
 }
 
 void Translator::DS_CONSUME(const GcnInst& inst) {
-    const u32 inst_offset = inst.control.ds.offset0;
+    const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataConsume(gds_offset);
     SetDst(inst.dst[0], prev);
