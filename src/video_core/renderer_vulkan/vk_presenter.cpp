@@ -75,8 +75,8 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     return MakeImageBlit(frame_width, frame_height, swapchain_width, swapchain_height, 0, 0);
 }
 
-[[nodiscard]] vk::ImageBlit MakeImageBlitFit(s32 frame_width, s32 frame_height, s32 swapchain_width,
-                                             s32 swapchain_height) {
+static std::tuple<s32, s32, s32, s32> FitImage(s32 frame_width, s32 frame_height,
+                                               s32 swapchain_width, s32 swapchain_height) {
     float frame_aspect = static_cast<float>(frame_width) / frame_height;
     float swapchain_aspect = static_cast<float>(swapchain_width) / swapchain_height;
 
@@ -89,8 +89,16 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
         dst_width = static_cast<s32>(swapchain_height * frame_aspect);
     }
 
-    s32 offset_x = (swapchain_width - dst_width) / 2;
-    s32 offset_y = (swapchain_height - dst_height) / 2;
+    const s32 offset_x = (swapchain_width - dst_width) / 2;
+    const s32 offset_y = (swapchain_height - dst_height) / 2;
+
+    return {dst_width, dst_height, offset_x, offset_y};
+}
+
+[[nodiscard]] vk::ImageBlit MakeImageBlitFit(s32 frame_width, s32 frame_height, s32 swapchain_width,
+                                             s32 swapchain_height) {
+    const auto [dst_width, dst_height, offset_x, offset_y] =
+        FitImage(frame_width, frame_height, swapchain_width, swapchain_height);
 
     return MakeImageBlit(frame_width, frame_height, dst_width, dst_height, offset_x, offset_y);
 }
@@ -552,12 +560,15 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *pp_pipeline);
 
+        const auto& [width, height, offset_x, offset_y] =
+            FitImage(image.info.size.width, image.info.size.height, frame->width, frame->height);
+
         const std::array viewports = {
             vk::Viewport{
-                .x = 0.0f,
-                .y = 0.0f,
-                .width = 1.0f * frame->width,
-                .height = 1.0f * frame->height,
+                .x = 1.0f * offset_x,
+                .y = 1.0f * offset_y,
+                .width = 1.0f * width,
+                .height = 1.0f * height,
                 .minDepth = 0.0f,
                 .maxDepth = 1.0f,
             },
@@ -565,7 +576,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 
         const std::array scissors = {
             vk::Rect2D{
-                .offset = {0, 0},
+                .offset = {offset_x, offset_y},
                 .extent = {frame->width, frame->height},
             },
         };
@@ -580,7 +591,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         const std::array attachments = {vk::RenderingAttachmentInfo{
             .imageView = frame->image_view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .loadOp = vk::AttachmentLoadOp::eClear,
             .storeOp = vk::AttachmentStoreOp::eStore,
         }};
 
