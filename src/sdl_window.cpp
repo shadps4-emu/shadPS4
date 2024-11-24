@@ -124,8 +124,8 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         controller->SetTouchpadState(event.gtouchpad.finger,
-                                        event.type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP,
-                                        event.gtouchpad.x, event.gtouchpad.y);
+                                     event.type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP, event.gtouchpad.x,
+                                     event.gtouchpad.y);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -213,9 +213,9 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
 
     bool input_down = event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION ||
-                        event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN ||
-                        event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN ||
-                        event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION;
+                      event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN ||
+                      event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN ||
+                      event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION;
     u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
 
     bool inputs_changed = Input::UpdatePressedKeys(input_id, input_down);

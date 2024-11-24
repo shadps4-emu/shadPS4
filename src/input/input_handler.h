@@ -308,9 +308,8 @@ public:
     u32 parameter;
     BindingConnection(InputBinding b, ControllerOutput* out, u32 param = 0) {
         binding = b;
-        parameter = param; // bruh this accidentally set to be 0 no wonder it didn't do anything
+        parameter = param;
 
-        // todo: check if out is in the allowed array
         output = out;
     }
     bool operator<(const BindingConnection& other) const {
@@ -328,8 +327,7 @@ public:
     }
 };
 
-// Check if the 3 key input is currently active.
-bool IsInputActive(const InputBinding& i);
+bool IsInputActive(BindingConnection& connection);
 
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
