@@ -16,10 +16,6 @@
 
 namespace Vulkan {
 
-static constexpr auto gp_stage_flags = vk::ShaderStageFlagBits::eVertex |
-                                       vk::ShaderStageFlagBits::eGeometry |
-                                       vk::ShaderStageFlagBits::eFragment;
-
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
@@ -387,69 +383,6 @@ void GraphicsPipeline::BuildDescSetLayout() {
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create graphics descriptor set layout: {}", vk::to_string(layout_result));
     desc_layout = std::move(layout);
-}
-
-void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
-                                     VideoCore::BufferCache& buffer_cache,
-                                     VideoCore::TextureCache& texture_cache) const {
-    // Bind resource buffers and textures.
-    boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
-    BufferBarriers buffer_barriers;
-    Shader::PushData push_data{};
-    Shader::Backend::Bindings binding{};
-
-    buffer_infos.clear();
-    buffer_views.clear();
-    image_infos.clear();
-
-    for (const auto* stage : stages) {
-        if (!stage) {
-            continue;
-        }
-        if (stage->uses_step_rates) {
-            push_data.step0 = regs.vgt_instance_step_rate_0;
-            push_data.step1 = regs.vgt_instance_step_rate_1;
-        }
-        stage->PushUd(binding, push_data);
-
-        BindBuffers(buffer_cache, texture_cache, *stage, binding, push_data, set_writes,
-                    buffer_barriers);
-
-        BindTextures(texture_cache, *stage, binding, set_writes);
-    }
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    SCOPE_EXIT {
-        cmdbuf.pushConstants(*pipeline_layout, gp_stage_flags, 0U, sizeof(push_data), &push_data);
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, Handle());
-    };
-
-    if (set_writes.empty()) {
-        return;
-    }
-
-    if (!buffer_barriers.empty()) {
-        const auto dependencies = vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-        };
-        scheduler.EndRendering();
-        cmdbuf.pipelineBarrier2(dependencies);
-    }
-
-    // Bind descriptor set.
-    if (uses_push_descriptors) {
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                    set_writes);
-        return;
-    }
-    const auto desc_set = desc_heap.Commit(*desc_layout);
-    for (auto& set_write : set_writes) {
-        set_write.dstSet = desc_set;
-    }
-    instance.GetDevice().updateDescriptorSets(set_writes, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, desc_set, {});
 }
 
 } // namespace Vulkan

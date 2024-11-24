@@ -19,6 +19,7 @@ class MemoryManager;
 namespace Vulkan {
 
 class Scheduler;
+class RenderState;
 class GraphicsPipeline;
 
 class Rasterizer {
@@ -54,7 +55,8 @@ public:
     void Finish();
 
 private:
-    void BeginRendering(const GraphicsPipeline& pipeline);
+    RenderState PrepareRenderState(u32 mrt_mask);
+    void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
@@ -62,6 +64,21 @@ private:
     void UpdateDepthStencilState();
 
     bool FilterDraw();
+
+    void BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
+                     Shader::PushData& push_data, Pipeline::DescriptorWrites& set_writes,
+                     Pipeline::BufferBarriers& buffer_barriers);
+
+    void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding,
+                      Pipeline::DescriptorWrites& set_writes);
+
+    bool BindResources(const Pipeline* pipeline);
+    void ResetBindings() {
+        for (auto& image_id : bound_images) {
+            texture_cache.GetImage(image_id).binding.Reset();
+        }
+        bound_images.clear();
+    }
 
 private:
     const Instance& instance;
@@ -72,6 +89,25 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     PipelineCache pipeline_cache;
+
+    boost::container::static_vector<
+        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
+        cb_descs;
+    std::optional<std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc>> db_desc;
+    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
+    boost::container::static_vector<vk::BufferView, 8> buffer_views;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
+    boost::container::static_vector<VideoCore::ImageId, 64> bound_images;
+
+    Pipeline::DescriptorWrites set_writes;
+    Pipeline::BufferBarriers buffer_barriers;
+
+    using BufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
+    boost::container::static_vector<BufferBindingInfo, 32> buffer_bindings;
+    using TexBufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
+    boost::container::static_vector<TexBufferBindingInfo, 32> texbuffer_bindings;
+    using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
+    boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 };
 
 } // namespace Vulkan

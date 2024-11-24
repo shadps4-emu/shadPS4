@@ -620,10 +620,10 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
     static constexpr FindFlags find_flags =
         FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
-    ImageInfo info{};
-    info.guest_address = device_addr;
-    info.guest_size_bytes = size;
-    const ImageId image_id = texture_cache.FindImage(info, find_flags);
+    TextureCache::BaseDesc desc{};
+    desc.info.guest_address = device_addr;
+    desc.info.guest_size_bytes = size;
+    const ImageId image_id = texture_cache.FindImage(desc, find_flags);
     if (!image_id) {
         return false;
     }

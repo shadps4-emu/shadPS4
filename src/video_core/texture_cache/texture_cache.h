@@ -43,8 +43,55 @@ class TextureCache {
     using PageTable = MultiLevelPageTable<Traits>;
 
 public:
-    explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                          BufferCache& buffer_cache, PageManager& tracker);
+    enum class BindingType : u32 {
+        Texture,
+        Storage,
+        RenderTarget,
+        DepthTarget,
+        VideoOut,
+    };
+
+    struct BaseDesc {
+        ImageInfo info;
+        ImageViewInfo view_info;
+        BindingType type{BindingType::Texture};
+
+        BaseDesc() = default;
+        BaseDesc(BindingType type_, ImageInfo info_, ImageViewInfo view_info_) noexcept
+            : info{std::move(info_)}, view_info{std::move(view_info_)}, type{type_} {}
+    };
+
+    struct TextureDesc : public BaseDesc {
+        TextureDesc() = default;
+        TextureDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
+            : BaseDesc{desc.is_storage ? BindingType::Storage : BindingType::Texture,
+                       ImageInfo{image, desc}, ImageViewInfo{image, desc}} {}
+    };
+
+    struct RenderTargetDesc : public BaseDesc {
+        RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                         const AmdGpu::Liverpool::CbDbExtent& hint = {})
+            : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
+    };
+
+    struct DepthTargetDesc : public BaseDesc {
+        DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                        const AmdGpu::Liverpool::DepthView& view,
+                        const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
+                        const AmdGpu::Liverpool::CbDbExtent& hint = {})
+            : BaseDesc{BindingType::DepthTarget,
+                       ImageInfo{buffer, view.NumSlices(), htile_address, hint},
+                       ImageViewInfo{buffer, view, ctl}} {}
+    };
+
+    struct VideoOutDesc : public BaseDesc {
+        VideoOutDesc(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address)
+            : BaseDesc{BindingType::VideoOut, ImageInfo{group, cpu_address}, ImageViewInfo{}} {}
+    };
+
+public:
+    TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+                 BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
@@ -57,18 +104,16 @@ public:
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info, FindFlags flags = {});
+    [[nodiscard]] ImageId FindImage(BaseDesc& desc, FindFlags flags = {});
 
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(const ImageInfo& image_info,
-                                              const ImageViewInfo& view_info);
+    [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(const ImageInfo& image_info,
-                                             const ImageViewInfo& view_info);
+    [[nodiscard]] ImageView& FindDepthTarget(BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
@@ -77,11 +122,13 @@ public:
         RefreshImage(image, custom_scheduler);
     }
 
-    [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
-                                         ImageId merged_image_id);
+    [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
+                                                               BindingType binding,
+                                                               ImageId cache_img_id,
+                                                               ImageId merged_image_id);
 
     /// Resolves depth overlap and either re-creates the image or returns existing one
-    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info,
+    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
                                               ImageId cache_img_id);
 
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
