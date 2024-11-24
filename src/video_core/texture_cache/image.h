@@ -22,9 +22,10 @@ VK_DEFINE_HANDLE(VmaAllocator)
 namespace VideoCore {
 
 enum ImageFlagBits : u32 {
-    CpuDirty = 1 << 1, ///< Contents have been modified from the CPU
+    MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
+    CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
-    Dirty = CpuDirty | GpuDirty,
+    Dirty = CpuDirty | GpuDirty | MaybeCpuDirty,
     GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
     Tracked = 1 << 4,        ///< Writes and reads are being hooked from the CPU
     Registered = 1 << 6,     ///< True when the image is registered
@@ -130,6 +131,7 @@ struct Image {
     std::vector<State> subresource_states{};
     boost::container::small_vector<u64, 14> mip_hashes{};
     u64 tick_accessed_last{0};
+    u64 hash{0};
 
     struct {
         union {

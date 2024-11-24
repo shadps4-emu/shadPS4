@@ -47,7 +47,17 @@ void TextureCache::InvalidateMemory(VAddr addr, VAddr addr_aligned, size_t size)
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(addr_aligned, size, [&](ImageId image_id, Image& image) {
         const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        if (addr < image_end) {
+        const auto page_end = addr_aligned + size;
+        if (addr < image.info.guest_address) {
+            // This page access may or may not modify the image.
+            // We should not mark it as dirty now, if it really was modified,
+            // it will receive more invalidations on subsequent pages.
+            if (image_end < page_end) {
+                // Image ends on this page so it can not receive any more invalidations.
+                // We will check it's hash later to see if it really was modified.
+                image.flags |= ImageFlagBits::MaybeCpuDirty;
+            }
+        } else if (addr < image_end) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuDirty;
         }
@@ -416,6 +426,19 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     if (image.info.num_samples > 1) {
         return;
+    }
+
+    if (True(image.flags & ImageFlagBits::MaybeCpuDirty) &&
+        False(image.flags & ImageFlagBits::CpuDirty)) {
+        // The image size should be less than page size to be considered MaybeCpuDirty
+        // So this calculation should be very uncommon and reasonably fast
+        ASSERT(image.info.guest_size_bytes <= 4_KB);
+        const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+        const u64 hash = XXH3_64bits(addr, image.info.guest_size_bytes);
+        if (image.hash == hash) {
+            return;
+        }
+        image.hash = hash;
     }
 
     const auto& num_layers = image.info.resources.layers;
