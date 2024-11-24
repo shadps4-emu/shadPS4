@@ -255,11 +255,11 @@ struct Info {
     }
 
     // TODO probably not needed
-    bool FoundTessConstantsSharp() {
+    bool FoundTessConstantsSharp() const {
         return tess_consts_dword_offset >= 0;
     }
 
-    void ReadTessConstantBuffer(TessellationDataConstantBuffer& tess_constants) {
+    void ReadTessConstantBuffer(TessellationDataConstantBuffer& tess_constants) const {
         ASSERT(FoundTessConstantsSharp());
         auto buf = ReadUdReg<AmdGpu::Buffer>(static_cast<u32>(tess_consts_ptr_base),
                                              static_cast<u32>(tess_consts_dword_offset));

@@ -9,6 +9,7 @@
 #include "common/path_util.h"
 #include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
+#include "shader_recompiler/frontend/tessellation.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
@@ -93,6 +94,15 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
+        if (regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Hull))) {
+            info.ls_info.links_with_tcs = true;
+            Shader::TessellationDataConstantBuffer tess_constants;
+            const auto* pgm = regs.ProgramForStage(static_cast<u32>(Stage::Hull));
+            const auto params = Liverpool::GetParams(*pgm);
+            const auto& hull_info = program_cache.at(params.hash)->info;
+            hull_info.ReadTessConstantBuffer(tess_constants);
+            info.ls_info.ls_stride = tess_constants.m_lsStride;
+        }
         break;
     }
     case Stage::Hull: {
@@ -396,13 +406,13 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (!instance.IsTessellationSupported()) {
             break;
         }
-        if (!TryBindStage(Stage::Local, LogicalStage::Vertex)) {
-            return false;
-        }
         if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;
         }
         if (!TryBindStage(Stage::Vertex, LogicalStage::TessellationEval)) {
+            return false;
+        }
+        if (!TryBindStage(Stage::Local, LogicalStage::Vertex)) {
             return false;
         }
         break;

@@ -6,6 +6,7 @@
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/passes/srt.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/types.h"
 
 #include <boost/container/static_vector.hpp>
@@ -393,6 +394,7 @@ void EmitContext::DefineInputs() {
             DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
+#if 0
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.loads.GetAny(param)) {
@@ -405,6 +407,14 @@ void EmitContext::DefineInputs() {
             Name(id, fmt::format("in_attr{}", i));
             input_params[i] = {id, input_f32, F32[1], 4};
         }
+#else
+        const u32 num_attrs = runtime_info.hs_info.ls_stride >> 4;
+        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+        // The input vertex count isn't statically known, so make length 32 (what glslang does)
+        const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+        input_attr_array = DefineInput(patch_array_type, 0);
+        Name(input_attr_array, "in_attrs");
+#endif
         break;
     }
     case LogicalStage::TessellationEval: {
@@ -458,16 +468,23 @@ void EmitContext::DefineOutputs() {
             cull_distances =
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
-        for (u32 i = 0; i < IR::NumParams; i++) {
-            const IR::Attribute param{IR::Attribute::Param0 + i};
-            if (!info.stores.GetAny(param)) {
-                continue;
+        if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
+            const u32 num_attrs = runtime_info.ls_info.ls_stride >> 4;
+            const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
+            output_attr_array = DefineOutput(type, 0);
+            Name(output_attr_array, "out_attrs");
+        } else {
+            for (u32 i = 0; i < IR::NumParams; i++) {
+                const IR::Attribute param{IR::Attribute::Param0 + i};
+                if (!info.stores.GetAny(param)) {
+                    continue;
+                }
+                const u32 num_components = info.stores.NumComponents(param);
+                const Id id{DefineOutput(F32[num_components], i)};
+                Name(id, fmt::format("out_attr{}", i));
+                output_params[i] =
+                    GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
             }
-            const u32 num_components = info.stores.NumComponents(param);
-            const Id id{DefineOutput(F32[num_components], i)};
-            Name(id, fmt::format("out_attr{}", i));
-            output_params[i] =
-                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
         }
         break;
     }

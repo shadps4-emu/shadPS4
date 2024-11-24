@@ -264,6 +264,8 @@ public:
         bool is_loaded{};
         s32 buffer_handle{-1};
     };
+    Id input_attr_array;
+    Id output_attr_array;
     std::array<SpirvAttribute, IR::NumParams> input_params{};
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};

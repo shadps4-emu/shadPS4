@@ -38,6 +38,13 @@ enum class LogicalStage : u32 {
     return static_cast<Stage>(index);
 }
 
+struct LocalRuntimeInfo {
+    u32 ls_stride;
+    bool links_with_tcs;
+
+    auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
+};
+
 struct ExportRuntimeInfo {
     u32 vertex_data_size;
 
@@ -208,6 +215,7 @@ struct RuntimeInfo {
     AmdGpu::FpDenormMode fp_denorm_mode32;
     AmdGpu::FpRoundMode fp_round_mode32;
     union {
+        LocalRuntimeInfo ls_info;
         ExportRuntimeInfo es_info;
         VertexRuntimeInfo vs_info;
         HullRuntimeInfo hs_info;
@@ -235,6 +243,8 @@ struct RuntimeInfo {
             return gs_info == other.gs_info;
         case Stage::Hull:
             return hs_info == other.hs_info;
+        case Stage::Local:
+            return ls_info == other.ls_info;
         default:
             return true;
         }
