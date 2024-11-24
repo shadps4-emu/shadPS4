@@ -226,16 +226,24 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
+    const auto& regs = liverpool->regs;
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+        // For QuadList we use generated index buffer to convert quads to triangles. Since it
+        // changes type of the draw, arguments are not valid for this case. We need to run a
+        // conversion pass to repack the indirect arguments buffer first.
+        LOG_WARNING(Render_Vulkan, "QuadList primitive type is not supported for indirect draw");
+        return;
+    }
+
+    ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
+               "Unsupported primitive type for indirect draw");
+
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
     }
 
     auto state = PrepareRenderState(pipeline->GetMrtMask());
-
-    const auto& regs = liverpool->regs;
-    ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
-               "Unsupported primitive type for indirect draw");
 
     if (!BindResources(pipeline)) {
         return;
@@ -245,7 +253,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     buffer_cache.BindVertexBuffers(vs_info);
     buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    const auto [buffer, base] =
+    const auto& [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
 
     VideoCore::Buffer* count_buffer{};
