@@ -703,7 +703,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
         cmdbuf[3] = (count_addr != 0 ? 1u : 0u) << 0x1e;
         cmdbuf[4] = max_count;
         *(u64*)(&cmdbuf[5]) = count_addr;
-        cmdbuf[7] = AmdGpu::Liverpool::DrawIndexedIndirectArgsSize;
+        cmdbuf[7] = sizeof(DrawIndexedIndirectArgs);
         cmdbuf[8] = 0;
 
         cmdbuf += 9;
