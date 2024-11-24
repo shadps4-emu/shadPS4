@@ -421,6 +421,7 @@ void EmitContext::DefineInputs() {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
+#if 0
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.loads.GetAny(param)) {
@@ -433,6 +434,14 @@ void EmitContext::DefineInputs() {
             Name(id, fmt::format("in_attr{}", i));
             input_params[i] = {id, input_f32, F32[1], 4};
         }
+#else
+        const u32 num_attrs = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+        // The input vertex count isn't statically known, so make length 32 (what glslang does)
+        const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+        input_attr_array = DefineInput(patch_array_type, 0);
+        Name(input_attr_array, "in_attrs");
+#endif
 
         u32 patch_base_location = runtime_info.vs_info.hs_output_cp_stride >> 4;
         for (size_t index = 0; index < 30; ++index) {
@@ -502,6 +511,7 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
+#if 0
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -514,6 +524,15 @@ void EmitContext::DefineOutputs() {
             Name(id, fmt::format("out_attr{}", i));
             output_params[i] = {id, output_f32, F32[1], 4};
         }
+#else
+        const u32 num_attrs = runtime_info.hs_info.hs_cp_stride >> 4;
+        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+        // The input vertex count isn't statically known, so make length 32 (what glslang does)
+        const Id patch_array_type{
+            TypeArray(per_vertex_type, ConstU32(runtime_info.hs_info.output_control_points))};
+        output_attr_array = DefineOutput(patch_array_type, 0);
+        Name(output_attr_array, "out_attrs");
+#endif
 
         u32 patch_base_location = runtime_info.hs_info.hs_output_cp_stride >> 4;
         for (size_t index = 0; index < 30; ++index) {

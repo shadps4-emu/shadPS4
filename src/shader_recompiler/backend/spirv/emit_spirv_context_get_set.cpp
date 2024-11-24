@@ -47,18 +47,6 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     }
 }
 
-// TODO refactor
-Id SpecialOutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
-    const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-    if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-        // TODO refactor all this
-        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
-        return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
-                                 ctx.ConstU32(element));
-    }
-    UNREACHABLE();
-}
-
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
@@ -232,7 +220,16 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
         UNREACHABLE();
     }
 
-    if (ctx.info.l_stage == LogicalStage::TessellationControl) {
+    // TODO refactor
+    if (ctx.l_stage == LogicalStage::TessellationControl ||
+        ctx.l_stage == LogicalStage::TessellationEval) {
+        if (IR::IsTessCoord(attr)) {
+            const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+            const auto pointer{
+                ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
+            return ctx.OpLoad(ctx.F32[1], pointer);
+        }
         ASSERT(IR::IsParam(attr));
         const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
@@ -343,7 +340,19 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
 
     // TODO refactor
     if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-        ctx.OpStore(SpecialOutputAttrPointer(ctx, attr, element), value);
+        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+        Id pointer = ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+                                       ctx.ConstU32(attr_index), ctx.ConstU32(element));
+        ctx.OpStore(pointer, value);
+        return;
+    } else if (ctx.l_stage == LogicalStage::TessellationControl) {
+        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+        Id pointer = ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+                                       ctx.OpLoad(ctx.U32[1], ctx.invocation_id),
+                                       ctx.ConstU32(attr_index), ctx.ConstU32(element));
+        ctx.OpStore(pointer, value);
         return;
     }
 
