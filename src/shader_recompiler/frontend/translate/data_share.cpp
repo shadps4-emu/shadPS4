@@ -50,6 +50,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_READ(64, false, false, false, inst);
     case Opcode::DS_READ2_B64:
         return DS_READ(64, false, true, false, inst);
+    case Opcode::DS_OR_B32:
+        return DS_OR_B32(inst, false);
     default:
         LogMissingOpcode(inst);
     }
@@ -114,6 +116,18 @@ void Translator::DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn) {
         ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, is_signed);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_OR_B32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicOr(addr_offset, data);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }

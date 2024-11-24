@@ -60,6 +60,10 @@ Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicSMin);
 }
 
+Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicOr);
+}
+
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicIAdd);
 }
