@@ -22,7 +22,6 @@ VK_DEFINE_HANDLE(VmaAllocator)
 namespace VideoCore {
 
 enum ImageFlagBits : u32 {
-    Virtual = 1 << 0,  ///< Image doesn't have Vk object representation and used only for tracking
     CpuDirty = 1 << 1, ///< Contents have been modified from the CPU
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
     Dirty = CpuDirty | GpuDirty,

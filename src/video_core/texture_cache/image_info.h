@@ -66,7 +66,6 @@ struct ImageInfo {
         u32 is_tiled : 1;
         u32 is_pow2 : 1;
         u32 is_block : 1;
-        u32 is_virtual : 1;
     } props{}; // Surface properties with impact on various calculation factors
 
     vk::Format pixel_format = vk::Format::eUndefined;

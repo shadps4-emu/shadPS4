@@ -146,11 +146,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{info.guest_address},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
-    if (info.props.is_virtual) {
-        flags |= ImageFlagBits::Virtual;
-        return;
-    }
-
     mip_hashes.resize(info.resources.levels);
     ASSERT(info.pixel_format != vk::Format::eUndefined);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case

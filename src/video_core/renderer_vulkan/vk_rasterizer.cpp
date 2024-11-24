@@ -558,7 +558,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                                                              std::tuple{tsharp, image_desc});
         image_id = texture_cache.FindImage(desc);
         auto& image = texture_cache.GetImage(image_id);
-        ASSERT(False(image.flags & VideoCore::ImageFlagBits::Virtual));
         if (image.binding.is_bound) {
             // The image is already bound. In case if it is about to be used as storage we need
             // to force general layout on it.
