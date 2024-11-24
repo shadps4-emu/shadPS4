@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -s, --show-gui                Show the GUI\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
-                          "state. Does not overwrite the config file."
+                          "state. Does not overwrite the config file.\n"
                           "  -h, --help                    Display this help message\n";
              exit(0);
          }},
