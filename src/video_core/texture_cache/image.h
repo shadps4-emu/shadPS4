@@ -25,9 +25,10 @@ enum ImageFlagBits : u32 {
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
-    Dirty = CpuDirty | GpuDirty | MaybeCpuDirty,
+    Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
     Tracked = 1 << 4,        ///< Writes and reads are being hooked from the CPU
+    TailTracked = 1 << 5,    ///< Writes and reads to the image tail are being hooked from the CPU
     Registered = 1 << 6,     ///< True when the image is registered
     Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
     MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
