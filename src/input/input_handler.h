@@ -49,12 +49,14 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"r1", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1},
     {"l3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3},
     {"r3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3},
+    {"pad_up", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP},
+    {"pad_down", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN},
+    {"pad_left", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT},
+    {"pad_right", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT},
     {"options", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS},
+
+    // these are outputs only (touchpad can only be bound to itself)
     {"touchpad", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD},
-    {"up", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP},
-    {"down", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN},
-    {"left", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT},
-    {"right", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT},
     {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 };
@@ -67,8 +69,15 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_right_x_minus", {Input::Axis::RightX, -127}},
     {"axis_right_y_plus", {Input::Axis::RightY, 127}},
     {"axis_right_y_minus", {Input::Axis::RightY, -127}},
-    {"l2", {Axis::TriggerLeft, 127}},
-    {"r2", {Axis::TriggerRight, 127}},
+
+    {"l2", {Axis::TriggerLeft, 0}},
+    {"r2", {Axis::TriggerRight, 0}},
+
+    // should only use these to bind analog inputs to analog outputs
+    {"axis_left_x", {Input::Axis::LeftX, 0}},
+    {"axis_left_y", {Input::Axis::LeftY, 0}},
+    {"axis_right_x", {Input::Axis::RightX, 0}},
+    {"axis_right_y", {Input::Axis::RightY, 0}},
 };
 const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"a", SDLK_A},
@@ -248,8 +257,8 @@ public:
     inline bool IsEmpty() {
         return key1 == 0 && key2 == 0 && key3 == 0;
     }
-    std::string ToString() const {
-        return fmt::format("({}, {}, {})", key1, key2, key3);
+    std::string ToString() {
+        return fmt::format("({:X}, {:X}, {:X})", key1, key2, key3);
     }
 
     // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)

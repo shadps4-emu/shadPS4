@@ -98,7 +98,62 @@ ControllerOutput output_array[] = {
 void ToggleMouseEnabled() {
     mouse_enabled ^= true;
 }
+
 // parsing related functions
+u32 GetAxisInputId(AxisMapping a) {
+    //LOG_INFO(Input, "Parsing an axis...");
+    if (a.axis == Axis::AxisMax || a.value != 0) {
+        LOG_ERROR(Input, "Invalid axis given!");
+        return 0;
+    }
+    u32 value = (u32)a.axis + 0x80000000;
+    LOG_DEBUG(Input, "Listening to {0:X}", value);
+    return value;
+}
+
+u32 GetOrbisToSdlButtonKeycode(u32 cbutton) {
+    switch (cbutton) {
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE:
+        return SDL_GAMEPAD_BUTTON_EAST;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE:
+        return SDL_GAMEPAD_BUTTON_NORTH;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE:
+        return SDL_GAMEPAD_BUTTON_WEST;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS:
+        return SDL_GAMEPAD_BUTTON_SOUTH;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1:
+        return SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1:
+        return SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3:
+        return SDL_GAMEPAD_BUTTON_LEFT_STICK;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3:
+        return SDL_GAMEPAD_BUTTON_RIGHT_STICK;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP:
+        return SDL_GAMEPAD_BUTTON_DPAD_UP;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN:
+        return SDL_GAMEPAD_BUTTON_DPAD_DOWN;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT:
+        return SDL_GAMEPAD_BUTTON_DPAD_LEFT;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT:
+        return SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
+    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS:
+        return SDL_GAMEPAD_BUTTON_START;
+    
+    default:
+        return ((u32)-1) - 0x10000000;
+    }
+}
+u32 GetControllerButtonInputId(u32 cbutton) {
+    if((cbutton & (OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD | 
+                    LEFTJOYSTICK_HALFMODE | 
+                    RIGHTJOYSTICK_HALFMODE)) != 0) {
+        //LOG_ERROR(Input, "You can't use this as a button input!");
+        return (u32)-1;
+    }
+    return GetOrbisToSdlButtonKeycode(cbutton) + 0x10000000;
+}
+
 
 // syntax: 'name, name,name' or 'name,name' or 'name'
 InputBinding GetBindingFromString(std::string& line) {
@@ -113,20 +168,40 @@ InputBinding GetBindingFromString(std::string& line) {
         tokens.push_back(token);
     }
 
-    // Check for invalid tokens and map valid ones to keys
+    // Check and process tokens
     for (const auto& t : tokens) {
-        if (string_to_keyboard_key_map.find(t) == string_to_keyboard_key_map.end()) {
-            return InputBinding(0, 0, 0); // Skip by setting all keys to 0
+        if (string_to_keyboard_key_map.find(t) != string_to_keyboard_key_map.end()) {
+            // Map to keyboard key
+            u32 key_id = string_to_keyboard_key_map.at(t);
+            if (!key1) key1 = key_id;
+            else if (!key2) key2 = key_id;
+            else if (!key3) key3 = key_id;
+        } 
+        else if (string_to_axis_map.find(t) != string_to_axis_map.end()) {
+            // Map to axis input ID
+            u32 axis_id = GetAxisInputId(string_to_axis_map.at(t));
+            if (axis_id == (u32)-1) {
+                return InputBinding(0, 0, 0);
+            }
+            if (!key1) key1 = axis_id;
+            else if (!key2) key2 = axis_id;
+            else if (!key3) key3 = axis_id;
+        } 
+        else if (string_to_cbutton_map.find(t) != string_to_cbutton_map.end()) {
+            // Map to controller button input ID
+            u32 cbutton_id = GetControllerButtonInputId(string_to_cbutton_map.at(t));
+            if (cbutton_id == (u32)-1) {
+                return InputBinding(0, 0, 0);
+            }
+            if (!key1) key1 = cbutton_id;
+            else if (!key2) key2 = cbutton_id;
+            else if (!key3) key3 = cbutton_id;
+        }
+        else {
+            // Invalid token found; return default binding
+            return InputBinding(0, 0, 0);
         }
     }
-
-    // Assign values to keys if all tokens were valid
-    if (tokens.size() > 0)
-        key1 = string_to_keyboard_key_map.at(tokens[0]);
-    if (tokens.size() > 1)
-        key2 = string_to_keyboard_key_map.at(tokens[1]);
-    if (tokens.size() > 2)
-        key3 = string_to_keyboard_key_map.at(tokens[2]);
 
     return InputBinding(key1, key2, key3);
 }
@@ -176,8 +251,8 @@ void ParseInputConfig(const std::string game_id = "") {
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
-            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
-                      line);
+            LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", 
+                        lineCount, line);
             continue;
         }
 
@@ -185,7 +260,6 @@ void ParseInputConfig(const std::string game_id = "") {
         std::string input_string = line.substr(equal_pos + 1);
         std::size_t comma_pos = input_string.find(',');
 
-        // special check for mouse to joystick input
         if (output_string == "mouse_to_joystick") {
             if (input_string == "left") {
                 mouse_joystick_binding = 1;
@@ -196,13 +270,12 @@ void ParseInputConfig(const std::string game_id = "") {
             }
             continue;
         }
-        // key toggle
         if (output_string == "key_toggle") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
                 InputBinding toggle_keys = GetBindingFromString(input_string);
                 if (toggle_keys.KeyCount() != 2) {
-                    LOG_ERROR(Input,
+                    LOG_WARNING(Input,
                               "Syntax error: Please provide exactly 2 keys: "
                               "first is the toggler, the second is the key to toggle: {}",
                               line);
@@ -214,7 +287,7 @@ void ParseInputConfig(const std::string game_id = "") {
                 connections.insert(connections.end(), toggle_connection);
                 continue;
             }
-            LOG_ERROR(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
+            LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
                       line);
             continue;
         }
@@ -225,12 +298,8 @@ void ParseInputConfig(const std::string game_id = "") {
 
             // Check for invalid input (in case there's an unexpected format)
             if (ss.fail()) {
-                LOG_ERROR(Input, "Failed to parse mouse movement parameters from line: {}", line);
-            } else {
-                // LOG_DEBUG(Input, "Mouse movement parameters parsed: {} {} {}",
-                // mouse_deadzone_offset, mouse_speed, mouse_speed_offset);
+                LOG_WARNING(Input, "Failed to parse mouse movement parameters from line: {}", line);
             }
-
             continue;
         }
 
@@ -241,7 +310,7 @@ void ParseInputConfig(const std::string game_id = "") {
         auto axis_it = string_to_axis_map.find(output_string);
 
         if (binding.IsEmpty()) {
-            LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
+            LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
                       line);
             continue;
         }
@@ -251,12 +320,15 @@ void ParseInputConfig(const std::string game_id = "") {
             connections.insert(connections.end(), connection);
 
         } else if (axis_it != string_to_axis_map.end()) {
+            int value_to_set = (binding.key3 & 0x80000000) != 0 ? 0 : 
+                                (axis_it->second.axis == Axis::TriggerLeft || axis_it->second.axis == Axis::TriggerRight) ?
+                                    127 : axis_it->second.value;
             connection = BindingConnection(
                 binding, GetOutputPointer(ControllerOutput(0, axis_it->second.axis)),
-                axis_it->second.value);
+                value_to_set);
             connections.insert(connections.end(), connection);
         } else {
-            LOG_DEBUG(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
+            LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.", lineCount,
                       line);
             continue;
         }
@@ -270,7 +342,7 @@ void ParseInputConfig(const std::string game_id = "") {
 u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_DEBUG(Input, "Something went wrong with wheel input parsing!");
-        return 0;
+        return (u32)-1;
     }
     if (event.wheel.y > 0) {
         return SDL_MOUSE_WHEEL_UP;
@@ -285,6 +357,7 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
 }
 
 u32 InputBinding::GetInputIDFromEvent(const SDL_Event& e) {
+    int value_mask;
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
@@ -295,6 +368,15 @@ u32 InputBinding::GetInputIDFromEvent(const SDL_Event& e) {
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
         return GetMouseWheelEvent(e);
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+        return (u32)e.gbutton.button + 0x10000000; // I believe this range is unused
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        // todo: somehow put this value into the correct connection
+        // solution 1: add it to the keycode as a 0x0FF00000 (a bit hacky but works I guess?)
+        // I guess in software developement, there really is nothing more permanent than a temporary solution
+        value_mask = (u32)((e.gaxis.value / 256 + 128) << 20); // +-32000 to +-128 to 0-255
+        return (u32)e.gaxis.axis + 0x80000000 + value_mask; // they are pushed to the end of the sorted array
     default:
         return (u32)-1;
     }
@@ -306,6 +388,10 @@ void ControllerOutput::SetControllerOutputController(GameController* c) {
 }
 
 void ToggleKeyInList(u32 key) {
+    if ((key & 0x80000000) != 0) {
+        LOG_ERROR(Input, "Toggling analog inputs is not supported!");
+        return;
+    }
     auto it = std::find(toggled_keys.begin(), toggled_keys.end(), key);
     if (it == toggled_keys.end()) {
         toggled_keys.insert(toggled_keys.end(), key);
@@ -327,13 +413,16 @@ void ControllerOutput::AddUpdate(bool pressed, u32 param) {
         new_button_state |= pressed;
         new_param = param;
     } else if (axis != Axis::AxisMax) {
-        float multiplier = 1.0;
         switch (axis) {
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
+            // if it's a button input, then we know the value to set, so the param is 0.
+            // if it's an analog input, then the param isn't 0
+            // warning: doesn't work yet
             new_param = SDL_clamp((pressed ? (s32)param : 0) + new_param, 0, 127);
             break;
         default:
+            // todo: do the same as above
             new_param = SDL_clamp((pressed ? (s32)param : 0) + new_param, -127, 127);
             break;
         }
@@ -401,6 +490,28 @@ void ControllerOutput::FinalizeUpdate() {
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
 bool UpdatePressedKeys(u32 value, bool is_pressed) {
+    // Skip invalid inputs
+    if (value == (u32)-1) {
+        return false;
+    }
+    if ((value & 0x80000000) != 0) {
+        // analog input, it gets added when it first sends an event,
+        // and from there, it only changes the parameter
+        // reverse iterate until we get out of the 0x8000000 range, if found,
+        // update the parameter, if not, add it to the end
+        //LOG_DEBUG(Input, "Updating an analog input...");
+        u32 value_to_search = value & 0xF00FFFFF;
+        for (auto& it = --pressed_keys.end(); (it->first & 0x80000000) != 0; it--) {
+            if ((it->first & 0xF00FFFFF) == value_to_search) {
+                it->first = value;
+                LOG_DEBUG(Input, "New value for {:X}: {:x}", value, value);
+                return true;
+            }
+        }
+        //LOG_DEBUG(Input, "Input activated for the first time, adding it to the list");
+        pressed_keys.insert(pressed_keys.end(), {value, false});
+        return true;
+    }
     if (is_pressed) {
         // Find the correct position for insertion to maintain order
         auto it =
@@ -425,9 +536,11 @@ bool UpdatePressedKeys(u32 value, bool is_pressed) {
     return false;
 }
 // Check if a given binding's all keys are currently active.
-bool IsInputActive(const InputBinding& i) {
-    // Extract keys from InputBinding and ignore unused (0) or virtually pressed keys
-    std::list<uint32_t> input_keys = {i.key1, i.key2, i.key3};
+// For now it also extracts the analog inputs' parameters.
+bool IsInputActive(BindingConnection& connection) {
+    InputBinding i = connection.binding;
+    // Extract keys from InputBinding and ignore unused (0) or toggled keys
+    std::list<u32> input_keys = {i.key1, i.key2, i.key3};
     input_keys.remove(0);
     for (auto key = input_keys.begin(); key != input_keys.end();) {
         if (std::find(toggled_keys.begin(), toggled_keys.end(), *key) != toggled_keys.end()) {
@@ -436,20 +549,23 @@ bool IsInputActive(const InputBinding& i) {
             ++key; // Increment only if no erase happened
         }
     }
+    if (input_keys.empty()) {
+        LOG_DEBUG(Input, "No actual inputs to check, returning true");
+        return true;
+    }
 
     // Iterator for pressed_keys, starting from the beginning
     auto pressed_it = pressed_keys.begin();
-    auto pressed_end = pressed_keys.end();
 
     // Store pointers to flags in pressed_keys that need to be set if all keys are active
     std::list<bool*> flags_to_set;
 
     // Check if all keys in input_keys are active
-    for (uint32_t key : input_keys) {
+    for (u32 key : input_keys) {
         bool key_found = false;
 
         // Search for the current key in pressed_keys starting from the last checked position
-        while (pressed_it != pressed_end && pressed_it->first <= key) {
+        while (pressed_it != pressed_keys.end() && (pressed_it->first & 0x80000000) == 0) {
             if (pressed_it->first == key) {
 
                 key_found = true;
@@ -459,6 +575,20 @@ bool IsInputActive(const InputBinding& i) {
                 break;
             }
             ++pressed_it;
+        }
+        if (!key_found && (key & 0x80000000) != 0) {
+            // reverse iterate over the analog inputs, as they can't be sorted
+            auto& rev_it = --pressed_keys.end();
+            for (auto rev_it = --pressed_keys.end(); (rev_it->first & 0x80000000) != 0; rev_it--) {
+                if ((rev_it->first & 0xF00FFFFF) == (key & 0xF00FFFFF)) {
+                    connection.parameter = (u32)((s32)((rev_it->first & 0x0FF00000) >> 20) - 128);
+                    LOG_DEBUG(Input, "Extracted the following param: {:X} from {:X}", 
+                            (s32)connection.parameter, rev_it->first);
+                    key_found = true;
+                    flags_to_set.push_back(&rev_it->second);
+                    break;
+                }
+            }
         }
         if (!key_found) {
             return false;
@@ -493,7 +623,8 @@ void ActivateOutputsFromInputs() {
         it.ResetUpdate();
     }
     for (auto& it : connections) {
-        it.output->AddUpdate(IsInputActive(it.binding), it.parameter);
+        bool active = IsInputActive(it);
+        it.output->AddUpdate(active, it.parameter);
     }
     for (auto& it : output_array) {
         it.FinalizeUpdate();
