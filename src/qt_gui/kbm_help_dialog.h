@@ -44,7 +44,7 @@ private:
 
     QString quickstart() {
         return
-            R"(The keyboard remapping backend, GUI and documentation have been written by kalaposfos
+            R"(The keyboard and controller remapping backend, GUI and documentation have been written by kalaposfos
 
 In this section, you will find information about the project, its features and help on setting up your ideal setup.
 To view the config file's syntax, check out the Syntax tab, for keybind names, visit Normal Keybinds and Special Bindings, and if you are here to view emulator-wide keybinds, you can find it in the FAQ section.
@@ -68,20 +68,20 @@ A: You can switch between them with F7, and it is required, because mouse input 
 Q: What happens if I accidentally make a typo in the config?
 A: The code recognises the line as wrong, and skip it, so the rest of the file will get parsed, but that line in question will be treated like a comment line.
 
-Q: I want to bind <key> to <input>, but your code doesn't support <key>!
+Q: I want to bind <input> to <output>, but your code doesn't support <input>!
 A: Some keys are intentionally omitted, but if you read the bindings through, and you're sure it is not there and isn't one of the intentionally disabled ones, reach out to me by opening an issue on https://github.com/kalaposfos13/shadPS4 or on Discord (@kalaposfos). 
 )";
     }
     QString syntax() {
         return
-            R"(This is the full list of currently supported mouse and keyboard inputs, and how to use them.
+            R"(This is the full list of currently supported mouse, keyboard and controller inputs, and how to use them.
 Emulator-reserved keys: F1 through F12
 
 Syntax (aka how a line can look like):
 #Comment line
-<controller_button> = <key>, <key>, <key>;
-<controller_button> = <key>, <key>;
-<controller_button> = <key>;
+<controller_button> = <input>, <input>, <input>;
+<controller_button> = <input>, <input>;
+<controller_button> = <input>;
 
 Examples:
 #Interact
@@ -92,7 +92,7 @@ r2 = leftbutton, lshift;
 axis_left_y_minus = w;
 
 You can make a comment line by putting # as the first character.
-Whitespace doesn't matter, <button>=<key>; is just as valid as <button> = <key>;
+Whitespace doesn't matter, <output>=<input>; is just as valid as <output> = <input>;
 ';' at the ends of lines is also optional.
 )";
     }
@@ -118,14 +118,20 @@ Mouse:
     The following wheel inputs cannot be bound to axis input, only button:
         'mousewheelup', 'mousewheeldown', 'mousewheelleft', 'mousewheelright'
 
-Controller (this is not for controller remappings (yet), but rather the buttons and axes the above keys will be bound to):
+Controller:
+    The touchpad currently can't be rebound to anything else, but you can bind buttons to it.
+    If you have a controller that has different names for buttons, it will still work, just look up what are the equivalent names for that controller
     The same left-right rule still applies here.
     Buttons:
-        'triangle', 'circle', 'cross', 'square', 'l1', 'l2', 'l3',
+        'triangle', 'circle', 'cross', 'square', 'l1', 'l3',
         'options', touchpad', 'up', 'down', 'left', 'right'
-    Axes:
-        'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus'
-        'axis_right_x_plus', ..., 'axis_right_y_minus'
+    Axes if you bind them to a button input:
+        'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus',
+        'axis_right_x_plus', ..., 'axis_right_y_minus',
+        'l2'
+    Axes if you bind them to another axis input:
+        'axis_left_x' 'axis_left_y' 'axis_right_x' 'axis_right_y',
+        'l2'
 )";
     }
     QString special() {
@@ -146,7 +152,7 @@ You can find these here, with detailed comments, examples and suggestions for mo
         1st: mouse_deadzone_offset: this value should have a value between 0 and 1 (It gets clamped to that range anyway), with 0 being no offset and 1 being pushing the joystick to the max in the direction the mouse moved.
             This controls the minimum distance the joystick gets moved, when moving the mouse. If set to 0, it will emulate raw mouse input, which doesn't work very well due to deadzones preventing input if the movement is not large enough.
         2nd: mouse_speed: It's just a standard multiplier to the mouse input speed.
-            If you input a negative number, the axis directions get reversed.
+            If you input a negative number, the axis directions get reversed (Keep in mind that the offset can still push it back to positive, if it's big enough)
         3rd: mouse_speed_offset: This also should be in the 0 to 1 range, with 0 being no offset and 1 being offsetting to the max possible value.
             This is best explained through an example: Let's set mouse_deadzone to 0.5, and this to 0: This means that if we move the mousevery slowly, it still inputs a half-strength joystick input, and if we increase the speed, it would stay that way until we move faster than half the max speed. If we instead set this to 0.25, we now only need to move the mouse faster than the 0.5-0.25=0.25=quarter of the max speed, to get an increase in joystick speed. If we set it to 0.5, then even moving the mouse at 1 pixel per frame will result in a faster-than-minimum speed.
 
