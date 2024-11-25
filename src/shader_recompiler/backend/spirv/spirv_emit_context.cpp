@@ -409,11 +409,13 @@ void EmitContext::DefineInputs() {
         }
 #else
         const u32 num_attrs = runtime_info.hs_info.ls_stride >> 4;
-        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-        // The input vertex count isn't statically known, so make length 32 (what glslang does)
-        const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
-        input_attr_array = DefineInput(patch_array_type, 0);
-        Name(input_attr_array, "in_attrs");
+        if (num_attrs > 0) {
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+            input_attr_array = DefineInput(patch_array_type, 0);
+            Name(input_attr_array, "in_attrs");
+        }
 #endif
         break;
     }
@@ -436,11 +438,13 @@ void EmitContext::DefineInputs() {
         }
 #else
         const u32 num_attrs = runtime_info.vs_info.hs_output_cp_stride >> 4;
-        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-        // The input vertex count isn't statically known, so make length 32 (what glslang does)
-        const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
-        input_attr_array = DefineInput(patch_array_type, 0);
-        Name(input_attr_array, "in_attrs");
+        if (num_attrs > 0) {
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+            input_attr_array = DefineInput(patch_array_type, 0);
+            Name(input_attr_array, "in_attrs");
+        }
 #endif
 
         u32 patch_base_location = runtime_info.vs_info.hs_output_cp_stride >> 4;
@@ -479,9 +483,11 @@ void EmitContext::DefineOutputs() {
         }
         if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
             const u32 num_attrs = runtime_info.ls_info.ls_stride >> 4;
-            const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
-            output_attr_array = DefineOutput(type, 0);
-            Name(output_attr_array, "out_attrs");
+            if (num_attrs > 0) {
+                const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
+                output_attr_array = DefineOutput(type, 0);
+                Name(output_attr_array, "out_attrs");
+            }
         } else {
             for (u32 i = 0; i < IR::NumParams; i++) {
                 const IR::Attribute param{IR::Attribute::Param0 + i};
@@ -525,13 +531,15 @@ void EmitContext::DefineOutputs() {
             output_params[i] = {id, output_f32, F32[1], 4};
         }
 #else
-        const u32 num_attrs = runtime_info.hs_info.hs_cp_stride >> 4;
-        const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-        // The input vertex count isn't statically known, so make length 32 (what glslang does)
-        const Id patch_array_type{
-            TypeArray(per_vertex_type, ConstU32(runtime_info.hs_info.output_control_points))};
-        output_attr_array = DefineOutput(patch_array_type, 0);
-        Name(output_attr_array, "out_attrs");
+        const u32 num_attrs = runtime_info.hs_info.hs_output_cp_stride >> 4;
+        if (num_attrs > 0) {
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            const Id patch_array_type{
+                TypeArray(per_vertex_type, ConstU32(runtime_info.hs_info.output_control_points))};
+            output_attr_array = DefineOutput(patch_array_type, 0);
+            Name(output_attr_array, "out_attrs");
+        }
 #endif
 
         u32 patch_base_location = runtime_info.hs_info.hs_output_cp_stride >> 4;
