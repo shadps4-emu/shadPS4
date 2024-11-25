@@ -298,7 +298,7 @@ public:
     }
 
     void ResetUpdate();
-    void AddUpdate(bool pressed, u32 param = 0);
+    void AddUpdate(bool pressed, bool analog, u32 param = 0);
     void FinalizeUpdate();
 };
 class BindingConnection {
@@ -326,8 +326,6 @@ public:
         return false;
     }
 };
-
-bool IsInputActive(BindingConnection& connection);
 
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.

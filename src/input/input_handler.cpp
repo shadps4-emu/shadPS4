@@ -411,11 +411,16 @@ void ControllerOutput::ResetUpdate() {
     new_button_state = false;
     new_param = 0;
 }
-void ControllerOutput::AddUpdate(bool pressed, u32 param) {
+void ControllerOutput::AddUpdate(bool pressed, bool analog, u32 param) {
     state_changed = true;
     if (button != 0) {
-        new_button_state |= pressed;
-        new_param = param;
+        if (analog) {
+            new_button_state |= abs((s32)param) > 0x40;
+        } else {
+            new_button_state |= pressed;
+            new_param = param;
+        }
+
     } else if (axis != Axis::AxisMax) {
         switch (axis) {
         case Axis::TriggerLeft:
@@ -536,7 +541,7 @@ bool UpdatePressedKeys(u32 value, bool is_pressed) {
 }
 // Check if a given binding's all keys are currently active.
 // For now it also extracts the analog inputs' parameters.
-bool IsInputActive(BindingConnection& connection) {
+void IsInputActive(BindingConnection& connection, bool& active, bool& analog) {
     InputBinding i = connection.binding;
     // Extract keys from InputBinding and ignore unused (0) or toggled keys
     std::list<u32> input_keys = {i.key1, i.key2, i.key3};
@@ -550,7 +555,8 @@ bool IsInputActive(BindingConnection& connection) {
     }
     if (input_keys.empty()) {
         LOG_DEBUG(Input, "No actual inputs to check, returning true");
-        return true;
+        active = true;
+        return;
     }
 
     // Iterator for pressed_keys, starting from the beginning
@@ -581,16 +587,17 @@ bool IsInputActive(BindingConnection& connection) {
             for (auto rev_it = --pressed_keys.end(); (rev_it->first & 0x80000000) != 0; rev_it--) {
                 if ((rev_it->first & 0xF00FFFFF) == (key & 0xF00FFFFF)) {
                     connection.parameter = (u32)((s32)((rev_it->first & 0x0FF00000) >> 20) - 128);
-                    LOG_DEBUG(Input, "Extracted the following param: {:X} from {:X}",
-                              (s32)connection.parameter, rev_it->first);
+                    // LOG_DEBUG(Input, "Extracted the following param: {:X} from {:X}",
+                    //          (s32)connection.parameter, rev_it->first);
                     key_found = true;
+                    analog = true;
                     flags_to_set.push_back(&rev_it->second);
                     break;
                 }
             }
         }
         if (!key_found) {
-            return false;
+            return;
         }
     }
 
@@ -599,14 +606,15 @@ bool IsInputActive(BindingConnection& connection) {
         is_fully_blocked &= *flag;
     }
     if (is_fully_blocked) {
-        return false;
+        return;
     }
     for (bool* flag : flags_to_set) {
         *flag = true;
     }
 
     LOG_DEBUG(Input, "Input found: {}", i.ToString());
-    return true; // All keys are active
+    active = true;
+    return; // All keys are active
 }
 
 void ActivateOutputsFromInputs() {
@@ -622,8 +630,9 @@ void ActivateOutputsFromInputs() {
         it.ResetUpdate();
     }
     for (auto& it : connections) {
-        bool active = IsInputActive(it);
-        it.output->AddUpdate(active, it.parameter);
+        bool active = false, analog_input_detected = false;
+        IsInputActive(it, active, analog_input_detected);
+        it.output->AddUpdate(active, analog_input_detected, it.parameter);
     }
     for (auto& it : output_array) {
         it.FinalizeUpdate();
