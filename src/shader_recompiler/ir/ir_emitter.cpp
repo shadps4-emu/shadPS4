@@ -282,6 +282,16 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
     Inst(Opcode::SetAttribute, attribute, value, Imm32(comp));
 }
 
+F32 IREmitter::GetTessGenericAttribute(const U32& vertex_index, const U32& attr_index,
+                                       const U32& comp_index) {
+    return Inst<F32>(IR::Opcode::GetTessGenericAttribute, vertex_index, attr_index, comp_index);
+}
+
+void IREmitter::SetTcsGenericAttribute(const F32& value, const U32& attr_index,
+                                       const U32& comp_index) {
+    Inst(Opcode::SetTcsGenericAttribute, value, attr_index, comp_index);
+}
+
 F32 IREmitter::GetPatch(Patch patch) {
     return Inst<F32>(Opcode::GetPatch, patch);
 }

@@ -87,6 +87,10 @@ public:
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
+    [[nodiscard]] F32 GetTessGenericAttribute(const U32& vertex_index, const U32& attr_index,
+                                              const U32& comp_index);
+    void SetTcsGenericAttribute(const F32& value, const U32& attr_index, const U32& comp_index);
+
     [[nodiscard]] F32 GetPatch(Patch patch);
     void SetPatch(Patch patch, const F32& value);
 

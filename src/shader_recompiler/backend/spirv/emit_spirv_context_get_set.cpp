@@ -346,14 +346,6 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
                                        ctx.ConstU32(attr_index), ctx.ConstU32(element));
         ctx.OpStore(pointer, value);
         return;
-    } else if (ctx.l_stage == LogicalStage::TessellationControl) {
-        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
-        Id pointer = ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
-                                       ctx.OpLoad(ctx.U32[1], ctx.invocation_id),
-                                       ctx.ConstU32(attr_index), ctx.ConstU32(element));
-        ctx.OpStore(pointer, value);
-        return;
     }
 
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
@@ -363,6 +355,19 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     } else {
         ctx.OpStore(pointer, value);
     }
+}
+
+Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
+    UNREACHABLE();
+}
+
+void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index) {
+    // Implied vertex index is invocation_id
+    const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+    Id pointer =
+        ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), attr_index, comp_index);
+    ctx.OpStore(pointer, value);
 }
 
 Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {

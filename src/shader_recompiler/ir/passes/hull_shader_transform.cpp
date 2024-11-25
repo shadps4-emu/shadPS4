@@ -560,10 +560,11 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                                            AttributeRegion output_kind) {
                     const IR::F32 data = ir.BitCast<IR::F32, IR::U32>(value);
                     if (output_kind == AttributeRegion::OutputCP) {
-                        const u32 param = offset_dw >> 2;
+                        const u32 attr_no = offset_dw >> 2;
                         const u32 comp = offset_dw & 3;
                         // Invocation ID array index is implicit, handled by SPIRV backend
-                        ir.SetAttribute(IR::Attribute::Param0 + param, data, comp);
+                        // ir.SetAttribute(IR::Attribute::Param0 + param, data, comp);
+                        ir.SetTcsGenericAttribute(data, ir.Imm32(attr_no), ir.Imm32(comp));
                     } else {
                         ASSERT(output_kind == AttributeRegion::PatchConst);
                         ir.SetPatch(IR::PatchGeneric(offset_dw), data);
@@ -638,12 +639,12 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
         ASSERT(runtime_info.hs_info.ls_stride % 16 == 0);
         u32 num_attributes = runtime_info.hs_info.ls_stride / 16;
         const auto invocation_id = ir.GetAttributeU32(IR::Attribute::InvocationId);
-        for (u32 i = 0; i < num_attributes; i++) {
-            for (u32 j = 0; j < 4; j++) {
+        for (u32 attr_no = 0; attr_no < num_attributes; attr_no++) {
+            for (u32 comp = 0; comp < 4; comp++) {
                 const auto input_attr =
-                    ir.GetAttribute(IR::Attribute::Param0 + i, j, invocation_id);
+                    ir.GetAttribute(IR::Attribute::Param0 + attr_no, comp, invocation_id);
                 // InvocationId is implicit index for output control point writes
-                ir.SetAttribute(IR::Attribute::Param0 + i, input_attr, j);
+                ir.SetTcsGenericAttribute(input_attr, ir.Imm32(attr_no), ir.Imm32(comp));
             }
         }
         // TODO: wrap rest of program with if statement when passthrough?
