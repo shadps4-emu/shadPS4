@@ -249,6 +249,7 @@ public:
         menuSettings->setObjectName("menuSettings");
         menuUtils = new QMenu(menuSettings);
         menuUtils->setObjectName("menuUtils");
+        menuUtils->setIcon(QIcon(":images/utils_icon.png"));
         menuThemes = new QMenu(menuView);
         menuThemes->setObjectName("menuThemes");
         menuThemes->setIcon(QIcon(":images/themes_icon.png"));
