@@ -43,16 +43,20 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
-void TextureCache::InvalidateMemory(VAddr addr, VAddr addr_aligned, size_t size) {
+void TextureCache::InvalidateMemory(VAddr addr, VAddr page_addr, size_t size) {
     std::scoped_lock lock{mutex};
-    ForEachImageInRegion(addr_aligned, size, [&](ImageId image_id, Image& image) {
-        const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        const auto page_end = addr_aligned + size;
-        if (addr < image.info.guest_address) {
+    ForEachImageInRegion(page_addr, size, [&](ImageId image_id, Image& image) {
+        if (addr < image.cpu_addr) {
             // This page access may or may not modify the image.
             // We should not mark it as dirty now, if it really was modified,
             // it will receive more invalidations on subsequent pages.
-            if (image_end < page_end) {
+            const auto page_end = page_addr + size;
+            if (image.cpu_addr_end <= page_end) {
+                if (image.hash == 0) {
+                    // Initialize hash
+                    const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+                    image.hash = XXH3_64bits(addr, image.info.guest_size_bytes);
+                }
                 // Image ends on this page so it can not receive any more invalidations.
                 // We will check it's hash later to see if it really was modified.
                 image.flags |= ImageFlagBits::MaybeCpuDirty;
@@ -64,7 +68,7 @@ void TextureCache::InvalidateMemory(VAddr addr, VAddr addr_aligned, size_t size)
             return;
         }
 
-        if (addr < image_end) {
+        if (addr < image.cpu_addr_end) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuDirty;
         }
