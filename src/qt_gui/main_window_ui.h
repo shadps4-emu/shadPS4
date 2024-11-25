@@ -110,15 +110,14 @@ public:
         setIconSizeLargeAct->setCheckable(true);
         setlistModeListAct = new QAction(MainWindow);
         setlistModeListAct->setObjectName("setlistModeListAct");
-        setlistModeListAct->setCheckable(true);
-        setlistModeListAct->setChecked(true);
         setlistModeListAct->setIcon(QIcon(":images/list_icon.png"));
+        setlistModeListAct->setCheckable(true);
         setlistModeGridAct = new QAction(MainWindow);
         setlistModeGridAct->setObjectName("setlistModeGridAct");
-        setlistModeGridAct->setCheckable(true);
         setlistModeGridAct->setIcon(QIcon(":images/grid_icon.png"));
+        setlistModeGridAct->setCheckable(true);
         setlistElfAct = new QAction(MainWindow);
-        setlistElfAct->setObjectName("setlistModeGridAct");
+        setlistElfAct->setObjectName("setlistElfAct");
         setlistElfAct->setCheckable(true);
         gameInstallPathAct = new QAction(MainWindow);
         gameInstallPathAct->setObjectName("gameInstallPathAct");
