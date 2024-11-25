@@ -49,13 +49,19 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
 
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto& info{ctx.output_params.at(index)};
-        ASSERT(info.num_components > 0);
-        if (info.num_components == 1) {
-            return info.id;
+        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
+        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+            return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
+                                     ctx.ConstU32(element));
         } else {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+            const auto& info{ctx.output_params.at(attr_index)};
+            ASSERT(info.num_components > 0);
+            if (info.num_components == 1) {
+                return info.id;
+            } else {
+                return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+            }
         }
     }
     if (IR::IsMrt(attr)) {
@@ -86,9 +92,13 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
 
 std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto& info{ctx.output_params.at(index)};
-        return {info.component_type, info.is_integer};
+        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+            return {ctx.F32[1], false};
+        } else {
+            const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
+            const auto& info{ctx.output_params.at(index)};
+            return {info.component_type, info.is_integer};
+        }
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
@@ -220,22 +230,12 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
         UNREACHABLE();
     }
 
-    // TODO refactor
-    if (ctx.l_stage == LogicalStage::TessellationControl ||
-        ctx.l_stage == LogicalStage::TessellationEval) {
-        if (IR::IsTessCoord(attr)) {
-            const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
-            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            const auto pointer{
-                ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
-            return ctx.OpLoad(ctx.F32[1], pointer);
-        }
-        ASSERT(IR::IsParam(attr));
-        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-        return ctx.OpLoad(ctx.F32[1],
-                          ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array, index,
-                                            ctx.ConstU32(attr_index), ctx.ConstU32(comp)));
+    if (IR::IsTessCoord(attr)) {
+        const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
+        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+        const auto pointer{
+            ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
+        return ctx.OpLoad(ctx.F32[1], pointer);
     }
 
     if (IR::IsParam(attr)) {
@@ -337,17 +337,6 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
         return;
     }
-
-    // TODO refactor
-    if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
-        Id pointer = ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
-                                       ctx.ConstU32(attr_index), ctx.ConstU32(element));
-        ctx.OpStore(pointer, value);
-        return;
-    }
-
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
     const auto component_type{OutputAttrComponentType(ctx, attr)};
     if (component_type.second) {
@@ -358,7 +347,9 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
 }
 
 Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
-    UNREACHABLE();
+    const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+    return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array,
+                                                    vertex_index, attr_index, comp_index));
 }
 
 void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index) {

@@ -593,15 +593,14 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 case AttributeRegion::InputCP: {
                     u32 offset_dw =
                         (address_info.attribute_byte_offset % runtime_info.hs_info.ls_stride) >> 2;
-                    const u32 param = offset_dw >> 2;
+                    const u32 attr_no = offset_dw >> 2;
                     const u32 comp = offset_dw & 3;
-                    IR::Value control_point_index =
-                        ir.IDiv(IR::U32{address_info.offset_in_patch},
-                                ir.Imm32(runtime_info.hs_info.ls_stride));
-                    IR::Value get_attrib =
-                        ir.GetAttribute(IR::Attribute::Param0 + param, comp, control_point_index);
-                    get_attrib = ir.BitCast<IR::U32>(IR::F32{get_attrib});
-                    inst.ReplaceUsesWithAndRemove(get_attrib);
+                    IR::U32 control_point_index = ir.IDiv(IR::U32{address_info.offset_in_patch},
+                                                          ir.Imm32(runtime_info.hs_info.ls_stride));
+                    IR::Value attr_read = ir.GetTessGenericAttribute(
+                        control_point_index, ir.Imm32(attr_no), ir.Imm32(comp));
+                    attr_read = ir.BitCast<IR::U32>(IR::F32{attr_read});
+                    inst.ReplaceUsesWithAndRemove(attr_read);
                     break;
                 }
                 case AttributeRegion::OutputCP: {
@@ -641,10 +640,10 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
         const auto invocation_id = ir.GetAttributeU32(IR::Attribute::InvocationId);
         for (u32 attr_no = 0; attr_no < num_attributes; attr_no++) {
             for (u32 comp = 0; comp < 4; comp++) {
-                const auto input_attr =
-                    ir.GetAttribute(IR::Attribute::Param0 + attr_no, comp, invocation_id);
+                IR::F32 attr_read =
+                    ir.GetTessGenericAttribute(invocation_id, ir.Imm32(attr_no), ir.Imm32(comp));
                 // InvocationId is implicit index for output control point writes
-                ir.SetTcsGenericAttribute(input_attr, ir.Imm32(attr_no), ir.Imm32(comp));
+                ir.SetTcsGenericAttribute(attr_read, ir.Imm32(attr_no), ir.Imm32(comp));
             }
         }
         // TODO: wrap rest of program with if statement when passthrough?
@@ -677,15 +676,15 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     u32 offset_dw = (address_info.attribute_byte_offset %
                                      runtime_info.vs_info.hs_output_cp_stride) >>
                                     2;
-                    const u32 param = offset_dw >> 2;
+                    const u32 attr_no = offset_dw >> 2;
                     const u32 comp = offset_dw & 3;
-                    IR::Value control_point_index =
+                    IR::U32 control_point_index =
                         ir.IDiv(IR::U32{address_info.offset_in_patch},
                                 ir.Imm32(runtime_info.vs_info.hs_output_cp_stride));
-                    IR::Value get_attrib =
-                        ir.GetAttribute(IR::Attribute::Param0 + param, comp, control_point_index);
-                    get_attrib = ir.BitCast<IR::U32>(IR::F32{get_attrib});
-                    inst.ReplaceUsesWithAndRemove(get_attrib);
+                    IR::Value attr_read = ir.GetTessGenericAttribute(
+                        control_point_index, ir.Imm32(attr_no), ir.Imm32(comp));
+                    attr_read = ir.BitCast<IR::U32>(IR::F32{attr_read});
+                    inst.ReplaceUsesWithAndRemove(attr_read);
                     break;
                 }
                 case AttributeRegion::PatchConst: {
