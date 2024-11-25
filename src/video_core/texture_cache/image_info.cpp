@@ -268,10 +268,10 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     num_samples = 1 << buffer.attrib.num_fragments_log2;
     num_bits = NumBits(buffer.info.format);
+    type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
-    type = size.height == 1 ? vk::ImageType::e1D : vk::ImageType::e2D;
     pitch = buffer.Pitch();
     resources.layers = buffer.NumSlices();
     meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
