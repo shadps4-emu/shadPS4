@@ -29,9 +29,12 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     info.UpdateSize();
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
-    const vk::Image& null_image = slot_images[null_id].image;
+    auto& img = slot_images[null_id];
+    const vk::Image& null_image = img.image;
     Vulkan::SetObjectName(instance.GetDevice(), null_image, "Null Image");
-    slot_images[null_id].flags = ImageFlagBits::Tracked;
+    img.flags = ImageFlagBits::Empty;
+    img.track_addr = img.info.guest_address;
+    img.track_addr_end = img.info.guest_address + img.info.guest_size_bytes;
 
     ImageViewInfo view_info;
     const auto null_view_id =
@@ -43,37 +46,43 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
+void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
+    if (image.hash == 0) {
+        // Initialize hash
+        const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+        image.hash = XXH3_64bits(addr, image.info.guest_size_bytes);
+    }
+    image.flags |= ImageFlagBits::MaybeCpuDirty;
+    UntrackImage(image_id);
+}
+
 void TextureCache::InvalidateMemory(VAddr addr, VAddr page_addr, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(page_addr, size, [&](ImageId image_id, Image& image) {
-        if (addr < image.cpu_addr) {
-            // This page access may or may not modify the image.
-            // We should not mark it as dirty now, if it really was modified,
-            // it will receive more invalidations on subsequent pages.
-            const auto page_end = page_addr + size;
-            if (image.cpu_addr_end <= page_end) {
-                if (image.hash == 0) {
-                    // Initialize hash
-                    const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-                    image.hash = XXH3_64bits(addr, image.info.guest_size_bytes);
-                }
-                // Image ends on this page so it can not receive any more invalidations.
-                // We will check it's hash later to see if it really was modified.
-                image.flags |= ImageFlagBits::MaybeCpuDirty;
-                UntrackImage(image_id);
-            } else {
-                // Remove tracking from this page only.
-                UntrackImageHead(image_id);
-            }
-            return;
-        }
-
-        if (addr < image.cpu_addr_end) {
-            // Ensure image is reuploaded when accessed again.
+        const auto image_begin = image.info.guest_address;
+        const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
+        const auto page_end = page_addr + size;
+        if (image_begin <= addr && addr < image_end) {
+            // This image was definitely accessed by this page fault.
+            // Untrack image, so the range is unprotected and the guest can write freely
             image.flags |= ImageFlagBits::CpuDirty;
+            UntrackImage(image_id);
+        } else if (page_end < image_end) {
+            // This page access may or may not modify the image.
+            // We should not mark it as dirty now. If it really was modified
+            // it will receive more invalidations on its other pages.
+            // Remove tracking from this page only.
+            UntrackImageHead(image_id);
+        } else if (image_begin < page_addr) {
+            // This page access does not modify the image but the page should be untracked.
+            // We should not mark this image as dirty now. If it really was modified
+            // it will receive more invalidations on its other pages.
+            UntrackImageTail(image_id);
+        } else {
+            // Image begins and ends on this page so it can not receive any more invalidations.
+            // We will check it's hash later to see if it really was modified.
+            MarkAsMaybeDirty(image_id, image);
         }
-        // Untrack image, so the range is unprotected and the guest can write freely.
-        UntrackImage(image_id);
     });
 }
 
@@ -443,9 +452,12 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         False(image.flags & ImageFlagBits::CpuDirty)) {
         // The image size should be less than page size to be considered MaybeCpuDirty
         // So this calculation should be very uncommon and reasonably fast
-        ASSERT(image.info.guest_size_bytes <= 4_KB);
-        const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-        const u64 hash = XXH3_64bits(addr, image.info.guest_size_bytes);
+        // For now we'll just check up to 64 first pixels
+        const auto addr = std::bit_cast<u8*>(image.info.guest_address);
+        const auto w = std::min(image.info.size.width, u32(8));
+        const auto h = std::min(image.info.size.height, u32(8));
+        const auto size = w * h * image.info.num_bits / 8;
+        const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
             return;
@@ -539,7 +551,7 @@ void TextureCache::RegisterImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
-    ForEachPage(image.cpu_addr, image.info.guest_size_bytes,
+    ForEachPage(image.info.guest_address, image.info.guest_size_bytes,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
 }
 
@@ -548,7 +560,7 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already unregistered image");
     image.flags &= ~ImageFlagBits::Registered;
-    ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
+    ForEachPage(image.info.guest_address, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
         if (page_it == nullptr) {
             UNREACHABLE_MSG("Unregistering unregistered page=0x{:x}", page << PageShift);
@@ -566,62 +578,106 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 
 void TextureCache::TrackImage(ImageId image_id) {
     auto& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::Tracked)) {
+    const auto image_begin = image.info.guest_address;
+    const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
+    if (image_begin == image.track_addr && image_end == image.track_addr_end) {
         return;
     }
-    if (True(image.flags & ImageFlagBits::TailTracked)) {
-        // Re-track only image head
-        TrackImageHead(image_id);
-    } else {
+
+    if (!image.IsTracked()) {
         // Re-track the whole image
-        image.flags |= ImageFlagBits::Tracked;
-        tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
+        image.track_addr = image_begin;
+        image.track_addr_end = image_end;
+        tracker.UpdatePagesCachedCount(image_begin, image.info.guest_size_bytes, 1);
+    } else {
+        if (image_begin < image.track_addr) {
+            TrackImageHead(image_id);
+        }
+        if (image.track_addr_end < image_end) {
+            TrackImageTail(image_id);
+        }
     }
 }
 
 void TextureCache::TrackImageHead(ImageId image_id) {
     auto& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::Tracked)) {
+    const auto image_begin = image.info.guest_address;
+    if (image_begin == image.track_addr) {
         return;
     }
-    ASSERT(True(image.flags & ImageFlagBits::TailTracked));
-    image.flags |= ImageFlagBits::Tracked;
-    image.flags &= ~ImageFlagBits::TailTracked;
-    const auto size = tracker.GetNextPageAddr(image.cpu_addr) - image.cpu_addr;
-    tracker.UpdatePagesCachedCount(image.cpu_addr, size, 1);
+    ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
+    const auto size = image.track_addr - image_begin;
+    image.track_addr = image_begin;
+    tracker.UpdatePagesCachedCount(image_begin, size, 1);
+}
+
+void TextureCache::TrackImageTail(ImageId image_id) {
+    auto& image = slot_images[image_id];
+    const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
+    if (image_end == image.track_addr_end) {
+        return;
+    }
+    ASSERT(image.track_addr_end != 0 && image.track_addr_end < image_end);
+    const auto addr = image.track_addr_end;
+    const auto size = image_end - image.track_addr_end;
+    image.track_addr_end = image_end;
+    tracker.UpdatePagesCachedCount(addr, size, 1);
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
     auto& image = slot_images[image_id];
-    ASSERT(!True(image.flags & ImageFlagBits::Tracked) ||
-           !True(image.flags & ImageFlagBits::TailTracked));
-    if (True(image.flags & ImageFlagBits::Tracked)) {
-        image.flags &= ~ImageFlagBits::Tracked;
-        tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
+    if (!image.IsTracked()) {
+        return;
     }
-    if (True(image.flags & ImageFlagBits::TailTracked)) {
-        image.flags &= ~ImageFlagBits::TailTracked;
-        const auto addr = tracker.GetNextPageAddr(image.cpu_addr);
-        const auto size = image.info.guest_size_bytes - (addr - image.cpu_addr);
+    const auto addr = image.track_addr;
+    const auto size = image.track_addr_end - image.track_addr;
+    image.track_addr = 0;
+    image.track_addr_end = 0;
+    if (size != 0) {
         tracker.UpdatePagesCachedCount(addr, size, -1);
     }
 }
 
 void TextureCache::UntrackImageHead(ImageId image_id) {
     auto& image = slot_images[image_id];
-    if (False(image.flags & ImageFlagBits::Tracked)) {
+    const auto image_begin = image.info.guest_address;
+    if (!image.IsTracked() || image_begin < image.track_addr) {
         return;
     }
-    image.flags |= ImageFlagBits::TailTracked;
-    image.flags &= ~ImageFlagBits::Tracked;
-    const auto size = tracker.GetNextPageAddr(image.cpu_addr) - image.cpu_addr;
-    tracker.UpdatePagesCachedCount(image.cpu_addr, size, -1);
+    const auto addr = tracker.GetNextPageAddr(image_begin);
+    const auto size = addr - image_begin;
+    image.track_addr = addr;
+    if (image.track_addr == image.track_addr_end) {
+        // This image spans only 2 pages and both are modified,
+        // but the image itself was not directly affected.
+        // Cehck its hash later.
+        MarkAsMaybeDirty(image_id, image);
+    }
+    tracker.UpdatePagesCachedCount(image_begin, size, -1);
+}
+
+void TextureCache::UntrackImageTail(ImageId image_id) {
+    auto& image = slot_images[image_id];
+    const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
+    if (!image.IsTracked() || image.track_addr_end < image_end) {
+        return;
+    }
+    ASSERT(image.track_addr_end != 0);
+    const auto addr = tracker.GetPageAddr(image_end);
+    const auto size = image_end - addr;
+    image.track_addr_end = addr;
+    if (image.track_addr == image.track_addr_end) {
+        // This image spans only 2 pages and both are modified,
+        // but the image itself was not directly affected.
+        // Cehck its hash later.
+        MarkAsMaybeDirty(image_id, image);
+    }
+    tracker.UpdatePagesCachedCount(addr, size, -1);
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {
     Image& image = slot_images[image_id];
-    ASSERT_MSG(False(image.flags & ImageFlagBits::Tracked), "Image was not untracked");
-    ASSERT_MSG(False(image.flags & ImageFlagBits::TailTracked), "Image was not untracked");
+    ASSERT_MSG(!image.IsTracked(), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
 
     // Remove any registered meta areas.

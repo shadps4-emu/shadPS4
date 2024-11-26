@@ -22,13 +22,12 @@ VK_DEFINE_HANDLE(VmaAllocator)
 namespace VideoCore {
 
 enum ImageFlagBits : u32 {
+    Empty = 0,
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
-    Tracked = 1 << 4,        ///< Writes and reads are being hooked from the CPU
-    TailTracked = 1 << 5,    ///< Writes and reads to the image tail are being hooked from the CPU
     Registered = 1 << 6,     ///< True when the image is registered
     Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
     MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
@@ -80,7 +79,9 @@ struct Image {
 
     [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
         const VAddr overlap_end = overlap_cpu_addr + overlap_size;
-        return cpu_addr < overlap_end && overlap_cpu_addr < cpu_addr_end;
+        const auto image_addr = info.guest_address;
+        const auto image_end = info.guest_address + info.guest_size_bytes;
+        return image_addr < overlap_end && overlap_cpu_addr < image_end;
     }
 
     ImageViewId FindView(const ImageViewInfo& info) const {
@@ -101,14 +102,18 @@ struct Image {
     void CopyImage(const Image& image);
     void CopyMip(const Image& image, u32 mip);
 
+    bool IsTracked() {
+        return track_addr != 0 && track_addr_end != 0;
+    }
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
     UniqueImage image;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     ImageFlagBits flags = ImageFlagBits::Dirty;
-    VAddr cpu_addr = 0;
-    VAddr cpu_addr_end = 0;
+    VAddr track_addr = 0;
+    VAddr track_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
 

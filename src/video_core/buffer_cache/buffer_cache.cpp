@@ -635,7 +635,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
     boost::container::small_vector<vk::BufferImageCopy, 8> copies;
-    u32 offset = buffer.Offset(image.cpu_addr);
+    u32 offset = buffer.Offset(image.info.guest_address);
     const u32 num_layers = image.info.resources.layers;
     const u32 max_offset = offset + size;
     for (u32 m = 0; m < image.info.resources.levels; m++) {
