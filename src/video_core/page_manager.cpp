@@ -114,8 +114,8 @@ struct PageManager::Impl {
 
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
-            const VAddr addr_page = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_page, PAGESIZE);
+            const VAddr addr_page = GetPageAddr(addr);
+            rasterizer->InvalidateMemory(addr, addr_page, PAGESIZE);
         }
     }
 
@@ -157,8 +157,8 @@ struct PageManager::Impl {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
         const bool is_write = Common::IsWriteError(context);
         if (is_write && owned_ranges.find(addr) != owned_ranges.end()) {
-            const VAddr addr_aligned = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);
+            const VAddr addr_aligned = GetPageAddr(addr);
+            rasterizer->InvalidateMemory(addr, addr_aligned, PAGESIZE);
             return true;
         }
         return false;
@@ -173,6 +173,14 @@ PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
     : impl{std::make_unique<Impl>(rasterizer_)}, rasterizer{rasterizer_} {}
 
 PageManager::~PageManager() = default;
+
+VAddr PageManager::GetPageAddr(VAddr addr) {
+    return Common::AlignDown(addr, PAGESIZE);
+}
+
+VAddr PageManager::GetNextPageAddr(VAddr addr) {
+    return Common::AlignUp(addr + 1, PAGESIZE);
+}
 
 void PageManager::OnGpuMap(VAddr address, size_t size) {
     impl->OnMap(address, size);

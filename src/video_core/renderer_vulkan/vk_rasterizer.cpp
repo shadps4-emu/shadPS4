@@ -792,9 +792,9 @@ u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
     return value;
 }
 
-void Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
-    buffer_cache.InvalidateMemory(addr, size);
-    texture_cache.InvalidateMemory(addr, size);
+void Rasterizer::InvalidateMemory(VAddr addr, VAddr addr_aligned, u64 size) {
+    buffer_cache.InvalidateMemory(addr_aligned, size);
+    texture_cache.InvalidateMemory(addr, addr_aligned, size);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {

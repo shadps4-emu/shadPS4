@@ -95,7 +95,7 @@ public:
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr address, size_t size);
+    void InvalidateMemory(VAddr addr, VAddr page_addr, size_t size);
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
@@ -242,9 +242,15 @@ private:
 
     /// Track CPU reads and writes for image
     void TrackImage(ImageId image_id);
+    void TrackImageHead(ImageId image_id);
+    void TrackImageTail(ImageId image_id);
 
     /// Stop tracking CPU reads and writes for image
     void UntrackImage(ImageId image_id);
+    void UntrackImageHead(ImageId image_id);
+    void UntrackImageTail(ImageId image_id);
+
+    void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
