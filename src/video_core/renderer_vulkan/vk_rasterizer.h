@@ -46,7 +46,7 @@ public:
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
-    void InvalidateMemory(VAddr addr, u64 size);
+    void InvalidateMemory(VAddr addr, VAddr addr_aligned, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 

@@ -144,8 +144,7 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
              const ImageInfo& info_)
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
-      image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{info.guest_address},
-      cpu_addr_end{cpu_addr + info.guest_size_bytes} {
+      image{instance->GetDevice(), instance->GetAllocator()} {
     mip_hashes.resize(info.resources.levels);
     ASSERT(info.pixel_format != vk::Format::eUndefined);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
