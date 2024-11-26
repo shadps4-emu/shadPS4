@@ -165,7 +165,7 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
     setupResult.bufferInfo = *hostBufferInfo;
     setupResult.hostFree = hostFree;
     //setupResult.extraSystemData = 
-    setupResult.systemListHead = systemList;
+    //setupResult.systemList = systemList;
 
     OrbisNgs2Handle systemHandle = setupResult.systemHandle;
     if (hostBufferInfo->hostBufferSize >= requiredBufferSize) {
