@@ -26,7 +26,7 @@ private:
     void updateContentHeight() {
         int contentHeight = contentBrowser->document()->size().height();
         contentBrowser->setMinimumHeight(contentHeight + 5);
-        contentBrowser->setMaximumHeight(contentHeight + 5);
+        contentBrowser->setMaximumHeight(contentHeight + 50);
     }
 };
 
@@ -66,10 +66,10 @@ Q: How do I change between mouse and controller joystick input, and why is it ev
 A: You can switch between them with F7, and it is required, because mouse input is done with polling, which means mouse movement is checked every frame, and if it didn't move, the code manually sets the emulator's virtual controller to 0 (back to the center), even if other input devices would update it.
 
 Q: What happens if I accidentally make a typo in the config?
-A: The code recognises the line as wrong, and skip it, so the rest of the file will get parsed, but that line in question will be treated like a comment line.
+A: The code recognises the line as wrong, and skip it, so the rest of the file will get parsed, but that line in question will be treated like a comment line. You can find these lines in the log, if you search for 'input_handler'.
 
 Q: I want to bind <input> to <output>, but your code doesn't support <input>!
-A: Some keys are intentionally omitted, but if you read the bindings through, and you're sure it is not there and isn't one of the intentionally disabled ones, reach out to me by opening an issue on https://github.com/kalaposfos13/shadPS4 or on Discord (@kalaposfos). 
+A: Some keys are intentionally omitted, but if you read the bindings through, and you're sure it is not there and isn't one of the intentionally disabled ones, open an issue on https://github.com/shadps4-emu/shadPS4.
 )";
     }
     QString syntax() {

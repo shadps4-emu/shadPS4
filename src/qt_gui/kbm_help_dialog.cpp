@@ -92,6 +92,7 @@ HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
 
     // Scroll area wrapping the container
     QScrollArea* scrollArea = new QScrollArea;
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollArea->setWidgetResizable(true);
     scrollArea->setWidget(containerWidget);
 

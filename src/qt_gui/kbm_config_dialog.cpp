@@ -27,7 +27,7 @@ HelpDialog* helpDialog;
 
 EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
-    setWindowTitle("Edit Config File");
+    setWindowTitle("Edit Keyboard + Mouse and Controller input bindings");
     resize(600, 400);
 
     // Create the editor widget
