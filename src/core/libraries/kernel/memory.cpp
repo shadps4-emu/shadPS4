@@ -528,6 +528,8 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
     LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelAvailableFlexibleMemorySize);
+    LIB_FUNCTION("aNz11fnnzi4", "libkernel_avlfmem", 1, "libkernel", 1, 1,
+                 sceKernelAvailableFlexibleMemorySize);
     LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
     LIB_FUNCTION("p5EcQeEeJAE", "libkernel", 1, "libkernel", 1, 1,
                  _sceKernelRtldSetApplicationHeapAPI);

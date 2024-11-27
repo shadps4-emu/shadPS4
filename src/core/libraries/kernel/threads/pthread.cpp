@@ -493,6 +493,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
+    LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setprio);
+    LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 
     // Posix-Kernel
