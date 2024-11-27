@@ -30,8 +30,9 @@ private:
     bool hasUnsavedChanges();    // Checks for unsaved changes
 
 private slots:
-    void onSaveClicked();                             // Save button slot
-    void onCancelClicked();                           // Slot for handling cancel button
-    void onHelpClicked();                             // Slot for handling help button
+    void onSaveClicked();   // Save button slot
+    void onCancelClicked(); // Slot for handling cancel button
+    void onHelpClicked();   // Slot for handling help button
+    void onResetToDefaultClicked();
     void onGameSelectionChanged(const QString& game); // Slot for game selection changes
 };

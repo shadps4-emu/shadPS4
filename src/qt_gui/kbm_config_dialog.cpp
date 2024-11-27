@@ -4,6 +4,7 @@
 #include "kbm_config_dialog.h"
 #include "kbm_help_dialog.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include "common/config.h"
@@ -53,6 +54,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     QPushButton* saveButton = new QPushButton("Save", this);
     QPushButton* cancelButton = new QPushButton("Cancel", this);
     QPushButton* helpButton = new QPushButton("Help", this);
+    QPushButton* defaultButton = new QPushButton("Default", this);
 
     // Layout for the game selection and buttons
     QHBoxLayout* topLayout = new QHBoxLayout();
@@ -60,6 +62,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     topLayout->addStretch();
     topLayout->addWidget(saveButton);
     topLayout->addWidget(cancelButton);
+    topLayout->addWidget(defaultButton);
     topLayout->addWidget(helpButton);
 
     // Main layout with editor and buttons
@@ -74,6 +77,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     connect(saveButton, &QPushButton::clicked, this, &EditorDialog::onSaveClicked);
     connect(cancelButton, &QPushButton::clicked, this, &EditorDialog::onCancelClicked);
     connect(helpButton, &QPushButton::clicked, this, &EditorDialog::onHelpClicked);
+    connect(defaultButton, &QPushButton::clicked, this, &EditorDialog::onResetToDefaultClicked);
     connect(gameComboBox, &QComboBox::currentTextChanged, this,
             &EditorDialog::onGameSelectionChanged);
 }
@@ -176,6 +180,34 @@ void EditorDialog::onHelpClicked() {
     } else {
         helpDialog->close();
         isHelpOpen = false;
+    }
+}
+
+void EditorDialog::onResetToDefaultClicked() {
+    bool default_default = gameComboBox->currentText() == "default";
+    QString prompt =
+        default_default
+            ? "Do you want to reset your custom default config to the original default config?"
+            : "Do you want to reset this config to your custom default config?";
+    QMessageBox::StandardButton reply =
+        QMessageBox::question(this, "Reset to Default", prompt, QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        if (default_default) {
+            const auto default_file = Config::GetFoolproofKbmConfigFile("default");
+            std::filesystem::remove(default_file);
+        }
+        const auto config_file = Config::GetFoolproofKbmConfigFile("default");
+        QFile file(config_file);
+
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&file);
+            editor->setPlainText(in.readAll());
+            file.close();
+        } else {
+            QMessageBox::warning(this, "Error", "Could not open the file for reading");
+        }
+        // saveFile(gameComboBox->currentText());
     }
 }
 
