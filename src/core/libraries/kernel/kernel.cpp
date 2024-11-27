@@ -143,14 +143,6 @@ void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
 }
 
 s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
-    if (d <= 2) { // stdin,stdout,stderr
-        std::string_view str{buf};
-        if (str[nbytes - 1] == '\n') {
-            str = str.substr(0, nbytes - 1);
-        }
-        LOG_INFO(Tty, "{}", str);
-        return nbytes;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {

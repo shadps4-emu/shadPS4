@@ -14,10 +14,35 @@
 #include <map>
 #include <ranges>
 
-using FactoryDevice = std::function<Core::Devices::BaseDevice*(u32, const char*, int, u16)>;
+#include "core/devices/logger.h"
+#include "core/devices/nop_device.h"
 
-// prefix path
-static std::map<std::string, FactoryDevice> available_device = {};
+namespace D = Core::Devices;
+using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
+
+#define GET_DEVICE_FD(fd)                                                                          \
+    [](u32, const char*, int, u16) {                                                               \
+        return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
+    }
+
+// prefix path, only dev devices
+static std::map<std::string, FactoryDevice> available_device = {
+    // clang-format off
+    {"/dev/stdin", GET_DEVICE_FD(0)},
+    {"/dev/stdout", GET_DEVICE_FD(1)},
+    {"/dev/stderr", GET_DEVICE_FD(2)},
+
+    {"/dev/fd/0", GET_DEVICE_FD(0)},
+    {"/dev/fd/1", GET_DEVICE_FD(1)},
+    {"/dev/fd/2", GET_DEVICE_FD(2)},
+
+    {"/dev/deci_stdin", GET_DEVICE_FD(0)},
+    {"/dev/deci_stdout", GET_DEVICE_FD(1)},
+    {"/dev/deci_stderr", GET_DEVICE_FD(2)},
+
+    {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
+    // clang-format on
+};
 
 namespace Libraries::Kernel {
 
@@ -60,9 +85,6 @@ int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
     if (path == "/dev/deci_tty6") {
         return 2001;
     }
-    if (path == "/dev/stdout") {
-        return 2002;
-    }
     if (path == "/dev/urandom") {
         return 2003;
     }
@@ -70,14 +92,15 @@ int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
 
-    for (const auto& [prefix, factory] : available_device) {
-        if (path.starts_with(prefix)) {
-            file->is_opened = true;
-            file->type = Core::FileSys::FileType::Device;
-            file->m_guest_name = path;
-            file->device = std::unique_ptr<Core::Devices::BaseDevice>{
-                factory(handle, path.data(), flags, mode)};
-            return handle;
+    if (path.starts_with("/dev/")) {
+        for (const auto& [prefix, factory] : available_device) {
+            if (path.starts_with(prefix)) {
+                file->is_opened = true;
+                file->type = Core::FileSys::FileType::Device;
+                file->m_guest_name = path;
+                file->device = factory(handle, path.data(), flags, mode);
+                return handle;
+            }
         }
     }
 
@@ -179,14 +202,6 @@ int PS4_SYSV_ABI posix_close(int d) {
 }
 
 size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
-    if (d <= 2) { // stdin,stdout,stderr
-        char* str = strdup((const char*)buf);
-        if (str[nbytes - 1] == '\n')
-            str[nbytes - 1] = 0;
-        LOG_INFO(Tty, "{}", str);
-        free(str);
-        return nbytes;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
