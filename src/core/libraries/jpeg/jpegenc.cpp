@@ -12,26 +12,115 @@
 namespace Libraries::JpegEnc {
 
 constexpr s32 ORBIS_JPEG_ENC_MINIMUM_MEMORY_SIZE = 0x800;
+constexpr u32 ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION = 0xFFFF;
+constexpr u32 ORBIS_JPEG_ENC_MAX_IMAGE_PITCH = 0xFFFFFFF;
+constexpr u32 ORBIS_JPEG_ENC_MAX_IMAGE_SIZE = 0x7FFFFFFF;
 
-static bool IsJpegEncHandleValid(OrbisJpegEncHandle handle) {
-    return handle && Common::IsAligned(reinterpret_cast<VAddr>(handle), 0x20) &&
-           handle->handle == handle;
+static s32 ValidateJpegEncCreateParam(const OrbisJpegEncCreateParam* param) {
+    if (!param) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
+    }
+    if (param->size != sizeof(OrbisJpegEncCreateParam)) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
+    }
+    if (param->attr != 0) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    return ORBIS_OK;
+}
+
+static s32 ValidateJpegEncMemory(const void* memory, const u32 memory_size) {
+    if (!memory) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
+    }
+    if (memory_size < ORBIS_JPEG_ENC_MINIMUM_MEMORY_SIZE) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
+    }
+    return ORBIS_OK;
+}
+
+static s32 ValidateJpegEncEncodeParam(const OrbisJpegEncEncodeParam* param) {
+    // TODO: Replace constant values with enums when known.
+
+    // Validate addresses
+    if (!param) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
+    }
+    if (!param->image || (param->pixel_format != 0xB &&
+                          !Common::IsAligned(reinterpret_cast<VAddr>(param->image), 4))) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
+    }
+    if (!param->jpeg) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
+    }
+
+    // Validate sizes
+    if (param->image_size == 0 || param->jpeg_size == 0) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
+    }
+
+    // Validate parameters
+    if (param->image_width > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION ||
+        param->image_height > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    if (param->image_pitch == 0 || param->image_pitch > ORBIS_JPEG_ENC_MAX_IMAGE_PITCH ||
+        (param->pixel_format != 0xB && !Common::IsAligned(param->image_pitch, 4))) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    const auto calculated_size = param->image_height * param->image_pitch;
+    if (calculated_size > ORBIS_JPEG_ENC_MAX_IMAGE_SIZE || calculated_size > param->image_size) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    if (param->pixel_format != 0 && param->pixel_format != 1 && param->pixel_format != 0xA &&
+        param->pixel_format != 0xB) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    if (param->encode_mode > 1 || param->color_space > 2 || param->sampling_type > 2 ||
+        param->restart_interval > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    }
+    if (param->pixel_format < 2) {
+        if (param->image_pitch >> 2 < param->image_width ||
+            (param->color_space != 1 && param->sampling_type != 0) || param->sampling_type == 0) {
+            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        }
+    } else if (param->pixel_format == 0xA) {
+        if (param->image_pitch >> 1 < Common::AlignUp(param->image_width, 2) ||
+            (param->color_space != 1 && param->sampling_type != 0) || param->sampling_type == 0) {
+            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        }
+    } else if (param->pixel_format == 0xB) {
+        if (param->color_space != 2 || param->image_pitch < param->image_width ||
+            param->sampling_type != 0) {
+            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        }
+    }
+
+    return ORBIS_OK;
+}
+
+static s32 ValidateJpecEngHandle(OrbisJpegEncHandle handle) {
+    if (!handle || !Common::IsAligned(reinterpret_cast<VAddr>(handle), 0x20) ||
+        handle->handle != handle) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_HANDLE;
+    }
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceJpegEncCreate(const OrbisJpegEncCreateParam* param, void* memory,
                                   const u32 memory_size, OrbisJpegEncHandle* handle) {
-    if (!param || !memory || !handle) {
-        LOG_ERROR(Lib_Jpeg, "Invalid address");
+    if (auto param_ret = ValidateJpegEncCreateParam(param); param_ret != ORBIS_OK) {
+        LOG_ERROR(Lib_Jpeg, "Invalid create param");
+        return param_ret;
+    }
+    if (auto memory_ret = ValidateJpegEncMemory(memory, memory_size); memory_ret != ORBIS_OK) {
+        LOG_ERROR(Lib_Jpeg, "Invalid memory");
+        return memory_ret;
+    }
+    if (!handle) {
+        LOG_ERROR(Lib_Jpeg, "Invalid handle output");
         return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
-    }
-    if (param->size != sizeof(OrbisJpegEncCreateParam) ||
-        memory_size < ORBIS_JPEG_ENC_MINIMUM_MEMORY_SIZE) {
-        LOG_ERROR(Lib_Jpeg, "Invalid size");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
-    }
-    if (param->attr != 0) {
-        LOG_ERROR(Lib_Jpeg, "Invalid attribute");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
 
     auto* handle_internal = reinterpret_cast<OrbisJpegEncHandleInternal*>(
@@ -44,28 +133,23 @@ s32 PS4_SYSV_ABI sceJpegEncCreate(const OrbisJpegEncCreateParam* param, void* me
 }
 
 s32 PS4_SYSV_ABI sceJpegEncDelete(OrbisJpegEncHandle handle) {
-    if (!IsJpegEncHandleValid(handle)) {
+    if (auto handle_ret = ValidateJpecEngHandle(handle); handle_ret != ORBIS_OK) {
         LOG_ERROR(Lib_Jpeg, "Invalid handle");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_HANDLE;
+        return handle_ret;
     }
-
     handle->handle = nullptr;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceJpegEncEncode(OrbisJpegEncHandle handle, const OrbisJpegEncEncodeParam* param,
                                   OrbisJpegEncOutputInfo* output_info) {
-    if (!IsJpegEncHandleValid(handle)) {
+    if (auto handle_ret = ValidateJpecEngHandle(handle); handle_ret != ORBIS_OK) {
         LOG_ERROR(Lib_Jpeg, "Invalid handle");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_HANDLE;
+        return handle_ret;
     }
-    if (!param || !param->image || !param->jpeg) {
-        LOG_ERROR(Lib_Jpeg, "Invalid address");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
-    }
-    if (param->image_size == 0 || param->jpeg_size == 0) {
-        LOG_ERROR(Lib_Jpeg, "Invalid size");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
+    if (auto param_ret = ValidateJpegEncEncodeParam(param); param_ret != ORBIS_OK) {
+        LOG_ERROR(Lib_Jpeg, "Invalid encode param");
+        return param_ret;
     }
 
     LOG_ERROR(Lib_Jpeg, "(STUBBED) called");
@@ -78,17 +162,9 @@ s32 PS4_SYSV_ABI sceJpegEncEncode(OrbisJpegEncHandle handle, const OrbisJpegEncE
 }
 
 s32 PS4_SYSV_ABI sceJpegEncQueryMemorySize(const OrbisJpegEncCreateParam* param) {
-    if (!param) {
-        LOG_ERROR(Lib_Jpeg, "Invalid address");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
-    }
-    if (param->size != sizeof(OrbisJpegEncCreateParam)) {
-        LOG_ERROR(Lib_Jpeg, "Invalid size");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
-    }
-    if (param->attr != 0) {
-        LOG_ERROR(Lib_Jpeg, "Invalid attribute");
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    if (auto param_ret = ValidateJpegEncCreateParam(param); param_ret != ORBIS_OK) {
+        LOG_ERROR(Lib_Jpeg, "Invalid create param");
+        return param_ret;
     }
     return ORBIS_JPEG_ENC_MINIMUM_MEMORY_SIZE;
 }
