@@ -7,9 +7,7 @@
 
 #include <atomic>
 #include "common/types.h"
-#include <memory>
 #include <mutex>
-#include <stddef.h>
 #include <vector>
 
 namespace Core::Loader {

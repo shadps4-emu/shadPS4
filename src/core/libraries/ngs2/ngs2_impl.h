@@ -55,27 +55,27 @@ struct OrbisNgs2SystemInfo {
 struct OrbisNgs2RackInfo {
     char name[ORBIS_NGS2_RACK_NAME_LENGTH]; // 0
 
-    OrbisNgs2Handle rackHandle; // 16
+    OrbisNgs2Handle rackHandle;            // 16
     OrbisNgs2ContextBufferInfo bufferInfo; // 24
 
     OrbisNgs2Handle ownerSystemHandle; // 88
 
-    u32 type; // 96
-    u32 rackId; // 100
-    u32 uid; // 104
+    u32 type;            // 96
+    u32 rackId;          // 100
+    u32 uid;             // 104
     u32 minGrainSamples; // 108
     u32 maxGrainSamples; // 112
-    u32 maxVoices; // 116
+    u32 maxVoices;       // 116
     u32 maxChannelWorks; // 120
-    u32 maxInputs; // 124
-    u32 maxMatrices; // 128
-    u32 maxPorts; // 132
+    u32 maxInputs;       // 124
+    u32 maxMatrices;     // 128
+    u32 maxPorts;        // 132
 
-    u32 stateFlags; // 136
-    float lastProcessRatio; // 140
-    u64 lastProcessTick; // 144
-    u64 renderCount; // 152
-    u32 activeVoiceCount; // 160
+    u32 stateFlags;             // 136
+    float lastProcessRatio;     // 140
+    u64 lastProcessTick;        // 144
+    u64 renderCount;            // 152
+    u32 activeVoiceCount;       // 160
     u32 activeChannelWorkCount; // 164
 };
 
@@ -111,9 +111,9 @@ struct SystemInternal {
         void* unknown;
     };
 
-    rackList rackListPreset;  // 152
-    rackList rackListNormal;  // 176
-    rackList rackListMaster;  // 200
+    rackList rackListPreset; // 152
+    rackList rackListNormal; // 176
+    rackList rackListMaster; // 200
 
     void* unknown3;       // 208
     void* systemListPrev; // 216
@@ -121,12 +121,12 @@ struct SystemInternal {
     void* systemListNext; // 232
     void* rackFunction;   // 240
 
-    Kernel::PthreadMutex processLock;    // 248
-    u32 hasProcessMutex;                 // 256
-    u32 unknown5;                        // 260
-    Kernel::PthreadMutex flushLock;      // 264
-    u32 hasFlushMutex;                   // 272
-    u32 unknown6;                        // 276
+    Kernel::PthreadMutex processLock; // 248
+    u32 hasProcessMutex;              // 256
+    u32 unknown5;                     // 260
+    Kernel::PthreadMutex flushLock;   // 264
+    u32 hasFlushMutex;                // 272
+    u32 unknown6;                     // 276
 
     // info
     u64 lastRenderTick;         // 280
