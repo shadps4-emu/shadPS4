@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/threads/pthread.h"
 
 namespace Libraries::Ngs2 {
 
@@ -121,10 +121,10 @@ struct SystemInternal {
     void* systemListNext; // 232
     void* rackFunction;   // 240
 
-    Kernel::ScePthreadMutex processLock; // 248
+    Kernel::PthreadMutex processLock;    // 248
     u32 hasProcessMutex;                 // 256
     u32 unknown5;                        // 260
-    Kernel::ScePthreadMutex flushLock;   // 264
+    Kernel::PthreadMutex flushLock;      // 264
     u32 hasFlushMutex;                   // 272
     u32 unknown6;                        // 276
 
