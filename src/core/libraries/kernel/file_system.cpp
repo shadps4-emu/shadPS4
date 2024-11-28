@@ -416,7 +416,7 @@ int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     return ORBIS_OK;
 }
 
-s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 offset) {
     if (d < 3) {
         return ORBIS_KERNEL_ERROR_EPERM;
     }
@@ -436,10 +436,19 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
         file->f.Seek(pos);
     };
     if (!file->f.Seek(offset)) {
-        LOG_CRITICAL(Kernel_Fs, "sceKernelPread: failed to seek");
+        LOG_CRITICAL(Kernel_Fs, "failed to seek");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    return file->f.ReadRaw<u8>(buf, nbytes);
+    size_t total_read = 0;
+    for (int i = 0; i < iovcnt; i++) {
+        total_read += file->f.ReadRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+    }
+    return total_read;
+}
+
+s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
+    SceKernelIovec iovec{buf, nbytes};
+    return sceKernelPreadv(d, &iovec, 1, offset);
 }
 
 int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
@@ -649,6 +658,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("E6ao34wPw+U", "libkernel", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
+    LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
