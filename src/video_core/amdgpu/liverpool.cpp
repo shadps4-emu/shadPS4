@@ -161,6 +161,19 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             }
             break;
         }
+        case PM4ItOpcode::IndirectBufferConst: {
+            const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            auto task = ProcessCeUpdate(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            while (!task.handle.done()) {
+                task.handle.resume();
+
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(ccb_task_name);
+            };
+            break;
+        }
         default:
             const u32 count = header->type3.NumWords();
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
