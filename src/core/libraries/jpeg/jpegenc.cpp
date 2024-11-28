@@ -23,7 +23,7 @@ static s32 ValidateJpegEncCreateParam(const OrbisJpegEncCreateParam* param) {
     if (param->size != sizeof(OrbisJpegEncCreateParam)) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
     }
-    if (param->attr != 0) {
+    if (param->attr != ORBIS_JPEG_ENC_ATTRIBUTE_NONE) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
     return ORBIS_OK;
@@ -40,13 +40,12 @@ static s32 ValidateJpegEncMemory(const void* memory, const u32 memory_size) {
 }
 
 static s32 ValidateJpegEncEncodeParam(const OrbisJpegEncEncodeParam* param) {
-    // TODO: Replace constant values with enums when known.
 
     // Validate addresses
     if (!param) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
     }
-    if (!param->image || (param->pixel_format != 0xB &&
+    if (!param->image || (param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8 &&
                           !Common::IsAligned(reinterpret_cast<VAddr>(param->image), 4))) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ADDR;
     }
@@ -65,15 +64,18 @@ static s32 ValidateJpegEncEncodeParam(const OrbisJpegEncEncodeParam* param) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
     if (param->image_pitch == 0 || param->image_pitch > ORBIS_JPEG_ENC_MAX_IMAGE_PITCH ||
-        (param->pixel_format != 0xB && !Common::IsAligned(param->image_pitch, 4))) {
+        (param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8 &&
+         !Common::IsAligned(param->image_pitch, 4))) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
     const auto calculated_size = param->image_height * param->image_pitch;
     if (calculated_size > ORBIS_JPEG_ENC_MAX_IMAGE_SIZE || calculated_size > param->image_size) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
-    if (param->pixel_format != 0 && param->pixel_format != 1 && param->pixel_format != 0xA &&
-        param->pixel_format != 0xB) {
+    if (param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_R8G8B8A8 &&
+        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_B8G8R8A8 &&
+        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8 &&
+        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
     }
     if (param->encode_mode > 1 || param->color_space > 2 || param->sampling_type > 2 ||
@@ -82,17 +84,22 @@ static s32 ValidateJpegEncEncodeParam(const OrbisJpegEncEncodeParam* param) {
     }
     if (param->pixel_format < 2) {
         if (param->image_pitch >> 2 < param->image_width ||
-            (param->color_space != 1 && param->sampling_type != 0) || param->sampling_type == 0) {
+            (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC &&
+             param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) ||
+            param->sampling_type == ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
             return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
         }
-    } else if (param->pixel_format == 0xA) {
+    } else if (param->pixel_format == ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8) {
         if (param->image_pitch >> 1 < Common::AlignUp(param->image_width, 2) ||
-            (param->color_space != 1 && param->sampling_type != 0) || param->sampling_type == 0) {
+            (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC &&
+             param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) ||
+            param->sampling_type == ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
             return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
         }
-    } else if (param->pixel_format == 0xB) {
-        if (param->color_space != 2 || param->image_pitch < param->image_width ||
-            param->sampling_type != 0) {
+    } else if (param->pixel_format == ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8) {
+        if (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE ||
+            param->image_pitch < param->image_width ||
+            param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
             return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
         }
     }
@@ -152,7 +159,13 @@ s32 PS4_SYSV_ABI sceJpegEncEncode(OrbisJpegEncHandle handle, const OrbisJpegEncE
         return param_ret;
     }
 
-    LOG_ERROR(Lib_Jpeg, "(STUBBED) called");
+    LOG_ERROR(Lib_Jpeg,
+              "(STUBBED) image_size = {} , jpeg_size = {} , image_width = {} , image_height = {} , "
+              "image_pitch = {} , pixel_format = {} , encode_mode = {} , sampling_type = {} , "
+              "compression_ratio = {} , restart_interval = {}",
+              param->image_size, param->jpeg_size, param->image_width, param->image_height,
+              param->image_pitch, param->pixel_format, param->encode_mode, param->color_space,
+              param->sampling_type, param->compression_ratio, param->restart_interval);
 
     if (output_info) {
         output_info->size = param->jpeg_size;

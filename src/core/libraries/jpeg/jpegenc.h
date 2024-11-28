@@ -11,6 +11,31 @@ class SymbolsResolver;
 
 namespace Libraries::JpegEnc {
 
+enum OrbisJpegEncCreateParamAttributes { ORBIS_JPEG_ENC_ATTRIBUTE_NONE = 0 };
+
+enum OrbisJpegEncEncodeParamPixelFormat {
+    ORBIS_JPEG_ENC_PIXEL_FORMAT_R8G8B8A8 = 0,
+    ORBIS_JPEG_ENC_PIXEL_FORMAT_B8G8R8A8 = 1,
+    ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8 = 10,
+    ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8 = 11
+};
+
+enum OrbisJpengEncEncodeParamEncodeMode {
+    ORBIS_JPEG_ENC_ENCODE_MODE_NORMAL = 0,
+    ORBIS_JPEG_ENC_ENCODE_MODE_MJPEG = 1
+};
+
+enum OrbisJpengEncEncodeParamColorSpace {
+    ORBIS_JPEG_ENC_COLOR_SPACE_YCC = 1,
+    ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE = 2
+};
+
+enum OrbisJpengEncEncodeParamSamplingType {
+    ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL = 0,
+    ORBIS_JPEG_ENC_SAMPLING_TYPE_422 = 1,
+    ORBIS_JPEG_ENC_SAMPLING_TYPE_420 = 2
+};
+
 struct OrbisJpegEncHandleInternal {
     OrbisJpegEncHandleInternal* handle;
     u32 handle_size;
