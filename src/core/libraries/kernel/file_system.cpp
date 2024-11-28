@@ -537,14 +537,13 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     }
     const auto& entry = file->dirents.at(file->dirents_index++);
     auto str = entry.name;
-    auto str_size = str.size() - 1;
     static int fileno = 1000; // random
     OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
     sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
     // hash or something?
     sce_ent->d_reclen = sizeof(OrbisKernelDirent);
     sce_ent->d_type = (entry.isFile ? 8 : 4);
-    sce_ent->d_namlen = str_size;
+    sce_ent->d_namlen = str.size();
     strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
     sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
 
