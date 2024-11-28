@@ -867,4 +867,47 @@ struct PM4CmdDrawIndexIndirectMulti {
     u32 draw_initiator; ///< Draw Initiator Register
 };
 
+struct PM4CmdMemSemaphore {
+    enum class MemSemaphoreClientCode : u32 {
+        CommandProcessor = 0b00u,
+        CommandBuffer = 0b01u,
+        DataBuffer = 0b10u,
+        Reserved = 0b11u,
+    };
+    enum class MemSemaphoreSelect : u32 {
+        SignalSemaphore = 0b110u,
+        WaitSemaphore = 0b1111u
+    };
+    enum class MemSemaphoreUseMailbox : u32 {
+        DoNotWaitForMailboxToBeWritten = 0u,
+        WaitForMailboxToBeWritten = 1u
+    };
+    enum class MemSemaphoreSignalType : u32 {
+        SignalIncrementOrWait = 0u,
+        SignalSetOne = 1u
+    };
+
+    PM4Type3Header header; ///< header
+    union {
+        BitField<3, 29, u32> addr_lo; ///< Semaphore address bits [31:3]
+        u32 dw1;
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi; ///< Semaphore address bits [39:32]
+        BitField<12, 1, u32>
+            waitOnSignal; ///< Wait until all outstanding EOP have completed
+        BitField<16, 1, MemSemaphoreUseMailbox>
+            useMailbox; ///< Enables waiting until mailbox is written to
+        BitField<20, 1, MemSemaphoreSignalType> signalType;
+        BitField<24, 2, MemSemaphoreClientCode> clientCode;
+        BitField<29, 3, MemSemaphoreSelect> semSel;
+    };
+
+    template <typename T>
+    T Address() const {
+        return reinterpret_cast<T>(addr_lo | u64(addr_hi) << 32);
+    }
+};
+
 } // namespace AmdGpu
