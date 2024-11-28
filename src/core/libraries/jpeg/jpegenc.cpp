@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <magic_enum.hpp>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -24,7 +25,7 @@ static s32 ValidateJpegEncCreateParam(const OrbisJpegEncCreateParam* param) {
         return ORBIS_JPEG_ENC_ERROR_INVALID_SIZE;
     }
     if (param->attr != ORBIS_JPEG_ENC_ATTRIBUTE_NONE) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
     return ORBIS_OK;
 }
@@ -61,47 +62,58 @@ static s32 ValidateJpegEncEncodeParam(const OrbisJpegEncEncodeParam* param) {
     // Validate parameters
     if (param->image_width > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION ||
         param->image_height > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
     if (param->image_pitch == 0 || param->image_pitch > ORBIS_JPEG_ENC_MAX_IMAGE_PITCH ||
         (param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8 &&
          !Common::IsAligned(param->image_pitch, 4))) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
     const auto calculated_size = param->image_height * param->image_pitch;
     if (calculated_size > ORBIS_JPEG_ENC_MAX_IMAGE_SIZE || calculated_size > param->image_size) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
-    if (param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_R8G8B8A8 &&
-        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_B8G8R8A8 &&
-        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8 &&
-        param->pixel_format != ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    if (param->encode_mode != ORBIS_JPEG_ENC_ENCODE_MODE_NORMAL &&
+        param->encode_mode != ORBIS_JPEG_ENC_ENCODE_MODE_MJPEG) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
-    if (param->encode_mode > 1 || param->color_space > 2 || param->sampling_type > 2 ||
-        param->restart_interval > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION) {
-        return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+    if (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC &&
+        param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
-    if (param->pixel_format < 2) {
+    if (param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL &&
+        param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_422 &&
+        param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_420) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
+    }
+    if (param->restart_interval > ORBIS_JPEG_ENC_MAX_IMAGE_DIMENSION) {
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
+    }
+    switch (param->pixel_format) {
+    case ORBIS_JPEG_ENC_PIXEL_FORMAT_R8G8B8A8:
+    case ORBIS_JPEG_ENC_PIXEL_FORMAT_B8G8R8A8:
         if (param->image_pitch >> 2 < param->image_width ||
-            (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC &&
-             param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) ||
+            param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC ||
             param->sampling_type == ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
-            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+            return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
         }
-    } else if (param->pixel_format == ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8) {
+        break;
+    case ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8:
         if (param->image_pitch >> 1 < Common::AlignUp(param->image_width, 2) ||
-            (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC &&
-             param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) ||
+            param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_YCC ||
             param->sampling_type == ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
-            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+            return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
         }
-    } else if (param->pixel_format == ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8) {
-        if (param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE ||
-            param->image_pitch < param->image_width ||
+        break;
+    case ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8:
+        if (param->image_pitch < param->image_width ||
+            param->color_space != ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE ||
             param->sampling_type != ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL) {
-            return ORBIS_JPEG_ENC_ERROR_INVALID_ATTR;
+            return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
         }
+        break;
+    default:
+        return ORBIS_JPEG_ENC_ERROR_INVALID_PARAM;
     }
 
     return ORBIS_OK;
@@ -164,8 +176,10 @@ s32 PS4_SYSV_ABI sceJpegEncEncode(OrbisJpegEncHandle handle, const OrbisJpegEncE
               "image_pitch = {} , pixel_format = {} , encode_mode = {} , sampling_type = {} , "
               "compression_ratio = {} , restart_interval = {}",
               param->image_size, param->jpeg_size, param->image_width, param->image_height,
-              param->image_pitch, param->pixel_format, param->encode_mode, param->color_space,
-              param->sampling_type, param->compression_ratio, param->restart_interval);
+              param->image_pitch, magic_enum::enum_name(param->pixel_format),
+              magic_enum::enum_name(param->encode_mode), magic_enum::enum_name(param->color_space),
+              magic_enum::enum_name(param->sampling_type), param->compression_ratio,
+              param->restart_interval);
 
     if (output_info) {
         output_info->size = param->jpeg_size;

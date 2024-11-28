@@ -11,26 +11,26 @@ class SymbolsResolver;
 
 namespace Libraries::JpegEnc {
 
-enum OrbisJpegEncCreateParamAttributes { ORBIS_JPEG_ENC_ATTRIBUTE_NONE = 0 };
+enum OrbisJpegEncCreateParamAttributes : u32 { ORBIS_JPEG_ENC_ATTRIBUTE_NONE = 0 };
 
-enum OrbisJpegEncEncodeParamPixelFormat {
+enum OrbisJpegEncEncodeParamPixelFormat : u16 {
     ORBIS_JPEG_ENC_PIXEL_FORMAT_R8G8B8A8 = 0,
     ORBIS_JPEG_ENC_PIXEL_FORMAT_B8G8R8A8 = 1,
     ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8U8Y8V8 = 10,
     ORBIS_JPEG_ENC_PIXEL_FORMAT_Y8 = 11
 };
 
-enum OrbisJpengEncEncodeParamEncodeMode {
+enum OrbisJpengEncEncodeParamEncodeMode : u16 {
     ORBIS_JPEG_ENC_ENCODE_MODE_NORMAL = 0,
     ORBIS_JPEG_ENC_ENCODE_MODE_MJPEG = 1
 };
 
-enum OrbisJpengEncEncodeParamColorSpace {
+enum OrbisJpengEncEncodeParamColorSpace : u16 {
     ORBIS_JPEG_ENC_COLOR_SPACE_YCC = 1,
     ORBIS_JPEG_ENC_COLOR_SPACE_GRAYSCALE = 2
 };
 
-enum OrbisJpengEncEncodeParamSamplingType {
+enum OrbisJpengEncEncodeParamSamplingType : u8 {
     ORBIS_JPEG_ENC_SAMPLING_TYPE_FULL = 0,
     ORBIS_JPEG_ENC_SAMPLING_TYPE_422 = 1,
     ORBIS_JPEG_ENC_SAMPLING_TYPE_420 = 2
@@ -46,7 +46,7 @@ typedef OrbisJpegEncHandleInternal* OrbisJpegEncHandle;
 
 struct OrbisJpegEncCreateParam {
     u32 size;
-    u32 attr;
+    OrbisJpegEncCreateParamAttributes attr;
 };
 static_assert(sizeof(OrbisJpegEncCreateParam) == 0x8);
 
@@ -58,10 +58,10 @@ struct OrbisJpegEncEncodeParam {
     u32 image_width;
     u32 image_height;
     u32 image_pitch;
-    u16 pixel_format;
-    u16 encode_mode;
-    u16 color_space;
-    u8 sampling_type;
+    OrbisJpegEncEncodeParamPixelFormat pixel_format;
+    OrbisJpengEncEncodeParamEncodeMode encode_mode;
+    OrbisJpengEncEncodeParamColorSpace color_space;
+    OrbisJpengEncEncodeParamSamplingType sampling_type;
     u8 compression_ratio;
     s32 restart_interval;
 };
