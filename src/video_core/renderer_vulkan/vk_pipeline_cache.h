@@ -38,8 +38,6 @@ struct Program {
 };
 
 class PipelineCache {
-    static constexpr size_t MaxShaderStages = 5;
-
 public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
                            AmdGpu::Liverpool* liverpool);

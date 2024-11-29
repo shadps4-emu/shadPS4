@@ -165,8 +165,7 @@ public:
         while (it != wait_list.end() && (*it)->priority > waiter->priority) {
             ++it;
         }
-        wait_list.insert(it, waiter);
-        return it;
+        return wait_list.insert(it, waiter);
     }
 
     WaitList wait_list;

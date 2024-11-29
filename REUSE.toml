@@ -37,6 +37,7 @@ path = [
     "src/images/refresh_icon.png",
     "src/images/settings_icon.png",
     "src/images/stop_icon.png",
+    "src/images/utils_icon.png",
     "src/images/shadPS4.icns",
     "src/images/shadps4.ico",
     "src/images/net.shadps4.shadPS4.svg",

@@ -20,7 +20,7 @@ enum class Stage : u32 {
     Local,
     Compute,
 };
-constexpr u32 MaxStageTypes = 6;
+constexpr u32 MaxStageTypes = 7;
 
 [[nodiscard]] constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
