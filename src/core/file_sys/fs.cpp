@@ -56,11 +56,12 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     std::filesystem::path host_path = mount->host_path / rel_path;
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
-    patch_path /= rel_path;
 
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        std::filesystem::exists(patch_path)) {
-        return patch_path;
+    if (corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) {
+        if (std::filesystem::exists(patch_path)) {
+            patch_path /= rel_path;
+            return patch_path;
+        }
     }
 
     if (!NeedsCaseInsensitiveSearch) {
