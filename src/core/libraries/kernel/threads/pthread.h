@@ -79,7 +79,7 @@ struct PthreadMutex {
         return Unlock();
     }
 
-    bool IsOwned(Pthread* curthread) const;
+    int IsOwned(Pthread* curthread) const;
 };
 using PthreadMutexT = PthreadMutex*;
 
