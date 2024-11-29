@@ -704,27 +704,36 @@ static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) 
     auto update_dir_name = std::string{fmt::UTF(file->m_host_name.u8string()).data};
     auto mount = mnt->GetMountFromHostPath(update_dir_name);
     auto suffix = std::string{fmt::UTF(mount->host_path.u8string()).data};
-    auto guest_name = mount->mount + "/" + update_dir_name.substr(suffix.size() + 1);
 
     size_t pos = update_dir_name.find("-UPDATE");
     if (pos != std::string::npos) {
         update_dir_name.erase(pos, 7);
+        auto guest_name = mount->mount + "/" + update_dir_name.substr(suffix.size() + 1);
+        int descriptor;
 
-        u32 handle = h->CreateHandle();
-        auto* new_file = h->GetFile(handle);
-        new_file->is_directory = true;
-        new_file->m_guest_name = guest_name;
-        new_file->m_host_name = update_dir_name;
-        if (!std::filesystem::is_directory(new_file->m_host_name)) {
-            h->DeleteHandle(handle);
-            return dir_entries;
+        auto existent_folder = h->GetFile(update_dir_name);
+        if (!existent_folder) {
+            u32 handle = h->CreateHandle();
+            auto* new_file = h->GetFile(handle);
+            new_file->is_directory = true;
+            new_file->m_guest_name = guest_name;
+            new_file->m_host_name = update_dir_name;
+            if (!std::filesystem::is_directory(new_file->m_host_name)) {
+                h->DeleteHandle(handle);
+                return dir_entries;
+            } else {
+                new_file->dirents = GetDirectoryEntries(new_file->m_host_name);
+                if (!new_file->is_opened) {
+                    new_file->dirents_index = 0;
+                }
+            }
+            new_file->is_opened = true;
+            descriptor = h->GetFileDescriptor(new_file);
         } else {
-            new_file->dirents = GetDirectoryEntries(new_file->m_host_name);
-            new_file->dirents_index = 0;
+            descriptor = h->GetFileDescriptor(existent_folder);
         }
-        new_file->is_opened = true;
-        dir_entries = GetDents(h->GetFileDescriptor(new_file), buf, nbytes, basep);
-        h->DeleteHandle(handle);
+
+        dir_entries = GetDents(descriptor, buf, nbytes, basep);
     }
 
     return dir_entries;
