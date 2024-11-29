@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
 #include "pad.h"
 
@@ -100,7 +99,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->connectedCount = 1;
         pInfo->connected = false;
         pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
-        return SCE_OK;
+        return ORBIS_OK;
     }
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
@@ -115,7 +114,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
         pInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
     }
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadGetDataInternal() {
@@ -382,7 +381,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->connectedCount = 1; // connectedCount;
     pData->deviceUniqueDataLen = 0;
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadReadStateExt() {

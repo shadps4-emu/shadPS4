@@ -3,9 +3,9 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
+#include "core/libraries/system/systemservice_error.h"
 
 namespace Libraries::SystemService {
 

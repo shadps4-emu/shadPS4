@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <queue>
-#include "ime.h"
-#include "ime_ui.h"
-
 #include "common/logging/log.h"
-#include "common/singleton.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/ime/ime.h"
+#include "core/libraries/ime/ime_error.h"
+#include "core/libraries/ime/ime_ui.h"
 #include "core/libraries/libs.h"
-#include "core/linker.h"
+#include "core/tls.h"
 
 namespace Libraries::Ime {
 

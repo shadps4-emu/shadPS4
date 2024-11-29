@@ -4,9 +4,9 @@
 #include <png.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/libpng/pngdec.h"
+#include "core/libraries/libpng/pngdec_error.h"
 #include "core/libraries/libs.h"
-#include "pngdec.h"
 
 namespace Libraries::PngDec {
 

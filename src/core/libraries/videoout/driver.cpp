@@ -8,10 +8,9 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/platform.h"
+#include "core/libraries/videoout/videoout_error.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -298,7 +297,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
         {
             // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
-            std::unique_lock lock{main_port.vo_mutex};
+            std::scoped_lock lock{main_port.vo_mutex};
             vblank_status.count++;
             vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();

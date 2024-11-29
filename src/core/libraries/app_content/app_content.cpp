@@ -6,14 +6,11 @@
 #include "app_content.h"
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/io_file.h"
 #include "common/logging/log.h"
-#include "common/path_util.h"
 #include "common/singleton.h"
-#include "common/string_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AppContent {
@@ -260,7 +257,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
                 AddContInfo info{};
                 info.status = ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_INSTALLED;
-                strcpy(info.entitlementLabel, entitlement_label.c_str());
+                entitlement_label.copy(info.entitlementLabel, sizeof(info.entitlementLabel));
 
                 addcont_info[addcont_count++] = info;
             }

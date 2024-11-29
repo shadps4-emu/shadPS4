@@ -8,7 +8,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/audio/audioout_error.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioOut {

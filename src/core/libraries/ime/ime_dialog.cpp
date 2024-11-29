@@ -4,7 +4,7 @@
 #include <array>
 #include <magic_enum.hpp>
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/ime/ime_error.h"
 #include "core/libraries/libs.h"
 #include "ime_dialog.h"
 #include "ime_dialog_ui.h"

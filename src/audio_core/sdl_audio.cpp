@@ -1,16 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "sdl_audio.h"
-
-#include "common/assert.h"
-#include "core/libraries/error_codes.h"
-
+#include <mutex>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_timer.h>
 
-#include <mutex> // std::unique_lock
+#include "audio_core/sdl_audio.h"
+#include "common/assert.h"
+#include "core/libraries/audio/audioout_error.h"
 
 namespace Audio {
 
@@ -19,7 +17,7 @@ constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buff
 s32 SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParamFormat format) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     for (int id = 0; id < portsOut.size(); id++) {
         auto& port = portsOut[id];
         if (!port.isOpen) {
