@@ -1111,7 +1111,8 @@ struct Liverpool {
             INSERT_PADDING_WORDS(2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
-            INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
+            INSERT_PADDING_WORDS(0xA102 - 0xA0D4);
+            u32 index_offset;
             u32 primitive_restart_index;
             INSERT_PADDING_WORDS(1);
             BlendConstants blend_constants;
@@ -1380,6 +1381,7 @@ static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
 static_assert(GFX6_3D_REG_INDEX(generic_scissor) == 0xA090);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
+static_assert(GFX6_3D_REG_INDEX(index_offset) == 0xA102);
 static_assert(GFX6_3D_REG_INDEX(primitive_restart_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);

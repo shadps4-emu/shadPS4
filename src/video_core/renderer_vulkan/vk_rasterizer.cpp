@@ -200,7 +200,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
-    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
+    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets(regs);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());

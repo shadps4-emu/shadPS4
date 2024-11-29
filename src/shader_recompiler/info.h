@@ -17,6 +17,7 @@
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader {
@@ -251,10 +252,10 @@ struct Info {
         bnd.user_data += ud_mask.NumRegs();
     }
 
-    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const {
-        u32 vertex_offset = 0;
+    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets(const AmdGpu::Liverpool::Regs& regs) const {
+        u32 vertex_offset = regs.index_offset;
         u32 instance_offset = 0;
-        if (vertex_offset_sgpr != -1) {
+        if (vertex_offset == 0 && vertex_offset_sgpr != -1) {
             vertex_offset = user_data[vertex_offset_sgpr];
         }
         if (instance_offset_sgpr != -1) {
