@@ -122,7 +122,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
         SleepqUnlock(this);
 
         //_thr_cancel_enter2(curthread, 0);
-        int error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
+        error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
         //_thr_cancel_leave(curthread, 0);
 
         SleepqLock(this);
@@ -145,7 +145,10 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     }
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
-    mp->CvLock(recurse);
+    int error2 = mp->CvLock(recurse);
+    if (error == 0) {
+        error = error2;
+    }
     return error;
 }
 
