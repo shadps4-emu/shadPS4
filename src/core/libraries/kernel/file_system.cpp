@@ -731,11 +731,33 @@ static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) 
 }
 
 int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
-    return GetDents(fd, buf, nbytes, nullptr) + HandleSeparateUpdateDents(fd, buf, nbytes, nullptr);
+    int a = GetDents(fd, buf, nbytes, nullptr);
+    int b = HandleSeparateUpdateDents(fd, buf, nbytes, nullptr);
+    if (a == ORBIS_OK && b == ORBIS_OK) {
+        return ORBIS_OK;
+    }
+    if (a < 0) {
+        return a;
+    }
+    if (b < 0) {
+        return b;
+    }
+    return a + b;
 }
 
 int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
-    return GetDents(fd, buf, nbytes, basep) + HandleSeparateUpdateDents(fd, buf, nbytes, basep);
+    int a = GetDents(fd, buf, nbytes, basep);
+    int b = HandleSeparateUpdateDents(fd, buf, nbytes, basep);
+    if (a == ORBIS_OK && b == ORBIS_OK) {
+        return ORBIS_OK;
+    }
+    if (a < 0) {
+        return a;
+    }
+    if (b < 0) {
+        return b;
+    }
+    return a + b;
 }
 
 s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
