@@ -72,6 +72,7 @@ public:
             }
             it = wait_list.erase(it);
             token_count -= waiter->need_count;
+            waiter->was_signaled = true;
             waiter->cv.notify_one();
         }
 
@@ -106,6 +107,7 @@ public:
         std::condition_variable cv;
         u32 priority;
         s32 need_count;
+        bool was_signaled{};
         bool was_deleted{};
         bool was_cancled{};
 
@@ -137,16 +139,17 @@ public:
             }
             // Wait until timeout runs out, recording how much remaining time there was.
             const auto start = std::chrono::high_resolution_clock::now();
-            const auto status = cv.wait_for(lk, std::chrono::microseconds(*timeout));
+            const auto signaled = cv.wait_for(lk, std::chrono::microseconds(*timeout),
+                                              [this] { return was_signaled; });
             const auto end = std::chrono::high_resolution_clock::now();
             const auto time =
                 std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            if (status == std::cv_status::timeout) {
-                *timeout = 0;
-            } else {
+            if (signaled) {
                 *timeout -= time;
+            } else {
+                *timeout = 0;
             }
-            return GetResult(status == std::cv_status::timeout);
+            return GetResult(!signaled);
         }
     };
 
