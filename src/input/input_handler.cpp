@@ -73,10 +73,8 @@ ControllerOutput output_array[] = {
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3),
+    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS),
     ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD),
@@ -92,6 +90,9 @@ ControllerOutput output_array[] = {
     ControllerOutput(0, Axis::RightY),
     ControllerOutput(0, Axis::TriggerLeft),
     ControllerOutput(0, Axis::TriggerRight),
+
+    // the "sorry, you gave an incorrect value, now we bind it to nothing" output
+    ControllerOutput(0, Axis::AxisMax),
 };
 
 // We had to go through 3 files of indirection just to update a flag
@@ -211,12 +212,13 @@ InputBinding GetBindingFromString(std::string& line) {
 // function that takes a controlleroutput, and returns the array's corresponding element's pointer
 ControllerOutput* GetOutputPointer(const ControllerOutput& parsed) {
     // i wonder how long until someone notices this or I get rid of it
-    for (int i = 0; i[output_array] != ControllerOutput(0, Axis::AxisMax); i++) {
+    int i = 0;
+    for (; i[output_array] != ControllerOutput(0, Axis::AxisMax); i++) {
         if (i[output_array] == parsed) {
             return &output_array[i];
         }
     }
-    return nullptr;
+    return &output_array[i];
 }
 
 void ParseInputConfig(const std::string game_id = "") {
@@ -435,8 +437,6 @@ void ControllerOutput::AddUpdate(bool pressed, bool analog, u32 param) {
             new_param = SDL_clamp((pressed ? (s32)param : 0) + new_param, -127, 127);
             break;
         }
-    } else {
-        LOG_DEBUG(Input, "Controller output with no values detected!");
     }
 }
 void ControllerOutput::FinalizeUpdate() {
@@ -449,7 +449,7 @@ void ControllerOutput::FinalizeUpdate() {
             touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
                          : Config::getBackButtonBehavior() == "right" ? 0.75f
                                                                       : 0.5f;
-            controller->SetTouchpadState(0, true, touchpad_x, 0.5f);
+            controller->SetTouchpadState(0, new_button_state, touchpad_x, 0.5f);
             controller->CheckButton(0, button, new_button_state);
             break;
         case LEFTJOYSTICK_HALFMODE:
@@ -481,14 +481,18 @@ void ControllerOutput::FinalizeUpdate() {
             break;
         case Axis::TriggerLeft:
         case Axis::TriggerRight:
-            controller->Axis(0, axis, GetAxis(0, 0x80, new_param));
+            controller->Axis(0, axis, GetAxis(0x0, 0x80, new_param));
+            // Also handle button counterpart for TriggerLeft and TriggerRight
+            controller->CheckButton(0,
+                                    axis == Axis::TriggerLeft
+                                        ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2
+                                        : OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2,
+                                    new_param > 0x20);
             return;
         default:
             break;
         }
         controller->Axis(0, axis, GetAxis(-0x80, 0x80, new_param * multiplier));
-    } else {
-        LOG_DEBUG(Input, "Controller output with no values detected!");
     }
 }
 
