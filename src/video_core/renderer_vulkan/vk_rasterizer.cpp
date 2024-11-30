@@ -388,7 +388,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     const auto& regs = liverpool->regs;
 
     if (pipeline->IsCompute()) {
-        const auto& info = pipeline->GetStage(Shader::Stage::Compute);
+        const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
         // Most of the time when a metadata is updated with a shader it gets cleared. It means
         // we can skip the whole dispatch and update the tracked state instead. Also, it is not

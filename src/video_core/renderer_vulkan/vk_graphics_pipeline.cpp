@@ -8,6 +8,7 @@
 
 #include "common/assert.h"
 #include "common/scope_exit.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -18,6 +19,8 @@
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
+
+using Shader::LogicalStage; // TODO
 
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
