@@ -49,9 +49,7 @@ public:
         const auto it = AddWaiter(&waiter);
 
         // Perform the wait.
-        lk.unlock();
-        const s32 result = waiter.Wait(timeout);
-        lk.lock();
+        const s32 result = waiter.Wait(lk, timeout);
         if (result == SCE_KERNEL_ERROR_ETIMEDOUT) {
             wait_list.erase(it);
         }
@@ -74,7 +72,8 @@ public:
             }
             it = wait_list.erase(it);
             token_count -= waiter->need_count;
-            waiter->sema.release();
+            waiter->was_signaled = true;
+            waiter->cv.notify_one();
         }
 
         return true;
@@ -87,7 +86,7 @@ public:
         }
         for (auto* waiter : wait_list) {
             waiter->was_cancled = true;
-            waiter->sema.release();
+            waiter->cv.notify_one();
         }
         wait_list.clear();
         token_count = set_count < 0 ? init_count : set_count;
@@ -98,20 +97,21 @@ public:
         std::scoped_lock lk{mutex};
         for (auto* waiter : wait_list) {
             waiter->was_deleted = true;
-            waiter->sema.release();
+            waiter->cv.notify_one();
         }
         wait_list.clear();
     }
 
 public:
     struct WaitingThread {
-        std::binary_semaphore sema;
+        std::condition_variable cv;
         u32 priority;
         s32 need_count;
+        bool was_signaled{};
         bool was_deleted{};
         bool was_cancled{};
 
-        explicit WaitingThread(s32 need_count, bool is_fifo) : sema{0}, need_count{need_count} {
+        explicit WaitingThread(s32 need_count, bool is_fifo) : need_count{need_count} {
             // Retrieve calling thread priority for sorting into waiting threads list.
             if (!is_fifo) {
                 priority = g_curthread->attr.prio;
@@ -131,24 +131,25 @@ public:
             return SCE_OK;
         }
 
-        int Wait(u32* timeout) {
+        int Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
             if (!timeout) {
                 // Wait indefinitely until we are woken up.
-                sema.acquire();
+                cv.wait(lk);
                 return GetResult(false);
             }
             // Wait until timeout runs out, recording how much remaining time there was.
             const auto start = std::chrono::high_resolution_clock::now();
-            const auto sema_timeout = !sema.try_acquire_for(std::chrono::microseconds(*timeout));
+            const auto signaled = cv.wait_for(lk, std::chrono::microseconds(*timeout),
+                                              [this] { return was_signaled; });
             const auto end = std::chrono::high_resolution_clock::now();
             const auto time =
                 std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            if (sema_timeout) {
-                *timeout = 0;
-            } else {
+            if (signaled) {
                 *timeout -= time;
+            } else {
+                *timeout = 0;
             }
-            return GetResult(sema_timeout);
+            return GetResult(!signaled);
         }
     };
 

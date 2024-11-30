@@ -121,6 +121,7 @@ int PthreadMutex::SelfTryLock() {
     switch (Type()) {
     case PthreadMutexType::ErrorCheck:
     case PthreadMutexType::Normal:
+    case PthreadMutexType::AdaptiveNp:
         return POSIX_EBUSY;
     case PthreadMutexType::Recursive: {
         /* Increment the lock count: */
@@ -224,7 +225,7 @@ int PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         [[unlikely]] {
         ret = POSIX_EINVAL;
     } else {
-        if (THR_RELTIME) {
+        if (abstime == THR_RELTIME) {
             ret = m_lock.try_lock_for(std::chrono::microseconds(usec)) ? 0 : POSIX_ETIMEDOUT;
         } else {
             ret = m_lock.try_lock_until(abstime->TimePoint()) ? 0 : POSIX_ETIMEDOUT;
@@ -336,7 +337,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_isowned_np(PthreadMutexT* mutex) {
     return m->m_owner == g_curthread;
 }
 
-bool PthreadMutex::IsOwned(Pthread* curthread) const {
+int PthreadMutex::IsOwned(Pthread* curthread) const {
     if (this <= THR_MUTEX_DESTROYED) [[unlikely]] {
         if (this == THR_MUTEX_DESTROYED) {
             return POSIX_EINVAL;
