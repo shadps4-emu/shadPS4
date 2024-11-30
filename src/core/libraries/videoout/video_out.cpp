@@ -4,12 +4,11 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/video_out.h"
-#include "core/loader/symbols_resolver.h"
+#include "core/libraries/videoout/videoout_error.h"
 #include "core/platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
@@ -51,7 +50,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
+    event.event.ident = u64(OrbisVideoOutEventId::Flip);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -78,7 +77,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
+    event.event.ident = u64(OrbisVideoOutEventId::Vblank);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -118,7 +117,7 @@ s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     LOG_TRACE(Lib_VideoOut, "called");
     auto* port = driver->GetPort(handle);
     std::unique_lock lock{port->port_mutex};
-    s32 pending = port->flip_status.flipPendingNum;
+    s32 pending = port->flip_status.flip_pending_num;
     return pending;
 }
 
@@ -156,7 +155,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
 
 int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
     if (ev == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -166,7 +165,7 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
 
 int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
     if (ev == nullptr || data == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -204,7 +203,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
 
 s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus* status) {
     if (status == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
     auto* port = driver->GetPort(handle);

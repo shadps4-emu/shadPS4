@@ -18,17 +18,26 @@ class AvPlayer;
 
 using SceAvPlayerHandle = AvPlayer*;
 
-enum SceAvPlayerUriType { SCE_AVPLAYER_URI_TYPE_SOURCE = 0 };
+enum class SceAvPlayerUriType : u32 {
+    Source = 0,
+};
 
 struct SceAvPlayerUri {
     const char* name;
     u32 length;
 };
 
-enum SceAvPlayerSourceType {
-    SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN = 0,
-    SCE_AVPLAYER_SOURCE_TYPE_FILE_MP4 = 1,
-    SCE_AVPLAYER_SOURCE_TYPE_HLS = 8
+enum class SceAvPlayerSourceType {
+    Unknown = 0,
+    FileMp4 = 1,
+    Hls = 8,
+};
+
+enum class SceAvPlayerStreamType : u32 {
+    Video,
+    Audio,
+    TimedText,
+    Unknown,
 };
 
 struct SceAvPlayerSourceDetails {
@@ -50,7 +59,7 @@ struct SceAvPlayerVideo {
     u32 width;
     u32 height;
     f32 aspect_ratio;
-    u8 language_code[4];
+    char language_code[4];
 };
 
 struct SceAvPlayerTextPosition {
@@ -82,7 +91,7 @@ struct SceAvPlayerFrameInfo {
 };
 
 struct SceAvPlayerStreamInfo {
-    u32 type;
+    SceAvPlayerStreamType type;
     u8 reserved[4];
     SceAvPlayerStreamDetails details;
     u64 duration;
@@ -135,10 +144,10 @@ struct SceAvPlayerFrameInfoEx {
     SceAvPlayerStreamDetailsEx details;
 };
 
-typedef void* PS4_SYSV_ABI (*SceAvPlayerAllocate)(void* p, u32 align, u32 size);
-typedef void PS4_SYSV_ABI (*SceAvPlayerDeallocate)(void* p, void* mem);
-typedef void* PS4_SYSV_ABI (*SceAvPlayerAllocateTexture)(void* p, u32 align, u32 size);
-typedef void PS4_SYSV_ABI (*SceAvPlayerDeallocateTexture)(void* p, void* mem);
+using SceAvPlayerAllocate = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
+using SceAvPlayerDeallocate = void PS4_SYSV_ABI (*)(void* p, void* mem);
+using SceAvPlayerAllocateTexture = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
+using SceAvPlayerDeallocateTexture = void PS4_SYSV_ABI (*)(void* p, void* mem);
 
 struct SceAvPlayerMemAllocator {
     void* object_ptr;
@@ -148,10 +157,10 @@ struct SceAvPlayerMemAllocator {
     SceAvPlayerDeallocateTexture deallocate_texture;
 };
 
-typedef s32 PS4_SYSV_ABI (*SceAvPlayerOpenFile)(void* p, const char* name);
-typedef s32 PS4_SYSV_ABI (*SceAvPlayerCloseFile)(void* p);
-typedef s32 PS4_SYSV_ABI (*SceAvPlayerReadOffsetFile)(void* p, u8* buf, u64 pos, u32 len);
-typedef u64 PS4_SYSV_ABI (*SceAvPlayerSizeFile)(void* p);
+using SceAvPlayerOpenFile = s32 PS4_SYSV_ABI (*)(void* p, const char* name);
+using SceAvPlayerCloseFile = s32 PS4_SYSV_ABI (*)(void* p);
+using SceAvPlayerReadOffsetFile = s32 PS4_SYSV_ABI (*)(void* p, u8* buf, u64 pos, u32 len);
+using SceAvPlayerSizeFile = u64 PS4_SYSV_ABI (*)(void* p);
 
 struct SceAvPlayerFileReplacement {
     void* object_ptr;
@@ -161,31 +170,31 @@ struct SceAvPlayerFileReplacement {
     SceAvPlayerSizeFile size;
 };
 
-enum SceAvPlayerEvents {
-    SCE_AVPLAYER_STATE_STOP = 0x01,
-    SCE_AVPLAYER_STATE_READY = 0x02,
-    SCE_AVPLAYER_STATE_PLAY = 0x03,
-    SCE_AVPLAYER_STATE_PAUSE = 0x04,
-    SCE_AVPLAYER_STATE_BUFFERING = 0x05,
-    SCE_AVPLAYER_TIMED_TEXT_DELIVERY = 0x10,
-    SCE_AVPLAYER_WARNING_ID = 0x20,
-    SCE_AVPLAYER_ENCRYPTION = 0x30,
-    SCE_AVPLAYER_DRM_ERROR = 0x40
+enum class SceAvPlayerEvents {
+    StateStop = 0x01,
+    StateReady = 0x02,
+    StatePlay = 0x03,
+    StatePause = 0x04,
+    StateBuffering = 0x05,
+    TimedTextDelivery = 0x10,
+    WarningId = 0x20,
+    Encryption = 0x30,
+    DrmError = 0x40,
 };
 
-typedef void PS4_SYSV_ABI (*SceAvPlayerEventCallback)(void* p, SceAvPlayerEvents event, s32 src_id,
-                                                      void* data);
+using SceAvPlayerEventCallback = void PS4_SYSV_ABI (*)(void* p, SceAvPlayerEvents event, s32 src_id,
+                                                       void* data);
 
 struct SceAvPlayerEventReplacement {
     void* object_ptr;
     SceAvPlayerEventCallback event_callback;
 };
 
-enum SceAvPlayerDebuglevels {
-    SCE_AVPLAYER_DBG_NONE,
-    SCE_AVPLAYER_DBG_INFO,
-    SCE_AVPLAYER_DBG_WARNINGS,
-    SCE_AVPLAYER_DBG_ALL
+enum class SceAvPlayerDebuglevels {
+    None,
+    Info,
+    Warnings,
+    All,
 };
 
 struct SceAvPlayerInitData {
@@ -224,24 +233,17 @@ struct SceAvPlayerInitDataEx {
     u8 reserved[3];
 };
 
-enum SceAvPlayerStreamType {
-    SCE_AVPLAYER_VIDEO,
-    SCE_AVPLAYER_AUDIO,
-    SCE_AVPLAYER_TIMEDTEXT,
-    SCE_AVPLAYER_UNKNOWN
+enum class SceAvPlayerVideoDecoderType {
+    Default = 0,
+    Reserved1,
+    Software,
+    Software2,
 };
 
-enum SceAvPlayerVideoDecoderType {
-    SCE_AVPLAYER_VIDEO_DECODER_TYPE_DEFAULT = 0,
-    SCE_AVPLAYER_VIDEO_DECODER_TYPE_RESERVED1,
-    SCE_AVPLAYER_VIDEO_DECODER_TYPE_SOFTWARE,
-    SCE_AVPLAYER_VIDEO_DECODER_TYPE_SOFTWARE2
-};
-
-enum SceAvPlayerAudioDecoderType {
-    SCE_AVPLAYER_AUDIO_DECODER_TYPE_DEFAULT = 0,
-    SCE_AVPLAYER_AUDIO_DECODER_TYPE_RESERVED1,
-    SCE_AVPLAYER_AUDIO_DECODER_TYPE_RESERVED2
+enum class SceAvPlayerAudioDecoderType {
+    Default = 0,
+    Reserved1,
+    Reserved2,
 };
 
 struct SceAvPlayerDecoderInit {
@@ -281,12 +283,12 @@ struct SceAvPlayerPostInitData {
     u8 reserved[56];
 };
 
-enum SceAvPlayerAvSyncMode {
-    SCE_AVPLAYER_AV_SYNC_MODE_DEFAULT = 0,
-    SCE_AVPLAYER_AV_SYNC_MODE_NONE
+enum class SceAvPlayerAvSyncMode {
+    Default = 0,
+    None,
 };
 
-typedef int PS4_SYSV_ABI (*SceAvPlayerLogCallback)(void* p, const char* format, va_list args);
+using SceAvPlayerLogCallback = int PS4_SYSV_ABI (*)(void* p, const char* format, va_list args);
 
 void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym);
 

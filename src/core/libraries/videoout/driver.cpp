@@ -8,10 +8,9 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/platform.h"
+#include "core/libraries/videoout/videoout_error.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -42,10 +41,10 @@ constexpr u32 PixelFormatBpp(PixelFormat pixel_format) {
 }
 
 VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
-    main_port.resolution.fullWidth = width;
-    main_port.resolution.fullHeight = height;
-    main_port.resolution.paneWidth = width;
-    main_port.resolution.paneHeight = height;
+    main_port.resolution.full_width = width;
+    main_port.resolution.full_height = height;
+    main_port.resolution.pane_width = width;
+    main_port.resolution.pane_height = height;
     present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
 }
 
@@ -174,20 +173,21 @@ void VideoOutDriver::Flip(const Request& req) {
         std::unique_lock lock{port->port_mutex};
         auto& flip_status = port->flip_status;
         flip_status.count++;
-        flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+        flip_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
         flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
-        flip_status.flipArg = req.flip_arg;
-        flip_status.currentBuffer = req.index;
+        flip_status.flip_arg = req.flip_arg;
+        flip_status.current_buffer = req.index;
         if (req.eop) {
-            --flip_status.gcQueueNum;
+            --flip_status.gc_queue_num;
         }
-        --flip_status.flipPendingNum;
+        --flip_status.flip_pending_num;
     }
 
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
         if (event != nullptr) {
-            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::SceKernelEvent::Filter::VideoOut,
+            event->TriggerEvent(u64(OrbisVideoOutEventId::Flip),
+                                Kernel::SceKernelEvent::Filter::VideoOut,
                                 reinterpret_cast<void*>(req.flip_arg));
         }
     }
@@ -211,16 +211,16 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
         std::unique_lock lock{port->port_mutex};
-        if (index != -1 && port->flip_status.flipPendingNum >= port->NumRegisteredBuffers()) {
+        if (index != -1 && port->flip_status.flip_pending_num >= port->NumRegisteredBuffers()) {
             LOG_ERROR(Lib_VideoOut, "Flip queue is full");
             return false;
         }
 
         if (is_eop) {
-            ++port->flip_status.gcQueueNum;
+            ++port->flip_status.gc_queue_num;
         }
-        ++port->flip_status.flipPendingNum; // integral GPU and CPU pending flips counter
-        port->flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
+        ++port->flip_status.flip_pending_num; // integral GPU and CPU pending flips counter
+        port->flip_status.submit_tsc = Libraries::Kernel::sceKernelReadTsc();
     }
 
     if (!is_eop) {
@@ -298,9 +298,9 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
         {
             // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
-            std::unique_lock lock{main_port.vo_mutex};
+            std::scoped_lock lock{main_port.vo_mutex};
             vblank_status.count++;
-            vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+            vblank_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
             main_port.vblank_cv.notify_all();
         }
@@ -308,7 +308,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Trigger flip events for the port.
         for (auto& event : main_port.vblank_events) {
             if (event != nullptr) {
-                event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
+                event->TriggerEvent(u64(OrbisVideoOutEventId::Vblank),
                                     Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
             }
         }

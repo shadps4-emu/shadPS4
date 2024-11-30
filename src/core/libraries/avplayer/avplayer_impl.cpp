@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/avplayer/avplayer_common.h"
+#include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_impl.h"
-#include "core/libraries/error_codes.h"
 #include "core/tls.h"
 
 namespace Libraries::AvPlayer {

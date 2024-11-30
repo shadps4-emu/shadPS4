@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <forward_list>
-#include <list>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/list_hook.hpp>
-#include "common/types.h"
 
 namespace Libraries::Kernel {
 
 struct Pthread;
+struct SleepQueue;
 
 using ListBaseHook =
     boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>;
@@ -17,7 +16,7 @@ using ListBaseHook =
 using SleepqList = boost::intrusive::list<SleepQueue, boost::intrusive::constant_time_size<false>>;
 
 struct SleepQueue : public ListBaseHook {
-    std::list<Pthread*> sq_blocked;
+    std::forward_list<Pthread*> sq_blocked;
     SleepqList sq_freeq;
     void* sq_wchan;
     int sq_type;

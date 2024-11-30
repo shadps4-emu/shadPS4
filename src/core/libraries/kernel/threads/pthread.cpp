@@ -4,8 +4,8 @@
 #include "common/assert.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
@@ -380,7 +380,7 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     LOG_INFO(Kernel_Pthread, "name = {}", name);
     thread->name = name;
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* policy,

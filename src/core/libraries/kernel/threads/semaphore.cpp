@@ -5,9 +5,11 @@
 #include <list>
 #include <mutex>
 #include <semaphore>
+
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
@@ -41,7 +43,7 @@ public:
         }
 
         if (timeout && *timeout == 0) {
-            return SCE_KERNEL_ERROR_ETIMEDOUT;
+            return ORBIS_KERNEL_ERROR_ETIMEDOUT;
         }
 
         // Create waiting thread object and add it into the list of waiters.
@@ -50,7 +52,7 @@ public:
 
         // Perform the wait.
         const s32 result = waiter.Wait(lk, timeout);
-        if (result == SCE_KERNEL_ERROR_ETIMEDOUT) {
+        if (result == ORBIS_KERNEL_ERROR_ETIMEDOUT) {
             wait_list.erase(it);
         }
         return result;
@@ -120,15 +122,15 @@ public:
 
         int GetResult(bool timed_out) {
             if (timed_out) {
-                return SCE_KERNEL_ERROR_ETIMEDOUT;
+                return ORBIS_KERNEL_ERROR_ETIMEDOUT;
             }
             if (was_deleted) {
-                return SCE_KERNEL_ERROR_EACCES;
+                return ORBIS_KERNEL_ERROR_EACCES;
             }
             if (was_cancled) {
-                return SCE_KERNEL_ERROR_ECANCELED;
+                return ORBIS_KERNEL_ERROR_ECANCELED;
             }
-            return SCE_OK;
+            return ORBIS_OK;
         }
 
         int Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
@@ -223,13 +225,13 @@ int PS4_SYSV_ABI sceKernelCancelSema(OrbisKernelSema sem, s32 setCount, s32* pNu
 
 int PS4_SYSV_ABI sceKernelDeleteSema(OrbisKernelSema sem) {
     if (!sem) {
-        return SCE_KERNEL_ERROR_ESRCH;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
     sem->Delete();
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_sem_init(PthreadSem** sem, int pshared, unsigned int value) {
+int PS4_SYSV_ABI posix_sem_init(PthreadSem** sem, int pshared, u32 value) {
     if (value > ORBIS_KERNEL_SEM_VALUE_MAX) {
         *__Error() = POSIX_EINVAL;
         return -1;

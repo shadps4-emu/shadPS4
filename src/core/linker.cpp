@@ -16,7 +16,6 @@
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
-#include "core/virtual_memory.h"
 
 namespace Core {
 
@@ -211,7 +210,7 @@ void Linker::Relocate(Module* module) {
         }
 
         if (rel_is_resolved) {
-            VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
+            std::memcpy(reinterpret_cast<void*>(rel_virtual_addr), &rel_value, sizeof(rel_value));
         } else {
             LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
@@ -297,8 +296,6 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
 
     u8* addr = dtv_table[module_index + 1].pointer;
     Module* module = m_modules[module_index - 1].get();
-    // LOG_INFO(Core_Linker, "Got DTV addr {} from module index {} with name {}",
-    //          fmt::ptr(addr), module_index, module->file.filename().string());
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
         const u32 init_image_size = module->tls.init_image_size;

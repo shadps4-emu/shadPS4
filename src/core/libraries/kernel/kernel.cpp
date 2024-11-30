@@ -2,36 +2,27 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
-
 #include <boost/asio/io_context.hpp>
 
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
-#include "common/singleton.h"
 #include "common/thread.h"
-#include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
+#include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
-#include "core/linker.h"
 
 #ifdef _WIN64
-#include <io.h>
-#include <objbase.h>
-#include <windows.h>
-#else
-#ifdef __APPLE__
-#include <date/tz.h>
-#endif
+#include <Rpc.h>
 #endif
 
 namespace Libraries::Kernel {
@@ -39,10 +30,10 @@ namespace Libraries::Kernel {
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 
 boost::asio::io_context io_context;
-std::mutex m_asio_req;
-std::condition_variable_any cv_asio_req;
-std::atomic<u32> asio_requests;
-std::jthread service_thread;
+static std::mutex m_asio_req;
+static std::condition_variable_any cv_asio_req;
+static std::atomic<u32> asio_requests;
+static std::jthread service_thread;
 
 void KernelSignalRequest() {
     std::unique_lock lock{m_asio_req};
@@ -93,16 +84,12 @@ int* PS4_SYSV_ABI __Error() {
     return &g_posix_errno;
 }
 
-void ErrSceToPosix(int result) {
-    const int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                       ? result + -SCE_KERNEL_ERROR_UNKNOWN
-                       : POSIX_EOTHER;
-    g_posix_errno = rt;
+void ErrSceToPosix(int error) {
+    g_posix_errno = error - ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-int ErrnoToSceKernelError(int e) {
-    const auto res = SCE_KERNEL_ERROR_UNKNOWN + e;
-    return res > SCE_KERNEL_ERROR_ESTOP ? SCE_KERNEL_ERROR_UNKNOWN : res;
+int ErrnoToSceKernelError(int error) {
+    return error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
 void SetPosixErrno(int e) {

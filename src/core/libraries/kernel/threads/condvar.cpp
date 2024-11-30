@@ -3,8 +3,8 @@
 
 #include <cstring>
 #include "common/assert.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/libs.h"

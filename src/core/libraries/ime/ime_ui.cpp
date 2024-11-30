@@ -16,7 +16,7 @@ ImeState::ImeState(const OrbisImeParam* param) {
     }
 
     work_buffer = param->work;
-    text_buffer = param->inputTextBuffer;
+    text_buffer = param->input_text_buffer;
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
     if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
@@ -52,13 +52,13 @@ void ImeState::SendEvent(OrbisImeEvent* event) {
 
 void ImeState::SendEnterEvent() {
     OrbisImeEvent enterEvent{};
-    enterEvent.id = OrbisImeEventId::PRESS_ENTER;
+    enterEvent.id = OrbisImeEventId::PressEnter;
     SendEvent(&enterEvent);
 }
 
 void ImeState::SendCloseEvent() {
     OrbisImeEvent closeEvent{};
-    closeEvent.id = OrbisImeEventId::PRESS_CLOSE;
+    closeEvent.id = OrbisImeEventId::PressClose;
     closeEvent.param.text.str = reinterpret_cast<char16_t*>(work_buffer);
     SendEvent(&closeEvent);
 }
@@ -180,7 +180,7 @@ void ImeUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
+    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->max_text_length,
                     input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
         state->input_changed = true;
     }
@@ -194,16 +194,16 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     if (lastCaretPos == -1) {
         lastCaretPos = data->CursorPos;
     } else if (data->CursorPos != lastCaretPos) {
-        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::STILL;
+        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::Still;
         if (data->CursorPos < lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::LEFT;
+            caretDirection = OrbisImeCaretMovementDirection::Left;
         } else if (data->CursorPos > lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::RIGHT;
+            caretDirection = OrbisImeCaretMovementDirection::Right;
         }
 
         OrbisImeEvent event{};
-        event.id = OrbisImeEventId::UPDATE_CARET;
-        event.param.caretMove = caretDirection;
+        event.id = OrbisImeEventId::UpdateCaret;
+        event.param.caret_move = caretDirection;
 
         lastCaretPos = data->CursorPos;
         ui->state->SendEvent(&event);
@@ -214,28 +214,28 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     if (currentText != lastText) {
         OrbisImeEditText eventParam{};
         eventParam.str = reinterpret_cast<char16_t*>(ui->ime_param->work);
-        eventParam.caretIndex = data->CursorPos;
-        eventParam.areaNum = 1;
+        eventParam.caret_index = data->CursorPos;
+        eventParam.area_num = 1;
 
-        eventParam.textArea[0].mode = 1; // Edit mode
-        eventParam.textArea[0].index = data->CursorPos;
-        eventParam.textArea[0].length = data->BufTextLen;
+        eventParam.text_area[0].mode = 1; // Edit mode
+        eventParam.text_area[0].index = data->CursorPos;
+        eventParam.text_area[0].length = data->BufTextLen;
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
-                                           ui->ime_param->maxTextLength)) {
+                                           ui->ime_param->max_text_length)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
             return 0;
         }
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
-                                           ui->ime_param->inputTextBuffer,
-                                           ui->ime_param->maxTextLength)) {
+                                           ui->ime_param->input_text_buffer,
+                                           ui->ime_param->max_text_length)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
             return 0;
         }
 
         OrbisImeEvent event{};
-        event.id = OrbisImeEventId::UPDATE_TEXT;
+        event.id = OrbisImeEventId::UpdateText;
         event.param.text = eventParam;
 
         lastText = currentText;

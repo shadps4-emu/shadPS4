@@ -40,16 +40,16 @@ struct OrbisUserServiceRegisteredUserIdList {
     OrbisUserServiceUserId userId[ORBIS_USER_SERVICE_MAX_REGISTER_USERS];
 };
 
-enum OrbisUserServiceUserColor {
-    ORBIS_USER_SERVICE_USER_COLOR_BLUE = 0,
-    ORBIS_USER_SERVICE_USER_COLOR_RED = 1,
-    ORBIS_USER_SERVICE_USER_COLOR_GREEN = 2,
-    ORBIS_USER_SERVICE_USER_COLOR_PINK = 3,
+enum class OrbisUserServiceUserColor {
+    Blue = 0,
+    Red = 1,
+    Green = 2,
+    Pink = 3,
 };
 
-enum OrbisUserServiceEventType {
-    SCE_USER_SERVICE_EVENT_TYPE_LOGIN = 0,  // Login event
-    SCE_USER_SERVICE_EVENT_TYPE_LOGOUT = 1, // Logout event
+enum class OrbisUserServiceEventType {
+    Login = 0,  // Login event
+    Logout = 1, // Logout event
 };
 
 struct OrbisUserServiceEvent {
@@ -258,7 +258,7 @@ int PS4_SYSV_ABI sceUserServiceGetTopMenuLimitItem();
 int PS4_SYSV_ABI sceUserServiceGetTopMenuNotificationFlag();
 int PS4_SYSV_ABI sceUserServiceGetTopMenuTutorialFlag();
 int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType();
-s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color);
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color);
 int PS4_SYSV_ABI sceUserServiceGetUserGroupName();
 int PS4_SYSV_ABI sceUserServiceGetUserGroupNameList();
 int PS4_SYSV_ABI sceUserServiceGetUserGroupNum();
