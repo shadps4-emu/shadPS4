@@ -421,29 +421,27 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     return 0;
 }
 
-int PS4_SYSV_ABI scePthreadSetprio(PthreadT thread, int prio) {
+int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     SchedParam param;
-    int ret;
 
     param.sched_priority = prio;
 
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (int ret = thread_state->FindThread(thread, /*include dead*/ 0)) {
+    } else if (int ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
         return ret;
     }
 
     if (thread->attr.sched_policy == SchedPolicy::Other || thread->attr.prio == prio) {
         thread->attr.prio = prio;
-        ret = 0;
     } else {
         // TODO: _thr_setscheduler
         thread->attr.prio = prio;
     }
 
     thread->lock.unlock();
-    return ret;
+    return 0;
 }
 
 enum class PthreadCancelState : u32 {
@@ -495,6 +493,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
+    LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setprio);
+    LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 
     // Posix-Kernel
@@ -517,7 +517,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, posix_pthread_yield);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getthreadid_np);
     LIB_FUNCTION("1tKyG7RlMJo", "libkernel", 1, "libkernel", 1, 1, scePthreadGetprio);
-    LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, scePthreadSetprio);
+    LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_setprio));
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
 }

@@ -150,6 +150,7 @@ void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
 
     // Orbis
     LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_create));
+    LIB_FUNCTION("PrdHuuDekhY", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_delete));
     LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
     LIB_FUNCTION("+BzXYkqYeLE", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_setspecific));
