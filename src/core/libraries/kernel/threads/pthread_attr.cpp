@@ -303,6 +303,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_attr_getstacksize);
     LIB_FUNCTION("VUT1ZSrHT0I", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_getdetachstate);
+    LIB_FUNCTION("JKyG3SWyA10", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_setguardsize);
 
     // Orbis
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1,

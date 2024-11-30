@@ -10,6 +10,7 @@
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
@@ -495,6 +496,16 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     return SCE_OK;
 }
 
+int PS4_SYSV_ABI posix_munmap(void* addr, size_t len) {
+    int result = sceKernelMunmap(addr, len);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_munmap: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
 void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
     LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", 1, 1,
@@ -517,6 +528,8 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
     LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelAvailableFlexibleMemorySize);
+    LIB_FUNCTION("aNz11fnnzi4", "libkernel_avlfmem", 1, "libkernel", 1, 1,
+                 sceKernelAvailableFlexibleMemorySize);
     LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
     LIB_FUNCTION("p5EcQeEeJAE", "libkernel", 1, "libkernel", 1, 1,
                  _sceKernelRtldSetApplicationHeapAPI);
@@ -537,6 +550,8 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
+    LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", 1, 1, posix_munmap);
+    LIB_FUNCTION("UqDGjXA5yUM", "libScePosix", 1, "libkernel", 1, 1, posix_munmap);
 }
 
 } // namespace Libraries::Kernel
