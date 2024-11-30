@@ -14,6 +14,7 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
+#include "widget/memory_map.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
@@ -34,6 +35,8 @@ static std::vector<Widget::FrameDumpViewer> frame_viewers;
 static float debug_popup_timing = 3.0f;
 
 static bool just_opened_options = false;
+
+static Widget::MemoryMapViewer memory_map;
 
 // clang-format off
 static std::string help_text =
@@ -78,6 +81,12 @@ void L::DrawMenuBar() {
             if (BeginMenu("Brightness")) {
                 SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
                 ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if (BeginMenu("Debug")) {
+            if (MenuItem("Memory map")) {
+                memory_map.open = true;
             }
             ImGui::EndMenu();
         }
@@ -218,6 +227,10 @@ void L::DrawAdvanced() {
         PopStyleVar();
 
         EndPopup();
+    }
+
+    if (memory_map.open) {
+        memory_map.Draw();
     }
 }
 
