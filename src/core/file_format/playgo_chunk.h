@@ -97,24 +97,23 @@ struct PlaygoChunk {
 
 class PlaygoFile {
 public:
-    bool initialized;
-    OrbisPlayGoHandle handle;
-    OrbisPlayGoChunkId id;
-    OrbisPlayGoLocus locus;
-    OrbisPlayGoInstallSpeed speed;
-    s64 speed_tick;
-    OrbisPlayGoEta eta;
-    OrbisPlayGoLanguageMask langMask;
+    bool initialized = false;
+    OrbisPlayGoHandle handle = 0;
+    OrbisPlayGoChunkId id = 0;
+    OrbisPlayGoLocus locus = OrbisPlayGoLocus::NotDownloaded;
+    OrbisPlayGoInstallSpeed speed = OrbisPlayGoInstallSpeed::Trickle;
+    s64 speed_tick = 0;
+    OrbisPlayGoEta eta = 0;
+    OrbisPlayGoLanguageMask langMask = 0;
     std::vector<PlaygoChunk> chunks;
 
 public:
-    PlaygoFile()
-        : initialized(false), handle(0), id(0), locus(0), speed(ORBIS_PLAYGO_INSTALL_SPEED_TRICKLE),
-          speed_tick(0), eta(0), langMask(0), playgoHeader{0} {}
+    explicit PlaygoFile() = default;
     ~PlaygoFile() = default;
 
     bool Open(const std::filesystem::path& filepath);
     bool LoadChunks(const Common::FS::IOFile& file);
+
     PlaygoHeader& GetPlaygoHeader() {
         return playgoHeader;
     }

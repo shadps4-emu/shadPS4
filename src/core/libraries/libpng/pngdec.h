@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -11,28 +12,14 @@ class SymbolsResolver;
 
 namespace Libraries::PngDec {
 
-enum OrbisPngDecColorSpace {
-    ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE = 2,
-    ORBIS_PNG_DEC_COLOR_SPACE_RGB,
-    ORBIS_PNG_DEC_COLOR_SPACE_CLUT,
-    ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE_ALPHA = 18,
-    ORBIS_PNG_DEC_COLOR_SPACE_RGBA
-};
+enum class OrbisPngDecColorSpace : u16 { Grayscale = 2, Rgb, Clut, GrayscaleAlpha = 18, Rgba };
 
-enum OrbisPngDecImageFlag {
-    ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE = 1,
-    ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST = 2
-};
+enum class OrbisPngDecImageFlag : u32 { None = 0, Adam7Interlace = 1, TrnsChunkExist = 2 };
+DECLARE_ENUM_FLAG_OPERATORS(OrbisPngDecImageFlag)
 
-enum OrbisPngDecPixelFormat {
-    ORBIS_PNG_DEC_PIXEL_FORMAT_R8G8B8A8 = 0,
-    ORBIS_PNG_DEC_PIXEL_FORMAT_B8G8R8A8
-};
+enum class OrbisPngDecPixelFormat : u16 { R8G8B8A8 = 0, B8G8R8A8 };
 
-enum OrbisPngDecAttribute {
-    ORBIS_PNG_DEC_ATTRIBUTE_NONE = 0,
-    ORBIS_PNG_DEC_ATTRIBUTE_BIT_DEPTH_16
-};
+enum class OrbisPngDecAttribute { None = 0, BitDepth16 };
 
 struct OrbisPngDecParseParam {
     const void* pngMemAddr;
@@ -43,9 +30,9 @@ struct OrbisPngDecParseParam {
 struct OrbisPngDecImageInfo {
     u32 imageWidth;
     u32 imageHeight;
-    u16 colorSpace;
+    OrbisPngDecColorSpace colorSpace;
     u16 bitDepth;
-    u32 imageFlag;
+    OrbisPngDecImageFlag imageFlag;
 };
 
 struct OrbisPngDecCreateParam {
@@ -54,14 +41,14 @@ struct OrbisPngDecCreateParam {
     u32 maxImageWidth;
 };
 
-typedef void* OrbisPngDecHandle;
+using OrbisPngDecHandle = void*;
 
 struct OrbisPngDecDecodeParam {
     const void* pngMemAddr;
     void* imageMemAddr;
     u32 pngMemSize;
     u32 imageMemSize;
-    u16 pixelFormat;
+    OrbisPngDecPixelFormat pixelFormat;
     u16 alphaValue;
     u32 imagePitch;
 };

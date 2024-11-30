@@ -257,9 +257,9 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     linker->Execute();
 
-    window->initTimers();
-    while (window->isOpen()) {
-        window->waitEvent();
+    window->InitTimers();
+    while (window->IsOpen()) {
+        window->WaitEvent();
     }
 
 #ifdef ENABLE_QT_GUI

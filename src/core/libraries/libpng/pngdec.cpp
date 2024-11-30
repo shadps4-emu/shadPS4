@@ -18,21 +18,16 @@ struct PngHandler {
 static inline OrbisPngDecColorSpace MapPngColor(int color) {
     switch (color) {
     case PNG_COLOR_TYPE_GRAY:
-        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE;
-
+        return OrbisPngDecColorSpace::Grayscale;
     case PNG_COLOR_TYPE_GRAY_ALPHA:
-        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE_ALPHA;
-
+        return OrbisPngDecColorSpace::GrayscaleAlpha;
     case PNG_COLOR_TYPE_PALETTE:
-        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_CLUT;
-
+        return OrbisPngDecColorSpace::Clut;
     case PNG_COLOR_TYPE_RGB:
-        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGB;
-
+        return OrbisPngDecColorSpace::Rgb;
     case PNG_COLOR_TYPE_RGB_ALPHA:
-        return OrbisPngDecColorSpace::ORBIS_PNG_DEC_COLOR_SPACE_RGBA;
+        return OrbisPngDecColorSpace::Rgba;
     }
-
     UNREACHABLE_MSG("unknown png color type");
 }
 
@@ -118,56 +113,60 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
                         pngdata->offset += len;
                     });
 
-    u32 width, height;
-    int color_type, bit_depth;
     png_read_info(pngh->png_ptr, pngh->info_ptr);
-
-    width = png_get_image_width(pngh->png_ptr, pngh->info_ptr);
-    height = png_get_image_height(pngh->png_ptr, pngh->info_ptr);
-    color_type = MapPngColor(png_get_color_type(pngh->png_ptr, pngh->info_ptr));
-    bit_depth = png_get_bit_depth(pngh->png_ptr, pngh->info_ptr);
+    const u32 width = png_get_image_width(pngh->png_ptr, pngh->info_ptr);
+    const u32 height = png_get_image_height(pngh->png_ptr, pngh->info_ptr);
+    const auto color_type = MapPngColor(png_get_color_type(pngh->png_ptr, pngh->info_ptr));
+    const auto bit_depth = png_get_bit_depth(pngh->png_ptr, pngh->info_ptr);
 
     if (imageInfo != nullptr) {
         imageInfo->bitDepth = bit_depth;
         imageInfo->imageWidth = width;
         imageInfo->imageHeight = height;
         imageInfo->colorSpace = color_type;
-        imageInfo->imageFlag = 0;
+        imageInfo->imageFlag = OrbisPngDecImageFlag::None;
         if (png_get_interlace_type(pngh->png_ptr, pngh->info_ptr) == 1) {
-            imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
+            imageInfo->imageFlag |= OrbisPngDecImageFlag::Adam7Interlace;
         }
         if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS)) {
-
-            imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+            imageInfo->imageFlag |= OrbisPngDecImageFlag::TrnsChunkExist;
         }
     }
 
-    if (bit_depth == 16)
+    if (bit_depth == 16) {
         png_set_strip_16(pngh->png_ptr);
-    if (color_type == PNG_COLOR_TYPE_PALETTE)
+    }
+    if (color_type == OrbisPngDecColorSpace::Clut) {
         png_set_palette_to_rgb(pngh->png_ptr);
-    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+    }
+    if (color_type == OrbisPngDecColorSpace::Grayscale && bit_depth < 8) {
         png_set_expand_gray_1_2_4_to_8(pngh->png_ptr);
-    if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS))
+    }
+    if (png_get_valid(pngh->png_ptr, pngh->info_ptr, PNG_INFO_tRNS)) {
         png_set_tRNS_to_alpha(pngh->png_ptr);
-    if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+    }
+    if (color_type == OrbisPngDecColorSpace::Grayscale ||
+        color_type == OrbisPngDecColorSpace::GrayscaleAlpha) {
         png_set_gray_to_rgb(pngh->png_ptr);
-    if (param->pixelFormat == OrbisPngDecPixelFormat::ORBIS_PNG_DEC_PIXEL_FORMAT_B8G8R8A8)
+    }
+    if (param->pixelFormat == OrbisPngDecPixelFormat::B8G8R8A8) {
         png_set_bgr(pngh->png_ptr);
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
-        color_type == PNG_COLOR_TYPE_PALETTE)
+    }
+    if (color_type == OrbisPngDecColorSpace::Rgb ||
+        color_type == OrbisPngDecColorSpace::Grayscale ||
+        color_type == OrbisPngDecColorSpace::Clut) {
         png_set_add_alpha(pngh->png_ptr, param->alphaValue, PNG_FILLER_AFTER);
+    }
 
-    int pass = png_set_interlace_handling(pngh->png_ptr);
+    const s32 pass = png_set_interlace_handling(pngh->png_ptr);
     png_read_update_info(pngh->png_ptr, pngh->info_ptr);
 
-    auto const numChannels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
-    auto horizontal_bytes = numChannels * width;
+    const s32 num_channels = png_get_channels(pngh->png_ptr, pngh->info_ptr);
+    const s32 horizontal_bytes = num_channels * width;
+    const s32 stride = param->imagePitch > 0 ? param->imagePitch : horizontal_bytes;
 
-    int stride = param->imagePitch > 0 ? param->imagePitch : horizontal_bytes;
-
-    for (int j = 0; j < pass; j++) { // interlaced
-        auto ptr = (png_bytep)param->imageMemAddr;
+    for (int j = 0; j < pass; j++) {
+        auto ptr = reinterpret_cast<png_bytep>(param->imageMemAddr);
         for (int y = 0; y < height; y++) {
             png_read_row(pngh->png_ptr, ptr, nullptr);
             ptr += stride;
@@ -233,13 +232,12 @@ s32 PS4_SYSV_ABI scePngDecParseHeader(const OrbisPngDecParseParam* param,
     imageInfo->imageHeight = png_get_image_height(png_ptr, info_ptr);
     imageInfo->colorSpace = MapPngColor(png_get_color_type(png_ptr, info_ptr));
     imageInfo->bitDepth = png_get_bit_depth(png_ptr, info_ptr);
-    imageInfo->imageFlag = 0;
+    imageInfo->imageFlag = OrbisPngDecImageFlag::None;
     if (png_get_interlace_type(png_ptr, info_ptr) == 1) {
-        imageInfo->imageFlag |= OrbisPngDecImageFlag::ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE;
+        imageInfo->imageFlag |= OrbisPngDecImageFlag::Adam7Interlace;
     }
     if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
-
-        imageInfo->imageFlag |= ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST;
+        imageInfo->imageFlag |= OrbisPngDecImageFlag::TrnsChunkExist;
     }
 
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);

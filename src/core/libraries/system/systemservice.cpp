@@ -1889,39 +1889,38 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value) {
     // TODO this probably should be stored in config for UI configuration
-    LOG_INFO(Lib_SystemService, "called param_id {}", param_id);
+    LOG_INFO(Lib_SystemService, "called param_id {}", u32(param_id));
     if (value == nullptr) {
         LOG_ERROR(Lib_SystemService, "value is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
     switch (param_id) {
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG:
+    case OrbisSystemServiceParamId::Lang:
         *value = Config::GetLanguage();
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT:
-        *value = ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY;
+    case OrbisSystemServiceParamId::DateFormat:
+        *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT:
-        *value = ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR;
+    case OrbisSystemServiceParamId::TimeFormat:
+        *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_ZONE:
+    case OrbisSystemServiceParamId::TimeZone:
         *value = +120;
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_SUMMERTIME:
+    case OrbisSystemServiceParamId::Summertime:
         *value = 1;
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_GAME_PARENTAL_LEVEL:
-        *value = ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF;
+    case OrbisSystemServiceParamId::GameParentalLevel:
+        *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN:
-        *value = ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS;
+    case OrbisSystemServiceParamId::EnterButtonAssign:
+        *value = u32(OrbisSystemParamEnterButtonAssign::Cross);
         break;
     default:
-        LOG_ERROR(Lib_SystemService, "param_id {} unsupported!",
-                  param_id); // shouldn't go there but log it
-        *value = 0;          // return a dummy value
+        LOG_ERROR(Lib_SystemService, "param_id {} unsupported!", u32(param_id));
+        *value = 0;
     }
 
     return ORBIS_OK;

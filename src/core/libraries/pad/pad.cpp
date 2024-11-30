@@ -98,7 +98,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
         pInfo->connectedCount = 1;
         pInfo->connected = false;
-        pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+        pInfo->deviceClass = OrbisPadDeviceClass::Standard;
         return ORBIS_OK;
     }
     pInfo->touchPadInfo.pixelDensity = 1;
@@ -109,7 +109,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
     pInfo->connectedCount = 1;
     pInfo->connected = true;
-    pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+    pInfo->deviceClass = OrbisPadDeviceClass::Standard;
     if (Config::getUseSpecialPad()) {
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
         pInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();

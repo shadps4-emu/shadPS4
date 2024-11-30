@@ -73,7 +73,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
 }
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& emu_window) {
-    const auto& window_info = emu_window.getWindowInfo();
+    const auto& window_info = emu_window.GetWindowInfo();
     vk::SurfaceKHR surface{};
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
