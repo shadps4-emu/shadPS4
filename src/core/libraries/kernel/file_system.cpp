@@ -723,9 +723,7 @@ static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) 
                 return dir_entries;
             } else {
                 new_file->dirents = GetDirectoryEntries(new_file->m_host_name);
-                if (!new_file->is_opened) {
-                    new_file->dirents_index = 0;
-                }
+                new_file->dirents_index = 0;
             }
             new_file->is_opened = true;
             descriptor = h->GetFileDescriptor(new_file);
@@ -734,6 +732,10 @@ static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) 
         }
 
         dir_entries = GetDents(descriptor, buf, nbytes, basep);
+        if (dir_entries == ORBIS_OK && existent_folder) {
+            existent_folder->dirents_index = 0;
+            file->dirents_index = 0;
+        }
     }
 
     return dir_entries;
