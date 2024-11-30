@@ -147,12 +147,16 @@ enum class OrbisSysModule : u16 {
     ORBIS_SYSMODULE_KEYBOARD = 0x0106,
 };
 
+enum class OrbisSysModuleInternal : u32 {
+    ORBIS_SYSMODULE_INTERNAL_RAZOR_CPU = 0x80000019, // libSceRazorCpu.sprx
+};
+
 int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal();
 int PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind();
 int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule();
 int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded();
 int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id);
-int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal();
+int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id);
 int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id);
 int PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal();
 int PS4_SYSV_ABI sceSysmoduleLoadModuleInternal();

@@ -28,6 +28,7 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/random/random.h"
+#include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
@@ -87,6 +88,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
+    Libraries::RazorCpu::RegisterlibSceRazorCpu(sym);
 }
 
 } // namespace Libraries

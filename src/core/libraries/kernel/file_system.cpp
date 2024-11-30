@@ -502,7 +502,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
 s32 PS4_SYSV_ABI posix_fsync(int fd) {
     s32 result = sceKernelFsync(fd);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_fstat: error = {}", result);
+        LOG_ERROR(Kernel_Pthread, "posix_fsync: error = {}", result);
         ErrSceToPosix(result);
         return -1;
     }
