@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "ngs2.h"
-#include "ngs2_error.h"
-#include "ngs2_impl.h"
-
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/ngs2/ngs2.h"
+#include "core/libraries/ngs2/ngs2_error.h"
+#include "core/libraries/ngs2/ngs2_impl.h"
 
 namespace Libraries::Ngs2 {
 

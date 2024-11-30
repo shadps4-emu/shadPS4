@@ -231,7 +231,7 @@ int PS4_SYSV_ABI sceKernelDeleteSema(OrbisKernelSema sem) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_sem_init(PthreadSem** sem, int pshared, unsigned int value) {
+int PS4_SYSV_ABI posix_sem_init(PthreadSem** sem, int pshared, u32 value) {
     if (value > ORBIS_KERNEL_SEM_VALUE_MAX) {
         *__Error() = POSIX_EINVAL;
         return -1;

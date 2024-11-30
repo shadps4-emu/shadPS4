@@ -20,12 +20,19 @@ enum class OrbisSystemServiceParamId {
     Summertime = 5,
     SystemName = 6,
     GameParentalLevel = 7,
-    EnterButtonAssign = 1000
+    EnterButtonAssign = 1000,
 };
 
-enum class OrbisSystemParamDateFormat { FmtYYYYMMDD = 0, FmtDDMMYYYY = 1, FmtMMDDYYYY = 2 };
+enum class OrbisSystemParamDateFormat {
+    FmtYYYYMMDD = 0,
+    FmtDDMMYYYY = 1,
+    FmtMMDDYYYY = 2,
+};
 
-enum class OrbisSystemParamTimeFormat { Fmt12Hour = 0, Fmt24Hour = 1 };
+enum class OrbisSystemParamTimeFormat {
+    Fmt12Hour = 0,
+    Fmt24Hour = 1,
+};
 
 enum class OrbisSystemParamGameParentalLevel {
     Off = 0,
@@ -39,10 +46,13 @@ enum class OrbisSystemParamGameParentalLevel {
     Level08 = 8,
     Level09 = 9,
     Level10 = 10,
-    Level11 = 11
+    Level11 = 11,
 };
 
-enum class OrbisSystemParamEnterButtonAssign { Circle = 0, Cross = 1 };
+enum class OrbisSystemParamEnterButtonAssign {
+    Circle = 0,
+    Cross = 1,
+};
 
 enum class OrbisSystemServiceEventType {
     Invalid = -1,
@@ -71,12 +81,12 @@ enum class OrbisSystemServiceEventType {
 };
 
 struct OrbisSystemServiceStatus {
-    s32 eventNum;
-    bool isSystemUiOverlaid;
-    bool isInBackgroundExecution;
-    bool isCpuMode7CpuNormal;
-    bool isGameLiveStreamingOnAir;
-    bool isOutOfVrPlayArea;
+    s32 event_num;
+    bool is_system_ui_overlaid;
+    bool is_in_background_execution;
+    bool is_cpu_mode7_cpu_normal;
+    bool is_game_live_streaming_on_air;
+    bool is_out_of_vr_play_area;
     u8 reserved[];
 };
 
@@ -86,36 +96,36 @@ struct OrbisSystemServiceDisplaySafeAreaInfo {
 };
 
 struct OrbisSystemServiceEvent {
-    OrbisSystemServiceEventType eventType;
+    OrbisSystemServiceEventType event_type;
     union {
         char param[8192];
         struct {
             char source[1024];
             char url[4096];
-        } urlOpen;
+        } url_open;
         struct {
             u32 size;
             u8 arg[8188];
-        } launchApp;
+        } launch_app;
         struct {
             u32 size;
             u8 arg[2020];
-        } appLaunchLink;
+        } app_launch_link;
         struct {
-            s32 userId;
-            char eventId[37];
-            char bootArgument[7169];
-        } joinEvent;
+            s32 user_id;
+            char event_id[37];
+            char boot_argument[7169];
+        } join_event;
         struct {
-            s32 userId;
-            u32 npServiceLabel;
+            s32 user_id;
+            u32 np_service_label;
             u8 reserved[8184];
-        } serviceEntitlementUpdate;
+        } service_entitlement_update;
         struct {
-            s32 userId;
-            u32 npServiceLabel;
+            s32 user_id;
+            u32 np_service_label;
             u8 reserved[8184];
-        } unifiedEntitlementUpdate;
+        } unified_entitlement_update;
         u8 reserved[8192];
     };
 };

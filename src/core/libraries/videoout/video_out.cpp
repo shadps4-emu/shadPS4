@@ -50,7 +50,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
+    event.event.ident = u64(OrbisVideoOutEventId::Flip);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -77,7 +77,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
+    event.event.ident = u64(OrbisVideoOutEventId::Vblank);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -117,7 +117,7 @@ s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     LOG_TRACE(Lib_VideoOut, "called");
     auto* port = driver->GetPort(handle);
     std::unique_lock lock{port->port_mutex};
-    s32 pending = port->flip_status.flipPendingNum;
+    s32 pending = port->flip_status.flip_pending_num;
     return pending;
 }
 

@@ -77,9 +77,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
     bool has_found = false;
     {
         std::scoped_lock lock{m_mutex};
-
         for (auto& event : m_events) {
-            if ((event.event.ident == ident) && (event.event.filter == filter)) {
+            if (event.event.ident == ident && event.event.filter == filter) {
                 event.Trigger(trigger_data);
                 has_found = true;
             }
@@ -91,7 +90,6 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
 
 int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     int count = 0;
-
     for (auto& event : m_events) {
         if (event.IsTriggered()) {
             if (event.event.flags & SceKernelEvent::Flags::Clear) {

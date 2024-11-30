@@ -575,7 +575,7 @@ int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
     return lastDay;
 }
 
-int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, unsigned int* dosTime) {
+int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, u32* dosTime) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr || dosTime == nullptr)
@@ -631,7 +631,7 @@ int PS4_SYSV_ABI sceRtcGetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick) {
     return ORBIS_OK;
 }
 
-unsigned int PS4_SYSV_ABI sceRtcGetTickResolution() {
+u32 PS4_SYSV_ABI sceRtcGetTickResolution() {
     LOG_TRACE(Lib_Rtc, "called");
 
     return 1000000;

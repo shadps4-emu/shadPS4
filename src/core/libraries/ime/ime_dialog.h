@@ -58,32 +58,32 @@ enum class Error : u32 {
 };
 
 enum class OrbisImeDialogStatus : u32 {
-    NONE = 0,
-    RUNNING = 1,
-    FINISHED = 2,
+    None = 0,
+    Running = 1,
+    Finished = 2,
 };
 
 enum class OrbisImeDialogEndStatus : u32 {
-    OK = 0,
-    USER_CANCELED = 1,
-    ABORTED = 2,
+    Ok = 0,
+    UserCanceled = 1,
+    Aborted = 2,
 };
 
 enum class OrbisImeDialogOption : u32 {
-    DEFAULT = 0,
-    MULTILINE = 1,
-    NO_AUTO_CORRECTION = 2,
-    NO_AUTO_COMPLETION = 4,
+    Default = 0,
+    Multiline = 1,
+    NoAutoCorrection = 2,
+    NoAutoCompletion = 4,
     // TODO: Document missing options
-    LARGE_RESOLUTION = 1024,
+    LargeResolution = 1024,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
 
 enum class OrbisImePanelPriority : u32 {
-    DEFAULT = 0,
-    ALPHABET = 1,
-    SYMBOL = 2,
-    ACCENT = 3,
+    Default = 0,
+    Alphabet = 1,
+    Symbol = 2,
+    Accent = 3,
 };
 
 struct OrbisImeColor {
@@ -103,29 +103,29 @@ struct OrbisImeKeycode {
     char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
-    s32 userId;
-    u32 resourceId;
+    s32 user_id;
+    u32 resource_id;
     u64 timestamp;
 };
 
-typedef PS4_SYSV_ABI int (*OrbisImeExtKeyboardFilter)(const OrbisImeKeycode* srcKeycode,
-                                                      u16* outKeycode, u32* outStatus,
-                                                      void* reserved);
+using OrbisImeExtKeyboardFilter = PS4_SYSV_ABI int (*)(const OrbisImeKeycode* srcKeycode,
+                                                       u16* outKeycode, u32* outStatus,
+                                                       void* reserved);
 
 struct OrbisImeDialogParam {
-    s32 userId;
+    s32 user_id;
     OrbisImeType type;
-    u64 supportedLanguages;
-    OrbisImeEnterLabel enterLabel;
-    OrbisImeInputMethod inputMethod;
+    u64 supported_languages;
+    OrbisImeEnterLabel enter_label;
+    OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
     OrbisImeDialogOption option;
-    u32 maxTextLength;
-    char16_t* inputTextBuffer;
+    u32 max_text_length;
+    char16_t* input_text_buffer;
     float posx;
     float posy;
-    OrbisImeHorizontalAlignment horizontalAlignment;
-    OrbisImeVerticalAlignment verticalAlignment;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
     const char16_t* placeholder;
     const char16_t* title;
     s8 reserved[16];
@@ -133,20 +133,20 @@ struct OrbisImeDialogParam {
 
 struct OrbisImeParamExtended {
     u32 option; // OrbisImeDialogOptionExtended
-    OrbisImeColor colorBase;
-    OrbisImeColor colorLine;
-    OrbisImeColor colorTextField;
-    OrbisImeColor colorPreedit;
-    OrbisImeColor colorButtonDefault;
-    OrbisImeColor colorButtonFunction;
-    OrbisImeColor colorButtonSymbol;
-    OrbisImeColor colorText;
-    OrbisImeColor colorSpecial;
+    OrbisImeColor color_base;
+    OrbisImeColor color_line;
+    OrbisImeColor color_text_field;
+    OrbisImeColor color_preedit;
+    OrbisImeColor color_button_default;
+    OrbisImeColor color_button_function;
+    OrbisImeColor color_button_symbol;
+    OrbisImeColor color_text;
+    OrbisImeColor color_special;
     OrbisImePanelPriority priority;
-    char* additionalDictionaryPath;
-    OrbisImeExtKeyboardFilter extKeyboardFilter;
-    uint32_t disableDevice;
-    uint32_t extKeyboardMode;
+    char* additional_dictionary_path;
+    OrbisImeExtKeyboardFilter ext_keyboard_filter;
+    uint32_t disable_device;
+    uint32_t ext_keyboard_mode;
     int8_t reserved[60];
 };
 

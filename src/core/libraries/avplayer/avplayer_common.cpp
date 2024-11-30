@@ -15,7 +15,7 @@ static bool iequals(std::string_view l, std::string_view r) {
 
 SceAvPlayerSourceType GetSourceType(std::string_view path) {
     if (path.empty()) {
-        return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+        return SceAvPlayerSourceType::Unknown;
     }
 
     std::string_view name = path;
@@ -25,14 +25,14 @@ SceAvPlayerSourceType GetSourceType(std::string_view path) {
         // -> schema://server.domain/path/to/file.ext/and/beyond
         name = path.substr(0, path.find_first_of("?#"));
         if (name.empty()) {
-            return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+            return SceAvPlayerSourceType::Unknown;
         }
     }
 
     // schema://server.domain/path/to/file.ext/and/beyond -> .ext/and/beyond
     auto ext = name.substr(name.rfind('.'));
     if (ext.empty()) {
-        return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+        return SceAvPlayerSourceType::Unknown;
     }
 
     // .ext/and/beyond -> .ext
@@ -40,14 +40,14 @@ SceAvPlayerSourceType GetSourceType(std::string_view path) {
 
     if (iequals(ext, ".mp4") || iequals(ext, ".m4v") || iequals(ext, ".m3d") ||
         iequals(ext, ".m4a") || iequals(ext, ".mov")) {
-        return SCE_AVPLAYER_SOURCE_TYPE_FILE_MP4;
+        return SceAvPlayerSourceType::FileMp4;
     }
 
     if (iequals(ext, ".m3u8")) {
-        return SCE_AVPLAYER_SOURCE_TYPE_HLS;
+        return SceAvPlayerSourceType::Hls;
     }
 
-    return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+    return SceAvPlayerSourceType::Unknown;
 }
 
 } // namespace Libraries::AvPlayer

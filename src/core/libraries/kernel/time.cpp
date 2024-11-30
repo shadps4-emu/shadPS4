@@ -254,7 +254,7 @@ Common::NativeClock* GetClock() {
 } // namespace Dev
 
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
-                                                struct OrbisTimesec* st, unsigned long* dst_sec) {
+                                                struct OrbisTimesec* st, u64* dst_sec) {
     LOG_TRACE(Kernel, "Called");
 #ifdef __APPLE__
     // std::chrono::current_zone() not available yet.

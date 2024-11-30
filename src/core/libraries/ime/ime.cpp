@@ -35,7 +35,7 @@ public:
 
         // Open an event to let the game know the IME has started
         OrbisImeEvent openEvent{};
-        openEvent.id = (ime_mode ? OrbisImeEventId::OPEN : OrbisImeEventId::KEYBOARD_OPEN);
+        openEvent.id = (ime_mode ? OrbisImeEventId::Open : OrbisImeEventId::KeyboardOpen);
 
         if (ime_mode) {
             sceImeGetPanelSize(&m_param.ime, &openEvent.param.rect.width,
@@ -43,8 +43,8 @@ public:
             openEvent.param.rect.x = m_param.ime.posx;
             openEvent.param.rect.y = m_param.ime.posy;
         } else {
-            openEvent.param.resourceIdArray.userId = 1;
-            openEvent.param.resourceIdArray.resourceId[0] = 1;
+            openEvent.param.resource_id_array.userId = 1;
+            openEvent.param.resource_id_array.resource_id[0] = 1;
         }
 
         Execute(nullptr, &openEvent, true);
@@ -213,15 +213,15 @@ s32 PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32*
     }
 
     switch (param->type) {
-    case OrbisImeType::DEFAULT:
-    case OrbisImeType::BASIC_LATIN:
-    case OrbisImeType::URL:
-    case OrbisImeType::MAIL:
+    case OrbisImeType::Default:
+    case OrbisImeType::BasicLatin:
+    case OrbisImeType::Url:
+    case OrbisImeType::Mail:
         // We set our custom sizes, commented sizes are the original ones
         *width = 500;  // 793
         *height = 100; // 408
         break;
-    case OrbisImeType::NUMBER:
+    case OrbisImeType::Number:
         *width = 370;
         *height = 402;
         break;
@@ -313,7 +313,7 @@ void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
     }
 
     memset(param, 0, sizeof(OrbisImeParam));
-    param->userId = -1;
+    param->user_id = -1;
 }
 
 int PS4_SYSV_ABI sceImeSetCandidateIndex() {

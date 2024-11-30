@@ -21,6 +21,10 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
+#ifdef _WIN64
+#include <Rpc.h>
+#endif
+
 namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return

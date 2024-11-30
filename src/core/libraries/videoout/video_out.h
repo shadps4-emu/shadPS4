@@ -40,36 +40,32 @@ constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE = 0;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_VR = 7;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY = 8;
 
-enum SceVideoOutEventId : s16 {
-    SCE_VIDEO_OUT_EVENT_FLIP = 0,
-    SCE_VIDEO_OUT_EVENT_VBLANK = 1,
-    SCE_VIDEO_OUT_EVENT_PRE_VBLANK_START = 2
-};
+enum class OrbisVideoOutEventId : s16 { Flip = 0, Vblank = 1, PreVblankStart = 2 };
 
-enum AspectRatioMode : s32 {
-    SCE_VIDEO_OUT_ASPECT_RATIO_16_9 = 0,
+enum class AspectRatioMode : s32 {
+    Ratio16_9 = 0,
 };
 
 struct FlipStatus {
     u64 count = 0;
-    u64 processTime = 0;
+    u64 process_time = 0;
     u64 tsc = 0;
-    s64 flipArg = -1;
-    u64 submitTsc = 0;
+    s64 flip_arg = -1;
+    u64 submit_tsc = 0;
     u64 reserved0 = 0;
-    s32 gcQueueNum = 0;
-    s32 flipPendingNum = 0;
-    s32 currentBuffer = -1;
+    s32 gc_queue_num = 0;
+    s32 flip_pending_num = 0;
+    s32 current_buffer = -1;
     u32 reserved1 = 0;
 };
 
 struct SceVideoOutResolutionStatus {
-    s32 fullWidth = 1280;
-    s32 fullHeight = 720;
-    s32 paneWidth = 1280;
-    s32 paneHeight = 720;
-    u64 refreshRate = SCE_VIDEO_OUT_REFRESH_RATE_59_94HZ;
-    float screenSizeInInch = 50;
+    s32 full_width = 1280;
+    s32 full_height = 720;
+    s32 pane_width = 1280;
+    s32 pane_height = 720;
+    u64 refresh_rate = SCE_VIDEO_OUT_REFRESH_RATE_59_94HZ;
+    float screen_size_in_inch = 50;
     u16 flags = 0;
     u16 reserved0 = 0;
     u32 reserved1[3] = {0};
@@ -77,7 +73,7 @@ struct SceVideoOutResolutionStatus {
 
 struct SceVideoOutVblankStatus {
     u64 count = 0;
-    u64 processTime = 0;
+    u64 process_time = 0;
     u64 tsc = 0;
     u64 reserved[1] = {0};
     u8 flags = 0;

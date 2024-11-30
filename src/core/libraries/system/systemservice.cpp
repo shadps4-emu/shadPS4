@@ -1772,14 +1772,12 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
         LOG_ERROR(Lib_SystemService, "OrbisSystemServiceStatus is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
-    OrbisSystemServiceStatus st = {};
-    st.eventNum = 0;
-    st.isSystemUiOverlaid = false;
-    st.isInBackgroundExecution = false;
-    st.isCpuMode7CpuNormal = true;
-    st.isGameLiveStreamingOnAir = false;
-    st.isOutOfVrPlayArea = false;
-    *status = st;
+    status->event_num = 0;
+    status->is_system_ui_overlaid = false;
+    status->is_in_background_execution = false;
+    status->is_cpu_mode7_cpu_normal = true;
+    status->is_game_live_streaming_on_air = false;
+    status->is_out_of_vr_play_area = false;
     return ORBIS_OK;
 }
 

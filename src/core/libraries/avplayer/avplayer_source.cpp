@@ -85,17 +85,17 @@ s32 AvPlayerSource::GetStreamCount() {
     return m_avformat_context->nb_streams;
 }
 
-static s32 CodecTypeToStreamType(AVMediaType codec_type) {
+static SceAvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
     switch (codec_type) {
     case AVMediaType::AVMEDIA_TYPE_VIDEO:
-        return SCE_AVPLAYER_VIDEO;
+        return SceAvPlayerStreamType::Video;
     case AVMediaType::AVMEDIA_TYPE_AUDIO:
-        return SCE_AVPLAYER_AUDIO;
+        return SceAvPlayerStreamType::Audio;
     case AVMediaType::AVMEDIA_TYPE_SUBTITLE:
-        return SCE_AVPLAYER_TIMEDTEXT;
+        return SceAvPlayerStreamType::TimedText;
     default:
         LOG_ERROR(Lib_AvPlayer, "Unexpected AVMediaType {}", magic_enum::enum_name(codec_type));
-        return -1;
+        return SceAvPlayerStreamType::Unknown;
     }
 }
 
@@ -124,7 +124,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
-    case SCE_AVPLAYER_VIDEO: {
+    case SceAvPlayerStreamType::Video: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
@@ -142,7 +142,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SCE_AVPLAYER_AUDIO: {
+    case SceAvPlayerStreamType::Audio: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
@@ -153,7 +153,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SCE_AVPLAYER_TIMEDTEXT: {
+    case SceAvPlayerStreamType::TimedText: {
         LOG_WARNING(Lib_AvPlayer, "Stream {} is a timedtext stream.", stream_index);
         info.details.subs.font_size = 12;
         info.details.subs.text_size = 12;
@@ -164,7 +164,8 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         break;
     }
     default: {
-        LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index, info.type);
+        LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index,
+                  magic_enum::enum_name(info.type));
         return false;
     }
     }

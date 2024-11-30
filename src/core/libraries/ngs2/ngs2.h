@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include "common/types.h"
-
 #include <atomic>
-#include <memory>
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -18,7 +16,9 @@ class Ngs2;
 
 using SceNgs2Handle = Ngs2*;
 
-enum SceNgs2HandleType { SCE_NGS2_HANDLE_TYPE_SYSTEM = 0 };
+enum class SceNgs2HandleType : u32 {
+    System = 0,
+};
 
 struct Ngs2Handle {
     void* selfPointer;
@@ -69,4 +69,5 @@ struct StackBuffer {
 };
 
 void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym);
+
 } // namespace Libraries::Ngs2
