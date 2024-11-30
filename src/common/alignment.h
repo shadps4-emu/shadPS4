@@ -24,6 +24,12 @@ template <typename T>
 
 template <typename T>
     requires std::is_integral_v<T>
+[[nodiscard]] constexpr bool IsAligned(T value, std::size_t alignment) {
+    return (value & (alignment - 1)) == 0;
+}
+
+template <typename T>
+    requires std::is_integral_v<T>
 [[nodiscard]] constexpr bool Is16KBAligned(T value) {
     return (value & 0x3FFF) == 0;
 }

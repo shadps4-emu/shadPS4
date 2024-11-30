@@ -354,6 +354,11 @@ set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
 )
 
+set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
+             src/core/libraries/jpeg/jpegenc.cpp
+             src/core/libraries/jpeg/jpegenc.h
+)
+
 set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo.h
                src/core/libraries/playgo/playgo_types.h
@@ -536,6 +541,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
+         ${JPEG_LIB}
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
