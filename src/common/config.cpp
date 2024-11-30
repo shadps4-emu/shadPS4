@@ -3,13 +3,14 @@
 
 #include <fstream>
 #include <string>
-#include <common/version.h>
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
-#include "common/logging/formatter.h"
+
 #include "common/path_util.h"
 #include "config.h"
+#include "logging/formatter.h"
+#include "version.h"
 
 namespace toml {
 template <typename TC, typename K>
@@ -81,7 +82,8 @@ std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en";
-// Settings
+
+// Language
 u32 m_language = 1; // english
 
 bool isNeoMode() {
@@ -334,6 +336,7 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
+
 bool addGameInstallDir(const std::filesystem::path& dir) {
     if (std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir) ==
         settings_install_dirs.end()) {
@@ -342,47 +345,60 @@ bool addGameInstallDir(const std::filesystem::path& dir) {
     }
     return false;
 }
+
 void removeGameInstallDir(const std::filesystem::path& dir) {
     auto iterator = std::find(settings_install_dirs.begin(), settings_install_dirs.end(), dir);
     if (iterator != settings_install_dirs.end()) {
         settings_install_dirs.erase(iterator);
     }
 }
+
 void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
 }
+
 void setMainWindowTheme(u32 theme) {
     mw_themes = theme;
 }
+
 void setIconSize(u32 size) {
     m_icon_size = size;
 }
+
 void setIconSizeGrid(u32 size) {
     m_icon_size_grid = size;
 }
+
 void setSliderPosition(u32 pos) {
     m_slider_pos = pos;
 }
+
 void setSliderPositionGrid(u32 pos) {
     m_slider_pos_grid = pos;
 }
+
 void setTableMode(u32 mode) {
     m_table_mode = mode;
 }
+
 void setMainWindowWidth(u32 width) {
     m_window_size_W = width;
 }
+
 void setMainWindowHeight(u32 height) {
     m_window_size_H = height;
 }
+
 void setPkgViewer(const std::vector<std::string>& pkgList) {
     m_pkg_viewer.resize(pkgList.size());
     m_pkg_viewer = pkgList;
 }
+
 void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer.resize(elfList.size());
     m_elf_viewer = elfList;
 }
+
 void setRecentFiles(const std::vector<std::string>& recentFiles) {
     m_recent_files.resize(recentFiles.size());
     m_recent_files = recentFiles;
@@ -395,18 +411,23 @@ void setEmulatorLanguage(std::string language) {
 u32 getMainWindowGeometryX() {
     return main_window_geometry_x;
 }
+
 u32 getMainWindowGeometryY() {
     return main_window_geometry_y;
 }
+
 u32 getMainWindowGeometryW() {
     return main_window_geometry_w;
 }
+
 u32 getMainWindowGeometryH() {
     return main_window_geometry_h;
 }
+
 const std::vector<std::filesystem::path>& getGameInstallDirs() {
     return settings_install_dirs;
 }
+
 std::filesystem::path getAddonInstallDir() {
     if (settings_addon_install_dir.empty()) {
         // Default for users without a config file or a config file from before this option existed
@@ -414,36 +435,47 @@ std::filesystem::path getAddonInstallDir() {
     }
     return settings_addon_install_dir;
 }
+
 u32 getMainWindowTheme() {
     return mw_themes;
 }
+
 u32 getIconSize() {
     return m_icon_size;
 }
+
 u32 getIconSizeGrid() {
     return m_icon_size_grid;
 }
+
 u32 getSliderPosition() {
     return m_slider_pos;
 }
+
 u32 getSliderPositionGrid() {
     return m_slider_pos_grid;
 }
+
 u32 getTableMode() {
     return m_table_mode;
 }
+
 u32 getMainWindowWidth() {
     return m_window_size_W;
 }
+
 u32 getMainWindowHeight() {
     return m_window_size_H;
 }
+
 std::vector<std::string> getPkgViewer() {
     return m_pkg_viewer;
 }
+
 std::vector<std::string> getElfViewer() {
     return m_elf_viewer;
 }
+
 std::vector<std::string> getRecentFiles() {
     return m_recent_files;
 }
@@ -455,6 +487,7 @@ std::string getEmulatorLanguage() {
 u32 GetLanguage() {
     return m_language;
 }
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -545,18 +578,6 @@ void load(const std::filesystem::path& path) {
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
-        // TODO Migration code, after a major release this should be removed.
-        auto old_game_install_dir = toml::find_fs_path_or(gui, "installDir", {});
-        if (!old_game_install_dir.empty()) {
-            addGameInstallDir(std::filesystem::path{old_game_install_dir});
-        } else {
-            const auto install_dir_array =
-                toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
-            for (const auto& dir : install_dir_array) {
-                addGameInstallDir(std::filesystem::path{dir});
-            }
-        }
-
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
@@ -575,6 +596,7 @@ void load(const std::filesystem::path& path) {
         m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
 }
+
 void save(const std::filesystem::path& path) {
     toml::value data;
 
@@ -654,9 +676,6 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["emulatorLanguage"] = emulator_language;
 
     data["Settings"]["consoleLanguage"] = m_language;
-
-    // TODO Migration code, after a major release this should be removed.
-    data.at("GUI").as_table().erase("installDir");
 
     std::ofstream file(path, std::ios::binary);
     file << data;
