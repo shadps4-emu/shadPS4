@@ -269,7 +269,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
-    constexpr std::array<SysModules, 11> ModulesToLoad{
+    constexpr std::array<SysModules, 10> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
          {"libSceUlt.sprx", nullptr},
@@ -279,7 +279,6 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceJpegEnc.sprx", nullptr},
-         {"libSceRazorCpu.sprx", nullptr},
          {"libSceCesCs.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;
