@@ -276,6 +276,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/dialog/savedatadialog_ui.h
                 src/core/libraries/system/sysmodule.cpp
                 src/core/libraries/system/sysmodule.h
+                src/core/libraries/system/system_error.h
                 src/core/libraries/system/systemservice.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/userservice.cpp
