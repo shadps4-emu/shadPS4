@@ -26,15 +26,13 @@ ImeState::ImeState(const OrbisImeParam* param) {
 }
 
 ImeState::ImeState(ImeState&& other) noexcept
-    : input_changed(other.input_changed), work_buffer(other.work_buffer),
-      text_buffer(other.text_buffer), current_text(std::move(other.current_text)),
-      event_queue(std::move(other.event_queue)) {
+    : work_buffer(other.work_buffer), text_buffer(other.text_buffer),
+      current_text(std::move(other.current_text)), event_queue(std::move(other.event_queue)) {
     other.text_buffer = nullptr;
 }
 
 ImeState& ImeState::operator=(ImeState&& other) noexcept {
     if (this != &other) {
-        input_changed = other.input_changed;
         work_buffer = other.work_buffer;
         text_buffer = other.text_buffer;
         current_text = std::move(other.current_text);
@@ -62,6 +60,10 @@ void ImeState::SendCloseEvent() {
     closeEvent.param.text.str = reinterpret_cast<char16_t*>(work_buffer);
     SendEvent(&closeEvent);
 }
+
+void ImeState::SetText(const char16_t* text, u32 length) {}
+
+void ImeState::SetCaret(u32 position) {}
 
 bool ImeState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
                                   char* utf8_text, std::size_t utf8_text_len) {
@@ -182,32 +184,12 @@ void ImeUi::DrawInputText() {
     }
     if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
                     input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
-        state->input_changed = true;
     }
 }
 
 int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeUi* ui = static_cast<ImeUi*>(data->UserData);
     ASSERT(ui);
-
-    static int lastCaretPos = -1;
-    if (lastCaretPos == -1) {
-        lastCaretPos = data->CursorPos;
-    } else if (data->CursorPos != lastCaretPos) {
-        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::STILL;
-        if (data->CursorPos < lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::LEFT;
-        } else if (data->CursorPos > lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::RIGHT;
-        }
-
-        OrbisImeEvent event{};
-        event.id = OrbisImeEventId::UPDATE_CARET;
-        event.param.caretMove = caretDirection;
-
-        lastCaretPos = data->CursorPos;
-        ui->state->SendEvent(&event);
-    }
 
     static std::string lastText;
     std::string currentText(data->Buf, data->BufTextLen);
@@ -239,6 +221,25 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         event.param.text = eventParam;
 
         lastText = currentText;
+        ui->state->SendEvent(&event);
+    }
+
+    static int lastCaretPos = -1;
+    if (lastCaretPos == -1) {
+        lastCaretPos = data->CursorPos;
+    } else if (data->CursorPos != lastCaretPos) {
+        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::STILL;
+        if (data->CursorPos < lastCaretPos) {
+            caretDirection = OrbisImeCaretMovementDirection::LEFT;
+        } else if (data->CursorPos > lastCaretPos) {
+            caretDirection = OrbisImeCaretMovementDirection::RIGHT;
+        }
+
+        OrbisImeEvent event{};
+        event.id = OrbisImeEventId::UPDATE_CARET;
+        event.param.caretMove = caretDirection;
+
+        lastCaretPos = data->CursorPos;
         ui->state->SendEvent(&event);
     }
 
