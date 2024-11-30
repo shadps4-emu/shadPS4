@@ -85,7 +85,7 @@ void RegView::ProcessShader(int shader_id) {
     MemoryEditor hex_view;
     hex_view.Open = true;
     hex_view.ReadOnly = true;
-    hex_view.Cols = 8;
+    hex_view.Cols = 16;
     hex_view.OptShowAscii = false;
     hex_view.OptShowOptions = false;
 
@@ -376,7 +376,9 @@ void RegView::Draw() {
             if (!shader) {
                 Text("Stage not selected");
             } else {
-                shader->hex_view.DrawContents(shader->user_data.data(), shader->user_data.size());
+                shader->hex_view.DrawContents(shader->user_data.data(),
+                                              shader->user_data.size() *
+                                                  sizeof(Vulkan::Liverpool::UserData::value_type));
             }
         }
         End();
