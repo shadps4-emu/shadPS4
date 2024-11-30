@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/ir/reg.h"
 
 namespace Shader::Gcn {
 
@@ -18,6 +19,12 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_MIN_U32(inst, false, false);
     case Opcode::DS_MAX_U32:
         return DS_MAX_U32(inst, false, false);
+    case Opcode::DS_AND_B32:
+        return DS_AND_B32(inst, false);
+    case Opcode::DS_OR_B32:
+        return DS_OR_B32(inst, false);
+    case Opcode::DS_XOR_B32:
+        return DS_XOR_B32(inst, false);
     case Opcode::DS_WRITE_B32:
         return DS_WRITE(32, false, false, false, inst);
     case Opcode::DS_WRITE2_B32:
@@ -30,6 +37,12 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_MIN_U32(inst, false, true);
     case Opcode::DS_MAX_RTN_U32:
         return DS_MAX_U32(inst, false, true);
+    case Opcode::DS_AND_RTN_B32:
+        return DS_AND_B32(inst, true);
+    case Opcode::DS_OR_RTN_B32:
+        return DS_OR_B32(inst, true);
+    case Opcode::DS_XOR_RTN_B32:
+        return DS_XOR_B32(inst, true);
     case Opcode::DS_SWIZZLE_B32:
         return DS_SWIZZLE_B32(inst);
     case Opcode::DS_READ_B32:
@@ -114,6 +127,42 @@ void Translator::DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn) {
         ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, is_signed);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_AND_B32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicAnd(addr_offset, data);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_OR_B32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicOr(addr_offset, data);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_XOR_B32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicXor(addr_offset, data);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }
