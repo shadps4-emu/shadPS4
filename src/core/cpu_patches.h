@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "common/types.h"
+
 namespace Core {
 
 /// Initializes a stack for the current thread for use by patch implementations.

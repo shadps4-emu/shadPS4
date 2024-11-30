@@ -250,6 +250,9 @@ public:
     void DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_SWIZZLE_B32(const GcnInst& inst);
+    void DS_AND_B32(const GcnInst& inst, bool rtn);
+    void DS_OR_B32(const GcnInst& inst, bool rtn);
+    void DS_XOR_B32(const GcnInst& inst, bool rtn);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_APPEND(const GcnInst& inst);
     void DS_CONSUME(const GcnInst& inst);

@@ -6,34 +6,30 @@
 #include "app_content.h"
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/io_file.h"
 #include "common/logging/log.h"
-#include "common/path_util.h"
 #include "common/singleton.h"
-#include "common/string_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AppContent {
 
-int32_t addcont_count = 0;
-
 struct AddContInfo {
-    char entitlementLabel[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
+    char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
     OrbisAppContentAddcontDownloadStatus status;
     OrbisAppContentGetEntitlementKey key;
 };
 
-std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_info = {{
+static std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_info = {{
     {"0000000000000000",
-     ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_INSTALLED,
+     OrbisAppContentAddcontDownloadStatus::Installed,
      {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00}},
 }};
 
-std::string title_id;
+static s32 addcont_count = 0;
+static std::string title_id;
 
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
@@ -64,12 +60,11 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     for (int i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlementLabel,
+        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
-
-        if (addcont_info[i].status != ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_INSTALLED) {
+        if (addcont_info[i].status != OrbisAppContentAddcontDownloadStatus::Installed) {
             return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
         }
 
@@ -170,14 +165,14 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
     }
 
     for (auto i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlementLabel->data, addcont_info[i].entitlementLabel,
+        if (strncmp(entitlementLabel->data, addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
 
         LOG_INFO(Lib_AppContent, "found DLC {}", entitlementLabel->data);
 
-        strncpy(info->entitlement_label.data, addcont_info[i].entitlementLabel,
+        strncpy(info->entitlement_label.data, addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
         info->status = addcont_info[i].status;
         return ORBIS_OK;
@@ -202,7 +197,7 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
 
     int dlcs_to_list = addcont_count < list_num ? addcont_count : list_num;
     for (int i = 0; i < dlcs_to_list; i++) {
-        strncpy(list[i].entitlement_label.data, addcont_info[i].entitlementLabel,
+        strncpy(list[i].entitlement_label.data, addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
         list[i].status = addcont_info[i].status;
     }
@@ -224,7 +219,7 @@ int PS4_SYSV_ABI sceAppContentGetEntitlementKey(
     }
 
     for (int i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlementLabel,
+        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
@@ -252,21 +247,19 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     } else {
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
-    auto addon_path = addons_dir / title_id;
-    if (std::filesystem::exists(addon_path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-            if (entry.is_directory()) {
-                auto entitlement_label = entry.path().filename().string();
-
-                AddContInfo info{};
-                info.status = ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_INSTALLED;
-                strcpy(info.entitlementLabel, entitlement_label.c_str());
-
-                addcont_info[addcont_count++] = info;
-            }
-        }
+    const auto addon_path = addons_dir / title_id;
+    if (!std::filesystem::exists(addon_path)) {
+        return ORBIS_OK;
     }
 
+    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+        if (entry.is_directory()) {
+            auto entitlement_label = entry.path().filename().string();
+            auto& info = addcont_info[addcont_count++];
+            info.status = OrbisAppContentAddcontDownloadStatus::Installed;
+            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label));
+        }
+    }
     return ORBIS_OK;
 }
 
@@ -314,9 +307,11 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount() {
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint) {
-    if (mountPoint == nullptr)
+    if (mountPoint == nullptr) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    strncpy(mountPoint->data, "/temp0", 16);
+    }
+    static constexpr std::string_view TmpMount = "/temp0";
+    TmpMount.copy(mountPoint->data, sizeof(mountPoint->data));
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
              option, mountPoint->data);
     return ORBIS_OK;

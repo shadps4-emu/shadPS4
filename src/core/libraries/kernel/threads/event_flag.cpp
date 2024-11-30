@@ -7,7 +7,7 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {

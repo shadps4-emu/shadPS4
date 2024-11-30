@@ -9,9 +9,9 @@
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
@@ -28,20 +28,20 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
                                                u64 alignment, int memoryType, s64* physAddrOut) {
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     const bool is_in_range = searchEnd - searchStart >= len;
     if (len <= 0 || !Common::Is16KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is16KBAligned(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (physAddrOut == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Result physical address pointer is null!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     auto* memory = Core::Memory::Instance();
@@ -53,7 +53,7 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
              "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
              searchStart, searchEnd, len, alignment, memoryType, phys_addr);
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
@@ -111,7 +111,7 @@ s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtual
                                        size_t infoSize) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}", fmt::ptr(addr), flags);
     if (!addr) {
-        return SCE_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EACCES;
     }
     auto* memory = Core::Memory::Instance();
     return memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
@@ -123,16 +123,16 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
 
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
         if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
-            return SCE_KERNEL_ERROR_EINVAL;
+            return ORBIS_KERNEL_ERROR_EINVAL;
         }
     }
 
@@ -141,7 +141,7 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     memory->Reserve(addr, in_addr, len, map_flags, alignment);
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
@@ -149,16 +149,16 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
                                                const char* name) {
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (!Common::Is16KBAligned(directMemoryStart)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
         if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
-            return SCE_KERNEL_ERROR_EINVAL;
+            return ORBIS_KERNEL_ERROR_EINVAL;
         }
     }
 
@@ -357,20 +357,20 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
                                            size_t alignment, u64* physAddrOut) {
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     const bool is_in_range = searchEnd - searchStart >= len;
     if (len <= 0 || !Common::Is64KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is64KBAligned(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (physAddrOut == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Result physical address pointer is null!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     auto* memory = Core::Memory::Instance();
@@ -391,16 +391,16 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
 
     if (addrIn == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (len == 0 || !Common::Is2MBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
         if ((!std::has_single_bit(alignment) && !Common::Is2MBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
-            return SCE_KERNEL_ERROR_EINVAL;
+            return ORBIS_KERNEL_ERROR_EINVAL;
         }
     }
 
@@ -415,11 +415,11 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
 s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (len == 0 || !Common::Is64KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 64KB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
@@ -434,11 +434,11 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (len == 0 || !Common::Is64KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 64KB aligned!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}", fmt::ptr(addr), len, flags);
@@ -493,7 +493,7 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     }
     auto* memory = Core::Memory::Instance();
     memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_munmap(void* addr, size_t len) {

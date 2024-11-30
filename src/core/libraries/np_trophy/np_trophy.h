@@ -29,14 +29,14 @@ constexpr int ORBIS_NP_TROPHY_INVALID_HANDLE = -1;
 constexpr int ORBIS_NP_TROPHY_INVALID_CONTEXT = -1;
 constexpr int ORBIS_NP_TROPHY_INVALID_TROPHY_ID = -1;
 
-typedef int32_t OrbisNpTrophyHandle;
-typedef int32_t OrbisNpTrophyContext;
-typedef int32_t OrbisNpTrophyId;
-typedef uint32_t OrbisNpTrophyFlagMask;
+using OrbisNpTrophyHandle = s32;
+using OrbisNpTrophyContext = s32;
+using OrbisNpTrophyId = s32;
+using OrbisNpTrophyFlagMask = u32;
 
 struct OrbisNpTrophyFlagArray {
-    OrbisNpTrophyFlagMask
-        flag_bits[ORBIS_NP_TROPHY_FLAG_SETSIZE >> ORBIS_NP_TROPHY_FLAG_BITS_SHIFT];
+    static constexpr int NumMasks = ORBIS_NP_TROPHY_FLAG_SETSIZE >> ORBIS_NP_TROPHY_FLAG_BITS_SHIFT;
+    std::array<OrbisNpTrophyFlagMask, NumMasks> flag_bits;
 };
 
 void ORBIS_NP_TROPHY_FLAG_ZERO(OrbisNpTrophyFlagArray* p);
@@ -49,18 +49,18 @@ struct OrbisNpTrophyData {
     size_t size;
     OrbisNpTrophyId trophy_id;
     bool unlocked;
-    uint8_t reserved[3];
+    u8 reserved[3];
     Rtc::OrbisRtcTick timestamp;
 };
 
-typedef int32_t OrbisNpTrophyGrade;
+using OrbisNpTrophyGrade = s32;
 constexpr int ORBIS_NP_TROPHY_GRADE_UNKNOWN = 0;
 constexpr int ORBIS_NP_TROPHY_GRADE_PLATINUM = 1;
 constexpr int ORBIS_NP_TROPHY_GRADE_GOLD = 2;
 constexpr int ORBIS_NP_TROPHY_GRADE_SILVER = 3;
 constexpr int ORBIS_NP_TROPHY_GRADE_BRONZE = 4;
 
-typedef int32_t OrbisNpTrophyGroupId;
+using OrbisNpTrophyGroupId = s32;
 constexpr int ORBIS_NP_TROPHY_BASE_GAME_GROUP_ID = -1;
 constexpr int ORBIS_NP_TROPHY_INVALID_GROUP_ID = -2;
 
@@ -70,29 +70,29 @@ struct OrbisNpTrophyDetails {
     OrbisNpTrophyGrade trophy_grade;
     OrbisNpTrophyGroupId group_id;
     bool hidden;
-    uint8_t reserved[3];
+    u8 reserved[3];
     char name[ORBIS_NP_TROPHY_NAME_MAX_SIZE];
     char description[ORBIS_NP_TROPHY_DESCR_MAX_SIZE];
 };
 
 struct OrbisNpTrophyGameData {
     size_t size;
-    uint32_t unlocked_trophies;
-    uint32_t unlocked_platinum;
-    uint32_t unlocked_gold;
-    uint32_t unlocked_silver;
-    uint32_t unlocked_bronze;
-    uint32_t progress_percentage;
+    u32 unlocked_trophies;
+    u32 unlocked_platinum;
+    u32 unlocked_gold;
+    u32 unlocked_silver;
+    u32 unlocked_bronze;
+    u32 progress_percentage;
 };
 
 struct OrbisNpTrophyGameDetails {
     size_t size;
-    uint32_t num_groups;
-    uint32_t num_trophies;
-    uint32_t num_platinum;
-    uint32_t num_gold;
-    uint32_t num_silver;
-    uint32_t num_bronze;
+    u32 num_groups;
+    u32 num_trophies;
+    u32 num_platinum;
+    u32 num_gold;
+    u32 num_silver;
+    u32 num_bronze;
     char title[ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE];
     char description[ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE];
 };
@@ -100,23 +100,23 @@ struct OrbisNpTrophyGameDetails {
 struct OrbisNpTrophyGroupData {
     size_t size;
     OrbisNpTrophyGroupId group_id;
-    uint32_t unlocked_trophies;
-    uint32_t unlocked_platinum;
-    uint32_t unlocked_gold;
-    uint32_t unlocked_silver;
-    uint32_t unlocked_bronze;
-    uint32_t progress_percentage;
+    u32 unlocked_trophies;
+    u32 unlocked_platinum;
+    u32 unlocked_gold;
+    u32 unlocked_silver;
+    u32 unlocked_bronze;
+    u32 progress_percentage;
     uint8_t reserved[4];
 };
 
 struct OrbisNpTrophyGroupDetails {
     size_t size;
     OrbisNpTrophyGroupId group_id;
-    uint32_t num_trophies;
-    uint32_t num_platinum;
-    uint32_t num_gold;
-    uint32_t num_silver;
-    uint32_t num_bronze;
+    u32 num_trophies;
+    u32 num_platinum;
+    u32 num_gold;
+    u32 num_silver;
+    u32 num_bronze;
     char title[ORBIS_NP_TROPHY_GROUP_TITLE_MAX_SIZE];
     char description[ORBIS_NP_TROPHY_GROUP_DESCR_MAX_SIZE];
 };
@@ -133,7 +133,7 @@ int PS4_SYSV_ABI sceNpTrophyConfigGetTrophySetVersion();
 int PS4_SYSV_ABI sceNpTrophyConfigGetTrophyTitleDetails();
 int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature();
 s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t user_id,
-                                          uint32_t service_label, uint64_t options);
+                                          u32 service_label, uint64_t options);
 s32 PS4_SYSV_ABI sceNpTrophyCreateHandle(OrbisNpTrophyHandle* handle);
 int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context);
 s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle);

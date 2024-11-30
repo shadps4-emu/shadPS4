@@ -69,7 +69,7 @@ private:
     SceAvPlayerPostInitData m_post_init_data{};
     SceAvPlayerEventReplacement m_event_replacement{};
     bool m_auto_start{};
-    u8 m_default_language[4]{};
+    char m_default_language[4]{};
 
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;

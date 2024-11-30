@@ -12,114 +12,81 @@ class SymbolsResolver;
 
 namespace Libraries::SystemService {
 
-enum OrbisSystemServiceParamId {
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG = 1,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT = 2,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT = 3,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_ZONE = 4,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_SUMMERTIME = 5,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_SYSTEM_NAME = 6,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_GAME_PARENTAL_LEVEL = 7,
-    ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN = 1000
+enum class OrbisSystemServiceParamId {
+    Lang = 1,
+    DateFormat = 2,
+    TimeFormat = 3,
+    TimeZone = 4,
+    Summertime = 5,
+    SystemName = 6,
+    GameParentalLevel = 7,
+    EnterButtonAssign = 1000,
 };
 
-enum OrbisSystemParamDateFormat {
-    ORBIS_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD = 0,
-    ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY = 1,
-    ORBIS_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY = 2
+enum class OrbisSystemParamDateFormat {
+    FmtYYYYMMDD = 0,
+    FmtDDMMYYYY = 1,
+    FmtMMDDYYYY = 2,
 };
 
-enum OrbisSystemParamTimeFormat {
-    ORBIS_SYSTEM_PARAM_TIME_FORMAT_12HOUR = 0,
-    ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR = 1
+enum class OrbisSystemParamTimeFormat {
+    Fmt12Hour = 0,
+    Fmt24Hour = 1,
 };
 
-enum OrbisSystemParamGameParentalLevel {
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF = 0,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL01 = 1,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL02 = 2,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL03 = 3,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL04 = 4,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL05 = 5,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL06 = 6,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL07 = 7,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL08 = 8,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL09 = 9,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL10 = 10,
-    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL11 = 11
+enum class OrbisSystemParamGameParentalLevel {
+    Off = 0,
+    Level01 = 1,
+    Level02 = 2,
+    Level03 = 3,
+    Level04 = 4,
+    Level05 = 5,
+    Level06 = 6,
+    Level07 = 7,
+    Level08 = 8,
+    Level09 = 9,
+    Level10 = 10,
+    Level11 = 11,
 };
 
-enum OrbisSystemParamEnterButtonAssign {
-    ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CIRCLE = 0,
-    ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS = 1
+enum class OrbisSystemParamEnterButtonAssign {
+    Circle = 0,
+    Cross = 1,
 };
 
-enum OrbisSystemParamLanguage {
-    ORBIS_SYSTEM_PARAM_LANG_JAPANESE = 0,
-    ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US = 1,
-    ORBIS_SYSTEM_PARAM_LANG_FRENCH = 2,
-    ORBIS_SYSTEM_PARAM_LANG_SPANISH = 3,
-    ORBIS_SYSTEM_PARAM_LANG_GERMAN = 4,
-    ORBIS_SYSTEM_PARAM_LANG_ITALIAN = 5,
-    ORBIS_SYSTEM_PARAM_LANG_DUTCH = 6,
-    ORBIS_SYSTEM_PARAM_LANG_PORTUGUESE_PT = 7,
-    ORBIS_SYSTEM_PARAM_LANG_RUSSIAN = 8,
-    ORBIS_SYSTEM_PARAM_LANG_KOREAN = 9,
-    ORBIS_SYSTEM_PARAM_LANG_CHINESE_T = 10,
-    ORBIS_SYSTEM_PARAM_LANG_CHINESE_S = 11,
-    ORBIS_SYSTEM_PARAM_LANG_FINNISH = 12,
-    ORBIS_SYSTEM_PARAM_LANG_SWEDISH = 13,
-    ORBIS_SYSTEM_PARAM_LANG_DANISH = 14,
-    ORBIS_SYSTEM_PARAM_LANG_NORWEGIAN = 15,
-    ORBIS_SYSTEM_PARAM_LANG_POLISH = 16,
-    ORBIS_SYSTEM_PARAM_LANG_PORTUGUESE_BR = 17,
-    ORBIS_SYSTEM_PARAM_LANG_ENGLISH_GB = 18,
-    ORBIS_SYSTEM_PARAM_LANG_TURKISH = 19,
-    ORBIS_SYSTEM_PARAM_LANG_SPANISH_LA = 20,
-    ORBIS_SYSTEM_PARAM_LANG_ARABIC = 21,
-    ORBIS_SYSTEM_PARAM_LANG_FRENCH_CA = 22,
-    ORBIS_SYSTEM_PARAM_LANG_CZECH = 23,
-    ORBIS_SYSTEM_PARAM_LANG_HUNGARIAN = 24,
-    ORBIS_SYSTEM_PARAM_LANG_GREEK = 25,
-    ORBIS_SYSTEM_PARAM_LANG_ROMANIAN = 26,
-    ORBIS_SYSTEM_PARAM_LANG_THAI = 27,
-    ORBIS_SYSTEM_PARAM_LANG_VIETNAMESE = 28,
-    ORBIS_SYSTEM_PARAM_LANG_INDONESIAN = 29
-};
-
-enum OrbisSystemServiceEventType {
-    ORBIS_SYSTEM_SERVICE_EVENT_INVALID = -1,
-    ORBIS_SYSTEM_SERVICE_EVENT_ON_RESUME = 0x10000000,
-    ORBIS_SYSTEM_SERVICE_EVENT_GAME_LIVE_STREAMING_STATUS_UPDATE = 0x10000001,
-    ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION = 0x10000002,
-    ORBIS_SYSTEM_SERVICE_EVENT_ENTITLEMENT_UPDATE = 0x10000003,
-    ORBIS_SYSTEM_SERVICE_EVENT_GAME_CUSTOM_DATA = 0x10000004,
-    ORBIS_SYSTEM_SERVICE_EVENT_DISPLAY_SAFE_AREA_UPDATE = 0x10000005,
-    ORBIS_SYSTEM_SERVICE_EVENT_URL_OPEN = 0x10000006,
-    ORBIS_SYSTEM_SERVICE_EVENT_LAUNCH_APP = 0x10000007,
-    ORBIS_SYSTEM_SERVICE_EVENT_APP_LAUNCH_LINK = 0x10000008,
-    ORBIS_SYSTEM_SERVICE_EVENT_ADDCONTENT_INSTALL = 0x10000009,
-    ORBIS_SYSTEM_SERVICE_EVENT_RESET_VR_POSITION = 0x1000000a,
-    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_EVENT = 0x1000000b,
-    ORBIS_SYSTEM_SERVICE_EVENT_PLAYGO_LOCUS_UPDATE = 0x1000000c,
-    ORBIS_SYSTEM_SERVICE_EVENT_PLAY_TOGETHER_HOST = 0x1000000d,
-    ORBIS_SYSTEM_SERVICE_EVENT_SERVICE_ENTITLEMENT_UPDATE = 0x1000000e,
-    ORBIS_SYSTEM_SERVICE_EVENT_EYE_TO_EYE_DISTANCE_UPDATE = 0x1000000f,
-    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_MATCH_EVENT = 0x10000010,
-    ORBIS_SYSTEM_SERVICE_EVENT_PLAY_TOGETHER_HOST_A = 0x10000011,
-    ORBIS_SYSTEM_SERVICE_EVENT_WEBBROWSER_CLOSED = 0x10000012,
-    ORBIS_SYSTEM_SERVICE_EVENT_CONTROLLER_SETTINGS_CLOSED = 0x10000013,
-    ORBIS_SYSTEM_SERVICE_EVENT_JOIN_TEAM_ON_TEAM_MATCH_EVENT = 0x10000014,
-    ORBIS_SYSTEM_SERVICE_EVENT_OPEN_SHARE_MENU = 0x30000000
+enum class OrbisSystemServiceEventType {
+    Invalid = -1,
+    OnResume = 0x10000000,
+    GameLiveStreamingStatusUpdate = 0x10000001,
+    SessionInvitation = 0x10000002,
+    EntitlementUpdate = 0x10000003,
+    GameCustomData = 0x10000004,
+    DisplaySafeAreaUpdate = 0x10000005,
+    UrlOpen = 0x10000006,
+    LaunchApp = 0x10000007,
+    AppLaunchLink = 0x10000008,
+    AddcontentInstall = 0x10000009,
+    ResetVrPosition = 0x1000000a,
+    JoinEvent = 0x1000000b,
+    PlaygoLocusUpdate = 0x1000000c,
+    PlayTogetherHost = 0x1000000d,
+    ServiceEntitlementUpdate = 0x1000000e,
+    EyeToEyeDistanceUpdate = 0x1000000f,
+    JoinMatchEvent = 0x10000010,
+    PlayTogetherHostA = 0x10000011,
+    WebBrowserClosed = 0x10000012,
+    ControllerSettingsClosed = 0x10000013,
+    JoinTeamOnTeamMatchEvent = 0x10000014,
+    OpenShareMenu = 0x30000000
 };
 
 struct OrbisSystemServiceStatus {
-    s32 eventNum;
-    bool isSystemUiOverlaid;
-    bool isInBackgroundExecution;
-    bool isCpuMode7CpuNormal;
-    bool isGameLiveStreamingOnAir;
-    bool isOutOfVrPlayArea;
+    s32 event_num;
+    bool is_system_ui_overlaid;
+    bool is_in_background_execution;
+    bool is_cpu_mode7_cpu_normal;
+    bool is_game_live_streaming_on_air;
+    bool is_out_of_vr_play_area;
     u8 reserved[];
 };
 
@@ -129,36 +96,36 @@ struct OrbisSystemServiceDisplaySafeAreaInfo {
 };
 
 struct OrbisSystemServiceEvent {
-    OrbisSystemServiceEventType eventType;
+    OrbisSystemServiceEventType event_type;
     union {
         char param[8192];
         struct {
             char source[1024];
             char url[4096];
-        } urlOpen;
+        } url_open;
         struct {
             u32 size;
             u8 arg[8188];
-        } launchApp;
+        } launch_app;
         struct {
             u32 size;
             u8 arg[2020];
-        } appLaunchLink;
+        } app_launch_link;
         struct {
-            s32 userId;
-            char eventId[37];
-            char bootArgument[7169];
-        } joinEvent;
+            s32 user_id;
+            char event_id[37];
+            char boot_argument[7169];
+        } join_event;
         struct {
-            s32 userId;
-            u32 npServiceLabel;
+            s32 user_id;
+            u32 np_service_label;
             u8 reserved[8184];
-        } serviceEntitlementUpdate;
+        } service_entitlement_update;
         struct {
-            s32 userId;
-            u32 npServiceLabel;
+            s32 user_id;
+            u32 np_service_label;
             u8 reserved[8184];
-        } unifiedEntitlementUpdate;
+        } unified_entitlement_update;
         u8 reserved[8192];
     };
 };
@@ -537,7 +504,7 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToAnotherApp();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBack();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBackWithValue();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome();
-s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value);
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value);
 int PS4_SYSV_ABI sceSystemServiceParamGetString();
 int PS4_SYSV_ABI sceSystemServicePowerTick();
 int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess();

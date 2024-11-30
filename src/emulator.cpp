@@ -29,6 +29,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/fiber/fiber.h"
+#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -256,9 +257,9 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     linker->Execute();
 
-    window->initTimers();
-    while (window->isOpen()) {
-        window->waitEvent();
+    window->InitTimers();
+    while (window->IsOpen()) {
+        window->WaitEvent();
     }
 
 #ifdef ENABLE_QT_GUI
@@ -278,7 +279,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterlibSceJpegEnc},
          {"libSceCesCs.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;
