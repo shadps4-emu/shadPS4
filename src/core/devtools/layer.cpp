@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "layer.h"
+
 #include <imgui.h>
 
 #include "common/config.h"
@@ -9,12 +11,12 @@
 #include "core/debug_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
-#include "layer.h"
 #include "options.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
+#include "widget/shader_list.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
@@ -37,6 +39,7 @@ static float debug_popup_timing = 3.0f;
 static bool just_opened_options = false;
 
 static Widget::MemoryMapViewer memory_map;
+static Widget::ShaderList shader_list;
 
 // clang-format off
 static std::string help_text =
@@ -66,6 +69,7 @@ void L::DrawMenuBar() {
         }
         if (BeginMenu("GPU Tools")) {
             MenuItem("Show frame info", nullptr, &frame_graph.is_open);
+            MenuItem("Show loaded shaders", nullptr, &shader_list.open);
             if (BeginMenu("Dump frames")) {
                 SliderInt("Count", &dump_frame_count, 1, 5);
                 if (MenuItem("Dump", "Ctrl+Alt+F9", nullptr, !DebugState.DumpingCurrentFrame())) {
@@ -184,19 +188,29 @@ void L::DrawAdvanced() {
     bool close_popup_options = true;
     if (BeginPopupModal("GPU Tools Options", &close_popup_options,
                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-        static char disassembly_cli[512];
+        static char disassembler_cli_isa[512];
+        static char disassembler_cli_spv[512];
         static bool frame_dump_render_on_collapse;
 
         if (just_opened_options) {
             just_opened_options = false;
-            auto s = Options.disassembly_cli.copy(disassembly_cli, sizeof(disassembly_cli) - 1);
-            disassembly_cli[s] = '\0';
+            auto s = Options.disassembler_cli_isa.copy(disassembler_cli_isa,
+                                                       sizeof(disassembler_cli_isa) - 1);
+            disassembler_cli_isa[s] = '\0';
+            s = Options.disassembler_cli_spv.copy(disassembler_cli_spv,
+                                                  sizeof(disassembler_cli_spv) - 1);
+            disassembler_cli_spv[s] = '\0';
             frame_dump_render_on_collapse = Options.frame_dump_render_on_collapse;
         }
 
-        InputText("Shader disassembler: ", disassembly_cli, sizeof(disassembly_cli));
+        InputText("Shader isa disassembler: ", disassembler_cli_isa, sizeof(disassembler_cli_isa));
         if (IsItemHovered()) {
-            SetTooltip(R"(Command to disassemble shaders. Example "dis.exe" --raw "{src}")");
+            SetTooltip(R"(Command to disassemble shaders. Example: dis.exe --raw "{src}")");
+        }
+        InputText("Shader SPIRV disassembler: ", disassembler_cli_spv,
+                  sizeof(disassembler_cli_spv));
+        if (IsItemHovered()) {
+            SetTooltip(R"(Command to disassemble shaders. Example: spirv-cross -V "{src}")");
         }
         Checkbox("Show frame dump popups even when collapsed", &frame_dump_render_on_collapse);
         if (IsItemHovered()) {
@@ -205,7 +219,8 @@ void L::DrawAdvanced() {
         }
 
         if (Button("Save")) {
-            Options.disassembly_cli = disassembly_cli;
+            Options.disassembler_cli_isa = disassembler_cli_isa;
+            Options.disassembler_cli_spv = disassembler_cli_spv;
             Options.frame_dump_render_on_collapse = frame_dump_render_on_collapse;
             SaveIniSettingsToDisk(io.IniFilename);
             CloseCurrentPopup();
@@ -231,6 +246,9 @@ void L::DrawAdvanced() {
 
     if (memory_map.open) {
         memory_map.Draw();
+    }
+    if (shader_list.open) {
+        shader_list.Draw();
     }
 }
 
