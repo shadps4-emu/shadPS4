@@ -48,10 +48,6 @@ int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
         LOG_ERROR(Lib_SysModule, "Invalid internal sysmodule ID: {:#x}", static_cast<u32>(id));
         return ORBIS_SYSMODULE_INVALID_ID;
     }
-    if (id == OrbisSysModuleInternal::ORBIS_SYSMODULE_INTERNAL_RAZOR_CPU) {
-        // Internal debugging library, report as not loaded so it won't be used.
-        return ORBIS_SYSMODULE_NOT_LOADED;
-    }
     return ORBIS_OK;
 }
 
