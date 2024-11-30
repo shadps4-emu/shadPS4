@@ -578,6 +578,12 @@ void load(const std::filesystem::path& path) {
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
+        const auto install_dir_array =
+            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+        for (const auto& dir : install_dir_array) {
+            addGameInstallDir(std::filesystem::path{dir});
+        }
+
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
