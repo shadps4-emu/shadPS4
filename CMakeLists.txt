@@ -374,6 +374,8 @@ set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
 
 set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo.h
+               src/core/libraries/playgo/playgo_dialog.cpp
+               src/core/libraries/playgo/playgo_dialog.h
                src/core/libraries/playgo/playgo_types.h
 )
 
