@@ -213,7 +213,8 @@ InputBinding GetBindingFromString(std::string& line) {
 ControllerOutput* GetOutputPointer(const ControllerOutput& parsed) {
     // i wonder how long until someone notices this or I get rid of it
     int i = 0;
-    for (; i[output_array] != ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax); i++) {
+    for (; i[output_array] != ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax);
+         i++) {
         if (i[output_array] == parsed) {
             return &output_array[i];
         }
@@ -284,7 +285,8 @@ void ParseInputConfig(const std::string game_id = "") {
                                 line);
                     continue;
                 }
-                ControllerOutput* toggle_out = GetOutputPointer(ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
+                ControllerOutput* toggle_out =
+                    GetOutputPointer(ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
                 BindingConnection toggle_connection =
                     BindingConnection(InputBinding(toggle_keys.key2), toggle_out, toggle_keys.key3);
                 connections.insert(connections.end(), toggle_connection);
@@ -328,8 +330,11 @@ void ParseInputConfig(const std::string game_id = "") {
                                   axis_it->second.axis == Axis::TriggerRight)
                                    ? 127
                                    : axis_it->second.value;
-            connection = BindingConnection(
-                binding, GetOutputPointer(ControllerOutput(OrbisPadButtonDataOffset::None, axis_it->second.axis)), value_to_set);
+            connection =
+                BindingConnection(binding,
+                                  GetOutputPointer(ControllerOutput(OrbisPadButtonDataOffset::None,
+                                                                    axis_it->second.axis)),
+                                  value_to_set);
             connections.insert(connections.end(), connection);
         } else {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
@@ -484,9 +489,8 @@ void ControllerOutput::FinalizeUpdate() {
             controller->Axis(0, axis, GetAxis(0x0, 0x80, new_param));
             // Also handle button counterpart for TriggerLeft and TriggerRight
             controller->CheckButton(0,
-                                    axis == Axis::TriggerLeft
-                                        ? OrbisPadButtonDataOffset::L2
-                                        : OrbisPadButtonDataOffset::R2,
+                                    axis == Axis::TriggerLeft ? OrbisPadButtonDataOffset::L2
+                                                              : OrbisPadButtonDataOffset::R2,
                                     new_param > 0x20);
             return;
         default:
