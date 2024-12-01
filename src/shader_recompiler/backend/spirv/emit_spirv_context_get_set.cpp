@@ -216,7 +216,8 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
 
         Id result;
         if (param.is_loaded) {
-            // Attribute is either default or manually interpolated. The id points to an already loaded vector.
+            // Attribute is either default or manually interpolated. The id points to an already
+            // loaded vector.
             result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
         } else if (param.num_components > 1) {
             // Attribute is a vector and we need to access a specific component.

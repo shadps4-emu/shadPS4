@@ -226,7 +226,8 @@ void EmitContext::DefineInterpolatedAttribs() {
     if (!profile.needs_manual_interpolation) {
         return;
     }
-    // Iterate all input attributes, load them and manually interpolate with barycentric coordinates.
+    // Iterate all input attributes, load them and manually interpolate with barycentric
+    // coordinates.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
         const u32 semantic = input.param_index;

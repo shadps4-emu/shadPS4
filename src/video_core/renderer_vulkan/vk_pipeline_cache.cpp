@@ -163,7 +163,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
-    profile = Shader::Profile {
+    profile = Shader::Profile{
         .supported_spirv = instance.ApiVersion() >= VK_API_VERSION_1_3 ? 0x00010600U : 0x00010500U,
         .subgroup_size = instance.SubgroupSize(),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
