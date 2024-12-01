@@ -30,7 +30,8 @@ namespace Core::Devtools {
 class Layer;
 namespace Widget {
 class FrameGraph;
-}
+class ShaderList;
+} // namespace Widget
 } // namespace Core::Devtools
 
 namespace DebugStateType {
@@ -49,12 +50,12 @@ struct QueueDump {
     uintptr_t base_addr;
 };
 
-struct ShaderDump {
+struct PipelineShaderProgramDump {
     Vulkan::Liverpool::ShaderProgram user_data{};
     std::vector<u32> code{};
 };
 
-struct ComputerShaderDump {
+struct PipelineComputerProgramDump {
     Vulkan::Liverpool::ComputeProgram cs_program{};
     std::vector<u32> code{};
 };
@@ -63,8 +64,8 @@ struct RegDump {
     bool is_compute{false};
     static constexpr size_t MaxShaderStages = 5;
     Vulkan::Liverpool::Regs regs{};
-    std::array<ShaderDump, MaxShaderStages> stages{};
-    ComputerShaderDump cs_data{};
+    std::array<PipelineShaderProgramDump, MaxShaderStages> stages{};
+    PipelineComputerProgramDump cs_data{};
 };
 
 struct FrameDump {
@@ -73,9 +74,41 @@ struct FrameDump {
     std::unordered_map<uintptr_t, RegDump> regs; // address -> reg dump
 };
 
+struct ShaderDump {
+    std::string name;
+    std::vector<u32> spv;
+    std::vector<u32> raw_code;
+
+    std::string cache_spv_disasm{};
+    std::string cache_raw_disasm{};
+
+    ShaderDump(std::string name, std::vector<u32> spv, std::vector<u32> raw_code)
+        : name(std::move(name)), spv(std::move(spv)), raw_code(std::move(raw_code)) {}
+
+    ShaderDump(const ShaderDump& other) = delete;
+    ShaderDump(ShaderDump&& other) noexcept
+        : name{std::move(other.name)}, spv{std::move(other.spv)},
+          raw_code{std::move(other.raw_code)}, cache_spv_disasm{std::move(other.cache_spv_disasm)},
+          cache_raw_disasm{std::move(other.cache_raw_disasm)} {}
+    ShaderDump& operator=(const ShaderDump& other) = delete;
+    ShaderDump& operator=(ShaderDump&& other) noexcept {
+        if (this == &other)
+            return *this;
+        name = std::move(other.name);
+        spv = std::move(other.spv);
+        raw_code = std::move(other.raw_code);
+        cache_spv_disasm = std::move(other.cache_spv_disasm);
+        cache_raw_disasm = std::move(other.cache_raw_disasm);
+        return *this;
+    }
+};
+
 class DebugStateImpl {
     friend class Core::Devtools::Layer;
     friend class Core::Devtools::Widget::FrameGraph;
+    friend class Core::Devtools::Widget::ShaderList;
+
+    std::queue<std::string> debug_message_popup;
 
     std::mutex guest_threads_mutex{};
     std::vector<ThreadID> guest_threads{};
@@ -94,7 +127,7 @@ class DebugStateImpl {
     std::shared_mutex frame_dump_list_mutex;
     std::vector<FrameDump> frame_dump_list{};
 
-    std::queue<std::string> debug_message_popup;
+    std::vector<ShaderDump> shader_dump_list{};
 
 public:
     void ShowDebugMessage(std::string message) {
@@ -152,6 +185,9 @@ public:
 
     void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
                       const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
+
+    void CollectShader(const std::string& name, std::span<const u32> spv,
+                       std::span<const u32> raw_code);
 };
 } // namespace DebugStateType
 

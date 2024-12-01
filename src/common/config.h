@@ -37,6 +37,7 @@ u32 getScreenHeight();
 s32 getGpuId();
 
 bool debugDump();
+bool collectShadersForDebug();
 bool showSplash();
 bool autoUpdate();
 bool nullGpu();
@@ -47,6 +48,7 @@ bool isRdocEnabled();
 u32 vblankDiv();
 
 void setDebugDump(bool enable);
+void setCollectShaderForDebug(bool enable);
 void setShowSplash(bool enable);
 void setAutoUpdate(bool enable);
 void setNullGpu(bool enable);

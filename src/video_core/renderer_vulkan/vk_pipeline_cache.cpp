@@ -7,6 +7,7 @@
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
@@ -260,7 +261,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // recompiler.
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
+        if (skip_cb_binding || !col_buf) {
             continue;
         }
         const auto base_format =
@@ -362,8 +363,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
-            (key.mrt_mask & (1u << cb)) == 0) {
+        if (skip_cb_binding || !col_buf || (key.mrt_mask & (1u << cb)) == 0) {
             key.color_formats[cb] = vk::Format::eUndefined;
             key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
             continue;
@@ -417,6 +417,9 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     const auto module = CompileSPV(spv, instance.GetDevice());
     const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
+    if (Config::collectShadersForDebug()) {
+        DebugState.CollectShader(name, spv, code);
+    }
     return module;
 }
 

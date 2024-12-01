@@ -435,10 +435,14 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
               src/core/devtools/widget/imgui_memory_editor.h
+              src/core/devtools/widget/memory_map.cpp
+              src/core/devtools/widget/memory_map.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp
               src/core/devtools/widget/reg_view.h
+              src/core/devtools/widget/shader_list.cpp
+              src/core/devtools/widget/shader_list.h
               src/core/devtools/widget/text_editor.cpp
               src/core/devtools/widget/text_editor.h
 )

@@ -95,13 +95,6 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             continue;
         }
 
-        // If the color buffer is still bound but rendering to it is disabled by the target
-        // mask, we need to prevent the render area from being affected by unbound render target
-        // extents.
-        if (!regs.color_target_mask.GetMask(col_buf_id)) {
-            continue;
-        }
-
         // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
         // an unnecessary transition and may result in state conflict if the resource is already
         // bound for reading.
