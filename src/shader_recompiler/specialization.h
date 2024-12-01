@@ -9,7 +9,6 @@
 #include "frontend/fetch_shader.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/passes/srt.h"
 
 namespace Shader {
 
@@ -22,8 +21,12 @@ struct VsAttribSpecialization {
 struct BufferSpecialization {
     u16 stride : 14;
     u16 is_storage : 1;
+    u32 size = 0;
 
-    auto operator<=>(const BufferSpecialization&) const = default;
+    bool operator==(const BufferSpecialization& other) const {
+        return stride == other.stride && is_storage == other.is_storage &&
+               (size >= other.is_storage || is_storage);
+    }
 };
 
 struct TextureBufferSpecialization {
@@ -86,6 +89,9 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
                          spec.is_storage = desc.IsStorage(sharp);
+                         if (!spec.is_storage) {
+                             spec.size = sharp.GetSize();
+                         }
                      });
         ForEachSharp(binding, tex_buffers, info->texture_buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {

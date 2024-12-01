@@ -108,7 +108,7 @@ struct PushData {
 
     void AddTexelOffset(u32 binding, u32 multiplier, u32 texel_offset) {
         ASSERT(texel_offset < 64 && multiplier < 16);
-        buf_offsets[binding] = texel_offset | (std::bit_width(multiplier) << 6);
+        buf_offsets[binding] = texel_offset | ((std::bit_width(multiplier) - 1) << 6);
     }
 };
 static_assert(sizeof(PushData) <= 128,
