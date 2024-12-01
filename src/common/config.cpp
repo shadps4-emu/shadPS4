@@ -47,6 +47,7 @@ static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
+static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
 static bool isNullGpu = false;
@@ -159,6 +160,10 @@ bool debugDump() {
     return isDebugDump;
 }
 
+bool collectShadersForDebug() {
+    return isShaderDebug;
+}
+
 bool showSplash() {
     return isShowSplash;
 }
@@ -233,6 +238,10 @@ void setScreenHeight(u32 height) {
 
 void setDebugDump(bool enable) {
     isDebugDump = enable;
+}
+
+void setCollectShaderForDebug(bool enable) {
+    isShaderDebug = enable;
 }
 
 void setShowSplash(bool enable) {
@@ -571,6 +580,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
+        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
     }
 
     if (data.contains("GUI")) {
@@ -662,6 +672,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
     data["Debug"]["DebugDump"] = isDebugDump;
+    data["Debug"]["CollectShader"] = isShaderDebug;
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["iconSize"] = m_icon_size;
     data["GUI"]["sliderPos"] = m_slider_pos;
@@ -717,6 +728,7 @@ void setDefaultValues() {
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
+    isShaderDebug = false;
     isShowSplash = false;
     isAutoUpdate = false;
     isNullGpu = false;
