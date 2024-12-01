@@ -63,36 +63,36 @@ std::list<BindingConnection> connections = std::list<BindingConnection>();
 
 ControllerOutput output_array[] = {
     // Important: these have to be the first, or else they will update in the wrong order
-    ControllerOutput(LEFTJOYSTICK_HALFMODE),
-    ControllerOutput(RIGHTJOYSTICK_HALFMODE),
-    ControllerOutput(KEY_TOGGLE),
+    ControllerOutput((OrbisPadButtonDataOffset)LEFTJOYSTICK_HALFMODE),
+    ControllerOutput((OrbisPadButtonDataOffset)RIGHTJOYSTICK_HALFMODE),
+    ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE),
 
     // Button mappings
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT),
-    ControllerOutput(OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT),
+    ControllerOutput(OrbisPadButtonDataOffset::Triangle),
+    ControllerOutput(OrbisPadButtonDataOffset::Circle),
+    ControllerOutput(OrbisPadButtonDataOffset::Cross),
+    ControllerOutput(OrbisPadButtonDataOffset::Square),
+    ControllerOutput(OrbisPadButtonDataOffset::L1),
+    ControllerOutput(OrbisPadButtonDataOffset::L3),
+    ControllerOutput(OrbisPadButtonDataOffset::R1),
+    ControllerOutput(OrbisPadButtonDataOffset::R3),
+    ControllerOutput(OrbisPadButtonDataOffset::Options),
+    ControllerOutput(OrbisPadButtonDataOffset::TouchPad),
+    ControllerOutput(OrbisPadButtonDataOffset::Up),
+    ControllerOutput(OrbisPadButtonDataOffset::Down),
+    ControllerOutput(OrbisPadButtonDataOffset::Left),
+    ControllerOutput(OrbisPadButtonDataOffset::Right),
 
     // Axis mappings
-    ControllerOutput(0, Axis::LeftX),
-    ControllerOutput(0, Axis::LeftY),
-    ControllerOutput(0, Axis::RightX),
-    ControllerOutput(0, Axis::RightY),
-    ControllerOutput(0, Axis::TriggerLeft),
-    ControllerOutput(0, Axis::TriggerRight),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::LeftX),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::LeftY),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::RightX),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::RightY),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::TriggerLeft),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::TriggerRight),
 
     // the "sorry, you gave an incorrect value, now we bind it to nothing" output
-    ControllerOutput(0, Axis::AxisMax),
+    ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax),
 };
 
 // We had to go through 3 files of indirection just to update a flag
@@ -111,33 +111,33 @@ u32 GetAxisInputId(AxisMapping a) {
     return value;
 }
 
-u32 GetOrbisToSdlButtonKeycode(u32 cbutton) {
+u32 GetOrbisToSdlButtonKeycode(OrbisPadButtonDataOffset cbutton) {
     switch (cbutton) {
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE:
+    case OrbisPadButtonDataOffset::Circle:
         return SDL_GAMEPAD_BUTTON_EAST;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE:
+    case OrbisPadButtonDataOffset::Triangle:
         return SDL_GAMEPAD_BUTTON_NORTH;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE:
+    case OrbisPadButtonDataOffset::Square:
         return SDL_GAMEPAD_BUTTON_WEST;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS:
+    case OrbisPadButtonDataOffset::Cross:
         return SDL_GAMEPAD_BUTTON_SOUTH;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1:
+    case OrbisPadButtonDataOffset::L1:
         return SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1:
+    case OrbisPadButtonDataOffset::R1:
         return SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3:
+    case OrbisPadButtonDataOffset::L3:
         return SDL_GAMEPAD_BUTTON_LEFT_STICK;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3:
+    case OrbisPadButtonDataOffset::R3:
         return SDL_GAMEPAD_BUTTON_RIGHT_STICK;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP:
+    case OrbisPadButtonDataOffset::Up:
         return SDL_GAMEPAD_BUTTON_DPAD_UP;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN:
+    case OrbisPadButtonDataOffset::Down:
         return SDL_GAMEPAD_BUTTON_DPAD_DOWN;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT:
+    case OrbisPadButtonDataOffset::Left:
         return SDL_GAMEPAD_BUTTON_DPAD_LEFT;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT:
+    case OrbisPadButtonDataOffset::Right:
         return SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
-    case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS:
+    case OrbisPadButtonDataOffset::Options:
         return SDL_GAMEPAD_BUTTON_START;
 
     default:
@@ -145,11 +145,11 @@ u32 GetOrbisToSdlButtonKeycode(u32 cbutton) {
     }
 }
 u32 GetControllerButtonInputId(u32 cbutton) {
-    if ((cbutton & (OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD | LEFTJOYSTICK_HALFMODE |
+    if ((cbutton & ((u32)OrbisPadButtonDataOffset::TouchPad | LEFTJOYSTICK_HALFMODE |
                     RIGHTJOYSTICK_HALFMODE)) != 0) {
         return (u32)-1;
     }
-    return GetOrbisToSdlButtonKeycode(cbutton) + 0x10000000;
+    return GetOrbisToSdlButtonKeycode((OrbisPadButtonDataOffset)cbutton) + 0x10000000;
 }
 
 // syntax: 'name, name,name' or 'name,name' or 'name'
@@ -190,7 +190,7 @@ InputBinding GetBindingFromString(std::string& line) {
                 key3 = axis_id;
         } else if (string_to_cbutton_map.find(t) != string_to_cbutton_map.end()) {
             // Map to controller button input ID
-            u32 cbutton_id = GetControllerButtonInputId(string_to_cbutton_map.at(t));
+            u32 cbutton_id = GetControllerButtonInputId((u32)string_to_cbutton_map.at(t));
             if (cbutton_id == (u32)-1) {
                 return InputBinding(0, 0, 0);
             }
@@ -213,7 +213,7 @@ InputBinding GetBindingFromString(std::string& line) {
 ControllerOutput* GetOutputPointer(const ControllerOutput& parsed) {
     // i wonder how long until someone notices this or I get rid of it
     int i = 0;
-    for (; i[output_array] != ControllerOutput(0, Axis::AxisMax); i++) {
+    for (; i[output_array] != ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax); i++) {
         if (i[output_array] == parsed) {
             return &output_array[i];
         }
@@ -284,7 +284,7 @@ void ParseInputConfig(const std::string game_id = "") {
                                 line);
                     continue;
                 }
-                ControllerOutput* toggle_out = GetOutputPointer(ControllerOutput(KEY_TOGGLE));
+                ControllerOutput* toggle_out = GetOutputPointer(ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
                 BindingConnection toggle_connection =
                     BindingConnection(InputBinding(toggle_keys.key2), toggle_out, toggle_keys.key3);
                 connections.insert(connections.end(), toggle_connection);
@@ -329,7 +329,7 @@ void ParseInputConfig(const std::string game_id = "") {
                                    ? 127
                                    : axis_it->second.value;
             connection = BindingConnection(
-                binding, GetOutputPointer(ControllerOutput(0, axis_it->second.axis)), value_to_set);
+                binding, GetOutputPointer(ControllerOutput(OrbisPadButtonDataOffset::None, axis_it->second.axis)), value_to_set);
             connections.insert(connections.end(), connection);
         } else {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
@@ -415,7 +415,7 @@ void ControllerOutput::ResetUpdate() {
 }
 void ControllerOutput::AddUpdate(bool pressed, bool analog, u32 param) {
     state_changed = true;
-    if (button != 0) {
+    if (button != OrbisPadButtonDataOffset::None) {
         if (analog) {
             new_button_state |= abs((s32)param) > 0x40;
         } else {
@@ -443,9 +443,9 @@ void ControllerOutput::FinalizeUpdate() {
     old_button_state = new_button_state;
     old_param = new_param;
     float touchpad_x = 0;
-    if (button != 0) {
-        switch (button) {
-        case OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD:
+    if (button != OrbisPadButtonDataOffset::None) {
+        switch ((u32)button) {
+        case (u32)OrbisPadButtonDataOffset::TouchPad:
             touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
                          : Config::getBackButtonBehavior() == "right" ? 0.75f
                                                                       : 0.5f;
@@ -465,7 +465,7 @@ void ControllerOutput::FinalizeUpdate() {
             }
             break;
         default: // is a normal key (hopefully)
-            controller->CheckButton(0, button, new_button_state);
+            controller->CheckButton(0, (OrbisPadButtonDataOffset)button, new_button_state);
             break;
         }
     } else if (axis != Axis::AxisMax) {
@@ -485,8 +485,8 @@ void ControllerOutput::FinalizeUpdate() {
             // Also handle button counterpart for TriggerLeft and TriggerRight
             controller->CheckButton(0,
                                     axis == Axis::TriggerLeft
-                                        ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2
-                                        : OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2,
+                                        ? OrbisPadButtonDataOffset::L2
+                                        : OrbisPadButtonDataOffset::R2,
                                     new_param > 0x20);
             return;
         default:

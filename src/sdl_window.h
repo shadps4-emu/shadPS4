@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/pad/pad.h"
 #include "string"
 
 struct SDL_Window;
@@ -73,8 +74,6 @@ private:
     void OnResize();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
-
-    static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button);
 
 private:
     s32 width;

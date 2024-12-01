@@ -40,25 +40,25 @@ struct AxisMapping {
 };
 
 // i strongly suggest you collapse these maps
-const std::map<std::string, u32> string_to_cbutton_map = {
-    {"triangle", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE},
-    {"circle", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE},
-    {"cross", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS},
-    {"square", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE},
-    {"l1", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1},
-    {"r1", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1},
-    {"l3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3},
-    {"r3", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3},
-    {"pad_up", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP},
-    {"pad_down", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN},
-    {"pad_left", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT},
-    {"pad_right", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT},
-    {"options", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS},
+const std::map<std::string, OrbisPadButtonDataOffset> string_to_cbutton_map = {
+    {"triangle", OrbisPadButtonDataOffset::Triangle},
+    {"circle", OrbisPadButtonDataOffset::Circle},
+    {"cross", OrbisPadButtonDataOffset::Cross},
+    {"square", OrbisPadButtonDataOffset::Square},
+    {"l1", OrbisPadButtonDataOffset::L1},
+    {"r1", OrbisPadButtonDataOffset::R1},
+    {"l3", OrbisPadButtonDataOffset::L3},
+    {"r3", OrbisPadButtonDataOffset::R3},
+    {"pad_up", OrbisPadButtonDataOffset::Up},
+    {"pad_down", OrbisPadButtonDataOffset::Down},
+    {"pad_left", OrbisPadButtonDataOffset::Left},
+    {"pad_right", OrbisPadButtonDataOffset::Right},
+    {"options", OrbisPadButtonDataOffset::Options},
 
     // these are outputs only (touchpad can only be bound to itself)
-    {"touchpad", OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD},
-    {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
-    {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
+    {"touchpad", OrbisPadButtonDataOffset::TouchPad},
+    {"leftjoystick_halfmode", (OrbisPadButtonDataOffset)LEFTJOYSTICK_HALFMODE},
+    {"rightjoystick_halfmode", (OrbisPadButtonDataOffset)RIGHTJOYSTICK_HALFMODE},
 };
 const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
@@ -270,12 +270,12 @@ class ControllerOutput {
 public:
     static void SetControllerOutputController(GameController* c);
 
-    u32 button;
+    OrbisPadButtonDataOffset button;
     Axis axis;
     s32 old_param, new_param;
     bool old_button_state, new_button_state, state_changed;
 
-    ControllerOutput(const u32 b, Axis a = Axis::AxisMax) {
+    ControllerOutput(const OrbisPadButtonDataOffset b, Axis a = Axis::AxisMax) {
         button = b;
         axis = a;
         old_param = 0;
@@ -288,13 +288,13 @@ public:
         return button != o.button || axis != o.axis;
     }
     std::string ToString() const {
-        return fmt::format("({}, {}, {})", button, (int)axis, old_param);
+        return fmt::format("({}, {}, {})", (u32)button, (int)axis, old_param);
     }
     inline bool IsButton() const {
-        return axis == Axis::AxisMax && button != 0;
+        return axis == Axis::AxisMax && button != OrbisPadButtonDataOffset::None;
     }
     inline bool IsAxis() const {
-        return axis != Axis::AxisMax && button == 0;
+        return axis != Axis::AxisMax && button == OrbisPadButtonDataOffset::None;
     }
 
     void ResetUpdate();
