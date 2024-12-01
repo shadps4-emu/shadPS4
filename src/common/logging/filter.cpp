@@ -107,6 +107,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Png)                                                                                  \
     SUB(Lib, Jpeg)                                                                                 \
     SUB(Lib, PlayGo)                                                                               \
+    SUB(Lib, PlayGoDialog)                                                                         \
     SUB(Lib, Random)                                                                               \
     SUB(Lib, Usbd)                                                                                 \
     SUB(Lib, Ajm)                                                                                  \
