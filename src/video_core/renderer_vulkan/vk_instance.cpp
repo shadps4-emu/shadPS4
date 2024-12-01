@@ -264,6 +264,7 @@ bool Instance::CreateDevice() {
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -399,6 +400,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
         },
+        vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
+            .legacyVertexAttributes = true,
+        },
 #ifdef __APPLE__
         feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
 #endif
@@ -437,6 +441,9 @@ bool Instance::CreateDevice() {
     }
     if (!vertex_input_dynamic_state) {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
+    }
+    if (!legacy_vertex_attributes) {
+        device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

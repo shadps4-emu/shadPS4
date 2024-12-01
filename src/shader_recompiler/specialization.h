@@ -12,6 +12,12 @@
 
 namespace Shader {
 
+struct VsInputSpecialization {
+    AmdGpu::NumberClass num_class{};
+
+    auto operator<=>(const VsInputSpecialization&) const = default;
+};
+
 struct BufferSpecialization {
     u16 stride : 14;
     u16 is_storage : 1;
@@ -51,18 +57,26 @@ struct StageSpecialization {
     const Shader::Info* info;
     RuntimeInfo runtime_info;
     std::bitset<MaxStageResources> bitset{};
+    boost::container::small_vector<VsInputSpecialization, 32> vs_inputs;
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     boost::container::small_vector<FMaskSpecialization, 8> fmasks;
     Backend::Bindings start{};
 
-    explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
-                                 Backend::Bindings start_)
+    explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
+                                 const Profile& profile_, Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         u32 binding{};
         if (info->has_readconst) {
             binding++;
+        }
+        if (info_.stage == Stage::Vertex && !profile_.support_legacy_vertex_attributes) {
+            // Specialize shader on VS input number types to follow spec.
+            ForEachSharp(vs_inputs, info->vs_inputs,
+                         [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                             spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                         });
         }
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
@@ -84,6 +98,17 @@ struct StageSpecialization {
                          spec.width = sharp.width;
                          spec.height = sharp.height;
                      });
+    }
+
+    void ForEachSharp(auto& spec_list, auto& desc_list, auto&& func) {
+        for (const auto& desc : desc_list) {
+            auto& spec = spec_list.emplace_back();
+            const auto sharp = desc.GetSharp(*info);
+            if (!sharp) {
+                continue;
+            }
+            func(spec, desc, sharp);
+        }
     }
 
     void ForEachSharp(u32& binding, auto& spec_list, auto& desc_list, auto&& func) {
@@ -112,6 +137,11 @@ struct StageSpecialization {
         }
         if (info->has_readconst) {
             binding++;
+        }
+        for (u32 i = 0; i < vs_inputs.size(); i++) {
+            if (vs_inputs[i] != other.vs_inputs[i]) {
+                return false;
+            }
         }
         for (u32 i = 0; i < buffers.size(); i++) {
             if (other.bitset[binding++] && buffers[i] != other.buffers[i]) {

@@ -169,6 +169,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -347,8 +348,7 @@ bool PipelineCache::RefreshGraphicsKey() {
                 input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
                 continue;
             }
-            const auto& buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto& buffer = input.GetSharp(*vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -431,7 +431,7 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
         Program* program = program_pool.Create(stage, params);
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start);
+        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         program->AddPermut(module, std::move(spec));
         it_pgm.value() = program;
         return std::make_tuple(&program->info, module, HashCombine(params.hash, 0));
@@ -440,7 +440,7 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
     Program* program = it_pgm->second;
     auto& info = program->info;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
+    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
 

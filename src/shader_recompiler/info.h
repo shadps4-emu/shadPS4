@@ -130,6 +130,10 @@ struct Info {
         u8 dword_offset;
         InstanceIdType instance_step_rate;
         s32 instance_data_buf;
+
+        [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept {
+            return info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
+        }
     };
     boost::container::static_vector<VsInput, 32> vs_inputs{};
 

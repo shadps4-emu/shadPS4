@@ -10,8 +10,25 @@
 
 namespace AmdGpu {
 
+enum NumberClass {
+    Float,
+    Sint,
+    Uint,
+};
+
 [[nodiscard]] constexpr bool IsInteger(NumberFormat nfmt) {
     return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+}
+
+[[nodiscard]] constexpr NumberClass GetNumberClass(NumberFormat nfmt) {
+    switch (nfmt) {
+    case NumberFormat::Sint:
+        return Sint;
+    case NumberFormat::Uint:
+        return Uint;
+    default:
+        return Float;
+    }
 }
 
 [[nodiscard]] std::string_view NameOf(DataFormat fmt);
