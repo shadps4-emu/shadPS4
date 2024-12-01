@@ -38,7 +38,8 @@ else()
         set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
         add_subdirectory(cryptopp-cmake)
         file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
-        target_include_directories(cryptopp INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
+        # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
+        set_target_properties(cryptopp PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
     endif()
 endif()
 
@@ -67,6 +68,8 @@ if (NOT TARGET ZLIB::ZLIB)
     )
     FetchContent_MakeAvailable(ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlib)
+    # libpng expects this variable to exist after its find_package(ZLIB)
+    get_target_property(ZLIB_INCLUDE_DIRS zlib INTERFACE_INCLUDE_DIRECTORIES)
 endif()
 
 # SDL3
