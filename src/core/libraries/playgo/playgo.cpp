@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/file_format/playgo_chunk.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
@@ -29,10 +31,9 @@ s32 PS4_SYSV_ABI scePlayGoClose(OrbisPlayGoHandle handle) {
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
-    playgo.reset();
     return ORBIS_OK;
 }
 
@@ -98,7 +99,7 @@ s32 PS4_SYSV_ABI scePlayGoGetInstallSpeed(OrbisPlayGoHandle handle,
     if (outSpeed == nullptr) {
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -126,7 +127,7 @@ s32 PS4_SYSV_ABI scePlayGoGetLanguageMask(OrbisPlayGoHandle handle,
     if (outLanguageMask == nullptr) {
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -148,7 +149,7 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     if (playgo->GetPlaygoHeader().file_size == 0) {
@@ -180,7 +181,7 @@ s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayG
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     if (playgo->GetPlaygoHeader().file_size == 0) {
@@ -219,7 +220,7 @@ s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo*
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     *outEntries = 0; // nothing to do
@@ -242,17 +243,24 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     if (param->bufSize < 0x200000) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-
-    playgo = std::make_unique<PlaygoFile>();
-    if (!playgo->initialized) {
-        using namespace SystemService;
-        s32 system_lang = 0;
-        sceSystemServiceParamGetInt(OrbisSystemServiceParamId::Lang, &system_lang);
-        playgo->langMask = scePlayGoConvertLanguage(system_lang);
-        playgo->initialized = true;
-    } else {
+    if (playgo) {
         return ORBIS_PLAYGO_ERROR_ALREADY_INITIALIZED;
     }
+
+    using namespace SystemService;
+
+    playgo = std::make_unique<PlaygoFile>();
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
+    if (!playgo->Open(file_path)) {
+        LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
+    }
+
+    s32 system_lang = 0;
+    sceSystemServiceParamGetInt(OrbisSystemServiceParamId::Lang, &system_lang);
+    playgo->langMask = scePlayGoConvertLanguage(system_lang);
+
     return ORBIS_OK;
 }
 
@@ -265,7 +273,7 @@ s32 PS4_SYSV_ABI scePlayGoOpen(OrbisPlayGoHandle* outHandle, const void* param) 
     if (param) {
         return ORBIS_PLAYGO_ERROR_INVALID_ARGUMENT;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     if (playgo->GetPlaygoHeader().file_size == 0) {
@@ -289,7 +297,7 @@ s32 PS4_SYSV_ABI scePlayGoPrefetch(OrbisPlayGoHandle handle, const OrbisPlayGoCh
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -310,7 +318,7 @@ s32 PS4_SYSV_ABI scePlayGoSetInstallSpeed(OrbisPlayGoHandle handle, OrbisPlayGoI
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -339,7 +347,7 @@ s32 PS4_SYSV_ABI scePlayGoSetLanguageMask(OrbisPlayGoHandle handle,
     if (handle != 1) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -360,7 +368,7 @@ s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayG
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo->initialized) {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     return ORBIS_OK;
@@ -369,11 +377,10 @@ s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayG
 s32 PS4_SYSV_ABI scePlayGoTerminate() {
     LOG_INFO(Lib_PlayGo, "called");
 
-    if (playgo->initialized) {
-        playgo->initialized = false;
-    } else {
+    if (!playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
+    playgo.reset();
     return ORBIS_OK;
 }
 
