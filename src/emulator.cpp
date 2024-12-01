@@ -22,7 +22,6 @@
 #include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
-#include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
 #include "core/file_format/trp.h"
@@ -157,12 +156,6 @@ void Emulator::Run(const std::filesystem::path& file) {
                 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
                 app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-            } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
-                auto filepath = sce_sys_folder / "playgo-chunk.dat";
-                if (!playgo->Open(filepath)) {
-                    LOG_ERROR(Loader, "PlayGo: unable to open file");
-                }
             } else if (entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
                 if (splash->IsLoaded()) {

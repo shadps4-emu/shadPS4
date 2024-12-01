@@ -97,7 +97,6 @@ struct PlaygoChunk {
 
 class PlaygoFile {
 public:
-    bool initialized = false;
     OrbisPlayGoHandle handle = 0;
     OrbisPlayGoChunkId id = 0;
     OrbisPlayGoLocus locus = OrbisPlayGoLocus::NotDownloaded;
