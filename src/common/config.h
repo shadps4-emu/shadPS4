@@ -42,6 +42,7 @@ bool autoUpdate();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
+bool patchShaders();
 bool isRdocEnabled();
 u32 vblankDiv();
 

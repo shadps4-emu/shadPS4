@@ -6,7 +6,7 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/videodec/videodec_error.h"
 
 // The av_err2str macro in libavutil/error.h does not play nice with C++
 #ifdef av_err2str

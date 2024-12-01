@@ -15,7 +15,7 @@ namespace Libraries::Vdec2 {
 class VdecDecoder;
 
 using OrbisVideodec2Decoder = VdecDecoder*;
-typedef void* OrbisVideodec2ComputeQueue;
+using OrbisVideodec2ComputeQueue = void*;
 
 struct OrbisVideodec2DecoderConfigInfo {
     u64 thisSize;

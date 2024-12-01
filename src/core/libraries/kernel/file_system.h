@@ -37,8 +37,8 @@ struct OrbisKernelStat {
     u32 st_gen;
     s32 st_lspare;
     OrbisKernelTimespec st_birthtim;
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
+    u32 : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
+    u32 : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
 };
 
 struct OrbisKernelDirent {

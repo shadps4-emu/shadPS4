@@ -38,7 +38,8 @@ else()
         set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
         add_subdirectory(cryptopp-cmake)
         file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
-        target_include_directories(cryptopp INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
+        # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
+        set_target_properties(cryptopp PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
     endif()
 endif()
 
@@ -52,16 +53,23 @@ file(GLOB LIBATRAC9_SOURCES LibAtrac9/C/src/*.c)
 add_library(LibAtrac9 STATIC ${LIBATRAC9_SOURCES})
 target_include_directories(LibAtrac9 INTERFACE LibAtrac9/C/src)
 
-# Zlib-Ng
-if (NOT TARGET zlib-ng::zlib)
+# zlib
+if (NOT TARGET ZLIB::ZLIB)
     set(ZLIB_ENABLE_TESTS OFF)
     set(WITH_GTEST OFF)
     set(WITH_NEW_STRATEGIES ON)
     set(WITH_NATIVE_INSTRUCTIONS ON)
     set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
-    add_subdirectory(zlib-ng)
-    add_library(zlib-ng::zlib ALIAS zlib)
+    include(FetchContent)
+    FetchContent_Declare(
+        ZLIB
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib-ng"
+        OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlib)
+    # libpng expects this variable to exist after its find_package(ZLIB)
+    get_target_property(ZLIB_INCLUDE_DIRS zlib INTERFACE_INCLUDE_DIRECTORIES)
 endif()
 
 # SDL3
@@ -156,15 +164,15 @@ if (NOT TARGET half::half)
 endif()
 
 # libpng
-set(PNG_SHARED OFF CACHE BOOL "" FORCE)
-set(PNG_STATIC ON CACHE BOOL "" FORCE)
-set(PNG_TESTS OFF CACHE BOOL "" FORCE) 
-set(PNG_TOOLS OFF CACHE BOOL "" FORCE) 
-set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
-set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib-ng" CACHE STRING "" FORCE)
-set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib-ng/zlibstatic-ngd" CACHE STRING "" FORCE)
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/libpng/zlib.h" "#include \"../zlib-ng/zlib.h\"")
-add_subdirectory(libpng)
+if (NOT TARGET PNG::PNG)
+    set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+    set(PNG_STATIC ON CACHE BOOL "" FORCE)
+    set(PNG_TESTS OFF CACHE BOOL "" FORCE)
+    set(PNG_TOOLS OFF CACHE BOOL "" FORCE)
+    set(SKIP_INSTALL_ALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(libpng)
+    add_library(PNG::PNG ALIAS png_static)
+endif()
 
 if (APPLE)
     # date

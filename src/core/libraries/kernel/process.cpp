@@ -5,7 +5,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
@@ -91,7 +91,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
                                                  OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (!info) {
         return ORBIS_KERNEL_ERROR_EFAULT;

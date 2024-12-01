@@ -23,7 +23,7 @@ constexpr int ORBIS_NET_CTL_HOSTNAME_LEN = 255 + 1;
 constexpr int ORBIS_NET_CTL_AUTH_NAME_LEN = 127 + 1;
 constexpr int ORBIS_NET_CTL_IPV4_ADDR_STR_LEN = 16;
 
-typedef union OrbisNetCtlInfo {
+union OrbisNetCtlInfo {
     u32 device;
     OrbisNetEtherAddr ether_addr;
     u32 mtu;
@@ -45,7 +45,7 @@ typedef union OrbisNetCtlInfo {
     u32 http_proxy_config;
     char http_proxy_server[ORBIS_NET_CTL_HOSTNAME_LEN];
     u16 http_proxy_port;
-} SceNetCtlInfo;
+};
 
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;

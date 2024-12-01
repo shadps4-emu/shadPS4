@@ -105,7 +105,9 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Rtc)                                                                                  \
     SUB(Lib, DiscMap)                                                                              \
     SUB(Lib, Png)                                                                                  \
+    SUB(Lib, Jpeg)                                                                                 \
     SUB(Lib, PlayGo)                                                                               \
+    SUB(Lib, PlayGoDialog)                                                                         \
     SUB(Lib, Random)                                                                               \
     SUB(Lib, Usbd)                                                                                 \
     SUB(Lib, Ajm)                                                                                  \
@@ -121,6 +123,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Fiber)                                                                                \
     SUB(Lib, Vdec2)                                                                                \
     SUB(Lib, Videodec)                                                                             \
+    SUB(Lib, RazorCpu)                                                                             \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

@@ -81,7 +81,7 @@ int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
                                                 OrbisKernelTimezone* timezone, int* dst_seconds);
 
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time, OrbisTimesec* st,
-                                                unsigned long* dst_sec);
+                                                u64* dst_sec);
 
 void RegisterTime(Core::Loader::SymbolsResolver* sym);
 

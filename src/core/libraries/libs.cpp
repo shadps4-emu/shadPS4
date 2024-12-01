@@ -27,7 +27,9 @@
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
+#include "core/libraries/playgo/playgo_dialog.h"
 #include "core/libraries/random/random.h"
+#include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
@@ -73,6 +75,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
     Libraries::PlayGo::RegisterlibScePlayGo(sym);
+    Libraries::PlayGo::Dialog::RegisterlibScePlayGoDialog(sym);
     Libraries::Random::RegisterlibSceRandom(sym);
     Libraries::Usbd::RegisterlibSceUsbd(sym);
     Libraries::Pad::RegisterlibScePad(sym);
@@ -87,6 +90,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SharePlay::RegisterlibSceSharePlay(sym);
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
+    Libraries::RazorCpu::RegisterlibSceRazorCpu(sym);
 }
 
 } // namespace Libraries

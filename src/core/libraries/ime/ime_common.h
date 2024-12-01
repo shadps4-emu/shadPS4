@@ -2,65 +2,64 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-#include <sys/types.h>
-#include "common/enum.h"
+
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
 
 enum class OrbisImeType : u32 {
-    DEFAULT = 0,
-    BASIC_LATIN = 1,
-    URL = 2,
-    MAIL = 3,
-    NUMBER = 4,
+    Default = 0,
+    BasicLatin = 1,
+    Url = 2,
+    Mail = 3,
+    Number = 4,
 };
 
 enum class OrbisImeHorizontalAlignment : u32 {
-    LEFT = 0,
-    CENTER = 1,
-    RIGHT = 2,
+    Left = 0,
+    Center = 1,
+    Right = 2,
 };
 
 enum class OrbisImeVerticalAlignment : u32 {
-    TOP = 0,
-    CENTER = 1,
-    BOTTOM = 2,
+    Top = 0,
+    Center = 1,
+    Bottom = 2,
 };
 
 enum class OrbisImeEnterLabel : u32 {
-    DEFAULT = 0,
-    SEND = 1,
-    SEARCH = 2,
-    GO = 3,
+    Default = 0,
+    Send = 1,
+    Search = 2,
+    Go = 3,
 };
 
 enum class OrbisImeInputMethod : u32 {
-    DEFAULT = 0,
+    Default = 0,
 };
 
 enum class OrbisImeEventId : u32 {
-    OPEN = 0,
-    UPDATE_TEXT = 1,
-    UPDATE_CARET = 2,
-    PRESS_CLOSE = 4,
-    PRESS_ENTER = 5,
-    ABORT = 6,
-    CANDIDATE_LIST_START = 7,
-    CANDIDATE_LIST_END = 8,
-    CANDIDATE_WORD = 9,
-    CANDIDATE_INDEX = 10,
-    CANDIDATE_DONE = 11,
-    CANDIDATE_CANCEL = 12,
-    CHANGE_DEVICE = 14,
-    CHANGE_INPUT_METHOD_STATE = 18,
+    Open = 0,
+    UpdateText = 1,
+    UpdateCaret = 2,
+    PressClose = 4,
+    PressEnter = 5,
+    Abort = 6,
+    CandidateListStart = 7,
+    CandidateListEnd = 8,
+    CandidateWord = 9,
+    CandidateIndex = 10,
+    CandidateDone = 11,
+    CandidateCancel = 12,
+    ChangeDevice = 14,
+    ChangeInputMethodState = 18,
 
-    KEYBOARD_OPEN = 256,
-    KEYBOARD_KEYCODE_DOWN = 257,
-    KEYBOARD_KEYCODE_UP = 258,
-    KEYBOARD_KEYCODE_REPEAT = 259,
-    KEYBOARD_CONNECTION = 260,
-    KEYBOARD_DISCONNECTION = 261,
-    KEYBOARD_ABORT = 262,
+    KeyboardOpen = 256,
+    KeyboardKeycodeDoen = 257,
+    KeyboardKeycodeUp = 258,
+    KeyboardKeycodeRepeat = 259,
+    KeyboardConnection = 260,
+    KeyboardDisconnection = 261,
+    KeyboardAbort = 262,
 };
 
 enum class OrbisImeKeyboardType : u32 {
@@ -105,10 +104,10 @@ enum class OrbisImeKeyboardType : u32 {
 };
 
 enum class OrbisImeDeviceType : u32 {
-    NONE = 0,
-    CONTROLLER = 1,
-    EXT_KEYBOARD = 2,
-    REMOTE_OSK = 3,
+    None = 0,
+    Controller = 1,
+    ExtKeyboard = 2,
+    RemoteOsk = 3,
 };
 
 struct OrbisImeRect {
@@ -126,9 +125,9 @@ struct OrbisImeTextAreaProperty {
 
 struct OrbisImeEditText {
     char16_t* str;
-    u32 caretIndex;
-    u32 areaNum;
-    OrbisImeTextAreaProperty textArea[4];
+    u32 caret_index;
+    u32 area_num;
+    OrbisImeTextAreaProperty text_area[4];
 };
 
 struct OrbisImeKeycode {
@@ -136,40 +135,40 @@ struct OrbisImeKeycode {
     char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
-    s32 userId;
-    u32 resourceId;
+    s32 user_id;
+    u32 resource_id;
     Libraries::Rtc::OrbisRtcTick timestamp;
 };
 
 struct OrbisImeKeyboardResourceIdArray {
     s32 userId;
-    u32 resourceId[6];
+    u32 resource_id[6];
 };
 
 enum class OrbisImeCaretMovementDirection : u32 {
-    STILL = 0,
-    LEFT = 1,
-    RIGHT = 2,
-    UP = 3,
-    DOWN = 4,
-    HOME = 5,
-    END = 6,
-    PAGE_UP = 7,
-    PAGE_DOWN = 8,
-    TOP = 9,
-    BOTTOM = 10,
+    Still = 0,
+    Left = 1,
+    Right = 2,
+    Up = 3,
+    Down = 4,
+    Home = 5,
+    End = 6,
+    PageUp = 7,
+    PageDown = 8,
+    Top = 9,
+    Bottom = 10,
 };
 
 union OrbisImeEventParam {
     OrbisImeRect rect;
     OrbisImeEditText text;
-    OrbisImeCaretMovementDirection caretMove;
+    OrbisImeCaretMovementDirection caret_move;
     OrbisImeKeycode keycode;
-    OrbisImeKeyboardResourceIdArray resourceIdArray;
-    char16_t* candidateWord;
-    s32 candidateIndex;
-    OrbisImeDeviceType deviceType;
-    u32 inputMethodState;
+    OrbisImeKeyboardResourceIdArray resource_id_array;
+    char16_t* candidate_word;
+    s32 candidate_index;
+    OrbisImeDeviceType device_type;
+    u32 input_method_state;
     s8 reserved[64];
 };
 
@@ -178,7 +177,7 @@ struct OrbisImeEvent {
     OrbisImeEventParam param;
 };
 
-typedef PS4_SYSV_ABI int (*OrbisImeTextFilter)(char16_t* outText, u32* outTextLength,
-                                               const char16_t* srcText, u32 srcTextLength);
+using OrbisImeTextFilter = PS4_SYSV_ABI int (*)(char16_t* outText, u32* outTextLength,
+                                                const char16_t* srcText, u32 srcTextLength);
 
-typedef PS4_SYSV_ABI void (*OrbisImeEventHandler)(void* arg, const OrbisImeEvent* e);
+using OrbisImeEventHandler = PS4_SYSV_ABI void (*)(void* arg, const OrbisImeEvent* e);

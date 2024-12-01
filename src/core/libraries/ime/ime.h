@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
-
-#include "ime_common.h"
+#include "core/libraries/ime/ime_common.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -16,13 +16,13 @@ namespace Libraries::Ime {
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 
 enum class OrbisImeKeyboardOption : u32 {
-    DEFAULT = 0,
-    REPEAT = 1,
-    REPEAT_EACH_KEY = 2,
-    ADD_OSK = 4,
-    EFFECTIVE_WITH_TIME = 8,
-    DISABLE_RESUME = 16,
-    DISABLE_CAPSLOCK_WITHOUT_SHIFT = 32,
+    Default = 0,
+    Repeat = 1,
+    RepeatEachKey = 2,
+    AddOsk = 4,
+    EffectiveWithTime = 8,
+    DisableResume = 16,
+    DisableCapslockWithoutShift = 32,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
 
@@ -35,19 +35,19 @@ struct OrbisImeKeyboardParam {
 };
 
 struct OrbisImeParam {
-    s32 userId;
+    s32 user_id;
     OrbisImeType type;
-    u64 supportedLanguages;
-    OrbisImeEnterLabel enterLabel;
-    OrbisImeInputMethod inputMethod;
+    u64 supported_languages;
+    OrbisImeEnterLabel enter_label;
+    OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
     u32 option;
-    u32 maxTextLength;
-    char16_t* inputTextBuffer;
+    u32 max_text_length;
+    char16_t* input_text_buffer;
     float posx;
     float posy;
-    OrbisImeHorizontalAlignment horizontalAlignment;
-    OrbisImeVerticalAlignment verticalAlignment;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
     void* work;
     void* arg;
     OrbisImeEventHandler handler;
@@ -117,4 +117,5 @@ int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
 void RegisterlibSceIme(Core::Loader::SymbolsResolver* sym);
+
 } // namespace Libraries::Ime

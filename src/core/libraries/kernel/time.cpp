@@ -5,7 +5,7 @@
 
 #include "common/assert.h"
 #include "common/native_clock.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
@@ -80,7 +80,7 @@ u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
 
 int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     if (tp == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
     clockid_t pclock_id = CLOCK_REALTIME;
     switch (clock_id) {
@@ -105,9 +105,9 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     tp->tv_sec = t.tv_sec;
     tp->tv_nsec = t.tv_nsec;
     if (result == 0) {
-        return SCE_OK;
+        return ORBIS_OK;
     }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI posix_clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
@@ -126,11 +126,11 @@ int PS4_SYSV_ABI posix_nanosleep(const OrbisKernelTimespec* rqtp, OrbisKernelTim
 
 int PS4_SYSV_ABI sceKernelNanosleep(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp) {
     if (!rqtp || !rmtp) {
-        return SCE_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
     if (rqtp->tv_sec < 0 || rqtp->tv_nsec < 0) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     return posix_nanosleep(rqtp, rmtp);
@@ -197,7 +197,7 @@ s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
 
 int PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
     if (res == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
     clockid_t pclock_id = CLOCK_REALTIME;
     switch (clock_id) {
@@ -221,9 +221,9 @@ int PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
     res->tv_sec = t.tv_sec;
     res->tv_nsec = t.tv_nsec;
     if (result == 0) {
-        return SCE_OK;
+        return ORBIS_OK;
     }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
@@ -237,9 +237,9 @@ int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
         if (dst_seconds)
             *dst_seconds = timezone->tz_dsttime * 60;
     } else {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 namespace Dev {
@@ -254,7 +254,7 @@ Common::NativeClock* GetClock() {
 } // namespace Dev
 
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
-                                                struct OrbisTimesec* st, unsigned long* dst_sec) {
+                                                struct OrbisTimesec* st, u64* dst_sec) {
     LOG_TRACE(Kernel, "Called");
 #ifdef __APPLE__
     // std::chrono::current_zone() not available yet.
