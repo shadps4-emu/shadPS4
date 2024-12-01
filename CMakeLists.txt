@@ -875,6 +875,10 @@ target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAlloca
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+endif()
+
 if (APPLE)
   option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)
   if (USE_SYSTEM_VULKAN_LOADER)
