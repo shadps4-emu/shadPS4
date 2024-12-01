@@ -94,8 +94,8 @@ s32 PS4_SYSV_ABI scePngDecDecode(OrbisPngDecHandle handle, const OrbisPngDecDeco
     LOG_TRACE(Lib_Png,
               "pngMemSize = {} , imageMemSize = {} , pixelFormat = {} , alphaValue = {} , "
               "imagePitch = {}",
-              param->pngMemSize, param->imageMemSize, param->pixelFormat, param->alphaValue,
-              param->imagePitch);
+              param->png_mem_size, param->image_mem_size, int(param->pixel_format),
+              param->alpha_value, param->image_pitch);
 
     auto pngh = (PngHandler*)handle;
 
@@ -240,8 +240,8 @@ s32 PS4_SYSV_ABI scePngDecParseHeader(const OrbisPngDecParseParam* param,
     LOG_TRACE(
         Lib_Png,
         "imageWidth = {} , imageHeight = {} , colorSpace = {} , bitDepth = {} , imageFlag = {}",
-        imageInfo->imageWidth, imageInfo->imageHeight, imageInfo->colorSpace, imageInfo->bitDepth,
-        imageInfo->imageFlag);
+        imageInfo->image_width, imageInfo->image_height, int(imageInfo->color_space),
+        imageInfo->bit_depth, int(imageInfo->image_flag));
     return ORBIS_OK;
 }
 

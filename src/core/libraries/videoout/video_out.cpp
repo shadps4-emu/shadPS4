@@ -195,8 +195,9 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
     LOG_TRACE(Lib_VideoOut,
               "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
               "{}, flipPendingNum = {}, currentBuffer = {}",
-              status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
-              status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
+              status->count, status->process_time, status->tsc, status->submit_tsc,
+              status->flip_arg, status->gc_queue_num, status->flip_pending_num,
+              status->current_buffer);
 
     return ORBIS_OK;
 }
