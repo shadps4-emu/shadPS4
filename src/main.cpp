@@ -4,12 +4,14 @@
 #include "functional"
 #include "iostream"
 #include "string"
+#include "system_error"
 #include "unordered_map"
 
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
+#include "core/file_sys/fs.h"
 #include "emulator.h"
 
 #ifdef _WIN32
@@ -38,6 +40,7 @@ int main(int argc, char* argv[]) {
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
+                          "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
                           "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -86,6 +89,25 @@ int main(int argc, char* argv[]) {
              Config::setFullscreenMode(is_fullscreen);
          }},
         {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
+        {"--add-game-folder",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --add-game-folder\n";
+                 exit(1);
+             }
+             std::string config_dir(argv[i]);
+             std::filesystem::path config_path = std::filesystem::path(config_dir);
+             std::error_code discard;
+             if (!std::filesystem::exists(config_path, discard)) {
+                 std::cerr << "Error: File does not exist: " << config_path << "\n";
+                 exit(1);
+             }
+
+             Config::addGameInstallDir(config_path);
+             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             std::cout << "Game folder successfully saved.\n";
+             exit(0);
+         }},
     };
 
     if (argc == 1) {
@@ -108,6 +130,12 @@ int main(int argc, char* argv[]) {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
         }
+    }
+
+    // If no game directory is set and no command line argument, prompt for it
+    if (Config::getGameInstallDirs().empty()) {
+        std::cout << "Warning: No game folder set, please set it by calling shadps4"
+                     " with the --add-game-folder <folder_name> argument";
     }
 
     if (!has_game_argument) {
