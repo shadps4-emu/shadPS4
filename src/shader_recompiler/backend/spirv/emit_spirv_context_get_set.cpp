@@ -171,7 +171,7 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
-Id EmitGetAttributeForGeomety(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
+Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
@@ -196,7 +196,7 @@ Id EmitGetAttributeForGeomety(EmitContext& ctx, IR::Attribute attr, u32 comp, u3
 
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (ctx.info.stage == Stage::Geometry) {
-        return EmitGetAttributeForGeomety(ctx, attr, comp, index);
+        return EmitGetAttributeForGeometry(ctx, attr, comp, index);
     }
 
     if (IR::IsParam(attr)) {
