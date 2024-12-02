@@ -155,18 +155,12 @@ void EmitContext::DefineInterfaces() {
 }
 
 const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return ctx.F32;
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return ctx.S32;
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return ctx.U32;
     default:
         break;
@@ -176,18 +170,12 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
                                                           u32 num_components, bool output) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return {id, output ? output_f32 : input_f32, F32[1], num_components, false};
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return {id, output ? output_u32 : input_u32, U32[1], num_components, true};
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return {id, output ? output_s32 : input_s32, S32[1], num_components, true};
     default:
         break;
@@ -512,8 +500,7 @@ void EmitContext::DefineBuffers() {
 
 void EmitContext::DefineTextureBuffers() {
     for (const auto& desc : info.texture_buffers) {
-        const bool is_integer =
-            desc.nfmt == AmdGpu::NumberFormat::Uint || desc.nfmt == AmdGpu::NumberFormat::Sint;
+        const bool is_integer = AmdGpu::IsInteger(desc.nfmt);
         const VectorIds& sampled_type{GetAttributeType(*this, desc.nfmt)};
         const u32 sampled = desc.is_written ? 2 : 1;
         const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
@@ -636,8 +623,7 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 
 void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
-        const bool is_integer = image_desc.nfmt == AmdGpu::NumberFormat::Uint ||
-                                image_desc.nfmt == AmdGpu::NumberFormat::Sint;
+        const bool is_integer = AmdGpu::IsInteger(image_desc.nfmt);
         const VectorIds& data_types = GetAttributeType(*this, image_desc.nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
