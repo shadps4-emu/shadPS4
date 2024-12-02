@@ -222,6 +222,36 @@ void EmitContext::DefineBufferOffsets() {
     }
 }
 
+void EmitContext::DefineInterpolatedAttribs() {
+    if (!profile.needs_manual_interpolation) {
+        return;
+    }
+    // Iterate all input attributes, load them and manually interpolate with barycentric
+    // coordinates.
+    for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
+        const auto& input = runtime_info.fs_info.inputs[i];
+        const u32 semantic = input.param_index;
+        auto& params = input_params[semantic];
+        if (input.is_flat || params.is_loaded) {
+            continue;
+        }
+        const Id p_array{OpLoad(TypeArray(F32[4], ConstU32(3U)), params.id)};
+        const Id p0{OpCompositeExtract(F32[4], p_array, 0U)};
+        const Id p1{OpCompositeExtract(F32[4], p_array, 1U)};
+        const Id p2{OpCompositeExtract(F32[4], p_array, 2U)};
+        const Id p10{OpFSub(F32[4], p1, p0)};
+        const Id p20{OpFSub(F32[4], p2, p0)};
+        const Id bary_coord{OpLoad(F32[3], gl_bary_coord_id)};
+        const Id bary_coord_y{OpCompositeExtract(F32[1], bary_coord, 1)};
+        const Id bary_coord_z{OpCompositeExtract(F32[1], bary_coord, 2)};
+        const Id p10_y{OpVectorTimesScalar(F32[4], p10, bary_coord_y)};
+        const Id p20_z{OpVectorTimesScalar(F32[4], p20, bary_coord_z)};
+        params.id = OpFAdd(F32[4], p0, OpFAdd(F32[4], p10_y, p20_z));
+        Name(params.id, fmt::format("fs_in_attr{}", semantic));
+        params.is_loaded = true;
+    }
+}
+
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
     switch (default_value) {
     case 0:
@@ -260,14 +290,14 @@ void EmitContext::DefineInputs() {
                     input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ? 0
                                                                                              : 1;
                 // Note that we pass index rather than Id
-                input_params[input.binding] = {
-                    rate_idx,
-                    input_u32,
-                    U32[1],
-                    input.num_components,
-                    true,
-                    false,
-                    input.instance_data_buf,
+                input_params[input.binding] = SpirvAttribute{
+                    .id = rate_idx,
+                    .pointer_type = input_u32,
+                    .component_type = U32[1],
+                    .num_components = input.num_components,
+                    .is_integer = true,
+                    .is_loaded = false,
+                    .buffer_handle = input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
@@ -286,6 +316,10 @@ void EmitContext::DefineInputs() {
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        if (profile.needs_manual_interpolation) {
+            gl_bary_coord_id =
+                DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+        }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
             const u32 semantic = input.param_index;
@@ -299,14 +333,21 @@ void EmitContext::DefineInputs() {
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
             const u32 num_components = info.loads.NumComponents(param);
             const Id type{F32[num_components]};
-            const Id id{DefineInput(type, semantic)};
-            if (input.is_flat) {
-                Decorate(id, spv::Decoration::Flat);
+            Id attr_id{};
+            if (profile.needs_manual_interpolation && !input.is_flat) {
+                attr_id = DefineInput(TypeArray(type, ConstU32(3U)), semantic);
+                Decorate(attr_id, spv::Decoration::PerVertexKHR);
+                Name(attr_id, fmt::format("fs_in_attr{}_p", semantic));
+            } else {
+                attr_id = DefineInput(type, semantic);
+                Name(attr_id, fmt::format("fs_in_attr{}", semantic));
             }
-            Name(id, fmt::format("fs_in_attr{}", semantic));
+            if (input.is_flat) {
+                Decorate(attr_id, spv::Decoration::Flat);
+            }
             input_params[semantic] =
-                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, false);
-            interfaces.push_back(id);
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);
+            interfaces.push_back(attr_id);
         }
         break;
     case Stage::Compute:

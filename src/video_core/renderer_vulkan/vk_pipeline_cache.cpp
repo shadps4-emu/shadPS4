@@ -169,6 +169,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
+                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
