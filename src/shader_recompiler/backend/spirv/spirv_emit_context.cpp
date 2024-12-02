@@ -317,9 +317,7 @@ void EmitContext::DefineInputs() {
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         if (profile.needs_manual_interpolation) {
-            gl_bary_coord_id = DefineVar(F32[3], spv::StorageClass::Input);
-            Decorate(gl_bary_coord_id, spv::Decoration::BuiltIn, spv::BuiltIn::BaryCoordKHR);
-            interfaces.push_back(gl_bary_coord_id);
+            gl_bary_coord_id = DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
