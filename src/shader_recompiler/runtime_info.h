@@ -119,7 +119,7 @@ struct HullRuntimeInfo {
 
     auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
 
-    bool IsPassthrough() {
+    bool IsPassthrough() const {
         return hs_output_base == 0;
     };
 
