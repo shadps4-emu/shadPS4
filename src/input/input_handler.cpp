@@ -139,6 +139,8 @@ u32 GetOrbisToSdlButtonKeycode(OrbisPadButtonDataOffset cbutton) {
         return SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
     case OrbisPadButtonDataOffset::Options:
         return SDL_GAMEPAD_BUTTON_START;
+    case (OrbisPadButtonDataOffset)BACK_BUTTON:
+        return SDL_GAMEPAD_BUTTON_BACK;
 
     default:
         return ((u32)-1) - 0x10000000;

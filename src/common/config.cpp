@@ -793,6 +793,7 @@ pad_left = pad_left
 pad_right = pad_right
 
 options = options
+touchpad = back
 
 axis_left_x = axis_left_x
 axis_left_y = axis_left_y

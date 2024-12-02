@@ -27,6 +27,7 @@
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
+#define BACK_BUTTON 0x00040000
 
 #define KEY_TOGGLE 0x00200000
 
@@ -59,6 +60,9 @@ const std::map<std::string, OrbisPadButtonDataOffset> string_to_cbutton_map = {
     {"touchpad", OrbisPadButtonDataOffset::TouchPad},
     {"leftjoystick_halfmode", (OrbisPadButtonDataOffset)LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", (OrbisPadButtonDataOffset)RIGHTJOYSTICK_HALFMODE},
+
+    // this is only for input
+    {"back", (OrbisPadButtonDataOffset)BACK_BUTTON},
 };
 const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
