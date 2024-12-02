@@ -69,7 +69,7 @@ if (NOT TARGET ZLIB::ZLIB)
     FetchContent_MakeAvailable(ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlib)
     # libpng expects this variable to exist after its find_package(ZLIB)
-    get_target_property(ZLIB_INCLUDE_DIRS zlib INTERFACE_INCLUDE_DIRECTORIES)
+    set(ZLIB_INCLUDE_DIRS "${FETCHCONTENT_BASE_DIR}/zlib-build")
 endif()
 
 # SDL3
