@@ -106,7 +106,8 @@ Emulator::~Emulator() {
 void Emulator::Run(const std::filesystem::path& file) {
 
     // Use the eboot from the separated updates folder if it's there
-    std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
+    std::filesystem::path game_patch_folder = file.parent_path();
+    game_patch_folder += "-UPDATE";
     bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys");
     std::filesystem::path eboot_path = std::filesystem::exists(game_patch_folder / file.filename())
                                            ? game_patch_folder / file.filename()
