@@ -1,6 +1,7 @@
 //  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cinttypes>
 #include <imgui.h>
 #include <magic_enum.hpp>
 
@@ -23,7 +24,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
             return DrawLine();
         }
         TableNextColumn();
-        Text("%zX", m.base);
+        Text("%" PRIXPTR, m.base);
         TableNextColumn();
         Text("%zX", m.size);
         TableNextColumn();
@@ -48,9 +49,9 @@ bool MemoryMapViewer::Iterator::DrawLine() {
         return DrawLine();
     }
     TableNextColumn();
-    Text("%llX", m.base);
+    Text("%" PRIXPTR, m.base);
     TableNextColumn();
-    Text("%llX", m.size);
+    Text("%zX", m.size);
     TableNextColumn();
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());
