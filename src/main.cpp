@@ -9,6 +9,7 @@
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/memory_patcher.h"
+#include "common/path_util.h"
 #include "emulator.h"
 
 #ifdef _WIN32
@@ -19,6 +20,10 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    // Load configurations
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(user_dir / "config.toml");
 
     bool has_game_argument = false;
     std::string game_path;
@@ -111,14 +116,29 @@ int main(int argc, char* argv[]) {
     }
 
     // Check if the game path or ID exists
-    if (!std::filesystem::exists(game_path)) {
-        std::cerr << "Error: Game file not found\n";
-        return -1;
+    std::filesystem::path eboot_path(game_path);
+
+    // Check if the provided path is a valid file
+    if (!std::filesystem::exists(eboot_path)) {
+        // If not a file, treat it as a game ID and search in install directories
+        bool game_found = false;
+        for (const auto& install_dir : Config::getGameInstallDirs()) {
+            const auto candidate_path = install_dir / game_path / "eboot.bin";
+            if (std::filesystem::exists(candidate_path)) {
+                eboot_path = candidate_path;
+                game_found = true;
+                break;
+            }
+        }
+        if (!game_found) {
+            std::cerr << "Error: Game ID or file path not found: " << game_path << std::endl;
+            return 1;
+        }
     }
 
-    // Run the emulator with the specified game
+    // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-    emulator.Run(game_path);
+    emulator.Run(eboot_path);
 
     return 0;
 }
