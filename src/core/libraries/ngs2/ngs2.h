@@ -6,9 +6,9 @@
 #include "core/libraries/ngs2/ngs2_impl.h"
 
 #include <atomic>
-#include "common/types.h"
 #include <mutex>
 #include <vector>
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
