@@ -215,10 +215,16 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
 
     bool input_down = event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION ||
-                      event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN ||
-                      event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN ||
-                      event->type == SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION;
+                      event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
     u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
+
+    // the touchpad button shouldn't be rebound to anything else,
+    // as it would break the entire touchpad handling
+    // You can still bind other things to it though
+    if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
+        controller->CheckButton(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+        return;
+    }
 
     bool inputs_changed = Input::UpdatePressedKeys(input_id, input_down);
 
