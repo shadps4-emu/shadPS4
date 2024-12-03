@@ -8,6 +8,9 @@
 namespace Shader::Backend::SPIRV {
 
 void EmitPrologue(EmitContext& ctx) {
+    if (ctx.stage == Stage::Fragment) {
+        ctx.DefineInterpolatedAttribs();
+    }
     ctx.DefineBufferOffsets();
 }
 

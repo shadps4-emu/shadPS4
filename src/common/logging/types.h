@@ -72,7 +72,9 @@ enum class Class : u8 {
     Lib_Rtc,               ///< The LibSceRtc implementation.
     Lib_DiscMap,           ///< The LibSceDiscMap implementation.
     Lib_Png,               ///< The LibScePng implementation.
+    Lib_Jpeg,              ///< The LibSceJpeg implementation.
     Lib_PlayGo,            ///< The LibScePlayGo implementation.
+    Lib_PlayGoDialog,      ///< The LibScePlayGoDialog implementation.
     Lib_Random,            ///< The libSceRandom implementation.
     Lib_Usbd,              ///< The LibSceUsbd implementation.
     Lib_Ajm,               ///< The LibSceAjm implementation.

@@ -143,6 +143,11 @@ public:
         return maintenance5;
     }
 
+    /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
+    bool IsFragmentShaderBarycentricSupported() const {
+        return fragment_shader_barycentric;
+    }
+
     bool IsListRestartSupported() const {
         return list_restart;
     }

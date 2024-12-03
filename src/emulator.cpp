@@ -22,13 +22,13 @@
 #include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
-#include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/fiber/fiber.h"
+#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -156,12 +156,6 @@ void Emulator::Run(const std::filesystem::path& file) {
                 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
                 app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-            } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
-                auto filepath = sce_sys_folder / "playgo-chunk.dat";
-                if (!playgo->Open(filepath)) {
-                    LOG_ERROR(Loader, "PlayGo: unable to open file");
-                }
             } else if (entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
                 if (splash->IsLoaded()) {
@@ -256,9 +250,9 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     linker->Execute();
 
-    window->initTimers();
-    while (window->isOpen()) {
-        window->waitEvent();
+    window->InitTimers();
+    while (window->IsOpen()) {
+        window->WaitEvent();
     }
 
 #ifdef ENABLE_QT_GUI
@@ -278,7 +272,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterlibSceJpegEnc},
          {"libSceCesCs.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;

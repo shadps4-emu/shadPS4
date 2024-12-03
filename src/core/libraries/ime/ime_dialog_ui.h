@@ -20,8 +20,8 @@ class ImeDialogState final {
 
     bool input_changed = false;
 
-    s32 userId{};
-    bool is_multiLine{};
+    s32 user_id{};
+    bool is_multi_line{};
     bool is_numeric{};
     OrbisImeType type{};
     OrbisImeEnterLabel enter_label{};

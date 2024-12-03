@@ -458,7 +458,7 @@ struct MemoryEditor {
                             data_write = data_next = true;
                         if (data_editing_addr_next != (size_t)-1)
                             data_write = data_next = false;
-                        unsigned int data_input_value = 0;
+                        u32 data_input_value = 0;
                         if (!ReadOnly && data_write &&
                             sscanf(DataInputBuf, "%X", &data_input_value) == 1) {
                             if (WriteFn)

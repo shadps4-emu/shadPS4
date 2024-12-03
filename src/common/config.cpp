@@ -47,11 +47,13 @@ static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
+static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool shouldDumpShaders = false;
+static bool shouldPatchShaders = true;
 static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
@@ -158,6 +160,10 @@ bool debugDump() {
     return isDebugDump;
 }
 
+bool collectShadersForDebug() {
+    return isShaderDebug;
+}
+
 bool showSplash() {
     return isShowSplash;
 }
@@ -176,6 +182,10 @@ bool copyGPUCmdBuffers() {
 
 bool dumpShaders() {
     return shouldDumpShaders;
+}
+
+bool patchShaders() {
+    return shouldPatchShaders;
 }
 
 bool isRdocEnabled() {
@@ -228,6 +238,10 @@ void setScreenHeight(u32 height) {
 
 void setDebugDump(bool enable) {
     isDebugDump = enable;
+}
+
+void setCollectShaderForDebug(bool enable) {
+    isShaderDebug = enable;
 }
 
 void setShowSplash(bool enable) {
@@ -546,6 +560,7 @@ void load(const std::filesystem::path& path) {
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
+        shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
     }
 
@@ -565,6 +580,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
+        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
     }
 
     if (data.contains("GUI")) {
@@ -646,6 +662,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
+    data["GPU"]["patchShaders"] = shouldPatchShaders;
     data["GPU"]["vblankDivider"] = vblankDivider;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
@@ -655,6 +672,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
     data["Debug"]["DebugDump"] = isDebugDump;
+    data["Debug"]["CollectShader"] = isShaderDebug;
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["iconSize"] = m_icon_size;
     data["GUI"]["sliderPos"] = m_slider_pos;
@@ -710,6 +728,7 @@ void setDefaultValues() {
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
+    isShaderDebug = false;
     isShowSplash = false;
     isAutoUpdate = false;
     isNullGpu = false;

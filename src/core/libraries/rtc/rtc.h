@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <sys/types.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -19,21 +20,21 @@ constexpr int ORBIS_RTC_DAYOFWEEK_THURSDAY = 4;
 constexpr int ORBIS_RTC_DAYOFWEEK_FRIDAY = 5;
 constexpr int ORBIS_RTC_DAYOFWEEK_SATURDAY = 6;
 
-constexpr int64_t UNIX_EPOCH_TICKS = 0xdcbffeff2bc000;
-constexpr int64_t WIN32_FILETIME_EPOCH_TICKS = 0xb36168b6a58000;
+constexpr s64 UNIX_EPOCH_TICKS = 0xdcbffeff2bc000;
+constexpr s64 WIN32_FILETIME_EPOCH_TICKS = 0xb36168b6a58000;
 
 struct OrbisRtcTick {
-    uint64_t tick;
+    u64 tick;
 };
 
 struct OrbisRtcDateTime {
-    uint16_t year;
-    uint16_t month;
-    uint16_t day;
-    uint16_t hour;
-    uint16_t minute;
-    uint16_t second;
-    uint32_t microsecond;
+    u16 year;
+    u16 month;
+    u16 day;
+    u16 hour;
+    u16 minute;
+    u16 second;
+    u32 microsecond;
 };
 
 int PS4_SYSV_ABI sceRtcCheckValid(OrbisRtcDateTime* pTime);
@@ -58,9 +59,9 @@ int PS4_SYSV_ABI sceRtcGetCurrentRawNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day);
 int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month);
-int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, unsigned int* dosTime);
+int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, u32* dosTime);
 int PS4_SYSV_ABI sceRtcGetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick);
-unsigned int PS4_SYSV_ABI sceRtcGetTickResolution();
+u32 PS4_SYSV_ABI sceRtcGetTickResolution();
 int PS4_SYSV_ABI sceRtcGetTime_t(OrbisRtcDateTime* pTime, time_t* llTime);
 int PS4_SYSV_ABI sceRtcGetWin32FileTime(OrbisRtcDateTime* pTime, uint64_t* ulWin32Time);
 int PS4_SYSV_ABI sceRtcInit();

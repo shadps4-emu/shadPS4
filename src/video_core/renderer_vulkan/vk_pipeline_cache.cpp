@@ -7,6 +7,7 @@
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
@@ -168,6 +169,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
+                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -260,7 +263,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // recompiler.
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
+        if (skip_cb_binding || !col_buf) {
             continue;
         }
         const auto base_format =
@@ -362,8 +365,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
-            (key.mrt_mask & (1u << cb)) == 0) {
+        if (skip_cb_binding || !col_buf || (key.mrt_mask & (1u << cb)) == 0) {
             key.color_formats[cb] = vk::Format::eUndefined;
             key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
             continue;
@@ -406,12 +408,20 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
-    const auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
+    auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+    auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
+    if (patch) {
+        spv = *patch;
+        LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
+    }
 
     const auto module = CompileSPV(spv, instance.GetDevice());
     const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
+    if (Config::collectShadersForDebug()) {
+        DebugState.CollectShader(name, spv, code);
+    }
     return module;
 }
 
@@ -463,6 +473,29 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
+}
+
+std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
+                                                              size_t perm_idx,
+                                                              std::string_view ext) {
+    if (!Config::patchShaders()) {
+        return {};
+    }
+
+    using namespace Common::FS;
+    const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
+    if (!std::filesystem::exists(patch_dir)) {
+        std::filesystem::create_directories(patch_dir);
+    }
+    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filepath = patch_dir / filename;
+    if (!std::filesystem::exists(filepath)) {
+        return {};
+    }
+    const auto file = IOFile{patch_dir / filename, FileAccessMode::Read};
+    std::vector<u32> code(file.GetSize() / sizeof(u32));
+    file.Read(code);
+    return code;
 }
 
 } // namespace Vulkan

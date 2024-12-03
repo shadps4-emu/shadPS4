@@ -6,8 +6,8 @@
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
 #include "kernel.h"
 
@@ -128,12 +128,12 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
         return ORBIS_KERNEL_ERROR_EPERM;
     }
     if (d == 2003) { // dev/urandom case
-        return SCE_OK;
+        return ORBIS_OK;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
     if (!file->is_directory) {
         file->f.Close();
@@ -141,7 +141,7 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
     h->DeleteHandle(d);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_close(int d) {
@@ -166,7 +166,7 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -175,7 +175,7 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
 
 int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     if (path == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
@@ -184,15 +184,15 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     bool ro = false;
     const auto host_path = mnt->GetHostPath(path, &ro);
     if (host_path.empty()) {
-        return SCE_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EACCES;
     }
 
     if (ro) {
-        return SCE_KERNEL_ERROR_EROFS;
+        return ORBIS_KERNEL_ERROR_EROFS;
     }
 
     if (std::filesystem::is_directory(host_path)) {
-        return SCE_KERNEL_ERROR_EPERM;
+        return ORBIS_KERNEL_ERROR_EPERM;
     }
 
     auto* file = h->GetFile(host_path);
@@ -201,7 +201,7 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     }
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
@@ -231,7 +231,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     std::scoped_lock lk{file->m_mutex};
     if (!file->f.Seek(offset, origin)) {
         LOG_CRITICAL(Kernel_Fs, "sceKernelLseek: failed to seek");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     return file->f.Tell();
 }
@@ -257,7 +257,7 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -277,7 +277,7 @@ int PS4_SYSV_ABI posix_read(int d, void* buf, size_t nbytes) {
 int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
     if (path == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -285,21 +285,21 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
     if (std::filesystem::exists(dir_name)) {
-        return SCE_KERNEL_ERROR_EEXIST;
+        return ORBIS_KERNEL_ERROR_EEXIST;
     }
 
     if (ro) {
-        return SCE_KERNEL_ERROR_EROFS;
+        return ORBIS_KERNEL_ERROR_EROFS;
     }
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
     std::error_code ec;
     if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
-        return SCE_KERNEL_ERROR_EIO;
+        return ORBIS_KERNEL_ERROR_EIO;
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        return SCE_KERNEL_ERROR_ENOENT;
+        return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
 }
@@ -323,13 +323,13 @@ int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     if (dir_name.empty()) {
         LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, permission denied",
                   fmt::UTF(dir_name.u8string()));
-        return SCE_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EACCES;
     }
 
     if (ro) {
         LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, directory is read only",
                   fmt::UTF(dir_name.u8string()));
-        return SCE_KERNEL_ERROR_EROFS;
+        return ORBIS_KERNEL_ERROR_EROFS;
     }
 
     if (!std::filesystem::is_directory(dir_name)) {
@@ -411,7 +411,7 @@ int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     if (!std::filesystem::exists(path_name)) {
-        return SCE_KERNEL_ERROR_ENOENT;
+        return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
 }
@@ -514,15 +514,15 @@ int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
     auto* file = h->GetFile(fd);
 
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (file->m_host_name.empty()) {
-        return SCE_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EACCES;
     }
 
     file->f.SetSize(length);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
@@ -605,11 +605,11 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     if (ro) {
-        return SCE_KERNEL_ERROR_EROFS;
+        return ORBIS_KERNEL_ERROR_EROFS;
     }
     const auto dst_path = mnt->GetHostPath(to, &ro);
     if (ro) {
-        return SCE_KERNEL_ERROR_EROFS;
+        return ORBIS_KERNEL_ERROR_EROFS;
     }
     const bool src_is_dir = std::filesystem::is_directory(src_path);
     const bool dst_is_dir = std::filesystem::is_directory(dst_path);

@@ -289,6 +289,16 @@ const char* GetContextRegName(u32 reg_offset) {
         return "mmSPI_PS_INPUT_CNTL_2";
     case mmSPI_PS_INPUT_CNTL_3:
         return "mmSPI_PS_INPUT_CNTL_3";
+    case mmPA_SU_POLY_OFFSET_FRONT_SCALE:
+        return "mmPA_SU_POLY_OFFSET_FRONT_SCALE";
+    case mmPA_SU_POLY_OFFSET_FRONT_OFFSET:
+        return "mmPA_SU_POLY_OFFSET_FRONT_OFFSET";
+    case mmPA_SU_POLY_OFFSET_BACK_SCALE:
+        return "mmPA_SU_POLY_OFFSET_BACK_SCALE";
+    case mmPA_SU_POLY_OFFSET_BACK_OFFSET:
+        return "mmPA_SU_POLY_OFFSET_BACK_OFFSET";
+    case mmPA_SU_POLY_OFFSET_CLAMP:
+        return "mmPA_SU_POLY_OFFSET_CLAMP";
     default:
         break;
     }
