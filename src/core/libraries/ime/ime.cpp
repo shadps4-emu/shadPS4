@@ -44,12 +44,12 @@ public:
             openEvent.param.rect.y = m_param.ime.posy;
         } else {
             openEvent.param.resource_id_array.userId = 1;
-            openEvent.param.resource_id_array.resource_id[0] = 1;
+            openEvent.param.resource_id_array.resourceId[0] = 1;
         }
 
         // Are we supposed to call the event handler on init with
         // ADD_OSK?
-        if (!ime_mode && False(m_param.key.option & OrbisImeKeyboardOption::ADD_OSK)) {
+        if (!ime_mode && False(m_param.key.option & OrbisImeKeyboardOption::AddOsk)) {
             Execute(nullptr, &openEvent, true);
         }
 

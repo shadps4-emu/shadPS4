@@ -16,7 +16,7 @@ ImeState::ImeState(const OrbisImeParam* param) {
     }
 
     work_buffer = param->work;
-    text_buffer = param->input_text_buffer;
+    text_buffer = param->inputTextBuffer;
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
     if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
@@ -182,7 +182,7 @@ void ImeUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->max_text_length,
+    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
                     input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
     }
 }
@@ -204,14 +204,14 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         eventParam.text_area[0].length = data->BufTextLen;
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
-                                           ui->ime_param->max_text_length)) {
+                                           ui->ime_param->maxTextLength)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
             return 0;
         }
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
-                                           ui->ime_param->input_text_buffer,
-                                           ui->ime_param->max_text_length)) {
+                                           ui->ime_param->inputTextBuffer,
+                                           ui->ime_param->maxTextLength)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert Orbis char to UTF-8");
             return 0;
         }
@@ -228,16 +228,16 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     if (lastCaretPos == -1) {
         lastCaretPos = data->CursorPos;
     } else if (data->CursorPos != lastCaretPos) {
-        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::STILL;
+        OrbisImeCaretMovementDirection caretDirection = OrbisImeCaretMovementDirection::Still;
         if (data->CursorPos < lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::LEFT;
+            caretDirection = OrbisImeCaretMovementDirection::Left;
         } else if (data->CursorPos > lastCaretPos) {
-            caretDirection = OrbisImeCaretMovementDirection::RIGHT;
+            caretDirection = OrbisImeCaretMovementDirection::Right;
         }
 
         OrbisImeEvent event{};
-        event.id = OrbisImeEventId::UPDATE_CARET;
-        event.param.caretMove = caretDirection;
+        event.id = OrbisImeEventId::UpdateCaret;
+        event.param.caret_move = caretDirection;
 
         lastCaretPos = data->CursorPos;
         ui->state->SendEvent(&event);
