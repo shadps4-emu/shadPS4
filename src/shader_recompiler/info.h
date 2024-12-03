@@ -57,7 +57,6 @@ using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
 struct TextureBufferResource {
     u32 sharp_idx;
-    AmdGpu::NumberFormat nfmt;
     bool is_written{};
 
     constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
@@ -66,8 +65,6 @@ using TextureBufferResourceList = boost::container::small_vector<TextureBufferRe
 
 struct ImageResource {
     u32 sharp_idx;
-    AmdGpu::ImageType type;
-    AmdGpu::NumberFormat nfmt;
     bool is_storage{};
     bool is_depth{};
     bool is_atomic{};
@@ -123,13 +120,16 @@ struct Info {
             Plain = 3,
         };
 
-        AmdGpu::NumberFormat fmt;
         u16 binding;
         u16 num_components;
         u8 sgpr_base;
         u8 dword_offset;
         InstanceIdType instance_step_rate;
         s32 instance_data_buf;
+
+        [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept {
+            return info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
+        }
     };
     boost::container::static_vector<VsInput, 32> vs_inputs{};
 
