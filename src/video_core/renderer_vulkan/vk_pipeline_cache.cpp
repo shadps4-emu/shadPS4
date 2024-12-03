@@ -349,8 +349,7 @@ bool PipelineCache::RefreshGraphicsKey() {
                 input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
                 continue;
             }
-            const auto& buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto& buffer = input.GetSharp(*vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }

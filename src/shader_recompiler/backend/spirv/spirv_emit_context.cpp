@@ -282,7 +282,8 @@ void EmitContext::DefineInputs() {
 
         for (const auto& input : info.vs_inputs) {
             ASSERT(input.binding < IR::NumParams);
-            const Id type{GetAttributeType(*this, input.fmt)[4]};
+            const auto sharp = input.GetSharp(info);
+            const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
             if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
                 input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
 
@@ -306,7 +307,7 @@ void EmitContext::DefineInputs() {
                 } else {
                     Name(id, fmt::format("vs_in_attr{}", input.binding));
                 }
-                input_params[input.binding] = GetAttributeInfo(input.fmt, id, 4, false);
+                input_params[input.binding] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
                 interfaces.push_back(id);
             }
         }
@@ -553,9 +554,10 @@ void EmitContext::DefineBuffers() {
 
 void EmitContext::DefineTextureBuffers() {
     for (const auto& desc : info.texture_buffers) {
-        const bool is_integer =
-            desc.nfmt == AmdGpu::NumberFormat::Uint || desc.nfmt == AmdGpu::NumberFormat::Sint;
-        const VectorIds& sampled_type{GetAttributeType(*this, desc.nfmt)};
+        const auto sharp = desc.GetSharp(info);
+        const auto nfmt = sharp.GetNumberFmt();
+        const bool is_integer = AmdGpu::IsInteger(nfmt);
+        const VectorIds& sampled_type{GetAttributeType(*this, nfmt)};
         const u32 sampled = desc.is_written ? 2 : 1;
         const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
                                       sampled, spv::ImageFormat::Unknown)};
@@ -652,8 +654,9 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
+    const auto type = image.GetBoundType();
     const u32 sampled = desc.is_storage ? 2 : 1;
-    switch (desc.type) {
+    switch (type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Color1DArray:
@@ -672,14 +675,15 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     default:
         break;
     }
-    throw InvalidArgument("Invalid texture type {}", desc.type);
+    throw InvalidArgument("Invalid texture type {}", type);
 }
 
 void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
-        const bool is_integer = image_desc.nfmt == AmdGpu::NumberFormat::Uint ||
-                                image_desc.nfmt == AmdGpu::NumberFormat::Sint;
-        const VectorIds& data_types = GetAttributeType(*this, image_desc.nfmt);
+        const auto sharp = image_desc.GetSharp(info);
+        const auto nfmt = sharp.GetNumberFmt();
+        const bool is_integer = AmdGpu::IsInteger(nfmt);
+        const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};

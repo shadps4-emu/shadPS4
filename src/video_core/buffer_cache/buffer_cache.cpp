@@ -157,7 +157,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
             continue;
         }
 
-        const auto& buffer = vs_info.ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto& buffer = input.GetSharp(vs_info);
         if (buffer.GetSize() == 0) {
             continue;
         }
