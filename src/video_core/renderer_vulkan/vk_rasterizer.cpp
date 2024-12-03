@@ -194,16 +194,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
-    u32 vertex_offset = regs.index_offset;
-    u32 instance_offset = 0;
-    if (fetch_shader) {
-        if (vertex_offset == 0 && fetch_shader->vertex_offset_sgpr != -1) {
-            vertex_offset = vs_info.user_data[fetch_shader->vertex_offset_sgpr];
-        }
-        if (fetch_shader->instance_offset_sgpr != -1) {
-            instance_offset = vs_info.user_data[fetch_shader->instance_offset_sgpr];
-        }
-    }
+    const auto [vertex_offset, instance_offset] = fetch_shader->GetDrawOffsets(regs, vs_info);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
