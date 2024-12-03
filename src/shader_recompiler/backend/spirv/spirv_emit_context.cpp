@@ -280,34 +280,42 @@ void EmitContext::DefineInputs() {
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
 
-        for (const auto& input : info.vs_inputs) {
-            ASSERT(input.binding < IR::NumParams);
-            const auto sharp = input.GetSharp(info);
+        const auto fetch_shader = info.LoadFetchShader();
+        if (!fetch_shader) {
+            break;
+        }
+        for (const auto& attrib : fetch_shader->attributes) {
+            ASSERT(attrib.semantic < IR::NumParams);
+            const auto sharp = info.GetSharp(attrib);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
-            if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
-
+            if (attrib.UsesStepRates()) {
                 const u32 rate_idx =
-                    input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ? 0
-                                                                                             : 1;
+                    attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::OverStepRate0 ? 0
+                                                                                                : 1;
+                const u32 num_components = AmdGpu::NumComponents(sharp.GetDataFmt());
+                const auto buffer =
+                    std::ranges::find_if(info.buffers, [&attrib](const auto& buffer) {
+                        return buffer.instance_attrib == attrib.semantic;
+                    });
                 // Note that we pass index rather than Id
-                input_params[input.binding] = SpirvAttribute{
+                input_params[attrib.semantic] = SpirvAttribute{
                     .id = rate_idx,
                     .pointer_type = input_u32,
                     .component_type = U32[1],
-                    .num_components = input.num_components,
+                    .num_components = std::min<u16>(attrib.num_elements, num_components),
                     .is_integer = true,
                     .is_loaded = false,
-                    .buffer_handle = input.instance_data_buf,
+                    .buffer_handle = int(buffer - info.buffers.begin()),
                 };
             } else {
-                Id id{DefineInput(type, input.binding)};
-                if (input.instance_step_rate == Info::VsInput::InstanceIdType::Plain) {
-                    Name(id, fmt::format("vs_instance_attr{}", input.binding));
+                Id id{DefineInput(type, attrib.semantic)};
+                if (attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::Plain) {
+                    Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
                 } else {
-                    Name(id, fmt::format("vs_in_attr{}", input.binding));
+                    Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
                 }
-                input_params[input.binding] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
+                input_params[attrib.semantic] =
+                    GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
                 interfaces.push_back(id);
             }
         }

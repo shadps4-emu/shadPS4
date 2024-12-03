@@ -6,6 +6,7 @@
 #include <bitset>
 
 #include "common/types.h"
+#include "frontend/fetch_shader.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/passes/srt.h"
@@ -50,6 +51,7 @@ struct StageSpecialization {
 
     const Shader::Info* info;
     RuntimeInfo runtime_info;
+    Gcn::FetchShaderData fetch_shader_data{};
     std::bitset<MaxStageResources> bitset{};
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
@@ -60,6 +62,9 @@ struct StageSpecialization {
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
                                  Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
+        if (const auto fetch_shader = info_.LoadFetchShader()) {
+            fetch_shader_data = *fetch_shader;
+        }
         u32 binding{};
         if (info->has_readconst) {
             binding++;
@@ -103,6 +108,9 @@ struct StageSpecialization {
             return false;
         }
         if (runtime_info != other.runtime_info) {
+            return false;
+        }
+        if (fetch_shader_data != other.fetch_shader_data) {
             return false;
         }
         u32 binding{};

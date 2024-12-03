@@ -47,8 +47,10 @@ public:
 
     const ComputePipeline* GetComputePipeline();
 
-    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(
-        Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding);
+    std::tuple<const Shader::Info*, vk::ShaderModule, std::optional<Shader::Gcn::FetchShaderData>,
+               u64>
+    GetProgram(Shader::Stage stage, Shader::ShaderParams params,
+               Shader::Backend::Bindings& binding);
 
 private:
     bool RefreshGraphicsKey();
@@ -80,6 +82,7 @@ private:
     tsl::robin_map<GraphicsPipelineKey, GraphicsPipeline*> graphics_pipelines;
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
+    std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};
 };
