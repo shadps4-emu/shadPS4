@@ -281,7 +281,12 @@ constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    const auto image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    if (!image.Valid()) {
+        // Fall back to null image if unbound.
+        return AmdGpu::Image::Null();
+    }
+    return image;
 }
 
 constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {

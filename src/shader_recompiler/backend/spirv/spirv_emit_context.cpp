@@ -660,7 +660,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
+    const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const auto type = image.GetBoundType();
     const u32 sampled = desc.is_storage ? 2 : 1;

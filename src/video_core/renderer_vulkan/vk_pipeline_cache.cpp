@@ -304,8 +304,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         auto params = Liverpool::GetParams(*pgm);
-        std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader,
+        std::optional<Shader::Gcn::FetchShaderData> fetch_shader_;
+        std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader_,
                  key.stage_hashes[stage_out_idx]) = GetProgram(stage_in, params, binding);
+        if (fetch_shader_) {
+            fetch_shader = fetch_shader_;
+        }
         return true;
     };
 
