@@ -34,7 +34,13 @@ namespace Shader::Gcn {
  * We take the reverse way, extract the original input semantics from these instructions.
  **/
 
-FetchShaderData ParseFetchShader(const u32* code) {
+std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
+    if (!info.has_fetch_shader) {
+        return std::nullopt;
+    }
+    const u32* code;
+    std::memcpy(&code, &info.user_data[info.fetch_shader_sgpr_base], sizeof(code));
+
     FetchShaderData data{.code = code};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;

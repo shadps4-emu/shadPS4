@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "video_core/amdgpu/types.h"
 
@@ -155,18 +156,12 @@ void EmitContext::DefineInterfaces() {
 }
 
 const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return ctx.F32;
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return ctx.S32;
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return ctx.U32;
     default:
         break;
@@ -176,18 +171,12 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
                                                           u32 num_components, bool output) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return {id, output ? output_f32 : input_f32, F32[1], num_components, false};
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return {id, output ? output_u32 : input_u32, U32[1], num_components, true};
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return {id, output ? output_s32 : input_s32, S32[1], num_components, true};
     default:
         break;
@@ -280,13 +269,13 @@ void EmitContext::DefineInputs() {
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
 
-        const auto fetch_shader = info.LoadFetchShader();
+        const auto fetch_shader = Gcn::ParseFetchShader(info);
         if (!fetch_shader) {
             break;
         }
         for (const auto& attrib : fetch_shader->attributes) {
             ASSERT(attrib.semantic < IR::NumParams);
-            const auto sharp = info.GetSharp(attrib);
+            const auto sharp = attrib.GetSharp(info);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
             if (attrib.UsesStepRates()) {
                 const u32 rate_idx =

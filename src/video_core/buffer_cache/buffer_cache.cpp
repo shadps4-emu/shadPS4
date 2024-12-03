@@ -158,7 +158,7 @@ bool BufferCache::BindVertexBuffers(
             continue;
         }
 
-        const auto& buffer = vs_info.GetSharp(attrib);
+        const auto& buffer = attrib.GetSharp(vs_info);
         if (buffer.GetSize() == 0) {
             continue;
         }

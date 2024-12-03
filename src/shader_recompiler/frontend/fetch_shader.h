@@ -6,6 +6,7 @@
 #include <ranges>
 #include <vector>
 #include "common/types.h"
+#include "shader_recompiler/info.h"
 
 namespace Shader::Gcn {
 
@@ -31,6 +32,10 @@ struct VertexAttribute {
     [[nodiscard]] bool UsesStepRates() const {
         const auto step_rate = GetStepRate();
         return step_rate == OverStepRate0 || step_rate == OverStepRate1;
+    }
+
+    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Shader::Info& info) const noexcept {
+        return info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
     }
 
     bool operator==(const VertexAttribute& other) const {
@@ -59,6 +64,6 @@ struct FetchShaderData {
     }
 };
 
-FetchShaderData ParseFetchShader(const u32* code);
+std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info);
 
 } // namespace Shader::Gcn

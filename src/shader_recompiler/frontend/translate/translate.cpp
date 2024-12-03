@@ -370,7 +370,9 @@ void Translator::EmitFetch(const GcnInst& inst) {
     // Read the pointer to the fetch shader assembly.
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = inst.src[0].code;
-    const auto fetch_data = info.LoadFetchShader();
+
+    const auto fetch_data = ParseFetchShader(info);
+    ASSERT(fetch_data.has_value());
 
     if (Config::dumpShaders()) {
         using namespace Common::FS;

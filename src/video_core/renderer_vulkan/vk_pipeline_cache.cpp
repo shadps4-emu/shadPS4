@@ -169,6 +169,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
     };
@@ -352,7 +353,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             if (attrib.UsesStepRates()) {
                 continue;
             }
-            const auto& buffer = vs_info->GetSharp(attrib);
+            const auto& buffer = attrib.GetSharp(*vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -436,7 +437,7 @@ PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
         Program* program = program_pool.Create(stage, params);
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start);
+        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         program->AddPermut(module, std::move(spec));
         it_pgm.value() = program;
         return std::make_tuple(&program->info, module, spec.fetch_shader_data,
@@ -446,7 +447,7 @@ PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
     Program* program = it_pgm->second;
     auto& info = program->info;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
+    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
 

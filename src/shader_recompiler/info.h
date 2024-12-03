@@ -9,7 +9,6 @@
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
-#include "frontend/fetch_shader.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/frontend/copy_shader.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -231,22 +230,6 @@ struct Info {
         bnd.user_data += ud_mask.NumRegs();
     }
 
-    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets(
-        const AmdGpu::Liverpool::Regs& regs,
-        const std::optional<Gcn::FetchShaderData>& fetch_shader) const {
-        u32 vertex_offset = regs.index_offset;
-        u32 instance_offset = 0;
-        if (fetch_shader) {
-            if (vertex_offset == 0 && fetch_shader->vertex_offset_sgpr != -1) {
-                vertex_offset = user_data[fetch_shader->vertex_offset_sgpr];
-            }
-            if (fetch_shader->instance_offset_sgpr != -1) {
-                instance_offset = user_data[fetch_shader->instance_offset_sgpr];
-            }
-        }
-        return {vertex_offset, instance_offset};
-    }
-
     void RefreshFlatBuf() {
         flattened_ud_buf.resize(srt_info.flattened_bufsize_dw);
         ASSERT(user_data.size() <= NumUserDataRegs);
@@ -255,20 +238,6 @@ struct Info {
         if (srt_info.walker_func) {
             srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
         }
-    }
-
-    [[nodiscard]] std::optional<Gcn::FetchShaderData> LoadFetchShader() const {
-        if (!has_fetch_shader) {
-            return std::nullopt;
-        }
-        const u32* code;
-        std::memcpy(&code, &user_data[fetch_shader_sgpr_base], sizeof(code));
-        return Gcn::ParseFetchShader(code);
-    }
-
-    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(
-        const Gcn::VertexAttribute& attrib) const noexcept {
-        return ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
     }
 };
 

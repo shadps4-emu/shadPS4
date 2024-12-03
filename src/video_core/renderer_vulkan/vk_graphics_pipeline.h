@@ -4,6 +4,7 @@
 #include <xxhash.h>
 
 #include "common/types.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
