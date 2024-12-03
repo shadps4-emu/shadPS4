@@ -176,18 +176,6 @@ struct Image {
     u64 lod_hw_cnt_en : 1;
     u64 : 43;
 
-    static constexpr Image Null() {
-        Image image{};
-        image.data_format = u64(DataFormat::Format8_8_8_8);
-        image.dst_sel_x = 4;
-        image.dst_sel_y = 5;
-        image.dst_sel_z = 6;
-        image.dst_sel_w = 7;
-        image.tiling_index = u64(TilingMode::Texture_MicroTiled);
-        image.type = u64(ImageType::Color2D);
-        return image;
-    }
-
     bool Valid() const {
         return (type & 0x8u) != 0;
     }
@@ -269,18 +257,21 @@ struct Image {
     }
 
     ImageType GetType() const noexcept {
-        return static_cast<ImageType>(type);
+        return Valid() ? static_cast<ImageType>(type) : ImageType::Color2D;
     }
 
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format);
+        return Valid() ? static_cast<DataFormat>(data_format) : DataFormat::Format8_8_8_8;
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format);
+        return Valid() ? static_cast<NumberFormat>(num_format) : NumberFormat::Unorm;
     }
 
     TilingMode GetTilingMode() const {
+        if (!Valid()) {
+            return TilingMode::Texture_MicroTiled;
+        }
         if (tiling_index >= 0 && tiling_index <= 7) {
             return tiling_index == 5 ? TilingMode::Texture_MicroTiled
                                      : TilingMode::Depth_MacroTiled;

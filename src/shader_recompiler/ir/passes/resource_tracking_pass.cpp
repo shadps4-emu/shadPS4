@@ -621,7 +621,6 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
-        image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
