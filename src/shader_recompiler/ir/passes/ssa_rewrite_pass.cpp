@@ -270,6 +270,7 @@ public:
         block->SsaSeal();
     }
 
+private:
     template <typename Type>
     IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
         for (IR::Block* const imm_pred : block->ImmPredecessors()) {
@@ -283,7 +284,7 @@ public:
         const size_t num_args{phi.NumArgs()};
         for (size_t arg_index = 0; arg_index < num_args; ++arg_index) {
             const IR::Value& op{phi.Arg(arg_index)};
-            if (op.Resolve() == same.Resolve() || op == IR::Value{&phi}) {
+            if (op.Resolve() == same.Resolve() || op.Resolve() == IR::Value{&phi}) {
                 // Unique value or self-reference
                 continue;
             }
@@ -308,10 +309,10 @@ public:
             ++reinsert_point;
         }
         // Reinsert the phi node and reroute all its uses to the "same" value
+        const auto users = phi.Uses();
         list.insert(reinsert_point, phi);
         phi.ReplaceUsesWith(same);
-        // TODO: Try to recursively remove all phi users, which might have become trivial
-        const auto users = phi.Uses();
+        // Try to recursively remove all phi users, which might have become trivial
         for (const auto& [user, arg_index] : users) {
             if (user->GetOpcode() == IR::Opcode::Phi) {
                 TryRemoveTrivialPhi(*user, user->GetParent(), undef_opcode);

@@ -180,8 +180,8 @@ void Inst::ClearArgs() {
 void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
     // Copy since user->SetArg will mutate this->uses
     // Could also do temp_uses = std::move(uses) but more readable
-    boost::container::list<IR::Use> temp_uses = uses;
-    for (auto& [user, operand] : temp_uses) {
+    const auto temp_uses = uses;
+    for (const auto& [user, operand] : temp_uses) {
         DEBUG_ASSERT(user->Arg(operand).Inst() == this);
         user->SetArg(operand, replacement);
     }
