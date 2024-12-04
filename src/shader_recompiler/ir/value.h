@@ -129,7 +129,7 @@ public:
     Inst& operator=(Inst&&) = delete;
     Inst(Inst&&) = delete;
 
-    IR::Block* GetParent() {
+    IR::Block* GetParent() const {
         ASSERT(parent);
         return parent;
     }
