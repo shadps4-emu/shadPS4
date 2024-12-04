@@ -726,19 +726,6 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
     return format->vk_format;
 }
 
-void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
-    static constexpr u16 NumVerticesPerQuad = 4;
-    u16* out_data = reinterpret_cast<u16*>(out_ptr);
-    for (u16 i = 0; i < num_vertices; i += NumVerticesPerQuad) {
-        *out_data++ = i;
-        *out_data++ = i + 1;
-        *out_data++ = i + 2;
-        *out_data++ = i;
-        *out_data++ = i + 2;
-        *out_data++ = i + 3;
-    }
-}
-
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
     const auto comp_swap = color_buffer.info.comp_swap.Value();
     const auto format = color_buffer.info.format.Value();

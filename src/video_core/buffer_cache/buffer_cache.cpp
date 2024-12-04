@@ -236,7 +236,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList && !is_indexed) {
         is_indexed = true;
 
         // Emit indices.
@@ -261,6 +261,32 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
     VAddr index_address = regs.index_base_address.Address<VAddr>();
     index_address += index_offset * index_size;
+
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+        // Convert indices.
+        const u32 new_index_size = regs.num_indices * index_size * 6 / 4;
+        const auto [data, offset] = stream_buffer.Map(new_index_size);
+        const auto index_ptr = reinterpret_cast<u8*>(index_address);
+        switch (index_type) {
+        case vk::IndexType::eUint16:
+            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u16>(data, index_ptr,
+                                                                         regs.num_indices);
+            break;
+        case vk::IndexType::eUint32:
+            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u32>(data, index_ptr,
+                                                                         regs.num_indices);
+            break;
+        default:
+            UNREACHABLE_MSG("Unsupported QuadList index type {}", vk::to_string(index_type));
+            break;
+        }
+        stream_buffer.Commit();
+
+        // Bind index buffer.
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, index_type);
+        return new_index_size / index_size;
+    }
 
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
