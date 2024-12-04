@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <variant>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/bit_field.h"
 #include "common/io_file.h"

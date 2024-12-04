@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"

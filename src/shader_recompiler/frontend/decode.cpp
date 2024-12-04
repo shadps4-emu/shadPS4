@@ -5,7 +5,7 @@
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 
-#include "magic_enum.hpp"
+#include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Gcn {
 

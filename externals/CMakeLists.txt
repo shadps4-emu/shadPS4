@@ -35,7 +35,7 @@ else()
     if (NOT TARGET cryptopp::cryptopp)
         set(CRYPTOPP_INSTALL OFF)
         set(CRYPTOPP_BUILD_TESTING OFF)
-        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
+        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp)
         add_subdirectory(cryptopp-cmake)
         file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
         # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
@@ -216,7 +216,7 @@ endif()
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     set(BUILD_EXAMPLES OFF)
-    add_subdirectory(discord-rpc/)
+    add_subdirectory(discord-rpc)
     target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 endif()
 

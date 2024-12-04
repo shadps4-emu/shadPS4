@@ -14,7 +14,7 @@
 #include "video_core/host_shaders/detile_m8x2_comp.h"
 
 #include <boost/container/static_vector.hpp>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <vk_mem_alloc.h>
 
 namespace VideoCore {

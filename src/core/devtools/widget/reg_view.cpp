@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <stdio.h>
 
 #include "common.h"
