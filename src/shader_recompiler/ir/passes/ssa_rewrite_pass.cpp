@@ -164,7 +164,6 @@ IR::Opcode UndefOpcode(const FlagTag) noexcept {
 enum class Status {
     Start,
     SetValue,
-    PreparePhiArgument,
     PushPhiArgument,
 };
 
@@ -253,11 +252,9 @@ public:
                 IR::Inst* const phi{stack.back().phi};
                 phi->AddPhiOperand(*stack.back().pred_it, stack.back().result);
                 ++stack.back().pred_it;
-            }
-                [[fallthrough]];
-            case Status::PreparePhiArgument:
                 prepare_phi_operand();
                 break;
+            }
             }
         } while (stack.size() > 1);
         return stack.back().result;
@@ -266,16 +263,13 @@ public:
     void SealBlock(IR::Block* block) {
         const auto it{incomplete_phis.find(block)};
         if (it != incomplete_phis.end()) {
-            for (auto& pair : it->second) {
-                auto& variant{pair.first};
-                auto& phi{pair.second};
+            for (auto& [variant, phi] : it->second) {
                 std::visit([&](auto& variable) { AddPhiOperands(variable, *phi, block); }, variant);
             }
         }
         block->SsaSeal();
     }
 
-private:
     template <typename Type>
     IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
         for (IR::Block* const imm_pred : block->ImmPredecessors()) {
@@ -317,6 +311,12 @@ private:
         list.insert(reinsert_point, phi);
         phi.ReplaceUsesWith(same);
         // TODO: Try to recursively remove all phi users, which might have become trivial
+        const auto users = phi.Uses();
+        for (const auto& [user, arg_index] : users) {
+            if (user->GetOpcode() == IR::Opcode::Phi) {
+                TryRemoveTrivialPhi(*user, user->GetParent(), undef_opcode);
+            }
+        }
         return same;
     }
 

@@ -150,7 +150,6 @@ void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
 }
 
 void Inst::Invalidate() {
-    ASSERT(uses.empty());
     ClearArgs();
     ReplaceOpcode(Opcode::Void);
 }

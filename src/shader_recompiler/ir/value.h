@@ -129,6 +129,14 @@ public:
     Inst& operator=(Inst&&) = delete;
     Inst(Inst&&) = delete;
 
+    IR::Block* GetParent() {
+        ASSERT(parent);
+        return parent;
+    }
+    void SetParent(IR::Block* block) {
+        parent = block;
+    }
+
     /// Get the number of uses this instruction has.
     [[nodiscard]] int UseCount() const noexcept {
         return uses.size();
@@ -214,6 +222,10 @@ public:
         return std::bit_cast<DefinitionType>(definition);
     }
 
+    const auto Uses() const {
+        return uses;
+    }
+
 private:
     struct NonTriviallyDummy {
         NonTriviallyDummy() noexcept {}
@@ -226,6 +238,7 @@ private:
     IR::Opcode op{};
     u32 flags{};
     u32 definition{};
+    IR::Block* parent{};
     union {
         NonTriviallyDummy dummy{};
         boost::container::small_vector<std::pair<Block*, Value>, 2> phi_args;
@@ -234,7 +247,7 @@ private:
 
     boost::container::list<IR::Use> uses;
 };
-static_assert(sizeof(Inst) <= 152, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 160, "Inst size unintentionally increased");
 
 using U1 = TypedValue<Type::U1>;
 using U8 = TypedValue<Type::U8>;
