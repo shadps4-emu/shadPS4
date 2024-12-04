@@ -5,6 +5,7 @@
 #include "common/alignment.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -107,7 +108,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     }
 }
 
-bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
+bool BufferCache::BindVertexBuffers(
+    const Shader::Info& vs_info, const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader) {
     boost::container::small_vector<vk::VertexInputAttributeDescription2EXT, 16> attributes;
     boost::container::small_vector<vk::VertexInputBindingDescription2EXT, 16> bindings;
     SCOPE_EXIT {
@@ -126,7 +128,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
     };
 
-    if (vs_info.vs_inputs.empty()) {
+    if (!fetch_shader || fetch_shader->attributes.empty()) {
         return false;
     }
 
@@ -150,30 +152,29 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
     // Calculate buffers memory overlaps
     bool has_step_rate = false;
     boost::container::static_vector<BufferRange, NumVertexBuffers> ranges{};
-    for (const auto& input : vs_info.vs_inputs) {
-        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+    for (const auto& attrib : fetch_shader->attributes) {
+        if (attrib.UsesStepRates()) {
             has_step_rate = true;
             continue;
         }
 
-        const auto& buffer = vs_info.ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto& buffer = attrib.GetSharp(vs_info);
         if (buffer.GetSize() == 0) {
             continue;
         }
         guest_buffers.emplace_back(buffer);
         ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
         attributes.push_back({
-            .location = input.binding,
-            .binding = input.binding,
+            .location = attrib.semantic,
+            .binding = attrib.semantic,
             .format =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back({
-            .binding = input.binding,
+            .binding = attrib.semantic,
             .stride = buffer.GetStride(),
-            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+            .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
                              ? vk::VertexInputRate::eVertex
                              : vk::VertexInputRate::eInstance,
             .divisor = 1,

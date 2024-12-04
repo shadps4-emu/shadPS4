@@ -381,7 +381,6 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp);
     const s32 binding = descriptors.Add(TextureBufferResource{
         .sharp_idx = sharp,
-        .nfmt = buffer.GetNumberFmt(),
         .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
     });
 
@@ -660,11 +659,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }
 
-    const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sharp_idx = tsharp,
-        .type = type,
-        .nfmt = image.GetNumberFmt(),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),

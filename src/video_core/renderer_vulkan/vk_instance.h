@@ -148,8 +148,14 @@ public:
         return fragment_shader_barycentric;
     }
 
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
     bool IsListRestartSupported() const {
         return list_restart;
+    }
+
+    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
+    bool IsLegacyVertexAttributesSupported() const {
+        return legacy_vertex_attributes;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -320,6 +326,7 @@ private:
     bool null_descriptor{};
     bool maintenance5{};
     bool list_restart{};
+    bool legacy_vertex_attributes{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};
