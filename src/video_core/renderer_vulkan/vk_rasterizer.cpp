@@ -102,9 +102,6 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             continue;
         }
 
-        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
-        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
-
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         auto& [image_id, desc] = cb_descs.emplace_back(std::piecewise_construct, std::tuple{},
                                                        std::tuple{col_buf, hint});
@@ -112,6 +109,10 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         image_id = bound_images.emplace_back(image_view.image_id);
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
+
+        const auto slice = image_view.info.range.base.layer;
+        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress(), slice);
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
 
         const auto mip = image_view.info.range.base.level;
         state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
@@ -134,8 +135,6 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
          (regs.depth_control.stencil_enable &&
           regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
-        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
-                              texture_cache.IsMetaCleared(htile_address);
         const auto& hint = liverpool->last_db_extent;
         auto& [image_id, desc] =
             db_desc.emplace(std::piecewise_construct, std::tuple{},
@@ -145,6 +144,11 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         image_id = bound_images.emplace_back(image_view.image_id);
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
+
+        const auto slice = image_view.info.range.base.layer;
+        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
+                              texture_cache.IsMetaCleared(htile_address, slice);
+        ASSERT(desc.view_info.range.extent.layers == 1);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
@@ -157,7 +161,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
                                                           .stencil = regs.stencil_clear}},
         };
-        texture_cache.TouchMeta(htile_address, false);
+        texture_cache.TouchMeta(htile_address, slice, false);
         state.has_depth =
             regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
         state.has_stencil = regs.depth_buffer.stencil_info.format !=
@@ -359,9 +363,11 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         // will need its full emulation anyways. For cases of metadata read a warning will be
         // logged.
         const auto IsMetaUpdate = [&](const auto& desc) {
-            const VAddr address = desc.GetSharp(info).base_address;
+            const auto sharp = desc.GetSharp(info);
+            const VAddr address = sharp.base_address;
             if (desc.is_written) {
-                if (texture_cache.TouchMeta(address, true)) {
+                // Assume all slices were updates
+                if (texture_cache.ClearMeta(address)) {
                     LOG_TRACE(Render_Vulkan, "Metadata update skipped");
                     return true;
                 }
@@ -373,17 +379,36 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
             return false;
         };
 
+        // Assume if a shader reads and writes metas at the same time, it is a copy shader.
+        bool meta_read = false;
         for (const auto& desc : info.buffers) {
             if (desc.is_gds_buffer) {
                 continue;
             }
-            if (IsMetaUpdate(desc)) {
-                return false;
+            if (!desc.is_written) {
+                const VAddr address = desc.GetSharp(info).base_address;
+                meta_read = texture_cache.IsMeta(address);
             }
         }
+
         for (const auto& desc : info.texture_buffers) {
-            if (IsMetaUpdate(desc)) {
-                return false;
+            if (!desc.is_written) {
+                const VAddr address = desc.GetSharp(info).base_address;
+                meta_read = texture_cache.IsMeta(address);
+            }
+        }
+
+        if (!meta_read) {
+            for (const auto& desc : info.buffers) {
+                if (IsMetaUpdate(desc)) {
+                    return false;
+                }
+            }
+
+            for (const auto& desc : info.texture_buffers) {
+                if (IsMetaUpdate(desc)) {
+                    return false;
+                }
             }
         }
     }
