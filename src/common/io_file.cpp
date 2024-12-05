@@ -377,16 +377,18 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
-    u64 size = GetSize();
-    if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
-        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-        return false;
-    } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
-        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-        return false;
-    } else if (origin == SeekOrigin::End && offset > 0) {
-        LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-        return false;
+    if (False(file_access_mode & (FileAccessMode::Write | FileAccessMode::Append))) {
+        u64 size = GetSize();
+        if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
+            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+            return false;
+        } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
+            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+            return false;
+        } else if (origin == SeekOrigin::End && offset > 0) {
+            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
+            return false;
+        }
     }
 
     errno = 0;

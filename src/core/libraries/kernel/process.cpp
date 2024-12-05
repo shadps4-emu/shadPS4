@@ -20,7 +20,7 @@ int PS4_SYSV_ABI sceKernelIsNeoMode() {
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
     int version = Common::ElfInfo::Instance().RawFirmwareVer();
     *ver = version;
-    return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
+    return (version >= 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI sceKernelGetCpumode() {

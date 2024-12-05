@@ -502,6 +502,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/types.h
            src/common/uint128.h
            src/common/unique_function.h
+           src/common/va_ctx.h
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
@@ -526,6 +527,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h
          src/core/crypto/keys.h
+         src/core/devices/base_device.cpp
+         src/core/devices/base_device.h
+         src/core/devices/ioccom.h
+         src/core/devices/logger.cpp
+         src/core/devices/logger.h
+         src/core/devices/nop_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h
