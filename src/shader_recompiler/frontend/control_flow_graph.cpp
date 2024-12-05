@@ -47,6 +47,15 @@ static IR::Condition MakeCondition(const GcnInst& inst) {
     }
 }
 
+static bool IgnoresExecMask(Opcode opcode) {
+    switch (opcode) {
+    case Opcode::V_WRITELANE_B32:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static constexpr size_t LabelReserveSize = 32;
 
 CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
@@ -133,20 +142,26 @@ void CFG::EmitDivergenceLabels() {
                     curr_begin = -1;
                     continue;
                 }
-                // Add a label to the instruction right after the open scope call.
-                // It is the start of a new basic block.
-                const auto& save_inst = inst_list[curr_begin];
-                const Label label = index_to_pc[curr_begin] + save_inst.length;
-                AddLabel(label);
-                // Add a label to the close scope instruction.
-                // There are 3 cases where we need to close a scope.
-                // * Close scope instruction inside the block
-                // * Close scope instruction at the end of the block (cbranch or endpgm)
-                // * Normal instruction at the end of the block
-                // For the last case we must NOT add a label as that would cause
-                // the instruction to be separated into its own basic block.
-                if (is_close) {
-                    AddLabel(index_to_pc[index]);
+                // If all instructions in the scope ignore exec masking, we shouldn't insert a
+                // scope.
+                const auto start = inst_list.begin() + curr_begin + 1;
+                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask,
+                                         &GcnInst::opcode)) {
+                    // Add a label to the instruction right after the open scope call.
+                    // It is the start of a new basic block.
+                    const auto& save_inst = inst_list[curr_begin];
+                    const Label label = index_to_pc[curr_begin] + save_inst.length;
+                    AddLabel(label);
+                    // Add a label to the close scope instruction.
+                    // There are 3 cases where we need to close a scope.
+                    // * Close scope instruction inside the block
+                    // * Close scope instruction at the end of the block (cbranch or endpgm)
+                    // * Normal instruction at the end of the block
+                    // For the last case we must NOT add a label as that would cause
+                    // the instruction to be separated into its own basic block.
+                    if (is_close) {
+                        AddLabel(index_to_pc[index]);
+                    }
                 }
                 // Reset scope begin.
                 curr_begin = -1;
