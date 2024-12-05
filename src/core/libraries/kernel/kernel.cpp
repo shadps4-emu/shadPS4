@@ -27,6 +27,7 @@
 #ifdef _WIN64
 #include <Rpc.h>
 #endif
+#include <common/singleton.h>
 
 namespace Libraries::Kernel {
 
@@ -135,7 +136,7 @@ s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
@@ -152,7 +153,7 @@ s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {

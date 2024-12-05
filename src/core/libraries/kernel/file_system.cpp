@@ -250,7 +250,7 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -299,7 +299,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -603,7 +603,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (file->type == Core::FileSys::FileType::Device) {
