@@ -656,7 +656,7 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     if (file == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
-    if (file->type != Core::FileSys::FileType::Device) {
+    if (file->type == Core::FileSys::FileType::Device) {
         return file->device->getdents(buf, nbytes, basep);
     }
 
