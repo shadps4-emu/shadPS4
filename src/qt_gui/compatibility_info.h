@@ -69,8 +69,7 @@ public:
         {OSType::LinuxOS, QStringLiteral("os-linux")},
         {OSType::macOS, QStringLiteral("os-macOS")},
         {OSType::Win32OS, QStringLiteral("os-windows")},
-        {OSType::UnknownOS, QStringLiteral("os-unknown")}
-    };
+        {OSType::UnknownOS, QStringLiteral("os-unknown")}};
 
     CompatibilityInfoClass();
     ~CompatibilityInfoClass();

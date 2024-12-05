@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QProgressDialog>
-#include <QMessageBox>
-#include <QFileInfo>
 #include <iostream>
 #include "common/path_util.h"
 #include "compatibility_info.h"
+#include <QProgressDialog>
+#include <QMessageBox>
+#include <QFileInfo>
 
 CompatibilityInfoClass::CompatibilityInfoClass()
     : m_network_manager(new QNetworkAccessManager(this)) {

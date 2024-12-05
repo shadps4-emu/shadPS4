@@ -4,10 +4,13 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
+#include "compatibility_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, std::shared_ptr<CompatibilityInfoClass> compat_info_get, QWidget* parent)
+GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, 
+                             std::shared_ptr<CompatibilityInfoClass> compat_info_get, 
+                             QWidget* parent)
     : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
     icon_size = Config::getIconSize();
     this->setShowGrid(false);
@@ -105,7 +108,8 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
 
-        m_game_info->m_games[i].compatibility_status = m_compat_info->GetCompatibilityStatus(m_game_info->m_games[i].serial);
+        m_game_info->m_games[i].compatibility_status = 
+            m_compat_info->GetCompatibilityStatus(m_game_info->m_games[i].serial);
         SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility_status);
 
         QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
@@ -217,24 +221,24 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
     QColor color;
 
     switch (status) {
-        case Unknown:
-            color = QStringLiteral("#000000");
-            break;
-        case Nothing:
-            color = QStringLiteral("#212121");
-            break;
-        case Boots:
-            color = QStringLiteral("#828282");
-            break;
-        case Menus:
-            color = QStringLiteral("#FF0000");
-            break;
-        case Ingame:
-            color = QStringLiteral("#F2D624");
-            break;
-        case Playable:
-            color = QStringLiteral("#47D35C");
-            break;
+    case Unknown:
+        color = QStringLiteral("#000000");
+        break;
+    case Nothing:
+        color = QStringLiteral("#212121");
+        break;
+    case Boots:
+        color = QStringLiteral("#828282");
+        break;
+    case Menus:
+        color = QStringLiteral("#FF0000");
+        break;
+    case Ingame:
+        color = QStringLiteral("#F2D624");
+        break;
+    case Playable:
+        color = QStringLiteral("#47D35C");
+        break;
     }
 
     QPixmap circle_pixmap(16, 16);
@@ -261,7 +265,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
     layout->addWidget(dotLabel, 0, 0, -1, 4);
-    layout->addWidget(label, 0,4,-1,4);
+    layout->addWidget(label, 0, 4, -1, 4);
     layout->setAlignment(Qt::AlignLeft);
     widget->setLayout(layout);
     this->setItem(row, column, item);
