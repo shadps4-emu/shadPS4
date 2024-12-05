@@ -398,17 +398,15 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     // Register meta data for this color buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
         if (desc.info.meta_info.cmask_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.cmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.cmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::CMask});
             image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
 
         if (desc.info.meta_info.fmask_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.fmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.fmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::FMask});
             image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
@@ -428,9 +426,8 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
         if (desc.info.meta_info.htile_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.htile_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.htile_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::HTile});
             image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }

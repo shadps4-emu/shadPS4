@@ -9,6 +9,7 @@
 #include <vector>
 #include <tsl/robin_map.h>
 #include "common/io_file.h"
+#include "core/devices/base_device.h"
 
 namespace Core::FileSys {
 
@@ -55,15 +56,22 @@ struct DirEntry {
     bool isFile;
 };
 
+enum class FileType {
+    Regular, // standard file
+    Directory,
+    Device,
+};
+
 struct File {
     std::atomic_bool is_opened{};
-    std::atomic_bool is_directory{};
+    std::atomic<FileType> type{FileType::Regular};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
     Common::FS::IOFile f;
     std::vector<DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;
+    std::shared_ptr<Devices::BaseDevice> device; // only valid for type == Device
 };
 
 class HandleTable {
@@ -75,6 +83,8 @@ public:
     void DeleteHandle(int d);
     File* GetFile(int d);
     File* GetFile(const std::filesystem::path& host_name);
+
+    void CreateStdHandles();
 
 private:
     std::vector<File*> m_files;

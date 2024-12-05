@@ -8,6 +8,7 @@
 #include <cstring>
 #include <type_traits>
 #include <utility>
+#include <boost/container/list.hpp>
 #include <boost/container/small_vector.hpp>
 #include <boost/intrusive/list.hpp>
 
@@ -107,6 +108,16 @@ public:
     explicit TypedValue(IR::Inst* inst_) : TypedValue(Value(inst_)) {}
 };
 
+struct Use {
+    Inst* user;
+    u32 operand;
+
+    Use() = default;
+    Use(Inst* user_, u32 operand_) : user(user_), operand(operand_) {}
+    Use(const Use&) = default;
+    bool operator==(const Use&) const noexcept = default;
+};
+
 class Inst : public boost::intrusive::list_base_hook<> {
 public:
     explicit Inst(IR::Opcode op_, u32 flags_) noexcept;
@@ -118,14 +129,22 @@ public:
     Inst& operator=(Inst&&) = delete;
     Inst(Inst&&) = delete;
 
+    IR::Block* GetParent() const {
+        ASSERT(parent);
+        return parent;
+    }
+    void SetParent(IR::Block* block) {
+        parent = block;
+    }
+
     /// Get the number of uses this instruction has.
     [[nodiscard]] int UseCount() const noexcept {
-        return use_count;
+        return uses.size();
     }
 
     /// Determines whether this instruction has uses or not.
     [[nodiscard]] bool HasUses() const noexcept {
-        return use_count > 0;
+        return uses.size() > 0;
     }
 
     /// Get the opcode this microinstruction represents.
@@ -167,7 +186,13 @@ public:
     void Invalidate();
     void ClearArgs();
 
-    void ReplaceUsesWith(Value replacement);
+    void ReplaceUsesWithAndRemove(Value replacement) {
+        ReplaceUsesWith(replacement, false);
+    }
+
+    void ReplaceUsesWith(Value replacement) {
+        ReplaceUsesWith(replacement, true);
+    }
 
     void ReplaceOpcode(IR::Opcode opcode);
 
@@ -197,25 +222,32 @@ public:
         return std::bit_cast<DefinitionType>(definition);
     }
 
+    const auto Uses() const {
+        return uses;
+    }
+
 private:
     struct NonTriviallyDummy {
         NonTriviallyDummy() noexcept {}
     };
 
-    void Use(const Value& value);
-    void UndoUse(const Value& value);
+    void Use(Inst* used, u32 operand);
+    void UndoUse(Inst* used, u32 operand);
+    void ReplaceUsesWith(Value replacement, bool preserve);
 
     IR::Opcode op{};
-    int use_count{};
     u32 flags{};
     u32 definition{};
+    IR::Block* parent{};
     union {
         NonTriviallyDummy dummy{};
         boost::container::small_vector<std::pair<Block*, Value>, 2> phi_args;
         std::array<Value, 6> args;
     };
+
+    boost::container::list<IR::Use> uses;
 };
-static_assert(sizeof(Inst) <= 128, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 160, "Inst size unintentionally increased");
 
 using U1 = TypedValue<Type::U1>;
 using U8 = TypedValue<Type::U8>;

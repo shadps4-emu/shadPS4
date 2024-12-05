@@ -206,6 +206,7 @@ static void RunThread(void* arg) {
     DebugState.AddCurrentThreadToGuestList();
 
     /* Run the current thread's start routine with argument: */
+    curthread->native_thr.Initialize();
     void* ret = Core::ExecuteGuest(curthread->start_routine, curthread->arg);
 
     /* Remove thread from tracking */
@@ -280,7 +281,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
-    new_thread->native_thr = Core::Thread();
+    new_thread->native_thr = Core::NativeThread();
     int ret = new_thread->native_thr.Create(RunThread, new_thread, &new_thread->attr);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
@@ -412,6 +413,33 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
     return 0;
 }
 
+int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy policy,
+                                             const SchedParam* param) {
+    if (pthread == nullptr || param == nullptr) {
+        return POSIX_EINVAL;
+    }
+
+    auto* thread_state = ThrState::Instance();
+    if (pthread == g_curthread) {
+        g_curthread->lock.lock();
+    } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ 0); ret != 0) {
+        return ret;
+    }
+
+    if (pthread->attr.sched_policy == policy &&
+        (policy == SchedPolicy::Other || pthread->attr.prio == param->sched_priority)) {
+        pthread->attr.prio = param->sched_priority;
+        pthread->lock.unlock();
+        return 0;
+    }
+
+    // TODO: _thr_setscheduler
+    pthread->attr.sched_policy = policy;
+    pthread->attr.prio = param->sched_priority;
+    pthread->lock.unlock();
+    return 0;
+}
+
 int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     SchedParam param;
     SchedPolicy policy;
@@ -495,6 +523,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setprio);
     LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
+    LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 
     // Posix-Kernel

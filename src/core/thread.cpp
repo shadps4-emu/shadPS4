@@ -4,44 +4,124 @@
 #include "libraries/kernel/threads/pthread.h"
 #include "thread.h"
 
+#include "core/libraries/kernel/threads/pthread.h"
+
 #ifdef _WIN64
 #include <windows.h>
+#include "common/ntapi.h"
 #else
 #include <pthread.h>
 #endif
 
 namespace Core {
 
-Thread::Thread() : native_handle{0} {}
-
-Thread::~Thread() {}
-
-int Thread::Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr) {
 #ifdef _WIN64
-    native_handle = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, nullptr);
-    return native_handle ? 0 : -1;
-#else
+#define KGDT64_R3_DATA (0x28)
+#define KGDT64_R3_CODE (0x30)
+#define KGDT64_R3_CMTEB (0x50)
+#define RPL_MASK (0x03)
+
+#define INITIAL_FPUCW (0x037f)
+#define INITIAL_MXCSR_MASK (0xffbf)
+#define EFLAGS_INTERRUPT_MASK (0x200)
+
+void InitializeTeb(INITIAL_TEB* teb, const ::Libraries::Kernel::PthreadAttr* attr) {
+    teb->StackBase = (void*)((u64)attr->stackaddr_attr + attr->stacksize_attr);
+    teb->StackLimit = nullptr;
+    teb->StackAllocationBase = attr->stackaddr_attr;
+}
+
+void InitializeContext(CONTEXT* ctx, ThreadFunc func, void* arg,
+                       const ::Libraries::Kernel::PthreadAttr* attr) {
+    /* Note: The stack has to be reversed */
+    ctx->Rsp = (u64)attr->stackaddr_attr + attr->stacksize_attr;
+    ctx->Rbp = (u64)attr->stackaddr_attr + attr->stacksize_attr;
+    ctx->Rcx = (u64)arg;
+    ctx->Rip = (u64)func;
+
+    ctx->SegGs = KGDT64_R3_DATA | RPL_MASK;
+    ctx->SegEs = KGDT64_R3_DATA | RPL_MASK;
+    ctx->SegDs = KGDT64_R3_DATA | RPL_MASK;
+    ctx->SegCs = KGDT64_R3_CODE | RPL_MASK;
+    ctx->SegSs = KGDT64_R3_DATA | RPL_MASK;
+    ctx->SegFs = KGDT64_R3_CMTEB | RPL_MASK;
+
+    ctx->EFlags = 0x3000 | EFLAGS_INTERRUPT_MASK;
+    ctx->MxCsr = INITIAL_MXCSR;
+
+    ctx->FltSave.ControlWord = INITIAL_FPUCW;
+    ctx->FltSave.MxCsr = INITIAL_MXCSR;
+    ctx->FltSave.MxCsr_Mask = INITIAL_MXCSR_MASK;
+
+    ctx->ContextFlags =
+        CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT;
+}
+#endif
+
+NativeThread::NativeThread() : native_handle{0} {}
+
+NativeThread::~NativeThread() {}
+
+int NativeThread::Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr) {
+#ifndef _WIN64
     pthread_t* pthr = reinterpret_cast<pthread_t*>(&native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
     pthread_attr_setstack(&pattr, attr->stackaddr_attr, attr->stacksize_attr);
     return pthread_create(pthr, &pattr, (PthreadFunc)func, arg);
+#else
+    CLIENT_ID clientId{};
+    INITIAL_TEB teb{};
+    CONTEXT ctx{};
+
+    clientId.UniqueProcess = GetCurrentProcess();
+    clientId.UniqueThread = GetCurrentThread();
+
+    InitializeTeb(&teb, attr);
+    InitializeContext(&ctx, func, arg, attr);
+
+    return NtCreateThread(&native_handle, THREAD_ALL_ACCESS, nullptr, GetCurrentProcess(),
+                          &clientId, &ctx, &teb, false);
 #endif
 }
 
-void Thread::Exit() {
+void NativeThread::Exit() {
     if (!native_handle) {
         return;
     }
 
+    tid = 0;
+
 #ifdef _WIN64
-    CloseHandle(native_handle);
+    NtClose(native_handle);
     native_handle = nullptr;
 
-    // We call this assuming the thread has finished execution.
-    ExitThread(0);
+    /* The Windows kernel will free the stack
+       given at thread creation via INITIAL_TEB
+       (StackAllocationBase) upon thread termination.
+
+       In earlier Windows versions (NT4 to Windows Server 2003),
+       you could get around this via disabling FreeStackOnTermination
+       on the TEB. This has been removed since then.
+
+       To avoid this, we must forcefully set the TEB
+       deallocation stack pointer to NULL so ZwFreeVirtualMemory fails
+       in the kernel and our stack is not freed.
+     */
+    auto* teb = reinterpret_cast<TEB*>(NtCurrentTeb());
+    teb->DeallocationStack = nullptr;
+
+    NtTerminateThread(nullptr, 0);
 #else
     pthread_exit(nullptr);
+#endif
+}
+
+void NativeThread::Initialize() {
+#if _WIN64
+    tid = GetCurrentThreadId();
+#else
+    tid = (u64)pthread_self();
 #endif
 }
 

@@ -222,3 +222,10 @@ endif()
 
 # GCN Headers
 add_subdirectory(gcn)
+
+# stb
+if (NOT TARGET stb::headers)
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE stb)
+    add_library(stb::headers ALIAS stb)
+endif()

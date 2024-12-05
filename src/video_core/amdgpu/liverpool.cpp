@@ -46,7 +46,7 @@ Liverpool::~Liverpool() {
 }
 
 void Liverpool::Process(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:GPU_CommandProcessor");
+    Common::SetCurrentThreadName("shadPS4:GpuCommandProcessor");
 
     while (!stoken.stop_requested()) {
         {
@@ -159,6 +159,19 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
                 co_yield {};
                 TracyFiberEnter(ccb_task_name);
             }
+            break;
+        }
+        case PM4ItOpcode::IndirectBufferConst: {
+            const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            auto task = ProcessCeUpdate(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            while (!task.handle.done()) {
+                task.handle.resume();
+
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(ccb_task_name);
+            };
             break;
         }
         default:
@@ -702,7 +715,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
                                        false);
             } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
-                LOG_WARNING(Render_Vulkan, "GDS memory read");
+                // LOG_WARNING(Render_Vulkan, "GDS memory read");
             } else if (dma_data->src_sel == DmaDataSrc::Memory &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
                 rasterizer->InlineData(dma_data->DstAddress<VAddr>(),

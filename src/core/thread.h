@@ -11,27 +11,34 @@ struct PthreadAttr;
 
 namespace Core {
 
-class Thread {
-public:
-    using ThreadFunc = void (*)(void*);
-    using PthreadFunc = void* (*)(void*);
+using ThreadFunc = void (*)(void*);
+using PthreadFunc = void* (*)(void*);
 
-    Thread();
-    ~Thread();
+class NativeThread {
+public:
+    NativeThread();
+    ~NativeThread();
 
     int Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr);
     void Exit();
+
+    void Initialize();
 
     uintptr_t GetHandle() {
         return reinterpret_cast<uintptr_t>(native_handle);
     }
 
+    u64 GetTid() {
+        return tid;
+    }
+
 private:
-#if _WIN64
+#ifdef _WIN64
     void* native_handle;
 #else
     uintptr_t native_handle;
 #endif
+    u64 tid;
 };
 
 } // namespace Core
