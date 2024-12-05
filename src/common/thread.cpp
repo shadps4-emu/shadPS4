@@ -147,6 +147,10 @@ void SetCurrentThreadName(const char* name) {
     SetThreadDescription(GetCurrentThread(), UTF8ToUTF16W(name).data());
 }
 
+void SetThreadName(void* thread, const char* name) {
+    SetThreadDescription(thread, UTF8ToUTF16W(name).data());
+}
+
 #else // !MSVC_VER, so must be POSIX threads
 
 // MinGW with the POSIX threading model does not support pthread_setname_np
@@ -170,11 +174,19 @@ void SetCurrentThreadName(const char* name) {
     pthread_setname_np(pthread_self(), name);
 #endif
 }
+
+void SetThreadName(void* thread, const char* name) {
+    // TODO
+}
 #endif
 
 #if defined(_WIN32)
 void SetCurrentThreadName(const char*) {
-    // Do Nothing on MingW
+    // Do Nothing on MinGW
+}
+
+void SetThreadName(void* thread, const char* name) {
+    // Do Nothing on MinGW
 }
 #endif
 
