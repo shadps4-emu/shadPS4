@@ -63,7 +63,7 @@ SPDX-FileCopyrightText = "2019-2024 Baldur Karlsson"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = "externals/stb_image.h"
+path = "externals/stb/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2017 Sean Barrett"
 SPDX-License-Identifier = "MIT"
