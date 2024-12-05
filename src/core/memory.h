@@ -20,6 +20,10 @@ namespace Libraries::Kernel {
 struct OrbisQueryInfo;
 }
 
+namespace Core::Devtools::Widget {
+class MemoryMapViewer;
+}
+
 namespace Core {
 
 enum class MemoryProt : u32 {
@@ -257,6 +261,8 @@ private:
     size_t total_flexible_size{};
     size_t flexible_usage{};
     Vulkan::Rasterizer* rasterizer{};
+
+    friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };
 
 using Memory = Common::Singleton<MemoryManager>;

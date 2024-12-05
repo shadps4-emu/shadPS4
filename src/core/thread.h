@@ -5,6 +5,10 @@
 
 #include "common/types.h"
 
+namespace Libraries::Kernel {
+struct PthreadAttr;
+} // namespace Libraries::Kernel
+
 namespace Core {
 
 class Thread {
@@ -15,7 +19,7 @@ public:
     Thread();
     ~Thread();
 
-    int Create(ThreadFunc func, void* arg);
+    int Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr);
     void Exit();
 
     uintptr_t GetHandle() {

@@ -629,9 +629,9 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 
 void Presenter::Present(Frame* frame) {
     // Recreate the swapchain if the window was resized.
-    if (window.getWidth() != swapchain.GetExtent().width ||
-        window.getHeight() != swapchain.GetExtent().height) {
-        swapchain.Recreate(window.getWidth(), window.getHeight());
+    if (window.GetWidth() != swapchain.GetExtent().width ||
+        window.GetHeight() != swapchain.GetExtent().height) {
+        swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
     ImGui::Core::NewFrame();
@@ -776,8 +776,8 @@ Frame* Presenter::GetRenderFrame() {
     device.resetFences(frame->present_done);
 
     // If the window dimensions changed, recreate this frame
-    if (frame->width != window.getWidth() || frame->height != window.getHeight()) {
-        RecreateFrame(frame, window.getWidth(), window.getHeight());
+    if (frame->width != window.GetWidth() || frame->height != window.GetHeight()) {
+        RecreateFrame(frame, window.GetWidth(), window.GetHeight());
     }
 
     return frame;

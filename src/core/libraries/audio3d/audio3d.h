@@ -15,56 +15,57 @@ namespace Libraries::Audio3d {
 
 class Audio3d;
 
-typedef int OrbisUserServiceUserId;
-typedef unsigned int OrbisAudio3dPortId;
-typedef unsigned int OrbisAudio3dObjectId;
-typedef unsigned int OrbisAudio3dAttributeId;
+using OrbisUserServiceUserId = s32;
+using OrbisAudio3dPortId = u32;
+using OrbisAudio3dObjectId = u32;
+using OrbisAudio3dAttributeId = u32;
 
-enum OrbisAudio3dFormat {
-    ORBIS_AUDIO3D_FORMAT_S16 = 0,  // s16
-    ORBIS_AUDIO3D_FORMAT_FLOAT = 1 // f32
+enum class OrbisAudio3dFormat {
+    S16 = 0,
+    Float = 1,
 };
 
-enum OrbisAudio3dRate { ORBIS_AUDIO3D_RATE_48000 = 0 };
-
-enum OrbisAudio3dBufferMode {
-    ORBIS_AUDIO3D_BUFFER_NO_ADVANCE = 0,
-    ORBIS_AUDIO3D_BUFFER_ADVANCE_NO_PUSH = 1,
-    ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH = 2
+enum class OrbisAudio3dRate {
+    Rate48000 = 0,
 };
 
-enum OrbisAudio3dBlocking { ORBIS_AUDIO3D_BLOCKING_ASYNC = 0, ORBIS_AUDIO3D_BLOCKING_SYNC = 1 };
+enum class OrbisAudio3dBufferMode { NoAdvance = 0, AdvanceNoPush = 1, AdvanceAndPush = 2 };
 
-enum OrbisAudio3dPassthrough {
-    ORBIS_AUDIO3D_PASSTHROUGH_NONE = 0,
-    ORBIS_AUDIO3D_PASSTHROUGH_LEFT = 1,
-    ORBIS_AUDIO3D_PASSTHROUGH_RIGHT = 2
+enum class OrbisAudio3dBlocking {
+    Async = 0,
+    Sync = 1,
 };
 
-enum OrbisAudio3dOutputRoute {
-    ORBIS_AUDIO3D_OUTPUT_BOTH = 0,
-    ORBIS_AUDIO3D_OUTPUT_HMU_ONLY = 1,
-    ORBIS_AUDIO3D_OUTPUT_TV_ONLY = 2
+enum class OrbisAudio3dPassthrough {
+    None = 0,
+    Left = 1,
+    Right = 2,
 };
 
-enum OrbisAudio3dAmbisonics {
-    ORBIS_AUDIO3D_AMBISONICS_NONE = ~0,
-    ORBIS_AUDIO3D_AMBISONICS_W = 0,
-    ORBIS_AUDIO3D_AMBISONICS_X = 1,
-    ORBIS_AUDIO3D_AMBISONICS_Y = 2,
-    ORBIS_AUDIO3D_AMBISONICS_Z = 3,
-    ORBIS_AUDIO3D_AMBISONICS_R = 4,
-    ORBIS_AUDIO3D_AMBISONICS_S = 5,
-    ORBIS_AUDIO3D_AMBISONICS_T = 6,
-    ORBIS_AUDIO3D_AMBISONICS_U = 7,
-    ORBIS_AUDIO3D_AMBISONICS_V = 8,
-    ORBIS_AUDIO3D_AMBISONICS_K = 9,
-    ORBIS_AUDIO3D_AMBISONICS_L = 10,
-    ORBIS_AUDIO3D_AMBISONICS_M = 11,
-    ORBIS_AUDIO3D_AMBISONICS_N = 12,
-    ORBIS_AUDIO3D_AMBISONICS_O = 13,
-    ORBIS_AUDIO3D_AMBISONICS_P = 14,
-    ORBIS_AUDIO3D_AMBISONICS_Q = 15
+enum class OrbisAudio3dOutputRoute {
+    Both = 0,
+    HmuOnly = 1,
+    TvOnly = 2,
+};
+
+enum class OrbisAudio3dAmbisonics : u32 {
+    None = ~0U,
+    W = 0,
+    X = 1,
+    Y = 2,
+    Z = 3,
+    R = 4,
+    S = 5,
+    T = 6,
+    U = 7,
+    V = 8,
+    K = 9,
+    L = 10,
+    M = 11,
+    N = 12,
+    O = 13,
+    P = 14,
+    Q = 15
 };
 
 static const OrbisAudio3dAttributeId s_sceAudio3dAttributePcm = 0x00000001;
@@ -86,21 +87,21 @@ struct OrbisAudio3dSpeakerArray;
 using OrbisAudio3dSpeakerArrayHandle = OrbisAudio3dSpeakerArray*; // head
 
 struct OrbisAudio3dOpenParameters {
-    size_t szSizeThis;
-    unsigned int uiGranularity;
-    OrbisAudio3dRate eRate;
-    unsigned int uiMaxObjects;
-    unsigned int uiQueueDepth;
-    OrbisAudio3dBufferMode eBufferMode;
+    size_t size_this;
+    u32 granularity;
+    OrbisAudio3dRate rate;
+    u32 max_objects;
+    u32 queue_depth;
+    OrbisAudio3dBufferMode buffer_mode;
     char padding[32];
-    unsigned int uiNumBeds;
+    u32 num_beds;
 };
 
 struct OrbisAudio3dAttribute {
-    OrbisAudio3dAttributeId uiAttributeId;
+    OrbisAudio3dAttributeId attribute_id;
     char padding[32];
-    const void* pValue;
-    size_t szValue;
+    const void* p_value;
+    size_t value;
 };
 
 struct OrbisAudio3dPosition {
@@ -110,22 +111,22 @@ struct OrbisAudio3dPosition {
 };
 
 struct OrbisAudio3dPcm {
-    OrbisAudio3dFormat eFormat;
-    const void* pSampleBuffer;
-    unsigned int uiNumSamples;
+    OrbisAudio3dFormat format;
+    const void* sample_buffer;
+    u32 num_samples;
 };
 
 struct OrbisAudio3dSpeakerArrayParameters {
-    OrbisAudio3dPosition* pSpeakerPosition;
-    unsigned int uiNumSpeakers;
-    bool bIs3d;
-    void* pBuffer;
-    size_t szSize;
+    OrbisAudio3dPosition* speaker_position;
+    u32 num_speakers;
+    bool is_3d;
+    void* buffer;
+    size_t size;
 };
 
 struct OrbisAudio3dApplicationSpecific {
-    size_t szSizeThis;
-    u8 cApplicationSpecific[32];
+    size_t size_this;
+    u8 application_specific[32];
 };
 
 void PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* sParameters);

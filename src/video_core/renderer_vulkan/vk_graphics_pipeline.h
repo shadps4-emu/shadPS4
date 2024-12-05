@@ -4,6 +4,7 @@
 #include <xxhash.h>
 
 #include "common/types.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
@@ -59,8 +60,13 @@ public:
     GraphicsPipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
                      const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
                      std::span<const Shader::Info*, MaxShaderStages> stages,
+                     std::optional<const Shader::Gcn::FetchShaderData> fetch_shader,
                      std::span<const vk::ShaderModule> modules);
     ~GraphicsPipeline();
+
+    const std::optional<const Shader::Gcn::FetchShaderData>& GetFetchShader() const noexcept {
+        return fetch_shader;
+    }
 
     bool IsEmbeddedVs() const noexcept {
         static constexpr size_t EmbeddedVsHash = 0x9b2da5cf47f8c29f;
@@ -94,6 +100,7 @@ private:
 
 private:
     GraphicsPipelineKey key;
+    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader{};
 };
 
 } // namespace Vulkan

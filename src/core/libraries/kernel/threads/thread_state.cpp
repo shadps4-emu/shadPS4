@@ -4,7 +4,7 @@
 #include <boost/container/small_vector.hpp>
 #include "common/alignment.h"
 #include "common/scope_exit.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/kernel/threads/thread_state.h"

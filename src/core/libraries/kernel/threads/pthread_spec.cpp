@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 
@@ -150,6 +149,7 @@ void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
 
     // Orbis
     LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_create));
+    LIB_FUNCTION("PrdHuuDekhY", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_delete));
     LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
     LIB_FUNCTION("+BzXYkqYeLE", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_setspecific));

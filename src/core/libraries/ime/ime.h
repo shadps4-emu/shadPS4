@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
-
-#include "ime_common.h"
+#include "core/libraries/ime/ime_common.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -16,15 +16,33 @@ namespace Libraries::Ime {
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 
 enum class OrbisImeKeyboardOption : u32 {
-    DEFAULT = 0,
-    REPEAT = 1,
-    REPEAT_EACH_KEY = 2,
-    ADD_OSK = 4,
-    EFFECTIVE_WITH_TIME = 8,
-    DISABLE_RESUME = 16,
-    DISABLE_CAPSLOCK_WITHOUT_SHIFT = 32,
+    Default = 0,
+    Repeat = 1,
+    RepeatEachKey = 2,
+    AddOsk = 4,
+    EffectiveWithTime = 8,
+    DisableResume = 16,
+    DisableCapslockWithoutShift = 32,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
+
+enum class OrbisImeOption : u32 {
+    DEFAULT = 0,
+    MULTILINE = 1,
+    NO_AUTO_CAPITALIZATION = 2,
+    PASSWORD = 4,
+    LANGUAGES_FORCED = 8,
+    EXT_KEYBOARD = 16,
+    NO_LEARNING = 32,
+    FIXED_POSITION = 64,
+    DISABLE_RESUME = 256,
+    DISABLE_AUTO_SPACE = 512,
+    DISABLE_POSITION_ADJUSTMENT = 2048,
+    EXPANDED_PREEDIT_BUFFER = 4096,
+    USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
+    USE_2K_COORDINATES = 16384,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption)
 
 struct OrbisImeKeyboardParam {
     OrbisImeKeyboardOption option;
@@ -35,19 +53,19 @@ struct OrbisImeKeyboardParam {
 };
 
 struct OrbisImeParam {
-    s32 userId;
+    s32 user_id;
     OrbisImeType type;
-    u64 supportedLanguages;
-    OrbisImeEnterLabel enterLabel;
-    OrbisImeInputMethod inputMethod;
+    u64 supported_languages;
+    OrbisImeEnterLabel enter_label;
+    OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
-    u32 option;
+    OrbisImeOption option;
     u32 maxTextLength;
     char16_t* inputTextBuffer;
     float posx;
     float posy;
-    OrbisImeHorizontalAlignment horizontalAlignment;
-    OrbisImeVerticalAlignment verticalAlignment;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
     void* work;
     void* arg;
     OrbisImeEventHandler handler;
@@ -93,7 +111,7 @@ int PS4_SYSV_ABI sceImeOpenInternal();
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param);
 int PS4_SYSV_ABI sceImeSetCandidateIndex();
 s32 PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret);
-int PS4_SYSV_ABI sceImeSetText();
+s32 PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length);
 int PS4_SYSV_ABI sceImeSetTextGeometry();
 s32 PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler);
 int PS4_SYSV_ABI sceImeVshClearPreedit();
@@ -117,4 +135,5 @@ int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
 void RegisterlibSceIme(Core::Loader::SymbolsResolver* sym);
+
 } // namespace Libraries::Ime

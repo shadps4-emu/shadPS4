@@ -3,9 +3,9 @@
 
 #include "common/logging/log.h"
 #include "common/thread.h"
+#include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/avplayer/avplayer_state.h"
-#include "core/libraries/error_codes.h"
 #include "core/tls.h"
 
 #include <magic_enum.hpp>
@@ -16,7 +16,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
                                                        s32 source_id, void* event_data) {
     auto const self = reinterpret_cast<AvPlayerState*>(opaque);
 
-    if (event_id == SCE_AVPLAYER_STATE_READY) {
+    if (event_id == SceAvPlayerEvents::StateReady) {
         s32 video_stream_index = -1;
         s32 audio_stream_index = -1;
         s32 timedtext_stream_index = -1;
@@ -36,35 +36,36 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
                 return;
             }
 
-            const std::string_view default_language(
-                reinterpret_cast<char*>(self->m_default_language));
+            const std::string_view default_language{self->m_default_language};
             switch (info.type) {
-            case SCE_AVPLAYER_VIDEO:
+            case SceAvPlayerStreamType::Video:
                 if (video_stream_index == -1) {
                     video_stream_index = stream_index;
                 }
                 if (!default_language.empty() &&
-                    default_language == reinterpret_cast<char*>(info.details.video.language_code)) {
+                    default_language == info.details.video.language_code) {
                     video_stream_index = stream_index;
                 }
                 break;
-            case SCE_AVPLAYER_AUDIO:
+            case SceAvPlayerStreamType::Audio:
                 if (audio_stream_index == -1) {
                     audio_stream_index = stream_index;
                 }
                 if (!default_language.empty() &&
-                    default_language == reinterpret_cast<char*>(info.details.video.language_code)) {
+                    default_language == info.details.video.language_code) {
                     audio_stream_index = stream_index;
                 }
                 break;
-            case SCE_AVPLAYER_TIMEDTEXT:
+            case SceAvPlayerStreamType::TimedText:
                 if (default_language.empty()) {
                     timedtext_stream_index = stream_index;
                     break;
                 }
-                if (default_language == reinterpret_cast<char*>(info.details.video.language_code)) {
+                if (default_language == info.details.video.language_code) {
                     timedtext_stream_index = stream_index;
                 }
+                break;
+            default:
                 break;
             }
         }
@@ -141,7 +142,7 @@ bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType sourc
 
         m_up_source = std::make_unique<AvPlayerSource>(
             *this, m_post_init_data.video_decoder_init.decoderType.video_type ==
-                       SCE_AVPLAYER_VIDEO_DECODER_TYPE_SOFTWARE2);
+                       SceAvPlayerVideoDecoderType::Software2);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -317,23 +318,23 @@ void AvPlayerState::OnEOF() {
 void AvPlayerState::OnPlaybackStateChanged(AvState state) {
     switch (state) {
     case AvState::Ready: {
-        EmitEvent(SCE_AVPLAYER_STATE_READY);
+        EmitEvent(SceAvPlayerEvents::StateReady);
         break;
     }
     case AvState::Play: {
-        EmitEvent(SCE_AVPLAYER_STATE_PLAY);
+        EmitEvent(SceAvPlayerEvents::StatePlay);
         break;
     }
     case AvState::Stop: {
-        EmitEvent(SCE_AVPLAYER_STATE_STOP);
+        EmitEvent(SceAvPlayerEvents::StateStop);
         break;
     }
     case AvState::Pause: {
-        EmitEvent(SCE_AVPLAYER_STATE_PAUSE);
+        EmitEvent(SceAvPlayerEvents::StatePause);
         break;
     }
     case AvState::Buffering: {
-        EmitEvent(SCE_AVPLAYER_STATE_BUFFERING);
+        EmitEvent(SceAvPlayerEvents::StateBuffering);
         break;
     }
     default:

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -18,18 +19,18 @@ constexpr int ORBIS_PAD_PORT_TYPE_STANDARD = 0;
 constexpr int ORBIS_PAD_PORT_TYPE_SPECIAL = 2;
 constexpr int ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL = 16;
 
-enum OrbisPadDeviceClass {
-    ORBIS_PAD_DEVICE_CLASS_INVALID = -1,
-    ORBIS_PAD_DEVICE_CLASS_STANDARD = 0,
-    ORBIS_PAD_DEVICE_CLASS_GUITAR = 1,
-    ORBIS_PAD_DEVICE_CLASS_DRUM = 2,
-    ORBIS_PAD_DEVICE_CLASS_DJ_TURNTABLE = 3,
-    ORBIS_PAD_DEVICE_CLASS_DANCEMAT = 4,
-    ORBIS_PAD_DEVICE_CLASS_NAVIGATION = 5,
-    ORBIS_PAD_DEVICE_CLASS_STEERING_WHEEL = 6,
-    ORBIS_PAD_DEVICE_CLASS_STICK = 7,
-    ORBIS_PAD_DEVICE_CLASS_FLIGHT_STICK = 8,
-    ORBIS_PAD_DEVICE_CLASS_GUN = 9,
+enum class OrbisPadDeviceClass {
+    Invalid = -1,
+    Standard = 0,
+    Guitar = 1,
+    Drum = 2,
+    DjTurntable = 3,
+    Dancemat = 4,
+    Navigation = 5,
+    SteeringWheel = 6,
+    Stick = 7,
+    FightStick = 8,
+    Gun = 9,
 };
 
 struct OrbisPadDeviceClassExtendedInformation {
@@ -123,25 +124,27 @@ struct OrbisPadAnalogStick {
     u8 y;
 };
 
-enum OrbisPadButtonDataOffset {
-    ORBIS_PAD_BUTTON_L3 = 0x00000002,
-    ORBIS_PAD_BUTTON_R3 = 0x00000004,
-    ORBIS_PAD_BUTTON_OPTIONS = 0x00000008,
-    ORBIS_PAD_BUTTON_UP = 0x00000010,
-    ORBIS_PAD_BUTTON_RIGHT = 0x00000020,
-    ORBIS_PAD_BUTTON_DOWN = 0x00000040,
-    ORBIS_PAD_BUTTON_LEFT = 0x00000080,
-    ORBIS_PAD_BUTTON_L2 = 0x00000100,
-    ORBIS_PAD_BUTTON_R2 = 0x00000200,
-    ORBIS_PAD_BUTTON_L1 = 0x00000400,
-    ORBIS_PAD_BUTTON_R1 = 0x00000800,
-    ORBIS_PAD_BUTTON_TRIANGLE = 0x00001000,
-    ORBIS_PAD_BUTTON_CIRCLE = 0x00002000,
-    ORBIS_PAD_BUTTON_CROSS = 0x00004000,
-    ORBIS_PAD_BUTTON_SQUARE = 0x00008000,
-    ORBIS_PAD_BUTTON_TOUCH_PAD = 0x00100000,
-    ORBIS_PAD_BUTTON_INTERCEPTED = 0x80000000,
+enum class OrbisPadButtonDataOffset : u32 {
+    None = 0,
+    L3 = 0x2,
+    R3 = 0x4,
+    Options = 0x8,
+    Up = 0x10,
+    Right = 0x20,
+    Down = 0x40,
+    Left = 0x80,
+    L2 = 0x100,
+    R2 = 0x200,
+    L1 = 0x400,
+    R1 = 0x800,
+    Triangle = 0x1000,
+    Circle = 0x2000,
+    Cross = 0x4000,
+    Square = 0x8000,
+    TouchPad = 0x100000,
+    Intercepted = 0x80000000,
 };
+DECLARE_ENUM_FLAG_OPERATORS(OrbisPadButtonDataOffset)
 
 struct OrbisFQuaternion {
     float x, y, z, w;
@@ -173,7 +176,7 @@ struct OrbisPadExtensionUnitData {
 };
 
 struct OrbisPadData {
-    u32 buttons;
+    OrbisPadButtonDataOffset buttons;
     OrbisPadAnalogStick leftStick;
     OrbisPadAnalogStick rightStick;
     OrbisPadAnalogButtons analogButtons;

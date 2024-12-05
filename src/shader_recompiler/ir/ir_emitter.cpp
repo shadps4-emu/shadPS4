@@ -326,6 +326,18 @@ U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_sig
                      : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
 }
 
+U32 IREmitter::SharedAtomicAnd(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicAnd32, address, data);
+}
+
+U32 IREmitter::SharedAtomicOr(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
+}
+
+U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
+}
+
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }

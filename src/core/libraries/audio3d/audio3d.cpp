@@ -1,18 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "audio3d.h"
-#include "audio3d_error.h"
-#include "audio3d_impl.h"
-
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/audio3d/audio3d.h"
+#include "core/libraries/audio3d/audio3d_error.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Audio3d {
-
-// Audio3d
 
 int PS4_SYSV_ABI sceAudio3dInitialize(s64 iReserved) {
     LOG_INFO(Lib_Audio3d, "iReserved = {}", iReserved);
@@ -25,18 +21,19 @@ int PS4_SYSV_ABI sceAudio3dTerminate() {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* sParameters) {
-    if (sParameters != NULL) {
-        sParameters->szSizeThis = sizeof(OrbisAudio3dOpenParameters);
-        sParameters->uiGranularity = 256;
-        sParameters->eRate = ORBIS_AUDIO3D_RATE_48000;
-        sParameters->uiMaxObjects = 512;
-        sParameters->uiQueueDepth = 2;
-        sParameters->eBufferMode = ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH;
-        sParameters->uiNumBeds = 2;
-    } else {
+void PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* parameters) {
+    if (parameters == nullptr) {
         LOG_ERROR(Lib_Audio3d, "Invalid OpenParameters ptr");
+        return;
     }
+
+    parameters->size_this = sizeof(OrbisAudio3dOpenParameters);
+    parameters->granularity = 256;
+    parameters->rate = OrbisAudio3dRate::Rate48000;
+    parameters->max_objects = 512;
+    parameters->queue_depth = 2;
+    parameters->buffer_mode = OrbisAudio3dBufferMode::AdvanceAndPush;
+    parameters->num_beds = 2;
 }
 
 int PS4_SYSV_ABI sceAudio3dPortOpen(OrbisUserServiceUserId iUserId,
@@ -76,13 +73,13 @@ int PS4_SYSV_ABI sceAudio3dPortPush(OrbisAudio3dPortId uiPortId, OrbisAudio3dBlo
 
 int PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId uiPortId,
                                                       OrbisAudio3dAttributeId* pCapabilities,
-                                                      unsigned int* pNumCapabilities) {
+                                                      u32* pNumCapabilities) {
     LOG_INFO(Lib_Audio3d, "uiPortId = {}", uiPortId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(OrbisAudio3dPortId uiPortId, unsigned int* pQueueLevel,
-                                             unsigned int* pQueueAvailable) {
+int PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(OrbisAudio3dPortId uiPortId, u32* pQueueLevel,
+                                             u32* pQueueAvailable) {
     LOG_INFO(Lib_Audio3d, "uiPortId = {}", uiPortId);
     return ORBIS_OK;
 }
@@ -107,24 +104,24 @@ int PS4_SYSV_ABI sceAudio3dObjectSetAttributes(OrbisAudio3dPortId uiPortId,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId uiPortId, unsigned int uiNumChannels,
+int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId uiPortId, u32 uiNumChannels,
                                     OrbisAudio3dFormat eFormat, const void* pBuffer,
-                                    unsigned int uiNumSamples) {
+                                    u32 uiNumSamples) {
     LOG_TRACE(Lib_Audio3d, "uiPortId = {}, uiNumChannels = {}, uiNumSamples = {}", uiPortId,
               uiNumChannels, uiNumSamples);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dBedWrite2(OrbisAudio3dPortId uiPortId, unsigned int uiNumChannels,
+int PS4_SYSV_ABI sceAudio3dBedWrite2(OrbisAudio3dPortId uiPortId, u32 uiNumChannels,
                                      OrbisAudio3dFormat eFormat, const void* pBuffer,
-                                     unsigned int uiNumSamples,
-                                     OrbisAudio3dOutputRoute eOutputRoute, bool bRestricted) {
+                                     u32 uiNumSamples, OrbisAudio3dOutputRoute eOutputRoute,
+                                     bool bRestricted) {
     LOG_INFO(Lib_Audio3d, "uiPortId = {}, uiNumChannels = {}, uiNumSamples = {}, bRestricted = {}",
              uiPortId, uiNumChannels, uiNumSamples, bRestricted);
     return ORBIS_OK;
 }
 
-size_t PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize(unsigned int uiNumSpeakers, bool bIs3d) {
+size_t PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize(u32 uiNumSpeakers, bool bIs3d) {
     LOG_INFO(Lib_Audio3d, "uiNumSpeakers = {}, bIs3d = {}", uiNumSpeakers, bIs3d);
     return ORBIS_OK;
 }
@@ -152,7 +149,7 @@ int PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray(OrbisAudio3dSpeakerArrayHandle han
 int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients(OrbisAudio3dSpeakerArrayHandle handle,
                                                           OrbisAudio3dPosition pos, float fSpread,
                                                           float* pCoefficients,
-                                                          unsigned int uiNumCoefficients) {
+                                                          u32 uiNumCoefficients) {
     LOG_INFO(Lib_Audio3d, "fSpread = {}, uiNumCoefficients = {}", fSpread, uiNumCoefficients);
     if (handle == nullptr) {
         LOG_ERROR(Lib_Audio3d, "invalid SpeakerArrayHandle");
@@ -164,8 +161,7 @@ int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients(OrbisAudio3dSpeakerArr
 int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients2(OrbisAudio3dSpeakerArrayHandle handle,
                                                            OrbisAudio3dPosition pos, float fSpread,
                                                            float* pCoefficients,
-                                                           unsigned int uiNumCoefficients,
-                                                           bool bHeightAware,
+                                                           u32 uiNumCoefficients, bool bHeightAware,
                                                            float fDownmixSpreadRadius) {
     LOG_INFO(Lib_Audio3d,
              "fSpread = {}, uiNumCoefficients = {}, bHeightAware = {}, fDownmixSpreadRadius = {}",
@@ -209,8 +205,8 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutputs(::Libraries::AudioOut::OrbisAudioOutO
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortCreate(unsigned int uiGranularity, OrbisAudio3dRate eRate,
-                                      s64 iReserved, OrbisAudio3dPortId* pId) {
+int PS4_SYSV_ABI sceAudio3dPortCreate(u32 uiGranularity, OrbisAudio3dRate eRate, s64 iReserved,
+                                      OrbisAudio3dPortId* pId) {
     LOG_INFO(Lib_Audio3d, "uiGranularity = {}, iReserved = {}", uiGranularity, iReserved);
     return ORBIS_OK;
 }

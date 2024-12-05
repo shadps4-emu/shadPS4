@@ -304,6 +304,10 @@ struct Image {
         const auto viewed_slice = last_array - base_array + 1;
         return GetType() == ImageType::Cube && viewed_slice < 6;
     }
+
+    ImageType GetBoundType() const noexcept {
+        return IsPartialCubemap() ? ImageType::Color2DArray : GetType();
+    }
 };
 static_assert(sizeof(Image) == 32); // 256bits
 

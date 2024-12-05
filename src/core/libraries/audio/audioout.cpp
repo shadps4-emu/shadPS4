@@ -4,30 +4,30 @@
 #include <memory>
 #include <magic_enum.hpp>
 
-#include "audio_core/sdl_audio.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
-#include "core/libraries/error_codes.h"
+#include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/audio/sdl_audio.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioOut {
 
-static std::unique_ptr<Audio::SDLAudio> audio;
+static std::unique_ptr<SDLAudioOut> audio;
 
-static std::string_view GetAudioOutPort(u32 port) {
+static std::string_view GetAudioOutPort(OrbisAudioOutPort port) {
     switch (port) {
-    case ORBIS_AUDIO_OUT_PORT_TYPE_MAIN:
+    case OrbisAudioOutPort::Main:
         return "MAIN";
-    case ORBIS_AUDIO_OUT_PORT_TYPE_BGM:
+    case OrbisAudioOutPort::Bgm:
         return "BGM";
-    case ORBIS_AUDIO_OUT_PORT_TYPE_VOICE:
+    case OrbisAudioOutPort::Voice:
         return "VOICE";
-    case ORBIS_AUDIO_OUT_PORT_TYPE_PERSONAL:
+    case OrbisAudioOutPort::Personal:
         return "PERSONAL";
-    case ORBIS_AUDIO_OUT_PORT_TYPE_PADSPK:
+    case OrbisAudioOutPort::Padspk:
         return "PADSPK";
-    case ORBIS_AUDIO_OUT_PORT_TYPE_AUX:
+    case OrbisAudioOutPort::Aux:
         return "AUX";
     default:
         return "INVALID";
@@ -36,21 +36,21 @@ static std::string_view GetAudioOutPort(u32 port) {
 
 static std::string_view GetAudioOutParamFormat(OrbisAudioOutParamFormat param) {
     switch (param) {
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
+    case OrbisAudioOutParamFormat::S16Mono:
         return "S16_MONO";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
+    case OrbisAudioOutParamFormat::S16Stereo:
         return "S16_STEREO";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
+    case OrbisAudioOutParamFormat::S16_8CH:
         return "S16_8CH";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
+    case OrbisAudioOutParamFormat::FloatMono:
         return "FLOAT_MONO";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
+    case OrbisAudioOutParamFormat::FloatStereo:
         return "FLOAT_STEREO";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
+    case OrbisAudioOutParamFormat::Float_8CH:
         return "FLOAT_8CH";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
+    case OrbisAudioOutParamFormat::S16_8CH_Std:
         return "S16_8CH_STD";
-    case ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
+    case OrbisAudioOutParamFormat::Float_8CH_Std:
         return "FLOAT_8CH_STD";
     default:
         return "INVALID";
@@ -59,11 +59,11 @@ static std::string_view GetAudioOutParamFormat(OrbisAudioOutParamFormat param) {
 
 static std::string_view GetAudioOutParamAttr(OrbisAudioOutParamAttr attr) {
     switch (attr) {
-    case ORBIS_AUDIO_OUT_PARAM_ATTR_NONE:
+    case OrbisAudioOutParamAttr::None:
         return "NONE";
-    case ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED:
+    case OrbisAudioOutParamAttr::Restricted:
         return "RESTRICTED";
-    case ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN:
+    case OrbisAudioOutParamAttr::MixToMain:
         return "MIX_TO_MAIN";
     default:
         return "INVALID";
@@ -180,29 +180,23 @@ int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
-    int type = 0;
-    int channels_num = 0;
-
-    if (const auto err = audio->AudioOutGetStatus(handle, &type, &channels_num); err != ORBIS_OK) {
-        return err;
-    }
-
+    const auto [type, channels_num] = audio->GetStatus(handle);
     state->rerouteCounter = 0;
-    state->volume = 127; // max volume
+    state->volume = 127;
 
     switch (type) {
-    case ORBIS_AUDIO_OUT_PORT_TYPE_MAIN:
-    case ORBIS_AUDIO_OUT_PORT_TYPE_BGM:
-    case ORBIS_AUDIO_OUT_PORT_TYPE_VOICE:
+    case OrbisAudioOutPort::Main:
+    case OrbisAudioOutPort::Bgm:
+    case OrbisAudioOutPort::Voice:
         state->output = 1;
         state->channel = (channels_num > 2 ? 2 : channels_num);
         break;
-    case ORBIS_AUDIO_OUT_PORT_TYPE_PERSONAL:
-    case ORBIS_AUDIO_OUT_PORT_TYPE_PADSPK:
+    case OrbisAudioOutPort::Personal:
+    case OrbisAudioOutPort::Padspk:
         state->output = 4;
         state->channel = 1;
         break;
-    case ORBIS_AUDIO_OUT_PORT_TYPE_AUX:
+    case OrbisAudioOutPort::Aux:
         state->output = 0;
         state->channel = 0;
         break;
@@ -243,7 +237,7 @@ int PS4_SYSV_ABI sceAudioOutInit() {
     if (audio != nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
-    audio = std::make_unique<Audio::SDLAudio>();
+    audio = std::make_unique<SDLAudioOut>();
     return ORBIS_OK;
 }
 
@@ -287,7 +281,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
              user_id, GetAudioOutPort(port_type), index, length, sample_rate,
              GetAudioOutParamFormat(param_type.data_format),
              GetAudioOutParamAttr(param_type.attributes));
-    if ((port_type < 0 || port_type > 4) && (port_type != 127)) {
+    if ((port_type < OrbisAudioOutPort::Main || port_type > OrbisAudioOutPort::Padspk) &&
+        (port_type != OrbisAudioOutPort::Aux)) {
         LOG_ERROR(Lib_AudioOut, "Invalid port type");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
@@ -303,18 +298,19 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     if (index != 0) {
         LOG_ERROR(Lib_AudioOut, "index is not valid !=0 {}", index);
     }
-    OrbisAudioOutParamFormat format = param_type.data_format;
-    if (format < 0 || format > 7) {
+    const auto format = param_type.data_format.Value();
+    if (format < OrbisAudioOutParamFormat::S16Mono ||
+        format > OrbisAudioOutParamFormat::Float_8CH_Std) {
         LOG_ERROR(Lib_AudioOut, "Invalid format");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
-    OrbisAudioOutParamAttr attr = param_type.attributes;
-    if (attr < 0 || attr > 2) {
+    const auto attr = param_type.attributes;
+    if (attr < OrbisAudioOutParamAttr::None || attr > OrbisAudioOutParamAttr::MixToMain) {
         // TODO Handle attributes in output audio device
         LOG_ERROR(Lib_AudioOut, "Invalid format attribute");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
-    return audio->AudioOutOpen(port_type, length, sample_rate, format);
+    return audio->Open(port_type, length, sample_rate, format);
 }
 
 int PS4_SYSV_ABI sceAudioOutOpenEx() {
@@ -330,7 +326,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
         // Nothing to output
         return ORBIS_OK;
     }
-    return audio->AudioOutOutput(handle, ptr);
+    return audio->Output(handle, ptr);
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
@@ -435,7 +431,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
-    return audio->AudioOutSetVolume(handle, flag, vol);
+    return audio->SetVolume(handle, flag, vol);
 }
 
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown() {
