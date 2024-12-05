@@ -328,7 +328,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     }
 
     // Map the file.
-    impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
+    impl.MapFile(mapped_addr, size_aligned, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
     auto& new_vma = CarveVMA(mapped_addr, size_aligned)->second;
@@ -512,9 +512,8 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_stack.Assign(vma.type == VMAType::Stack);
-    info->is_pooled.Assign(vma.type == VMAType::Pooled);
-    info->is_committed.Assign(vma.type != VMAType::Free && vma.type != VMAType::Reserved &&
-                              vma.type != VMAType::PoolReserved);
+    info->is_pooled.Assign(vma.type == VMAType::PoolReserved);
+    info->is_committed.Assign(vma.type == VMAType::Pooled);
     vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
@@ -585,6 +584,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
                "Range provided is not fully contained in vma");
     it->second.name = name;
 }
+
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
     // If the requested address is below the mapped range, start search from the lowest address
     auto min_search_address = impl.SystemManagedVirtualBase();
@@ -691,7 +691,7 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, size_t of
     new_area.size -= offset_in_area;
 
     return dmem_map.emplace_hint(std::next(dmem_handle), new_area.base, new_area);
-};
+}
 
 int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {
