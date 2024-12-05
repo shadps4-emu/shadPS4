@@ -8,8 +8,7 @@
 #include "game_list_utils.h"
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, std::shared_ptr<CompatibilityInfoClass> compat_info_get, QWidget* parent)
-    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get),
-      networkManager(new QNetworkAccessManager(this)) {
+    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
     icon_size = Config::getIconSize();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
