@@ -171,54 +171,38 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
+Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
+    if (IR::IsPosition(attr)) {
+        ASSERT(attr == IR::Attribute::Position0);
+        const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
+        const auto pointer{
+            ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, ctx.ConstU32(index), ctx.ConstU32(0u))};
+        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+    }
+
+    if (IR::IsParam(attr)) {
+        const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto param = ctx.input_params.at(param_id).id;
+        const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
+        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, ctx.ConstU32(index))};
+        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+    }
+    UNREACHABLE();
+}
+
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (ctx.info.stage == Stage::Geometry) {
-        if (IR::IsPosition(attr)) {
-            ASSERT(attr == IR::Attribute::Position0);
-            const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-            const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, ctx.ConstU32(index),
-                                                 ctx.ConstU32(0u))};
-            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
-        }
-
-        if (IR::IsParam(attr)) {
-            const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto param = ctx.input_params.at(param_id).id;
-            const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-            const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, ctx.ConstU32(index))};
-            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
-        }
-        UNREACHABLE();
+        return EmitGetAttributeForGeometry(ctx, attr, comp, index);
     }
 
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(index)};
-        if (param.buffer_handle < 0) {
-            if (!ValidId(param.id)) {
-                // Attribute is disabled or varying component is not written
-                return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
-            }
-
-            Id result;
-            if (param.is_default) {
-                result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
-            } else if (param.num_components > 1) {
-                const Id pointer{
-                    ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
-                result = ctx.OpLoad(param.component_type, pointer);
-            } else {
-                result = ctx.OpLoad(param.component_type, param.id);
-            }
-            if (param.is_integer) {
-                result = ctx.OpBitcast(ctx.F32[1], result);
-            }
-            return result;
-        } else {
+        if (param.buffer_handle >= 0) {
             const auto step_rate = EmitReadStepRate(ctx, param.id.value);
             const auto offset = ctx.OpIAdd(
                 ctx.U32[1],
@@ -229,7 +213,26 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
                 ctx.ConstU32(comp));
             return EmitReadConstBuffer(ctx, param.buffer_handle, offset);
         }
+
+        Id result;
+        if (param.is_loaded) {
+            // Attribute is either default or manually interpolated. The id points to an already
+            // loaded vector.
+            result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
+        } else if (param.num_components > 1) {
+            // Attribute is a vector and we need to access a specific component.
+            const Id pointer{ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
+            result = ctx.OpLoad(param.component_type, pointer);
+        } else {
+            // Attribute is a single float or interger, simply load it.
+            result = ctx.OpLoad(param.component_type, param.id);
+        }
+        if (param.is_integer) {
+            result = ctx.OpBitcast(ctx.F32[1], result);
+        }
+        return result;
     }
+
     switch (attr) {
     case IR::Attribute::FragCoord: {
         const Id coord = ctx.OpLoad(

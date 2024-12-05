@@ -20,8 +20,11 @@ struct Liverpool;
 }
 
 namespace Shader {
-struct Info;
+namespace Gcn {
+struct FetchShaderData;
 }
+struct Info;
+} // namespace Shader
 
 namespace VideoCore {
 
@@ -76,7 +79,8 @@ public:
     void InvalidateMemory(VAddr device_addr, u64 size);
 
     /// Binds host vertex buffers for the current draw.
-    bool BindVertexBuffers(const Shader::Info& vs_info);
+    bool BindVertexBuffers(const Shader::Info& vs_info,
+                           const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader);
 
     /// Bind host index buffer for the current draw.
     u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);

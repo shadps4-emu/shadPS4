@@ -187,13 +187,14 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 
     const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
-    buffer_cache.BindVertexBuffers(vs_info);
+    const auto& fetch_shader = pipeline->GetFetchShader();
+    buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
 
     BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
-    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets(regs);
+    const auto [vertex_offset, instance_offset] = fetch_shader->GetDrawOffsets(regs, vs_info);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
@@ -243,7 +244,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
-    buffer_cache.BindVertexBuffers(vs_info);
+    const auto& fetch_shader = pipeline->GetFetchShader();
+    buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     buffer_cache.BindIndexBuffer(is_indexed, 0);
 
     const auto& [buffer, base] =
@@ -397,10 +399,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         if (!stage) {
             continue;
         }
-        if (stage->uses_step_rates) {
-            push_data.step0 = regs.vgt_instance_step_rate_0;
-            push_data.step1 = regs.vgt_instance_step_rate_1;
-        }
+        push_data.step0 = regs.vgt_instance_step_rate_0;
+        push_data.step1 = regs.vgt_instance_step_rate_1;
         stage->PushUd(binding, push_data);
 
         BindBuffers(*stage, binding, push_data, set_writes, buffer_barriers);

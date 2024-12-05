@@ -281,7 +281,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
 
     /* Create thread */
     new_thread->native_thr = Core::Thread();
-    int ret = new_thread->native_thr.Create(RunThread, new_thread);
+    int ret = new_thread->native_thr.Create(RunThread, new_thread, &new_thread->attr);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;

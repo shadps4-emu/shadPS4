@@ -203,7 +203,7 @@ int PS4_SYSV_ABI _sigprocmask() {
 }
 
 int PS4_SYSV_ABI posix_getpagesize() {
-    return 4096;
+    return 16_KB;
 }
 
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {

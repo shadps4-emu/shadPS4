@@ -368,13 +368,11 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 
 void Translator::EmitFetch(const GcnInst& inst) {
     // Read the pointer to the fetch shader assembly.
-    const u32 sgpr_base = inst.src[0].code;
-    const u32* code;
-    std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
+    info.has_fetch_shader = true;
+    info.fetch_shader_sgpr_base = inst.src[0].code;
 
-    // Parse the assembly to generate a list of attributes.
-    u32 fetch_size{};
-    const auto fetch_data = ParseFetchShader(code, &fetch_size);
+    const auto fetch_data = ParseFetchShader(info);
+    ASSERT(fetch_data.has_value());
 
     if (Config::dumpShaders()) {
         using namespace Common::FS;
@@ -384,13 +382,10 @@ void Translator::EmitFetch(const GcnInst& inst) {
         }
         const auto filename = fmt::format("vs_{:#018x}.fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
-        file.WriteRaw<u8>(code, fetch_size);
+        file.WriteRaw<u8>(fetch_data->code, fetch_data->size);
     }
 
-    info.vertex_offset_sgpr = fetch_data.vertex_offset_sgpr;
-    info.instance_offset_sgpr = fetch_data.instance_offset_sgpr;
-
-    for (const auto& attrib : fetch_data.attributes) {
+    for (const auto& attrib : fetch_data->attributes) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
@@ -420,29 +415,14 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
         // In case of programmable step rates we need to fallback to instance data pulling in
         // shader, so VBs should be bound as regular data buffers
-        s32 instance_buf_handle = -1;
-        const auto step_rate = static_cast<Info::VsInput::InstanceIdType>(attrib.instance_data);
-        if (step_rate == Info::VsInput::OverStepRate0 ||
-            step_rate == Info::VsInput::OverStepRate1) {
+        if (attrib.UsesStepRates()) {
             info.buffers.push_back({
                 .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
                 .used_types = IR::Type::F32,
                 .is_instance_data = true,
+                .instance_attrib = attrib.semantic,
             });
-            instance_buf_handle = s32(info.buffers.size() - 1);
-            info.uses_step_rates = true;
         }
-
-        const u32 num_components = AmdGpu::NumComponents(buffer.GetDataFmt());
-        info.vs_inputs.push_back({
-            .fmt = buffer.GetNumberFmt(),
-            .binding = attrib.semantic,
-            .num_components = std::min<u16>(attrib.num_elements, num_components),
-            .sgpr_base = attrib.sgpr_base,
-            .dword_offset = attrib.dword_offset,
-            .instance_step_rate = step_rate,
-            .instance_data_buf = instance_buf_handle,
-        });
     }
 }
 
