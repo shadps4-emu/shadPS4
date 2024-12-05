@@ -142,9 +142,11 @@ void CFG::EmitDivergenceLabels() {
                     curr_begin = -1;
                     continue;
                 }
-                // If all instructions in the scope ignore exec masking, we shouldn't insert a scope.
+                // If all instructions in the scope ignore exec masking, we shouldn't insert a
+                // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
-                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask, &GcnInst::opcode)) {
+                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask,
+                                         &GcnInst::opcode)) {
                     // Add a label to the instruction right after the open scope call.
                     // It is the start of a new basic block.
                     const auto& save_inst = inst_list[curr_begin];
