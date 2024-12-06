@@ -218,6 +218,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     QWidget* widget = new QWidget(this);
     QGridLayout* layout = new QGridLayout(widget);
 
+    widget->setStyleSheet("QToolTip {background-color: black; color: white;}");
+
     QColor color;
     QString tooltip_string;
 
