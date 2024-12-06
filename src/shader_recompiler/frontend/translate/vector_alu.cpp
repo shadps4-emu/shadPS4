@@ -1155,15 +1155,23 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    if (src0.IsImmediate() && src0.U64() == -1) {
-        ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
-        ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
-        return;
+    if (src0.IsImmediate()) {
+        if (src0.U64() == -1) {
+            // If src0 is a fixed -1, the result will always be -1.
+            ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
+            ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
+            return;
+        }
+        if (src1.IsImmediate()) {
+            // If both src0 and src1 are immediates, we can calculate the result now.
+            // Note that according to the manual, only bits 4:0 are used from src1.
+            const u64 result = src0.U64() << (src1.U64() & 0x1F);
+            ir.SetVectorReg(dst_reg, ir.Imm32(static_cast<u32>(result)));
+            ir.SetVectorReg(dst_reg + 1, ir.Imm32(static_cast<u32>(result >> 32)));
+            return;
+        }
     }
-    ASSERT_MSG(src0.IsImmediate() && src0.U64() == 0 && src1.IsImmediate() && src1.U64() == 0,
-               "V_LSHL_B64 with non-zero src0 or src1 is not supported");
-    ir.SetVectorReg(dst_reg, ir.Imm32(0));
-    ir.SetVectorReg(dst_reg + 1, ir.Imm32(0));
+    UNREACHABLE_MSG("Unimplemented V_LSHL_B64 arguments");
 }
 
 void Translator::V_MUL_F64(const GcnInst& inst) {
