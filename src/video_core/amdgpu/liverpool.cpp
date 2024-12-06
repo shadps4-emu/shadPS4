@@ -163,8 +163,8 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::IndirectBufferConst: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task = ProcessCeUpdate(
-                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            auto task =
+                ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
             while (!task.handle.done()) {
                 task.handle.resume();
 
@@ -565,7 +565,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DmaData: {
                 const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
-                if (dma_data->dst_addr_lo == 0x3022C) {
+                if (dma_data->dst_addr_lo == 0x3022C || !rasterizer) {
                     break;
                 }
                 if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
@@ -700,7 +700,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::DmaData: {
             const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
-            if (dma_data->dst_addr_lo == 0x3022C) {
+            if (dma_data->dst_addr_lo == 0x3022C || !rasterizer) {
                 break;
             }
             if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {

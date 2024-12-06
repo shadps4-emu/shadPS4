@@ -105,6 +105,11 @@ struct PushData {
         ASSERT(offset < 256 && binding < buf_offsets.size());
         buf_offsets[binding] = offset;
     }
+
+    void AddTexelOffset(u32 binding, u32 multiplier, u32 texel_offset) {
+        ASSERT(texel_offset < 64 && multiplier < 16);
+        buf_offsets[binding] = texel_offset | ((std::bit_width(multiplier) - 1) << 6);
+    }
 };
 static_assert(sizeof(PushData) <= 128,
               "PushData size is greater than minimum size guaranteed by Vulkan spec");

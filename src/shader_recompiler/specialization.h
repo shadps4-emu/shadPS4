@@ -9,7 +9,6 @@
 #include "frontend/fetch_shader.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/passes/srt.h"
 
 namespace Shader {
 
@@ -22,8 +21,12 @@ struct VsAttribSpecialization {
 struct BufferSpecialization {
     u16 stride : 14;
     u16 is_storage : 1;
+    u32 size = 0;
 
-    auto operator<=>(const BufferSpecialization&) const = default;
+    bool operator==(const BufferSpecialization& other) const {
+        return stride == other.stride && is_storage == other.is_storage &&
+               (size >= other.is_storage || is_storage);
+    }
 };
 
 struct TextureBufferSpecialization {
@@ -57,7 +60,7 @@ struct StageSpecialization {
 
     const Shader::Info* info;
     RuntimeInfo runtime_info;
-    Gcn::FetchShaderData fetch_shader_data{};
+    std::optional<Gcn::FetchShaderData> fetch_shader_data{};
     boost::container::small_vector<VsAttribSpecialization, 32> vs_attribs;
     std::bitset<MaxStageResources> bitset{};
     boost::container::small_vector<BufferSpecialization, 16> buffers;
@@ -69,15 +72,14 @@ struct StageSpecialization {
     explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
                                  const Profile& profile_, Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
-        if (const auto fetch_shader = Gcn::ParseFetchShader(info_)) {
-            fetch_shader_data = *fetch_shader;
-            if (info_.stage == Stage::Vertex && !profile_.support_legacy_vertex_attributes) {
-                // Specialize shader on VS input number types to follow spec.
-                ForEachSharp(vs_attribs, fetch_shader_data.attributes,
-                             [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
-                                 spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
-                             });
-            }
+        fetch_shader_data = Gcn::ParseFetchShader(info_);
+        if (info_.stage == Stage::Vertex && fetch_shader_data &&
+            !profile_.support_legacy_vertex_attributes) {
+            // Specialize shader on VS input number types to follow spec.
+            ForEachSharp(vs_attribs, fetch_shader_data->attributes,
+                         [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                             spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                         });
         }
         u32 binding{};
         if (info->has_readconst) {
@@ -87,6 +89,9 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
                          spec.is_storage = desc.IsStorage(sharp);
+                         if (!spec.is_storage) {
+                             spec.size = sharp.GetSize();
+                         }
                      });
         ForEachSharp(binding, tex_buffers, info->texture_buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {

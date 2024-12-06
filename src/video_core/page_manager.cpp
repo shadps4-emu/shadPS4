@@ -29,7 +29,7 @@ namespace VideoCore {
 constexpr size_t PAGESIZE = 4_KB;
 constexpr size_t PAGEBITS = 12;
 
-#if ENABLE_USERFAULTFD
+#ifdef ENABLE_USERFAULTFD
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
         uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);

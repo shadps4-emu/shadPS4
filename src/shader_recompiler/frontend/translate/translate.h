@@ -96,6 +96,7 @@ public:
     void S_MUL_I32(const GcnInst& inst);
     void S_BFE_U32(const GcnInst& inst);
     void S_ABSDIFF_I32(const GcnInst& inst);
+    void S_NOT_B32(const GcnInst& inst);
 
     // SOPK
     void S_MOVK(const GcnInst& inst);
@@ -109,6 +110,7 @@ public:
     void S_NOT_B64(const GcnInst& inst);
     void S_BREV_B32(const GcnInst& inst);
     void S_BCNT1_I32_B64(const GcnInst& inst);
+    void S_FF1_I32_B64(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
 
