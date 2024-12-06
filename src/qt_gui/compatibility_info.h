@@ -42,6 +42,12 @@ enum OSType {
     Last
 };
 
+struct CompatibilityEntry {
+    CompatibilityStatus status;
+    QString version;
+    QDateTime last_tested;
+};
+
 class CompatibilityInfoClass : public QObject {
     Q_OBJECT
 public:
@@ -75,7 +81,7 @@ public:
     ~CompatibilityInfoClass();
     void UpdateCompatibilityDatabase(QWidget* parent = nullptr);
     bool LoadCompatibilityFile();
-    CompatibilityStatus GetCompatibilityStatus(const std::string& serial);
+    CompatibilityEntry GetCompatibilityInfo(const std::string& serial);
     void ExtractCompatibilityInfo(QByteArray response);
     static void WaitForReply(QNetworkReply* reply);
     QNetworkReply* FetchPage(int page_num);
