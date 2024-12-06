@@ -1071,23 +1071,26 @@ struct Liverpool {
         BitField<27, 1, u32> enable_postz_overrasterization;
     };
 
-    struct PsInput {
-        u32 persp_sample_ena : 1;
-        u32 persp_center_ena : 1;
-        u32 persp_centroid_ena : 1;
-        u32 persp_pull_model_ena : 1;
-        u32 linear_sample_ena : 1;
-        u32 linear_center_ena : 1;
-        u32 linear_centroid_ena : 1;
-        u32 line_stipple_tex_ena : 1;
-        u32 pos_x_float_ena : 1;
-        u32 pos_y_float_ena : 1;
-        u32 pos_z_float_ena : 1;
-        u32 pos_w_float_ena : 1;
-        u32 front_face_ena : 1;
-        u32 ancillary_ena : 1;
-        u32 sample_coverage_ena : 1;
-        u32 pos_fixed_pt_ena : 1;
+    union PsInput {
+        u32 raw;
+        struct {
+            u32 persp_sample_ena : 1;
+            u32 persp_center_ena : 1;
+            u32 persp_centroid_ena : 1;
+            u32 persp_pull_model_ena : 1;
+            u32 linear_sample_ena : 1;
+            u32 linear_center_ena : 1;
+            u32 linear_centroid_ena : 1;
+            u32 line_stipple_tex_ena : 1;
+            u32 pos_x_float_ena : 1;
+            u32 pos_y_float_ena : 1;
+            u32 pos_z_float_ena : 1;
+            u32 pos_w_float_ena : 1;
+            u32 front_face_ena : 1;
+            u32 ancillary_ena : 1;
+            u32 sample_coverage_ena : 1;
+            u32 pos_fixed_pt_ena : 1;
+        };
     };
 
     union Regs {

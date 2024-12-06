@@ -7,6 +7,7 @@
 #include <span>
 #include <boost/container/static_vector.hpp>
 #include "common/types.h"
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/types.h"
 
 namespace Shader {
@@ -96,16 +97,6 @@ enum class MrtSwizzle : u8 {
 };
 static constexpr u32 MaxColorBuffers = 8;
 
-enum class PsInputFlags : u8 {
-    None = 0,
-    PosX = 1 << 0,
-    PosY = 1 << 1,
-    PosZ = 1 << 2,
-    PosW = 1 << 3,
-    FrontFacing = 1 << 4,
-};
-DECLARE_ENUM_FLAG_OPERATORS(PsInputFlags)
-
 struct FragmentRuntimeInfo {
     struct PsInput {
         u8 param_index;
@@ -115,8 +106,8 @@ struct FragmentRuntimeInfo {
 
         auto operator<=>(const PsInput&) const noexcept = default;
     };
-    PsInputFlags en_flags;
-    PsInputFlags addr_flags;
+    AmdGpu::Liverpool::PsInput en_flags;
+    AmdGpu::Liverpool::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
@@ -129,7 +120,7 @@ struct FragmentRuntimeInfo {
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
-               en_flags == other.en_flags && addr_flags == other.addr_flags &&
+               en_flags.raw == other.en_flags.raw && addr_flags.raw == other.addr_flags.raw &&
                num_inputs == other.num_inputs &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
