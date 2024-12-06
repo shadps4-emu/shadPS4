@@ -53,15 +53,74 @@ void Translator::EmitPrologue() {
         }
         break;
     case Stage::Fragment:
-        // https://github.com/chaotic-cx/mesa-mirror/blob/72326e15/src/amd/vulkan/radv_shader_args.c#L258
-        // The first two VGPRs are used for i/j barycentric coordinates. In the vast majority of
-        // cases it will be only those two, but if shader is using both e.g linear and perspective
-        // inputs it can be more For now assume that this isn't the case.
-        dst_vreg = IR::VectorReg::V2;
-        for (u32 i = 0; i < 4; i++) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, i));
+        dst_vreg = IR::VectorReg::V0;
+        if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
         }
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+        if (runtime_info.fs_info.addr_flags.persp_center_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
+        }
+        if (runtime_info.fs_info.addr_flags.persp_centroid_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
+        }
+        if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
+            ++dst_vreg; // I/W
+            ++dst_vreg; // J/W
+            ++dst_vreg; // 1/W
+        }
+        if (runtime_info.fs_info.addr_flags.linear_sample_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
+        }
+        if (runtime_info.fs_info.addr_flags.linear_center_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
+        }
+        if (runtime_info.fs_info.addr_flags.linear_centroid_ena) {
+            ++dst_vreg; // I
+            ++dst_vreg; // J
+        }
+        if (runtime_info.fs_info.addr_flags.line_stipple_tex_ena) {
+            ++dst_vreg;
+        }
+        if (runtime_info.fs_info.addr_flags.pos_x_float_ena) {
+            if (runtime_info.fs_info.en_flags.pos_x_float_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 0));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
+            }
+        }
+        if (runtime_info.fs_info.addr_flags.pos_y_float_ena) {
+            if (runtime_info.fs_info.en_flags.pos_y_float_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 1));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
+            }
+        }
+        if (runtime_info.fs_info.addr_flags.pos_z_float_ena) {
+            if (runtime_info.fs_info.en_flags.pos_z_float_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 2));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
+            }
+        }
+        if (runtime_info.fs_info.addr_flags.pos_w_float_ena) {
+            if (runtime_info.fs_info.en_flags.pos_w_float_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 3));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
+            }
+        }
+        if (runtime_info.fs_info.addr_flags.front_face_ena) {
+            if (runtime_info.fs_info.en_flags.front_face_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
         break;
     case Stage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
