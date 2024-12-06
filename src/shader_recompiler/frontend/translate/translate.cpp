@@ -59,12 +59,22 @@ void Translator::EmitPrologue() {
         // inputs it can be more For now assume that this isn't the case.
         dst_vreg = IR::VectorReg::V2;
         for (u32 i = 0; i < 4; i++) {
-            if (True(runtime_info.fs_info.en_flags & Shader::PsInputEnableFlags(1 << i))) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, i));
+            if (True(runtime_info.fs_info.addr_flags & Shader::PsInputFlags(1 << i))) {
+                if (True(runtime_info.fs_info.en_flags & Shader::PsInputFlags(1 << i))) {
+                    ir.SetVectorReg(dst_vreg, ir.GetAttribute(IR::Attribute::FragCoord, i));
+                } else {
+                    ir.SetVectorReg(dst_vreg, ir.Imm32(0.0f));
+                }
+                ++dst_vreg;
             }
         }
-        if (True(runtime_info.fs_info.en_flags & Shader::PsInputEnableFlags::FrontFacing)) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+        if (True(runtime_info.fs_info.addr_flags & Shader::PsInputFlags::FrontFacing)) {
+            if (True(runtime_info.fs_info.en_flags & Shader::PsInputFlags::FrontFacing)) {
+                ir.SetVectorReg(dst_vreg, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+            } else {
+                ir.SetVectorReg(dst_vreg, ir.Imm32(0));
+            }
+            ++dst_vreg;
         }
         break;
     case Stage::Compute:

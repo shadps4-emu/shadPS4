@@ -124,21 +124,27 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     case Shader::Stage::Fragment: {
         BuildCommon(regs.ps_program);
         info.fs_info.en_flags =
-            ((regs.ps_input_addr.pos_x_float_ena && regs.ps_input_ena.pos_x_float_ena)
-                 ? Shader::PsInputEnableFlags::PosX
-                 : Shader::PsInputEnableFlags::None) |
-            ((regs.ps_input_addr.pos_y_float_ena && regs.ps_input_ena.pos_y_float_ena)
-                 ? Shader::PsInputEnableFlags::PosY
-                 : Shader::PsInputEnableFlags::None) |
-            ((regs.ps_input_addr.pos_z_float_ena && regs.ps_input_ena.pos_z_float_ena)
-                 ? Shader::PsInputEnableFlags::PosZ
-                 : Shader::PsInputEnableFlags::None) |
-            ((regs.ps_input_addr.pos_w_float_ena && regs.ps_input_ena.pos_w_float_ena)
-                 ? Shader::PsInputEnableFlags::PosW
-                 : Shader::PsInputEnableFlags::None) |
-            ((regs.ps_input_addr.front_face_ena && regs.ps_input_ena.front_face_ena)
-                 ? Shader::PsInputEnableFlags::FrontFacing
-                 : Shader::PsInputEnableFlags::None);
+            (regs.ps_input_ena.pos_x_float_ena ? Shader::PsInputFlags::PosX
+                                               : Shader::PsInputFlags::None) |
+            (regs.ps_input_ena.pos_y_float_ena ? Shader::PsInputFlags::PosY
+                                               : Shader::PsInputFlags::None) |
+            (regs.ps_input_ena.pos_z_float_ena ? Shader::PsInputFlags::PosZ
+                                               : Shader::PsInputFlags::None) |
+            (regs.ps_input_ena.pos_w_float_ena ? Shader::PsInputFlags::PosW
+                                               : Shader::PsInputFlags::None) |
+            (regs.ps_input_ena.front_face_ena ? Shader::PsInputFlags::FrontFacing
+                                              : Shader::PsInputFlags::None);
+        info.fs_info.addr_flags =
+            (regs.ps_input_addr.pos_x_float_ena ? Shader::PsInputFlags::PosX
+                                                : Shader::PsInputFlags::None) |
+            (regs.ps_input_addr.pos_y_float_ena ? Shader::PsInputFlags::PosY
+                                                : Shader::PsInputFlags::None) |
+            (regs.ps_input_addr.pos_z_float_ena ? Shader::PsInputFlags::PosZ
+                                                : Shader::PsInputFlags::None) |
+            (regs.ps_input_addr.pos_w_float_ena ? Shader::PsInputFlags::PosW
+                                                : Shader::PsInputFlags::None) |
+            (regs.ps_input_addr.front_face_ena ? Shader::PsInputFlags::FrontFacing
+                                               : Shader::PsInputFlags::None);
         const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
         for (u32 i = 0; i < regs.num_interp; i++) {

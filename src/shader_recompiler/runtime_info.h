@@ -96,7 +96,7 @@ enum class MrtSwizzle : u8 {
 };
 static constexpr u32 MaxColorBuffers = 8;
 
-enum class PsInputEnableFlags : u8 {
+enum class PsInputFlags : u8 {
     None = 0,
     PosX = 1 << 0,
     PosY = 1 << 1,
@@ -104,7 +104,7 @@ enum class PsInputEnableFlags : u8 {
     PosW = 1 << 3,
     FrontFacing = 1 << 4,
 };
-DECLARE_ENUM_FLAG_OPERATORS(PsInputEnableFlags)
+DECLARE_ENUM_FLAG_OPERATORS(PsInputFlags)
 
 struct FragmentRuntimeInfo {
     struct PsInput {
@@ -115,7 +115,8 @@ struct FragmentRuntimeInfo {
 
         auto operator<=>(const PsInput&) const noexcept = default;
     };
-    PsInputEnableFlags en_flags;
+    PsInputFlags en_flags;
+    PsInputFlags addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
@@ -128,7 +129,8 @@ struct FragmentRuntimeInfo {
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
-               en_flags == other.en_flags && num_inputs == other.num_inputs &&
+               en_flags == other.en_flags && addr_flags == other.addr_flags &&
+               num_inputs == other.num_inputs &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }
