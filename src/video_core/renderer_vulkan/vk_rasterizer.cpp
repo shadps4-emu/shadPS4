@@ -171,6 +171,22 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
     return state;
 }
 
+[[nodiscard]] std::pair<u32, u32> GetDrawOffsets(
+    const AmdGpu::Liverpool::Regs& regs, const Shader::Info& info,
+    const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader) {
+    u32 vertex_offset = regs.index_offset;
+    u32 instance_offset = 0;
+    if (fetch_shader) {
+        if (vertex_offset == 0 && fetch_shader->vertex_offset_sgpr != -1) {
+            vertex_offset = info.user_data[fetch_shader->vertex_offset_sgpr];
+        }
+        if (fetch_shader->instance_offset_sgpr != -1) {
+            instance_offset = info.user_data[fetch_shader->instance_offset_sgpr];
+        }
+    }
+    return {vertex_offset, instance_offset};
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
@@ -198,7 +214,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
 
-    const auto [vertex_offset, instance_offset] = fetch_shader->GetDrawOffsets(regs, vs_info);
+    const auto [vertex_offset, instance_offset] = GetDrawOffsets(regs, vs_info, fetch_shader);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
