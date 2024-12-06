@@ -417,17 +417,21 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+    vk::ShaderModule module;
+
     auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
     if (patch) {
-        spv = *patch;
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
+        module = CompileSPV(*patch, instance.GetDevice());
+    } else {
+        module = CompileSPV(spv, instance.GetDevice());
     }
 
-    const auto module = CompileSPV(spv, instance.GetDevice());
-    const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
+    const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
-        DebugState.CollectShader(name, spv, code);
+        DebugState.CollectShader(name, spv, code, patch ? *patch : std::span<const u32>{});
     }
     return module;
 }

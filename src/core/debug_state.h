@@ -76,29 +76,41 @@ struct FrameDump {
 
 struct ShaderDump {
     std::string name;
+
     std::vector<u32> spv;
-    std::vector<u32> raw_code;
+    std::vector<u32> isa;
+
+    std::vector<u32> patch_spv;
+    std::string patch_source{};
 
     std::string cache_spv_disasm{};
-    std::string cache_raw_disasm{};
+    std::string cache_isa_disasm{};
+    std::string cache_patch_disasm{};
 
-    ShaderDump(std::string name, std::vector<u32> spv, std::vector<u32> raw_code)
-        : name(std::move(name)), spv(std::move(spv)), raw_code(std::move(raw_code)) {}
+    ShaderDump(std::string name, std::vector<u32> spv, std::vector<u32> isa,
+               std::vector<u32> patch_spv)
+        : name(std::move(name)), spv(std::move(spv)), isa(std::move(isa)),
+          patch_spv(std::move(patch_spv)) {}
 
     ShaderDump(const ShaderDump& other) = delete;
     ShaderDump(ShaderDump&& other) noexcept
-        : name{std::move(other.name)}, spv{std::move(other.spv)},
-          raw_code{std::move(other.raw_code)}, cache_spv_disasm{std::move(other.cache_spv_disasm)},
-          cache_raw_disasm{std::move(other.cache_raw_disasm)} {}
+        : name{std::move(other.name)}, spv{std::move(other.spv)}, isa{std::move(other.isa)},
+          patch_spv{std::move(other.patch_spv)}, patch_source{std::move(other.patch_source)},
+          cache_spv_disasm{std::move(other.cache_spv_disasm)},
+          cache_isa_disasm{std::move(other.cache_isa_disasm)},
+          cache_patch_disasm{std::move(other.cache_patch_disasm)} {}
     ShaderDump& operator=(const ShaderDump& other) = delete;
     ShaderDump& operator=(ShaderDump&& other) noexcept {
         if (this == &other)
             return *this;
         name = std::move(other.name);
         spv = std::move(other.spv);
-        raw_code = std::move(other.raw_code);
+        isa = std::move(other.isa);
+        patch_spv = std::move(other.patch_spv);
+        patch_source = std::move(other.patch_source);
         cache_spv_disasm = std::move(other.cache_spv_disasm);
-        cache_raw_disasm = std::move(other.cache_raw_disasm);
+        cache_isa_disasm = std::move(other.cache_isa_disasm);
+        cache_patch_disasm = std::move(other.cache_patch_disasm);
         return *this;
     }
 };
@@ -187,7 +199,7 @@ public:
                       const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
 
     void CollectShader(const std::string& name, std::span<const u32> spv,
-                       std::span<const u32> raw_code);
+                       std::span<const u32> raw_code, std::span<const u32> patch_spv);
 };
 } // namespace DebugStateType
 

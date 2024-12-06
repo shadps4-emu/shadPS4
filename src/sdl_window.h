@@ -41,6 +41,8 @@ struct WindowSystemInfo {
 };
 
 class WindowSDL {
+    int keyboard_grab = 0;
+
 public:
     explicit WindowSDL(s32 width, s32 height, Input::GameController* controller,
                        std::string_view window_title);
@@ -68,6 +70,9 @@ public:
 
     void WaitEvent();
     void InitTimers();
+
+    void RequestKeyboard();
+    void ReleaseKeyboard();
 
 private:
     void OnResize();

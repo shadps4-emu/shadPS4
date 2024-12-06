@@ -6,20 +6,32 @@
 #include "core/debug_state.h"
 #include "text_editor.h"
 
+#include <filesystem>
+
 namespace Core::Devtools::Widget {
 
 class ShaderList {
-    int selected_shader = -1;
-    TextEditor isa_editor{};
-    TextEditor spv_editor{};
-    bool loaded_data = false;
-    bool showing_isa = false;
+    struct Selection {
+        int index;
+        TextEditor isa_editor{};
+        TextEditor glsl_editor{};
+        bool open = true;
+        bool loaded_data = false;
+        bool showing_bin = false;
+        bool showing_patch = false;
 
-    void DrawShader(DebugStateType::ShaderDump& value);
+        std::filesystem::path patch_path;
+        std::filesystem::path patch_bin_path;
+
+        explicit Selection(int index);
+        ~Selection();
+
+        bool DrawShader(DebugStateType::ShaderDump& value);
+    };
+
+    std::vector<Selection> open_shaders{};
 
 public:
-    ShaderList();
-
     bool open = false;
 
     void Draw();

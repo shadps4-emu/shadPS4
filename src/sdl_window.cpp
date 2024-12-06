@@ -168,6 +168,21 @@ void WindowSDL::InitTimers() {
     SDL_AddTimer(100, &PollController, controller);
 }
 
+void WindowSDL::RequestKeyboard() {
+    if (keyboard_grab == 0) {
+        SDL_StartTextInput(window);
+    }
+    keyboard_grab++;
+}
+
+void WindowSDL::ReleaseKeyboard() {
+    ASSERT(keyboard_grab > 0);
+    keyboard_grab--;
+    if (keyboard_grab == 0) {
+        SDL_StopTextInput(window);
+    }
+}
+
 void WindowSDL::OnResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();
