@@ -4,12 +4,13 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
+
 #include "compatibility_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, 
-                             std::shared_ptr<CompatibilityInfoClass> compat_info_get, 
+GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
+                             std::shared_ptr<CompatibilityInfoClass> compat_info_get,
                              QWidget* parent)
     : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
     icon_size = Config::getIconSize();
@@ -108,9 +109,9 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
 
-        m_game_info->m_games[i].compatibility_status = 
-            m_compat_info->GetCompatibilityStatus(m_game_info->m_games[i].serial);
-        SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility_status);
+        m_game_info->m_games[i].compatibility =
+            m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
+        SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility);
 
         QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
         if (playTime.isEmpty()) {
@@ -213,14 +214,14 @@ void GameListFrame::ResizeIcons(int iconSize) {
     this->horizontalHeader()->setSectionResizeMode(8, QHeaderView::ResizeToContents);
 }
 
-void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatus status) {
+void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry entry) {
     QTableWidgetItem* item = new QTableWidgetItem();
     QWidget* widget = new QWidget(this);
     QGridLayout* layout = new QGridLayout(widget);
 
     QColor color;
 
-    switch (status) {
+    switch (entry.status) {
     case Unknown:
         color = QStringLiteral("#000000");
         break;
@@ -252,7 +253,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
     QLabel* dotLabel = new QLabel("", widget);
     dotLabel->setPixmap(circle_pixmap);
 
-    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(status), widget);
+    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
 
     label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
@@ -264,8 +265,13 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
 
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
-    layout->addWidget(dotLabel, 0, 0, -1, 4);
-    layout->addWidget(label, 0, 4, -1, 4);
+    QLabel* version_label =
+        new QLabel(QString("%1, (%2)").arg(entry.last_tested.toString(), entry.version), widget);
+    version_label->setStyleSheet("color: white; font-size: 12px;");
+
+    layout->addWidget(dotLabel, 0, 0, -1, 1);
+    layout->addWidget(label, 0, 1, 1, 1);
+    layout->addWidget(version_label, 1, 1, 1, 1);
     layout->setAlignment(Qt::AlignLeft);
     widget->setLayout(layout);
     this->setItem(row, column, item);

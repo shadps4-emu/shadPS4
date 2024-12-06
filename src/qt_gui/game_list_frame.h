@@ -17,7 +17,9 @@
 class GameListFrame : public QTableWidget {
     Q_OBJECT
 public:
-    explicit GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, std::shared_ptr<CompatibilityInfoClass> compat_info_get, QWidget* parent = nullptr);
+    explicit GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
+                           std::shared_ptr<CompatibilityInfoClass> compat_info_get,
+                           QWidget* parent = nullptr);
 Q_SIGNALS:
     void GameListFrameClosed();
 
@@ -33,7 +35,7 @@ public Q_SLOTS:
 private:
     void SetTableItem(int row, int column, QString itemStr);
     void SetRegionFlag(int row, int column, QString itemStr);
-    void SetCompatibilityItem(int row, int column, CompatibilityStatus status);
+    void SetCompatibilityItem(int row, int column, CompatibilityEntry entry);
     QString GetPlayTime(const std::string& serial);
     QList<QAction*> m_columnActs;
     GameInfoClass* game_inf_get = nullptr;
@@ -65,7 +67,7 @@ public:
         case 1:
             return a.name < b.name;
         case 2:
-            return a.compatibility_status < b.compatibility_status;
+            return a.compatibility.status < b.compatibility.status;
         case 3:
             return a.serial.substr(4) < b.serial.substr(4);
         case 4:
@@ -90,7 +92,7 @@ public:
         case 1:
             return a.name > b.name;
         case 2:
-            return a.compatibility_status > b.compatibility_status;
+            return a.compatibility.status > b.compatibility.status;
         case 3:
             return a.serial.substr(4) > b.serial.substr(4);
         case 4:

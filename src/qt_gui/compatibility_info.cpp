@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <iostream>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QProgressDialog>
+
 #include "common/path_util.h"
 #include "compatibility_info.h"
-#include <QProgressDialog>
-#include <QMessageBox>
-#include <QFileInfo>
 
 CompatibilityInfoClass::CompatibilityInfoClass()
     : m_network_manager(new QNetworkAccessManager(this)) {
@@ -20,7 +20,8 @@ CompatibilityInfoClass::~CompatibilityInfoClass() = default;
 void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
     QFileInfo check_file(m_compatibility_filename);
     const auto modified_delta = check_file.lastModified() - QDateTime::currentDateTime();
-    if (check_file.exists() && check_file.isFile() && std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() < 60) {
+    if (check_file.exists() && check_file.isFile() &&
+        std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() < 60) {
         if (LoadCompatibilityFile())
             return;
         QMessageBox::critical(parent, tr("Error"),
@@ -46,9 +47,10 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
 
     if (reply->error() != QNetworkReply::NoError) {
         reply->deleteLater();
-        QMessageBox::critical(parent, tr("Error"),
-                              tr("Unable to update compatibility data! Using old compatibility data..."));
-        //TODO: Try loading compatibility_file.json again 
+        QMessageBox::critical(
+            parent, tr("Error"),
+            tr("Unable to update compatibility data! Using old compatibility data..."));
+        // Try loading compatibility_file.json again
         LoadCompatibilityFile();
         return;
     }
@@ -87,8 +89,7 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
 
         dialog.reset();
     });
-    connect(&dialog, &QProgressDialog::canceled, &future_watcher,
-            &QFutureWatcher<void>::cancel);
+    connect(&dialog, &QProgressDialog::canceled, &future_watcher, &QFutureWatcher<void>::cancel);
     dialog.setRange(0, remaining_pages);
     connect(&future_watcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
             &QProgressDialog::setValue);
@@ -117,7 +118,7 @@ void CompatibilityInfoClass::WaitForReply(QNetworkReply* reply) {
     return;
 };
 
-CompatibilityStatus CompatibilityInfoClass::GetCompatibilityStatus(const std::string& serial) {
+CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::string& serial) {
     QString title_id = QString::fromStdString(serial);
     if (m_compatibility_database.contains(title_id)) {
         {
@@ -125,13 +126,18 @@ CompatibilityStatus CompatibilityInfoClass::GetCompatibilityStatus(const std::st
                 QString os_string = OSTypeToString.at(static_cast<OSType>(os_int));
                 QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
                 if (compatibility_obj.contains(os_string)) {
-                    return LabelToCompatStatus.at(
-                        compatibility_obj[os_string].toString());
+                    QJsonObject compatibility_entry_obj = compatibility_obj[os_string].toObject();
+                    CompatibilityEntry compatibility_entry{
+                        LabelToCompatStatus.at(compatibility_entry_obj["status"].toString()),
+                        compatibility_entry_obj["version"].toString(),
+                        QDateTime::fromString(compatibility_entry_obj["last_tested"].toString(),
+                                              Qt::ISODate)};
+                    return compatibility_entry;
                 }
             }
         }
     }
-    return CompatibilityStatus::Unknown;
+    return CompatibilityEntry{CompatibilityStatus::Unknown};
 }
 
 bool CompatibilityInfoClass::LoadCompatibilityFile() {
@@ -151,7 +157,6 @@ bool CompatibilityInfoClass::LoadCompatibilityFile() {
     m_compatibility_database = json_doc.object();
     return true;
 }
-
 
 void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
     QJsonDocument json_doc(QJsonDocument::fromJson(response));
@@ -190,10 +195,17 @@ void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
             QJsonValueRef compatibility_object_ref = m_compatibility_database[title_id];
 
             if (compatibility_object_ref.isNull()) {
-                compatibility_object_ref = QJsonObject({{current_os, compatibility_status}});
-            } else {
-                compatibility_object_ref.toObject()[current_os] = compatibility_status;
+                compatibility_object_ref = QJsonObject({});
             }
+
+            QJsonObject compatibility_data{
+                {{"status", compatibility_status},
+                 {"last_tested", issue_obj["updated_at"]},
+                 {"version", issue_obj["milestone"].isNull()
+                                 ? "unknown"
+                                 : issue_obj["milestone"].toObject()["title"].toString()}}};
+
+            compatibility_object_ref.toObject().insert(current_os, compatibility_data);
         }
     }
 

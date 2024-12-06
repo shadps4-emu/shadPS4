@@ -27,7 +27,7 @@ struct GameInfo {
     std::string fw = "Unknown";
 
     std::string play_time = "Unknown";
-    CompatibilityStatus compatibility_status = CompatibilityStatus::Unknown;
+    CompatibilityEntry compatibility = CompatibilityEntry{CompatibilityStatus::Unknown};
 };
 
 class GameListUtils {
