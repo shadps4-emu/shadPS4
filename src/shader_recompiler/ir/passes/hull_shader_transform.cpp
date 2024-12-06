@@ -461,7 +461,6 @@ private:
             Visit(a);
         } else if (MakeInstPattern<IR::Opcode::GetAttributeU32>(MatchValue(a), MatchU32(0))
                        .DoMatch(node)) {
-            printf("here\n");
             products.back().as_factors.emplace_back(a.Attribute());
         } else if (MakeInstPattern<IR::Opcode::GetAttributeU32>(MatchValue(a), MatchU32(0))
                        .DoMatch(node)) {
@@ -571,9 +570,18 @@ private:
 } // namespace
 
 void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
+    TessConstantUseWalker walker;
     g_program = &program; // TODO delete
     Info& info = program.info;
     Pass pass(info, runtime_info);
+
+    for (IR::Block* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32) {
+                walker.MarkTessAttributeUsers(&inst);
+            }
+        }
+    }
 
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
@@ -585,9 +593,6 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             case IR::Opcode::StoreBufferU32x2:
             case IR::Opcode::StoreBufferU32x3:
             case IR::Opcode::StoreBufferU32x4: {
-                // TODO: rename struct
-                RingAddressInfo address_info = pass.WalkRingAccess(&inst, ir);
-
                 const auto info = inst.Flags<IR::BufferInstInfo>();
                 if (!info.globally_coherent) {
                     break;
@@ -600,8 +605,10 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
                 const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
-                const u32 gcn_factor_idx =
-                    (info.inst_offset.Value() + address_info.attribute_byte_offset) >> 2;
+                IR::U32 index = IR::U32{inst.Arg(1)};
+                // ASSERT(index.IsImmediate());
+                // const u32 gcn_factor_idx = (info.inst_offset.Value() + index.U32()) >> 2;
+                const u32 gcn_factor_idx = (info.inst_offset.Value()) >> 2;
 
                 const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
@@ -645,8 +652,8 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32
                                            ? 1
                                            : (opcode == IR::Opcode::WriteSharedU64 ? 2 : 4);
-                const IR::U32 addr = IR::U32{inst.Arg(0)};
-                const IR::Value data = inst.Arg(1);
+                const IR::U32 addr{inst.Arg(0)};
+                const IR::U32 data{inst.Arg(1)};
                 const auto [data_lo, data_hi] = [&] -> std::pair<IR::U32, IR::U32> {
                     if (num_dwords == 1) {
                         return {IR::U32{data}, IR::U32{}};
@@ -655,14 +662,15 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     return {IR::U32{prod->Arg(0)}, IR::U32{prod->Arg(1)}};
                 }();
 
-                const auto SetOutput = [&](IR::U32 value, u32 offset_dw,
-                                           AttributeRegion output_kind) {
+                const auto SetOutput = [&](IR::U32 addr, IR::U32 value, AttributeRegion output_kind,
+                                           u32 off_dw = 0) {
                     const IR::F32 data = ir.BitCast<IR::F32, IR::U32>(value);
+                    if (off_dw > 0) {
+                        addr = ir.IAdd(addr, ir.Imm32(off_dw));
+                    }
+
                     if (output_kind == AttributeRegion::OutputCP) {
-                        const u32 attr_no = offset_dw >> 2;
-                        const u32 comp = offset_dw & 3;
                         // Invocation ID array index is implicit, handled by SPIRV backend
-                        // ir.SetAttribute(IR::Attribute::Param0 + param, data, comp);
                         IR::U32 attr_index = ir.ShiftRightLogical(
                             ir.IMod(addr, ir.GetAttributeU32(IR::Attribute::TcsCpStride)),
                             ir.Imm32(4u));
@@ -671,18 +679,18 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         ir.SetTcsGenericAttribute(data, attr_index, comp_index);
                     } else {
                         ASSERT(output_kind == AttributeRegion::PatchConst);
-                        ir.SetPatch(IR::PatchGeneric(offset_dw), data);
+                        ir.SetPatch(IR::PatchGeneric(address_info.attribute_byte_offset >> 2),
+                                    data);
                     }
                 };
 
-                u32 offset_dw = address_info.attribute_byte_offset >> 2;
-                SetOutput(data_lo, offset_dw, address_info.region);
+                AttributeRegion region = FindRegionKind(&inst, info, runtime_info);
+                SetOutput(addr, data, region);
                 if (num_dwords > 1) {
                     // TODO handle WriteSharedU128
-                    SetOutput(data_hi, offset_dw + 1, address_info.region);
+                    SetOutput(addr, data_hi, region, 1);
                 }
                 inst.Invalidate();
-
                 break;
             }
 
@@ -760,8 +768,17 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
 
 // TODO refactor
 void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
+    TessConstantUseWalker walker;
     Info& info = program.info;
     Pass pass(info, runtime_info);
+
+    for (IR::Block* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32) {
+                walker.MarkTessAttributeUsers(&inst);
+            }
+        }
+    }
 
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
@@ -773,19 +790,14 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 // case IR::Opcode::LoadSharedU128: // TODO
                 RingAddressInfo address_info = pass.WalkRingAccess(&inst, ir);
                 const IR::U32 addr = IR::U32{inst.Arg(0)};
+                AttributeRegion region = FindRegionKind(&inst, info, runtime_info);
 
-                ASSERT(address_info.region == AttributeRegion::OutputCP ||
-                       address_info.region == AttributeRegion::PatchConst);
-                switch (address_info.region) {
+                ASSERT(region == AttributeRegion::OutputCP ||
+                       region == AttributeRegion::PatchConst);
+                switch (region) {
                 case AttributeRegion::OutputCP: {
-                    u32 offset_dw = (address_info.attribute_byte_offset %
-                                     runtime_info.vs_info.hs_output_cp_stride) >>
-                                    2;
-                    const u32 attr_no = offset_dw >> 2;
-                    const u32 comp = offset_dw & 3;
                     IR::U32 control_point_index =
-                        ir.IDiv(IR::U32{address_info.offset_in_patch},
-                                ir.Imm32(runtime_info.vs_info.hs_output_cp_stride));
+                        ir.IDiv(addr, ir.Imm32(runtime_info.vs_info.hs_output_cp_stride));
                     IR::U32 attr_index = ir.ShiftRightLogical(
                         ir.IMod(addr, ir.GetAttributeU32(IR::Attribute::TcsCpStride)),
                         ir.Imm32(4u));
@@ -798,6 +810,7 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     break;
                 }
                 case AttributeRegion::PatchConst: {
+                    // TODO make patch consts into dynamic offset
                     u32 offset_dw = address_info.attribute_byte_offset >> 2;
                     IR::Value get_patch = ir.GetPatch(IR::PatchGeneric(offset_dw));
                     inst.ReplaceUsesWithAndRemove(get_patch);
