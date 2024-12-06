@@ -4,9 +4,9 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
-#include "compatibility_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
+#include <QToolTip>
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, 
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get, 
@@ -219,25 +219,32 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
     QGridLayout* layout = new QGridLayout(widget);
 
     QColor color;
+    QString tooltip_string;
 
     switch (status) {
     case Unknown:
         color = QStringLiteral("#000000");
+        tooltip_string = tr("Compatibility is untested");
         break;
     case Nothing:
         color = QStringLiteral("#212121");
+        tooltip_string = tr("Games that do not initialize properly / crash the emulator");
         break;
     case Boots:
         color = QStringLiteral("#828282");
+        tooltip_string = tr("Games that are able to boot, but only display a blank screen");
         break;
     case Menus:
         color = QStringLiteral("#FF0000");
+        tooltip_string = tr("Games that displays an image but do not go past the menus");
         break;
     case Ingame:
         color = QStringLiteral("#F2D624");
+        tooltip_string = tr("Games that have game-breaking glitches or unplayable performance");
         break;
     case Playable:
         color = QStringLiteral("#47D35C");
+        tooltip_string = tr("Game can be completed with playable performance and no major glitches");
         break;
     }
 
@@ -268,6 +275,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityStatu
     layout->addWidget(label, 0, 4, -1, 4);
     layout->setAlignment(Qt::AlignLeft);
     widget->setLayout(layout);
+    widget->setToolTip(tooltip_string);
     this->setItem(row, column, item);
     this->setCellWidget(row, column, widget);
 

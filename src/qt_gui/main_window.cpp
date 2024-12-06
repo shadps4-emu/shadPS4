@@ -15,7 +15,6 @@
 #include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/version.h"
-#include "compatibility_info.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
