@@ -4,6 +4,7 @@
 #include <QCompleter>
 #include <QDirIterator>
 #include <QHoverEvent>
+#include <vector>
 
 #include <common/version.h>
 #ifdef ENABLE_UPDATER
@@ -14,6 +15,8 @@
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
+#include <toml.hpp>
+#include "common/logging/formatter.h"
 
 QStringList languageNames = {"Arabic",
                              "Czech",
@@ -320,11 +323,31 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
-    ui->consoleLanguageComboBox->setCurrentIndex(
+
+     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+
+    try {
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        const toml::value data = toml::parse(userdir / "Config.toml");
+    } catch (std::exception& ex) {
+        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        return;
+    }
+
+    const toml::value data = toml::parse(userdir / "Config.toml");
+
+    const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
+                                      15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
+
+    // test fix for config file not saving
+
+     ui->consoleLanguageComboBox->setCurrentIndex(
         std::distance(
             languageIndexes.begin(),
-            std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
+            std::find(languageIndexes.begin(), languageIndexes.end(), toml::find_or<int>(data, "Settings", "consoleLanguage", 6))) %
         languageIndexes.size());
+
     ui->emulatorLanguageComboBox->setCurrentIndex(languages[Config::getEmulatorLanguage()]);
     ui->hideCursorComboBox->setCurrentIndex(Config::getCursorState());
     OnCursorStateChanged(Config::getCursorState());
@@ -351,6 +374,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(Config::vkValidationSyncEnabled());
     ui->rdocCheckBox->setChecked(Config::isRdocEnabled());
 
+
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(Config::autoUpdate());
     std::string updateChannel = Config::getUpdateChannel();
@@ -376,6 +400,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
+
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
