@@ -59,9 +59,13 @@ void Translator::EmitPrologue() {
         // inputs it can be more For now assume that this isn't the case.
         dst_vreg = IR::VectorReg::V2;
         for (u32 i = 0; i < 4; i++) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, i));
+            if (True(runtime_info.fs_info.en_flags & Shader::PsInputEnableFlags(1 << i))) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, i));
+            }
         }
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+        if (True(runtime_info.fs_info.en_flags & Shader::PsInputEnableFlags::FrontFacing)) {
+            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+        }
         break;
     case Stage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
