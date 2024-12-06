@@ -163,8 +163,8 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::IndirectBufferConst: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task = ProcessCeUpdate(
-                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            auto task =
+                ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
             while (!task.handle.done()) {
                 task.handle.resume();
 
