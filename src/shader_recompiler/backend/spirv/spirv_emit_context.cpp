@@ -207,6 +207,8 @@ void EmitContext::DefineBufferOffsets() {
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
         tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
+        tex_buffer.coord_shift =
+            OpBitFieldUExtract(U32[1], value, ConstU32(offset + 6U), ConstU32(2U));
         Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
     }
 }

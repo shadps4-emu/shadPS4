@@ -548,12 +548,13 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
                 vsharp.base_address, vsharp.GetSize(), desc.is_written, true, buffer_id);
             const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
-            ASSERT_MSG(fmt_stride == vsharp.GetStride(),
+            const u32 buf_stride = vsharp.GetStride();
+            ASSERT_MSG(buf_stride % fmt_stride == 0,
                        "Texel buffer stride must match format stride");
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % fmt_stride == 0);
-            push_data.AddOffset(binding.buffer, adjust / fmt_stride);
+            push_data.AddTexelOffset(binding.buffer, buf_stride / fmt_stride, adjust / fmt_stride);
             buffer_view =
                 vk_buffer->View(offset_aligned, vsharp.GetSize() + adjust, desc.is_written,
                                 vsharp.GetDataFmt(), vsharp.GetNumberFmt());
