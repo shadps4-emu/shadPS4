@@ -279,6 +279,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         ++remapped_cb;
     }
 
+    fetch_shader = std::nullopt;
+
     Shader::Backend::Bindings binding{};
     const auto& TryBindStageRemap = [&](Shader::Stage stage_in, Shader::Stage stage_out) -> bool {
         const auto stage_in_idx = static_cast<u32>(stage_in);

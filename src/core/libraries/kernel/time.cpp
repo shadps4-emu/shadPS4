@@ -52,7 +52,22 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 
 int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 #ifdef _WIN64
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    const auto start_time = std::chrono::high_resolution_clock::now();
+    auto total_wait_time = std::chrono::microseconds(microseconds);
+
+    while (total_wait_time.count() > 0) {
+        auto wait_time = std::chrono::ceil<std::chrono::milliseconds>(total_wait_time).count();
+        u64 res = SleepEx(static_cast<u64>(wait_time), true);
+        if (res == WAIT_IO_COMPLETION) {
+            auto elapsedTime = std::chrono::high_resolution_clock::now() - start_time;
+            auto elapsedMicroseconds =
+                std::chrono::duration_cast<std::chrono::microseconds>(elapsedTime).count();
+            total_wait_time = std::chrono::microseconds(microseconds - elapsedMicroseconds);
+        } else {
+            break;
+        }
+    }
+
     return 0;
 #else
     timespec start;

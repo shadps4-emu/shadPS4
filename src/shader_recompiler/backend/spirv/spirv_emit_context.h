@@ -223,6 +223,7 @@ public:
     struct TextureBufferDefinition {
         Id id;
         Id coord_offset;
+        Id coord_shift;
         u32 binding;
         Id image_type;
         Id result_type;

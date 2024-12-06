@@ -326,7 +326,9 @@ Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto& buffer = ctx.texture_buffers[handle];
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    const Id coord =
+        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
+                   buffer.coord_offset);
     Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
                                  : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
     if (buffer.is_integer) {
@@ -372,7 +374,9 @@ void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     const auto& buffer = ctx.texture_buffers[handle];
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    const Id coord =
+        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
+                   buffer.coord_offset);
     if (buffer.is_integer) {
         value = ctx.OpBitcast(buffer.result_type, value);
     }

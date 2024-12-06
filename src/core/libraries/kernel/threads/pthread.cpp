@@ -380,6 +380,7 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 
 int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     LOG_INFO(Kernel_Pthread, "name = {}", name);
+    Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
     thread->name = name;
     return ORBIS_OK;
 }

@@ -42,7 +42,7 @@ public:
 
     struct Traits {
         using Entry = BufferId;
-        static constexpr size_t AddressSpaceBits = 39;
+        static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 14;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
     };
