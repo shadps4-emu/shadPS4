@@ -19,7 +19,7 @@ CompatibilityInfoClass::~CompatibilityInfoClass() = default;
 
 void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
     QFileInfo check_file(m_compatibility_filename);
-    const auto modified_delta = check_file.lastModified() - QDateTime::currentDateTime();
+    const auto modified_delta = QDateTime::currentDateTime() - check_file.lastModified();
     if (check_file.exists() && check_file.isFile() &&
         std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() < 60) {
         if (LoadCompatibilityFile())
@@ -192,11 +192,9 @@ void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
                 }
             }
 
-            QJsonValueRef compatibility_object_ref = m_compatibility_database[title_id];
+            // QJson does not support editing nested objects directly..
 
-            if (compatibility_object_ref.isNull()) {
-                compatibility_object_ref = QJsonObject({});
-            }
+            QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
 
             QJsonObject compatibility_data{
                 {{"status", compatibility_status},
@@ -205,7 +203,9 @@ void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
                                  ? "unknown"
                                  : issue_obj["milestone"].toObject()["title"].toString()}}};
 
-            compatibility_object_ref.toObject().insert(current_os, compatibility_data);
+            compatibility_obj[current_os] = compatibility_data;
+
+            m_compatibility_database[title_id] = compatibility_obj;
         }
     }
 

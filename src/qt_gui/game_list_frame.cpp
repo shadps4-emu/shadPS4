@@ -23,7 +23,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->verticalScrollBar()->installEventFilter(this);
     this->verticalScrollBar()->setSingleStep(20);
     this->horizontalScrollBar()->setSingleStep(20);
-    this->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    this->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     this->verticalHeader()->setVisible(false);
     this->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     this->horizontalHeader()->setHighlightSections(false);
@@ -45,8 +45,8 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    this->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
+    this->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
     PopulateGameList();
 
     connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
@@ -255,7 +255,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
 
     QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
 
-    label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
+    label->setStyleSheet("color: white; font-size: 12px; font-weight: bold;");
 
     // Create shadow effect
     QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
@@ -266,8 +266,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
     QLabel* version_label =
-        new QLabel(QString("%1, (%2)").arg(entry.last_tested.toString(), entry.version), widget);
-    version_label->setStyleSheet("color: white; font-size: 12px;");
+        new QLabel(QString("%1, (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version), widget);
+    version_label->setStyleSheet("color: white; font-size: 10px;");
 
     layout->addWidget(dotLabel, 0, 0, -1, 1);
     layout->addWidget(label, 0, 1, 1, 1);
