@@ -6,6 +6,8 @@
 #include <mutex>
 #include <semaphore>
 
+#include "core/libraries/kernel/sync/semaphore.h"
+
 #include "common/logging/log.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -21,7 +23,7 @@ constexpr int ORBIS_KERNEL_SEM_VALUE_MAX = 0x7FFFFFFF;
 struct PthreadSem {
     explicit PthreadSem(s32 value_) : semaphore{value_}, value{value_} {}
 
-    std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX> semaphore;
+    CountingSemaphore semaphore;
     std::atomic<s32> value;
 };
 
@@ -75,7 +77,7 @@ public:
             it = wait_list.erase(it);
             token_count -= waiter->need_count;
             waiter->was_signaled = true;
-            waiter->cv.notify_one();
+            waiter->sem.release();
         }
 
         return true;
@@ -88,7 +90,7 @@ public:
         }
         for (auto* waiter : wait_list) {
             waiter->was_cancled = true;
-            waiter->cv.notify_one();
+            waiter->sem.release();
         }
         wait_list.clear();
         token_count = set_count < 0 ? init_count : set_count;
@@ -99,21 +101,21 @@ public:
         std::scoped_lock lk{mutex};
         for (auto* waiter : wait_list) {
             waiter->was_deleted = true;
-            waiter->cv.notify_one();
+            waiter->sem.release();
         }
         wait_list.clear();
     }
 
 public:
     struct WaitingThread {
-        std::condition_variable cv;
+        BinarySemaphore sem;
         u32 priority;
         s32 need_count;
         bool was_signaled{};
         bool was_deleted{};
         bool was_cancled{};
 
-        explicit WaitingThread(s32 need_count, bool is_fifo) : need_count{need_count} {
+        explicit WaitingThread(s32 need_count, bool is_fifo) : sem{0}, need_count{need_count} {
             // Retrieve calling thread priority for sorting into waiting threads list.
             if (!is_fifo) {
                 priority = g_curthread->attr.prio;
@@ -134,24 +136,26 @@ public:
         }
 
         int Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
+            lk.unlock();
             if (!timeout) {
                 // Wait indefinitely until we are woken up.
-                cv.wait(lk);
+                sem.acquire();
+                lk.lock();
                 return GetResult(false);
             }
             // Wait until timeout runs out, recording how much remaining time there was.
             const auto start = std::chrono::high_resolution_clock::now();
-            const auto signaled = cv.wait_for(lk, std::chrono::microseconds(*timeout),
-                                              [this] { return was_signaled; });
+            sem.try_acquire_for(std::chrono::microseconds(*timeout));
             const auto end = std::chrono::high_resolution_clock::now();
             const auto time =
                 std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            if (signaled) {
+            lk.lock();
+            if (was_signaled) {
                 *timeout -= time;
             } else {
                 *timeout = 0;
             }
-            return GetResult(!signaled);
+            return GetResult(!was_signaled);
         }
     };
 

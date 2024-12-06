@@ -191,7 +191,7 @@ int PthreadCond::Signal() {
     PthreadMutex* mp = td->mutex_obj;
     has_user_waiters = SleepqRemove(sq, td);
 
-    std::binary_semaphore* waddr = nullptr;
+    BinarySemaphore* waddr = nullptr;
     if (mp->m_owner == curthread) {
         if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
             curthread->WakeAll();
@@ -211,7 +211,7 @@ int PthreadCond::Signal() {
 
 struct BroadcastArg {
     Pthread* curthread;
-    std::binary_semaphore* waddrs[Pthread::MaxDeferWaiters];
+    BinarySemaphore* waddrs[Pthread::MaxDeferWaiters];
     int count;
 };
 

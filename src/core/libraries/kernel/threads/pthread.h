@@ -11,6 +11,8 @@
 #include <shared_mutex>
 
 #include "common/enum.h"
+#include "core/libraries/kernel/sync/mutex.h"
+#include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/kernel/time.h"
 #include "core/thread.h"
 #include "core/tls.h"
@@ -44,7 +46,7 @@ enum class PthreadMutexProt : u32 {
 };
 
 struct PthreadMutex {
-    std::timed_mutex m_lock;
+    TimedMutex m_lock;
     PthreadMutexFlags m_flags;
     Pthread* m_owner;
     int m_count;
@@ -288,14 +290,14 @@ struct Pthread {
     int report_events;
     int event_mask;
     std::string name;
-    std::binary_semaphore wake_sema{0};
+    BinarySemaphore wake_sema{0};
     SleepQueue* sleepqueue;
     void* wchan;
     PthreadMutex* mutex_obj;
     bool will_sleep;
     bool has_user_waiters;
     int nwaiter_defer;
-    std::binary_semaphore* defer_waiters[MaxDeferWaiters];
+    BinarySemaphore* defer_waiters[MaxDeferWaiters];
 
     bool InCritical() const noexcept {
         return locklevel > 0 || critical_count > 0;
