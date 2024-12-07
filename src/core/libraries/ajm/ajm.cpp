@@ -138,8 +138,9 @@ int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     if (p_context_id == nullptr || reserved != 0) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
-    *p_context_id = 1;
-    contexts.emplace(contexts.size() + 1, std::make_unique<AjmContext>());
+    u32 id = contexts.size() + 1;
+    *p_context_id = id;
+    contexts.emplace(id, std::make_unique<AjmContext>());
     return ORBIS_OK;
 }
 
