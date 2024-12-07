@@ -24,11 +24,15 @@ enum class Stage : u32 {
 };
 constexpr u32 MaxStageTypes = 7;
 
+// Vertex intentionally comes after TCS/TES because in a tess pipeline,
+// we need to find the ls_stride from tess constants V# (in order to define an output attribute
+// array with correct length), and finding the tess constant V# requires analysis while compiling
+// TCS/TES (for now)
 enum class LogicalStage : u32 {
     Fragment,
-    Vertex,
     TessellationControl,
     TessellationEval,
+    Vertex,
     Geometry,
     GsCopy,
     Compute,

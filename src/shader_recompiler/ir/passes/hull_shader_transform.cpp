@@ -606,9 +606,8 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 };
                 const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
                 IR::U32 index = IR::U32{inst.Arg(1)};
-                // ASSERT(index.IsImmediate());
-                // const u32 gcn_factor_idx = (info.inst_offset.Value() + index.U32()) >> 2;
-                const u32 gcn_factor_idx = (info.inst_offset.Value()) >> 2;
+                ASSERT(index.IsImmediate());
+                const u32 gcn_factor_idx = (info.inst_offset.Value() + index.U32()) >> 2;
 
                 const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
@@ -670,6 +669,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
 
                     if (output_kind == AttributeRegion::OutputCP) {
+#if 0
                         // Invocation ID array index is implicit, handled by SPIRV backend
                         IR::U32 attr_index = ir.ShiftRightLogical(
                             ir.IMod(addr, ir.GetAttributeU32(IR::Attribute::TcsCpStride)),
@@ -677,6 +677,13 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         IR::U32 comp_index =
                             ir.ShiftRightLogical(ir.BitwiseAnd(addr, ir.Imm32(0xFU)), ir.Imm32(2u));
                         ir.SetTcsGenericAttribute(data, attr_index, comp_index);
+#else
+                        u32 offset_dw = address_info.attribute_byte_offset >> 2;
+                        const u32 param = offset_dw >> 2;
+                        const u32 comp = offset_dw & 3;
+                        // Invocation ID array index is implicit, handled by SPIRV backend
+                        ir.SetTcsGenericAttribute(data, ir.Imm32(param), ir.Imm32(comp));
+#endif
                     } else {
                         ASSERT(output_kind == AttributeRegion::PatchConst);
                         ir.SetPatch(IR::PatchGeneric(address_info.attribute_byte_offset >> 2),
@@ -899,9 +906,14 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                         static_cast<u32>(IR::Attribute::TcsLsStride) + offset);
                     IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
 
-                    ASSERT(tess_constant_attr !=
-                           IR::Attribute::TcsOffChipTessellationFactorThreshold);
-                    IR::U32 replacement = ir.GetAttributeU32(tess_constant_attr);
+                    IR::U32 replacement;
+                    if (tess_constant_attr ==
+                        IR::Attribute::TcsOffChipTessellationFactorThreshold) {
+                        replacement = ir.BitCast<IR::U32>(
+                            ir.GetAttribute(IR::Attribute::TcsOffChipTessellationFactorThreshold));
+                    } else {
+                        replacement = ir.GetAttributeU32(tess_constant_attr);
+                    }
 
                     inst.ReplaceUsesWithAndRemove(replacement);
                 }
@@ -926,7 +938,10 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                         MatchU32(0), MatchU32(8))
                         .DoMatch(IR::Value{&inst})) {
                     IR::IREmitter emit(*block, it);
-                    IR::Value replacement = emit.GetAttributeU32(IR::Attribute::TessPatchIdInVgt);
+                    // IR::Value replacement =
+                    // emit.GetAttributeU32(IR::Attribute::TessPatchIdInVgt);
+                    // TODO should be fine but check this
+                    IR::Value replacement(0u);
                     inst.ReplaceUsesWithAndRemove(replacement);
                 } else if (MakeInstPattern<IR::Opcode::BitFieldUExtract>(
                                MakeInstPattern<IR::Opcode::GetAttributeU32>(

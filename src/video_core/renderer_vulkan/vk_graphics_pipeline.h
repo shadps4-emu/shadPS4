@@ -101,9 +101,6 @@ public:
 
 private:
     void BuildDescSetLayout();
-    // Temp, find better way
-    boost::container::small_vector<const Shader::Info*, MaxShaderStages> GetCompilationOrder()
-        const;
 
 private:
     GraphicsPipelineKey key;

@@ -349,33 +349,14 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
 GraphicsPipeline::~GraphicsPipeline() = default;
 
-boost::container::small_vector<const Shader::Info*, MaxShaderStages>
-GraphicsPipeline::GetCompilationOrder() const {
-    bool uses_tessellation = stages[static_cast<size_t>(Shader::LogicalStage::TessellationControl)];
-
-    boost::container::small_vector<const Shader::Info*, MaxShaderStages> ordered_stages;
-    for (auto s = 0; s < MaxShaderStages; s++) {
-        if (uses_tessellation &&
-            static_cast<Shader::LogicalStage>(s) == Shader::LogicalStage::Vertex) {
-            continue;
-        }
-        if (stages[s]) {
-            ordered_stages.push_back(stages[s]);
-        }
-    }
-    if (uses_tessellation) {
-        ordered_stages.push_back(stages[static_cast<size_t>(Shader::LogicalStage::Vertex)]);
-    }
-    // TODO handle geometry + tess
-    return ordered_stages;
-}
-
 void GraphicsPipeline::BuildDescSetLayout() {
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     u32 binding{};
 
-    for (const auto* stage : GetCompilationOrder()) {
-        ASSERT(stage);
+    for (const auto* stage : stages) {
+        if (!stage) {
+            continue;
+        }
         if (stage->has_readconst) {
             bindings.push_back({
                 .binding = binding++,
