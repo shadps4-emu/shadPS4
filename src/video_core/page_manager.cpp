@@ -32,7 +32,7 @@ constexpr size_t PAGEBITS = 12;
 #ifdef ENABLE_USERFAULTFD
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
-        uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
+        uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY);
         ASSERT_MSG(uffd != -1, "{}", Common::GetLastErrorMsg());
 
         // Request uffdio features from kernel.
