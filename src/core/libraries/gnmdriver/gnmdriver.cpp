@@ -544,7 +544,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
             .base_addr = base_addr,
         });
     }
-    liverpool->SubmitAsc(vqid, acb_span);
+    liverpool->SubmitAsc(gnm_vqid, acb_span);
 
     *asc_queue.read_addr += acb_size;
     *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
