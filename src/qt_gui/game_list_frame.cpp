@@ -246,7 +246,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         break;
     case Playable:
         color = QStringLiteral("#47D35C");
-        tooltip_string = tr("Game can be completed with playable performance and no major glitches");
+        tooltip_string = 
+            tr("Game can be completed with playable performance and no major glitches");
         break;
     }
 
@@ -273,8 +274,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
 
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
-    QLabel* version_label =
-        new QLabel(QString("%1, (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version), widget);
+    QLabel* version_label = new QLabel(
+        QString("%1, (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version), widget);
     version_label->setStyleSheet("color: white; font-size: 10px;");
 
     layout->addWidget(dotLabel, 0, 0, -1, 1);
