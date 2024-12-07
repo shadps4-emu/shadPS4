@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <fmt/chrono.h>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/io_file.h"
 #include "core/devtools/options.h"

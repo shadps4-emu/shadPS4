@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <core/libraries/system/msgdialog_ui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/cstring.h"

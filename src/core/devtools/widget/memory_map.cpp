@@ -3,7 +3,7 @@
 
 #include <cinttypes>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "core/debug_state.h"
 #include "core/memory.h"

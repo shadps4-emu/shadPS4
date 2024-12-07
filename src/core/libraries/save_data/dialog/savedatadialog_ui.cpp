@@ -3,7 +3,7 @@
 
 #include <fmt/chrono.h>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
 #include "common/singleton.h"

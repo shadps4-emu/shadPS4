@@ -22,7 +22,7 @@
 #include "video_core/renderer_vulkan/vk_platform.h"
 
 #if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
-static vk::DynamicLoader dl;
+static vk::detail::DynamicLoader dl;
 #else
 extern "C" {
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,

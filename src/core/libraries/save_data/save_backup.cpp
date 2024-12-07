@@ -5,7 +5,7 @@
 #include <mutex>
 #include <semaphore>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "save_backup.h"
 #include "save_instance.h"
