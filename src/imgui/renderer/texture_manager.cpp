@@ -9,6 +9,7 @@
 #include "common/io_file.h"
 #include "common/polyfill_thread.h"
 #include "common/stb.h"
+#include "common/thread.h"
 #include "imgui_impl_vulkan.h"
 #include "texture_manager.h"
 
@@ -81,6 +82,7 @@ RefCountedTexture::~RefCountedTexture() {
         }
     }
 }
+
 RefCountedTexture::Image RefCountedTexture::GetTexture() const {
     if (inner == nullptr) {
         return {};
@@ -91,6 +93,7 @@ RefCountedTexture::Image RefCountedTexture::GetTexture() const {
         .height = inner->height,
     };
 }
+
 RefCountedTexture::operator bool() const {
     return inner != nullptr && inner->texture_id != nullptr;
 }
@@ -130,6 +133,7 @@ Inner::~Inner() {
 }
 
 void WorkerLoop() {
+    Common::SetCurrentThreadName("shadPS4:ImGuiTextureManager");
     std::mutex mtx;
     while (g_is_worker_running) {
         std::unique_lock lk{mtx};

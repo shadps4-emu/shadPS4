@@ -375,12 +375,12 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
-void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
-    UnmapMemoryImpl(virtual_addr, size);
+    return UnmapMemoryImpl(virtual_addr, size);
 }
 
-void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
     ASSERT_MSG(vma_base.Contains(virtual_addr, size),
@@ -415,6 +415,8 @@ void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
                has_backing, readonly_file);
     TRACK_FREE(virtual_addr, "VMEM");
+
+    return ORBIS_OK;
 }
 
 int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {

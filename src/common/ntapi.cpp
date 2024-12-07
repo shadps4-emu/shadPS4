@@ -9,6 +9,7 @@ NtClose_t NtClose = nullptr;
 NtSetInformationFile_t NtSetInformationFile = nullptr;
 NtCreateThread_t NtCreateThread = nullptr;
 NtTerminateThread_t NtTerminateThread = nullptr;
+NtQueueApcThreadEx_t NtQueueApcThreadEx = nullptr;
 
 namespace Common::NtApi {
 
@@ -21,6 +22,7 @@ void Initialize() {
         (NtSetInformationFile_t)GetProcAddress(nt_handle, "NtSetInformationFile");
     NtCreateThread = (NtCreateThread_t)GetProcAddress(nt_handle, "NtCreateThread");
     NtTerminateThread = (NtTerminateThread_t)GetProcAddress(nt_handle, "NtTerminateThread");
+    NtQueueApcThreadEx = (NtQueueApcThreadEx_t)GetProcAddress(nt_handle, "NtQueueApcThreadEx");
 }
 
 } // namespace Common::NtApi
