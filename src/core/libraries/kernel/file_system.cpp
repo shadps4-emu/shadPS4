@@ -715,7 +715,7 @@ static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) 
         if (!existent_folder) {
             u32 handle = h->CreateHandle();
             auto* new_file = h->GetFile(handle);
-            new_file->is_directory = true;
+            new_file->type = Core::FileSys::FileType::Directory;
             new_file->m_guest_name = guest_name;
             new_file->m_host_name = update_dir_name;
             if (!std::filesystem::is_directory(new_file->m_host_name)) {
