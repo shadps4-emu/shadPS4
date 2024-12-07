@@ -11,6 +11,8 @@
 #include "common/config.h"
 #include "core/file_format/psf.h"
 
+static constexpr int COMPAT_DB_VERSION = 1; 
+
 enum class CompatibilityStatus {
     Unknown,
     Nothing,
@@ -46,6 +48,8 @@ struct CompatibilityEntry {
     CompatibilityStatus status;
     QString version;
     QDateTime last_tested;
+    QString url;
+    int issue_number;
 };
 
 class CompatibilityInfoClass : public QObject {

@@ -18,15 +18,8 @@ CompatibilityInfoClass::CompatibilityInfoClass()
 CompatibilityInfoClass::~CompatibilityInfoClass() = default;
 
 void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
-    QFileInfo check_file(m_compatibility_filename);
-    const auto modified_delta = QDateTime::currentDateTime() - check_file.lastModified();
-    if (check_file.exists() && check_file.isFile() &&
-        std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() < 60) {
-        if (LoadCompatibilityFile())
-            return;
-        QMessageBox::critical(parent, tr("Error"),
-                              tr("Failure in reading compatibility_data.json."));
-    }
+    if (LoadCompatibilityFile())
+        return;
 
     QNetworkReply* reply = FetchPage(1);
     WaitForReply(reply);
@@ -49,7 +42,7 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
         reply->deleteLater();
         QMessageBox::critical(
             parent, tr("Error"),
-            tr("Unable to update compatibility data! Using old compatibility data..."));
+            tr("Unable to update compatibility data! Try again later."));
         // Try loading compatibility_file.json again
         LoadCompatibilityFile();
         return;
@@ -83,6 +76,8 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
         }
 
         QJsonDocument json_doc;
+        m_compatibility_database["version"] = COMPAT_DB_VERSION;
+
         json_doc.setObject(m_compatibility_database);
         compatibility_file.write(json_doc.toJson());
         compatibility_file.close();
@@ -131,7 +126,9 @@ CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::strin
                         LabelToCompatStatus.at(compatibility_entry_obj["status"].toString()),
                         compatibility_entry_obj["version"].toString(),
                         QDateTime::fromString(compatibility_entry_obj["last_tested"].toString(),
-                                              Qt::ISODate)};
+                                              Qt::ISODate),
+                        compatibility_entry_obj["url"].toString(),
+                        compatibility_entry_obj["issue_number"].toInt()};
                     return compatibility_entry;
                 }
             }
@@ -141,6 +138,14 @@ CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::strin
 }
 
 bool CompatibilityInfoClass::LoadCompatibilityFile() {
+    // Returns true if compatibility is loaded succescfully
+    QFileInfo check_file(m_compatibility_filename);
+    const auto modified_delta = QDateTime::currentDateTime() - check_file.lastModified();
+    if (!check_file.exists() || !check_file.isFile() &&
+        std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() > 60) {
+        return false;
+    }
+ 
     QFile compatibility_file(m_compatibility_filename);
     if (!compatibility_file.open(QIODevice::ReadOnly)) {
         compatibility_file.close();
@@ -153,6 +158,14 @@ bool CompatibilityInfoClass::LoadCompatibilityFile() {
     if (json_doc.isEmpty() || json_doc.isNull()) {
         return false;
     }
+
+    // Check database version
+    int version_number;
+    if (json_doc.object()["version"].isDouble()) {
+        if (json_doc.object()["version"].toInt() < COMPAT_DB_VERSION)
+            return false;
+    } else
+        return false;
 
     m_compatibility_database = json_doc.object();
     return true;
@@ -201,7 +214,9 @@ void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
                  {"last_tested", issue_obj["updated_at"]},
                  {"version", issue_obj["milestone"].isNull()
                                  ? "unknown"
-                                 : issue_obj["milestone"].toObject()["title"].toString()}}};
+                                 : issue_obj["milestone"].toObject()["title"].toString()},
+                 {"url", issue_obj["html_url"]},
+                 {"issue_number", issue_obj["number"]}}};
 
             compatibility_obj[current_os] = compatibility_data;
 

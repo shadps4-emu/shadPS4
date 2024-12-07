@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QToolTip>
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
-#include <QToolTip>
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,
@@ -73,6 +73,12 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
+    });
+
+    connect(this, &QTableWidget::cellClicked, this, [=](int row, int column) { 
+        if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
+            QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
+        }
     });
 }
 
@@ -223,7 +229,6 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     QColor color;
     QString status_explanation;
 
-
     switch (entry.status) {
     case CompatibilityStatus::Unknown:
         color = QStringLiteral("#000000");
@@ -247,20 +252,23 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         break;
     case CompatibilityStatus::Playable:
         color = QStringLiteral("#47D35C");
-        status_explanation = 
+        status_explanation =
             tr("Game can be completed with playable performance and no major glitches");
         break;
     }
 
-    QString tooltip_string; 
+    QString tooltip_string;
 
     if (entry.status == CompatibilityStatus::Unknown) {
-        tooltip_string = status_explanation; 
+        tooltip_string = status_explanation;
     } else {
         tooltip_string =
+            "<p> <i>" + tr("Click to go to issue") + "</i>" + 
+            "<br>" + 
             tr("Last updated") +
-            QString(": %1 (%2)\n").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
-            status_explanation;
+            QString(": %1 (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
+            "<br>" + 
+            status_explanation + "</p>";
     }
 
     QPixmap circle_pixmap(16, 16);
