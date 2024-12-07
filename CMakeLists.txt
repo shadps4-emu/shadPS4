@@ -878,6 +878,10 @@ target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAlloca
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
 
+if (ENABLE_DISCORD_RPC)
+    target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+endif()
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
 endif()

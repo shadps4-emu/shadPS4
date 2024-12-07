@@ -1071,6 +1071,28 @@ struct Liverpool {
         BitField<27, 1, u32> enable_postz_overrasterization;
     };
 
+    union PsInput {
+        u32 raw;
+        struct {
+            u32 persp_sample_ena : 1;
+            u32 persp_center_ena : 1;
+            u32 persp_centroid_ena : 1;
+            u32 persp_pull_model_ena : 1;
+            u32 linear_sample_ena : 1;
+            u32 linear_center_ena : 1;
+            u32 linear_centroid_ena : 1;
+            u32 line_stipple_tex_ena : 1;
+            u32 pos_x_float_ena : 1;
+            u32 pos_y_float_ena : 1;
+            u32 pos_z_float_ena : 1;
+            u32 pos_w_float_ena : 1;
+            u32 front_face_ena : 1;
+            u32 ancillary_ena : 1;
+            u32 sample_coverage_ena : 1;
+            u32 pos_fixed_pt_ena : 1;
+        };
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -1126,7 +1148,10 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA191 - 0xA187);
             std::array<PsInputControl, 32> ps_inputs;
             VsOutputConfig vs_output_config;
-            INSERT_PADDING_WORDS(4);
+            INSERT_PADDING_WORDS(1);
+            PsInput ps_input_ena;
+            PsInput ps_input_addr;
+            INSERT_PADDING_WORDS(1);
             BitField<0, 6, u32> num_interp;
             INSERT_PADDING_WORDS(0xA1C3 - 0xA1B6 - 1);
             ShaderPosFormat shader_pos_format;
@@ -1388,6 +1413,8 @@ static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
 static_assert(GFX6_3D_REG_INDEX(ps_inputs) == 0xA191);
 static_assert(GFX6_3D_REG_INDEX(vs_output_config) == 0xA1B1);
+static_assert(GFX6_3D_REG_INDEX(ps_input_ena) == 0xA1B3);
+static_assert(GFX6_3D_REG_INDEX(ps_input_addr) == 0xA1B4);
 static_assert(GFX6_3D_REG_INDEX(num_interp) == 0xA1B6);
 static_assert(GFX6_3D_REG_INDEX(shader_pos_format) == 0xA1C3);
 static_assert(GFX6_3D_REG_INDEX(z_export_format) == 0xA1C4);
