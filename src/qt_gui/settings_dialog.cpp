@@ -6,6 +6,9 @@
 #include <QHoverEvent>
 
 #include <common/version.h>
+#ifdef ENABLE_DISCORD_RPC
+#include "common/discord_rpc_handler.h"
+#endif
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
 #endif
