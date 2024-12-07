@@ -351,7 +351,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="343"/>
 			<source>Download Cheats/Patches</source>
-			<translation>Hileler/Yamalar</translation>
+			<translation>Hileleri/Yamaları İndir</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
