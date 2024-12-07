@@ -108,7 +108,9 @@ void Emulator::Run(const std::filesystem::path& file) {
     // Use the eboot from the separated updates folder if it's there
     std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
     bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys");
-    std::filesystem::path eboot_path = use_game_patch ? game_patch_folder / file.filename() : file;
+    std::filesystem::path eboot_path = std::filesystem::exists(game_patch_folder / file.filename())
+                                           ? game_patch_folder / file.filename()
+                                           : file;
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();

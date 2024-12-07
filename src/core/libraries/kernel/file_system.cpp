@@ -695,12 +695,47 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     return sizeof(OrbisKernelDirent);
 }
 
+static int HandleSeparateUpdateDents(int fd, char* buf, int nbytes, s64* basep) {
+    int dir_entries = 0;
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto* file = h->GetFile(fd);
+    auto update_dir_name = std::string{fmt::UTF(file->m_host_name.u8string()).data};
+    auto mount = mnt->GetMountFromHostPath(update_dir_name);
+    auto suffix = std::string{fmt::UTF(mount->host_path.u8string()).data};
+    auto guest_name = mount->mount + "/" + update_dir_name.substr(suffix.size() + 1);
+
+    size_t pos = update_dir_name.find("-UPDATE");
+    if (pos != std::string::npos) {
+        update_dir_name.erase(pos, 7);
+
+        u32 handle = h->CreateHandle();
+        auto* new_file = h->GetFile(handle);
+        new_file->is_directory = true;
+        new_file->m_guest_name = guest_name;
+        new_file->m_host_name = update_dir_name;
+        if (!std::filesystem::is_directory(new_file->m_host_name)) {
+            h->DeleteHandle(handle);
+            return dir_entries;
+        } else {
+            new_file->dirents = GetDirectoryEntries(new_file->m_host_name);
+            new_file->dirents_index = 0;
+        }
+        new_file->is_opened = true;
+        dir_entries = GetDents(h->GetFileDescriptor(new_file), buf, nbytes, basep);
+        h->DeleteHandle(handle);
+    }
+
+    return dir_entries;
+}
+
 int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
-    return GetDents(fd, buf, nbytes, nullptr);
+    return GetDents(fd, buf, nbytes, nullptr) + HandleSeparateUpdateDents(fd, buf, nbytes, nullptr);
 }
 
 int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
-    return GetDents(fd, buf, nbytes, basep);
+    return GetDents(fd, buf, nbytes, basep) + HandleSeparateUpdateDents(fd, buf, nbytes, basep);
 }
 
 s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
