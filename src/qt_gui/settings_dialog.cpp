@@ -503,9 +503,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
 
 #ifdef ENABLE_DISCORD_RPC
-    Config::getEnableDiscordRPC();
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
-    if (val == Qt::Checked) {
+    if (Config::getEnableDiscordRPC()) {
         rpc->init();
         rpc->setStatusIdling();
     } else {
