@@ -11,7 +11,7 @@
 #include "common/config.h"
 #include "core/file_format/psf.h"
 
-enum CompatibilityStatus {
+enum class CompatibilityStatus {
     Unknown,
     Nothing,
     Boots,
@@ -21,22 +21,22 @@ enum CompatibilityStatus {
 };
 
 // Prioritize different compatibility reports based on user's platform
-enum OSType {
+enum class OSType {
 #ifdef Q_OS_WIN
-    Win32OS = 0,
-    UnknownOS,
-    LinuxOS,
+    Win32 = 0,
+    Unknown,
+    Linux,
     macOS,
 #elif defined(Q_OS_LINUX)
-    LinuxOS = 0,
-    UnknownOS,
-    Win32OS,
+    Linux = 0,
+    Unknown,
+    Win32,
     macOS,
 #elif defined(Q_OS_MAC)
     macOS = 0,
-    UnknownOS,
-    LinuxOS,
-    Win32OS,
+    Unknown,
+    Linux,
+    Win32,
 #endif
     // Fake enum to allow for iteration
     Last
@@ -59,9 +59,9 @@ public:
         {QStringLiteral("status-ingame"), CompatibilityStatus::Ingame},
         {QStringLiteral("status-playable"), CompatibilityStatus::Playable}};
     inline static const std::unordered_map<QString, OSType> LabelToOSType = {
-        {QStringLiteral("os-linux"), OSType::LinuxOS},
+        {QStringLiteral("os-linux"), OSType::Linux},
         {QStringLiteral("os-macOS"), OSType::macOS},
-        {QStringLiteral("os-windows"), OSType::Win32OS},
+        {QStringLiteral("os-windows"), OSType::Win32},
     };
 
     inline static const std::unordered_map<CompatibilityStatus, QString> CompatStatusToString = {
@@ -72,10 +72,10 @@ public:
         {CompatibilityStatus::Ingame, QStringLiteral("Ingame")},
         {CompatibilityStatus::Playable, QStringLiteral("Playable")}};
     inline static const std::unordered_map<OSType, QString> OSTypeToString = {
-        {OSType::LinuxOS, QStringLiteral("os-linux")},
+        {OSType::Linux, QStringLiteral("os-linux")},
         {OSType::macOS, QStringLiteral("os-macOS")},
-        {OSType::Win32OS, QStringLiteral("os-windows")},
-        {OSType::UnknownOS, QStringLiteral("os-unknown")}};
+        {OSType::Win32, QStringLiteral("os-windows")},
+        {OSType::Unknown, QStringLiteral("os-unknown")}};
 
     CompatibilityInfoClass();
     ~CompatibilityInfoClass();

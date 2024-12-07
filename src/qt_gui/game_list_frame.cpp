@@ -221,34 +221,46 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     widget->setStyleSheet("QToolTip {background-color: black; color: white;}");
 
     QColor color;
-    QString tooltip_string;
+    QString status_explanation;
+
 
     switch (entry.status) {
-    case Unknown:
+    case CompatibilityStatus::Unknown:
         color = QStringLiteral("#000000");
-        tooltip_string = tr("Compatibility is untested");
+        status_explanation = tr("Compatibility is untested");
         break;
-    case Nothing:
+    case CompatibilityStatus::Nothing:
         color = QStringLiteral("#212121");
-        tooltip_string = tr("Games that do not initialize properly / crash the emulator");
+        status_explanation = tr("Games does not initialize properly / crashes the emulator");
         break;
-    case Boots:
+    case CompatibilityStatus::Boots:
         color = QStringLiteral("#828282");
-        tooltip_string = tr("Games that are able to boot, but only display a blank screen");
+        status_explanation = tr("Game boots, but only displays a blank screen");
         break;
-    case Menus:
+    case CompatibilityStatus::Menus:
         color = QStringLiteral("#FF0000");
-        tooltip_string = tr("Games that displays an image but do not go past the menus");
+        status_explanation = tr("Game displays an image but does not go past the menu");
         break;
-    case Ingame:
+    case CompatibilityStatus::Ingame:
         color = QStringLiteral("#F2D624");
-        tooltip_string = tr("Games that have game-breaking glitches or unplayable performance");
+        status_explanation = tr("Game has game-breaking glitches or unplayable performance");
         break;
-    case Playable:
+    case CompatibilityStatus::Playable:
         color = QStringLiteral("#47D35C");
-        tooltip_string = 
+        status_explanation = 
             tr("Game can be completed with playable performance and no major glitches");
         break;
+    }
+
+    QString tooltip_string; 
+
+    if (entry.status == CompatibilityStatus::Unknown) {
+        tooltip_string = status_explanation; 
+    } else {
+        tooltip_string =
+            tr("Last updated") +
+            QString(": %1 (%2)\n").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
+            status_explanation;
     }
 
     QPixmap circle_pixmap(16, 16);
@@ -264,7 +276,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
 
     QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
 
-    label->setStyleSheet("color: white; font-size: 12px; font-weight: bold;");
+    label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
     // Create shadow effect
     QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
@@ -274,13 +286,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
 
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
-    QLabel* version_label = new QLabel(
-        QString("%1, (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version), widget);
-    version_label->setStyleSheet("color: white; font-size: 10px;");
-
     layout->addWidget(dotLabel, 0, 0, -1, 1);
     layout->addWidget(label, 0, 1, 1, 1);
-    layout->addWidget(version_label, 1, 1, 1, 1);
     layout->setAlignment(Qt::AlignLeft);
     widget->setLayout(layout);
     widget->setToolTip(tooltip_string);

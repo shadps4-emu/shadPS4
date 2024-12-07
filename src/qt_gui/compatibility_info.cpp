@@ -122,7 +122,7 @@ CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::strin
     QString title_id = QString::fromStdString(serial);
     if (m_compatibility_database.contains(title_id)) {
         {
-            for (int os_int = 0; os_int != OSType::Last; os_int++) {
+            for (int os_int = 0; os_int != static_cast<int>(OSType::Last); os_int++) {
                 QString os_string = OSTypeToString.at(static_cast<OSType>(os_int));
                 QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
                 if (compatibility_obj.contains(os_string)) {
