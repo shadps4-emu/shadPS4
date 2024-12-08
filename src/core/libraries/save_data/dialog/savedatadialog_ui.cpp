@@ -3,7 +3,7 @@
 
 #include <fmt/chrono.h>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
 #include "common/singleton.h"
@@ -98,12 +98,9 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = param_sfo.GetLastWrite();
-#if defined(_WIN32) && !defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__)
-            auto utc_time = std::chrono::file_clock::to_utc(last_write);
-#else
-            auto utc_time = std::chrono::file_clock::to_sys(last_write);
-#endif
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
+            std::string date_str =
+                fmt::format("{:%d %b, %Y %R}",
+                            fmt::localtime(std::chrono::system_clock::to_time_t(last_write)));
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
@@ -592,7 +589,7 @@ void SaveDialogUi::DrawList() {
                 int idx = 0;
                 int max_idx = 0;
                 bool is_min = pos == FocusPos::DATAOLDEST;
-                std::filesystem::file_time_type max_write{};
+                std::chrono::system_clock::time_point max_write{};
                 if (state->new_item.has_value()) {
                     idx++;
                 }

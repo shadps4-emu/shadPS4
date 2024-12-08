@@ -7,6 +7,7 @@ path = [
     ".github/FUNDING.yml",
     ".github/shadps4.png",
     ".gitmodules",
+    "dist/MacOSBundleInfo.plist.in",
     "dist/net.shadps4.shadPS4.desktop",
     "dist/net.shadps4.shadPS4_metadata.pot",
     "dist/net.shadps4.shadPS4.metainfo.xml",
@@ -41,6 +42,7 @@ path = [
     "src/images/refresh_icon.png",
     "src/images/settings_icon.png",
     "src/images/stop_icon.png",
+    "src/images/utils_icon.png",
     "src/images/shadPS4.icns",
     "src/images/shadps4.ico",
     "src/images/net.shadps4.shadPS4.svg",
@@ -68,7 +70,7 @@ SPDX-FileCopyrightText = "2019-2024 Baldur Karlsson"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = "externals/stb_image.h"
+path = "externals/stb/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2017 Sean Barrett"
 SPDX-License-Identifier = "MIT"

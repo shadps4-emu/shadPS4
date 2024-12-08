@@ -131,7 +131,7 @@ static int UTF8CharLength(TextEditor::Char c) {
 }
 
 // "Borrowed" from ImGui source
-static inline int ImTextCharToUtf8(char* buf, int buf_size, unsigned int c) {
+static inline int ImTextCharToUtf8(char* buf, int buf_size, u32 c) {
     if (c < 0x80) {
         buf[0] = (char)c;
         return 1;

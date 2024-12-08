@@ -206,7 +206,7 @@ Id DefineMain(EmitContext& ctx, const IR::Program& program) {
     return main;
 }
 
-void SetupCapabilities(const Info& info, EmitContext& ctx) {
+void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ctx) {
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
     ctx.AddCapability(spv::Capability::ImageQuery);
@@ -251,6 +251,10 @@ void SetupCapabilities(const Info& info, EmitContext& ctx) {
     if (info.stage == Stage::Geometry) {
         ctx.AddCapability(spv::Capability::Geometry);
     }
+    if (info.stage == Stage::Fragment && profile.needs_manual_interpolation) {
+        ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
+        ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+    }
 }
 
 void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
@@ -280,7 +284,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
             ctx.AddExtension("SPV_EXT_demote_to_helper_invocation");
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
         }
-        if (info.stores.Get(IR::Attribute::Depth)) {
+        if (info.stores.GetAny(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
         break;
@@ -342,7 +346,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    SetupCapabilities(program.info, ctx);
+    SetupCapabilities(program.info, profile, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
     binding.user_data += program.info.ud_mask.NumRegs();

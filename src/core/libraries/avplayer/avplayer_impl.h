@@ -3,11 +3,8 @@
 
 #pragma once
 
-#include "avplayer.h"
-#include "avplayer_data_streamer.h"
-#include "avplayer_state.h"
-
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/avplayer/avplayer_state.h"
 
 #include <mutex>
 
@@ -17,7 +14,6 @@ extern "C" {
 }
 
 #include <memory>
-#include <vector>
 
 namespace Libraries::AvPlayer {
 

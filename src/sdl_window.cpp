@@ -6,9 +6,9 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/version.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
@@ -20,6 +20,45 @@
 #endif
 
 namespace Frontend {
+
+using namespace Libraries::Pad;
+
+static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
+    switch (button) {
+    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+        return OrbisPadButtonDataOffset::Down;
+    case SDL_GAMEPAD_BUTTON_DPAD_UP:
+        return OrbisPadButtonDataOffset::Up;
+    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+        return OrbisPadButtonDataOffset::Left;
+    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+        return OrbisPadButtonDataOffset::Right;
+    case SDL_GAMEPAD_BUTTON_SOUTH:
+        return OrbisPadButtonDataOffset::Cross;
+    case SDL_GAMEPAD_BUTTON_NORTH:
+        return OrbisPadButtonDataOffset::Triangle;
+    case SDL_GAMEPAD_BUTTON_WEST:
+        return OrbisPadButtonDataOffset::Square;
+    case SDL_GAMEPAD_BUTTON_EAST:
+        return OrbisPadButtonDataOffset::Circle;
+    case SDL_GAMEPAD_BUTTON_START:
+        return OrbisPadButtonDataOffset::Options;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD:
+        return OrbisPadButtonDataOffset::TouchPad;
+    case SDL_GAMEPAD_BUTTON_BACK:
+        return OrbisPadButtonDataOffset::TouchPad;
+    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+        return OrbisPadButtonDataOffset::L1;
+    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+        return OrbisPadButtonDataOffset::R1;
+    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+        return OrbisPadButtonDataOffset::L3;
+    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+        return OrbisPadButtonDataOffset::R3;
+    default:
+        return OrbisPadButtonDataOffset::None;
+    }
+}
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
@@ -80,7 +119,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 
 WindowSDL::~WindowSDL() = default;
 
-void WindowSDL::waitEvent() {
+void WindowSDL::WaitEvent() {
     // Called on main thread
     SDL_Event event;
 
@@ -96,16 +135,16 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
-        onResize();
+        OnResize();
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
     case SDL_EVENT_WINDOW_EXPOSED:
         is_shown = event.type == SDL_EVENT_WINDOW_EXPOSED;
-        onResize();
+        OnResize();
         break;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        onKeyPress(&event);
+        OnKeyPress(&event);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -115,7 +154,7 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        onGamepadEvent(&event);
+        OnGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
         is_open = false;
@@ -125,18 +164,16 @@ void WindowSDL::waitEvent() {
     }
 }
 
-void WindowSDL::initTimers() {
+void WindowSDL::InitTimers() {
     SDL_AddTimer(100, &PollController, controller);
 }
 
-void WindowSDL::onResize() {
+void WindowSDL::OnResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
     ImGui::Core::OnResize();
 }
 
-void WindowSDL::onKeyPress(const SDL_Event* event) {
-    using Libraries::Pad::OrbisPadButtonDataOffset;
-
+void WindowSDL::OnKeyPress(const SDL_Event* event) {
 #ifdef __APPLE__
     // Use keys that are more friendly for keyboards without a keypad.
     // Once there are key binding options this won't be necessary.
@@ -151,38 +188,38 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     constexpr SDL_Keycode TriangleKey = SDLK_KP_8;
 #endif
 
-    u32 button = 0;
+    auto button = OrbisPadButtonDataOffset::None;
     Input::Axis axis = Input::Axis::AxisMax;
     int axisvalue = 0;
     int ax = 0;
     std::string backButtonBehavior = Config::getBackButtonBehavior();
     switch (event->key.key) {
     case SDLK_UP:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
+        button = OrbisPadButtonDataOffset::Up;
         break;
     case SDLK_DOWN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
+        button = OrbisPadButtonDataOffset::Down;
         break;
     case SDLK_LEFT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
+        button = OrbisPadButtonDataOffset::Left;
         break;
     case SDLK_RIGHT:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
+        button = OrbisPadButtonDataOffset::Right;
         break;
     case TriangleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
+        button = OrbisPadButtonDataOffset::Triangle;
         break;
     case CircleKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
+        button = OrbisPadButtonDataOffset::Circle;
         break;
     case CrossKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
+        button = OrbisPadButtonDataOffset::Cross;
         break;
     case SquareKey:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
+        button = OrbisPadButtonDataOffset::Square;
         break;
     case SDLK_RETURN:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
+        button = OrbisPadButtonDataOffset::Options;
         break;
     case SDLK_A:
         axis = Input::Axis::LeftX;
@@ -257,19 +294,19 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_X:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+        button = OrbisPadButtonDataOffset::L3;
         break;
     case SDLK_M:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+        button = OrbisPadButtonDataOffset::R3;
         break;
     case SDLK_Q:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+        button = OrbisPadButtonDataOffset::L1;
         break;
     case SDLK_U:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+        button = OrbisPadButtonDataOffset::R1;
         break;
     case SDLK_E:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        button = OrbisPadButtonDataOffset::L2;
         axis = Input::Axis::TriggerLeft;
         if (event->type == SDL_EVENT_KEY_DOWN) {
             axisvalue += 255;
@@ -279,7 +316,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         ax = Input::GetAxis(0, 0x80, axisvalue);
         break;
     case SDLK_O:
-        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
+        button = OrbisPadButtonDataOffset::R2;
         axis = Input::Axis::TriggerRight;
         if (event->type == SDL_EVENT_KEY_DOWN) {
             axisvalue += 255;
@@ -294,9 +331,9 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
                                                    : (backButtonBehavior == "right" ? 0.75f : 0.5f);
             // trigger a touchpad event so that the touchpad emulation for back button works
             controller->SetTouchpadState(0, true, x, 0.5f);
-            button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+            button = OrbisPadButtonDataOffset::TouchPad;
         } else {
-            button = 0;
+            button = {};
         }
         break;
     case SDLK_F11:
@@ -317,7 +354,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     default:
         break;
     }
-    if (button != 0) {
+    if (button != OrbisPadButtonDataOffset::None) {
         controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
     }
     if (axis != Input::Axis::AxisMax) {
@@ -325,10 +362,8 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     }
 }
 
-void WindowSDL::onGamepadEvent(const SDL_Event* event) {
-    using Libraries::Pad::OrbisPadButtonDataOffset;
-
-    u32 button = 0;
+void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
+    auto button = OrbisPadButtonDataOffset::None;
     Input::Axis axis = Input::Axis::AxisMax;
     switch (event->type) {
     case SDL_EVENT_GAMEPAD_ADDED:
@@ -343,25 +378,25 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
                                      event->gtouchpad.x, event->gtouchpad.y);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        button = sdlGamepadToOrbisButton(event->gbutton.button);
-        if (button != 0) {
-            if (event->gbutton.button == SDL_GAMEPAD_BUTTON_BACK) {
-                std::string backButtonBehavior = Config::getBackButtonBehavior();
-                if (backButtonBehavior != "none") {
-                    float x = backButtonBehavior == "left"
-                                  ? 0.25f
-                                  : (backButtonBehavior == "right" ? 0.75f : 0.5f);
-                    // trigger a touchpad event so that the touchpad emulation for back button works
-                    controller->SetTouchpadState(0, true, x, 0.5f);
-                    controller->CheckButton(0, button,
-                                            event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
-                }
-            } else {
-                controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
-            }
+    case SDL_EVENT_GAMEPAD_BUTTON_UP: {
+        button = SDLGamepadToOrbisButton(event->gbutton.button);
+        if (button == OrbisPadButtonDataOffset::None) {
+            break;
+        }
+        if (event->gbutton.button != SDL_GAMEPAD_BUTTON_BACK) {
+            controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+            break;
+        }
+        const auto backButtonBehavior = Config::getBackButtonBehavior();
+        if (backButtonBehavior != "none") {
+            float x = backButtonBehavior == "left" ? 0.25f
+                                                   : (backButtonBehavior == "right" ? 0.75f : 0.5f);
+            // trigger a touchpad event so that the touchpad emulation for back button works
+            controller->SetTouchpadState(0, true, x, 0.5f);
+            controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
         }
         break;
+    }
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         axis = event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX           ? Input::Axis::LeftX
                : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY         ? Input::Axis::LeftY
@@ -380,45 +415,6 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
             }
         }
         break;
-    }
-}
-
-int WindowSDL::sdlGamepadToOrbisButton(u8 button) {
-    using Libraries::Pad::OrbisPadButtonDataOffset;
-
-    switch (button) {
-    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
-    case SDL_GAMEPAD_BUTTON_DPAD_UP:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
-    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
-    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
-    case SDL_GAMEPAD_BUTTON_SOUTH:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
-    case SDL_GAMEPAD_BUTTON_NORTH:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
-    case SDL_GAMEPAD_BUTTON_WEST:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
-    case SDL_GAMEPAD_BUTTON_EAST:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
-    case SDL_GAMEPAD_BUTTON_START:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
-    case SDL_GAMEPAD_BUTTON_TOUCHPAD:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
-    case SDL_GAMEPAD_BUTTON_BACK:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
-    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
-    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
-    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
-    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
-    default:
-        return 0;
     }
 }
 

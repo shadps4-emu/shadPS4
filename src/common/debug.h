@@ -41,7 +41,7 @@ enum MarkersPalette : int {
 #define RENDERER_TRACE ZoneScopedC(RendererMarkerColor)
 #define HLE_TRACE ZoneScopedC(HleMarkerColor)
 
-#define TRACE_HINT(str) ZoneText(str.c_str(), str.size())
+#define TRACE_HINT(str) ZoneText(str.data(), str.size())
 
 #define TRACE_WARN(msg)                                                                            \
     [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::DarkOrange); }(msg);

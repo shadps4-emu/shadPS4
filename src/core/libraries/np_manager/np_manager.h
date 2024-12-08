@@ -13,18 +13,14 @@ namespace Libraries::NpManager {
 
 constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
 
-enum OrbisNpState {
-    ORBIS_NP_STATE_UNKNOWN = 0,
-    ORBIS_NP_STATE_SIGNED_OUT,
-    ORBIS_NP_STATE_SIGNED_IN
-};
+enum class OrbisNpState : u32 { Unknown = 0, SignedOut, SignedIn };
 
 using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
                                                                void* userdata);
 
 constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
-typedef int OrbisUserServiceUserId;
+using OrbisUserServiceUserId = s32;
 
 struct OrbisNpOnlineId {
     char data[ORBIS_NP_ONLINEID_MAX_LENGTH];

@@ -840,8 +840,8 @@
 		<name>CheatsPatches</name>
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
-			<source>Cheats / Patches</source>
-			<translation>چیت / پچ ها</translation>
+			<source>Cheats / Patches for </source>
+			<translation>Cheats / Patches for ا</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>

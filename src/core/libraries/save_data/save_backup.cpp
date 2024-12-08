@@ -5,7 +5,7 @@
 #include <mutex>
 #include <semaphore>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "save_backup.h"
 #include "save_instance.h"
@@ -79,7 +79,7 @@ static void backup(const std::filesystem::path& dir_name) {
 }
 
 static void BackupThreadBody() {
-    Common::SetCurrentThreadName("shadPS4:SaveData_BackupThread");
+    Common::SetCurrentThreadName("shadPS4:SaveData:BackupThread");
     while (g_backup_status != WorkerStatus::Stopping) {
         g_backup_status = WorkerStatus::Waiting;
 

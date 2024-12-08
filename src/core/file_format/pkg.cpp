@@ -1,31 +1,30 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <zlib-ng.h>
+#include <zlib.h>
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
 #include "core/file_format/pkg.h"
 #include "core/file_format/pkg_type.h"
 
-static void DecompressPFSC(std::span<const char> compressed_data,
-                           std::span<char> decompressed_data) {
-    zng_stream decompressStream;
+static void DecompressPFSC(std::span<char> compressed_data, std::span<char> decompressed_data) {
+    z_stream decompressStream;
     decompressStream.zalloc = Z_NULL;
     decompressStream.zfree = Z_NULL;
     decompressStream.opaque = Z_NULL;
 
-    if (zng_inflateInit(&decompressStream) != Z_OK) {
+    if (inflateInit(&decompressStream) != Z_OK) {
         // std::cerr << "Error initializing zlib for deflation." << std::endl;
     }
 
     decompressStream.avail_in = compressed_data.size();
-    decompressStream.next_in = reinterpret_cast<const Bytef*>(compressed_data.data());
+    decompressStream.next_in = reinterpret_cast<unsigned char*>(compressed_data.data());
     decompressStream.avail_out = decompressed_data.size();
-    decompressStream.next_out = reinterpret_cast<Bytef*>(decompressed_data.data());
+    decompressStream.next_out = reinterpret_cast<unsigned char*>(decompressed_data.data());
 
-    if (zng_inflate(&decompressStream, Z_FINISH)) {
+    if (inflate(&decompressStream, Z_FINISH)) {
     }
-    if (zng_inflateEnd(&decompressStream) != Z_OK) {
+    if (inflateEnd(&decompressStream) != Z_OK) {
         // std::cerr << "Error ending zlib inflate" << std::endl;
     }
 }

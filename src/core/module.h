@@ -165,15 +165,6 @@ public:
         return elf.IsSharedLib();
     }
 
-    void* FindByName(std::string_view name) {
-        const auto symbols = export_sym.GetSymbols();
-        const auto it = std::ranges::find(symbols, name, &Loader::SymbolRecord::nid_name);
-        if (it != symbols.end()) {
-            return reinterpret_cast<void*>(it->virtual_address);
-        }
-        return nullptr;
-    }
-
     template <typename T = VAddr>
     T GetProcParam() const noexcept {
         return reinterpret_cast<T>(proc_param_virtual_addr);
@@ -216,6 +207,8 @@ public:
     void LoadModuleToMemory(u32& max_tls_index);
     void LoadDynamicInfo();
     void LoadSymbols();
+
+    void* FindByName(std::string_view name);
 
     OrbisKernelModuleInfoEx GetModuleInfoEx() const;
     const ModuleInfo* FindModule(std::string_view id);

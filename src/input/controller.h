@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include "common/types.h"
+#include "core/libraries/pad/pad.h"
 
 struct SDL_Gamepad;
 
@@ -28,7 +29,7 @@ struct TouchpadEntry {
 };
 
 struct State {
-    u32 buttonsState = 0;
+    Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
     int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
@@ -49,7 +50,7 @@ public:
     void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
     State GetLastState() const;
-    void CheckButton(int id, u32 button, bool isPressed);
+    void CheckButton(int id, Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void AddState(const State& state);
     void Axis(int id, Input::Axis axis, int value);
     void SetLightBarRGB(u8 r, u8 g, u8 b);

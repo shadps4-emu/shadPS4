@@ -304,6 +304,10 @@ struct Image {
         const auto viewed_slice = last_array - base_array + 1;
         return GetType() == ImageType::Cube && viewed_slice < 6;
     }
+
+    ImageType GetBoundType() const noexcept {
+        return IsPartialCubemap() ? ImageType::Color2DArray : GetType();
+    }
 };
 static_assert(sizeof(Image) == 32); // 256bits
 
@@ -358,8 +362,8 @@ enum class MipFilter : u64 {
 };
 
 enum class BorderColor : u64 {
-    OpaqueBlack = 0,
-    TransparentBlack = 1,
+    TransparentBlack = 0,
+    OpaqueBlack = 1,
     White = 2,
     Custom = 3,
 };
@@ -416,11 +420,11 @@ struct Sampler {
     }
 
     float MinLod() const noexcept {
-        return static_cast<float>(min_lod);
+        return static_cast<float>(min_lod.Value()) / 256.0f;
     }
 
     float MaxLod() const noexcept {
-        return static_cast<float>(max_lod);
+        return static_cast<float>(max_lod.Value()) / 256.0f;
     }
 };
 

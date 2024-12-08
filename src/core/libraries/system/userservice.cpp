@@ -4,9 +4,9 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
+#include "core/libraries/system/userservice_error.h"
 
 namespace Libraries::UserService {
 
@@ -112,7 +112,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
 
     if (!logged_in) {
         logged_in = true;
-        event->event = SCE_USER_SERVICE_EVENT_TYPE_LOGIN;
+        event->event = OrbisUserServiceEventType::Login;
         event->userId = 1;
         return ORBIS_OK;
     }
@@ -1041,14 +1041,14 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color) {
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color) {
     // TODO fix me better
     LOG_INFO(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = ORBIS_USER_SERVICE_USER_COLOR_BLUE;
+    *color = OrbisUserServiceUserColor::Blue;
     return ORBIS_OK;
 }
 

@@ -7,10 +7,10 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "np_trophy.h"
-#include "trophy_ui.h"
+#include "core/libraries/np_trophy/np_trophy.h"
+#include "core/libraries/np_trophy/np_trophy_error.h"
+#include "core/libraries/np_trophy/trophy_ui.h"
 
 namespace Libraries::NpTrophy {
 

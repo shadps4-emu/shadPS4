@@ -86,6 +86,32 @@ struct Liverpool {
         }
     };
 
+    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x1000) {
+        constexpr u32 token_mov_vcchi = 0xBEEB03FF;
+
+        if (code[0] == token_mov_vcchi) {
+            const auto* info = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
+            if (info->Valid()) {
+                return *info;
+            }
+        }
+
+        // First instruction is not s_mov_b32 vcc_hi, #imm,
+        // which means we cannot get the binary info via said instruction.
+        // The easiest solution is to iterate through each dword and break
+        // on the first instance of the binary info.
+        constexpr size_t signature_size = sizeof(BinaryInfo::signature_ref) / sizeof(u8);
+        const u32* end = code + search_limit;
+
+        for (const u32* it = code; it < end; ++it) {
+            if (const BinaryInfo* info = std::bit_cast<const BinaryInfo*>(it); info->Valid()) {
+                return *info;
+            }
+        }
+
+        UNREACHABLE_MSG("Shader binary info not found.");
+    }
+
     struct ShaderProgram {
         u32 address_lo;
         BitField<0, 8, u32> address_hi;
@@ -111,8 +137,7 @@ struct Liverpool {
 
         std::span<const u32> Code() const {
             const u32* code = Address<u32*>();
-            BinaryInfo bininfo;
-            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const BinaryInfo& bininfo = SearchBinaryInfo(code);
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
@@ -164,27 +189,24 @@ struct Liverpool {
 
         std::span<const u32> Code() const {
             const u32* code = Address<u32*>();
-            BinaryInfo bininfo;
-            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const BinaryInfo& bininfo = SearchBinaryInfo(code);
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
     };
 
     template <typename Shader>
-    static constexpr auto* GetBinaryInfo(const Shader& sh) {
+    static constexpr const BinaryInfo& GetBinaryInfo(const Shader& sh) {
         const auto* code = sh.template Address<u32*>();
-        const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        // ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
-        return bininfo;
+        return SearchBinaryInfo(code);
     }
 
     static constexpr Shader::ShaderParams GetParams(const auto& sh) {
-        auto* bininfo = GetBinaryInfo(sh);
+        auto& bininfo = GetBinaryInfo(sh);
         return {
             .user_data = sh.user_data,
             .code = sh.Code(),
-            .hash = bininfo->shader_hash,
+            .hash = bininfo.shader_hash,
         };
     }
 
@@ -1049,6 +1071,28 @@ struct Liverpool {
         BitField<27, 1, u32> enable_postz_overrasterization;
     };
 
+    union PsInput {
+        u32 raw;
+        struct {
+            u32 persp_sample_ena : 1;
+            u32 persp_center_ena : 1;
+            u32 persp_centroid_ena : 1;
+            u32 persp_pull_model_ena : 1;
+            u32 linear_sample_ena : 1;
+            u32 linear_center_ena : 1;
+            u32 linear_centroid_ena : 1;
+            u32 line_stipple_tex_ena : 1;
+            u32 pos_x_float_ena : 1;
+            u32 pos_y_float_ena : 1;
+            u32 pos_z_float_ena : 1;
+            u32 pos_w_float_ena : 1;
+            u32 front_face_ena : 1;
+            u32 ancillary_ena : 1;
+            u32 sample_coverage_ena : 1;
+            u32 pos_fixed_pt_ena : 1;
+        };
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -1089,7 +1133,8 @@ struct Liverpool {
             INSERT_PADDING_WORDS(2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
-            INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
+            INSERT_PADDING_WORDS(0xA102 - 0xA0D4);
+            u32 index_offset;
             u32 primitive_restart_index;
             INSERT_PADDING_WORDS(1);
             BlendConstants blend_constants;
@@ -1103,7 +1148,10 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA191 - 0xA187);
             std::array<PsInputControl, 32> ps_inputs;
             VsOutputConfig vs_output_config;
-            INSERT_PADDING_WORDS(4);
+            INSERT_PADDING_WORDS(1);
+            PsInput ps_input_ena;
+            PsInput ps_input_addr;
+            INSERT_PADDING_WORDS(1);
             BitField<0, 6, u32> num_interp;
             INSERT_PADDING_WORDS(0xA1C3 - 0xA1B6 - 1);
             ShaderPosFormat shader_pos_format;
@@ -1358,12 +1406,15 @@ static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
 static_assert(GFX6_3D_REG_INDEX(generic_scissor) == 0xA090);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
+static_assert(GFX6_3D_REG_INDEX(index_offset) == 0xA102);
 static_assert(GFX6_3D_REG_INDEX(primitive_restart_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
 static_assert(GFX6_3D_REG_INDEX(ps_inputs) == 0xA191);
 static_assert(GFX6_3D_REG_INDEX(vs_output_config) == 0xA1B1);
+static_assert(GFX6_3D_REG_INDEX(ps_input_ena) == 0xA1B3);
+static_assert(GFX6_3D_REG_INDEX(ps_input_addr) == 0xA1B4);
 static_assert(GFX6_3D_REG_INDEX(num_interp) == 0xA1B6);
 static_assert(GFX6_3D_REG_INDEX(shader_pos_format) == 0xA1C3);
 static_assert(GFX6_3D_REG_INDEX(z_export_format) == 0xA1C4);

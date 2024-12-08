@@ -451,7 +451,7 @@ private:
             pShellLink->SetWorkingDirectory((LPCWSTR)QFileInfo(exePath).absolutePath().utf16());
 
             // Set arguments, eboot.bin file location
-            QString arguments = QString("\"%1\"").arg(targetPath);
+            QString arguments = QString("-g \"%1\"").arg(targetPath);
             pShellLink->SetArguments((LPCWSTR)arguments.utf16());
 
             // Set the icon for the shortcut

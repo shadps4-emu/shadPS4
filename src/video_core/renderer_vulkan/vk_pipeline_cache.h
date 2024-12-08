@@ -38,8 +38,6 @@ struct Program {
 };
 
 class PipelineCache {
-    static constexpr size_t MaxShaderStages = 5;
-
 public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
                            AmdGpu::Liverpool* liverpool);
@@ -49,8 +47,10 @@ public:
 
     const ComputePipeline* GetComputePipeline();
 
-    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(
-        Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding);
+    std::tuple<const Shader::Info*, vk::ShaderModule, std::optional<Shader::Gcn::FetchShaderData>,
+               u64>
+    GetProgram(Shader::Stage stage, Shader::ShaderParams params,
+               Shader::Backend::Bindings& binding);
 
 private:
     bool RefreshGraphicsKey();
@@ -58,6 +58,8 @@ private:
 
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
                     std::string_view ext);
+    std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
+                                                   std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, const Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
@@ -80,6 +82,7 @@ private:
     tsl::robin_map<GraphicsPipelineKey, GraphicsPipeline*> graphics_pipelines;
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
+    std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};
 };

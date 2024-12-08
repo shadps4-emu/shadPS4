@@ -36,19 +36,66 @@ static constexpr u32 MaxInvalidateDist = 12_MB;
 class TextureCache {
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
-        static constexpr size_t AddressSpaceBits = 39;
-        static constexpr size_t FirstLevelBits = 9;
+        static constexpr size_t AddressSpaceBits = 40;
+        static constexpr size_t FirstLevelBits = 10;
         static constexpr size_t PageBits = 20;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 
 public:
-    explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                          BufferCache& buffer_cache, PageManager& tracker);
+    enum class BindingType : u32 {
+        Texture,
+        Storage,
+        RenderTarget,
+        DepthTarget,
+        VideoOut,
+    };
+
+    struct BaseDesc {
+        ImageInfo info;
+        ImageViewInfo view_info;
+        BindingType type{BindingType::Texture};
+
+        BaseDesc() = default;
+        BaseDesc(BindingType type_, ImageInfo info_, ImageViewInfo view_info_) noexcept
+            : info{std::move(info_)}, view_info{std::move(view_info_)}, type{type_} {}
+    };
+
+    struct TextureDesc : public BaseDesc {
+        TextureDesc() = default;
+        TextureDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
+            : BaseDesc{desc.is_storage ? BindingType::Storage : BindingType::Texture,
+                       ImageInfo{image, desc}, ImageViewInfo{image, desc}} {}
+    };
+
+    struct RenderTargetDesc : public BaseDesc {
+        RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                         const AmdGpu::Liverpool::CbDbExtent& hint = {})
+            : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
+    };
+
+    struct DepthTargetDesc : public BaseDesc {
+        DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                        const AmdGpu::Liverpool::DepthView& view,
+                        const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
+                        const AmdGpu::Liverpool::CbDbExtent& hint = {})
+            : BaseDesc{BindingType::DepthTarget,
+                       ImageInfo{buffer, view.NumSlices(), htile_address, hint},
+                       ImageViewInfo{buffer, view, ctl}} {}
+    };
+
+    struct VideoOutDesc : public BaseDesc {
+        VideoOutDesc(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address)
+            : BaseDesc{BindingType::VideoOut, ImageInfo{group, cpu_address}, ImageViewInfo{}} {}
+    };
+
+public:
+    TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+                 BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr address, size_t size);
+    void InvalidateMemory(VAddr addr, VAddr page_addr, size_t size);
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
@@ -57,18 +104,16 @@ public:
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info, FindFlags flags = {});
+    [[nodiscard]] ImageId FindImage(BaseDesc& desc, FindFlags flags = {});
 
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(const ImageInfo& image_info,
-                                              const ImageViewInfo& view_info);
+    [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(const ImageInfo& image_info,
-                                             const ImageViewInfo& view_info);
+    [[nodiscard]] ImageView& FindDepthTarget(BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
@@ -77,11 +122,13 @@ public:
         RefreshImage(image, custom_scheduler);
     }
 
-    [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
-                                         ImageId merged_image_id);
+    [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
+                                                               BindingType binding,
+                                                               ImageId cache_img_id,
+                                                               ImageId merged_image_id);
 
     /// Resolves depth overlap and either re-creates the image or returns existing one
-    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info,
+    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
                                               ImageId cache_img_id);
 
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
@@ -102,22 +149,38 @@ public:
         return slot_image_views[id];
     }
 
+    /// Registers an image view for provided image
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
+
     bool IsMeta(VAddr address) const {
         return surface_metas.contains(address);
     }
 
-    bool IsMetaCleared(VAddr address) const {
+    bool IsMetaCleared(VAddr address, u32 slice) const {
         const auto& it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            return it.value().is_cleared;
+            return it.value().clear_mask & (1u << slice);
         }
         return false;
     }
 
-    bool TouchMeta(VAddr address, bool is_clear) {
+    bool ClearMeta(VAddr address) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            it.value().is_cleared = is_clear;
+            it.value().clear_mask = u32(-1);
+            return true;
+        }
+        return false;
+    }
+
+    bool TouchMeta(VAddr address, u32 slice, bool is_clear) {
+        auto it = surface_metas.find(address);
+        if (it != surface_metas.end()) {
+            if (is_clear) {
+                it.value().clear_mask |= 1u << slice;
+            } else {
+                it.value().clear_mask &= ~(1u << slice);
+            }
             return true;
         }
         return false;
@@ -181,9 +244,6 @@ private:
         }
     }
 
-    /// Registers an image view for provided image
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
-
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -195,9 +255,15 @@ private:
 
     /// Track CPU reads and writes for image
     void TrackImage(ImageId image_id);
+    void TrackImageHead(ImageId image_id);
+    void TrackImageTail(ImageId image_id);
 
     /// Stop tracking CPU reads and writes for image
     void UntrackImage(ImageId image_id);
+    void UntrackImageHead(ImageId image_id);
+    void UntrackImageTail(ImageId image_id);
+
+    void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
@@ -227,7 +293,7 @@ private:
             HTile,
         };
         Type type;
-        bool is_cleared;
+        u32 clear_mask{u32(-1)};
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };

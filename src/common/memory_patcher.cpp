@@ -28,7 +28,7 @@ std::string g_game_serial;
 std::string patchFile;
 std::vector<patchInfo> pending_patches;
 
-std::string toHex(unsigned long long value, size_t byteSize) {
+std::string toHex(u64 value, size_t byteSize) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0') << std::setw(byteSize * 2) << value;
     return ss.str();
@@ -38,16 +38,16 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
     std::string result;
 
     if (type == "byte") {
-        unsigned int value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 1);
     } else if (type == "bytes16") {
-        unsigned int value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 2);
     } else if (type == "bytes32") {
-        unsigned long value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 4);
     } else if (type == "bytes64") {
-        unsigned long long value = std::stoull(valueStr, nullptr, 16);
+        const u64 value = std::stoull(valueStr, nullptr, 16);
         result = toHex(value, 8);
     } else if (type == "float32") {
         union {

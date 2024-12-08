@@ -28,6 +28,9 @@ public:
     /// Increase/decrease the number of surface in pages touching the specified region
     void UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta);
 
+    static VAddr GetPageAddr(VAddr addr);
+    static VAddr GetNextPageAddr(VAddr addr);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;

@@ -70,8 +70,9 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     static constexpr std::array misc_formats = {
         vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
         vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
-        vk::Format::eB8G8R8A8Srgb,           vk::Format::eR5G6B5UnormPack16,
-        vk::Format::eD24UnormS8Uint,
+        vk::Format::eB8G8R8A8Snorm,          vk::Format::eB8G8R8A8Uint,
+        vk::Format::eB8G8R8A8Sint,           vk::Format::eB8G8R8A8Srgb,
+        vk::Format::eR5G6B5UnormPack16,      vk::Format::eD24UnormS8Uint,
     };
     for (const auto& format : misc_formats) {
         if (!format_properties.contains(format)) {
@@ -95,7 +96,7 @@ Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
-    : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
+    : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
       physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
@@ -256,6 +257,7 @@ bool Instance::CreateDevice() {
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+    fragment_shader_barycentric = add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
 
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
@@ -264,6 +266,7 @@ bool Instance::CreateDevice() {
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -345,6 +348,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceVulkan12Features{
             .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
+            .drawIndirectCount = vk12_features.drawIndirectCount,
             .shaderFloat16 = vk12_features.shaderFloat16,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
             .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
@@ -398,6 +402,12 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
         },
+        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
+            .fragmentShaderBarycentric = true,
+        },
+        vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
+            .legacyVertexAttributes = true,
+        },
 #ifdef __APPLE__
         feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
 #endif
@@ -436,6 +446,12 @@ bool Instance::CreateDevice() {
     }
     if (!vertex_input_dynamic_state) {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
+    }
+    if (!fragment_shader_barycentric) {
+        device_chain.unlink<vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
+    }
+    if (!legacy_vertex_attributes) {
+        device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

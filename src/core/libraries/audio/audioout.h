@@ -9,46 +9,36 @@
 
 namespace Libraries::AudioOut {
 
-constexpr int SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
-
-// main up to 8 ports, BGM 1 port, voice up to 4 ports,
+// Main up to 8 ports, BGM 1 port, voice up to 4 ports,
 // personal up to 4 ports, padspk up to 5 ports, aux 1 port
 constexpr int SCE_AUDIO_OUT_NUM_PORTS = 22;
+constexpr int SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
 
-enum OrbisAudioOutPort {
-    ORBIS_AUDIO_OUT_PORT_TYPE_MAIN = 0,
-    ORBIS_AUDIO_OUT_PORT_TYPE_BGM = 1,
-    ORBIS_AUDIO_OUT_PORT_TYPE_VOICE = 2,
-    ORBIS_AUDIO_OUT_PORT_TYPE_PERSONAL = 3,
-    ORBIS_AUDIO_OUT_PORT_TYPE_PADSPK = 4,
-    ORBIS_AUDIO_OUT_PORT_TYPE_AUX = 127
+enum class OrbisAudioOutPort { Main = 0, Bgm = 1, Voice = 2, Personal = 3, Padspk = 4, Aux = 127 };
+
+enum class OrbisAudioOutParamFormat {
+    S16Mono = 0,
+    S16Stereo = 1,
+    S16_8CH = 2,
+    FloatMono = 3,
+    FloatStereo = 4,
+    Float_8CH = 5,
+    S16_8CH_Std = 6,
+    Float_8CH_Std = 7
 };
 
-enum OrbisAudioOutParamFormat {
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO = 0,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO = 1,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH = 2,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO = 3,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO = 4,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH = 5,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD = 6,
-    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD = 7
+enum class OrbisAudioOutParamAttr {
+    None = 0,
+    Restricted = 1,
+    MixToMain = 2,
 };
 
-enum OrbisAudioOutParamAttr {
-    ORBIS_AUDIO_OUT_PARAM_ATTR_NONE = 0,
-    ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED = 1,
-    ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN = 2,
-};
-
-struct OrbisAudioOutParamExtendedInformation {
-    union {
-        BitField<0, 8, OrbisAudioOutParamFormat> data_format;
-        BitField<8, 8, u32> reserve0;
-        BitField<16, 4, OrbisAudioOutParamAttr> attributes;
-        BitField<20, 10, u32> reserve1;
-        BitField<31, 1, u32> unused;
-    };
+union OrbisAudioOutParamExtendedInformation {
+    BitField<0, 8, OrbisAudioOutParamFormat> data_format;
+    BitField<8, 8, u32> reserve0;
+    BitField<16, 4, OrbisAudioOutParamAttr> attributes;
+    BitField<20, 10, u32> reserve1;
+    BitField<31, 1, u32> unused;
 };
 
 struct OrbisAudioOutOutputParam {

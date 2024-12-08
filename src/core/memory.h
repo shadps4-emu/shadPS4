@@ -10,7 +10,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
-#include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/memory.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -18,6 +18,10 @@ class Rasterizer;
 
 namespace Libraries::Kernel {
 struct OrbisQueryInfo;
+}
+
+namespace Core::Devtools::Widget {
+class MemoryMapViewer;
 }
 
 namespace Core {
@@ -133,6 +137,10 @@ public:
         rasterizer = rasterizer_;
     }
 
+    AddressSpace& GetAddressSpace() {
+        return impl;
+    }
+
     u64 GetTotalDirectSize() const {
         return total_direct_size;
     }
@@ -147,6 +155,13 @@ public:
 
     VAddr SystemReservedVirtualBase() noexcept {
         return impl.SystemReservedVirtualBase();
+    }
+
+    bool IsValidAddress(const void* addr) const noexcept {
+        const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
+        const auto end_it = std::prev(vma_map.end());
+        const VAddr end_addr = end_it->first + end_it->second.size;
+        return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
     }
 
     bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
@@ -177,7 +192,7 @@ public:
 
     void PoolDecommit(VAddr virtual_addr, size_t size);
 
-    void UnmapMemory(VAddr virtual_addr, size_t size);
+    s32 UnmapMemory(VAddr virtual_addr, size_t size);
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
@@ -235,7 +250,7 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
-    void UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+    s32 UnmapMemoryImpl(VAddr virtual_addr, size_t size);
 
 private:
     AddressSpace impl;
@@ -246,6 +261,8 @@ private:
     size_t total_flexible_size{};
     size_t flexible_usage{};
     Vulkan::Rasterizer* rasterizer{};
+
+    friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };
 
 using Memory = Common::Singleton<MemoryManager>;

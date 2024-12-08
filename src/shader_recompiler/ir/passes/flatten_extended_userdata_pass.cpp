@@ -148,16 +148,20 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     // Special case for V# step rate buffers in fetch shader
     for (const auto [sgpr_base, dword_offset, num_dwords] : info.srt_info.srt_reservations) {
         // get pointer to V#
-        c.mov(r10d, ptr[rdi + (sgpr_base << 2)]);
-
+        if (sgpr_base != IR::NumScalarRegs) {
+            PushPtr(c, sgpr_base);
+        }
         u32 src_off = dword_offset << 2;
 
         for (auto j = 0; j < num_dwords; j++) {
-            c.mov(r11d, ptr[r10d + src_off]);
+            c.mov(r11d, ptr[rdi + src_off]);
             c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r11d);
 
             src_off += 4;
             ++pass_info.dst_off_dw;
+        }
+        if (sgpr_base != IR::NumScalarRegs) {
+            PopPtr(c);
         }
     }
 

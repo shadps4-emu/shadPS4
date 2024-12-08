@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "video_core/amdgpu/types.h"
 
@@ -155,18 +156,12 @@ void EmitContext::DefineInterfaces() {
 }
 
 const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return ctx.F32;
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return ctx.S32;
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return ctx.U32;
     default:
         break;
@@ -176,18 +171,12 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
                                                           u32 num_components, bool output) {
-    switch (fmt) {
-    case AmdGpu::NumberFormat::Float:
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::SnormNz:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Srgb:
+    switch (GetNumberClass(fmt)) {
+    case AmdGpu::NumberClass::Float:
         return {id, output ? output_f32 : input_f32, F32[1], num_components, false};
-    case AmdGpu::NumberFormat::Uint:
+    case AmdGpu::NumberClass::Uint:
         return {id, output ? output_u32 : input_u32, U32[1], num_components, true};
-    case AmdGpu::NumberFormat::Sint:
+    case AmdGpu::NumberClass::Sint:
         return {id, output ? output_s32 : input_s32, S32[1], num_components, true};
     default:
         break;
@@ -218,7 +207,39 @@ void EmitContext::DefineBufferOffsets() {
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
         tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
+        tex_buffer.coord_shift =
+            OpBitFieldUExtract(U32[1], value, ConstU32(offset + 6U), ConstU32(2U));
         Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
+    }
+}
+
+void EmitContext::DefineInterpolatedAttribs() {
+    if (!profile.needs_manual_interpolation) {
+        return;
+    }
+    // Iterate all input attributes, load them and manually interpolate with barycentric
+    // coordinates.
+    for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
+        const auto& input = runtime_info.fs_info.inputs[i];
+        const u32 semantic = input.param_index;
+        auto& params = input_params[semantic];
+        if (input.is_flat || params.is_loaded) {
+            continue;
+        }
+        const Id p_array{OpLoad(TypeArray(F32[4], ConstU32(3U)), params.id)};
+        const Id p0{OpCompositeExtract(F32[4], p_array, 0U)};
+        const Id p1{OpCompositeExtract(F32[4], p_array, 1U)};
+        const Id p2{OpCompositeExtract(F32[4], p_array, 2U)};
+        const Id p10{OpFSub(F32[4], p1, p0)};
+        const Id p20{OpFSub(F32[4], p2, p0)};
+        const Id bary_coord{OpLoad(F32[3], gl_bary_coord_id)};
+        const Id bary_coord_y{OpCompositeExtract(F32[1], bary_coord, 1)};
+        const Id bary_coord_z{OpCompositeExtract(F32[1], bary_coord, 2)};
+        const Id p10_y{OpVectorTimesScalar(F32[4], p10, bary_coord_y)};
+        const Id p20_z{OpVectorTimesScalar(F32[4], p20, bary_coord_z)};
+        params.id = OpFAdd(F32[4], p0, OpFAdd(F32[4], p10_y, p20_z));
+        Name(params.id, fmt::format("fs_in_attr{}", semantic));
+        params.is_loaded = true;
     }
 }
 
@@ -250,33 +271,42 @@ void EmitContext::DefineInputs() {
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
 
-        for (const auto& input : info.vs_inputs) {
-            ASSERT(input.binding < IR::NumParams);
-            const Id type{GetAttributeType(*this, input.fmt)[4]};
-            if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
-
+        const auto fetch_shader = Gcn::ParseFetchShader(info);
+        if (!fetch_shader) {
+            break;
+        }
+        for (const auto& attrib : fetch_shader->attributes) {
+            ASSERT(attrib.semantic < IR::NumParams);
+            const auto sharp = attrib.GetSharp(info);
+            const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
+            if (attrib.UsesStepRates()) {
                 const u32 rate_idx =
-                    input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ? 0
-                                                                                             : 1;
+                    attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::OverStepRate0 ? 0
+                                                                                                : 1;
+                const u32 num_components = AmdGpu::NumComponents(sharp.GetDataFmt());
+                const auto buffer =
+                    std::ranges::find_if(info.buffers, [&attrib](const auto& buffer) {
+                        return buffer.instance_attrib == attrib.semantic;
+                    });
                 // Note that we pass index rather than Id
-                input_params[input.binding] = {
-                    rate_idx,
-                    input_u32,
-                    U32[1],
-                    input.num_components,
-                    true,
-                    false,
-                    input.instance_data_buf,
+                input_params[attrib.semantic] = SpirvAttribute{
+                    .id = rate_idx,
+                    .pointer_type = input_u32,
+                    .component_type = U32[1],
+                    .num_components = std::min<u16>(attrib.num_elements, num_components),
+                    .is_integer = true,
+                    .is_loaded = false,
+                    .buffer_handle = int(buffer - info.buffers.begin()),
                 };
             } else {
-                Id id{DefineInput(type, input.binding)};
-                if (input.instance_step_rate == Info::VsInput::InstanceIdType::Plain) {
-                    Name(id, fmt::format("vs_instance_attr{}", input.binding));
+                Id id{DefineInput(type, attrib.semantic)};
+                if (attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::Plain) {
+                    Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
                 } else {
-                    Name(id, fmt::format("vs_in_attr{}", input.binding));
+                    Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
                 }
-                input_params[input.binding] = GetAttributeInfo(input.fmt, id, 4, false);
+                input_params[attrib.semantic] =
+                    GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
                 interfaces.push_back(id);
             }
         }
@@ -286,6 +316,10 @@ void EmitContext::DefineInputs() {
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        if (profile.needs_manual_interpolation) {
+            gl_bary_coord_id =
+                DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+        }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
             const u32 semantic = input.param_index;
@@ -299,14 +333,21 @@ void EmitContext::DefineInputs() {
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
             const u32 num_components = info.loads.NumComponents(param);
             const Id type{F32[num_components]};
-            const Id id{DefineInput(type, semantic)};
-            if (input.is_flat) {
-                Decorate(id, spv::Decoration::Flat);
+            Id attr_id{};
+            if (profile.needs_manual_interpolation && !input.is_flat) {
+                attr_id = DefineInput(TypeArray(type, ConstU32(3U)), semantic);
+                Decorate(attr_id, spv::Decoration::PerVertexKHR);
+                Name(attr_id, fmt::format("fs_in_attr{}_p", semantic));
+            } else {
+                attr_id = DefineInput(type, semantic);
+                Name(attr_id, fmt::format("fs_in_attr{}", semantic));
             }
-            Name(id, fmt::format("fs_in_attr{}", semantic));
+            if (input.is_flat) {
+                Decorate(attr_id, spv::Decoration::Flat);
+            }
             input_params[semantic] =
-                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, false);
-            interfaces.push_back(id);
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);
+            interfaces.push_back(attr_id);
         }
         break;
     case Stage::Compute:
@@ -512,9 +553,10 @@ void EmitContext::DefineBuffers() {
 
 void EmitContext::DefineTextureBuffers() {
     for (const auto& desc : info.texture_buffers) {
-        const bool is_integer =
-            desc.nfmt == AmdGpu::NumberFormat::Uint || desc.nfmt == AmdGpu::NumberFormat::Sint;
-        const VectorIds& sampled_type{GetAttributeType(*this, desc.nfmt)};
+        const auto sharp = desc.GetSharp(info);
+        const auto nfmt = sharp.GetNumberFmt();
+        const bool is_integer = AmdGpu::IsInteger(nfmt);
+        const VectorIds& sampled_type{GetAttributeType(*this, nfmt)};
         const u32 sampled = desc.is_written ? 2 : 1;
         const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
                                       sampled, spv::ImageFormat::Unknown)};
@@ -609,10 +651,11 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
+    const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
+    const auto type = image.GetBoundType();
     const u32 sampled = desc.is_storage ? 2 : 1;
-    switch (desc.type) {
+    switch (type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Color1DArray:
@@ -631,14 +674,15 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     default:
         break;
     }
-    throw InvalidArgument("Invalid texture type {}", desc.type);
+    throw InvalidArgument("Invalid texture type {}", type);
 }
 
 void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
-        const bool is_integer = image_desc.nfmt == AmdGpu::NumberFormat::Uint ||
-                                image_desc.nfmt == AmdGpu::NumberFormat::Sint;
-        const VectorIds& data_types = GetAttributeType(*this, image_desc.nfmt);
+        const auto sharp = image_desc.GetSharp(info);
+        const auto nfmt = sharp.GetNumberFmt();
+        const bool is_integer = AmdGpu::IsInteger(nfmt);
+        const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};

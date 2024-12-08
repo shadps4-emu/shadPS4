@@ -4,14 +4,13 @@
 #include <cwchar>
 #include <string>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_dialog_ui.h"
-#include "core/linker.h"
+#include "core/tls.h"
 #include "imgui/imgui_std.h"
 
 using namespace ImGui;
@@ -26,15 +25,15 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
         return;
     }
 
-    userId = param->userId;
-    is_multiLine = True(param->option & OrbisImeDialogOption::MULTILINE);
-    is_numeric = param->type == OrbisImeType::NUMBER;
+    user_id = param->user_id;
+    is_multi_line = True(param->option & OrbisImeDialogOption::Multiline);
+    is_numeric = param->type == OrbisImeType::Number;
     type = param->type;
-    enter_label = param->enterLabel;
+    enter_label = param->enter_label;
     text_filter = param->filter;
-    keyboard_filter = extended ? extended->extKeyboardFilter : nullptr;
-    max_text_length = param->maxTextLength;
-    text_buffer = param->inputTextBuffer;
+    keyboard_filter = extended ? extended->ext_keyboard_filter : nullptr;
+    max_text_length = param->max_text_length;
+    text_buffer = param->input_text_buffer;
 
     if (param->title) {
         std::size_t title_len = std::char_traits<char16_t>::length(param->title);
@@ -65,12 +64,12 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
 }
 
 ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
-    : input_changed(other.input_changed), userId(other.userId), is_multiLine(other.is_multiLine),
-      is_numeric(other.is_numeric), type(other.type), enter_label(other.enter_label),
-      text_filter(other.text_filter), keyboard_filter(other.keyboard_filter),
-      max_text_length(other.max_text_length), text_buffer(other.text_buffer),
-      title(std::move(other.title)), placeholder(std::move(other.placeholder)),
-      current_text(other.current_text) {
+    : input_changed(other.input_changed), user_id(other.user_id),
+      is_multi_line(other.is_multi_line), is_numeric(other.is_numeric), type(other.type),
+      enter_label(other.enter_label), text_filter(other.text_filter),
+      keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
+      text_buffer(other.text_buffer), title(std::move(other.title)),
+      placeholder(std::move(other.placeholder)), current_text(other.current_text) {
 
     other.text_buffer = nullptr;
 }
@@ -78,8 +77,8 @@ ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
 ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
     if (this != &other) {
         input_changed = other.input_changed;
-        userId = other.userId;
-        is_multiLine = other.is_multiLine;
+        user_id = other.user_id;
+        is_multi_line = other.is_multi_line;
         is_numeric = other.is_numeric;
         type = other.type;
         enter_label = other.enter_label;
@@ -124,9 +123,8 @@ bool ImeDialogState::CallTextFilter() {
         return false;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
     int ret =
-        linker->ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
+        Core::ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
 
     if (ret != 0) {
         return false;
@@ -147,15 +145,12 @@ bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16*
         return true;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
-    int ret = linker->ExecuteGuest(keyboard_filter, src_keycode, out_keycode, out_status, nullptr);
-
+    int ret = Core::ExecuteGuest(keyboard_filter, src_keycode, out_keycode, out_status, nullptr);
     return ret == 0;
 }
 
 bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
                                         char* utf8_text, std::size_t utf8_text_len) {
-
     std::fill(utf8_text, utf8_text + utf8_text_len, '\0');
     const ImWchar* orbis_text_ptr = reinterpret_cast<const ImWchar*>(orbis_text);
     ImTextStrToUtf8(utf8_text, utf8_text_len, orbis_text_ptr, orbis_text_ptr + orbis_text_len);
@@ -165,7 +160,6 @@ bool ImeDialogState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t 
 
 bool ImeDialogState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len,
                                         char16_t* orbis_text, std::size_t orbis_text_len) {
-
     std::fill(orbis_text, orbis_text + orbis_text_len, u'\0');
     ImTextStrFromUtf8(reinterpret_cast<ImWchar*>(orbis_text), orbis_text_len, utf8_text, nullptr);
 
@@ -176,7 +170,7 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
                          OrbisImeDialogResult* result)
     : state(state), status(status), result(result) {
 
-    if (state && *status == OrbisImeDialogStatus::RUNNING) {
+    if (state && *status == OrbisImeDialogStatus::Running) {
         AddLayer(this);
     }
 }
@@ -196,7 +190,7 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
     other.status = nullptr;
     other.result = nullptr;
 
-    if (state && *status == OrbisImeDialogStatus::RUNNING) {
+    if (state && *status == OrbisImeDialogStatus::Running) {
         AddLayer(this);
     }
 }
@@ -213,7 +207,7 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     other.status = nullptr;
     other.result = nullptr;
 
-    if (state && *status == OrbisImeDialogStatus::RUNNING) {
+    if (state && *status == OrbisImeDialogStatus::Running) {
         AddLayer(this);
     }
 
@@ -231,7 +225,7 @@ void ImeDialogUi::Draw() {
         return;
     }
 
-    if (!status || *status != OrbisImeDialogStatus::RUNNING) {
+    if (!status || *status != OrbisImeDialogStatus::Running) {
         return;
     }
 
@@ -240,7 +234,7 @@ void ImeDialogUi::Draw() {
 
     ImVec2 window_size;
 
-    if (state->is_multiLine) {
+    if (state->is_multi_line) {
         window_size = {500.0f, 300.0f};
     } else {
         window_size = {500.0f, 150.0f};
@@ -264,7 +258,7 @@ void ImeDialogUi::Draw() {
             SetWindowFontScale(1.0f);
         }
 
-        if (state->is_multiLine) {
+        if (state->is_multi_line) {
             DrawMultiLineInputText();
         } else {
             DrawInputText();
@@ -275,16 +269,16 @@ void ImeDialogUi::Draw() {
         const char* button_text;
 
         switch (state->enter_label) {
-        case OrbisImeEnterLabel::GO:
+        case OrbisImeEnterLabel::Go:
             button_text = "Go##ImeDialogOK";
             break;
-        case OrbisImeEnterLabel::SEARCH:
+        case OrbisImeEnterLabel::Search:
             button_text = "Search##ImeDialogOK";
             break;
-        case OrbisImeEnterLabel::SEND:
+        case OrbisImeEnterLabel::Send:
             button_text = "Send##ImeDialogOK";
             break;
-        case OrbisImeEnterLabel::DEFAULT:
+        case OrbisImeEnterLabel::Default:
         default:
             button_text = "OK##ImeDialogOK";
             break;
@@ -297,16 +291,16 @@ void ImeDialogUi::Draw() {
         SetCursorPosX(button_start_pos);
 
         if (Button(button_text, BUTTON_SIZE) ||
-            (!state->is_multiLine && IsKeyPressed(ImGuiKey_Enter))) {
-            *status = OrbisImeDialogStatus::FINISHED;
-            result->endstatus = OrbisImeDialogEndStatus::OK;
+            (!state->is_multi_line && IsKeyPressed(ImGuiKey_Enter))) {
+            *status = OrbisImeDialogStatus::Finished;
+            result->endstatus = OrbisImeDialogEndStatus::Ok;
         }
 
         SameLine(0.0f, button_spacing);
 
         if (Button("Cancel##ImeDialogCancel", BUTTON_SIZE)) {
-            *status = OrbisImeDialogStatus::FINISHED;
-            result->endstatus = OrbisImeDialogEndStatus::USER_CANCELED;
+            *status = OrbisImeDialogStatus::Finished;
+            result->endstatus = OrbisImeDialogEndStatus::UserCanceled;
         }
     }
     End();
@@ -367,9 +361,10 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         .status = 1,                              // ??? 1 = key pressed, 0 = key released
         .type = OrbisImeKeyboardType::ENGLISH_US, // TODO set this to the correct value (maybe use
                                                   // the current language?)
-        .userId = ui->state->userId,
-        .resourceId = 0,
-        .timestamp = 0};
+        .user_id = ui->state->user_id,
+        .resource_id = 0,
+        .timestamp = 0,
+    };
 
     if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert orbis char to utf8");

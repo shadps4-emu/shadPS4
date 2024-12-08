@@ -14,7 +14,7 @@
 #include "imgui_internal.h"
 #include "sdl_window.h"
 #include "texture_manager.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
@@ -49,7 +49,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
+    io.DisplaySize = ImVec2((float)window.GetWidth(), (float)window.GetHeight());
     PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f); // Makes the window edges rounded
 
     auto path = config_path.u8string();
@@ -83,7 +83,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     StyleColorsDark();
 
     ::Core::Devtools::Layer::SetupSettings();
-    Sdl::Init(window.GetSdlWindow());
+    Sdl::Init(window.GetSDLWindow());
 
     const Vulkan::InitInfo vk_info{
         .instance = instance.GetInstance(),
@@ -108,7 +108,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFormatString(label, IM_ARRAYSIZE(label), "WindowOverViewport_%08X", GetMainViewport()->ID);
     dock_id = ImHashStr(label);
 
-    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSdlWindow()); dpi > 0.0f) {
+    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSDLWindow()); dpi > 0.0f) {
         GetIO().FontGlobalScale = dpi;
     }
 }

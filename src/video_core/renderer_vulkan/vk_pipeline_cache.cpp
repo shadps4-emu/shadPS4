@@ -7,17 +7,18 @@
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
-extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Vulkan {
 
@@ -122,6 +123,8 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     }
     case Shader::Stage::Fragment: {
         BuildCommon(regs.ps_program);
+        info.fs_info.en_flags = regs.ps_input_ena;
+        info.fs_info.addr_flags = regs.ps_input_addr;
         const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
         for (u32 i = 0; i < regs.num_interp; i++) {
@@ -168,6 +171,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
+        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
+                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -184,7 +190,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
         it.value() = graphics_pipeline_pool.Create(instance, scheduler, desc_heap, graphics_key,
-                                                   *pipeline_cache, infos, modules);
+                                                   *pipeline_cache, infos, fetch_shader, modules);
     }
     return it->second;
 }
@@ -260,14 +266,13 @@ bool PipelineCache::RefreshGraphicsKey() {
     // recompiler.
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
+        if (skip_cb_binding || !col_buf) {
             continue;
         }
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
-        const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
-        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+        key.color_formats[remapped_cb] =
+            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
         key.color_num_formats[remapped_cb] = col_buf.NumFormat();
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
@@ -275,6 +280,8 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         ++remapped_cb;
     }
+
+    fetch_shader = std::nullopt;
 
     Shader::Backend::Bindings binding{};
     const auto& TryBindStageRemap = [&](Shader::Stage stage_in, Shader::Stage stage_out) -> bool {
@@ -293,8 +300,8 @@ bool PipelineCache::RefreshGraphicsKey() {
             return false;
         }
 
-        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
-        if (!bininfo->Valid()) {
+        const auto& bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo.Valid()) {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
             key.stage_hashes[stage_out_idx] = 0;
             infos[stage_out_idx] = nullptr;
@@ -302,8 +309,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         auto params = Liverpool::GetParams(*pgm);
-        std::tie(infos[stage_out_idx], modules[stage_out_idx], key.stage_hashes[stage_out_idx]) =
-            GetProgram(stage_in, params, binding);
+        std::optional<Shader::Gcn::FetchShaderData> fetch_shader_;
+        std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader_,
+                 key.stage_hashes[stage_out_idx]) = GetProgram(stage_in, params, binding);
+        if (fetch_shader_) {
+            fetch_shader = fetch_shader_;
+        }
         return true;
     };
 
@@ -339,16 +350,14 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     }
 
-    const auto* vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
-    if (vs_info && !instance.IsVertexInputDynamicState()) {
+    const auto vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
+    if (vs_info && fetch_shader && !instance.IsVertexInputDynamicState()) {
         u32 vertex_binding = 0;
-        for (const auto& input : vs_info->vs_inputs) {
-            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+        for (const auto& attrib : fetch_shader->attributes) {
+            if (attrib.UsesStepRates()) {
                 continue;
             }
-            const auto& buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto& buffer = attrib.GetSharp(*vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -358,11 +367,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
     }
 
+    u32 num_samples = 1u;
+
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
-            (key.mrt_mask & (1u << cb)) == 0) {
+        if (skip_cb_binding || !col_buf || (key.mrt_mask & (1u << cb)) == 0) {
             key.color_formats[cb] = vk::Format::eUndefined;
             key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
             continue;
@@ -374,8 +384,16 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
 
+        num_samples = std::max(num_samples, 1u << col_buf.attrib.num_samples_log2);
+
         ++remapped_cb;
     }
+
+    // It seems that the number of samples > 1 set in the AA config doesn't mean we're always
+    // rendering with MSAA, so we need to derive MS ratio from the CB settings.
+    num_samples = std::max(num_samples, regs.depth_buffer.NumSamples());
+    key.num_samples = num_samples;
+
     return true;
 }
 
@@ -383,7 +401,7 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const auto cs_params = Liverpool::GetParams(*cs_pgm);
-    std::tie(infos[0], modules[0], compute_key) =
+    std::tie(infos[0], modules[0], fetch_shader, compute_key) =
         GetProgram(Shader::Stage::Compute, cs_params, binding);
     return true;
 }
@@ -397,33 +415,43 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
-    const auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
+    auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+    auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
+    if (patch) {
+        spv = *patch;
+        LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
+    }
 
     const auto module = CompileSPV(spv, instance.GetDevice());
     const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
+    if (Config::collectShadersForDebug()) {
+        DebugState.CollectShader(name, spv, code);
+    }
     return module;
 }
 
-std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram(
-    Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding) {
+std::tuple<const Shader::Info*, vk::ShaderModule, std::optional<Shader::Gcn::FetchShaderData>, u64>
+PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
+                          Shader::Backend::Bindings& binding) {
     const auto runtime_info = BuildRuntimeInfo(stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
         Program* program = program_pool.Create(stage, params);
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start);
+        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         program->AddPermut(module, std::move(spec));
         it_pgm.value() = program;
-        return std::make_tuple(&program->info, module, HashCombine(params.hash, 0));
+        return std::make_tuple(&program->info, module, spec.fetch_shader_data,
+                               HashCombine(params.hash, 0));
     }
 
     Program* program = it_pgm->second;
     auto& info = program->info;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
+    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
 
@@ -437,7 +465,8 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
     }
-    return std::make_tuple(&info, module, HashCombine(params.hash, perm_idx));
+    return std::make_tuple(&info, module, spec.fetch_shader_data,
+                           HashCombine(params.hash, perm_idx));
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
@@ -454,6 +483,29 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
+}
+
+std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
+                                                              size_t perm_idx,
+                                                              std::string_view ext) {
+    if (!Config::patchShaders()) {
+        return {};
+    }
+
+    using namespace Common::FS;
+    const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
+    if (!std::filesystem::exists(patch_dir)) {
+        std::filesystem::create_directories(patch_dir);
+    }
+    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filepath = patch_dir / filename;
+    if (!std::filesystem::exists(filepath)) {
+        return {};
+    }
+    const auto file = IOFile{patch_dir / filename, FileAccessMode::Read};
+    std::vector<u32> code(file.GetSize() / sizeof(u32));
+    file.Read(code);
+    return code;
 }
 
 } // namespace Vulkan

@@ -22,10 +22,7 @@ class ImeState {
     friend class ImeHandler;
     friend class ImeUi;
 
-    bool input_changed = false;
-
     void* work_buffer{};
-
     char16_t* text_buffer{};
 
     // A character can hold up to 4 bytes in UTF-8
@@ -42,6 +39,9 @@ public:
     void SendEvent(OrbisImeEvent* event);
     void SendEnterEvent();
     void SendCloseEvent();
+
+    void SetText(const char16_t* text, u32 length);
+    void SetCaret(u32 position);
 
 private:
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,

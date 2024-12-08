@@ -58,11 +58,22 @@ bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
 }
 
 vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
-    if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Unorm;
-    }
-    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Srgb;
+    // BGRA
+    if (dst_sel == 0b111100101110) {
+        switch (format) {
+        case vk::Format::eR8G8B8A8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
+        case vk::Format::eR8G8B8A8Snorm:
+            return vk::Format::eB8G8R8A8Snorm;
+        case vk::Format::eR8G8B8A8Uint:
+            return vk::Format::eB8G8R8A8Uint;
+        case vk::Format::eR8G8B8A8Sint:
+            return vk::Format::eB8G8R8A8Sint;
+        case vk::Format::eR8G8B8A8Srgb:
+            return vk::Format::eB8G8R8A8Srgb;
+        default:
+            break;
+        }
     }
     return format;
 }
@@ -87,12 +98,9 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         range.extent.levels = image.last_level - image.base_level + 1;
     }
     range.extent.layers = image.last_array - image.base_array + 1;
-    type = ConvertImageViewType(image.GetType());
+    type = ConvertImageViewType(image.GetBoundType());
 
-    // Adjust view type for partial cubemaps and arrays
-    if (image.IsPartialCubemap()) {
-        type = vk::ImageViewType::e2DArray;
-    }
+    // Adjust view type for arrays
     if (type == vk::ImageViewType::eCube) {
         if (desc.is_array) {
             type = vk::ImageViewType::eCubeArray;
@@ -125,14 +133,14 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 }
 
-ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
-                             bool is_vo_surface) noexcept {
+ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept {
     const auto base_format =
         Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
     range.base.layer = col_buffer.view.slice_start;
     range.extent.layers = col_buffer.NumSlices() - range.base.layer;
-    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(
-        base_format, col_buffer.info.comp_swap.Value(), is_vo_surface);
+    type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(base_format,
+                                                            col_buffer.info.comp_swap.Value());
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
@@ -143,20 +151,22 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
     is_storage = ctl.depth_write_enable;
     range.base.layer = view.slice_start;
     range.extent.layers = view.NumSlices() - range.base.layer;
+    type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
                      ImageId image_id_)
     : image_id{image_id_}, info{info_} {
-    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage};
+    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
-    // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
+    // When sampling D32/D16 texture from shader, the T# specifies R32/R16 format so adjust it.
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
     if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
-        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat)) {
+        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat ||
+         format == vk::Format::eR16Unorm || format == vk::Format::eD16Unorm)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }

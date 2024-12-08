@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/libraries/kernel/event_queues.h"
+#include "core/libraries/kernel/equeue.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -16,11 +16,11 @@ using namespace Kernel;
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
-int PS4_SYSV_ABI sceGnmBeginWorkload();
+int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload);
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
                                             u32 cmp_func, u32 ref);
 int PS4_SYSV_ABI sceGnmComputeWaitSemaphore();
-int PS4_SYSV_ABI sceGnmCreateWorkloadStream();
+int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream);
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerHaltWavefront();
 int PS4_SYSV_ABI sceGnmDebuggerReadGds();
@@ -34,7 +34,7 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus();
 s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id);
 int PS4_SYSV_ABI sceGnmDestroyWorkloadStream();
 void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw);
-int PS4_SYSV_ABI sceGnmDingDongForWorkload();
+void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id);
 int PS4_SYSV_ABI sceGnmDisableMipStatsReport();
 s32 PS4_SYSV_ABI sceGnmDispatchDirect(u32* cmdbuf, u32 size, u32 threads_x, u32 threads_y,
                                       u32 threads_z, u32 flags);
@@ -47,7 +47,10 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32
 s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
                                          u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
                                          u32 flags);
-int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti();
+s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 data_offset,
+                                                   u32 max_count, u64 count_addr, u32 shader_stage,
+                                                   u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
+                                                   u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti();
 int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced();
 s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, u32 index_count,
@@ -74,7 +77,7 @@ int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation();
 int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery();
 int PS4_SYSV_ABI sceGnmDriverTraceInProgress();
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture();
-int PS4_SYSV_ABI sceGnmEndWorkload();
+int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload);
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic();
 void PS4_SYSV_ABI sceGnmFlushGarlic();
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress();
@@ -207,11 +210,17 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg);
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload();
+int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
+    u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
+    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, u32 flip_arg);
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes);
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload();
+int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
+                                                       const u32* dcb_gpu_addrs[],
+                                                       u32* dcb_sizes_in_bytes,
+                                                       const u32* ccb_gpu_addrs[],
+                                                       u32* ccb_sizes_in_bytes);
 int PS4_SYSV_ABI sceGnmSubmitDone();
 int PS4_SYSV_ABI sceGnmUnmapComputeQueue();
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner();

@@ -90,6 +90,9 @@ public:
     [[nodiscard]] U32F32 SharedAtomicIAdd(const U32& address, const U32F32& data);
     [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
     [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
+    [[nodiscard]] U32 SharedAtomicAnd(const U32& address, const U32& data);
+    [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
+    [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);

@@ -22,14 +22,13 @@
 #include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
-#include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/fiber/fiber.h"
-#include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -75,6 +74,9 @@ Emulator::Emulator() {
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
     LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::vkMarkersEnabled());
     LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::vkCrashDiagnosticEnabled());
+
+    // Create stdin/stdout/stderr
+    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
@@ -157,14 +159,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
                 app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-            } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
-                auto filepath = sce_sys_folder / "playgo-chunk.dat";
-                if (!playgo->Open(filepath)) {
-                    LOG_ERROR(Loader, "PlayGo: unable to open file");
-                }
-            } else if (entry.path().filename() == "pic0.png" ||
-                       entry.path().filename() == "pic1.png") {
+            } else if (entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
                 if (splash->IsLoaded()) {
                     continue;
@@ -222,7 +217,6 @@ void Emulator::Run(const std::filesystem::path& file) {
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
     // Initialize kernel and library facilities.
-    Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
@@ -257,13 +251,11 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 #endif
 
-    // start execution
-    std::jthread mainthread =
-        std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
+    linker->Execute();
 
-    window->initTimers();
-    while (window->isOpen()) {
-        window->waitEvent();
+    window->InitTimers();
+    while (window->IsOpen()) {
+        window->WaitEvent();
     }
 
 #ifdef ENABLE_QT_GUI
@@ -274,7 +266,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
-    constexpr std::array<SysModules, 11> ModulesToLoad{
+    constexpr std::array<SysModules, 10> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
          {"libSceUlt.sprx", nullptr},
@@ -283,8 +275,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
-         {"libSceRazorCpu.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterlibSceJpegEnc},
          {"libSceCesCs.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;

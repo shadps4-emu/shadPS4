@@ -62,7 +62,7 @@
 		<message>
 			<location filename="../install_dir_select.cpp" line="37"/>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Sélectionnez le répertoire où vous souhaitez effectuer l'installation.</translation>
 		</message>
 	</context>
 	<context>
@@ -158,22 +158,22 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="72"/>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Supprimer...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="73"/>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Supprimer jeu</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="74"/>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>Supprimer MÀJ</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Supprimer DLC</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
@@ -203,7 +203,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="299"/>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Jeu</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
@@ -213,17 +213,17 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>Ce jeu n'a pas de mise à jour à supprimer!</translation>
 		</message>
 			<message>
 			<location filename="../gui_context_menus.h" line="316"/>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Mise à jour</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="321"/>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>Ce jeu n'a pas de DLC à supprimer!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="325"/>
@@ -233,12 +233,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="332"/>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Supprime %1</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="333"/>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Êtes vous sûr de vouloir supprimer le répertoire %1 %2 ?</translation>
 		</message>
 	</context>
 	<context>
@@ -495,7 +495,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Dossier séparé pour les mises à jours</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -510,7 +510,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="154"/>
 			<source>Enable Discord Rich Presence</source>
-			<translation>Activer Discord Rich Presence</translation>
+			<translation>Activer la présence Discord</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="155"/>
@@ -840,8 +840,8 @@
 		<name>CheatsPatches</name>
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
-			<source>Cheats / Patches</source>
-			<translation>Cheats/Patches</translation>
+			<source>Cheats / Patches for </source>
+			<translation>Cheats/Patchs pour </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -1159,7 +1159,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Dossier séparé pour les mises à jours:\nInstalle les mises à jours des jeux dans un dossier séparé pour une gestion plus facile.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
@@ -1169,7 +1169,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>Est-ce un PS4 Pro:\nFait en sorte que l'émulateur se comporte comme un PS4 PRO, ce qui peut activer des fonctionnalités spéciales dans les jeux qui le prennent en charge.</translation>
+			<translation>Mode PS4 Pro:\nFait en sorte que l'émulateur se comporte comme un PS4 PRO, ce qui peut activer des fonctionnalités spéciales dans les jeux qui le prennent en charge.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>

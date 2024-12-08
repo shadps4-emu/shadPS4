@@ -10,7 +10,8 @@ struct ImGuiTextBuffer;
 namespace Core::Devtools {
 
 struct TOptions {
-    std::string disassembly_cli{};
+    std::string disassembler_cli_isa{"clrxdisasm --raw \"{src}\""};
+    std::string disassembler_cli_spv{"spirv-cross -V \"{src}\""};
     bool frame_dump_render_on_collapse{false};
 };
 

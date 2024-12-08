@@ -4,13 +4,15 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/video_out.h"
-#include "core/loader/symbols_resolver.h"
+#include "core/libraries/videoout/videoout_error.h"
 #include "core/platform.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Libraries::VideoOut {
 
@@ -48,7 +50,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
+    event.event.ident = u64(OrbisVideoOutEventId::Flip);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -75,7 +77,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
+    event.event.ident = u64(OrbisVideoOutEventId::Vblank);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
@@ -115,7 +117,7 @@ s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     LOG_TRACE(Lib_VideoOut, "called");
     auto* port = driver->GetPort(handle);
     std::unique_lock lock{port->port_mutex};
-    s32 pending = port->flip_status.flipPendingNum;
+    s32 pending = port->flip_status.flip_pending_num;
     return pending;
 }
 
@@ -153,7 +155,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
 
 int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
     if (ev == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -163,7 +165,7 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
 
 int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
     if (ev == nullptr || data == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -193,15 +195,16 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
     LOG_TRACE(Lib_VideoOut,
               "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
               "{}, flipPendingNum = {}, currentBuffer = {}",
-              status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
-              status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
+              status->count, status->process_time, status->tsc, status->submit_tsc,
+              status->flip_arg, status->gc_queue_num, status->flip_pending_num,
+              status->current_buffer);
 
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus* status) {
     if (status == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
     auto* port = driver->GetPort(handle);
@@ -297,6 +300,28 @@ s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutColorSettingsSetGamma(SceVideoOutColorSettings* settings, float gamma) {
+    if (gamma < 0.1f || gamma > 2.0f) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    settings->gamma = gamma;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettings* settings) {
+    if (settings == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    presenter->GetGammaRef() = settings->gamma;
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
@@ -329,6 +354,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("U2JJtSqNKZI", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetEventId);
     LIB_FUNCTION("rWUTcKdkUzQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetEventData);
+    LIB_FUNCTION("DYhhWbJSeRg", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutColorSettingsSetGamma);
+    LIB_FUNCTION("pv9CI5VC+R0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutAdjustColor);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);

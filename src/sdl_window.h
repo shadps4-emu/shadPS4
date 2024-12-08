@@ -46,36 +46,33 @@ public:
                        std::string_view window_title);
     ~WindowSDL();
 
-    s32 getWidth() const {
+    s32 GetWidth() const {
         return width;
     }
 
-    s32 getHeight() const {
+    s32 GetHeight() const {
         return height;
     }
 
-    bool isOpen() const {
+    bool IsOpen() const {
         return is_open;
     }
 
-    [[nodiscard]] SDL_Window* GetSdlWindow() const {
+    [[nodiscard]] SDL_Window* GetSDLWindow() const {
         return window;
     }
 
-    WindowSystemInfo getWindowInfo() const {
+    WindowSystemInfo GetWindowInfo() const {
         return window_info;
     }
 
-    void waitEvent();
-
-    void initTimers();
+    void WaitEvent();
+    void InitTimers();
 
 private:
-    void onResize();
-    void onKeyPress(const SDL_Event* event);
-    void onGamepadEvent(const SDL_Event* event);
-
-    int sdlGamepadToOrbisButton(u8 button);
+    void OnResize();
+    void OnKeyPress(const SDL_Event* event);
+    void OnGamepadEvent(const SDL_Event* event);
 
 private:
     s32 width;

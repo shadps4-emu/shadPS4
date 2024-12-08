@@ -14,7 +14,7 @@ namespace Vulkan {
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window)
     : instance{instance_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
-    Create(window.getWidth(), window.getHeight(), surface);
+    Create(window.GetWidth(), window.GetHeight(), surface);
 }
 
 Swapchain::~Swapchain() {

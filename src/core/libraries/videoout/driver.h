@@ -74,7 +74,7 @@ struct ServiceThreadParams {
 
 class VideoOutDriver {
 public:
-    explicit VideoOutDriver(u32 width, u32 height);
+    VideoOutDriver(u32 width, u32 height);
     ~VideoOutDriver();
 
     int Open(const ServiceThreadParams* params);

@@ -21,8 +21,13 @@ static inline u32 get_max_size(std::string_view key, u32 default_value) {
 }
 
 bool PSF::Open(const std::filesystem::path& filepath) {
+    using namespace std::chrono;
     if (std::filesystem::exists(filepath)) {
-        last_write = std::filesystem::last_write_time(filepath);
+        const auto t = std::filesystem::last_write_time(filepath);
+        const auto rel =
+            duration_cast<seconds>(t - std::filesystem::file_time_type::clock::now()).count();
+        const auto tp = system_clock::to_time_t(system_clock::now() + seconds{rel});
+        last_write = system_clock::from_time_t(tp);
     }
 
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
@@ -99,7 +104,7 @@ bool PSF::Encode(const std::filesystem::path& filepath) const {
         return false;
     }
 
-    last_write = std::filesystem::file_time_type::clock::now();
+    last_write = std::chrono::system_clock::now();
 
     const auto psf_buffer = Encode();
     const size_t written = file.Write(psf_buffer);

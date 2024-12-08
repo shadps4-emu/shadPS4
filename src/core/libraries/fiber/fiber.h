@@ -26,17 +26,12 @@ struct SceFiber {
     u64 signature;
     FiberState state;
     SceFiberEntry entry;
-
     u64 argOnInitialize;
-
     u64 argRun;
     u64* pArgRun;
-
     u64 argReturn;
     u64* pArgReturn;
-
     u64 sizeContext;
-
     char name[ORBIS_FIBER_MAX_NAME_LENGTH];
     void* handle;
 };
@@ -53,7 +48,7 @@ struct SceFiberInfo {
 };
 static_assert(sizeof(SceFiberInfo) <= 128);
 
-typedef void* SceFiberOptParam;
+using SceFiberOptParam = void*;
 
 s32 PS4_SYSV_ABI sceFiberInitialize(SceFiber* fiber, const char* name, SceFiberEntry entry,
                                     u64 argOnInitialize, void* addrContext, u64 sizeContext,

@@ -12,6 +12,8 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
+#include "common/support/avdec.h"
+
 namespace Libraries::Ajm {
 
 // Following tables have been reversed from AJM library

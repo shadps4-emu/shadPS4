@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <utility>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
@@ -10,22 +11,22 @@
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
+
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
-static constexpr auto gp_stage_flags = vk::ShaderStageFlagBits::eVertex |
-                                       vk::ShaderStageFlagBits::eGeometry |
-                                       vk::ShaderStageFlagBits::eFragment;
-
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
+                                   std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
                                    std::span<const vk::ShaderModule> modules)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_} {
+    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
+      fetch_shader{std::move(fetch_shader_)} {
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
@@ -50,32 +51,31 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
-    if (!instance.IsVertexInputDynamicState()) {
-        const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
-        for (const auto& input : vs_info->vs_inputs) {
-            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+    if (fetch_shader && !instance.IsVertexInputDynamicState()) {
+        const auto& vs_info = GetStage(Shader::Stage::Vertex);
+        for (const auto& attrib : fetch_shader->attributes) {
+            if (attrib.UsesStepRates()) {
                 // Skip attribute binding as the data will be pulled by shader
                 continue;
             }
 
-            const auto buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto buffer = attrib.GetSharp(vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
             vertex_attributes.push_back({
-                .location = input.binding,
-                .binding = input.binding,
+                .location = attrib.semantic,
+                .binding = attrib.semantic,
                 .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
                 .offset = 0,
             });
             vertex_bindings.push_back({
-                .binding = input.binding,
+                .binding = attrib.semantic,
                 .stride = buffer.GetStride(),
-                .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
-                                 ? vk::VertexInputRate::eVertex
-                                 : vk::VertexInputRate::eInstance,
+                .inputRate =
+                    attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
+                        ? vk::VertexInputRate::eVertex
+                        : vk::VertexInputRate::eInstance,
             });
         }
     }
@@ -387,69 +387,6 @@ void GraphicsPipeline::BuildDescSetLayout() {
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create graphics descriptor set layout: {}", vk::to_string(layout_result));
     desc_layout = std::move(layout);
-}
-
-void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
-                                     VideoCore::BufferCache& buffer_cache,
-                                     VideoCore::TextureCache& texture_cache) const {
-    // Bind resource buffers and textures.
-    boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
-    BufferBarriers buffer_barriers;
-    Shader::PushData push_data{};
-    Shader::Backend::Bindings binding{};
-
-    buffer_infos.clear();
-    buffer_views.clear();
-    image_infos.clear();
-
-    for (const auto* stage : stages) {
-        if (!stage) {
-            continue;
-        }
-        if (stage->uses_step_rates) {
-            push_data.step0 = regs.vgt_instance_step_rate_0;
-            push_data.step1 = regs.vgt_instance_step_rate_1;
-        }
-        stage->PushUd(binding, push_data);
-
-        BindBuffers(buffer_cache, texture_cache, *stage, binding, push_data, set_writes,
-                    buffer_barriers);
-
-        BindTextures(texture_cache, *stage, binding, set_writes);
-    }
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    SCOPE_EXIT {
-        cmdbuf.pushConstants(*pipeline_layout, gp_stage_flags, 0U, sizeof(push_data), &push_data);
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, Handle());
-    };
-
-    if (set_writes.empty()) {
-        return;
-    }
-
-    if (!buffer_barriers.empty()) {
-        const auto dependencies = vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-        };
-        scheduler.EndRendering();
-        cmdbuf.pipelineBarrier2(dependencies);
-    }
-
-    // Bind descriptor set.
-    if (uses_push_descriptors) {
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                    set_writes);
-        return;
-    }
-    const auto desc_set = desc_heap.Commit(*desc_layout);
-    for (auto& set_write : set_writes) {
-        set_write.dstSet = desc_set;
-    }
-    instance.GetDevice().updateDescriptorSets(set_writes, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, desc_set, {});
 }
 
 } // namespace Vulkan

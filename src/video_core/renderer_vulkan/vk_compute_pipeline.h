@@ -24,13 +24,8 @@ public:
                     vk::ShaderModule module);
     ~ComputePipeline();
 
-    bool BindResources(VideoCore::BufferCache& buffer_cache,
-                       VideoCore::TextureCache& texture_cache) const;
-
 private:
     u64 compute_key;
-    const Shader::Info* info;
-    bool uses_push_descriptors{};
 };
 
 } // namespace Vulkan

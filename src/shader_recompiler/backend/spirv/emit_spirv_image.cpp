@@ -187,7 +187,8 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool has_mips) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
-    const auto type = ctx.info.images[handle & 0xFFFF].type;
+    const auto sharp = ctx.info.images[handle & 0xFFFF].GetSharp(ctx.info);
+    const auto type = sharp.GetBoundType();
     const Id zero = ctx.u32_zero_value;
     const auto mips{[&] { return has_mips ? ctx.OpImageQueryLevels(ctx.U32[1], image) : zero; }};
     const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa && !texture.is_storage};

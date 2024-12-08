@@ -60,6 +60,11 @@ F64 IREmitter::Imm64(f64 value) const {
 }
 
 template <>
+IR::U32 IREmitter::BitCast<IR::U32, IR::U1>(const IR::U1& value) {
+    return IR::U32{Select(value, Imm32(1), Imm32(0))};
+}
+
+template <>
 IR::U32 IREmitter::BitCast<IR::U32, IR::F32>(const IR::F32& value) {
     return Inst<IR::U32>(Opcode::BitCastU32F32, value);
 }
@@ -319,6 +324,18 @@ U32 IREmitter::SharedAtomicIMin(const U32& address, const U32& data, bool is_sig
 U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_signed) {
     return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, address, data)
                      : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
+}
+
+U32 IREmitter::SharedAtomicAnd(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicAnd32, address, data);
+}
+
+U32 IREmitter::SharedAtomicOr(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
+}
+
+U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {

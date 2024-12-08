@@ -2,20 +2,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <imgui.h>
-#include <pthread.h>
 
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
-#include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/platform.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "core/libraries/videoout/videoout_error.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
-extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
@@ -43,10 +41,10 @@ constexpr u32 PixelFormatBpp(PixelFormat pixel_format) {
 }
 
 VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
-    main_port.resolution.fullWidth = width;
-    main_port.resolution.fullHeight = height;
-    main_port.resolution.paneWidth = width;
-    main_port.resolution.paneHeight = height;
+    main_port.resolution.full_width = width;
+    main_port.resolution.full_height = height;
+    main_port.resolution.pane_width = width;
+    main_port.resolution.pane_height = height;
     present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
 }
 
@@ -136,7 +134,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
             .address_right = 0,
         };
 
-        renderer->RegisterVideoOutSurface(group, address);
+        presenter->RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -164,9 +162,9 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 
 void VideoOutDriver::Flip(const Request& req) {
     // Whatever the game is rendering show splash if it is active
-    if (!renderer->ShowSplash(req.frame)) {
+    if (!presenter->ShowSplash(req.frame)) {
         // Present the frame.
-        renderer->Present(req.frame);
+        presenter->Present(req.frame);
     }
 
     // Update flip status.
@@ -175,20 +173,21 @@ void VideoOutDriver::Flip(const Request& req) {
         std::unique_lock lock{port->port_mutex};
         auto& flip_status = port->flip_status;
         flip_status.count++;
-        flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+        flip_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
         flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
-        flip_status.flipArg = req.flip_arg;
-        flip_status.currentBuffer = req.index;
+        flip_status.flip_arg = req.flip_arg;
+        flip_status.current_buffer = req.index;
         if (req.eop) {
-            --flip_status.gcQueueNum;
+            --flip_status.gc_queue_num;
         }
-        --flip_status.flipPendingNum;
+        --flip_status.flip_pending_num;
     }
 
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
         if (event != nullptr) {
-            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::SceKernelEvent::Filter::VideoOut,
+            event->TriggerEvent(u64(OrbisVideoOutEventId::Flip),
+                                Kernel::SceKernelEvent::Filter::VideoOut,
                                 reinterpret_cast<void*>(req.flip_arg));
         }
     }
@@ -201,24 +200,27 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    const auto empty_frame = renderer->PrepareBlankFrame(false);
-    renderer->Present(empty_frame);
+    if (presenter->ShowSplash(nullptr)) {
+        return;
+    }
+    const auto empty_frame = presenter->PrepareBlankFrame(false);
+    presenter->Present(empty_frame);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
         std::unique_lock lock{port->port_mutex};
-        if (index != -1 && port->flip_status.flipPendingNum >= port->NumRegisteredBuffers()) {
+        if (index != -1 && port->flip_status.flip_pending_num >= port->NumRegisteredBuffers()) {
             LOG_ERROR(Lib_VideoOut, "Flip queue is full");
             return false;
         }
 
         if (is_eop) {
-            ++port->flip_status.gcQueueNum;
+            ++port->flip_status.gc_queue_num;
         }
-        ++port->flip_status.flipPendingNum; // integral GPU and CPU pending flips counter
-        port->flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
+        ++port->flip_status.flip_pending_num; // integral GPU and CPU pending flips counter
+        port->flip_status.submit_tsc = Libraries::Kernel::sceKernelReadTsc();
     }
 
     if (!is_eop) {
@@ -226,7 +228,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         // point VO surface is ready to be presented, and we will need have an actual state of
         // Vulkan image at the time of frame presentation.
         liverpool->SendCommand([=, this]() {
-            renderer->FlushDraw();
+            presenter->FlushDraw();
             SubmitFlipInternal(port, index, flip_arg, is_eop);
         });
     } else {
@@ -240,11 +242,11 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
                                         bool is_eop /*= false*/) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = renderer->PrepareBlankFrame(is_eop);
+        frame = presenter->PrepareBlankFrame(is_eop);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
+        frame = presenter->PrepareFrame(group, buffer.address_left, is_eop);
     }
 
     std::scoped_lock lock{mutex};
@@ -296,9 +298,9 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
         {
             // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
-            std::unique_lock lock{main_port.vo_mutex};
+            std::scoped_lock lock{main_port.vo_mutex};
             vblank_status.count++;
-            vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+            vblank_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
             main_port.vblank_cv.notify_all();
         }
@@ -306,7 +308,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Trigger flip events for the port.
         for (auto& event : main_port.vblank_events) {
             if (event != nullptr) {
-                event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
+                event->TriggerEvent(u64(OrbisVideoOutEventId::Vblank),
                                     Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
             }
         }

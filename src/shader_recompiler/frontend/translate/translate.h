@@ -96,6 +96,7 @@ public:
     void S_MUL_I32(const GcnInst& inst);
     void S_BFE_U32(const GcnInst& inst);
     void S_ABSDIFF_I32(const GcnInst& inst);
+    void S_NOT_B32(const GcnInst& inst);
 
     // SOPK
     void S_MOVK(const GcnInst& inst);
@@ -109,11 +110,13 @@ public:
     void S_NOT_B64(const GcnInst& inst);
     void S_BREV_B32(const GcnInst& inst);
     void S_BCNT1_I32_B64(const GcnInst& inst);
+    void S_FF1_I32_B32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
 
     // SOPC
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
+    void S_BITCMP(bool compare_mode, u32 bits, const GcnInst& inst);
 
     // SOPP
     void S_BARRIER();
@@ -220,10 +223,12 @@ public:
     void V_FMA_F64(const GcnInst& inst);
     void V_MIN3_F32(const GcnInst& inst);
     void V_MIN3_I32(const GcnInst& inst);
+    void V_MIN3_U32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
     void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);
     void V_MED3_I32(const GcnInst& inst);
+    void V_MED3_U32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_CVT_PK_U16_U32(const GcnInst& inst);
@@ -247,6 +252,9 @@ public:
     void DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_SWIZZLE_B32(const GcnInst& inst);
+    void DS_AND_B32(const GcnInst& inst, bool rtn);
+    void DS_OR_B32(const GcnInst& inst, bool rtn);
+    void DS_XOR_B32(const GcnInst& inst, bool rtn);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_APPEND(const GcnInst& inst);
     void DS_CONSUME(const GcnInst& inst);

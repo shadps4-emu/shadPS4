@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <xxhash.h>
+
 #include "common/types.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
@@ -14,8 +16,8 @@ class TextureCache;
 
 namespace Vulkan {
 
-static constexpr u32 MaxVertexBufferCount = 32;
 static constexpr u32 MaxShaderStages = 5;
+static constexpr u32 MaxVertexBufferCount = 32;
 
 class Instance;
 class Scheduler;
@@ -58,14 +60,12 @@ public:
     GraphicsPipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
                      const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
                      std::span<const Shader::Info*, MaxShaderStages> stages,
+                     std::optional<const Shader::Gcn::FetchShaderData> fetch_shader,
                      std::span<const vk::ShaderModule> modules);
     ~GraphicsPipeline();
 
-    void BindResources(const Liverpool::Regs& regs, VideoCore::BufferCache& buffer_cache,
-                       VideoCore::TextureCache& texture_cache) const;
-
-    const Shader::Info& GetStage(Shader::Stage stage) const noexcept {
-        return *stages[u32(stage)];
+    const std::optional<const Shader::Gcn::FetchShaderData>& GetFetchShader() const noexcept {
+        return fetch_shader;
     }
 
     bool IsEmbeddedVs() const noexcept {
@@ -99,9 +99,8 @@ private:
     void BuildDescSetLayout();
 
 private:
-    std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
-    bool uses_push_descriptors{};
+    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader{};
 };
 
 } // namespace Vulkan

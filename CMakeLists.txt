@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-cmake_minimum_required(VERSION 3.16.3)
+# Version 3.24 needed for FetchContent OVERRIDE_FIND_PACKAGE
+cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -110,18 +111,20 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
-find_package(glslang 14.2.0 CONFIG)
+find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
-find_package(magic_enum 0.9.6 CONFIG)
+find_package(magic_enum 0.9.7 CONFIG)
+find_package(PNG 1.6 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
+find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.3.289 CONFIG)
+find_package(VulkanHeaders 1.4.303 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
-find_package(zlib-ng 2.1.7 MODULE)
+find_package(ZLIB 1.3 MODULE)
 find_package(Zydis 5.0.0 CONFIG)
 find_package(pugixml 1.14 CONFIG)
 
@@ -176,10 +179,6 @@ if(ENABLE_QT_GUI)
     qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
 endif()
 
-set(AUDIO_CORE src/audio_core/sdl_audio.cpp
-               src/audio_core/sdl_audio.h
-)
-
 set(AJM_LIB src/core/libraries/ajm/ajm.cpp
             src/core/libraries/ajm/ajm.h
             src/core/libraries/ajm/ajm_at9.cpp
@@ -199,6 +198,9 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
+              src/core/libraries/audio/sdl_audio.cpp
+              src/core/libraries/audio/sdl_audio.h
+              src/core/libraries/audio/audioout_error.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
@@ -208,30 +210,43 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/event_flag/event_flag.cpp
-               src/core/libraries/kernel/event_flag/event_flag.h
-               src/core/libraries/kernel/event_flag/event_flag_obj.cpp
-               src/core/libraries/kernel/event_flag/event_flag_obj.h
+set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
+               src/core/libraries/kernel/sync/mutex.h
+               src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/condvar.cpp
+               src/core/libraries/kernel/threads/event_flag.cpp
+               src/core/libraries/kernel/threads/exception.cpp
+               src/core/libraries/kernel/threads/exception.h
+               src/core/libraries/kernel/threads/mutex.cpp
+               src/core/libraries/kernel/threads/pthread_attr.cpp
+               src/core/libraries/kernel/threads/pthread_clean.cpp
+               src/core/libraries/kernel/threads/pthread.cpp
+               src/core/libraries/kernel/threads/pthread_spec.cpp
                src/core/libraries/kernel/threads/rwlock.cpp
                src/core/libraries/kernel/threads/semaphore.cpp
-               src/core/libraries/kernel/threads/keys.cpp
-               src/core/libraries/kernel/threads/threads.h
-               src/core/libraries/kernel/cpu_management.cpp
-               src/core/libraries/kernel/cpu_management.h
-               src/core/libraries/kernel/event_queue.cpp
-               src/core/libraries/kernel/event_queue.h
-               src/core/libraries/kernel/event_queues.cpp
-               src/core/libraries/kernel/event_queues.h
+               src/core/libraries/kernel/threads/sleepq.cpp
+               src/core/libraries/kernel/threads/sleepq.h
+               src/core/libraries/kernel/threads/stack.cpp
+               src/core/libraries/kernel/threads/tcb.cpp
+               src/core/libraries/kernel/threads/pthread.h
+               src/core/libraries/kernel/threads/thread_state.cpp
+               src/core/libraries/kernel/threads/thread_state.h
+               src/core/libraries/kernel/process.cpp
+               src/core/libraries/kernel/process.h
+               src/core/libraries/kernel/equeue.cpp
+               src/core/libraries/kernel/equeue.h
                src/core/libraries/kernel/file_system.cpp
                src/core/libraries/kernel/file_system.h
-               src/core/libraries/kernel/libkernel.cpp
-               src/core/libraries/kernel/libkernel.h
-               src/core/libraries/kernel/memory_management.cpp
-               src/core/libraries/kernel/memory_management.h
-               src/core/libraries/kernel/thread_management.cpp
-               src/core/libraries/kernel/thread_management.h
-               src/core/libraries/kernel/time_management.cpp
-               src/core/libraries/kernel/time_management.h
+               src/core/libraries/kernel/kernel.cpp
+               src/core/libraries/kernel/kernel.h
+               src/core/libraries/kernel/memory.cpp
+               src/core/libraries/kernel/memory.h
+               src/core/libraries/kernel/threads.cpp
+               src/core/libraries/kernel/threads.h
+               src/core/libraries/kernel/time.cpp
+               src/core/libraries/kernel/time.h
+               src/core/libraries/kernel/orbis_error.h
+               src/core/libraries/kernel/posix_error.h
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
@@ -245,6 +260,21 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
+)
+
+set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
+                 src/core/libraries/avplayer/avplayer_common.h
+                 src/core/libraries/avplayer/avplayer_file_streamer.cpp
+                 src/core/libraries/avplayer/avplayer_file_streamer.h
+                 src/core/libraries/avplayer/avplayer_impl.cpp
+                 src/core/libraries/avplayer/avplayer_impl.h
+                 src/core/libraries/avplayer/avplayer_source.cpp
+                 src/core/libraries/avplayer/avplayer_source.h
+                 src/core/libraries/avplayer/avplayer_state.cpp
+                 src/core/libraries/avplayer/avplayer_state.h
+                 src/core/libraries/avplayer/avplayer.cpp
+                 src/core/libraries/avplayer/avplayer.h
+                 src/core/libraries/avplayer/avplayer_error.h
 )
 
 set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
@@ -268,30 +298,22 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/dialog/savedatadialog_ui.h
                 src/core/libraries/system/sysmodule.cpp
                 src/core/libraries/system/sysmodule.h
+                src/core/libraries/system/system_error.h
                 src/core/libraries/system/systemservice.cpp
                 src/core/libraries/system/systemservice.h
+                src/core/libraries/system/systemservice_error.h
                 src/core/libraries/system/userservice.cpp
                 src/core/libraries/system/userservice.h
+                src/core/libraries/system/userservice_error.h
                 src/core/libraries/app_content/app_content.cpp
                 src/core/libraries/app_content/app_content.h
+                src/core/libraries/app_content/app_content_error.h
                 src/core/libraries/rtc/rtc.cpp
                 src/core/libraries/rtc/rtc.h
                 src/core/libraries/rtc/rtc_error.h
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
-                src/core/libraries/avplayer/avplayer_common.cpp
-                src/core/libraries/avplayer/avplayer_common.h
-                src/core/libraries/avplayer/avplayer_file_streamer.cpp
-                src/core/libraries/avplayer/avplayer_file_streamer.h
-                src/core/libraries/avplayer/avplayer_impl.cpp
-                src/core/libraries/avplayer/avplayer_impl.h
-                src/core/libraries/avplayer/avplayer_source.cpp
-                src/core/libraries/avplayer/avplayer_source.h
-                src/core/libraries/avplayer/avplayer_state.cpp
-                src/core/libraries/avplayer/avplayer_state.h
-                src/core/libraries/avplayer/avplayer.cpp
-                src/core/libraries/avplayer/avplayer.h
                 src/core/libraries/ngs2/ngs2.cpp
                 src/core/libraries/ngs2/ngs2.h
                 src/core/libraries/ngs2/ngs2_error.h
@@ -309,6 +331,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/remote_play/remoteplay.h
                 src/core/libraries/share_play/shareplay.cpp
                 src/core/libraries/share_play/shareplay.h
+                src/core/libraries/razor_cpu/razor_cpu.cpp
+                src/core/libraries/razor_cpu/razor_cpu.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -316,6 +340,7 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/driver.h
                  src/core/libraries/videoout/video_out.cpp
                  src/core/libraries/videoout/video_out.h
+                 src/core/libraries/videoout/videoout_error.h
 )
 
 set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
@@ -333,18 +358,28 @@ set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/ime_ui.h
             src/core/libraries/ime/ime.cpp
             src/core/libraries/ime/ime.h
+            src/core/libraries/ime/ime_error.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad.h
+            src/core/libraries/pad/pad_errors.h
 )
 
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
+            src/core/libraries/libpng/pngdec_error.h
+)
+
+set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
+             src/core/libraries/jpeg/jpegenc.cpp
+             src/core/libraries/jpeg/jpegenc.h
 )
 
 set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo.h
+               src/core/libraries/playgo/playgo_dialog.cpp
+               src/core/libraries/playgo/playgo_dialog.h
                src/core/libraries/playgo/playgo_types.h
 )
 
@@ -359,6 +394,7 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
 
 set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
               src/core/libraries/fiber/fiber.h
+              src/core/libraries/fiber/fiber_error.h
 )
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
@@ -368,6 +404,7 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_avc.h
              src/core/libraries/videodec/videodec.cpp
              src/core/libraries/videodec/videodec.h
+             src/core/libraries/videodec/videodec_error.h
              src/core/libraries/videodec/videodec_impl.cpp
              src/core/libraries/videodec/videodec_impl.h
 )
@@ -380,6 +417,7 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_trophy/np_trophy.h
             src/core/libraries/np_trophy/trophy_ui.cpp
             src/core/libraries/np_trophy/trophy_ui.h
+            src/core/libraries/np_trophy/np_trophy_error.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
@@ -401,10 +439,14 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
               src/core/devtools/widget/imgui_memory_editor.h
+              src/core/devtools/widget/memory_map.cpp
+              src/core/devtools/widget/memory_map.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp
               src/core/devtools/widget/reg_view.h
+              src/core/devtools/widget/shader_list.cpp
+              src/core/devtools/widget/shader_list.h
               src/core/devtools/widget/text_editor.cpp
               src/core/devtools/widget/text_editor.h
 )
@@ -453,7 +495,12 @@ set(COMMON src/common/logging/backend.cpp
            src/common/signal_context.h
            src/common/signal_context.cpp
            src/common/singleton.h
+           src/common/slab_heap.h
            src/common/slot_vector.h
+           src/common/spin_lock.cpp
+           src/common/spin_lock.h
+           src/common/stb.cpp
+           src/common/stb.h
            src/common/string_util.cpp
            src/common/string_util.h
            src/common/thread.cpp
@@ -461,6 +508,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/types.h
            src/common/uint128.h
            src/common/unique_function.h
+           src/common/va_ctx.h
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
@@ -485,6 +533,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h
          src/core/crypto/keys.h
+         src/core/devices/base_device.cpp
+         src/core/devices/base_device.h
+         src/core/devices/ioccom.h
+         src/core/devices/logger.cpp
+         src/core/devices/logger.h
+         src/core/devices/nop_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h
@@ -508,10 +562,10 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/loader/elf.h
          src/core/loader/symbols_resolver.h
          src/core/loader/symbols_resolver.cpp
-         src/core/libraries/error_codes.h
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
          ${AJM_LIB}
+         ${AVPLAYER_LIB}
          ${AUDIO_LIB}
          ${GNM_LIB}
          ${KERNEL_LIB}
@@ -522,6 +576,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
+         ${JPEG_LIB}
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
@@ -541,10 +596,10 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
+         src/core/thread.cpp
+         src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
-         src/core/virtual_memory.cpp
-         src/core/virtual_memory.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
@@ -657,8 +712,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/buffer_cache/word_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
-               src/video_core/renderer_vulkan/renderer_vulkan.cpp
-               src/video_core/renderer_vulkan/renderer_vulkan.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
@@ -677,6 +730,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_pipeline_common.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
+               src/video_core/renderer_vulkan/vk_presenter.cpp
+               src/video_core/renderer_vulkan/vk_presenter.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
@@ -820,11 +875,19 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
+
+if (ENABLE_DISCORD_RPC)
+    target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+endif()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+endif()
 
 if (APPLE)
   option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)
@@ -850,9 +913,9 @@ if (NOT ENABLE_QT_GUI)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
-    target_link_libraries(shadps4 PRIVATE cryptoppwin zlib-ng::zlib)
+    target_link_libraries(shadps4 PRIVATE cryptoppwin)
 else()
-    target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib-ng::zlib)
+    target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp)
 endif()
 
 if (ENABLE_QT_GUI)
@@ -924,7 +987,10 @@ if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON
-        MACOSX_BUNDLE_ICON_FILE shadPS4.icns)
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
+        MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
+        )
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)
