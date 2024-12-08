@@ -99,12 +99,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                     Config::save(config_dir / "config.toml");
                     QWidget::close();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Apply)) {
+                    UpdateSettings();
                     Config::save(config_dir / "config.toml");
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     Config::setDefaultValues();
+                    Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
-                    UpdateInstallFolders();
+                    ResetInstallFolders();
                 }
                 if (Common::Log::IsActive()) {
                     Common::Log::Filter filter;
@@ -223,6 +225,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 void SettingsDialog::LoadValuesFromConfig() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    std::error_code error;
+    if (!std::filesystem::exists(userdir / "Config.toml", error)) {
+        Config::load(userdir / "Config.toml");
+        return;
+    }
+
     try {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -516,7 +524,7 @@ void SettingsDialog::UpdateSettings() {
     UpdateInstallFolders();
 }
 
-void SettingsDialog::UpdateInstallFolders() {
+void SettingsDialog::ResetInstallFolders() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const toml::value data = toml::parse(userdir / "Config.toml");
