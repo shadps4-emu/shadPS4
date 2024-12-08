@@ -87,14 +87,23 @@ public:
     template <class Rep, class Period>
     bool try_acquire_for(const std::chrono::duration<Rep, Period>& rel_time) {
 #ifdef _WIN64
-        const auto rel_time_ms = std::chrono::ceil<std::chrono::milliseconds>(rel_time);
-        const u64 timeout_ms = static_cast<u64>(rel_time_ms.count());
+        const auto start_time = std::chrono::high_resolution_clock::now();
+        auto rel_time_ms = std::chrono::ceil<std::chrono::milliseconds>(rel_time);
 
-        if (timeout_ms == 0) {
-            return false;
+        while (rel_time_ms.count() > 0) {
+            u64 timeout_ms = static_cast<u64>(rel_time_ms.count());
+            u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
+            if (res == WAIT_OBJECT_0) {
+                return true;
+            } else if (res == WAIT_IO_COMPLETION) {
+                auto elapsed_time = std::chrono::high_resolution_clock::now() - start_time;
+                rel_time_ms -= std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
+            } else {
+                return false;
+            }
         }
 
-        return WaitForSingleObjectEx(sem, timeout_ms, true) == WAIT_OBJECT_0;
+        return false;
 #elif defined(__APPLE__)
         const auto rel_time_ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time).count();
         const auto timeout = dispatch_time(DISPATCH_TIME_NOW, rel_time_ns);
@@ -107,19 +116,26 @@ public:
     template <class Clock, class Duration>
     bool try_acquire_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
 #ifdef _WIN64
-        const auto now = Clock::now();
-        if (now >= abs_time) {
+        const auto start_time = Clock::now();
+        if (start_time >= abs_time) {
             return false;
         }
 
-        const auto rel_time = std::chrono::ceil<std::chrono::milliseconds>(abs_time - now);
-        const u64 timeout_ms = static_cast<u64>(rel_time.count());
-        if (timeout_ms == 0) {
-            return false;
+        auto rel_time = std::chrono::ceil<std::chrono::milliseconds>(abs_time - start_time);
+        while (rel_time.count() > 0) {
+            u64 timeout_ms = static_cast<u64>(rel_time.count());
+            u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
+            if (res == WAIT_OBJECT_0) {
+                return true;
+            } else if (res == WAIT_IO_COMPLETION) {
+                auto elapsed_time = Clock::now() - start_time;
+                rel_time -= std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
+            } else {
+                return false;
+            }
         }
 
-        u64 res = WaitForSingleObjectEx(sem, static_cast<u64>(timeout_ms), true);
-        return res == WAIT_OBJECT_0;
+        return false;
 #elif defined(__APPLE__)
         auto abs_s = std::chrono::time_point_cast<std::chrono::seconds>(abs_time);
         auto abs_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(abs_time) -

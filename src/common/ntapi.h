@@ -509,6 +509,20 @@ typedef struct _TEB {                             /* win32/win64 */
 static_assert(offsetof(TEB, DeallocationStack) ==
               0x1478); /* The only member we care about at the moment */
 
+typedef enum _QUEUE_USER_APC_FLAGS {
+    QueueUserApcFlagsNone,
+    QueueUserApcFlagsSpecialUserApc,
+    QueueUserApcFlagsMaxValue
+} QUEUE_USER_APC_FLAGS;
+
+typedef union _USER_APC_OPTION {
+    ULONG_PTR UserApcFlags;
+    HANDLE MemoryReserveHandle;
+} USER_APC_OPTION, *PUSER_APC_OPTION;
+
+using PPS_APC_ROUTINE = void (*)(PVOID ApcArgument1, PVOID ApcArgument2, PVOID ApcArgument3,
+                                 PCONTEXT Context);
+
 typedef u64(__stdcall* NtClose_t)(HANDLE Handle);
 
 typedef u64(__stdcall* NtSetInformationFile_t)(HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock,
@@ -522,10 +536,16 @@ typedef u64(__stdcall* NtCreateThread_t)(PHANDLE ThreadHandle, ACCESS_MASK Desir
 
 typedef u64(__stdcall* NtTerminateThread_t)(HANDLE ThreadHandle, u64 ExitStatus);
 
+typedef u64(__stdcall* NtQueueApcThreadEx_t)(HANDLE ThreadHandle,
+                                             USER_APC_OPTION UserApcReserveHandle,
+                                             PPS_APC_ROUTINE ApcRoutine, PVOID ApcArgument1,
+                                             PVOID ApcArgument2, PVOID ApcArgument3);
+
 extern NtClose_t NtClose;
 extern NtSetInformationFile_t NtSetInformationFile;
 extern NtCreateThread_t NtCreateThread;
 extern NtTerminateThread_t NtTerminateThread;
+extern NtQueueApcThreadEx_t NtQueueApcThreadEx;
 
 namespace Common::NtApi {
 void Initialize();

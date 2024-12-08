@@ -192,7 +192,7 @@ public:
 
     void PoolDecommit(VAddr virtual_addr, size_t size);
 
-    void UnmapMemory(VAddr virtual_addr, size_t size);
+    s32 UnmapMemory(VAddr virtual_addr, size_t size);
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
@@ -250,7 +250,7 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
-    void UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+    s32 UnmapMemoryImpl(VAddr virtual_addr, size_t size);
 
 private:
     AddressSpace impl;

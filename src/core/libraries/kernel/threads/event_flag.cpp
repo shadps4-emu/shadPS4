@@ -132,6 +132,33 @@ public:
         m_bits &= bits;
     }
 
+    void Cancel(u64 setPattern, int* numWaitThreads) {
+        std::unique_lock lock{m_mutex};
+
+        while (m_status != Status::Set) {
+            m_mutex.unlock();
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            m_mutex.lock();
+        }
+
+        if (numWaitThreads) {
+            *numWaitThreads = m_waiting_threads;
+        }
+
+        m_status = Status::Canceled;
+        m_bits = setPattern;
+
+        m_cond_var.notify_all();
+
+        while (m_waiting_threads > 0) {
+            m_mutex.unlock();
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            m_mutex.lock();
+        }
+
+        m_status = Status::Set;
+    }
+
 private:
     enum class Status { Set, Canceled, Deleted };
 
@@ -232,7 +259,8 @@ int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern
 
 int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPattern,
                                           int* pNumWaitThreads) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
+    LOG_DEBUG(Kernel_Event, "called");
+    ef->Cancel(setPattern, pNumWaitThreads);
     return ORBIS_OK;
 }
 
