@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "shader_recompiler/ir/attribute.h"
-#include "shader_recompiler/runtime_info.h"
-#pragma clang optimize off
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/patch.h"
+#include "shader_recompiler/runtime_info.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -230,14 +229,6 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
         UNREACHABLE();
     }
 
-    if (IR::IsTessCoord(attr)) {
-        const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
-        const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-        const auto pointer{
-            ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
-        return ctx.OpLoad(ctx.F32[1], pointer);
-    }
-
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(index)};
@@ -312,9 +303,6 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
                             ctx.u32_zero_value);
     case IR::Attribute::PrimitiveId:
     case IR::Attribute::TessPatchIdInVgt: // TODO see why this isnt DCEd
-        ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
-               ctx.info.l_stage == LogicalStage::TessellationControl ||
-               ctx.info.l_stage == LogicalStage::TessellationEval);
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     case IR::Attribute::InvocationId:
         ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||

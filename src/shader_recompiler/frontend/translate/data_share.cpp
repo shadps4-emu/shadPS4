@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#include "shader_recompiler/runtime_info.h"
-#pragma clang optimize off
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Gcn {
 
