@@ -39,7 +39,7 @@ CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
       m_gameSize(gameSize), m_gameImage(gameImage), manager(new QNetworkAccessManager(this)) {
     setupUI();
     resize(500, 400);
-    setWindowTitle(tr("Cheats / Patches"));
+    setWindowTitle(tr("Cheats / Patches for ") + m_gameName);
 }
 
 CheatsPatches::~CheatsPatches() {}
