@@ -91,9 +91,9 @@ struct ShaderDump {
     std::string cache_patch_disasm{};
 
     ShaderDump(std::string name, vk::ShaderModule module, std::vector<u32> spv,
-               std::vector<u32> isa, std::vector<u32> patch_spv)
+               std::vector<u32> isa, std::vector<u32> patch_spv, bool is_patched)
         : name(std::move(name)), module(module), spv(std::move(spv)), isa(std::move(isa)),
-          patch_spv(std::move(patch_spv)) {}
+          patch_spv(std::move(patch_spv)), is_patched(is_patched) {}
 
     ShaderDump(const ShaderDump& other) = delete;
     ShaderDump(ShaderDump&& other) noexcept
@@ -204,7 +204,8 @@ public:
                       const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
 
     void CollectShader(const std::string& name, vk::ShaderModule module, std::span<const u32> spv,
-                       std::span<const u32> raw_code, std::span<const u32> patch_spv);
+                       std::span<const u32> raw_code, std::span<const u32> patch_spv,
+                       bool is_patched);
 };
 } // namespace DebugStateType
 

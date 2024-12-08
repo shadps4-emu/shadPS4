@@ -434,7 +434,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     vk::ShaderModule module;
 
     auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
-    if (patch) {
+    const bool is_patched = patch && Config::patchShaders();
+    if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
         module = CompileSPV(*patch, instance.GetDevice());
     } else {
@@ -444,7 +445,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
-        DebugState.CollectShader(name, module, spv, code, patch ? *patch : std::span<const u32>{});
+        DebugState.CollectShader(name, module, spv, code, patch ? *patch : std::span<const u32>{},
+                                 is_patched);
     }
     return module;
 }
@@ -533,9 +535,6 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
 std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
                                                               size_t perm_idx,
                                                               std::string_view ext) {
-    if (!Config::patchShaders()) {
-        return {};
-    }
 
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";

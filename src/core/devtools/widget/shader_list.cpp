@@ -232,10 +232,12 @@ void ShaderList::Draw() {
     int i = 0;
     for (const auto& shader : DebugState.shader_dump_list) {
         char name[128];
-        if (shader.patch_spv.empty()) {
-            snprintf(name, sizeof(name), "%s", shader.name.c_str());
+        if (shader.is_patched) {
+            snprintf(name, sizeof(name), "%s (PATCH ON)", shader.name.c_str());
+        } else if (!shader.patch_spv.empty()) {
+            snprintf(name, sizeof(name), "%s (PATCH OFF)", shader.name.c_str());
         } else {
-            snprintf(name, sizeof(name), "%s (PATCH)", shader.name.c_str());
+            snprintf(name, sizeof(name), "%s", shader.name.c_str());
         }
         if (ButtonEx(name, {width, 20.0f}, ImGuiButtonFlags_NoHoveredOnFocus)) {
             open_shaders.emplace_back(i);
