@@ -34,7 +34,7 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus();
 s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id);
 int PS4_SYSV_ABI sceGnmDestroyWorkloadStream();
 void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw);
-int PS4_SYSV_ABI sceGnmDingDongForWorkload();
+void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id);
 int PS4_SYSV_ABI sceGnmDisableMipStatsReport();
 s32 PS4_SYSV_ABI sceGnmDispatchDirect(u32* cmdbuf, u32 size, u32 threads_x, u32 threads_y,
                                       u32 threads_z, u32 flags);
