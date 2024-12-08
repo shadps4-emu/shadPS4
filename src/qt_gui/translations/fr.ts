@@ -1359,6 +1359,11 @@
 			<source>Play Time</source>
 			<translation>Temps de jeu</translation>
 		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="108"/>
+			<source>Never Played</source>
+			<translation>Jamais joué</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
