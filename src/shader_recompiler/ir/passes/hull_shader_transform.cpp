@@ -315,7 +315,7 @@ static bool TryOptimizeAddendInModulo(IR::Value addend, u32 stride, std::vector<
 // If any addend is divisible by stride, then we can replace it with 0 in the attribute
 // or component index calculation
 static IR::U32 TryOptimizeAddressModulo(IR::U32 addr, u32 stride, IR::IREmitter& ir) {
-#if 0
+#if 1
     std::vector<IR::U32> addends;
     if (TryOptimizeAddendInModulo(addr, stride, addends)) {
         addr = ir.Imm32(0);
