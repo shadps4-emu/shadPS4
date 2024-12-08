@@ -322,7 +322,6 @@ static IR::U32 TryOptimizeAddressModulo(IR::U32 addr, u32 stride, IR::IREmitter&
         for (auto& addend : addends) {
             addr = ir.IAdd(addr, addend);
         }
-        LOG_INFO(Render_Recompiler, "OPTIMIZED attr index");
     }
 #endif
     return addr;
@@ -459,10 +458,6 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 case AttributeRegion::InputCP: {
                     IR::U32 control_point_index =
                         ir.IDiv(addr, ir.Imm32(runtime_info.hs_info.ls_stride));
-
-                    if (info.pgm_hash == 0xb5fb5174) {
-                        printf("here\n");
-                    }
 
                     IR::U32 addr_for_attrs =
                         TryOptimizeAddressModulo(addr, runtime_info.hs_info.ls_stride, ir);
