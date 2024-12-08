@@ -16,6 +16,7 @@
 #include "imgui/imgui_std.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
@@ -35,9 +36,20 @@ ShaderList::Selection::~Selection() {
     presenter->GetWindow().ReleaseKeyboard();
 }
 
+void ShaderList::Selection::ReloadShader(DebugStateType::ShaderDump& value) {
+    auto& spv = value.is_patched ? value.patch_spv : value.spv;
+    if (spv.empty()) {
+        return;
+    }
+    auto& cache = presenter->GetRasterizer().GetPipelineCache();
+    if (const auto m = cache.ReplaceShader(value.module, spv); m) {
+        value.module = *m;
+    }
+}
+
 bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
-    if (!loaded_data) {
-        loaded_data = true;
+    if (!value.loaded_data) {
+        value.loaded_data = true;
         if (value.cache_isa_disasm.empty()) {
             value.cache_isa_disasm = RunDisassembler(Options.disassembler_cli_isa, value.isa);
         }
@@ -58,12 +70,11 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                 std::string{std::istreambuf_iterator{file}, std::istreambuf_iterator<char>{}};
         }
 
-        if (value.patch_spv.empty()) { // No patch
-            showing_patch = false;
+        value.is_patched = !value.patch_spv.empty();
+        if (!value.is_patched) { // No patch
             isa_editor.SetText(value.cache_isa_disasm);
             glsl_editor.SetText(value.cache_spv_disasm);
         } else {
-            showing_patch = true;
             isa_editor.SetText(value.cache_patch_disasm);
             isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
             glsl_editor.SetText(value.patch_source);
@@ -73,6 +84,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
 
     char name[64];
     snprintf(name, sizeof(name), "Shader %s", value.name.c_str());
+    SetNextWindowSize({450.0f, 600.0f}, ImGuiCond_FirstUseEver);
     if (!Begin(name, &open, ImGuiWindowFlags_NoNav)) {
         End();
         return open;
@@ -80,8 +92,8 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
 
     Text("%s", value.name.c_str());
     SameLine(0.0f, 7.0f);
-    if (Checkbox("Enable patch", &showing_patch)) {
-        if (showing_patch) {
+    if (Checkbox("Enable patch", &value.is_patched)) {
+        if (value.is_patched) {
             if (value.patch_source.empty()) {
                 value.patch_source = value.cache_spv_disasm;
             }
@@ -89,15 +101,19 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
             glsl_editor.SetText(value.patch_source);
             glsl_editor.SetReadOnly(false);
+            if (!value.patch_spv.empty()) {
+                ReloadShader(value);
+            }
         } else {
             isa_editor.SetText(value.cache_isa_disasm);
             isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition());
             glsl_editor.SetText(value.cache_spv_disasm);
             glsl_editor.SetReadOnly(true);
+            ReloadShader(value);
         }
     }
 
-    if (showing_patch) {
+    if (value.is_patched) {
         if (BeginCombo("Shader type", showing_bin ? "SPIRV" : "GLSL",
                        ImGuiComboFlags_WidthFitPreview)) {
             if (Selectable("GLSL")) {
@@ -121,7 +137,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
         }
     }
 
-    if (showing_patch) {
+    if (value.is_patched) {
         bool save = false;
         bool compile = false;
         SameLine(0.0f, 3.0f);
@@ -172,6 +188,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                                                     res);
                     } else {
                         isa_editor.SetText(value.cache_patch_disasm);
+                        ReloadShader(value);
                     }
                 }
             }
@@ -179,7 +196,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
     }
 
     if (showing_bin) {
-        isa_editor.Render(showing_patch ? "SPIRV" : "ISA", GetContentRegionAvail());
+        isa_editor.Render(value.is_patched ? "SPIRV" : "ISA", GetContentRegionAvail());
     } else {
         glsl_editor.Render("GLSL", GetContentRegionAvail());
     }
@@ -189,6 +206,16 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
 }
 
 void ShaderList::Draw() {
+    for (auto it = open_shaders.begin(); it != open_shaders.end();) {
+        auto& selection = *it;
+        auto& shader = DebugState.shader_dump_list[selection.index];
+        if (!selection.DrawShader(shader)) {
+            it = open_shaders.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
     SetNextWindowSize({500.0f, 600.0f}, ImGuiCond_FirstUseEver);
     if (!Begin("Shader list", &open)) {
         End();
@@ -201,20 +228,16 @@ void ShaderList::Draw() {
         return;
     }
 
-    for (auto it = open_shaders.begin(); it != open_shaders.end();) {
-        auto& selection = *it;
-        auto& shader = DebugState.shader_dump_list[selection.index];
-        if (!selection.DrawShader(shader)) {
-            it = open_shaders.erase(it);
-        } else {
-            ++it;
-        }
-    }
-
     auto width = GetContentRegionAvail().x;
     int i = 0;
     for (const auto& shader : DebugState.shader_dump_list) {
-        if (ButtonEx(shader.name.c_str(), {width, 20.0f}, ImGuiButtonFlags_NoHoveredOnFocus)) {
+        char name[128];
+        if (shader.patch_spv.empty()) {
+            snprintf(name, sizeof(name), "%s", shader.name.c_str());
+        } else {
+            snprintf(name, sizeof(name), "%s (PATCH)", shader.name.c_str());
+        }
+        if (ButtonEx(name, {width, 20.0f}, ImGuiButtonFlags_NoHoveredOnFocus)) {
             open_shaders.emplace_back(i);
         }
         i++;

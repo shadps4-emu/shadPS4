@@ -94,6 +94,10 @@ public:
         draw_scheduler.Flush(info);
     }
 
+    Rasterizer& GetRasterizer() const {
+        return *rasterizer.get();
+    }
+
 private:
     void CreatePostProcessPipeline();
     Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);

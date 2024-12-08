@@ -12,21 +12,21 @@ namespace Core::Devtools::Widget {
 
 class ShaderList {
     struct Selection {
+        explicit Selection(int index);
+        ~Selection();
+
+        void ReloadShader(DebugStateType::ShaderDump& value);
+
+        bool DrawShader(DebugStateType::ShaderDump& value);
+
         int index;
         TextEditor isa_editor{};
         TextEditor glsl_editor{};
         bool open = true;
-        bool loaded_data = false;
         bool showing_bin = false;
-        bool showing_patch = false;
 
         std::filesystem::path patch_path;
         std::filesystem::path patch_bin_path;
-
-        explicit Selection(int index);
-        ~Selection();
-
-        bool DrawShader(DebugStateType::ShaderDump& value);
     };
 
     std::vector<Selection> open_shaders{};
