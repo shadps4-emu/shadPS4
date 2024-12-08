@@ -85,7 +85,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::ConstantPropagationPass(
-        program.post_order_blocks); // TODO const fold spam for now    dumpMatchingIR("post_ssa");
+        program.post_order_blocks); // TODO const fold spam for now while testing
     if (stage == Stage::Hull) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
@@ -93,6 +93,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
         Shader::Optimization::HullShaderTransform(program, runtime_info);
         dumpMatchingIR("post_hull");
         Shader::Optimization::TessellationPostprocess(program, runtime_info);
+        dumpMatchingIR("post_hull_postprocess");
     } else if (info.l_stage == LogicalStage::TessellationEval) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
