@@ -96,7 +96,8 @@ public:
                                                        BufferId buffer_id = {});
 
     /// Attempts to obtain a buffer without modifying the cache contents.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainViewBuffer(VAddr gpu_addr, u32 size);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainViewBuffer(VAddr gpu_addr, u32 size,
+                                                           bool prefer_gpu);
 
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
