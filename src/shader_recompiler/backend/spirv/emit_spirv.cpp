@@ -284,7 +284,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
             ctx.AddExtension("SPV_EXT_demote_to_helper_invocation");
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
         }
-        if (info.stores.Get(IR::Attribute::Depth)) {
+        if (info.stores.GetAny(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
         break;
