@@ -70,8 +70,9 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     static constexpr std::array misc_formats = {
         vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
         vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
-        vk::Format::eB8G8R8A8Srgb,           vk::Format::eR5G6B5UnormPack16,
-        vk::Format::eD24UnormS8Uint,
+        vk::Format::eB8G8R8A8Snorm,          vk::Format::eB8G8R8A8Uint,
+        vk::Format::eB8G8R8A8Sint,           vk::Format::eB8G8R8A8Srgb,
+        vk::Format::eR5G6B5UnormPack16,      vk::Format::eD24UnormS8Uint,
     };
     for (const auto& format : misc_formats) {
         if (!format_properties.contains(format)) {

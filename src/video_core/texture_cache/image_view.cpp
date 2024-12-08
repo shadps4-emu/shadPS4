@@ -58,11 +58,22 @@ bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
 }
 
 vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
-    if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Unorm;
-    }
-    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Srgb;
+    // BGRA
+    if (dst_sel == 0b111100101110) {
+        switch (format) {
+        case vk::Format::eR8G8B8A8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
+        case vk::Format::eR8G8B8A8Snorm:
+            return vk::Format::eB8G8R8A8Snorm;
+        case vk::Format::eR8G8B8A8Uint:
+            return vk::Format::eB8G8R8A8Uint;
+        case vk::Format::eR8G8B8A8Sint:
+            return vk::Format::eB8G8R8A8Sint;
+        case vk::Format::eR8G8B8A8Srgb:
+            return vk::Format::eB8G8R8A8Srgb;
+        default:
+            break;
+        }
     }
     return format;
 }
