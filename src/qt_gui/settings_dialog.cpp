@@ -302,7 +302,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
-    UpdateInstallFolders();
+    ResetInstallFolders();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -521,7 +521,7 @@ void SettingsDialog::UpdateSettings() {
 #endif
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
-    UpdateInstallFolders();
+    ResetInstallFolders();
 }
 
 void SettingsDialog::ResetInstallFolders() {
