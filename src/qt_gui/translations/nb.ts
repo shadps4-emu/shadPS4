@@ -90,7 +90,7 @@
 		<message>
 			<location filename="../game_install_dialog.cpp" line="75"/>
 			<source>The value for location to install games is not valid.</source>
-			<translation>Verdien for mappen for å installere spill er ikke gyldig.</translation>
+			<translation>Stien for å installere spillet er ikke gyldig.</translation>
 		</message>
 	</context>
 	<context>
@@ -123,7 +123,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
 			<source>Open Game Folder</source>
-			<translation>Åpne Spillmappe</translation>
+			<translation>Åpne Spillmappen</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>
@@ -208,7 +208,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>Denne funksjonen krever 'Aktiver seperat oppdateringsmappe' konfigurasjonsalternativet. Hvis du vil bruke denne funksjonen, vennligst aktiver den.</translation>
+			<translation>Denne funksjonen krever 'Aktiver seperat oppdateringsmappe' konfigurasjonsalternativet. Hvis du vil bruke denne funksjonen, må du aktiver den.</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
@@ -261,7 +261,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="308"/>
 			<source>Check for Updates</source>
-			<translation>Sjekk etter oppdateringer</translation>
+			<translation>Se etter oppdateringer</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="314"/>
@@ -500,7 +500,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
-			<translation>Vis Velkomst</translation>
+			<translation>Vis Velkomstbilde</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="136"/>
@@ -655,7 +655,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="286"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Sjekk etter oppdateringer ved oppstart</translation>
+			<translation>Se etter oppdateringer ved oppstart</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="313"/>
@@ -665,7 +665,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
-			<translation>Sjekk for oppdateringer</translation>
+			<translation>Se etter oppdateringer</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
@@ -718,7 +718,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="391"/>
 			<source>Patches Downloaded Successfully!</source>
-			<translation>Programrettelser lastet ned vellykket!</translation>
+			<translation>Programrettelser ble lastet ned!</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="392"/>
@@ -828,7 +828,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="704"/>
 			<source>Game successfully installed at %1</source>
-			<translation>Spillet ble installert vellykket på %1</translation>
+			<translation>Spillet ble installert i %1</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="725"/>
@@ -841,12 +841,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Juks / Programrettelser for </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til juks-utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til jukse/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
@@ -871,7 +871,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="126"/>
 			<source>Select Cheat File:</source>
-			<translation>Velg juksfil:</translation>
+			<translation>Velg juksefil:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="133"/>
@@ -896,7 +896,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="170"/>
 			<source>You can delete the cheats you don't want after downloading them.</source>
-			<translation>Du kan slette jukser du ikke ønsker etter å ha lastet dem ned.</translation>
+			<translation>Du kan slette juksene du ikke ønsker etter å ha lastet dem ned.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="178"/>
@@ -971,12 +971,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="434"/>
 			<source>Options saved successfully.</source>
-			<translation>Alternativer lagret vellykket.</translation>
+			<translation>Alternativer ble lagret.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="470"/>
 			<source>Invalid Source</source>
-			<translation>Ugyldig kilde</translation>
+			<translation>Ugyldig Kilde</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="471"/>
@@ -986,7 +986,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="519"/>
 			<source>File Exists</source>
-			<translation>Filen eksisterer</translation>
+			<translation>Filen Eksisterer</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="520"/>
@@ -996,17 +996,17 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="539"/>
 			<source>Failed to save file:</source>
-			<translation>Kunne ikke lagre fil:</translation>
+			<translation>Kunne ikke lagre filen:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="545"/>
 			<source>Failed to download file:</source>
-			<translation>Kunne ikke laste ned fil:</translation>
+			<translation>Kunne ikke laste ned filen:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
 			<source>Cheats Not Found</source>
-			<translation>Jukser ikke funnet</translation>
+			<translation>Fant ikke juksene</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
@@ -1016,12 +1016,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="593"/>
 			<source>Cheats Downloaded Successfully</source>
-			<translation>Jukser lastet ned vellykket</translation>
+			<translation>Juksene ble lastet ned</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="594"/>
 			<source>CheatsDownloadedSuccessfully_MSG</source>
-			<translation>Du har lastet ned jukser vellykket for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
+			<translation>Du har lastet ned jukser for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="747"/>
@@ -1041,7 +1041,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Oppdateringer lastet ned vellykket! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
+			<translation>Programrettelser ble lastet ned! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1076,7 +1076,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
-			<translation>Kunne ikke åpne fil:</translation>
+			<translation>Kunne ikke åpne filen:</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="819"/>
@@ -1111,7 +1111,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Kan ikke bruke juksetriks før spillet er startet.</translation>
+			<translation>Kan ikke bruke juksene før spillet er startet.</translation>
 		</message>
 	</context>
 	<context>
@@ -1154,7 +1154,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>Aktiver fullskjerm:\nSetter automatisk spillvinduet i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
+			<translation>Aktiver fullskjerm:\nSetter spillvinduet automatisk i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
@@ -1164,12 +1164,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Vis startskjerm:\nViser spillets startskjerm (et spesialbilde) når spillet starter.</translation>
+			<translation>Vis Velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>Er PS4 Pro:\nFår emulatoren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter dette.</translation>
+			<translation>Er PS4 Pro:\nFår etterligneren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter dette.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>
@@ -1199,7 +1199,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Spille tittelmusikk:\nHvis et spill støtter det, aktiverer spesiell musikk når du velger spillet i menyen.</translation>
+			<translation>Spille tittelmusikk:\nHvis et spill støtter det, så aktiveres det spesiell musikk når du velger spillet i menyen.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
@@ -1254,7 +1254,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en etterligneren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å bestemme det automatisk.</translation>
+			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en etterligneren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å bestemme den automatisk.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
@@ -1264,7 +1264,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Vblank Skillelinje:\nBildehastigheten som etterligneren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten på spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+			<translation>Vblank Skillelinje:\nBildehastigheten som etterligneren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
@@ -1274,12 +1274,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
-			<translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillgjengivelse som om det ikke var noe grafikkort.</translation>
+			<translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillets-gjengivelse som om det ikke var noe grafikkort.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>gameFoldersBox</source>
-			<translation>Spillmapper:\nListen over mapper for å sjekke installerte spill.</translation>
+			<translation>Spillmapper:\nListen over mapper som brukes for å se etter installerte spill.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
@@ -1299,12 +1299,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens oppførsel.</translation>
+			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens oppførsel.</translation>
+			<translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
@@ -1365,7 +1365,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="34"/>
 			<source>Auto Updater</source>
-			<translation>Automatisk oppdaterer</translation>
+			<translation>Automatisk oppdaterering</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="51"/>
@@ -1435,7 +1435,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="198"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Sjekk etter oppdateringer ved oppstart</translation>
+			<translation>Se etter oppdateringer ved oppstart</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="199"/>
