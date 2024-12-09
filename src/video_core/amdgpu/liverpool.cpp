@@ -165,12 +165,12 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task =
                 ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            task.handle.resume();
             while (!task.handle.done()) {
-                task.handle.resume();
-
                 TracyFiberLeave;
                 co_yield {};
                 TracyFiberEnter(ccb_task_name);
+                task.handle.resume();
             };
             break;
         }
@@ -187,6 +187,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
     TracyFiberEnter(dcb_task_name);
+    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
 
     cblock.Reset();
 
@@ -583,6 +584,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                            dma_data->dst_sel == DmaDataDst::Memory) {
                     // LOG_WARNING(Render_Vulkan, "GDS memory read");
+                    const u32 data = rasterizer->ReadDataFromGds(dma_data->src_addr_lo);
+                    std::memcpy(dma_data->DstAddress<void*>(), &data, sizeof(data));
                 } else if (dma_data->src_sel == DmaDataSrc::Memory &&
                            dma_data->dst_sel == DmaDataDst::Memory) {
                     rasterizer->InlineData(dma_data->DstAddress<VAddr>(),
@@ -662,11 +665,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         ce_task.handle.destroy();
     }
 
+    mapped_queues[GfxQueueId].cs_state = regs.cs_program;
     TracyFiberLeave;
 }
 
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
     TracyFiberEnter(acb_task_name);
+    regs.cs_program = mapped_queues[vqid].cs_state;
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
     while (!acb.empty()) {
@@ -689,12 +694,14 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task = ProcessCompute(
                 {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
+            task.handle.resume();
             while (!task.handle.done()) {
-                task.handle.resume();
-
+                mapped_queues[vqid].cs_state = regs.cs_program;
                 TracyFiberLeave;
                 co_yield {};
                 TracyFiberEnter(acb_task_name);
+                regs.cs_program = mapped_queues[vqid].cs_state;
+                task.handle.resume();
             };
             break;
         }
@@ -716,6 +723,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
                 // LOG_WARNING(Render_Vulkan, "GDS memory read");
+                const u32 data = rasterizer->ReadDataFromGds(dma_data->src_addr_lo);
+                std::memcpy(dma_data->DstAddress<void*>(), &data, sizeof(data));
             } else if (dma_data->src_sel == DmaDataSrc::Memory &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
                 rasterizer->InlineData(dma_data->DstAddress<VAddr>(),
@@ -789,6 +798,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         acb = NextPacket(acb, header->type3.NumWords() + 1);
     }
 
+    mapped_queues[vqid].cs_state = regs.cs_program;
     TracyFiberLeave;
 }
 
@@ -847,7 +857,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
 }
 
 void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
-    ASSERT_MSG(vqid >= 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
+    ASSERT_MSG(vqid > 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
     auto& queue = mapped_queues[vqid];
 
     const auto& task = ProcessCompute(acb, vqid);

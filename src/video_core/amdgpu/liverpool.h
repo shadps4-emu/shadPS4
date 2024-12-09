@@ -1292,7 +1292,7 @@ public:
         submit_cv.notify_one();
     }
 
-    void reserveCopyBufferSpace() {
+    void ReserveCopyBufferSpace() {
         GpuQueue& gfx_queue = mapped_queues[GfxQueueId];
         std::scoped_lock<std::mutex> lk(gfx_queue.m_access);
 
