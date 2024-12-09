@@ -7,7 +7,6 @@
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
-#include "keys_shortcuts_dialog.h"
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
 #endif
@@ -272,11 +271,6 @@ void MainWindow::CreateConnects() {
         checkUpdate->exec();
     });
 #endif
-
-    connect(ui->keys_shortcuts, &QAction::triggered, this, [this]() {
-        auto keysShortcutsDialog = new KeysShortcutsDialog(this);
-        keysShortcutsDialog->exec();
-    });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
         auto aboutDialog = new AboutDialog(this);
@@ -960,7 +954,6 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->downloadCheatsPatchesAct->setIcon(
         RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
     ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
-    ui->keys_shortcuts->setIcon(RecolorIcon(ui->keys_shortcuts->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));

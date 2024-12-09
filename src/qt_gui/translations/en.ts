@@ -1488,12 +1488,4 @@
 			<translation>Failed to create the update script file</translation>
 		</message>
 	</context>
-	<context>
-		<name>KeysShortcutsDialog</name>
-		<message>
-			<location filename="../keys_shortcuts_dialog.cpp" line="57"/>
-			<source>KeysShortcutsDialog_MSG</source>
-			<translation>F7 : Captures mouse and enables mouse movement input.\nF8 : Reparse keyboard input.\nF9 : Pause emulator (in Debug Menu).\nF10 : FPS counter.\nLCtrl + F10 : Debug Menu.\nF11 : Fullscreen.\nF12 : Captures a frame when RenderDoc is enabled.</translation>
-		</message>
-	</context>
 </TS>

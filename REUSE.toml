@@ -33,8 +33,6 @@ path = [
     "src/images/grid_icon.png",
     "src/images/iconsize_icon.png",
     "src/images/ko-fi.png",
-    "src/images/keys.png",
-    "src/images/keys_icon.png",
     "src/images/list_icon.png",
     "src/images/list_mode_icon.png",
     "src/images/pause_icon.png",
