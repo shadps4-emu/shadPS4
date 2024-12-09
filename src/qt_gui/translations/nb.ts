@@ -90,7 +90,7 @@
 		<message>
 			<location filename="../game_install_dialog.cpp" line="75"/>
 			<source>The value for location to install games is not valid.</source>
-			<translation>Stien for å installere spill er ikke gyldig.</translation>
+			<translation>Stien for å installere spillet er ikke gyldig.</translation>
 		</message>
 	</context>
 	<context>
