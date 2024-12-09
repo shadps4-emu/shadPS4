@@ -189,10 +189,19 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = graphics_pipeline_pool.Create(instance, scheduler, desc_heap, graphics_key,
-                                                   *pipeline_cache, infos, fetch_shader, modules);
+        it.value() =
+            std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, graphics_key,
+                                               *pipeline_cache, infos, fetch_shader, modules);
+        if (Config::collectShadersForDebug()) {
+            for (auto stage = 0; stage < MaxShaderStages; ++stage) {
+                if (infos[stage]) {
+                    auto& m = modules[stage];
+                    module_related_pipelines[m].emplace_back(graphics_key);
+                }
+            }
+        }
     }
-    return it->second;
+    return it->second.get();
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
@@ -201,10 +210,14 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = compute_pipeline_pool.Create(instance, scheduler, desc_heap, *pipeline_cache,
-                                                  compute_key, *infos[0], modules[0]);
+        it.value() = std::make_unique<ComputePipeline>(
+            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
+        if (Config::collectShadersForDebug()) {
+            auto& m = modules[0];
+            module_related_pipelines[m].emplace_back(compute_key);
+        }
     }
-    return it->second;
+    return it->second.get();
 }
 
 bool PipelineCache::RefreshGraphicsKey() {
@@ -401,7 +414,7 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const auto cs_params = Liverpool::GetParams(*cs_pgm);
-    std::tie(infos[0], modules[0], fetch_shader, compute_key) =
+    std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
         GetProgram(Shader::Stage::Compute, cs_params, binding);
     return true;
 }
@@ -417,17 +430,23 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+    vk::ShaderModule module;
+
     auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
-    if (patch) {
-        spv = *patch;
+    const bool is_patched = patch && Config::patchShaders();
+    if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
+        module = CompileSPV(*patch, instance.GetDevice());
+    } else {
+        module = CompileSPV(spv, instance.GetDevice());
     }
 
-    const auto module = CompileSPV(spv, instance.GetDevice());
-    const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
+    const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
-        DebugState.CollectShader(name, spv, code);
+        DebugState.CollectShader(name, module, spv, code, patch ? *patch : std::span<const u32>{},
+                                 is_patched);
     }
     return module;
 }
@@ -438,17 +457,17 @@ PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
     const auto runtime_info = BuildRuntimeInfo(stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
-        Program* program = program_pool.Create(stage, params);
+        it_pgm.value() = std::make_unique<Program>(stage, params);
+        auto& program = it_pgm.value();
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
         const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         program->AddPermut(module, std::move(spec));
-        it_pgm.value() = program;
         return std::make_tuple(&program->info, module, spec.fetch_shader_data,
                                HashCombine(params.hash, 0));
     }
 
-    Program* program = it_pgm->second;
+    auto& program = it_pgm.value();
     auto& info = program->info;
     info.RefreshFlatBuf();
     const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
@@ -467,6 +486,34 @@ PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
     }
     return std::make_tuple(&info, module, spec.fetch_shader_data,
                            HashCombine(params.hash, perm_idx));
+}
+
+std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,
+                                                             std::span<const u32> spv_code) {
+    std::optional<vk::ShaderModule> new_module{};
+    for (const auto& [_, program] : program_cache) {
+        for (auto& m : program->modules) {
+            if (m.module == module) {
+                const auto& d = instance.GetDevice();
+                d.destroyShaderModule(m.module);
+                m.module = CompileSPV(spv_code, d);
+                new_module = m.module;
+            }
+        }
+    }
+    if (module_related_pipelines.contains(module)) {
+        auto& pipeline_keys = module_related_pipelines[module];
+        for (auto& key : pipeline_keys) {
+            if (std::holds_alternative<GraphicsPipelineKey>(key)) {
+                auto& graphics_key = std::get<GraphicsPipelineKey>(key);
+                graphics_pipelines.erase(graphics_key);
+            } else if (std::holds_alternative<ComputePipelineKey>(key)) {
+                auto& compute_key = std::get<ComputePipelineKey>(key);
+                compute_pipelines.erase(compute_key);
+            }
+        }
+    }
+    return new_module;
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
@@ -488,9 +535,6 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
 std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
                                                               size_t perm_idx,
                                                               std::string_view ext) {
-    if (!Config::patchShaders()) {
-        return {};
-    }
 
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";

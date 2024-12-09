@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <variant>
 #include <tsl/robin_map.h>
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
@@ -10,6 +11,13 @@
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
+
+template <>
+struct std::hash<vk::ShaderModule> {
+    std::size_t operator()(const vk::ShaderModule& module) const noexcept {
+        return std::hash<size_t>{}(reinterpret_cast<size_t>((VkShaderModule)module));
+    }
+};
 
 namespace Shader {
 struct Info;
@@ -52,6 +60,9 @@ public:
     GetProgram(Shader::Stage stage, Shader::ShaderParams params,
                Shader::Backend::Bindings& binding);
 
+    std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
+                                                  std::span<const u32> spv_code);
+
 private:
     bool RefreshGraphicsKey();
     bool RefreshComputeKey();
@@ -74,17 +85,19 @@ private:
     vk::UniquePipelineLayout pipeline_layout;
     Shader::Profile profile{};
     Shader::Pools pools;
-    tsl::robin_map<size_t, Program*> program_cache;
-    Common::ObjectPool<Program> program_pool;
-    Common::ObjectPool<GraphicsPipeline> graphics_pipeline_pool;
-    Common::ObjectPool<ComputePipeline> compute_pipeline_pool;
-    tsl::robin_map<size_t, ComputePipeline*> compute_pipelines;
-    tsl::robin_map<GraphicsPipelineKey, GraphicsPipeline*> graphics_pipelines;
+    tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
+    tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
+    tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
-    u64 compute_key{};
+    ComputePipelineKey compute_key{};
+
+    // Only if Config::collectShadersForDebug()
+    tsl::robin_map<vk::ShaderModule,
+                   std::vector<std::variant<GraphicsPipelineKey, ComputePipelineKey>>>
+        module_related_pipelines;
 };
 
 } // namespace Vulkan

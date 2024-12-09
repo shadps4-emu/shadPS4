@@ -54,6 +54,10 @@ public:
     u64 Flush();
     void Finish();
 
+    PipelineCache& GetPipelineCache() {
+        return pipeline_cache;
+    }
+
 private:
     RenderState PrepareRenderState(u32 mrt_mask);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);

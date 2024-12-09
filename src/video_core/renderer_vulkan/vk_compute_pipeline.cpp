@@ -13,7 +13,7 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 u64 compute_key_, const Shader::Info& info_,
+                                 ComputePipelineKey compute_key_, const Shader::Info& info_,
                                  vk::ShaderModule module)
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
     auto& info = stages[int(Shader::Stage::Compute)];
