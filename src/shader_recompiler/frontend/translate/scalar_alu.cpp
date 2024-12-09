@@ -102,6 +102,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_SAVEEXEC_B64(NegateMode::None, false, inst);
         case Opcode::S_ORN2_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::Src1, true, inst);
+        case Opcode::S_ABS_I32:
+            return S_ABS_I32(inst);
         default:
             LogMissingOpcode(inst);
         }
@@ -618,6 +620,12 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
     }
     ir.SetExec(result);
     ir.SetScc(result);
+}
+
+void Translator::S_ABS_I32(const GcnInst& inst) {
+    const auto result = ir.IAbs(GetSrc(inst.src[0]));
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
 // SOPC
