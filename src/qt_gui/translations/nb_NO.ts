@@ -846,7 +846,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til juks-utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til jukse/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
@@ -896,7 +896,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="170"/>
 			<source>You can delete the cheats you don't want after downloading them.</source>
-			<translation>Du kan slette jukser du ikke ønsker etter å ha lastet dem ned.</translation>
+			<translation>Du kan slette juksene du ikke ønsker etter å ha lastet dem ned.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="178"/>
@@ -1006,7 +1006,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
 			<source>Cheats Not Found</source>
-			<translation>Jukser ikke funnet</translation>
+			<translation>Fant ikke juksene</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
@@ -1016,7 +1016,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="593"/>
 			<source>Cheats Downloaded Successfully</source>
-			<translation>Jukser ble lastet ned</translation>
+			<translation>Juksene ble lastet ned</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="594"/>
@@ -1111,7 +1111,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Kan ikke bruke juks før spillet er startet.</translation>
+			<translation>Kan ikke bruke juksene før spillet er startet.</translation>
 		</message>
 	</context>
 	<context>
