@@ -140,11 +140,10 @@ void NativeThread::Initialize() {
     ASSERT_MSG(posix_memalign(&sig_stack_ptr, page_size, sig_stack_size) == 0,
                "Failed to allocate signal stack: {}", errno);
 
-    const stack_t sig_stack = {
-        .ss_sp = sig_stack_ptr,
-        .ss_size = sig_stack_size,
-        .ss_flags = 0,
-    };
+    stack_t sig_stack;
+    sig_stack.ss_sp = sig_stack_ptr;
+    sig_stack.ss_size = sig_stack_size;
+    sig_stack.ss_flags = 0;
     ASSERT_MSG(sigaltstack(&sig_stack, nullptr) == 0, "Failed to set signal stack: {}", errno);
 #endif
 }
