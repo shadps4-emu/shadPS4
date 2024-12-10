@@ -360,7 +360,8 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, bool prefer_gpu) {
+    // Check if any buffer contains the full requested range.
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
@@ -370,6 +371,13 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size) 
             return {&buffer, buffer.Offset(gpu_addr)};
         }
     }
+    // If no buffer contains the full requested range but some buffer within was GPU-modified,
+    // fall back to ObtainBuffer to create a full buffer and avoid losing GPU modifications.
+    // This is only done if the request prefers to use GPU memory, otherwise we can skip it.
+    if (prefer_gpu && memory_tracker.IsRegionGpuModified(gpu_addr, size)) {
+        return ObtainBuffer(gpu_addr, size, false, false);
+    }
+    // In all other cases, just do a CPU copy to the staging buffer.
     const u32 offset = staging_buffer.Copy(gpu_addr, size, 16);
     return {&staging_buffer, offset};
 }
