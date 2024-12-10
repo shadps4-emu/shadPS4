@@ -141,8 +141,8 @@ void NativeThread::Initialize() {
                "Failed to allocate signal stack: {}", errno);
 
     const stack_t sig_stack = {
-        .ss_flags = 0,
         .ss_sp = sig_stack_ptr,
+        .ss_flags = 0,
         .ss_size = sig_stack_size,
     };
     ASSERT_MSG(sigaltstack(&sig_stack, nullptr) == 0, "Failed to set signal stack: {}", errno);
