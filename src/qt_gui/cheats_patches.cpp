@@ -955,15 +955,33 @@ void CheatsPatches::createFilesJson(const QString& repository) {
     jsonFile.close();
 }
 
-void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray) {
+void CheatsPatches::clearListCheats() {
     QLayoutItem* item;
     while ((item = rightLayout->takeAt(0)) != nullptr) {
-        delete item->widget();
-        delete item;
+        QWidget* widget = item->widget();
+        if (widget) {
+            delete widget;
+        } else {
+            QLayout* layout = item->layout();
+            if (layout) {
+                QLayoutItem* innerItem;
+                while ((innerItem = layout->takeAt(0)) != nullptr) {
+                    QWidget* innerWidget = innerItem->widget();
+                    if (innerWidget) {
+                        delete innerWidget;
+                    }
+                    delete innerItem;
+                }
+                delete layout;
+            }
+        }
     }
     m_cheats.clear();
     m_cheatCheckBoxes.clear();
+}
 
+void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray) {
+    clearListCheats();
     int maxWidthButton = 0;
 
     for (const QJsonValue& modValue : modsArray) {
@@ -1056,6 +1074,8 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
 }
 
 void CheatsPatches::populateFileListCheats() {
+    clearListCheats();
+
     QString cheatsDir;
     Common::FS::PathToQString(cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
 
