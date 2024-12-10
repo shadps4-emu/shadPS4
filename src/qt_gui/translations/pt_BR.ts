@@ -841,7 +841,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Cheats / Patches para </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
