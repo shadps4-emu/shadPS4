@@ -1362,7 +1362,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Nunca jogado</translation>
 		</message>
 	</context>
 	<context>
