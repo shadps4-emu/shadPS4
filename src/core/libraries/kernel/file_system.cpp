@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <map>
+#include <ranges>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
+#include "core/devices/logger.h"
+#include "core/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/memory.h"
 #include "kernel.h"
-
-#include <map>
-#include <ranges>
-
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
 
 namespace D = Core::Devices;
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
@@ -348,9 +348,15 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     }
 
     std::scoped_lock lk{file->m_mutex};
+    const auto* memory = Core::Memory::Instance();
     if (file->type == Core::FileSys::FileType::Device) {
+        // Size is not known, invalidate the whole buffer.
+        memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), nbytes);
         return file->device->read(buf, nbytes);
     }
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = file->f.GetSize() - file->f.Tell();
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
     return file->f.ReadRaw<u8>(buf, nbytes);
 }
 
@@ -527,7 +533,12 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
     }
 
     std::scoped_lock lk{file->m_mutex};
+    const auto* memory = Core::Memory::Instance();
     if (file->type == Core::FileSys::FileType::Device) {
+        // Size is not known, invalidate all buffers.
+        for (int i = 0; i < iovcnt; i++) {
+            memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[i].iov_base), iov[i].iov_len);
+        }
         return file->device->preadv(iov, iovcnt, offset);
     }
 
@@ -541,6 +552,10 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
     }
     size_t total_read = 0;
     for (int i = 0; i < iovcnt; i++) {
+        // Invalidate up to the actual number of bytes that could be read.
+        const auto remaining = file->f.GetSize() - file->f.Tell();
+        memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[i].iov_base),
+                                 std::min<u64>(iov[i].iov_len, remaining));
         total_read += file->f.ReadRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;

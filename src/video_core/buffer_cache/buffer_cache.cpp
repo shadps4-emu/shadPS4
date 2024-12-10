@@ -55,15 +55,18 @@ BufferCache::~BufferCache() = default;
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
     std::scoped_lock lk{mutex};
-    const bool is_tracked = IsRegionRegistered(device_addr, size);
+    const auto pages_start = PageManager::GetPageAddr(device_addr);
+    const auto pages_end = PageManager::GetNextPageAddr(device_addr + size - 1);
+    const auto pages_size = pages_end - pages_start;
+    const bool is_tracked = IsRegionRegistered(pages_start, pages_size);
     if (!is_tracked) {
         return;
     }
     // Mark the page as CPU modified to stop tracking writes.
     SCOPE_EXIT {
-        memory_tracker.MarkRegionAsCpuModified(device_addr, size);
+        memory_tracker.MarkRegionAsCpuModified(pages_start, pages_size);
     };
-    if (!memory_tracker.IsRegionGpuModified(device_addr, size)) {
+    if (!memory_tracker.IsRegionGpuModified(pages_start, pages_size)) {
         // Page has not been modified by the GPU, nothing to do.
         return;
     }

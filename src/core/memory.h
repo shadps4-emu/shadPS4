@@ -211,6 +211,8 @@ public:
 
     void NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name);
 
+    void InvalidateMemory(VAddr addr, u64 size) const;
+
 private:
     VMAHandle FindVMA(VAddr target) {
         return std::prev(vma_map.upper_bound(target));
