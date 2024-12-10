@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "libraries/kernel/threads/pthread.h"
-#include "thread.h"
-
+#include "common/alignment.h"
 #include "core/libraries/kernel/threads/pthread.h"
+#include "thread.h"
 
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
 #else
+#include <csignal>
 #include <pthread.h>
 #endif
 
@@ -113,6 +113,17 @@ void NativeThread::Exit() {
 
     NtTerminateThread(nullptr, 0);
 #else
+    // Disable and free the signal stack.
+    constexpr stack_t sig_stack = {
+        .ss_flags = SS_DISABLE,
+    };
+    sigaltstack(&sig_stack, nullptr);
+
+    if (sig_stack_ptr) {
+        free(sig_stack_ptr);
+        sig_stack_ptr = nullptr;
+    }
+
     pthread_exit(nullptr);
 #endif
 }
@@ -122,6 +133,19 @@ void NativeThread::Initialize() {
     tid = GetCurrentThreadId();
 #else
     tid = (u64)pthread_self();
+
+    // Set up an alternate signal handler stack to avoid overflowing small thread stacks.
+    const size_t page_size = getpagesize();
+    const size_t sig_stack_size = Common::AlignUp(std::max<size_t>(64_KB, MINSIGSTKSZ), page_size);
+    ASSERT_MSG(posix_memalign(&sig_stack_ptr, page_size, sig_stack_size) == 0,
+               "Failed to allocate signal stack: {}", errno);
+
+    const stack_t sig_stack = {
+        .ss_sp = sig_stack_ptr,
+        .ss_size = sig_stack_size,
+        .ss_flags = 0,
+    };
+    ASSERT_MSG(sigaltstack(&sig_stack, nullptr) == 0, "Failed to set signal stack: {}", errno);
 #endif
 }
 
