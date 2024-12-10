@@ -360,6 +360,7 @@ public:
                     QMessageBox::Yes | QMessageBox::No);
                 if (reply == QMessageBox::Yes) {
                     dir.removeRecursively();
+                    widget->removeRow(itemID);
                 }
             }
         }
