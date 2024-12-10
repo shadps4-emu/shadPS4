@@ -58,14 +58,13 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
 
 void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
+    const auto end = addr + size;
     const auto pages_start = PageManager::GetPageAddr(addr);
     const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
     ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
         const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        if ((image_begin <= addr && addr < image_end) ||
-            (image_begin < addr + size && addr + size <= image_end) ||
-            (addr <= image_begin && image_end <= addr + size)) {
+        if (image_begin < end && addr < image_end) {
             // Start or end of the modified region is in the image, or the image is entirely within
             // the modified region, so the image was definitely accessed by this page fault.
             // Untrack the image, so that the range is unprotected and the guest can write freely.
