@@ -51,6 +51,9 @@ void CheatsPatches::setupUI() {
     QString CHEATS_DIR_QString;
     Common::FS::PathToQString(CHEATS_DIR_QString,
                               Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
+    QString PATCHS_DIR_QString;
+    Common::FS::PathToQString(PATCHS_DIR_QString,
+                              Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
     QString NameCheatJson = m_gameSerial + "_" + m_gameVersion + ".json";
     m_cheatFilePath = CHEATS_DIR_QString + "/" + NameCheatJson;
 
@@ -237,9 +240,45 @@ void CheatsPatches::setupUI() {
     });
     patchesControlLayout->addWidget(patchesButton);
 
+    QPushButton* deletePatchButton = new QPushButton(tr("Delete File"));
+    connect(deletePatchButton, &QPushButton::clicked, [this, PATCHS_DIR_QString]() {
+        QStringListModel* model = qobject_cast<QStringListModel*>(patchesListView->model());
+        if (!model) {
+            return;
+        }
+        QItemSelectionModel* selectionModel = patchesListView->selectionModel();
+        if (!selectionModel) {
+            return;
+        }
+        QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+        if (selectedIndexes.isEmpty()) {
+            QMessageBox::warning(this, tr("Delete File"), tr("No files selected."));
+            return;
+        }
+        QModelIndex selectedIndex = selectedIndexes.first();
+        QString selectedFileName = model->data(selectedIndex).toString();
+
+        int ret = QMessageBox::warning(
+            this, tr("Delete File"),
+            QString(tr("Do you want to delete the selected file?\\n%1").replace("\\n", "\n"))
+                .arg(selectedFileName),
+            QMessageBox::Yes | QMessageBox::No);
+
+        if (ret == QMessageBox::Yes) {
+            QString fileName = selectedFileName.split('|').first().trimmed();
+            QString directoryName = selectedFileName.split('|').last().trimmed();
+            QString filePath = PATCHS_DIR_QString + "/" + directoryName + "/" + fileName;
+
+            QFile::remove(filePath);
+            createFilesJson(directoryName);
+            populateFileListPatches();
+        }
+    });
+
     QPushButton* saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &CheatsPatches::onSaveButtonClicked);
 
+    patchesControlLayout->addWidget(deletePatchButton);
     patchesControlLayout->addWidget(saveButton);
 
     patchesLayout->addLayout(patchesControlLayout);
@@ -916,15 +955,33 @@ void CheatsPatches::createFilesJson(const QString& repository) {
     jsonFile.close();
 }
 
-void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray) {
+void CheatsPatches::clearListCheats() {
     QLayoutItem* item;
     while ((item = rightLayout->takeAt(0)) != nullptr) {
-        delete item->widget();
-        delete item;
+        QWidget* widget = item->widget();
+        if (widget) {
+            delete widget;
+        } else {
+            QLayout* layout = item->layout();
+            if (layout) {
+                QLayoutItem* innerItem;
+                while ((innerItem = layout->takeAt(0)) != nullptr) {
+                    QWidget* innerWidget = innerItem->widget();
+                    if (innerWidget) {
+                        delete innerWidget;
+                    }
+                    delete innerItem;
+                }
+                delete layout;
+            }
+        }
     }
     m_cheats.clear();
     m_cheatCheckBoxes.clear();
+}
 
+void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray) {
+    clearListCheats();
     int maxWidthButton = 0;
 
     for (const QJsonValue& modValue : modsArray) {
@@ -1017,6 +1074,8 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
 }
 
 void CheatsPatches::populateFileListCheats() {
+    clearListCheats();
+
     QString cheatsDir;
     Common::FS::PathToQString(cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
 

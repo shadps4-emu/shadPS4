@@ -25,5 +25,10 @@
 		<file>images/flag_us.png</file>
 		<file>images/flag_world.png</file>
 		<file>images/flag_china.png</file>
+		<file>images/github.png</file>
+		<file>images/discord.png</file>
+		<file>images/ko-fi.png</file>
+		<file>images/youtube.png</file>
+		<file>images/website.png</file>
 	</qresource>
 </RCC>

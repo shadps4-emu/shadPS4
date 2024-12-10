@@ -46,7 +46,7 @@ void KernelSignalRequest() {
 }
 
 static void KernelServiceThread(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:Kernel_ServiceThread");
+    Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
 
     while (!stoken.stop_requested()) {
         HLE_TRACE;
@@ -255,6 +255,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
+    LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, ps4__write);
 }
 
 } // namespace Libraries::Kernel

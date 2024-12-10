@@ -37,6 +37,7 @@ private:
     void* native_handle;
 #else
     uintptr_t native_handle;
+    void* sig_stack_ptr;
 #endif
     u64 tid;
 };

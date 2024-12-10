@@ -550,9 +550,9 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
-int PS4_SYSV_ABI sceGnmDingDongForWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id) {
+    LOG_DEBUG(Lib_GnmDriver, "called, redirecting to sceGnmDingDong");
+    sceGnmDingDong(gnm_vqid, next_offs_dw);
 }
 
 int PS4_SYSV_ABI sceGnmDisableMipStatsReport() {

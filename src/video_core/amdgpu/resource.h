@@ -420,11 +420,11 @@ struct Sampler {
     }
 
     float MinLod() const noexcept {
-        return static_cast<float>(min_lod);
+        return static_cast<float>(min_lod.Value()) / 256.0f;
     }
 
     float MaxLod() const noexcept {
-        return static_cast<float>(max_lod);
+        return static_cast<float>(max_lod.Value()) / 256.0f;
     }
 };
 

@@ -28,6 +28,14 @@ public:
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
+    [[nodiscard]] Scheduler& GetScheduler() noexcept {
+        return scheduler;
+    }
+
+    [[nodiscard]] VideoCore::BufferCache& GetBufferCache() noexcept {
+        return buffer_cache;
+    }
+
     [[nodiscard]] VideoCore::TextureCache& GetTextureCache() noexcept {
         return texture_cache;
     }
@@ -53,6 +61,10 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
+
+    PipelineCache& GetPipelineCache() {
+        return pipeline_cache;
+    }
 
 private:
     RenderState PrepareRenderState(u32 mrt_mask);

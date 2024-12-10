@@ -8,6 +8,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_hle.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "vk_rasterizer.h"
@@ -315,6 +316,11 @@ void Rasterizer::DispatchDirect() {
     const auto& cs_program = liverpool->regs.cs_program;
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
+        return;
+    }
+
+    const auto& cs = pipeline->GetStage(Shader::Stage::Compute);
+    if (ExecuteShaderHLE(cs, liverpool->regs, *this)) {
         return;
     }
 

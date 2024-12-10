@@ -540,6 +540,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("onNY9Byn-W8", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_join));
     LIB_FUNCTION("P41kTWUS3EI", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_getschedparam));
+    LIB_FUNCTION("oIRFTjoILbg", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(posix_pthread_setschedparam));
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);

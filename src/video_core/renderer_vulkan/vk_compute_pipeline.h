@@ -17,15 +17,33 @@ class Instance;
 class Scheduler;
 class DescriptorHeap;
 
+struct ComputePipelineKey {
+    size_t value;
+
+    friend bool operator==(const ComputePipelineKey& lhs, const ComputePipelineKey& rhs) {
+        return lhs.value == rhs.value;
+    }
+    friend bool operator!=(const ComputePipelineKey& lhs, const ComputePipelineKey& rhs) {
+        return !(lhs == rhs);
+    }
+};
+
 class ComputePipeline : public Pipeline {
 public:
     ComputePipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
-                    vk::PipelineCache pipeline_cache, u64 compute_key, const Shader::Info& info,
-                    vk::ShaderModule module);
+                    vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key,
+                    const Shader::Info& info, vk::ShaderModule module);
     ~ComputePipeline();
 
 private:
-    u64 compute_key;
+    ComputePipelineKey compute_key;
 };
 
 } // namespace Vulkan
+
+template <>
+struct std::hash<Vulkan::ComputePipelineKey> {
+    std::size_t operator()(const Vulkan::ComputePipelineKey& key) const noexcept {
+        return std::hash<size_t>{}(key.value);
+    }
+};

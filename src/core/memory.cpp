@@ -96,12 +96,12 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t siz
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                               int memory_type) {
     std::scoped_lock lk{mutex};
+    alignment = alignment > 0 ? alignment : 16_KB;
 
     auto dmem_area = FindDmemArea(search_start);
 
     const auto is_suitable = [&] {
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
-                                                : dmem_area->second.base;
+        const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
         const auto alignment_size = aligned_base - dmem_area->second.base;
         const auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
@@ -114,7 +114,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
 
     // Align free position
     PAddr free_addr = dmem_area->second.base;
-    free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
+    free_addr = Common::AlignUp(free_addr, alignment);
 
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(free_addr, size)->second;
@@ -375,12 +375,12 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
-void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
-    UnmapMemoryImpl(virtual_addr, size);
+    return UnmapMemoryImpl(virtual_addr, size);
 }
 
-void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
     ASSERT_MSG(vma_base.Contains(virtual_addr, size),
@@ -415,6 +415,8 @@ void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
                has_backing, readonly_file);
     TRACK_FREE(virtual_addr, "VMEM");
+
+    return ORBIS_OK;
 }
 
 int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
