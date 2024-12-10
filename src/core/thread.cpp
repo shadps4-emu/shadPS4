@@ -115,7 +115,7 @@ void NativeThread::Exit() {
 #else
     // Disable and free the signal stack.
     constexpr stack_t sig_stack = {
-        .ss_flags = SS_DISABLE,
+        ss_flags: SS_DISABLE,
     };
     sigaltstack(&sig_stack, nullptr);
 
@@ -141,9 +141,9 @@ void NativeThread::Initialize() {
                "Failed to allocate signal stack: {}", errno);
 
     const stack_t sig_stack = {
-        .ss_sp = sig_stack_ptr,
-        .ss_flags = 0,
-        .ss_size = sig_stack_size,
+        ss_sp: sig_stack_ptr,
+        ss_flags: 0,
+        ss_size: sig_stack_size,
     };
     ASSERT_MSG(sigaltstack(&sig_stack, nullptr) == 0, "Failed to set signal stack: {}", errno);
 #endif
