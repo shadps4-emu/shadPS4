@@ -103,6 +103,14 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             continue;
         }
 
+        // If the color buffer is still bound but rendering to it is disabled by the target
+        // mask, we need to prevent the render area from being affected by unbound render target
+        // extents.
+        if (!regs.color_target_mask.GetMask(col_buf_id)) {
+            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
+            continue;
+        }
+
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         auto& [image_id, desc] = cb_descs.emplace_back(std::piecewise_construct, std::tuple{},
                                                        std::tuple{col_buf, hint});
@@ -118,7 +126,6 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         const auto mip = image_view.info.range.base.level;
         state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
         state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
-        state.color_images[state.num_color_attachments] = image.image;
         state.color_attachments[state.num_color_attachments++] = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
@@ -153,7 +160,6 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
-        state.depth_image = image.image;
         state.depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
@@ -716,7 +722,6 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             auto& image = texture_cache.GetImage(view.image_id);
             state.color_attachments[cb_index].imageView = *view.image_view;
             state.color_attachments[cb_index].imageLayout = image.last_state.layout;
-            state.color_images[cb_index] = image.image;
 
             const auto mip = view.info.range.base.level;
             state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));

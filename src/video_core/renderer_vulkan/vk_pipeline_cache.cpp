@@ -279,7 +279,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // recompiler.
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf) {
+        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
             continue;
         }
         const auto base_format =
@@ -385,7 +385,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || (key.mrt_mask & (1u << cb)) == 0) {
+        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
+            (key.mrt_mask & (1u << cb)) == 0) {
             key.color_formats[cb] = vk::Format::eUndefined;
             key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
             continue;
