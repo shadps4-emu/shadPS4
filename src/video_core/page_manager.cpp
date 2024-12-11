@@ -114,8 +114,7 @@ struct PageManager::Impl {
 
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
-            const VAddr addr_page = GetPageAddr(addr);
-            rasterizer->InvalidateMemory(addr, addr_page, PAGESIZE);
+            rasterizer->InvalidateMemory(addr, 1);
         }
     }
 
@@ -135,17 +134,14 @@ struct PageManager::Impl {
     }
 
     void OnMap(VAddr address, size_t size) {
-        owned_ranges += boost::icl::interval<VAddr>::right_open(address, address + size);
+        // No-op
     }
 
     void OnUnmap(VAddr address, size_t size) {
-        owned_ranges -= boost::icl::interval<VAddr>::right_open(address, address + size);
+        // No-op
     }
 
     void Protect(VAddr address, size_t size, bool allow_write) {
-        ASSERT_MSG(owned_ranges.find(address) != owned_ranges.end(),
-                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", address,
-                   size);
         auto* memory = Core::Memory::Instance();
         auto& impl = memory->GetAddressSpace();
         impl.Protect(address, size,
@@ -155,17 +151,13 @@ struct PageManager::Impl {
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
-        const bool is_write = Common::IsWriteError(context);
-        if (is_write && owned_ranges.find(addr) != owned_ranges.end()) {
-            const VAddr addr_aligned = GetPageAddr(addr);
-            rasterizer->InvalidateMemory(addr, addr_aligned, PAGESIZE);
-            return true;
+        if (Common::IsWriteError(context)) {
+            return rasterizer->InvalidateMemory(addr, 1);
         }
         return false;
     }
 
     inline static Vulkan::Rasterizer* rasterizer;
-    inline static boost::icl::interval_set<VAddr> owned_ranges;
 };
 #endif
 
@@ -210,6 +202,9 @@ void PageManager::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
         const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
         const u32 interval_size = interval_end_addr - interval_start_addr;
+        ASSERT_MSG(rasterizer->IsMapped(interval_start_addr, interval_size),
+                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
+                   interval_start_addr, interval_size);
         if (delta > 0 && count == delta) {
             impl->Protect(interval_start_addr, interval_size, false);
         } else if (delta < 0 && count == -delta) {

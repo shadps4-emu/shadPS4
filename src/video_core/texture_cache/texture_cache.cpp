@@ -56,24 +56,27 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     UntrackImage(image_id);
 }
 
-void TextureCache::InvalidateMemory(VAddr addr, VAddr page_addr, size_t size) {
+void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
-    ForEachImageInRegion(page_addr, size, [&](ImageId image_id, Image& image) {
+    const auto end = addr + size;
+    const auto pages_start = PageManager::GetPageAddr(addr);
+    const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
+    ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
         const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        const auto page_end = page_addr + size;
-        if (image_begin <= addr && addr < image_end) {
-            // This image was definitely accessed by this page fault.
-            // Untrack image, so the range is unprotected and the guest can write freely
+        if (image_begin < end && addr < image_end) {
+            // Start or end of the modified region is in the image, or the image is entirely within
+            // the modified region, so the image was definitely accessed by this page fault.
+            // Untrack the image, so that the range is unprotected and the guest can write freely.
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
-        } else if (page_end < image_end) {
+        } else if (pages_end < image_end) {
             // This page access may or may not modify the image.
             // We should not mark it as dirty now. If it really was modified
             // it will receive more invalidations on its other pages.
             // Remove tracking from this page only.
             UntrackImageHead(image_id);
-        } else if (image_begin < page_addr) {
+        } else if (image_begin < pages_start) {
             // This page access does not modify the image but the page should be untracked.
             // We should not mark this image as dirty now. If it really was modified
             // it will receive more invalidations on its other pages.

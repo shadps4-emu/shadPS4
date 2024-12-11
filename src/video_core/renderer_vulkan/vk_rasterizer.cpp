@@ -841,12 +841,27 @@ u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
     return value;
 }
 
-void Rasterizer::InvalidateMemory(VAddr addr, VAddr addr_aligned, u64 size) {
-    buffer_cache.InvalidateMemory(addr_aligned, size);
-    texture_cache.InvalidateMemory(addr, addr_aligned, size);
+bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
+    if (!IsMapped(addr, size)) {
+        // Not GPU mapped memory, can skip invalidation logic entirely.
+        return false;
+    }
+    buffer_cache.InvalidateMemory(addr, size);
+    texture_cache.InvalidateMemory(addr, size);
+    return true;
+}
+
+bool Rasterizer::IsMapped(VAddr addr, u64 size) {
+    if (size == 0) {
+        // There is no memory, so not mapped.
+        return false;
+    }
+    return mapped_ranges.find(boost::icl::interval<VAddr>::right_open(addr, addr + size)) !=
+           mapped_ranges.end();
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
+    mapped_ranges += boost::icl::interval<VAddr>::right_open(addr, addr + size);
     page_manager.OnGpuMap(addr, size);
 }
 
@@ -854,6 +869,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
+    mapped_ranges -= boost::icl::interval<VAddr>::right_open(addr, addr + size);
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {

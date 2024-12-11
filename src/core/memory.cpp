@@ -587,6 +587,12 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
     it->second.name = name;
 }
 
+void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
+    if (rasterizer) {
+        rasterizer->InvalidateMemory(addr, size);
+    }
+}
+
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
     // If the requested address is below the mapped range, start search from the lowest address
     auto min_search_address = impl.SystemManagedVirtualBase();

@@ -133,33 +133,11 @@ void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
 }
 
 s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
-    if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->write(buf, nbytes);
-    }
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    return sceKernelWrite(d, buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
-    if (d == 0) {
-        return static_cast<s64>(
-            strlen(std::fgets(static_cast<char*>(buf), static_cast<int>(nbytes), stdin)));
-    }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
-    if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->read(buf, nbytes);
-    }
-    return file->f.ReadRaw<u8>(buf, nbytes);
+    return sceKernelRead(d, buf, nbytes);
 }
 
 struct OrbisKernelUuid {

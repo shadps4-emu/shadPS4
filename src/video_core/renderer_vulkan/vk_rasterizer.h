@@ -54,7 +54,8 @@ public:
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
-    void InvalidateMemory(VAddr addr, VAddr addr_aligned, u64 size);
+    bool InvalidateMemory(VAddr addr, u64 size);
+    bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
@@ -100,6 +101,7 @@ private:
     VideoCore::TextureCache texture_cache;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
+    boost::icl::interval_set<VAddr> mapped_ranges;
     PipelineCache pipeline_cache;
 
     boost::container::static_vector<
