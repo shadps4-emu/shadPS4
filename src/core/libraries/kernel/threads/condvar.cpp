@@ -177,7 +177,7 @@ int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadM
     return cvp->Wait(mutex, THR_RELTIME, usec);
 }
 
-int PthreadCond::Signal() {
+int PthreadCond::Signal(Pthread* thread) {
     Pthread* curthread = g_curthread;
 
     SleepqLock(this);
@@ -187,7 +187,8 @@ int PthreadCond::Signal() {
         return 0;
     }
 
-    Pthread* td = sq->sq_blocked.front();
+    Pthread* td = thread ? thread : sq->sq_blocked.front();
+
     PthreadMutex* mp = td->mutex_obj;
     has_user_waiters = SleepqRemove(sq, td);
 
@@ -262,7 +263,13 @@ int PthreadCond::Broadcast() {
 int PS4_SYSV_ABI posix_pthread_cond_signal(PthreadCondT* cond) {
     PthreadCond* cvp{};
     CHECK_AND_INIT_COND
-    return cvp->Signal();
+    return cvp->Signal(nullptr);
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_signalto_np(PthreadCondT* cond, Pthread* thread) {
+    PthreadCond* cvp{};
+    CHECK_AND_INIT_COND
+    return cvp->Signal(thread);
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(PthreadCondT* cond) {
@@ -358,6 +365,8 @@ void RegisterCond(Core::Loader::SymbolsResolver* sym) {
                  ORBIS(posix_pthread_cond_reltimedwait_np));
     LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_cond_destroy));
+    LIB_FUNCTION("o69RpYO-Mu0", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(posix_pthread_cond_signalto_np));
 }
 
 } // namespace Libraries::Kernel

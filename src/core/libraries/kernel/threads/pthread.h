@@ -123,7 +123,7 @@ struct PthreadCond {
 
     int Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, u64 usec = 0);
 
-    int Signal();
+    int Signal(Pthread* thread);
     int Broadcast();
 };
 using PthreadCondT = PthreadCond*;
