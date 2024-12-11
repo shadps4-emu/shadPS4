@@ -254,7 +254,7 @@ void L::DrawAdvanced() {
 
 void L::DrawSimple() {
     const auto io = GetIO();
-    Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    Text("%.1f FPS (%.2f ms)", io.Framerate, 1000.0f / io.Framerate);
 }
 
 static void LoadSettings(const char* line) {
@@ -338,6 +338,7 @@ void L::Draw() {
         const auto fn = DebugState.flip_frame_count.load();
         frame_graph.AddFrame(fn, io.DeltaTime);
     }
+
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
             show_advanced_debug = !show_advanced_debug;
