@@ -148,6 +148,8 @@ public:
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3,
                                            const Value& e4);
+    [[nodiscard]] Value CompositeConstruct(std::span<const Value> values);
+
     [[nodiscard]] Value CompositeExtract(const Value& vector, size_t element);
     [[nodiscard]] Value CompositeInsert(const Value& vector, const Value& object, size_t element);
 

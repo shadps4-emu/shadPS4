@@ -574,6 +574,19 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     }
 }
 
+Value IREmitter::CompositeConstruct(std::span<const Value> elements) {
+    switch (elements.size()) {
+    case 2:
+        return CompositeConstruct(elements[0], elements[1]);
+    case 3:
+        return CompositeConstruct(elements[0], elements[1], elements[2]);
+    case 4:
+        return CompositeConstruct(elements[0], elements[1], elements[2], elements[3]);
+    default:
+        UNREACHABLE_MSG("Composite construct with greater than 4 elements");
+    }
+}
+
 Value IREmitter::CompositeExtract(const Value& vector, size_t element) {
     const auto read{[&](Opcode opcode, size_t limit) -> Value {
         if (element >= limit) {
