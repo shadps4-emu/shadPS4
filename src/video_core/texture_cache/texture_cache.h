@@ -28,6 +28,7 @@ enum class FindFlags {
     RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
     RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
     RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
+    ExactFmt = 1 << 4,  ///< Require the format to be exactly the same.
 };
 DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
 

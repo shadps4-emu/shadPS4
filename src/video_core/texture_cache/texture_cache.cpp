@@ -324,6 +324,10 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
             continue;
         }
+        if (True(flags & FindFlags::ExactFmt) &&
+            info.pixel_format != cache_image.info.pixel_format) {
+            continue;
+        }
         ASSERT((cache_image.info.type == info.type || info.size == Extent3D{1, 1, 1} ||
                 True(flags & FindFlags::RelaxFmt)));
         image_id = cache_id;
@@ -348,9 +352,12 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
     }
 
     if (image_id) {
-        Image& image_resoved = slot_images[image_id];
-
-        if (image_resoved.info.resources < info.resources) {
+        Image& image_resolved = slot_images[image_id];
+        if (True(flags & FindFlags::ExactFmt) &&
+            info.pixel_format != image_resolved.info.pixel_format) {
+            // Cannot reuse this image as we need the exact requested format.
+            image_id = {};
+        } else if (image_resolved.info.resources < info.resources) {
             // The image was clearly picked up wrong.
             FreeImage(image_id);
             image_id = {};

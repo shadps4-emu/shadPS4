@@ -790,8 +790,10 @@ void Rasterizer::Resolve() {
                                                         mrt0_hint};
     VideoCore::TextureCache::RenderTargetDesc mrt1_desc{liverpool->regs.color_buffers[1],
                                                         mrt1_hint};
-    auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_desc));
-    auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_desc));
+    auto& mrt0_image =
+        texture_cache.GetImage(texture_cache.FindImage(mrt0_desc, VideoCore::FindFlags::ExactFmt));
+    auto& mrt1_image =
+        texture_cache.GetImage(texture_cache.FindImage(mrt1_desc, VideoCore::FindFlags::ExactFmt));
 
     VideoCore::SubresourceRange mrt0_range;
     mrt0_range.base.layer = liverpool->regs.color_buffers[0].view.slice_start;
