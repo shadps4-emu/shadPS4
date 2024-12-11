@@ -512,8 +512,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
-        DebugState.CollectShader(name, module, spv, code, patch ? *patch : std::span<const u32>{},
-                                 is_patched);
+        DebugState.CollectShader(name, info.l_stage, module, spv, code,
+                                 patch ? *patch : std::span<const u32>{}, is_patched);
     }
     return module;
 }
