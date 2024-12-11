@@ -45,7 +45,8 @@ struct Liverpool {
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
     static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
     static constexpr u32 NumQueuesPerPipe = 8u;
-    static constexpr u32 NumTotalQueues = NumGfxRings + (NumComputePipes * NumQueuesPerPipe);
+    static constexpr u32 NumComputeRings = NumComputePipes * NumQueuesPerPipe;
+    static constexpr u32 NumTotalQueues = NumGfxRings + NumComputeRings;
     static_assert(NumTotalQueues < 64u); // need to fit into u64 bitmap for ffs
 
     static constexpr u32 NumColorBuffers = 8;
@@ -1298,7 +1299,7 @@ public:
     ~Liverpool();
 
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
-    void SubmitAsc(u32 vqid, std::span<const u32> acb);
+    void SubmitAsc(u32 gnm_vqid, std::span<const u32> acb);
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};

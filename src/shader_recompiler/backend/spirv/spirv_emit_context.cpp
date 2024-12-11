@@ -294,7 +294,7 @@ void EmitContext::DefineInputs() {
                     });
                 // Note that we pass index rather than Id
                 input_params[attrib.semantic] = SpirvAttribute{
-                    .id = rate_idx,
+                    .id = {rate_idx},
                     .pointer_type = input_u32,
                     .component_type = U32[1],
                     .num_components = std::min<u16>(attrib.num_elements, num_components),

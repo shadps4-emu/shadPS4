@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <boost/preprocessor/stringize.hpp>
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
@@ -18,7 +20,40 @@ namespace AmdGpu {
 
 static const char* dcb_task_name{"DCB_TASK"};
 static const char* ccb_task_name{"CCB_TASK"};
-static const char* acb_task_name{"ACB_TASK"};
+
+#define MAX_NAMES 56
+static_assert(Liverpool::NumComputeRings <= MAX_NAMES);
+
+#define NAME_NUM(z, n, name) BOOST_PP_STRINGIZE(name) BOOST_PP_STRINGIZE(n),
+#define NAME_ARRAY(name, num) {BOOST_PP_REPEAT(num, NAME_NUM, name)}
+
+static const char* acb_task_name[] = NAME_ARRAY(ACB_TASK, MAX_NAMES);
+
+#define YIELD_CE(name)                                                                             \
+    mapped_queues[GfxQueueId].cs_state = regs.cs_program;                                          \
+    FIBER_EXIT;                                                                                    \
+    co_yield {};                                                                                   \
+    FIBER_ENTER(name);                                                                             \
+    regs.cs_program = mapped_queues[GfxQueueId].cs_state
+
+#define YIELD_GFX                                                                                  \
+    mapped_queues[GfxQueueId].cs_state = regs.cs_program;                                          \
+    FIBER_EXIT;                                                                                    \
+    co_yield {};                                                                                   \
+    FIBER_ENTER(dcb_task_name);                                                                    \
+    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
+
+#define YIELD_ASC(id)                                                                              \
+    mapped_queues[id].cs_state = regs.cs_program;                                                  \
+    FIBER_EXIT;                                                                                    \
+    co_yield {};                                                                                   \
+    FIBER_ENTER(acb_task_name[id]);                                                                \
+    regs.cs_program = mapped_queues[id].cs_state;
+
+#define RESUME(task, name)                                                                         \
+    FIBER_EXIT;                                                                                    \
+    task.handle.resume();                                                                          \
+    FIBER_ENTER(name);
 
 std::array<u8, 48_KB> Liverpool::ConstantEngine::constants_heap;
 
@@ -119,7 +154,7 @@ void Liverpool::Process(std::stop_token stoken) {
 }
 
 Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
-    TracyFiberEnter(ccb_task_name);
+    FIBER_ENTER(ccb_task_name);
 
     while (!ccb.empty()) {
         const auto* header = reinterpret_cast<const PM4Header*>(ccb.data());
@@ -155,9 +190,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         case PM4ItOpcode::WaitOnDeCounterDiff: {
             const auto diff = it_body[0];
             while ((cblock.de_count - cblock.ce_count) >= diff) {
-                TracyFiberLeave;
-                co_yield {};
-                TracyFiberEnter(ccb_task_name);
+                YIELD_CE(ccb_task_name);
             }
             break;
         }
@@ -165,13 +198,12 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task =
                 ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
-            while (!task.handle.done()) {
-                task.handle.resume();
+            RESUME(task, ccb_task_name);
 
-                TracyFiberLeave;
-                co_yield {};
-                TracyFiberEnter(ccb_task_name);
-            };
+            while (!task.handle.done()) {
+                YIELD_CE(ccb_task_name);
+                RESUME(task, ccb_task_name);
+            }
             break;
         }
         default:
@@ -182,11 +214,11 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         ccb = NextPacket(ccb, header->type3.NumWords() + 1);
     }
 
-    TracyFiberLeave;
+    FIBER_EXIT;
 }
 
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
-    TracyFiberEnter(dcb_task_name);
+    FIBER_ENTER(dcb_task_name);
 
     cblock.Reset();
 
@@ -197,9 +229,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (!ccb.empty()) {
         // In case of CCB provided kick off CE asap to have the constant heap ready to use
         ce_task = ProcessCeUpdate(ccb);
-        TracyFiberLeave;
-        ce_task.handle.resume();
-        TracyFiberEnter(dcb_task_name);
+        RESUME(ce_task, dcb_task_name);
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
@@ -613,11 +643,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::Rewind: {
                 const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
                 while (!rewind->Valid()) {
-                    mapped_queues[GfxQueueId].cs_state = regs.cs_program;
-                    TracyFiberLeave;
-                    co_yield {};
-                    TracyFiberEnter(dcb_task_name);
-                    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
+                    YIELD_GFX;
                 }
                 break;
             }
@@ -633,11 +659,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
                 }
                 while (!wait_reg_mem->Test()) {
-                    mapped_queues[GfxQueueId].cs_state = regs.cs_program;
-                    TracyFiberLeave;
-                    co_yield {};
-                    TracyFiberEnter(dcb_task_name);
-                    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
+                    YIELD_GFX;
                 }
                 break;
             }
@@ -645,13 +667,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
                 auto task = ProcessGraphics(
                     {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
-                while (!task.handle.done()) {
-                    task.handle.resume();
+                RESUME(task, dcb_task_name);
 
-                    TracyFiberLeave;
-                    co_yield {};
-                    TracyFiberEnter(dcb_task_name);
-                };
+                while (!task.handle.done()) {
+                    YIELD_GFX;
+                    RESUME(task, dcb_task_name);
+                }
                 break;
             }
             case PM4ItOpcode::IncrementDeCounter: {
@@ -660,9 +681,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::WaitOnCeCounter: {
                 while (cblock.ce_count <= cblock.de_count) {
-                    TracyFiberLeave;
-                    ce_task.handle.resume();
-                    TracyFiberEnter(dcb_task_name);
+                    RESUME(ce_task, dcb_task_name);
                 }
                 break;
             }
@@ -686,11 +705,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         ce_task.handle.destroy();
     }
 
-    TracyFiberLeave;
+    FIBER_EXIT;
 }
 
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
-    TracyFiberEnter(acb_task_name);
+    FIBER_ENTER(acb_task_name[vqid]);
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
     while (!acb.empty()) {
@@ -713,13 +732,12 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task = ProcessCompute(
                 {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
-            while (!task.handle.done()) {
-                task.handle.resume();
+            RESUME(task, acb_task_name[vqid]);
 
-                TracyFiberLeave;
-                co_yield {};
-                TracyFiberEnter(acb_task_name);
-            };
+            while (!task.handle.done()) {
+                YIELD_ASC(vqid);
+                RESUME(task, acb_task_name[vqid]);
+            }
             break;
         }
         case PM4ItOpcode::DmaData: {
@@ -757,11 +775,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         case PM4ItOpcode::Rewind: {
             const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
             while (!rewind->Valid()) {
-                mapped_queues[vqid].cs_state = regs.cs_program;
-                TracyFiberLeave;
-                co_yield {};
-                TracyFiberEnter(acb_task_name);
-                regs.cs_program = mapped_queues[vqid].cs_state;
+                YIELD_ASC(vqid);
             }
             break;
         }
@@ -803,11 +817,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
             while (!wait_reg_mem->Test()) {
-                mapped_queues[vqid].cs_state = regs.cs_program;
-                TracyFiberLeave;
-                co_yield {};
-                TracyFiberEnter(acb_task_name);
-                regs.cs_program = mapped_queues[vqid].cs_state;
+                YIELD_ASC(vqid);
             }
             break;
         }
@@ -824,7 +834,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         acb = NextPacket(acb, header->type3.NumWords() + 1);
     }
 
-    TracyFiberLeave;
+    FIBER_EXIT;
 }
 
 std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
@@ -881,11 +891,11 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     submit_cv.notify_one();
 }
 
-void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
-    ASSERT_MSG(vqid >= 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
-    auto& queue = mapped_queues[vqid];
+void Liverpool::SubmitAsc(u32 gnm_vqid, std::span<const u32> acb) {
+    ASSERT_MSG(gnm_vqid > 0 && gnm_vqid < NumTotalQueues, "Invalid virtual ASC queue index");
+    auto& queue = mapped_queues[gnm_vqid];
 
-    const auto& task = ProcessCompute(acb, vqid);
+    const auto& task = ProcessCompute(acb, gnm_vqid);
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
