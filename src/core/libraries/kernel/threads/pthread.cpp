@@ -243,6 +243,13 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     static int TidCounter = 1;
     new_thread->tid = ++TidCounter;
 
+    if (new_thread->attr.stackaddr_attr == 0) {
+        /* Enforce minimum stack size of 64 KB */
+        static constexpr size_t MinimumStack = 64_KB;
+        auto& stacksize = new_thread->attr.stacksize_attr;
+        stacksize = std::max(stacksize, MinimumStack);
+    }
+
     if (thread_state->CreateStack(&new_thread->attr) != 0) {
         /* Insufficient memory to create a stack: */
         thread_state->Free(curthread, new_thread);
