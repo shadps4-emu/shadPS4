@@ -107,10 +107,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         // mask, we need to prevent the render area from being affected by unbound render target
         // extents.
         if (!regs.color_target_mask.GetMask(col_buf_id)) {
-            state.color_attachments[state.num_color_attachments++] = vk::RenderingAttachmentInfo{
-                // With VK_NULL_HANDLE, other struct members are ignored.
-                .imageView = VK_NULL_HANDLE,
-            };
+            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
             continue;
         }
 
