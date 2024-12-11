@@ -610,6 +610,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
                 break;
             }
+            case PM4ItOpcode::Rewind: {
+                const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+                while (!rewind->Valid()) {
+                    mapped_queues[GfxQueueId].cs_state = regs.cs_program;
+                    TracyFiberLeave;
+                    co_yield {};
+                    TracyFiberEnter(dcb_task_name);
+                    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
+                }
+                break;
+            }
             case PM4ItOpcode::WaitRegMem: {
                 const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
                 // ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
@@ -628,6 +639,19 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     TracyFiberEnter(dcb_task_name);
                     regs.cs_program = mapped_queues[GfxQueueId].cs_state;
                 }
+                break;
+            }
+            case PM4ItOpcode::IndirectBuffer: {
+                const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+                auto task = ProcessGraphics(
+                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
+                while (!task.handle.done()) {
+                    task.handle.resume();
+
+                    TracyFiberLeave;
+                    co_yield {};
+                    TracyFiberEnter(dcb_task_name);
+                };
                 break;
             }
             case PM4ItOpcode::IncrementDeCounter: {
@@ -728,6 +752,17 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             break;
         }
         case PM4ItOpcode::AcquireMem: {
+            break;
+        }
+        case PM4ItOpcode::Rewind: {
+            const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+            while (!rewind->Valid()) {
+                mapped_queues[vqid].cs_state = regs.cs_program;
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(acb_task_name);
+                regs.cs_program = mapped_queues[vqid].cs_state;
+            }
             break;
         }
         case PM4ItOpcode::SetShReg: {

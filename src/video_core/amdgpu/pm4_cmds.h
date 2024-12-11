@@ -418,6 +418,19 @@ struct PM4DmaData {
     }
 };
 
+struct PM4CmdRewind {
+    PM4Type3Header header;
+    union {
+        u32 raw;
+        BitField<24, 1, u32> offload_enable; ///< Enable offload polling valid bit to IQ
+        BitField<31, 1, u32> valid;          ///< Set when subsequent packets are valid
+    };
+
+    bool Valid() const {
+        return valid;
+    }
+};
+
 struct PM4CmdWaitRegMem {
     enum class Engine : u32 { Me = 0u, Pfp = 1u };
     enum class MemSpace : u32 { Register = 0u, Memory = 1u };
