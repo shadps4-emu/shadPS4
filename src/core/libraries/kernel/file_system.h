@@ -65,6 +65,9 @@ constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
+s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes);
+s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes);
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

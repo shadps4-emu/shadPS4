@@ -201,7 +201,7 @@ int PS4_SYSV_ABI posix_close(int d) {
     return result;
 }
 
-size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -246,6 +246,15 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return ORBIS_OK;
 }
 
+size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = file.GetSize() - file.Tell();
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+
+    return file.ReadRaw<u8>(buf, nbytes);
+}
+
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -264,7 +273,7 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     }
     size_t total_read = 0;
     for (int i = 0; i < iovcnt; i++) {
-        total_read += file->f.ReadRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
@@ -348,16 +357,10 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     }
 
     std::scoped_lock lk{file->m_mutex};
-    const auto* memory = Core::Memory::Instance();
     if (file->type == Core::FileSys::FileType::Device) {
-        // Size is not known, invalidate the whole buffer.
-        memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), nbytes);
         return file->device->read(buf, nbytes);
     }
-    // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file->f.GetSize() - file->f.Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    return file->f.ReadRaw<u8>(buf, nbytes);
+    return ReadFile(file->f, buf, nbytes);
 }
 
 int PS4_SYSV_ABI posix_read(int d, void* buf, size_t nbytes) {
@@ -533,12 +536,7 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
     }
 
     std::scoped_lock lk{file->m_mutex};
-    const auto* memory = Core::Memory::Instance();
     if (file->type == Core::FileSys::FileType::Device) {
-        // Size is not known, invalidate all buffers.
-        for (int i = 0; i < iovcnt; i++) {
-            memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[i].iov_base), iov[i].iov_len);
-        }
         return file->device->preadv(iov, iovcnt, offset);
     }
 
@@ -552,11 +550,7 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
     }
     size_t total_read = 0;
     for (int i = 0; i < iovcnt; i++) {
-        // Invalidate up to the actual number of bytes that could be read.
-        const auto remaining = file->f.GetSize() - file->f.Tell();
-        memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[i].iov_base),
-                                 std::min<u64>(iov[i].iov_len, remaining));
-        total_read += file->f.ReadRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }

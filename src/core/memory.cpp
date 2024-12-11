@@ -588,7 +588,9 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
 }
 
 void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
-    rasterizer->InvalidateMemory(addr, size);
+    if (rasterizer) {
+        rasterizer->InvalidateMemory(addr, size);
+    }
 }
 
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
