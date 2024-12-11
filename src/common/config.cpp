@@ -743,6 +743,7 @@ void setDefaultValues() {
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;
+    separateupdatefolder = false;
 }
 
 } // namespace Config
