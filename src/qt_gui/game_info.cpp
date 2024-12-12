@@ -4,8 +4,8 @@
 #include <QProgressDialog>
 
 #include "common/path_util.h"
-#include "game_info.h"
 #include "compatibility_info.h"
+#include "game_info.h"
 
 GameInfoClass::GameInfoClass() = default;
 GameInfoClass::~GameInfoClass() = default;
