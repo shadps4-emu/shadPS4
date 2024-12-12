@@ -100,6 +100,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         // an unnecessary transition and may result in state conflict if the resource is already
         // bound for reading.
         if ((mrt_mask & (1 << col_buf_id)) == 0) {
+            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
             continue;
         }
 
