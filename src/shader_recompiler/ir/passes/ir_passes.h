@@ -21,6 +21,5 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info);
 void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
 void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
-void TessellationPostprocess(IR::Program& program, RuntimeInfo& runtime_info);
 
 } // namespace Shader::Optimization

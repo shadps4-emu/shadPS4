@@ -154,14 +154,13 @@ std::optional<TessSharpLocation> FindTessConstantSharp(IR::Inst* read_const_buff
 // Walker that helps deduce what type of attribute a DS instruction is reading
 // or writing, which could be an input control point, output control point,
 // or per-patch constant (PatchConst).
-// For certain ReadConstBuffer instructions using the tess constants V#,
-// which we preprocess and transform into a named GetAttribute, we visit the users
+// For certain ReadConstBuffer instructions using the tess constants V#,, we visit the users
 // recursively and increment a counter on the Load/WriteShared users.
-// Namely TcsNumPatches (from m_hsNumPatch), TcsOutputBase (m_hsOutputBase),
-// and TcsPatchConstBase (m_patchConstBase).
-// In addr calculations, the term TcsNumPatches * ls_stride * #input_cp_in_patch
+// Namely NumPatch (from m_hsNumPatch), HsOutputBase (m_hsOutputBase),
+// and PatchConstBase (m_patchConstBase).
+// In addr calculations, the term NumPatch * ls_stride * #input_cp_in_patch
 // is used as an addend to skip the region for input control points, and similarly
-// TcsNumPatches * hs_cp_stride * #output_cp_in_patch is used to skip the region
+// NumPatch * hs_cp_stride * #output_cp_in_patch is used to skip the region
 // for output control points.
 // The Input CP, Output CP, and PatchConst regions are laid out in that order for the
 // entire thread group, so seeing the TcsNumPatches attribute used in an addr calc should
@@ -174,21 +173,21 @@ std::optional<TessSharpLocation> FindTessConstantSharp(IR::Inst* read_const_buff
 // and find the interval it's inside of? (phis are still a problem here)
 class TessConstantUseWalker {
 public:
-    void MarkTessAttributeUsers(IR::Inst* get_attribute) {
+    void MarkTessAttributeUsers(IR::Inst* read_const_buffer, TessConstantAttribute attr) {
         uint inc;
-        switch (get_attribute->Arg(0).Attribute()) {
-        case IR::Attribute::TcsNumPatches:
-        case IR::Attribute::TcsOutputBase:
+        switch (attr) {
+        case TessConstantAttribute::HsNumPatch:
+        case TessConstantAttribute::HsOutputBase:
             inc = 1;
             break;
-        case IR::Attribute::TcsPatchConstBase:
+        case TessConstantAttribute::PatchConstBase:
             inc = 2;
             break;
         default:
-            return;
+            UNREACHABLE();
         }
 
-        for (IR::Use use : get_attribute->Uses()) {
+        for (IR::Use use : read_const_buffer->Uses()) {
             MarkTessAttributeUsersHelper(use, inc);
         }
 
@@ -276,14 +275,6 @@ static bool IsDivisibleByStride(IR::Value term, u32 stride) {
     IR::Value a, b;
     if (MatchU32(stride).Match(term)) {
         return true;
-    } else if (M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::TcsLsStride), MatchU32(0))
-                   .Match(term) ||
-               M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::TcsCpStride), MatchU32(0))
-                   .Match(term)) {
-        // TODO if we fold in constants earlier (Dont produce attributes, instead just emit
-        // constants) then this case isnt needed. Also should assert that this correct attribute is
-        // being used depending on stage and whether this is an input or output attribute
-        return true;
     } else if (M_BITFIELDUEXTRACT(MatchValue(a), MatchU32(0), MatchU32(24)).Match(term) ||
                M_BITFIELDSEXTRACT(MatchValue(a), MatchU32(0), MatchU32(24)).Match(term)) {
         return IsDivisibleByStride(a, stride);
@@ -309,7 +300,7 @@ static bool TryOptimizeAddendInModulo(IR::Value addend, u32 stride, std::vector<
     }
 }
 
-// In calculation addr = (a + b + ...) % stride
+// In calculation (a + b + ...) % stride
 // Use this fact
 // (a + b) mod N = (a mod N + b mod N) mod N
 // If any addend is divisible by stride, then we can replace it with 0 in the attribute
@@ -517,6 +508,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
         // if (InvocationId == 0) {
         //    program ...
         // }
+        // But as long as we treat invocation ID as 0 for all threads, shouldn't matter functionally
     }
 }
 
@@ -600,8 +592,7 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                         InitTessConstants(sharp_location->ptr_base,
                                           static_cast<s32>(sharp_location->dword_off), info,
                                           runtime_info, tess_constants);
-                        break; // TODO
-                        // continue;
+                        break; // break out of switch and loop
                     }
                     UNREACHABLE_MSG("Failed to match tess constant sharp");
                 }
@@ -617,10 +608,11 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
 
     ASSERT(info.FoundTessConstantsSharp());
 
+    TessConstantUseWalker walker;
+
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            switch (inst.GetOpcode()) {
-            case IR::Opcode::ReadConstBuffer: {
+            if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
                 auto sharp_location = FindTessConstantSharp(&inst);
                 if (sharp_location && sharp_location->ptr_base == info.tess_consts_ptr_base &&
                     sharp_location->dword_off == info.tess_consts_dword_offset) {
@@ -630,33 +622,46 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
 
                     ASSERT_MSG(index.IsImmediate(),
                                "Tessellation constant read with dynamic index");
-                    u32 offset = index.U32();
-                    ASSERT(offset < static_cast<u32>(IR::Attribute::TcsFirstEdgeTessFactorIndex) -
-                                        static_cast<u32>(IR::Attribute::TcsLsStride) + 1);
-                    IR::Attribute tess_constant_attr = static_cast<IR::Attribute>(
-                        static_cast<u32>(IR::Attribute::TcsLsStride) + offset);
-                    IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+                    u32 off_dw = index.U32();
+                    ASSERT(off_dw <=
+                           static_cast<u32>(TessConstantAttribute::FirstEdgeTessFactorIndex));
 
-                    IR::U32 replacement;
-                    if (tess_constant_attr ==
-                        IR::Attribute::TcsOffChipTessellationFactorThreshold) {
-                        replacement = ir.BitCast<IR::U32>(
-                            ir.GetAttribute(IR::Attribute::TcsOffChipTessellationFactorThreshold));
-                    } else {
-                        replacement = ir.GetAttributeU32(tess_constant_attr);
+                    auto tess_const_attr = static_cast<TessConstantAttribute>(off_dw);
+                    switch (tess_const_attr) {
+                    case TessConstantAttribute::LsStride:
+                        // If not, we may need to make this runtime state for TES
+                        ASSERT(info.l_stage == LogicalStage::TessellationControl);
+                        inst.ReplaceUsesWithAndRemove(IR::Value(tess_constants.m_lsStride));
+                        break;
+                    case TessConstantAttribute::HsCpStride:
+                        inst.ReplaceUsesWithAndRemove(IR::Value(tess_constants.m_hsCpStride));
+                        break;
+                    case TessConstantAttribute::HsNumPatch:
+                    case TessConstantAttribute::HsOutputBase:
+                    case TessConstantAttribute::PatchConstBase:
+                        walker.MarkTessAttributeUsers(&inst, tess_const_attr);
+                        // We should be able to safely set these to 0 so that indexing happens only
+                        // within the local patch in the recompiled Vulkan shader. This assumes
+                        // these values only contribute to address calculations for in/out
+                        // attributes in the original gcn shader.
+                        // See the explanation for why we set V2 to 0 when emitting the prologue.
+                        inst.ReplaceUsesWithAndRemove(IR::Value(0u));
+                        break;
+                    // PatchConstSize:
+                    // PatchOutputSize:
+                    // OffChipTessellationFactorThreshold:
+                    // FirstEdgeTessFactorIndex:
+                    default:
+                        break;
                     }
-
-                    inst.ReplaceUsesWithAndRemove(replacement);
                 }
-                break;
-            }
-
-            default:
-                break;
             }
         }
     }
 
+    // These pattern matching are neccessary for now unless we support dynamic indexing of
+    // PatchConst attributes and tess factors. PatchConst should be easy, turn those into a single
+    // vec4 array like in/out attrs. Not sure about tess factors.
     if (info.l_stage == LogicalStage::TessellationControl) {
         // Replace the BFEs on V1 (packed with patch id and output cp id) for easier pattern
         // matching
@@ -669,9 +674,6 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                         MatchU32(0), MatchU32(8))
                         .Match(IR::Value{&inst})) {
                     IR::IREmitter emit(*block, it);
-                    // IR::Value replacement =
-                    // emit.GetAttributeU32(IR::Attribute::TessPatchIdInVgt);
-                    // TODO should be fine but check this
                     IR::Value replacement(0u);
                     inst.ReplaceUsesWithAndRemove(replacement);
                 } else if (M_BITFIELDUEXTRACT(
@@ -691,82 +693,6 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
                     inst.ReplaceUsesWithAndRemove(replacement);
                 }
-            }
-        }
-    }
-
-    TessConstantUseWalker walker;
-    for (IR::Block* block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32) {
-                walker.MarkTessAttributeUsers(&inst);
-            }
-        }
-    }
-
-    for (IR::Block* block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32) {
-                switch (inst.Arg(0).Attribute()) {
-                // Should verify that these are only used in address calculations for attr
-                // read/write
-                // Replace with 0 so we can dynamically index the control points within the
-                // region allocated for this patch (input or output). These terms should only
-                // contribute to the base address of that region, so replacing with 0 *should*
-                // be fine
-                case IR::Attribute::TcsNumPatches:
-                case IR::Attribute::TcsOutputBase:
-                case IR::Attribute::TcsPatchConstBase:
-                case IR::Attribute::TessPatchIdInVgt:
-                    inst.ReplaceUsesWithAndRemove(IR::Value(0u));
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-    }
-}
-
-void TessellationPostprocess(IR::Program& program, RuntimeInfo& runtime_info) {
-    Shader::Info& info = program.info;
-    TessellationDataConstantBuffer tess_constants;
-    InitTessConstants(info.tess_consts_ptr_base, info.tess_consts_dword_offset, info, runtime_info,
-                      tess_constants);
-
-    for (IR::Block* block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32) {
-                switch (inst.Arg(0).Attribute()) {
-                case IR::Attribute::TcsLsStride:
-                    ASSERT(info.l_stage == LogicalStage::TessellationControl);
-                    inst.ReplaceUsesWithAndRemove(IR::Value(tess_constants.m_lsStride));
-                    break;
-                case IR::Attribute::TcsCpStride:
-                    inst.ReplaceUsesWithAndRemove(IR::Value(tess_constants.m_hsCpStride));
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-    }
-
-    // TODO delete
-    for (IR::Block* block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            switch (inst.GetOpcode()) {
-            case IR::Opcode::LoadSharedU32:
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
-            case IR::Opcode::WriteSharedU32:
-            case IR::Opcode::WriteSharedU64:
-            case IR::Opcode::WriteSharedU128:
-                UNREACHABLE_MSG("Remaining DS instruction. {} transform failed",
-                                info.l_stage == LogicalStage::TessellationControl ? "Hull"
-                                                                                  : "Domain");
-            default:
-                break;
             }
         }
     }

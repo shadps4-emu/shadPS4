@@ -126,26 +126,6 @@ std::string NameOf(Attribute attribute) {
         return "TessellationEvaluationPointV";
     case Attribute::PackedHullInvocationInfo:
         return "PackedHullInvocationInfo";
-    case Attribute::TcsLsStride:
-        return "TcsLsStride";
-    case Attribute::TcsCpStride:
-        return "TcsCpStride";
-    case Attribute::TcsNumPatches:
-        return "TcsNumPatches";
-    case Attribute::TcsOutputBase:
-        return "TcsOutputBase";
-    case Attribute::TcsPatchConstSize:
-        return "TcsPatchConstSize";
-    case Attribute::TcsPatchConstBase:
-        return "TcsPatchConstBase";
-    case Attribute::TcsPatchOutputSize:
-        return "TcsPatchOutputSize";
-    case Attribute::TcsOffChipTessellationFactorThreshold:
-        return "TcsOffChipTessellationFactorThreshold";
-    case Attribute::TcsFirstEdgeTessFactorIndex:
-        return "TcsFirstEdgeTessFactorIndex";
-    case Attribute::TessPatchIdInVgt:
-        return "TessPatchIdInVgt";
     default:
         break;
     }

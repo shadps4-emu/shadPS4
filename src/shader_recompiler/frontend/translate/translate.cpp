@@ -124,6 +124,9 @@ void Translator::EmitPrologue() {
         }
         break;
     case LogicalStage::TessellationControl: {
+        // Should be laid out like:
+        // [0:8]: patch id within VGT
+        // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
         // TODO need PrimitiveId also like TES?
@@ -134,10 +137,17 @@ void Translator::EmitPrologue() {
                         ir.GetAttribute(IR::Attribute::TessellationEvaluationPointU));
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttribute(IR::Attribute::TessellationEvaluationPointV));
-        // I think V2 is actually the patch id within the patches running on the local CU, used in
-        // compiler generated address calcs,
-        // and V3 is the patch id within the draw
-        ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::TessPatchIdInVgt));
+        // V2 is similar to PrimitiveID but not the same. It seems to only be used in
+        // compiler-generated address calculations. Its probably the patch id within the
+        // patches running locally on a given VGT (or CU, whichever is the granularity of LDS
+        // memory). So it is probably equal to PrimitiveID % #patches_per_VGT (or per CU).
+        // We should be able to safely set V2 to 0, along with other special values read from the
+        // tess constants buffer, since in the recompiled Vulkan shaders a thread can only
+        // read/write control points and patch const attributes within the local patch. This (V2)
+        // and other special values of TessellationDataConstantBuffer are (probably) just an
+        // implementation detail from the ps4 shader compiler and only used for addressing.
+        ir.SetVectorReg(IR::VectorReg::V2, ir.Imm32(0u));
+        // V3 is the actual PrimitiveID as intended by the shader author.
         ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     case LogicalStage::Compute:

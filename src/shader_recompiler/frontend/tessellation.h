@@ -21,4 +21,17 @@ struct TessellationDataConstantBuffer {
     u32 m_firstEdgeTessFactorIndex;
 };
 
+// TODO comment
+enum class TessConstantAttribute : u32 {
+    LsStride,
+    HsCpStride,
+    HsNumPatch,
+    HsOutputBase,
+    PatchConstSize,
+    PatchConstBase,
+    PatchOutputSize,
+    OffChipTessellationFactorThreshold,
+    FirstEdgeTessFactorIndex,
+};
+
 } // namespace Shader
