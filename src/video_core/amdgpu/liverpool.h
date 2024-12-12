@@ -431,6 +431,10 @@ struct Liverpool {
             return u64(z_read_base) << 8;
         }
 
+        u64 StencilAddress() const {
+            return u64(stencil_read_base) << 8;
+        }
+
         u32 NumSamples() const {
             return 1u << z_info.num_samples; // spec doesn't say it is a log2
         }

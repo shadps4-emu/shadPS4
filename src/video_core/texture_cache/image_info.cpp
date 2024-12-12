@@ -298,6 +298,9 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     resources.layers = num_slices;
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
 
+    stencil_addr = buffer.StencilAddress();
+    stencil_size = pitch * size.height * sizeof(u8);
+
     guest_address = buffer.Address();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
     guest_size_bytes = depth_slice_sz * num_slices;
