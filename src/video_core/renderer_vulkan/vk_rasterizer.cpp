@@ -263,7 +263,6 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     auto state = PrepareRenderState(pipeline->GetMrtMask());
-
     if (!BindResources(pipeline)) {
         return;
     }
@@ -353,6 +352,9 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     if (!BindResources(pipeline)) {
         return;
     }
+
+    LOG_CRITICAL(Render_Vulkan, "DispatchIndirect addr = {:#x}",
+                 std::bit_cast<uintptr_t>(address + offset));
 
     scheduler.EndRendering();
 
@@ -838,6 +840,10 @@ void Rasterizer::Resolve() {
 
 void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
     buffer_cache.InlineData(address, value, num_bytes, is_gds);
+}
+
+void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
+    buffer_cache.CopyBuffer(dst, src, num_bytes, dst_gds, src_gds);
 }
 
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {

@@ -53,6 +53,7 @@ public:
     void ScopedMarkerInsertColor(const std::string_view& str, const u32 color);
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+    void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size);
     bool IsMapped(VAddr addr, u64 size);
