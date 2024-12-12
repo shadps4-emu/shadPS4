@@ -11,7 +11,7 @@
 #include "common/config.h"
 #include "core/file_format/psf.h"
 
-static constexpr int COMPAT_DB_VERSION = 1; 
+static constexpr int COMPAT_DB_VERSION = 1;
 
 enum class CompatibilityStatus {
     Unknown,

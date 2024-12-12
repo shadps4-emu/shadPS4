@@ -75,7 +75,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
     });
 
-    connect(this, &QTableWidget::cellClicked, this, [=](int row, int column) { 
+    connect(this, &QTableWidget::cellClicked, this, [=](int row, int column) {
         if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
             QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
         }
@@ -263,12 +263,9 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         tooltip_string = status_explanation;
     } else {
         tooltip_string =
-            "<p> <i>" + tr("Click to go to issue") + "</i>" + 
-            "<br>" + 
-            tr("Last updated") +
+            "<p> <i>" + tr("Click to go to issue") + "</i>" + "<br>" + tr("Last updated") +
             QString(": %1 (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
-            "<br>" + 
-            status_explanation + "</p>";
+            "<br>" + status_explanation + "</p>";
     }
 
     QPixmap circle_pixmap(16, 16);

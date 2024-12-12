@@ -40,9 +40,8 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
 
     if (reply->error() != QNetworkReply::NoError) {
         reply->deleteLater();
-        QMessageBox::critical(
-            parent, tr("Error"),
-            tr("Unable to update compatibility data! Try again later."));
+        QMessageBox::critical(parent, tr("Error"),
+                              tr("Unable to update compatibility data! Try again later."));
         // Try loading compatibility_file.json again
         LoadCompatibilityFile();
         return;
@@ -141,11 +140,12 @@ bool CompatibilityInfoClass::LoadCompatibilityFile() {
     // Returns true if compatibility is loaded succescfully
     QFileInfo check_file(m_compatibility_filename);
     const auto modified_delta = QDateTime::currentDateTime() - check_file.lastModified();
-    if (!check_file.exists() || !check_file.isFile() &&
-        std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() > 60) {
+    if (!check_file.exists() ||
+        !check_file.isFile() &&
+            std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() > 60) {
         return false;
     }
- 
+
     QFile compatibility_file(m_compatibility_filename);
     if (!compatibility_file.open(QIODevice::ReadOnly)) {
         compatibility_file.close();

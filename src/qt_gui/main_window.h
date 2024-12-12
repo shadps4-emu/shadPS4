@@ -93,7 +93,7 @@ private:
     PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
-    std::shared_ptr<CompatibilityInfoClass> m_compat_info = 
+    std::shared_ptr<CompatibilityInfoClass> m_compat_info =
         std::make_shared<CompatibilityInfoClass>();
 
     QTranslator* translator;
