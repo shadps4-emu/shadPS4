@@ -110,7 +110,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
+        .cullMode = LiverpoolToVK::IsPrimitiveCulled(key.prim_type)
+                        ? LiverpoolToVK::CullMode(key.cull_mode)
+                        : vk::CullModeFlagBits::eNone,
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
