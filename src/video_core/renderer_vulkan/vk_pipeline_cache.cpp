@@ -268,6 +268,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
     // order. We need to do some arrays compaction at this stage
+    key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
     key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
     key.blend_controls.fill({});
@@ -277,11 +278,19 @@ bool PipelineCache::RefreshGraphicsKey() {
 
     // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
     // recompiler.
-    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
+        if (skip_cb_binding || !col_buf) {
+            // No attachment bound and no incremented index.
             continue;
         }
+
+        const auto remapped_cb = key.num_color_attachments++;
+        if (!regs.color_target_mask.GetMask(cb)) {
+            // Bound to null handle, skip over this attachment index.
+            continue;
+        }
+
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         key.color_formats[remapped_cb] =
@@ -290,8 +299,6 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
         }
-
-        ++remapped_cb;
     }
 
     fetch_shader = std::nullopt;
@@ -385,10 +392,18 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
-            (key.mrt_mask & (1u << cb)) == 0) {
-            key.color_formats[cb] = vk::Format::eUndefined;
-            key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+        if (skip_cb_binding || !col_buf) {
+            // No attachment bound and no incremented index.
+            continue;
+        }
+
+        if (!regs.color_target_mask.GetMask(cb) || (key.mrt_mask & (1u << cb)) == 0) {
+            // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
+            // of the latter we need to change format to undefined, and either way we need to
+            // increment the index for the null attachment binding.
+            key.color_formats[remapped_cb] = vk::Format::eUndefined;
+            key.mrt_swizzles[remapped_cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+            ++remapped_cb;
             continue;
         }
 
@@ -397,10 +412,9 @@ bool PipelineCache::RefreshGraphicsKey() {
                                                       !col_buf.info.blend_bypass);
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
+        ++remapped_cb;
 
         num_samples = std::max(num_samples, 1u << col_buf.attrib.num_samples_log2);
-
-        ++remapped_cb;
     }
 
     // It seems that the number of samples > 1 set in the AA config doesn't mean we're always

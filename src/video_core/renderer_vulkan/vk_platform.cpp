@@ -44,6 +44,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     case 0xc81ad50e:
     case 0xb7c39078:
     case 0x32868fde: // vkCreateBufferView(): pCreateInfo->range does not equal VK_WHOLE_SIZE
+    case 0x1012616b: // `VK_FORMAT_UNDEFINED` does not match fragment shader output type
         return VK_FALSE;
     default:
         break;

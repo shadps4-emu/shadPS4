@@ -229,17 +229,15 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         });
     }
 
-    const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
-    const u32 num_color_formats = std::distance(key.color_formats.begin(), it);
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = num_color_formats,
+        .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
         .stencilAttachmentFormat = key.stencil_format,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
-    for (u32 i = 0; i < num_color_formats; i++) {
+    for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
         const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
@@ -292,7 +290,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
         .logicOpEnable = false,
         .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = num_color_formats,
+        .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };
