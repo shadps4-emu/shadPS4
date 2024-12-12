@@ -68,7 +68,7 @@ void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setGameInstallDirs(std::span<const std::filesystem::path> settings_install_dirs_config);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
