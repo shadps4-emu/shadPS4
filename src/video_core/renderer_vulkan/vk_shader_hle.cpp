@@ -60,7 +60,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
     static constexpr vk::DeviceSize MaxDistanceForMerge = 64_MB;
     u32 batch_start = 0;
-    u32 batch_end = 1;
+    u32 batch_end = copies.size() > 1 ? 1 : 0;
 
     while (batch_end < copies.size()) {
         // Place first copy into the current batch
@@ -72,7 +72,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
         for (int i = batch_start + 1; i < copies.size(); i++) {
             // Compute new src and dst bounds if we were to batch this copy
-            const auto [src_offset, dst_offset, size] = copies[i];
+            const auto& [src_offset, dst_offset, size] = copies[i];
             auto new_src_offset_min = std::min(src_offset_min, src_offset);
             auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
             if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
