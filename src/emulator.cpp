@@ -75,6 +75,9 @@ Emulator::Emulator() {
     LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::vkMarkersEnabled());
     LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::vkCrashDiagnosticEnabled());
 
+    // Create stdin/stdout/stderr
+    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
+
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();

@@ -28,6 +28,14 @@ public:
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
+    [[nodiscard]] Scheduler& GetScheduler() noexcept {
+        return scheduler;
+    }
+
+    [[nodiscard]] VideoCore::BufferCache& GetBufferCache() noexcept {
+        return buffer_cache;
+    }
+
     [[nodiscard]] VideoCore::TextureCache& GetTextureCache() noexcept {
         return texture_cache;
     }
@@ -46,13 +54,18 @@ public:
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
-    void InvalidateMemory(VAddr addr, VAddr addr_aligned, u64 size);
+    bool InvalidateMemory(VAddr addr, u64 size);
+    bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
     void CpSync();
     u64 Flush();
     void Finish();
+
+    PipelineCache& GetPipelineCache() {
+        return pipeline_cache;
+    }
 
 private:
     RenderState PrepareRenderState(u32 mrt_mask);
@@ -88,6 +101,7 @@ private:
     VideoCore::TextureCache texture_cache;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
+    boost::icl::interval_set<VAddr> mapped_ranges;
     PipelineCache pipeline_cache;
 
     boost::container::static_vector<

@@ -7,7 +7,8 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
-#include "magic_enum.hpp"
+
+#include <magic_enum/magic_enum.hpp>
 
 #include <functional>
 #include <mutex>

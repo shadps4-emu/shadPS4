@@ -351,7 +351,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="343"/>
 			<source>Download Cheats/Patches</source>
-			<translation>Hileler / Yamanlar İndir</translation>
+			<translation>Hileleri/Yamaları İndir</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
@@ -505,7 +505,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
-			<translation>PS4 Pro mu</translation>
+			<translation>PS4 Pro</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="154"/>
@@ -545,12 +545,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="635"/>
 			<source>Hide Cursor</source>
-			<translation>İmleci gizle</translation>
+			<translation>İmleci Gizle</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>İmleç için hareketsizlik zaman aşımı</translation>
+			<translation>İmleç İçin Hareketsizlik Zaman Aşımı</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -665,7 +665,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
-			<translation>Güncellemeleri kontrol et</translation>
+			<translation>Güncellemeleri Kontrol Et</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
@@ -703,7 +703,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="328"/>
 			<source>Download Patches For All Games</source>
-			<translation>Tüm Oyunlar İçin Yamanları İndir</translation>
+			<translation>Tüm Oyunlar İçin Yamaları İndir</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="363"/>
@@ -758,7 +758,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>Patch detected!</source>
-			<translation>Yamanın tespit edildi!</translation>
+			<translation>Yama tespit edildi!</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
@@ -840,8 +840,8 @@
 		<name>CheatsPatches</name>
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
-			<source>Cheats / Patches</source>
-			<translation>Hileler / Yamalar</translation>
+			<source>Cheats / Patches for </source>
+			<translation>Cheats / Patches for </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -941,7 +941,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="292"/>
 			<source>Unable to open files.json for reading.</source>
-			<translation>files.json dosyasını okumak için açılamadı.</translation>
+			<translation>files.json dosyası okumak için açılamadı.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="316"/>
@@ -1169,7 +1169,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>PS4 Pro Mu:\nEmülatörü bir PS4 PRO gibi çalıştırır; bu, bunu destekleyen oyunlarda özel özellikleri etkinleştirebilir.</translation>
+			<translation>PS4 Pro:\nEmülatörü bir PS4 PRO gibi çalıştırır; bu, bunu destekleyen oyunlarda özel özellikleri etkinleştirebilir.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>
@@ -1358,6 +1358,11 @@
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
 			<translation>Oynama Süresi</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="108"/>
+			<source>Never Played</source>
+			<translation>Never Played</translation>
 		</message>
 	</context>
 	<context>

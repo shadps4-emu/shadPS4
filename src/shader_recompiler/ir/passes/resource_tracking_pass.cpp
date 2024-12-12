@@ -596,7 +596,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         }
         return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
     }();
-    inst.ReplaceUsesWith(new_inst);
+    inst.ReplaceUsesWithAndRemove(new_inst);
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {

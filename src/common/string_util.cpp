@@ -37,6 +37,10 @@ std::vector<std::string> SplitString(const std::string& str, char delimiter) {
     return output;
 }
 
+std::string_view U8stringToString(std::u8string_view u8str) {
+    return std::string_view{reinterpret_cast<const char*>(u8str.data()), u8str.size()};
+}
+
 #ifdef _WIN32
 static std::wstring CPToUTF16(u32 code_page, std::string_view input) {
     const auto size =

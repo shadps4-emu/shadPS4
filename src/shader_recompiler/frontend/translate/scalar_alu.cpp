@@ -50,6 +50,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_OR_B64(NegateMode::None, false, inst);
         case Opcode::S_XOR_B32:
             return S_XOR_B32(inst);
+        case Opcode::S_NOT_B32:
+            return S_NOT_B32(inst);
         case Opcode::S_XOR_B64:
             return S_OR_B64(NegateMode::None, true, inst);
         case Opcode::S_ANDN2_B32:
@@ -94,10 +96,14 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_BREV_B32(inst);
         case Opcode::S_BCNT1_I32_B64:
             return S_BCNT1_I32_B64(inst);
+        case Opcode::S_FF1_I32_B32:
+            return S_FF1_I32_B32(inst);
         case Opcode::S_AND_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::None, false, inst);
         case Opcode::S_ORN2_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::Src1, true, inst);
+        case Opcode::S_ABS_I32:
+            return S_ABS_I32(inst);
         default:
             LogMissingOpcode(inst);
         }
@@ -301,6 +307,10 @@ void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
             ASSERT_MSG(-s32(operand.code) + SignedConstIntNegMin - 1 == -1,
                        "SignedConstIntNeg must be -1");
             return ir.Imm1(true);
+        case OperandField::LiteralConst:
+            ASSERT_MSG(operand.code == 0 || operand.code == std::numeric_limits<u32>::max(),
+                       "Unsupported literal {:#x}", operand.code);
+            return ir.Imm1(operand.code & 1);
         default:
             UNREACHABLE();
         }
@@ -378,6 +388,13 @@ void Translator::S_XOR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.BitwiseXor(src0, src1)};
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_NOT_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 result{ir.BitwiseNot(src0)};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
@@ -560,6 +577,12 @@ void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
+void Translator::S_FF1_I32_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 result{ir.Select(ir.IEqual(src0, ir.Imm32(0U)), ir.Imm32(-1), ir.FindILsb(src0))};
+    SetDst(inst.dst[0], result);
+}
+
 void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst) {
     // This instruction normally operates on 64-bit data (EXEC, VCC, SGPRs)
     // However here we flatten it to 1-bit EXEC and 1-bit VCC. For the destination
@@ -597,6 +620,12 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
     }
     ir.SetExec(result);
     ir.SetScc(result);
+}
+
+void Translator::S_ABS_I32(const GcnInst& inst) {
+    const auto result = ir.IAbs(GetSrc(inst.src[0]));
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
 // SOPC

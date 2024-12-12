@@ -58,11 +58,22 @@ bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
 }
 
 vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
-    if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Unorm;
-    }
-    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Srgb;
+    // BGRA
+    if (dst_sel == 0b111100101110) {
+        switch (format) {
+        case vk::Format::eR8G8B8A8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
+        case vk::Format::eR8G8B8A8Snorm:
+            return vk::Format::eB8G8R8A8Snorm;
+        case vk::Format::eR8G8B8A8Uint:
+            return vk::Format::eB8G8R8A8Uint;
+        case vk::Format::eR8G8B8A8Sint:
+            return vk::Format::eB8G8R8A8Sint;
+        case vk::Format::eR8G8B8A8Srgb:
+            return vk::Format::eB8G8R8A8Srgb;
+        default:
+            break;
+        }
     }
     return format;
 }
@@ -150,11 +161,12 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
-    // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
+    // When sampling D32/D16 texture from shader, the T# specifies R32/R16 format so adjust it.
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
     if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
-        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat)) {
+        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat ||
+         format == vk::Format::eR16Unorm || format == vk::Format::eD16Unorm)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }

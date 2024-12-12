@@ -4,11 +4,11 @@
 #include <algorithm>
 #include "common/config.h"
 #include "common/string_util.h"
+#include "core/devices/logger.h"
+#include "core/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
-
-constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
@@ -135,7 +135,6 @@ int HandleTable::CreateHandle() {
     std::scoped_lock lock{m_mutex};
 
     auto* file = new File{};
-    file->is_directory = false;
     file->is_opened = false;
 
     int existingFilesNum = m_files.size();
@@ -143,23 +142,23 @@ int HandleTable::CreateHandle() {
     for (int index = 0; index < existingFilesNum; index++) {
         if (m_files.at(index) == nullptr) {
             m_files[index] = file;
-            return index + RESERVED_HANDLES;
+            return index;
         }
     }
 
     m_files.push_back(file);
-    return m_files.size() + RESERVED_HANDLES - 1;
+    return m_files.size() - 1;
 }
 
 void HandleTable::DeleteHandle(int d) {
     std::scoped_lock lock{m_mutex};
-    delete m_files.at(d - RESERVED_HANDLES);
-    m_files[d - RESERVED_HANDLES] = nullptr;
+    delete m_files.at(d);
+    m_files[d] = nullptr;
 }
 
 File* HandleTable::GetFile(int d) {
     std::scoped_lock lock{m_mutex};
-    return m_files.at(d - RESERVED_HANDLES);
+    return m_files.at(d);
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
@@ -169,6 +168,22 @@ File* HandleTable::GetFile(const std::filesystem::path& host_name) {
         }
     }
     return nullptr;
+}
+
+void HandleTable::CreateStdHandles() {
+    auto setup = [this](const char* path, auto* device) {
+        int fd = CreateHandle();
+        auto* file = GetFile(fd);
+        file->is_opened = true;
+        file->type = FileType::Device;
+        file->m_guest_name = path;
+        file->device =
+            std::shared_ptr<Devices::BaseDevice>{reinterpret_cast<Devices::BaseDevice*>(device)};
+    };
+    // order matters
+    setup("/dev/stdin", new Devices::NopDevice(0));             // stdin
+    setup("/dev/stdout", new Devices::Logger("stdout", false)); // stdout
+    setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
 }
 
 } // namespace Core::FileSys

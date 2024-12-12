@@ -28,6 +28,7 @@ enum class FindFlags {
     RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
     RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
     RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
+    ExactFmt = 1 << 4,  ///< Require the format to be exactly the same.
 };
 DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
 
@@ -95,7 +96,7 @@ public:
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr addr, VAddr page_addr, size_t size);
+    void InvalidateMemory(VAddr addr, size_t size);
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
@@ -156,18 +157,31 @@ public:
         return surface_metas.contains(address);
     }
 
-    bool IsMetaCleared(VAddr address) const {
+    bool IsMetaCleared(VAddr address, u32 slice) const {
         const auto& it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            return it.value().is_cleared;
+            return it.value().clear_mask & (1u << slice);
         }
         return false;
     }
 
-    bool TouchMeta(VAddr address, bool is_clear) {
+    bool ClearMeta(VAddr address) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            it.value().is_cleared = is_clear;
+            it.value().clear_mask = u32(-1);
+            return true;
+        }
+        return false;
+    }
+
+    bool TouchMeta(VAddr address, u32 slice, bool is_clear) {
+        auto it = surface_metas.find(address);
+        if (it != surface_metas.end()) {
+            if (is_clear) {
+                it.value().clear_mask |= 1u << slice;
+            } else {
+                it.value().clear_mask &= ~(1u << slice);
+            }
             return true;
         }
         return false;
@@ -280,7 +294,7 @@ private:
             HTile,
         };
         Type type;
-        bool is_cleared;
+        u32 clear_mask{u32(-1)};
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };

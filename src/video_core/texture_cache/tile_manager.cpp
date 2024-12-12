@@ -14,7 +14,7 @@
 #include "video_core/host_shaders/detile_m8x2_comp.h"
 
 #include <boost/container/static_vector.hpp>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <vk_mem_alloc.h>
 
 namespace VideoCore {
@@ -174,6 +174,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
+    case vk::Format::eR4G4B4A4UnormPack16:
     case vk::Format::eR8G8Unorm:
     case vk::Format::eR16Sfloat:
     case vk::Format::eR16Unorm:
@@ -392,7 +393,8 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     const auto* detiler = GetDetiler(image);
     if (!detiler) {
         if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled &&
-            image.info.tiling_mode != AmdGpu::TilingMode::Display_MacroTiled) {
+            image.info.tiling_mode != AmdGpu::TilingMode::Display_MacroTiled &&
+            image.info.tiling_mode != AmdGpu::TilingMode::Depth_MacroTiled) {
             LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
                       vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
         }

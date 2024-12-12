@@ -5,7 +5,7 @@
 #include "core/libraries/ajm/ajm_instance.h"
 #include "core/libraries/ajm/ajm_mp3.h"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Ajm {
 

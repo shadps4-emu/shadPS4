@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <any>
 #include <memory>
 
 #include "shader_recompiler/exception.h"
@@ -119,10 +120,10 @@ void Inst::SetArg(size_t index, Value value) {
     }
     const IR::Value arg{Arg(index)};
     if (!arg.IsImmediate()) {
-        UndoUse(arg);
+        UndoUse(arg.Inst(), index);
     }
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), index);
     }
     if (op == Opcode::Phi) {
         phi_args[index].second = value;
@@ -143,7 +144,7 @@ Block* Inst::PhiBlock(size_t index) const {
 
 void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
     if (!value.IsImmediate()) {
-        Use(value);
+        Use(value.Inst(), phi_args.size());
     }
     phi_args.emplace_back(predecessor, value);
 }
@@ -155,17 +156,19 @@ void Inst::Invalidate() {
 
 void Inst::ClearArgs() {
     if (op == Opcode::Phi) {
-        for (auto& pair : phi_args) {
+        for (auto i = 0; i < phi_args.size(); i++) {
+            auto& pair = phi_args[i];
             IR::Value& value{pair.second};
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst(), i);
             }
         }
         phi_args.clear();
     } else {
-        for (auto& value : args) {
+        for (auto i = 0; i < args.size(); i++) {
+            auto& value = args[i];
             if (!value.IsImmediate()) {
-                UndoUse(value);
+                UndoUse(value.Inst(), i);
             }
         }
         // Reset arguments to null
@@ -174,13 +177,21 @@ void Inst::ClearArgs() {
     }
 }
 
-void Inst::ReplaceUsesWith(Value replacement) {
-    Invalidate();
-    ReplaceOpcode(Opcode::Identity);
-    if (!replacement.IsImmediate()) {
-        Use(replacement);
+void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
+    // Copy since user->SetArg will mutate this->uses
+    // Could also do temp_uses = std::move(uses) but more readable
+    const auto temp_uses = uses;
+    for (const auto& [user, operand] : temp_uses) {
+        DEBUG_ASSERT(user->Arg(operand).Inst() == this);
+        user->SetArg(operand, replacement);
     }
-    args[0] = replacement;
+    Invalidate();
+    if (preserve) {
+        // Still useful to have Identity for indirection.
+        // SSA pass would be more complicated without it
+        ReplaceOpcode(Opcode::Identity);
+        SetArg(0, replacement);
+    }
 }
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {
@@ -195,14 +206,15 @@ void Inst::ReplaceOpcode(IR::Opcode opcode) {
     op = opcode;
 }
 
-void Inst::Use(const Value& value) {
-    Inst* const inst{value.Inst()};
-    ++inst->use_count;
+void Inst::Use(Inst* used, u32 operand) {
+    DEBUG_ASSERT(0 == std::count(used->uses.begin(), used->uses.end(), IR::Use(this, operand)));
+    used->uses.emplace_front(this, operand);
 }
 
-void Inst::UndoUse(const Value& value) {
-    Inst* const inst{value.Inst()};
-    --inst->use_count;
+void Inst::UndoUse(Inst* used, u32 operand) {
+    IR::Use use(this, operand);
+    DEBUG_ASSERT(1 == std::count(used->uses.begin(), used->uses.end(), use));
+    used->uses.remove(use);
 }
 
 } // namespace Shader::IR

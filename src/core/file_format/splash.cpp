@@ -5,12 +5,8 @@
 
 #include "common/assert.h"
 #include "common/io_file.h"
+#include "common/stb.h"
 #include "splash.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#define STBI_NO_STDIO
-#include "externals/stb_image.h"
 
 bool Splash::Open(const std::filesystem::path& filepath) {
     ASSERT_MSG(filepath.stem().string() != "png", "Unexpected file format passed");

@@ -9,7 +9,7 @@
     <x>0</x>
     <y>0</y>
     <width>780</width>
-    <height>320</height>
+    <height>310</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,14 +22,14 @@
   <widget class="QLabel" name="shad_logo">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>30</y>
+     <x>15</x>
+     <y>15</y>
      <width>271</width>
-     <height>261</height>
+     <height>271</height>
     </rect>
    </property>
    <property name="frameShape">
-    <enum>QFrame::Shape::NoFrame</enum>
+    <enum>QFrame::NoFrame</enum>
    </property>
    <property name="text">
     <string/>
@@ -45,7 +45,7 @@
    <property name="geometry">
     <rect>
      <x>310</x>
-     <y>40</y>
+     <y>15</y>
      <width>171</width>
      <height>41</height>
     </rect>
@@ -64,9 +64,9 @@
    <property name="geometry">
     <rect>
      <x>310</x>
-     <y>90</y>
+     <y>60</y>
      <width>451</width>
-     <height>101</height>
+     <height>70</height>
     </rect>
    </property>
    <property name="font">
@@ -85,9 +85,9 @@
    <property name="geometry">
     <rect>
      <x>310</x>
-     <y>180</y>
+     <y>130</y>
      <width>451</width>
-     <height>101</height>
+     <height>70</height>
     </rect>
    </property>
    <property name="font">
@@ -102,6 +102,131 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QLabel" name="image_1">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>210</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>:/images/github.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="image_2">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>210</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>:/images/discord.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="image_3">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>210</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>:/images/youtube.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="image_4">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>210</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>:/images/ko-fi.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
+   </property>
+  </widget>
+   <widget class="QLabel" name="image_5">
+     <property name="geometry">
+       <rect>
+         <x>670</x>
+         <y>210</y>
+         <width>80</width>
+         <height>80</height>
+       </rect>
+     </property>
+     <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
+     </property>
+     <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+       <string/>
+     </property>
+     <property name="pixmap">
+       <pixmap>:/images/website.png</pixmap>
+     </property>
+     <property name="scaledContents">
+       <bool>true</bool>
+     </property>
+   </widget>
  </widget>
  <resources/>
  <connections/>

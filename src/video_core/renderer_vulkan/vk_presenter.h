@@ -53,6 +53,10 @@ public:
         return pp_settings.gamma;
     }
 
+    Frontend::WindowSDL& GetWindow() const {
+        return window;
+    }
+
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
         auto desc = VideoCore::TextureCache::VideoOutDesc{attribute, cpu_address};
@@ -88,6 +92,10 @@ public:
     void FlushDraw() {
         SubmitInfo info{};
         draw_scheduler.Flush(info);
+    }
+
+    Rasterizer& GetRasterizer() const {
+        return *rasterizer.get();
     }
 
 private:

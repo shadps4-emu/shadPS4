@@ -58,19 +58,6 @@ struct FetchShaderData {
                }) != attributes.end();
     }
 
-    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets(const AmdGpu::Liverpool::Regs& regs,
-                                                     const Info& info) const {
-        u32 vertex_offset = regs.index_offset;
-        u32 instance_offset = 0;
-        if (vertex_offset == 0 && vertex_offset_sgpr != -1) {
-            vertex_offset = info.user_data[vertex_offset_sgpr];
-        }
-        if (instance_offset_sgpr != -1) {
-            instance_offset = info.user_data[instance_offset_sgpr];
-        }
-        return {vertex_offset, instance_offset};
-    }
-
     bool operator==(const FetchShaderData& other) const {
         return attributes == other.attributes && vertex_offset_sgpr == other.vertex_offset_sgpr &&
                instance_offset_sgpr == other.instance_offset_sgpr;

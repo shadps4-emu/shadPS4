@@ -177,9 +177,10 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
     }
 }
 
-void DebugStateImpl::CollectShader(const std::string& name, std::span<const u32> spv,
-                                   std::span<const u32> raw_code) {
-    shader_dump_list.emplace_back(name, std::vector<u32>{spv.begin(), spv.end()},
-                                  std::vector<u32>{raw_code.begin(), raw_code.end()});
-    std::ranges::sort(shader_dump_list, {}, &ShaderDump::name);
+void DebugStateImpl::CollectShader(const std::string& name, vk::ShaderModule module,
+                                   std::span<const u32> spv, std::span<const u32> raw_code,
+                                   std::span<const u32> patch_spv, bool is_patched) {
+    shader_dump_list.emplace_back(name, module, std::vector<u32>{spv.begin(), spv.end()},
+                                  std::vector<u32>{raw_code.begin(), raw_code.end()},
+                                  std::vector<u32>{patch_spv.begin(), patch_spv.end()}, is_patched);
 }

@@ -37,7 +37,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->setColumnWidth(5, 90);  // Firmware
     this->setColumnWidth(6, 90);  // Size
     this->setColumnWidth(7, 90);  // Version
-    this->setColumnWidth(8, 100); // Play Time
+    this->setColumnWidth(8, 120); // Play Time
     QStringList headers;
     headers << tr("Icon") << tr("Name") << tr("Compatibility") << tr("Serial") << tr("Region")
             << tr("Firmware") << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
@@ -121,7 +121,7 @@ void GameListFrame::PopulateGameList() {
         QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
         if (playTime.isEmpty()) {
             m_game_info->m_games[i].play_time = "0:00:00";
-            SetTableItem(i, 8, "0");
+            SetTableItem(i, 8, tr("Never Played"));
         } else {
             QStringList timeParts = playTime.split(':');
             int hours = timeParts[0].toInt();
