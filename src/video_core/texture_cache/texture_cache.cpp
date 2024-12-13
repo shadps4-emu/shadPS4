@@ -447,7 +447,11 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     if (desc.info.stencil_addr != 0) {
         ImageId stencil_id{};
         ForEachImageInRegion(desc.info.stencil_addr, desc.info.stencil_size,
-                             [&](ImageId image_id, Image&) { stencil_id = image_id; });
+                             [&](ImageId image_id, Image& image) {
+                                 if (image.info.guest_address == desc.info.stencil_addr) {
+                                     stencil_id = image_id;
+                                 }
+                             });
         if (!stencil_id) {
             ImageInfo info{};
             info.guest_address = desc.info.stencil_addr;

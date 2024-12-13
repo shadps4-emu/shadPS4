@@ -93,8 +93,6 @@ struct Image {
     }
 
     void AssociateDepth(ImageId image_id) {
-        ASSERT_MSG(!depth_id || image_id == depth_id,
-                   "Stencil attachment bound to multiple depth targets");
         depth_id = image_id;
     }
 
