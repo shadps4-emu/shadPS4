@@ -38,6 +38,7 @@ public:
     }
 
     auto GetStages() const {
+        static_assert(static_cast<u32>(Shader::LogicalStage::Compute) == Shader::MaxStageTypes - 1);
         if (is_compute) {
             return std::span{stages.cend() - 1, stages.cend()};
         } else {

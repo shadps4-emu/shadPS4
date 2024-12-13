@@ -50,7 +50,6 @@ public:
     void Barrier();
     void WorkgroupMemoryBarrier();
     void DeviceMemoryBarrier();
-    void TcsOutputBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);

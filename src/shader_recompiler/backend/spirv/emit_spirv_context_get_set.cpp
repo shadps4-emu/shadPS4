@@ -207,7 +207,7 @@ Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, I
 }
 
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
-    if (ctx.info.stage == Stage::Geometry) {
+    if (ctx.info.l_stage == LogicalStage::Geometry) {
         return EmitGetAttributeForGeometry(ctx, attr, comp, index);
     } else if (ctx.info.l_stage == LogicalStage::TessellationControl ||
                ctx.info.l_stage == LogicalStage::TessellationEval) {
@@ -363,7 +363,8 @@ void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id co
 Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {
     const u32 index{IR::GenericPatchIndex(patch)};
     const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
-    const Id type{ctx.stage == Stage::Hull ? ctx.output_f32 : ctx.input_f32};
+    const Id type{ctx.l_stage == LogicalStage::TessellationControl ? ctx.output_f32
+                                                                   : ctx.input_f32};
     const Id pointer{ctx.OpAccessChain(type, ctx.patches.at(index), element)};
     return ctx.OpLoad(ctx.F32[1], pointer);
 }

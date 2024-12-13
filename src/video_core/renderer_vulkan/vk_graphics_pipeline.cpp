@@ -20,8 +20,6 @@
 
 namespace Vulkan {
 
-using Shader::LogicalStage; // TODO
-
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
@@ -33,7 +31,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
-    const bool uses_tessellation = stages[u32(LogicalStage::TessellationControl)];
+    const bool uses_tessellation = stages[u32(Shader::LogicalStage::TessellationControl)];
 
     const vk::PushConstantRange push_constants = {
         .stageFlags = gp_stage_flags,
@@ -215,7 +213,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
-    auto stage = u32(LogicalStage::Vertex);
+    auto stage = u32(Shader::LogicalStage::Vertex);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -223,7 +221,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(LogicalStage::Geometry);
+    stage = u32(Shader::LogicalStage::Geometry);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eGeometry,
@@ -231,7 +229,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(LogicalStage::TessellationControl);
+    stage = u32(Shader::LogicalStage::TessellationControl);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,
@@ -239,7 +237,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(LogicalStage::TessellationEval);
+    stage = u32(Shader::LogicalStage::TessellationEval);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
@@ -247,7 +245,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(LogicalStage::Fragment);
+    stage = u32(Shader::LogicalStage::Fragment);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,

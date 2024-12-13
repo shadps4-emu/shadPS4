@@ -65,38 +65,18 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     // Run optimization passes
     const auto stage = program.info.stage;
 
-    auto dumpMatchingIR = [&](std::string phase) {
-        if (Config::dumpShaders()) {
-            std::string s = IR::DumpProgram(program);
-            using namespace Common::FS;
-            const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-            if (!std::filesystem::exists(dump_dir)) {
-                std::filesystem::create_directories(dump_dir);
-            }
-            const auto filename =
-                fmt::format("{}_{:#018x}.{}.ir.txt", info.stage, info.pgm_hash, phase);
-            const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
-            file.WriteString(s);
-        }
-    };
-
-    dumpMatchingIR("init");
-
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::ConstantPropagationPass(
         program.post_order_blocks); // TODO const fold spam for now while testing
-    if (stage == Stage::Hull) {
+    if (info.l_stage == LogicalStage::TessellationControl) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-        dumpMatchingIR("pre_hull");
         Shader::Optimization::HullShaderTransform(program, runtime_info);
-        dumpMatchingIR("post_hull");
     } else if (info.l_stage == LogicalStage::TessellationEval) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
-        dumpMatchingIR("post_domain");
     }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
@@ -109,7 +89,6 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);
-    dumpMatchingIR("final");
 
     return program;
 }

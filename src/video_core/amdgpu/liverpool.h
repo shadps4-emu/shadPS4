@@ -598,16 +598,6 @@ struct Liverpool {
         BitField<2, 2, IndexSwapMode> swap_mode;
     };
 
-    union MultiVgtParam {
-        u32 raw;
-        BitField<0, 16, u32> primgroup_size;
-        BitField<16, 1, u32> partial_vs_wave_on;
-        BitField<17, 1, u32> switch_on_eop;
-        BitField<18, 1, u32> partial_es_wave_on;
-        BitField<19, 1, u32> switch_on_eoi;
-        BitField<20, 1, u32> wd_switch_on_eop;
-    };
-
     union VgtNumInstances {
         u32 num_instances;
 
@@ -982,7 +972,7 @@ struct Liverpool {
         BitField<3, 2, u32> es_en;
         BitField<5, 1, u32> gs_en;
         BitField<6, 2, u32> vs_en;
-        BitField<8, 24, u32> dynamic_hs; // TODO testing
+        BitField<8, 1, u32> dynamic_hs;
 
         bool IsStageEnabled(u32 stage) const {
             switch (stage) {
@@ -1236,7 +1226,7 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A5 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            MultiVgtParam ia_multi_vgt_param;
+            INSERT_PADDING_WORDS(0xA2AB - 0xA2A9 - 1);
             u32 vgt_esgs_ring_itemsize;
             u32 vgt_gsvs_ring_itemsize;
             INSERT_PADDING_WORDS(0xA2CE - 0xA2AC - 1);
@@ -1487,7 +1477,6 @@ static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_restart) == 0xA2A5);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
-static_assert(GFX6_3D_REG_INDEX(ia_multi_vgt_param) == 0xA2AA);
 static_assert(GFX6_3D_REG_INDEX(vgt_esgs_ring_itemsize) == 0xA2AB);
 static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);

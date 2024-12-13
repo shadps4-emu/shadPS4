@@ -22,7 +22,6 @@ enum class Stage : u32 {
     Local,
     Compute,
 };
-constexpr u32 MaxStageTypes = 7;
 
 // Vertex intentionally comes after TCS/TES due to order of compilation
 enum class LogicalStage : u32 {
@@ -31,10 +30,11 @@ enum class LogicalStage : u32 {
     TessellationEval,
     Vertex,
     Geometry,
-    GsCopy, // TODO delete this, but causes crash somehow (probably wrong use of Shader::Stage
-            // somewhere)
     Compute,
+    NumLogicalStages
 };
+
+constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
 
 [[nodiscard]] constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
