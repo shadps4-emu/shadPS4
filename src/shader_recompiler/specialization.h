@@ -49,6 +49,12 @@ struct FMaskSpecialization {
     auto operator<=>(const FMaskSpecialization&) const = default;
 };
 
+struct SamplerSpecialization {
+    bool force_unnormalized = false;
+
+    auto operator<=>(const SamplerSpecialization&) const = default;
+};
+
 /**
  * Alongside runtime information, this structure also checks bound resources
  * for compatibility. Can be used as a key for storing shader permutations.
@@ -67,6 +73,7 @@ struct StageSpecialization {
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     boost::container::small_vector<FMaskSpecialization, 8> fmasks;
+    boost::container::small_vector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
     explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
@@ -106,6 +113,10 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.width = sharp.width;
                          spec.height = sharp.height;
+                     });
+        ForEachSharp(samplers, info->samplers,
+                     [](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
+                         spec.force_unnormalized = sharp.force_unnormalized;
                      });
     }
 
@@ -172,6 +183,11 @@ struct StageSpecialization {
         }
         for (u32 i = 0; i < fmasks.size(); i++) {
             if (other.bitset[binding++] && fmasks[i] != other.fmasks[i]) {
+                return false;
+            }
+        }
+        for (u32 i = 0; i < samplers.size(); i++) {
+            if (samplers[i] != other.samplers[i]) {
                 return false;
             }
         }

@@ -527,6 +527,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     info.has_lod.Assign(flags.any(MimgModifier::Lod));
     info.is_array.Assign(mimg.da);
+    info.is_unnormalized.Assign(mimg.unrm);
 
     if (gather) {
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);

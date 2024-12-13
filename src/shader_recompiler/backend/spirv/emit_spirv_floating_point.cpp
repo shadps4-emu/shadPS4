@@ -87,6 +87,14 @@ Id EmitFPMul64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return Decorate(ctx, inst, ctx.OpFMul(ctx.F64[1], a, b));
 }
 
+Id EmitFPDiv32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    return Decorate(ctx, inst, ctx.OpFDiv(ctx.F32[1], a, b));
+}
+
+Id EmitFPDiv64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    return Decorate(ctx, inst, ctx.OpFDiv(ctx.F64[1], a, b));
+}
+
 Id EmitFPNeg16(EmitContext& ctx, Id value) {
     return ctx.OpFNegate(ctx.F16[1], value);
 }

@@ -692,6 +692,20 @@ F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
     }
 }
 
+F32F64 IREmitter::FPDiv(const F32F64& a, const F32F64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPDiv32, a, b);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPDiv64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
 F32F64 IREmitter::FPFma(const F32F64& a, const F32F64& b, const F32F64& c) {
     if (a.Type() != b.Type() || a.Type() != c.Type()) {
         UNREACHABLE_MSG("Mismatching types {}, {}, and {}", a.Type(), b.Type(), c.Type());

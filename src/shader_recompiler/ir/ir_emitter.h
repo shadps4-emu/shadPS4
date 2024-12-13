@@ -158,6 +158,7 @@ public:
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPMul(const F32F64& a, const F32F64& b);
+    [[nodiscard]] F32F64 FPDiv(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPFma(const F32F64& a, const F32F64& b, const F32F64& c);
 
     [[nodiscard]] F32F64 FPAbs(const F32F64& value);
