@@ -51,7 +51,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     }
     handle = linker->LoadModule(path, true);
     if (handle == -1) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
     auto* module = linker->GetModule(handle);
     linker->RelocateAnyImports(module);
