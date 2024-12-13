@@ -521,7 +521,6 @@ void SettingsDialog::UpdateSettings() {
 #endif
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
-    ResetInstallFolders();
 }
 
 void SettingsDialog::ResetInstallFolders() {
