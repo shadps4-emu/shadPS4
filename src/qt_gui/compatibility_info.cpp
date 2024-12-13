@@ -141,7 +141,7 @@ bool CompatibilityInfoClass::LoadCompatibilityFile() {
     QFileInfo check_file(m_compatibility_filename);
     const auto modified_delta = QDateTime::currentDateTime() - check_file.lastModified();
     if (!check_file.exists() ||
-        !check_file.isFile() &&
+        !check_file.isFile() ||
             std::chrono::duration_cast<std::chrono::minutes>(modified_delta).count() > 60) {
         return false;
     }

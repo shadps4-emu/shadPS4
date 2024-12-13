@@ -75,7 +75,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
     });
 
-    connect(this, &QTableWidget::cellClicked, this, [=](int row, int column) {
+    connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
         if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
             QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
         }
