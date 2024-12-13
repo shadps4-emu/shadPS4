@@ -179,6 +179,16 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FFBH_U32(inst);
     case Opcode::V_FFBL_B32:
         return V_FFBL_B32(inst);
+    case Opcode::V_FREXP_EXP_I32_F64:
+        return V_FREXP_EXP_I32_F64(inst);
+    case Opcode::V_FREXP_MANT_F64:
+        return V_FREXP_MANT_F64(inst);
+    case Opcode::V_FRACT_F64:
+        return V_FRACT_F64(inst);
+    case Opcode::V_FREXP_EXP_I32_F32:
+        return V_FREXP_EXP_I32_F32(inst);
+    case Opcode::V_FREXP_MANT_F32:
+        return V_FREXP_MANT_F32(inst);
     case Opcode::V_MOVRELD_B32:
         return V_MOVRELD_B32(inst);
     case Opcode::V_MOVRELS_B32:
@@ -733,7 +743,7 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    SetDst(inst.dst[0], ir.Fract(src0));
+    SetDst(inst.dst[0], ir.FPFract(src0));
 }
 
 void Translator::V_TRUNC_F32(const GcnInst& inst) {
@@ -820,6 +830,31 @@ void Translator::V_FFBH_U32(const GcnInst& inst) {
 void Translator::V_FFBL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.FindILsb(src0));
+}
+
+void Translator::V_FREXP_EXP_I32_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpExp(src0));
+}
+
+void Translator::V_FREXP_MANT_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFrexpSig(src0));
+}
+
+void Translator::V_FRACT_F64(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFract(src0));
+}
+
+void Translator::V_FREXP_EXP_I32_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpExp(src0));
+}
+
+void Translator::V_FREXP_MANT_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpSig(src0));
 }
 
 void Translator::V_MOVRELD_B32(const GcnInst& inst) {

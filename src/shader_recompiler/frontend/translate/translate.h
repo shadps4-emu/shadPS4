@@ -200,6 +200,11 @@ public:
     void V_BFREV_B32(const GcnInst& inst);
     void V_FFBH_U32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
+    void V_FREXP_EXP_I32_F64(const GcnInst& inst);
+    void V_FREXP_MANT_F64(const GcnInst& inst);
+    void V_FRACT_F64(const GcnInst& inst);
+    void V_FREXP_EXP_I32_F32(const GcnInst& inst);
+    void V_FREXP_MANT_F32(const GcnInst& inst);
     void V_MOVRELD_B32(const GcnInst& inst);
     void V_MOVRELS_B32(const GcnInst& inst);
     void V_MOVRELSD_B32(const GcnInst& inst);
