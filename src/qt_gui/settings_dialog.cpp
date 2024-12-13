@@ -226,21 +226,21 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     std::error_code error;
-    if (!std::filesystem::exists(userdir / "Config.toml", error)) {
-        Config::load(userdir / "Config.toml");
+    if (!std::filesystem::exists(userdir / "config.toml", error)) {
+        Config::load(userdir / "config.toml");
         return;
     }
 
     try {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        const toml::value data = toml::parse(userdir / "Config.toml");
+        const toml::value data = toml::parse(userdir / "config.toml");
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
 
-    const toml::value data = toml::parse(userdir / "Config.toml");
+    const toml::value data = toml::parse(userdir / "config.toml");
     const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                           15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 
@@ -527,7 +527,7 @@ void SettingsDialog::UpdateSettings() {
 void SettingsDialog::ResetInstallFolders() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    const toml::value data = toml::parse(userdir / "Config.toml");
+    const toml::value data = toml::parse(userdir / "config.toml");
 
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
