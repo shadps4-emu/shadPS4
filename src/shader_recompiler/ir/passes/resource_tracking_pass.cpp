@@ -137,6 +137,35 @@ bool IsImageInstruction(const IR::Inst& inst) {
     }
 }
 
+IR::Value SwizzleVector(IR::IREmitter& ir, auto sharp, IR::Value texel) {
+    boost::container::static_vector<IR::Value, 4> comps;
+    for (u32 i = 0; i < 4; i++) {
+        switch (sharp.GetSwizzle(i)) {
+        case AmdGpu::CompSwizzle::Zero:
+            comps.emplace_back(ir.Imm32(0.f));
+            break;
+        case AmdGpu::CompSwizzle::One:
+            comps.emplace_back(ir.Imm32(1.f));
+            break;
+        case AmdGpu::CompSwizzle::Red:
+            comps.emplace_back(ir.CompositeExtract(texel, 0));
+            break;
+        case AmdGpu::CompSwizzle::Green:
+            comps.emplace_back(ir.CompositeExtract(texel, 1));
+            break;
+        case AmdGpu::CompSwizzle::Blue:
+            comps.emplace_back(ir.CompositeExtract(texel, 2));
+            break;
+        case AmdGpu::CompSwizzle::Alpha:
+            comps.emplace_back(ir.CompositeExtract(texel, 3));
+            break;
+        default:
+            UNREACHABLE();
+        }
+    }
+    return ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
+};
+
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
@@ -388,6 +417,15 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+
+    // Apply dst_sel swizzle on formatted buffer instructions
+    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
+        inst.SetArg(2, SwizzleVector(ir, buffer, inst.Arg(2)));
+    } else {
+        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
+        inst.ReplaceUsesWith(SwizzleVector(ir, buffer, texel));
+    }
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
@@ -731,6 +769,10 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }();
     inst.SetArg(1, coords);
+
+    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
+        inst.SetArg(2, SwizzleVector(ir, image, inst.Arg(2)));
+    }
 
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);

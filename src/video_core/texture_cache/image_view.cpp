@@ -50,34 +50,6 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
     }
 }
 
-bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
-    return (num_components == 1 && dst_sel == 0b001'000'000'100) ||
-           (num_components == 2 && dst_sel == 0b001'000'101'100) ||
-           (num_components == 3 && dst_sel == 0b001'110'101'100) ||
-           (num_components == 4 && dst_sel == 0b111'110'101'100);
-}
-
-vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
-    // BGRA
-    if (dst_sel == 0b111100101110) {
-        switch (format) {
-        case vk::Format::eR8G8B8A8Unorm:
-            return vk::Format::eB8G8R8A8Unorm;
-        case vk::Format::eR8G8B8A8Snorm:
-            return vk::Format::eB8G8R8A8Snorm;
-        case vk::Format::eR8G8B8A8Uint:
-            return vk::Format::eB8G8R8A8Uint;
-        case vk::Format::eR8G8B8A8Sint:
-            return vk::Format::eB8G8R8A8Sint;
-        case vk::Format::eR8G8B8A8Srgb:
-            return vk::Format::eB8G8R8A8Srgb;
-        default:
-            break;
-        }
-    }
-    return format;
-}
-
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
     : is_storage{desc.is_storage} {
     const auto dfmt = image.GetDataFmt();
@@ -119,17 +91,6 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
         mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
         mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
-    }
-    // Check for unfortunate case of storage images being swizzled
-    const u32 num_comps = AmdGpu::NumComponents(image.GetDataFmt());
-    const u32 dst_sel = image.DstSelect();
-    if (is_storage && !IsIdentityMapping(dst_sel, num_comps)) {
-        if (auto new_format = TrySwizzleFormat(format, dst_sel); new_format != format) {
-            format = new_format;
-            return;
-        }
-        LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}", num_comps,
-                  image.DstSelectName());
     }
 }
 
