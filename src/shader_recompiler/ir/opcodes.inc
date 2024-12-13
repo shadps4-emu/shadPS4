@@ -184,6 +184,8 @@ OPCODE(FPMin32,                                             F32,            F32,
 OPCODE(FPMin64,                                             F64,            F64,            F64,                                                            )
 OPCODE(FPMul32,                                             F32,            F32,            F32,                                                            )
 OPCODE(FPMul64,                                             F64,            F64,            F64,                                                            )
+OPCODE(FPDiv32,                                             F32,            F32,            F32,                                                            )
+OPCODE(FPDiv64,                                             F64,            F64,            F64,                                                            )
 OPCODE(FPNeg32,                                             F32,            F32,                                                                            )
 OPCODE(FPNeg64,                                             F64,            F64,                                                                            )
 OPCODE(FPRecip32,                                           F32,            F32,                                                                            )

@@ -189,6 +189,8 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b);
 Id EmitFPMul16(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitFPMul32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitFPMul64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
+Id EmitFPDiv32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
+Id EmitFPDiv64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitFPNeg16(EmitContext& ctx, Id value);
 Id EmitFPNeg32(EmitContext& ctx, Id value);
 Id EmitFPNeg64(EmitContext& ctx, Id value);
