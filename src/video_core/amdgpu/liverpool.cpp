@@ -29,11 +29,11 @@ static_assert(Liverpool::NumComputeRings <= MAX_NAMES);
 
 static const char* acb_task_name[] = NAME_ARRAY(ACB_TASK, MAX_NAMES);
 
-#define YIELD_CE(name)                                                                             \
+#define YIELD_CE()                                                                                 \
     mapped_queues[GfxQueueId].cs_state = regs.cs_program;                                          \
     FIBER_EXIT;                                                                                    \
     co_yield {};                                                                                   \
-    FIBER_ENTER(name);                                                                             \
+    FIBER_ENTER(ccb_task_name);                                                                    \
     regs.cs_program = mapped_queues[GfxQueueId].cs_state
 
 #define YIELD_GFX                                                                                  \
@@ -44,11 +44,11 @@ static const char* acb_task_name[] = NAME_ARRAY(ACB_TASK, MAX_NAMES);
     regs.cs_program = mapped_queues[GfxQueueId].cs_state;
 
 #define YIELD_ASC(id)                                                                              \
-    mapped_queues[id].cs_state = regs.cs_program;                                                  \
+    mapped_queues[id + 1].cs_state = regs.cs_program;                                              \
     FIBER_EXIT;                                                                                    \
     co_yield {};                                                                                   \
     FIBER_ENTER(acb_task_name[id]);                                                                \
-    regs.cs_program = mapped_queues[id].cs_state;
+    regs.cs_program = mapped_queues[id + 1].cs_state;
 
 #define RESUME(task, name)                                                                         \
     FIBER_EXIT;                                                                                    \
@@ -114,7 +114,7 @@ void Liverpool::Process(std::stop_token stoken) {
                 --num_commands;
             }
 
-            qid = (qid + 1) % NumTotalQueues;
+            qid = (qid + 1) % num_mapped_queues;
 
             auto& queue = mapped_queues[qid];
 
@@ -190,7 +190,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         case PM4ItOpcode::WaitOnDeCounterDiff: {
             const auto diff = it_body[0];
             while ((cblock.de_count - cblock.ce_count) >= diff) {
-                YIELD_CE(ccb_task_name);
+                YIELD_CE();
             }
             break;
         }
@@ -198,10 +198,9 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task =
                 ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
-            RESUME(task, ccb_task_name);
 
             while (!task.handle.done()) {
-                YIELD_CE(ccb_task_name);
+                YIELD_CE();
                 RESUME(task, ccb_task_name);
             }
             break;
@@ -229,7 +228,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (!ccb.empty()) {
         // In case of CCB provided kick off CE asap to have the constant heap ready to use
         ce_task = ProcessCeUpdate(ccb);
-        RESUME(ce_task, dcb_task_name);
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
@@ -708,8 +706,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     FIBER_EXIT;
 }
 
-Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
+template <bool is_indirect>
+Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
+    const auto& queue = asc_queues[{vqid}];
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
     while (!acb.empty()) {
@@ -730,7 +730,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task = ProcessCompute(
+            auto task = ProcessCompute<true>(
                 {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
             RESUME(task, acb_task_name[vqid]);
 
@@ -823,7 +823,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
-            release_mem->SignalFence(Platform::InterruptId::Compute0RelMem); // <---
+            release_mem->SignalFence(static_cast<Platform::InterruptId>(queue.pipe_id));
             break;
         }
         default:
@@ -831,7 +831,13 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
                             static_cast<u32>(opcode), count);
         }
 
-        acb = NextPacket(acb, header->type3.NumWords() + 1);
+        const auto packet_size_dw = header->type3.NumWords() + 1;
+        acb = NextPacket(acb, packet_size_dw);
+
+        if constexpr (!is_indirect) {
+            *queue.read_addr += packet_size_dw;
+            *queue.read_addr %= queue.ring_size_dw;
+        }
     }
 
     FIBER_EXIT;
@@ -895,13 +901,15 @@ void Liverpool::SubmitAsc(u32 gnm_vqid, std::span<const u32> acb) {
     ASSERT_MSG(gnm_vqid > 0 && gnm_vqid < NumTotalQueues, "Invalid virtual ASC queue index");
     auto& queue = mapped_queues[gnm_vqid];
 
-    const auto& task = ProcessCompute(acb, gnm_vqid);
+    const auto vqid = gnm_vqid - 1;
+    const auto& task = ProcessCompute(acb, vqid);
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
     }
 
     std::scoped_lock lk{submit_mutex};
+    num_mapped_queues = std::max(num_mapped_queues, gnm_vqid + 1);
     ++num_submits;
     submit_cv.notify_one();
 }

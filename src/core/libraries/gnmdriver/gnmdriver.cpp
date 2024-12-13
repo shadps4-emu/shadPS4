@@ -296,17 +296,12 @@ static_assert(CtxInitSequence400.size() == 0x61);
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
 std::condition_variable cv_lock{};
-static std::mutex m_submission{};
+std::mutex m_submission{};
 static u64 frames_submitted{};      // frame counter
 static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
 static int sdk_version{0};
 
-struct AscQueueInfo {
-    VAddr map_addr;
-    u32* read_addr;
-    u32 ring_size_dw;
-};
-static Common::SlotVector<AscQueueInfo> asc_queues{};
+static u32 asc_next_offs_dw[Liverpool::NumComputeRings];
 static constexpr VAddr tessellation_factors_ring_addr = Core::SYSTEM_RESERVED_MAX - 0xFFFFFFF;
 static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
@@ -506,11 +501,19 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     }
 
     auto vqid = gnm_vqid - 1;
-    auto& asc_queue = asc_queues[{vqid}];
-    const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr + *asc_queue.read_addr);
-    const auto acb_size = next_offs_dw ? (next_offs_dw << 2u) - *asc_queue.read_addr
-                                       : (asc_queue.ring_size_dw << 2u) - *asc_queue.read_addr;
-    const std::span acb_span{acb_ptr, acb_size >> 2u};
+    auto& asc_queue = liverpool->asc_queues[{vqid}];
+
+    const auto& offs_dw = asc_next_offs_dw[vqid];
+
+    if (next_offs_dw < offs_dw) {
+        ASSERT_MSG(next_offs_dw == 0, "ACB submission is split at the end of ring buffer");
+    }
+
+    const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr) + offs_dw;
+    const auto acb_size_dw = (next_offs_dw ? next_offs_dw : asc_queue.ring_size_dw) - offs_dw;
+    const std::span acb_span{acb_ptr, acb_size_dw};
+
+    asc_next_offs_dw[vqid] = next_offs_dw;
 
     if (DebugState.DumpingCurrentFrame()) {
         static auto last_frame_num = -1LL;
@@ -545,9 +548,6 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         });
     }
     liverpool->SubmitAsc(gnm_vqid, acb_span);
-
-    *asc_queue.read_addr += acb_size;
-    *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
 void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id) {
@@ -1266,11 +1266,15 @@ int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_bas
         return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_READ_PTR_ADDR;
     }
 
-    auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw);
+    const auto vqid =
+        liverpool->asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw, pipe_id);
     // We need to offset index as `dingDong` assumes it to be from the range [1..64]
     const auto gnm_vqid = vqid.index + 1;
     LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
              gnm_vqid);
+
+    const auto& queue = liverpool->asc_queues[vqid];
+    *queue.read_addr = 0u;
 
     return gnm_vqid;
 }

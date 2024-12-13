@@ -16,6 +16,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
+#include "common/slot_vector.h"
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
@@ -1342,6 +1343,14 @@ public:
         gfx_queue.dcb_buffer.reserve(GfxReservedSize);
     }
 
+    struct AscQueueInfo {
+        VAddr map_addr;
+        u32* read_addr;
+        u32 ring_size_dw;
+        u32 pipe_id;
+    };
+    Common::SlotVector<AscQueueInfo> asc_queues{};
+
 private:
     struct Task {
         struct promise_type {
@@ -1379,7 +1388,8 @@ private:
                                                                          std::span<const u32> ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
-    Task ProcessCompute(std::span<const u32> acb, int vqid);
+    template <bool is_indirect = false>
+    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
 
     void Process(std::stop_token stoken);
 
@@ -1394,6 +1404,7 @@ private:
         VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
+    u32 num_mapped_queues{1u}; // GFX is always available
 
     struct ConstantEngine {
         void Reset() {
