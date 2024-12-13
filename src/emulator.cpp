@@ -266,7 +266,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
+    constexpr std::array<SysModules, 13> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", &Libraries::Fiber::RegisterlibSceFiber},
          {"libSceUlt.sprx", nullptr},
@@ -276,7 +276,10 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterlibSceJpegEnc},
-         {"libSceCesCs.sprx", nullptr}}};
+         {"libSceCesCs.sprx", nullptr},
+         {"libSceFont.sprx", nullptr},
+         {"libSceFontFt.sprx", nullptr},
+         {"libSceFreeTypeOt.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);

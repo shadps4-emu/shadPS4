@@ -616,18 +616,24 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         auto& [image_id, desc] = image_bindings.emplace_back(std::piecewise_construct, std::tuple{},
                                                              std::tuple{tsharp, image_desc});
         image_id = texture_cache.FindImage(desc);
-        auto& image = texture_cache.GetImage(image_id);
-        if (image.binding.is_bound) {
+        auto* image = &texture_cache.GetImage(image_id);
+        if (image->depth_id) {
+            // If this image has an associated depth image, it's a stencil attachment.
+            // Redirect the access to the actual depth-stencil buffer.
+            image_id = image->depth_id;
+            image = &texture_cache.GetImage(image_id);
+        }
+        if (image->binding.is_bound) {
             // The image is already bound. In case if it is about to be used as storage we need
             // to force general layout on it.
-            image.binding.force_general |= image_desc.is_storage;
+            image->binding.force_general |= image_desc.is_storage;
         }
-        if (image.binding.is_target) {
+        if (image->binding.is_target) {
             // The image is already bound as target. Since we read and output to it need to force
             // general layout too.
-            image.binding.force_general = 1u;
+            image->binding.force_general = 1u;
         }
-        image.binding.is_bound = 1u;
+        image->binding.is_bound = 1u;
     }
 
     // Second pass to re-bind images that were updated after binding
