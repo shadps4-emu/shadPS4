@@ -107,7 +107,7 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.type = sharp.GetBoundType();
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         if (desc.is_storage && !sharp.CanSwizzleWithFormat()) {
+                         if (desc.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
                      });

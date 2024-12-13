@@ -749,7 +749,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }();
     inst.SetArg(1, coords);
 
-    if (inst.GetOpcode() == IR::Opcode::ImageWrite && !image.CanSwizzleWithFormat()) {
+    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
         inst.SetArg(2, SwizzleVector(ir, image, inst.Arg(2)));
     }
 

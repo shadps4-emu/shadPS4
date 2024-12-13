@@ -208,14 +208,6 @@ struct Image {
         return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
     }
 
-    bool CanSwizzleWithFormat() const {
-        // BGRA
-        if (DstSelect() == 0b111100101110 && GetDataFmt() == DataFormat::Format8_8_8_8) {
-            return true;
-        }
-        return false;
-    }
-
     CompSwizzle GetSwizzle(u32 comp) const noexcept {
         const std::array select{dst_sel_x, dst_sel_y, dst_sel_z, dst_sel_w};
         return static_cast<CompSwizzle>(select[comp]);
