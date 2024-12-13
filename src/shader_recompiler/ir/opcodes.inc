@@ -210,7 +210,12 @@ OPCODE(FPCeil32,                                            F32,            F32,
 OPCODE(FPCeil64,                                            F64,            F64,                                                                            )
 OPCODE(FPTrunc32,                                           F32,            F32,                                                                            )
 OPCODE(FPTrunc64,                                           F64,            F64,                                                                            )
-OPCODE(FPFract,                                             F32,            F32,                                                                            )
+OPCODE(FPFract32,                                           F32,            F32,                                                                            )
+OPCODE(FPFract64,                                           F64,            F64,                                                                            )
+OPCODE(FPFrexpSig32,                                        F32,            F32,                                                                            )
+OPCODE(FPFrexpSig64,                                        F64,            F64,                                                                            )
+OPCODE(FPFrexpExp32,                                        U32,            F32,                                                                            )
+OPCODE(FPFrexpExp64,                                        U32,            F64,                                                                            )
 
 OPCODE(FPOrdEqual32,                                        U1,             F32,            F32,                                                            )
 OPCODE(FPOrdEqual64,                                        U1,             F64,            F64,                                                            )

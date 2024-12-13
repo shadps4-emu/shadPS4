@@ -869,8 +869,37 @@ F32F64 IREmitter::FPTrunc(const F32F64& value) {
     }
 }
 
-F32 IREmitter::Fract(const F32& value) {
-    return Inst<F32>(Opcode::FPFract, value);
+F32F64 IREmitter::FPFract(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFract32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFract64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+F32F64 IREmitter::FPFrexpSig(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFrexpSig32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFrexpSig64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+U32 IREmitter::FPFrexpExp(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<U32>(Opcode::FPFrexpExp32, value);
+    case Type::F64:
+        return Inst<U32>(Opcode::FPFrexpExp64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U1 IREmitter::FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {

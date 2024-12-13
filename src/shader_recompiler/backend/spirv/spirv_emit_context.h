@@ -148,6 +148,8 @@ public:
 
     Id full_result_i32x2;
     Id full_result_u32x2;
+    Id frexp_result_f32;
+    Id frexp_result_f64;
 
     Id pi_x2;
 
