@@ -420,36 +420,35 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                  Descriptors& descriptors, const IR::Inst* producer,
                                  const u32 image_binding, const AmdGpu::Image& image) {
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    const auto sampler_binding = [&] -> std::pair<u32, AmdGpu::Sampler> {
+    const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
         ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
         const IR::Value& handle = producer->Arg(1);
         // Inline sampler resource.
         if (handle.IsImmediate()) {
             LOG_WARNING(Render_Vulkan, "Inline sampler detected");
             const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
-            return {descriptors.Add(SamplerResource{
-                        .sharp_idx = std::numeric_limits<u32>::max(),
-                        .inline_sampler = inline_sampler,
-                    }),
-                    inline_sampler};
+            const auto binding = descriptors.Add(SamplerResource{
+                .sharp_idx = std::numeric_limits<u32>::max(),
+                .inline_sampler = inline_sampler,
+            });
+            return {binding, inline_sampler};
         }
         // Normal sampler resource.
         const auto ssharp_handle = handle.InstRecursive();
         const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
         const auto ssharp = TrackSharp(ssharp_ud, info);
-        return {descriptors.Add(SamplerResource{
-                    .sharp_idx = ssharp,
-                    .associated_image = image_binding,
-                    .disable_aniso = disable_aniso,
-                }),
-                info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
+        const auto binding = descriptors.Add(SamplerResource{
+            .sharp_idx = ssharp,
+            .associated_image = image_binding,
+            .disable_aniso = disable_aniso,
+        });
+        return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
     }();
-    const auto& sampler = sampler_binding.second;
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const IR::U32 handle = ir.Imm32(image_binding | sampler_binding.first << 16);
+    const IR::U32 handle = ir.Imm32(image_binding | sampler_binding << 16);
 
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
@@ -549,7 +548,8 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const auto dimensions =
         unnormalized ? ir.ImageQueryDimension(ir.Imm32(image_binding), ir.Imm32(0u), ir.Imm1(false))
                      : IR::Value{};
-    const auto fix_coord = [&](IR::F32 coord, u32 dim_idx) -> IR::Value {
+    const auto get_coord = [&](u32 idx, u32 dim_idx) -> IR::Value {
+        const auto coord = get_addr_reg(idx);
         if (unnormalized) {
             // Normalize the coordinate for sampling, dividing by its corresponding dimension.
             return ir.FPDiv(coord,
@@ -563,29 +563,25 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D: // x
             addr_reg = addr_reg + 1;
-            return fix_coord(get_addr_reg(addr_reg - 1), 0);
+            return get_coord(addr_reg - 1, 0);
         case AmdGpu::ImageType::Color1DArray: // x, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color2D: // x, y
             addr_reg = addr_reg + 2;
-            return ir.CompositeConstruct(fix_coord(get_addr_reg(addr_reg - 2), 0),
-                                         fix_coord(get_addr_reg(addr_reg - 1), 1));
+            return ir.CompositeConstruct(get_coord(addr_reg - 2, 0), get_coord(addr_reg - 1, 1));
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
             addr_reg = addr_reg + 3;
-            return ir.CompositeConstruct(fix_coord(get_addr_reg(addr_reg - 3), 0),
-                                         fix_coord(get_addr_reg(addr_reg - 2), 1),
+            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_addr_reg(addr_reg - 1));
         case AmdGpu::ImageType::Color3D: // x, y, z
             addr_reg = addr_reg + 3;
-            return ir.CompositeConstruct(fix_coord(get_addr_reg(addr_reg - 3), 0),
-                                         fix_coord(get_addr_reg(addr_reg - 2), 1),
-                                         fix_coord(get_addr_reg(addr_reg - 1), 2));
+            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
+                                         get_coord(addr_reg - 1, 2));
         case AmdGpu::ImageType::Cube: // x, y, face
             addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, fix_coord(get_addr_reg(addr_reg - 3), 0),
-                                  fix_coord(get_addr_reg(addr_reg - 2), 1),
+            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                   get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
