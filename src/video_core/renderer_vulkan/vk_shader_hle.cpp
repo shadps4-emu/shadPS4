@@ -60,7 +60,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
     static constexpr vk::DeviceSize MaxDistanceForMerge = 64_MB;
     u32 batch_start = 0;
-    u32 batch_end = copies.size() > 1 ? 1 : 0;
+    u32 batch_end = 0;
 
     while (batch_end < copies.size()) {
         // Place first copy into the current batch
@@ -70,19 +70,19 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
         auto dst_offset_min = copy.dstOffset;
         auto dst_offset_max = copy.dstOffset + copy.size;
 
-        for (int i = batch_start + 1; i < copies.size(); i++) {
+        for (++batch_end; batch_end < copies.size(); batch_end++) {
             // Compute new src and dst bounds if we were to batch this copy
-            const auto& [src_offset, dst_offset, size] = copies[i];
+            const auto& [src_offset, dst_offset, size] = copies[batch_end];
             auto new_src_offset_min = std::min(src_offset_min, src_offset);
             auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
             if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
-                continue;
+                break;
             }
 
             auto new_dst_offset_min = std::min(dst_offset_min, dst_offset);
             auto new_dst_offset_max = std::max(dst_offset_max, dst_offset + size);
             if (new_dst_offset_max - new_dst_offset_min > MaxDistanceForMerge) {
-                continue;
+                break;
             }
 
             // We can batch this copy
@@ -90,10 +90,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
             src_offset_max = new_src_offset_max;
             dst_offset_min = new_dst_offset_min;
             dst_offset_max = new_dst_offset_max;
-            if (i != batch_end) {
-                std::swap(copies[i], copies[batch_end]);
-            }
-            ++batch_end;
         }
 
         // Obtain buffers for the total source and destination ranges.
@@ -116,7 +112,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
                   src_offset_max - src_offset_min, dst_offset_max - dst_offset_min);
         scheduler.CommandBuffer().copyBuffer(src_buf->Handle(), dst_buf->Handle(), vk_copies);
         batch_start = batch_end;
-        ++batch_end;
     }
 
     scheduler.CommandBuffer().pipelineBarrier(
