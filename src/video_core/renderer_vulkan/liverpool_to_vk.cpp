@@ -699,15 +699,6 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         default:
             break;
         }
-    } else if (comp_swap_reverse) {
-        switch (base_format) {
-        case vk::Format::eR8G8B8A8Unorm:
-            return vk::Format::eA8B8G8R8UnormPack32;
-        case vk::Format::eR8G8B8A8Srgb:
-            return vk::Format::eA8B8G8R8SrgbPack32;
-        default:
-            break;
-        }
     }
     return base_format;
 }
