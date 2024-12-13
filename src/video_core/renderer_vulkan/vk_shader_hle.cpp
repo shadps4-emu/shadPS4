@@ -70,9 +70,9 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
         auto dst_offset_min = copy.dstOffset;
         auto dst_offset_max = copy.dstOffset + copy.size;
 
-        for (int i = batch_start + 1; i < copies.size(); i++) {
+        for (++batch_end; batch_end < copies.size(); batch_end++) {
             // Compute new src and dst bounds if we were to batch this copy
-            const auto& [src_offset, dst_offset, size] = copies[i];
+            const auto& [src_offset, dst_offset, size] = copies[batch_end];
             auto new_src_offset_min = std::min(src_offset_min, src_offset);
             auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
             if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
@@ -90,7 +90,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
             src_offset_max = new_src_offset_max;
             dst_offset_min = new_dst_offset_min;
             dst_offset_max = new_dst_offset_max;
-            batch_end = i;
         }
 
         // Obtain buffers for the total source and destination ranges.
@@ -102,7 +101,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
                                       dst_offset_max - dst_offset_min, true, false);
 
         // Apply found buffer base.
-        const auto vk_copies = std::span{copies}.subspan(batch_start, ++batch_end - batch_start);
+        const auto vk_copies = std::span{copies}.subspan(batch_start, batch_end - batch_start);
         for (auto& copy : vk_copies) {
             copy.srcOffset = copy.srcOffset - src_offset_min + src_buf_offset;
             copy.dstOffset = copy.dstOffset - dst_offset_min + dst_buf_offset;
