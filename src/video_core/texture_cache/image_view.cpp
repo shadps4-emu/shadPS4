@@ -124,12 +124,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     const u32 num_comps = AmdGpu::NumComponents(image.GetDataFmt());
     const u32 dst_sel = image.DstSelect();
     if (is_storage && !IsIdentityMapping(dst_sel, num_comps)) {
-        if (auto new_format = TrySwizzleFormat(format, dst_sel); new_format != format) {
-            format = new_format;
-            return;
-        }
-        LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}", num_comps,
-                  image.DstSelectName());
+        format = TrySwizzleFormat(format, dst_sel);
     }
 }
 
