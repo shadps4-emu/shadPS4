@@ -62,7 +62,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
     u32 batch_start = 0;
     u32 batch_end = 0;
 
-    while (batch_start < copies.size()) {
+    while (batch_end < copies.size()) {
         // Place first copy into the current batch
         const auto& copy = copies[batch_start];
         auto src_offset_min = copy.srcOffset;
@@ -70,22 +70,19 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
         auto dst_offset_min = copy.dstOffset;
         auto dst_offset_max = copy.dstOffset + copy.size;
 
-        u32 skip_start = 0;
         for (int i = batch_start + 1; i < copies.size(); i++) {
             // Compute new src and dst bounds if we were to batch this copy
             const auto& [src_offset, dst_offset, size] = copies[i];
             auto new_src_offset_min = std::min(src_offset_min, src_offset);
             auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
             if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
-                skip_start = skip_start == 0 ? i : skip_start;
-                continue;
+                break;
             }
 
             auto new_dst_offset_min = std::min(dst_offset_min, dst_offset);
             auto new_dst_offset_max = std::max(dst_offset_max, dst_offset + size);
             if (new_dst_offset_max - new_dst_offset_min > MaxDistanceForMerge) {
-                skip_start = skip_start == 0 ? i : skip_start;
-                continue;
+                break;
             }
 
             // We can batch this copy
@@ -94,19 +91,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
             dst_offset_min = new_dst_offset_min;
             dst_offset_max = new_dst_offset_max;
             batch_end = i;
-
-            if (skip_start != 0) {
-                std::swap(copies[i], copies[skip_start]);
-                batch_end = skip_start;
-
-                // Restore skipped copies order if we skipped more than one
-                if (skip_start + 1 != i) {
-                    auto it = copies.begin();
-                    std::reverse(it + (batch_end + 1), it + i);
-                }
-
-                ++skip_start;
-            }
         }
 
         // Obtain buffers for the total source and destination ranges.
