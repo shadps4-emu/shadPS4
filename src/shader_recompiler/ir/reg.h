@@ -40,7 +40,8 @@ union TextureInstInfo {
     BitField<6, 2, u32> gather_comp;
     BitField<8, 1, u32> has_derivatives;
     BitField<9, 1, u32> is_array;
-    BitField<10, 1, u32> is_gather;
+    BitField<10, 1, u32> is_unnormalized;
+    BitField<11, 1, u32> is_gather;
 };
 
 union BufferInstInfo {

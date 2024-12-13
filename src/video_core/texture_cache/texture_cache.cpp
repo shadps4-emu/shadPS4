@@ -443,6 +443,27 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
         }
     }
 
+    // If there is a stencil attachment, link depth and stencil.
+    if (desc.info.stencil_addr != 0) {
+        ImageId stencil_id{};
+        ForEachImageInRegion(desc.info.stencil_addr, desc.info.stencil_size,
+                             [&](ImageId image_id, Image& image) {
+                                 if (image.info.guest_address == desc.info.stencil_addr) {
+                                     stencil_id = image_id;
+                                 }
+                             });
+        if (!stencil_id) {
+            ImageInfo info{};
+            info.guest_address = desc.info.stencil_addr;
+            info.guest_size_bytes = desc.info.stencil_size;
+            info.size = desc.info.size;
+            stencil_id = slot_images.insert(instance, scheduler, info);
+            RegisterImage(stencil_id);
+        }
+        Image& image = slot_images[stencil_id];
+        image.AssociateDepth(image_id);
+    }
+
     return RegisterImageView(image_id, desc.view_info);
 }
 

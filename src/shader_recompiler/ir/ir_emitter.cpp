@@ -692,6 +692,20 @@ F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
     }
 }
 
+F32F64 IREmitter::FPDiv(const F32F64& a, const F32F64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPDiv32, a, b);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPDiv64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
 F32F64 IREmitter::FPFma(const F32F64& a, const F32F64& b, const F32F64& c) {
     if (a.Type() != b.Type() || a.Type() != c.Type()) {
         UNREACHABLE_MSG("Mismatching types {}, {}, and {}", a.Type(), b.Type(), c.Type());
@@ -855,8 +869,37 @@ F32F64 IREmitter::FPTrunc(const F32F64& value) {
     }
 }
 
-F32 IREmitter::Fract(const F32& value) {
-    return Inst<F32>(Opcode::FPFract, value);
+F32F64 IREmitter::FPFract(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFract32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFract64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+F32F64 IREmitter::FPFrexpSig(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFrexpSig32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFrexpSig64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+U32 IREmitter::FPFrexpExp(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<U32>(Opcode::FPFrexpExp32, value);
+    case Type::F64:
+        return Inst<U32>(Opcode::FPFrexpExp64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U1 IREmitter::FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {

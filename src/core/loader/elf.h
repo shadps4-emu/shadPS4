@@ -347,8 +347,10 @@ struct elf_program_id_header {
 constexpr s64 DT_NULL = 0;
 constexpr s64 DT_NEEDED = 0x00000001;
 constexpr s64 DT_RELA = 0x00000007;
+constexpr s64 DT_STRSZ = 0x00000009;
 constexpr s64 DT_INIT = 0x0000000c;
 constexpr s64 DT_FINI = 0x0000000d;
+constexpr s64 DT_SONAME = 0x0000000e;
 constexpr s64 DT_DEBUG = 0x00000015;
 constexpr s64 DT_TEXTREL = 0x00000016;
 constexpr s64 DT_INIT_ARRAY = 0x00000019;
@@ -365,6 +367,7 @@ constexpr s64 DT_SCE_NEEDED_MODULE = 0x6100000f;
 constexpr s64 DT_SCE_MODULE_ATTR = 0x61000011;
 constexpr s64 DT_SCE_EXPORT_LIB = 0x61000013;
 constexpr s64 DT_SCE_IMPORT_LIB = 0x61000015;
+constexpr s64 DT_SCE_EXPORT_LIB_ATTR = 0x61000017;
 constexpr s64 DT_SCE_IMPORT_LIB_ATTR = 0x61000019;
 constexpr s64 DT_SCE_HASH = 0x61000025;
 constexpr s64 DT_SCE_PLTGOT = 0x61000027;
@@ -457,6 +460,20 @@ struct eh_frame_hdr {
     uint32_t eh_frame_ptr;
     uint32_t fde_count;
 };
+
+// Values for DT_SCE_MODULE_ATTR
+constexpr u32 MODULE_ATTR_NONE = 0x00;
+constexpr u32 MODULE_ATTR_SCE_CANT_STOP = 0x01;
+constexpr u32 MODULE_ATTR_SCE_EXCLUSIVE_LOAD = 0x02;
+constexpr u32 MODULE_ATTR_SCE_EXCLUSIVE_START = 0x04;
+constexpr u32 MODULE_ATTR_SCE_CAN_RESTART = 0x08;
+constexpr u32 MODULE_ATTR_SCE_CAN_RELOCATE = 0x10;
+constexpr u32 MODULE_ATTR_SCE_CANT_SHARE = 0x20;
+
+// Values for DT_SCE_IMPORT_LIB_ATTR & DT_SCE_EXPORT_LIB_ATTR
+constexpr u32 LIB_ATTR_AUTO_EXPORT = 0x01;
+constexpr u32 LIB_ATTR_WEAK_EXPORT = 0x02;
+constexpr u32 LIB_ATTR_LOOSE_IMPORT = 0x08;
 
 namespace Core::Loader {
 

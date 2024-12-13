@@ -215,6 +215,37 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             }
             break;
         }
+        case PT_SCE_LIBVERSION:
+            // contains list of used libraries and binary version in format:
+            // u8 size; name[size-5]; ':'; u32 version
+            LOG_INFO(Core_Linker, "PT_SCE_LIBVERSION unused blob: offset = {:#x}, size = {}",
+                     elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+            break;
+        case PT_SCE_MODULE_PARAM:
+            // contains unknown struct, first u32 - sizeof this struct, currently unused
+            LOG_INFO(Core_Linker, "PT_SCE_MODULE_PARAM unused blob: offset = {:#x}, size = {}",
+                     elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+            break;
+        case PT_SCE_COMMENT:
+            // Contains path to compiled executable, unused
+            LOG_INFO(Core_Linker, "PT_SCE_COMMENT unused blob: offset = {:#x}, size = {}",
+                     elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+            break;
+        case PT_INTERP: {
+            std::vector<char> interpeter_path(elf_pheader[i].p_filesz);
+            const VAddr segment_addr = std::bit_cast<VAddr>(interpeter_path.data());
+            elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+            LOG_INFO(Core_Linker, "Interpreter: {}", interpeter_path.data());
+            break;
+        }
+        case PT_NOTE:
+            if (elf_pheader[i].p_offset && elf_pheader[i].p_filesz) {
+                std::vector<char> note(elf_pheader[i].p_filesz);
+                const VAddr segment_addr = std::bit_cast<VAddr>(note.data());
+                elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+                LOG_INFO(Core_Linker, "note: {}", note.data());
+            }
+            break;
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }
@@ -230,6 +261,46 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             MemoryPatcher::OnGameLoaded();
         }
     }
+}
+
+static std::string_view ModuleAttrString(u32 module_attr) {
+    switch (module_attr) {
+    case MODULE_ATTR_NONE:
+        return "NONE";
+    case MODULE_ATTR_SCE_CANT_STOP:
+        return "SCE_CANT_STOP";
+    case MODULE_ATTR_SCE_EXCLUSIVE_LOAD:
+        return "SCE_EXCLUSIVE_LOAD";
+    case MODULE_ATTR_SCE_EXCLUSIVE_START:
+        return "SCE_EXCLUSIVE_START";
+    case MODULE_ATTR_SCE_CAN_RESTART:
+        return "SCE_CAN_RESTART";
+    case MODULE_ATTR_SCE_CAN_RELOCATE:
+        return "SCE_CAN_RESTART";
+    case MODULE_ATTR_SCE_CANT_SHARE:
+        return "SCE_CANT_SHARE";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static std::string LibAttrString(u32 lib_attr) {
+    std::vector<std::string> strings;
+
+    if (lib_attr & LIB_ATTR_AUTO_EXPORT)
+        strings.push_back("AUTO_EXPORT");
+    if (lib_attr & LIB_ATTR_WEAK_EXPORT)
+        strings.push_back("WEAK_EXPORT");
+    if (lib_attr & LIB_ATTR_LOOSE_IMPORT)
+        strings.push_back("LOOSE_IMPORT");
+
+    std::string result;
+    for (const auto& str : strings) {
+        if (!result.empty())
+            result += "|";
+        result += str;
+    }
+    return result;
 }
 
 void Module::LoadDynamicInfo() {
@@ -326,7 +397,8 @@ void Module::LoadDynamicInfo() {
             dynamic_info.flags = dyn->d_un.d_val;
             // This value should always be DF_TEXTREL (0x04)
             if (dynamic_info.flags != 0x04) {
-                LOG_WARNING(Core_Linker, "DT_FLAGS is NOT 0x04 should check!");
+                LOG_WARNING(Core_Linker, "DT_FLAGS is NOT 0x04 should check! Current: {:#x}",
+                            dynamic_info.flags);
             }
             break;
         case DT_NEEDED:
@@ -336,6 +408,14 @@ void Module::LoadDynamicInfo() {
                 dynamic_info.needed.push_back(dynamic_info.str_table + dyn->d_un.d_val);
             } else {
                 LOG_ERROR(Core_Linker, "DT_NEEDED str table is not loaded should check!");
+            }
+            break;
+        case DT_SONAME:
+            if (dynamic_info.str_table) {
+                LOG_INFO(Core_Linker, "DT_SONAME value = {}",
+                         dynamic_info.str_table + dyn->d_un.d_val);
+            } else {
+                LOG_ERROR(Core_Linker, "DT_SONAME str table is not loaded should check!");
             }
             break;
         case DT_SCE_NEEDED_MODULE: {
@@ -357,14 +437,18 @@ void Module::LoadDynamicInfo() {
             // the given app. How exactly this is generated isn't known, however it is not necessary
             // to have a valid fingerprint. While an invalid fingerprint will cause a warning to be
             // printed to the kernel log, the ELF will still load and run.
-            LOG_INFO(Core_Linker, "DT_SCE_FINGERPRINT value = {:#018x}", dyn->d_un.d_val);
+            LOG_DEBUG(Core_Linker, "DT_SCE_FINGERPRINT value = {:#018x}", dyn->d_un.d_val);
             std::memcpy(info.fingerprint.data(), &dyn->d_un.d_val, sizeof(SCE_DBG_NUM_FINGERPRINT));
             break;
         case DT_SCE_IMPORT_LIB_ATTR:
             // The upper 32-bits should contain the module index multiplied by 0x10000. The lower
-            // 32-bits should be a constant 0x9.
-            LOG_INFO(Core_Linker, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ......: {:#018x}",
-                     dyn->d_un.d_val);
+            // 32-bits library attributes flag.
+            LOG_DEBUG(Core_Linker, "DT_SCE_IMPORT_LIB_ATTR Library ID: {:#02x}, value = {}",
+                      dyn->d_un.d_val >> 48, LibAttrString(dyn->d_un.d_val & 0xFFFFFFFF));
+            break;
+        case DT_SCE_EXPORT_LIB_ATTR:
+            LOG_DEBUG(Core_Linker, "DT_SCE_EXPORT_LIB_ATTR Library ID: {:#02x}, value = {}",
+                      dyn->d_un.d_val >> 48, LibAttrString(dyn->d_un.d_val & 0xFFFFFFFF));
             break;
         case DT_SCE_ORIGINAL_FILENAME:
             dynamic_info.filename = dynamic_info.str_table + dyn->d_un.d_val;
@@ -379,8 +463,8 @@ void Module::LoadDynamicInfo() {
             break;
         };
         case DT_SCE_MODULE_ATTR:
-            LOG_INFO(Core_Linker, "unsupported DT_SCE_MODULE_ATTR value = ..........: {:#018x}",
-                     dyn->d_un.d_val);
+            LOG_INFO(Core_Linker, "DT_SCE_MODULE_ATTR value = {}",
+                     ModuleAttrString(dyn->d_un.d_val & 0xFFFFFFFF));
             break;
         case DT_SCE_EXPORT_LIB: {
             LibraryInfo& info = dynamic_info.export_libs.emplace_back();
@@ -389,6 +473,10 @@ void Module::LoadDynamicInfo() {
             info.enc_id = EncodeId(info.id);
             break;
         }
+        case DT_STRSZ:
+            LOG_INFO(Core_Linker, "unsupported DT_STRSZ value = ..........: {:#018x}",
+                     dyn->d_un.d_val);
+            break;
         default:
             LOG_INFO(Core_Linker, "unsupported dynamic tag ..........: {:#018x}", dyn->d_tag);
         }

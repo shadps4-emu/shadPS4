@@ -147,6 +147,10 @@ void EmitContext::DefineArithmeticTypes() {
 
     full_result_i32x2 = Name(TypeStruct(S32[1], S32[1]), "full_result_i32x2");
     full_result_u32x2 = Name(TypeStruct(U32[1], U32[1]), "full_result_u32x2");
+    frexp_result_f32 = Name(TypeStruct(F32[1], U32[1]), "frexp_result_f32");
+    if (info.uses_fp64) {
+        frexp_result_f64 = Name(TypeStruct(F64[1], U32[1]), "frexp_result_f64");
+    }
 }
 
 void EmitContext::DefineInterfaces() {

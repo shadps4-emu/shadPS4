@@ -971,7 +971,7 @@ s32 PS4_SYSV_ABI sceGnmFindResourcesPublic() {
 }
 
 void PS4_SYSV_ABI sceGnmFlushGarlic() {
-    LOG_WARNING(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "(STUBBED) called");
 }
 
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress() {
