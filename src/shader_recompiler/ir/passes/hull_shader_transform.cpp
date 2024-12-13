@@ -336,7 +336,7 @@ static IR::F32 ReadTessInputComponent(IR::U32 addr, const u32 stride, IR::IREmit
 } // namespace
 
 void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
-    Info& info = program.info;
+    const Info& info = program.info;
 
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
@@ -366,19 +366,31 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
 
                 const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
-                    ASSERT(gcn_factor_idx * 4 < runtime_info.hs_info.tess_factor_stride);
-
-                    switch (runtime_info.hs_info.tess_factor_stride) {
-                    case 24:
+                    // The hull outputs tess factors in different formats depending on the shader.
+                    // For triangle domains, it seems to pack the entries into 4 consecutive floats,
+                    // with the 3 edge factors followed by the 1 interior factor.
+                    // For quads, it does the expected 4 edge factors then 2 interior.
+                    // There is a tess factor stride member of the GNMX hull constants struct in
+                    // a hull program shader binary archive, but this doesn't seem to be
+                    // communicated to the driver. The fixed function tessellator would need to know
+                    // this somehow. It's probably implied by the type of the abstract domain. If
+                    // this is causing problems, good idea to check the hs_regs argument to
+                    // sceGnmSetHsShader. The memory containing the tess factor stride probably
+                    // follows the memory for hs_regs if the app is providing a pointer into the
+                    // program they loaded from disk
+                    switch (runtime_info.hs_info.tess_type) {
+                    case AmdGpu::TessellationType::Quad:
+                        ASSERT(gcn_factor_idx < 6);
                         return IR::PatchFactor(gcn_factor_idx);
-                    case 16:
+                    case AmdGpu::TessellationType::Triangle:
+                        ASSERT(gcn_factor_idx < 4);
                         if (gcn_factor_idx == 3) {
                             return IR::Patch::TessellationLodInteriorU;
                         }
                         return IR::PatchFactor(gcn_factor_idx);
-
                     default:
-                        UNREACHABLE_MSG("Unhandled tess factor stride");
+                        // TODO point domain types haven't been seen so far
+                        UNREACHABLE_MSG("Unhandled tess type");
                     }
                 };
 

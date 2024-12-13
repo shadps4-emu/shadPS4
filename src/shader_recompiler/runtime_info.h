@@ -104,36 +104,40 @@ struct VertexRuntimeInfo {
 
 struct HullRuntimeInfo {
     // from registers
-    u32 output_control_points;
-
-    // from HullStateConstants in HsProgram (TODO dont rely on this)
-    u32 tess_factor_stride;
+    u32 num_input_control_points;
+    u32 num_threads;
+    AmdGpu::TessellationType tess_type;
 
     // from tess constants buffer
     u32 ls_stride;
     u32 hs_output_cp_stride;
-    u32 hs_num_patch;
     u32 hs_output_base;
-    u32 patch_const_size;
-    u32 patch_const_base;
-    u32 patch_output_size;
-    u32 first_edge_tess_factor_index;
 
     auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
 
+    // It might be possible for a non-passthrough TCS to have these conditions, in some
+    // dumb situation.
+    // In that case, it should be fine to assume passthrough and declare some extra
+    // output control points and attributes that shouldnt be read by the TES anyways
+    //
+    // TODO now having patch control points dynamic state is kind of pointless if we depend on
+    // num_input_control_points
     bool IsPassthrough() const {
-        return hs_output_base == 0;
+        return hs_output_base == 0 && num_threads == 1;
     };
+
+    // regs.ls_hs_config.hs_output_control_points contains the number of threads, which
+    // isn't exactly the number of output control points.
+    // For passthrough shaders, the register field is set to 1, so use the number of
+    // input control points
+    u32 NumOutputControlPoints() const {
+        return IsPassthrough() ? num_input_control_points : num_threads;
+    }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
         ls_stride = tess_constants.m_lsStride;
         hs_output_cp_stride = tess_constants.m_hsCpStride;
-        hs_num_patch = tess_constants.m_hsNumPatch;
         hs_output_base = tess_constants.m_hsOutputBase;
-        patch_const_size = tess_constants.m_patchConstSize;
-        patch_const_base = tess_constants.m_patchConstBase;
-        patch_output_size = tess_constants.m_patchOutputSize;
-        first_edge_tess_factor_index = tess_constants.m_firstEdgeTessFactorIndex;
     }
 };
 

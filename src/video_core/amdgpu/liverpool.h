@@ -143,20 +143,11 @@ struct Liverpool {
         }
     };
 
-    struct HsStageRegisters {
-        u32 vgt_tf_param;
-        u32 vgt_hos_max_tess_level;
-        u32 vgt_hos_min_tess_level;
-    };
-
-    struct HsConstants {
-        u32 num_input_cp;
-        u32 num_output_cp;
-        u32 num_patch_const;
-        u32 cp_stride;
-        u32 num_threads;
-        u32 tess_factor_stride;
-        u32 first_edge_tess_factor_index;
+    struct HsTessFactorClamp {
+        // I've only seen min=0.0, max=1.0 so far.
+        // TODO why is max set to 1.0? Makes no sense
+        float hs_max_tess;
+        float hs_min_tess;
     };
 
     struct ComputeProgram {
@@ -1102,9 +1093,6 @@ struct Liverpool {
     };
 
     union TessFactorMemoryBase {
-        // TODO: was going to use this to check against UD used in tcs shader
-        // but only seen set to 0
-        // Remove this and other added regs if they end up unused
         u32 base;
 
         u64 MemoryBase() const {
@@ -1162,11 +1150,7 @@ struct Liverpool {
             ShaderProgram es_program;
             INSERT_PADDING_WORDS(0x2C);
             ShaderProgram hs_program;
-            // TODO delete. These don't actually correspond to real registers, but I'll stash them
-            // here to debug
-            HsStageRegisters hs_registers;
-            HsConstants hs_constants;
-            INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20 - 3 - 7);
+            INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20);
             ShaderProgram ls_program;
             INSERT_PADDING_WORDS(0xA4);
             ComputeProgram cs_program;
@@ -1233,7 +1217,9 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA290 - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 1);
+            HsTessFactorClamp hs_clamp;
+            INSERT_PADDING_WORDS(0xA290 - 0xA287 - 2);
             GsMode vgt_gs_mode;
             INSERT_PADDING_WORDS(1);
             ModeControl mode_control;
@@ -1453,8 +1439,6 @@ static_assert(GFX6_3D_REG_INDEX(vs_program.user_data) == 0x2C4C);
 static_assert(GFX6_3D_REG_INDEX(gs_program) == 0x2C88);
 static_assert(GFX6_3D_REG_INDEX(es_program) == 0x2CC8);
 static_assert(GFX6_3D_REG_INDEX(hs_program) == 0x2D08);
-static_assert(GFX6_3D_REG_INDEX(hs_registers) == 0x2D1C);
-static_assert(GFX6_3D_REG_INDEX(hs_constants) == 0x2D1F);
 static_assert(GFX6_3D_REG_INDEX(ls_program) == 0x2D48);
 static_assert(GFX6_3D_REG_INDEX(cs_program) == 0x2E00);
 static_assert(GFX6_3D_REG_INDEX(cs_program.dim_z) == 0x2E03);
@@ -1493,6 +1477,7 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(hs_clamp) == 0xA287);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_mode) == 0xA290);
 static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_out_prim_type) == 0xA29B);

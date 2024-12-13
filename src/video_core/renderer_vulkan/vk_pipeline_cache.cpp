@@ -107,13 +107,9 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
     }
     case Stage::Hull: {
         BuildCommon(regs.hs_program);
-        // TODO: ls_hs_config.output_control_points seems to be == 1 when doing passthrough
-        // instead of the real number which matches the input patch topology
-        // info.hs_info.output_control_points = regs.ls_hs_config.hs_output_control_points.Value();
-
-        // TODO dont rely on HullStateConstants
-        info.hs_info.output_control_points = regs.hs_constants.num_output_cp;
-        info.hs_info.tess_factor_stride = regs.hs_constants.tess_factor_stride;
+        info.hs_info.num_input_control_points = regs.ls_hs_config.hs_input_control_points.Value();
+        info.hs_info.num_threads = regs.ls_hs_config.hs_output_control_points.Value();
+        info.hs_info.tess_type = regs.tess_config.type;
 
         // We need to initialize most hs_info fields after finding the V# with tess constants
         break;

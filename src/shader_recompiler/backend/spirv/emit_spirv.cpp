@@ -308,7 +308,7 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
         execution_model = spv::ExecutionModel::TessellationControl;
         ctx.AddCapability(spv::Capability::Tessellation);
         ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices,
-                             ctx.runtime_info.hs_info.output_control_points);
+                             ctx.runtime_info.hs_info.NumOutputControlPoints());
         break;
     case LogicalStage::TessellationEval: {
         execution_model = spv::ExecutionModel::TessellationEvaluation;

@@ -491,8 +491,8 @@ void EmitContext::DefineOutputs() {
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
-            const Id patch_array_type{
-                TypeArray(per_vertex_type, ConstU32(runtime_info.hs_info.output_control_points))};
+            const Id patch_array_type{TypeArray(
+                per_vertex_type, ConstU32(runtime_info.hs_info.NumOutputControlPoints()))};
             output_attr_array = DefineOutput(patch_array_type, 0);
             Name(output_attr_array, "out_attrs");
         }
