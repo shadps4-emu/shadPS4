@@ -324,7 +324,7 @@ void Rasterizer::DispatchDirect() {
     }
 
     const auto& cs = pipeline->GetStage(Shader::LogicalStage::Compute);
-    if (ExecuteShaderHLE(cs, *this)) {
+    if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
         return;
     }
 

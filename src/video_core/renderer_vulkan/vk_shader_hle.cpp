@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/info.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 
@@ -11,10 +12,11 @@ namespace Vulkan {
 
 static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
-bool ExecuteCopyShaderHLE(const Shader::Info& info, Rasterizer& rasterizer) {
+static bool ExecuteCopyShaderHLE(const Shader::Info& info,
+                                 const AmdGpu::Liverpool::ComputeProgram& cs_program,
+                                 Rasterizer& rasterizer) {
     auto& scheduler = rasterizer.GetScheduler();
     auto& buffer_cache = rasterizer.GetBufferCache();
-    const auto& cs_program = liverpool->GetCsRegs();
 
     // Copy shader defines three formatted buffers as inputs: control, source, and destination.
     const auto ctl_buf_sharp = info.texture_buffers[0].GetSharp(info);
@@ -121,10 +123,11 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, Rasterizer& rasterizer) {
     return true;
 }
 
-bool ExecuteShaderHLE(const Shader::Info& info, Rasterizer& rasterizer) {
+bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
+                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer) {
     switch (info.pgm_hash) {
     case COPY_SHADER_HASH:
-        return ExecuteCopyShaderHLE(info, rasterizer);
+        return ExecuteCopyShaderHLE(info, cs_program, rasterizer);
     default:
         return false;
     }

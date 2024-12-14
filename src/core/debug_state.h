@@ -202,12 +202,18 @@ public:
 
     void PushQueueDump(QueueDump dump);
 
-    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr, bool is_compute = false);
+    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
+                      const AmdGpu::Liverpool::Regs& regs);
+    using CsState = AmdGpu::Liverpool::ComputeProgram;
+    void PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_addr, const CsState& cs_state);
 
     void CollectShader(const std::string& name, Shader::LogicalStage l_stage,
                        vk::ShaderModule module, std::span<const u32> spv,
                        std::span<const u32> raw_code, std::span<const u32> patch_spv,
                        bool is_patched);
+
+private:
+    std::optional<RegDump*> GetRegDump(uintptr_t base_addr, uintptr_t header_addr);
 };
 } // namespace DebugStateType
 

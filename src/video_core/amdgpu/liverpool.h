@@ -1145,7 +1145,7 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20);
             ShaderProgram ls_program;
             INSERT_PADDING_WORDS(0xA4);
-            ComputeProgram cs_program;
+            ComputeProgram cs_program; // shadowed by `cs_state` in `mapped_queues`
             INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80 - 3 - 5);
             DepthRenderControl depth_render_control;
             INSERT_PADDING_WORDS(1);
@@ -1279,7 +1279,6 @@ struct Liverpool {
     };
 
     Regs regs{};
-    std::array<ComputeProgram, NumComputeRings> asc_sh_regs{};
 
     // See for a comment in context reg parsing code
     union CbDbExtent {
@@ -1345,7 +1344,7 @@ public:
     }
 
     inline ComputeProgram& GetCsRegs() {
-        return *curr_cs_regs;
+        return mapped_queues[curr_gnm_queue_id].cs_state;
     }
 
     struct AscQueueInfo {
@@ -1399,11 +1398,11 @@ private:
     void Process(std::stop_token stoken);
 
     inline void SaveDispatchContext() {
-        curr_cs_regs = &regs.cs_program;
+        curr_gnm_queue_id = GfxQueueId;
     }
 
     inline void SaveDispatchContext(u32 vqid) {
-        curr_cs_regs = &asc_sh_regs[vqid];
+        curr_gnm_queue_id = vqid + 1;
     }
 
     struct GpuQueue {
@@ -1413,6 +1412,7 @@ private:
         std::vector<u32> dcb_buffer;
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
+        ComputeProgram cs_state{};
         VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
@@ -1445,7 +1445,7 @@ private:
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
-    ComputeProgram* curr_cs_regs{&regs.cs_program};
+    u32 curr_gnm_queue_id{GfxQueueId}; // Gnm queue processing dispatch
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

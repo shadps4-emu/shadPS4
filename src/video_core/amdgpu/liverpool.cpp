@@ -375,8 +375,18 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::SetShReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                            (count - 1) * sizeof(u32));
+                const auto set_size = (count - 1) * sizeof(u32);
+
+                if (set_data->reg_offset >= 0x200 &&
+                    set_data->reg_offset <= (0x200 + sizeof(ComputeProgram) / 4)) {
+                    ASSERT(set_size <= sizeof(ComputeProgram));
+                    auto* addr = reinterpret_cast<u32*>(&mapped_queues[GfxQueueId].cs_state) +
+                                 (set_data->reg_offset - 0x200);
+                    std::memcpy(addr, header + 2, set_size);
+                } else {
+                    std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
+                                set_size);
+                }
                 break;
             }
             case PM4ItOpcode::SetUconfigReg: {
@@ -398,7 +408,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -415,7 +425,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index_off->index_count;
                 regs.draw_initiator = draw_index_off->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -431,7 +441,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -447,7 +457,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(DrawIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -464,7 +474,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(DrawIndexedIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -481,7 +491,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto offset = draw_index_indirect->data_offset;
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -503,7 +513,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 cs_program.dim_z = dispatch_direct->dim_z;
                 cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
+                    DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+                                                   cs_program);
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -522,7 +533,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
+                    DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+                                                   cs_program);
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -782,8 +794,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             if (set_data->reg_offset >= 0x200 &&
                 set_data->reg_offset <= (0x200 + sizeof(ComputeProgram) / 4)) {
                 ASSERT(set_size <= sizeof(ComputeProgram));
-                auto* addr =
-                    reinterpret_cast<u32*>(&asc_sh_regs[vqid]) + (set_data->reg_offset - 0x200);
+                auto* addr = reinterpret_cast<u32*>(&mapped_queues[vqid + 1].cs_state) +
+                             (set_data->reg_offset - 0x200);
                 std::memcpy(addr, header + 2, set_size);
             } else {
                 std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
@@ -800,7 +812,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             cs_program.dim_z = dispatch_direct->dim_z;
             cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (DebugState.DumpingCurrentReg()) {
-                DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
+                DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+                                               cs_program);
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);

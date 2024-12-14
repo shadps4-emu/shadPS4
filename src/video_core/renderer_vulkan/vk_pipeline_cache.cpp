@@ -172,7 +172,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
         }
         break;
     }
-    case Shader::Stage::Compute: {
+    case Stage::Compute: {
         const auto& cs_pgm = liverpool->GetCsRegs();
         info.num_user_data = cs_pgm.settings.num_user_regs;
         info.num_allocated_vgprs = cs_pgm.settings.num_vgprs * 4;
