@@ -177,15 +177,6 @@ if (NOT TARGET PNG::PNG)
     add_library(PNG::PNG ALIAS png_static)
 endif()
 
-if (APPLE)
-    # date
-    if (NOT TARGET date::date-tz)
-        option(BUILD_TZ_LIB "" ON)
-        option(USE_SYSTEM_TZ_DB "" ON)
-        add_subdirectory(date)
-    endif()
-endif()
-
 # Dear ImGui
 add_library(Dear_ImGui
         dear_imgui/imgui.cpp
@@ -231,4 +222,19 @@ if (NOT TARGET stb::headers)
     add_library(stb INTERFACE)
     target_include_directories(stb INTERFACE stb)
     add_library(stb::headers ALIAS stb)
+endif()
+
+# Apple-only dependencies
+if (APPLE)
+    # date
+    if (NOT TARGET date::date-tz)
+        option(BUILD_TZ_LIB "" ON)
+        option(USE_SYSTEM_TZ_DB "" ON)
+        add_subdirectory(date)
+    endif()
+
+    # MoltenVK
+    if (NOT TARGET MoltenVK)
+        add_subdirectory(MoltenVK)
+    endif()
 endif()

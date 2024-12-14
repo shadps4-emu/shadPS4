@@ -894,8 +894,7 @@ if (APPLE)
       target_compile_definitions(shadps4 PRIVATE USE_SYSTEM_VULKAN_LOADER=1)
   else()
       # Link MoltenVK for Vulkan support
-      find_library(MOLTENVK MoltenVK REQUIRED)
-      target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
+      target_link_libraries(shadps4 PRIVATE MoltenVK)
   endif()
 
   if (ARCHITECTURE STREQUAL "x86_64")
