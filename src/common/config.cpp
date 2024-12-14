@@ -692,6 +692,7 @@ void save(const std::filesystem::path& path) {
     std::ofstream file(path, std::ios::binary);
     file << data;
     file.close();
+    saveMainWindow(path);
 }
 
 void saveMainWindow(const std::filesystem::path& path) {
