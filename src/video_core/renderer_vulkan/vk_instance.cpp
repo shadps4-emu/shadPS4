@@ -379,7 +379,6 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{
             .extendedDynamicState = true,
         },
-        vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT{},
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
             .extendedDynamicState3ColorWriteMask = true,
         },
