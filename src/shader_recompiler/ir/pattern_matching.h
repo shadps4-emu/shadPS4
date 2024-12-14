@@ -104,7 +104,7 @@ inline auto MakeInstPattern(Args&&... args) {
     return MatchInstObject<opcode, Args...>(std::forward<Args>(args)...);
 }
 
-// Conveniences. TODO maybe delete
+// Conveniences. TODO probably simpler way of doing this
 #define M_READCONST(...) MakeInstPattern<IR::Opcode::ReadConst>(__VA_ARGS__)
 #define M_GETUSERDATA(...) MakeInstPattern<IR::Opcode::GetUserData>(__VA_ARGS__)
 #define M_BITFIELDUEXTRACT(...) MakeInstPattern<IR::Opcode::BitFieldUExtract>(__VA_ARGS__)

@@ -510,7 +510,6 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::TessellationEval: {
-        // TODO copied from logical vertex, figure this out
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
         const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
                                           info.stores.Get(IR::Attribute::Position2) ||

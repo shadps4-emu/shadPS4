@@ -129,7 +129,7 @@ void Translator::EmitPrologue() {
         // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
-        // TODO need PrimitiveId also like TES? Havent seen it yet but probably V2
+        // TODO PrimitiveId is probably V2 but haven't seen it yet
         break;
     }
     case LogicalStage::TessellationEval:

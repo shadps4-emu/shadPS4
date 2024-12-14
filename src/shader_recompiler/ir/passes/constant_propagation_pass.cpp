@@ -293,14 +293,6 @@ void FoldReadLane(IR::Block& block, IR::Inst& inst) {
     }
 }
 
-void FoldTessAttrAccess(IR::Inst& inst) {
-    if (inst.GetOpcode() == IR::Opcode::GetTessGenericAttribute) {
-        // Fold the vertex index
-    }
-    // Fold the attr index
-    // Fold the component index
-}
-
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::IAdd32:
@@ -481,9 +473,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
         return FoldConvert(inst, IR::Opcode::ConvertF32F16);
-    case IR::Opcode::GetTessGenericAttribute:
-    case IR::Opcode::SetTcsGenericAttribute:
-        return FoldTessAttrAccess(inst);
     default:
         break;
     }

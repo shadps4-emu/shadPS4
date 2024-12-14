@@ -175,7 +175,6 @@ struct Info {
     PersistentSrtInfo srt_info;
     std::vector<u32> flattened_ud_buf;
 
-    // TODO handle indirection
     IR::ScalarReg tess_consts_ptr_base = IR::ScalarReg::Max;
     s32 tess_consts_dword_offset = -1;
 
