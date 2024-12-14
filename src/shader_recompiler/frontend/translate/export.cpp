@@ -13,7 +13,7 @@ void Translator::EmitExport(const GcnInst& inst) {
 
     const auto& exp = inst.control.exp;
     const IR::Attribute attrib{exp.target};
-    if (attrib == IR::Attribute::Depth && exp.en != 1) {
+    if (attrib == IR::Attribute::Depth && exp.en != 0 && exp.en != 1) {
         LOG_WARNING(Render_Vulkan, "Unsupported depth export");
         return;
     }
