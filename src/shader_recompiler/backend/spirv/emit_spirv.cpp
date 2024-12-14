@@ -223,6 +223,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::StorageImageReadWithoutFormat);
         ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
         if (profile.supports_image_load_store_lod) {
+            ctx.AddExtension("SPV_AMD_shader_image_load_store_lod");
             ctx.AddCapability(spv::Capability::ImageReadWriteLodAMD);
         }
     }
