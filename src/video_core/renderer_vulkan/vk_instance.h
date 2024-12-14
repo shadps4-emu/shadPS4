@@ -33,10 +33,6 @@ public:
     [[nodiscard]] vk::Format GetSupportedFormat(vk::Format format,
                                                 vk::FormatFeatureFlags2 flags) const;
 
-    /// Re-orders a component swizzle for format compatibility, if needed.
-    [[nodiscard]] vk::ComponentMapping GetSupportedComponentSwizzle(
-        vk::Format format, vk::ComponentMapping swizzle, vk::FormatFeatureFlags2 flags) const;
-
     /// Returns the Vulkan instance
     vk::Instance GetInstance() const {
         return *instance;

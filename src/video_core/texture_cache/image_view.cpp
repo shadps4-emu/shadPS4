@@ -141,8 +141,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .image = image.image,
         .viewType = info.type,
         .format = instance.GetSupportedFormat(format, image.format_features),
-        .components =
-            instance.GetSupportedComponentSwizzle(format, info.mapping, image.format_features),
+        .components = info.mapping,
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
