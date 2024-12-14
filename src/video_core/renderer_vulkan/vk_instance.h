@@ -158,6 +158,11 @@ public:
         return legacy_vertex_attributes;
     }
 
+    /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
+    bool IsImageLoadStoreLodSupported() const {
+        return image_load_store_lod;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -327,6 +332,7 @@ private:
     bool maintenance5{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
+    bool image_load_store_lod{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};

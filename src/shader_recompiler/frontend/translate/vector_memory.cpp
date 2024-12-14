@@ -98,7 +98,9 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
         // Buffer store operations
     case Opcode::IMAGE_STORE:
-        return IMAGE_STORE(inst);
+        return IMAGE_STORE(false, inst);
+    case Opcode::IMAGE_STORE_MIP:
+        return IMAGE_STORE(true, inst);
 
         // Image misc operations
     case Opcode::IMAGE_GET_RESINFO:
@@ -423,7 +425,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
     }
 }
 
-void Translator::IMAGE_STORE(const GcnInst& inst) {
+void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg data_reg{inst.dst[0].code};
@@ -434,6 +436,9 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
         ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
                               ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
 
+    IR::TextureInstInfo info{};
+    info.has_lod.Assign(has_mip);
+
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
         if (((mimg.dmask >> i) & 1) == 0) {
@@ -443,7 +448,7 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
         comps.push_back(ir.GetVectorReg<IR::F32>(data_reg++));
     }
     const IR::Value value = ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
-    ir.ImageWrite(handle, body, value, {});
+    ir.ImageWrite(handle, body, {}, value, info);
 }
 
 void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {

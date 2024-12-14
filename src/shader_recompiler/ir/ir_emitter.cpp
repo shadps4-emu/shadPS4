@@ -1599,9 +1599,9 @@ Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const
     return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, dref);
 }
 
-Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const Value& offset,
-                            const U32& lod, const U32& multisampling, TextureInstInfo info) {
-    return Inst(Opcode::ImageFetch, Flags{info}, handle, coords, offset, lod, multisampling);
+Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const U32& lod,
+                            const Value& offset, const U32& multisampling, TextureInstInfo info) {
+    return Inst(Opcode::ImageFetch, Flags{info}, handle, coords, lod, offset, multisampling);
 }
 
 Value IREmitter::ImageQueryDimension(const Value& handle, const IR::U32& lod,
@@ -1625,13 +1625,14 @@ Value IREmitter::ImageGradient(const Value& handle, const Value& coords,
                 offset, lod_clamp);
 }
 
-Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInstInfo info) {
-    return Inst(Opcode::ImageRead, Flags{info}, handle, coords);
+Value IREmitter::ImageRead(const Value& handle, const Value& coords, const U32& lod,
+                           TextureInstInfo info) {
+    return Inst(Opcode::ImageRead, Flags{info}, handle, coords, lod);
 }
 
-void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
-                           TextureInstInfo info) {
-    Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& lod,
+                           const Value& color, TextureInstInfo info) {
+    Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, color);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

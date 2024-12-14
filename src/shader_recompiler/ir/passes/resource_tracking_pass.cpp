@@ -771,14 +771,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     inst.SetArg(1, coords);
 
     if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(2, SwizzleVector(ir, image, inst.Arg(2)));
+        inst.SetArg(3, SwizzleVector(ir, image, inst.Arg(3)));
     }
 
     if (inst_info.has_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
+        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
+               inst.GetOpcode() == IR::Opcode::ImageRead ||
+               inst.GetOpcode() == IR::Opcode::ImageWrite);
         ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
                image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
-        inst.SetArg(3, arg);
+        inst.SetArg(2, arg);
     } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
         inst.SetArg(4, arg);
