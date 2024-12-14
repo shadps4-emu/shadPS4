@@ -8,20 +8,21 @@
 namespace Shader {
 
 struct TessellationDataConstantBuffer {
-    u32 m_lsStride;
-    u32 m_hsCpStride;      // HullStateConstants::m_cpStride != 0 ? HullStateConstants::m_cpStride :
+    u32 ls_stride;
+    u32 hs_cp_stride;      // HullStateConstants::m_cpStride != 0 ? HullStateConstants::m_cpStride :
                            // ls_stride
-    u32 m_hsNumPatch;      // num patches submitted in threadgroup
-    u32 m_hsOutputBase;    // HullStateConstants::m_numInputCP::m_cpStride != 0 ?
+    u32 num_patches;       // num patches submitted in threadgroup
+    u32 hs_output_base;    // HullStateConstants::m_numInputCP::m_cpStride != 0 ?
                            // HullStateConstants::m_numInputCP * ls_stride * num_patches : 0
-    u32 m_patchConstSize;  // 16 * num_patch_attrs
-    u32 m_patchConstBase;  // hs_output_base + patch_output_size
-    u32 m_patchOutputSize; // output_cp_stride * num_output_cp
-    f32 m_offChipTessellationFactorThreshold;
-    u32 m_firstEdgeTessFactorIndex;
+                           // basically 0 when passthrough
+    u32 patch_const_size;  // 16 * num_patch_attrs
+    u32 patch_const_base;  // hs_output_base + patch_output_size
+    u32 patch_output_size; // output_cp_stride * num_output_cp_per_patch
+    f32 off_chip_tessellation_factor_threshold;
+    u32 first_edge_tess_factor_index;
 };
 
-// TODO comment
+// Assign names to dword fields of TessellationDataConstantBuffer
 enum class TessConstantAttribute : u32 {
     LsStride,
     HsCpStride,

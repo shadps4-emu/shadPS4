@@ -101,7 +101,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
             const auto params = Liverpool::GetParams(*pgm);
             const auto& hull_info = program_cache.at(params.hash)->info;
             hull_info.ReadTessConstantBuffer(tess_constants);
-            info.ls_info.ls_stride = tess_constants.m_lsStride;
+            info.ls_info.ls_stride = tess_constants.ls_stride;
         }
         break;
     }

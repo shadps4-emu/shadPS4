@@ -129,7 +129,7 @@ void Translator::EmitPrologue() {
         // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
-        // TODO need PrimitiveId also like TES?
+        // TODO need PrimitiveId also like TES? Havent seen it yet but probably V2
         break;
     }
     case LogicalStage::TessellationEval:
@@ -140,12 +140,8 @@ void Translator::EmitPrologue() {
         // V2 is similar to PrimitiveID but not the same. It seems to only be used in
         // compiler-generated address calculations. Its probably the patch id within the
         // patches running locally on a given VGT (or CU, whichever is the granularity of LDS
-        // memory). So it is probably equal to PrimitiveID % #patches_per_VGT (or per CU).
-        // We should be able to safely set V2 to 0, along with other special values read from the
-        // tess constants buffer, since in the recompiled Vulkan shaders a thread can only
-        // read/write control points and patch const attributes within the local patch. This (V2)
-        // and other special values of TessellationDataConstantBuffer are (probably) just an
-        // implementation detail from the ps4 shader compiler and only used for addressing.
+        // memory)
+        // Set to 0. See explanation in comment describing hull/domain passes
         ir.SetVectorReg(IR::VectorReg::V2, ir.Imm32(0u));
         // V3 is the actual PrimitiveID as intended by the shader author.
         ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));

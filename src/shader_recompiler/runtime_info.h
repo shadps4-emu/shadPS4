@@ -98,7 +98,7 @@ struct VertexRuntimeInfo {
     }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        hs_output_cp_stride = tess_constants.m_hsCpStride;
+        hs_output_cp_stride = tess_constants.hs_cp_stride;
     }
 };
 
@@ -135,9 +135,9 @@ struct HullRuntimeInfo {
     }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        ls_stride = tess_constants.m_lsStride;
-        hs_output_cp_stride = tess_constants.m_hsCpStride;
-        hs_output_base = tess_constants.m_hsOutputBase;
+        ls_stride = tess_constants.ls_stride;
+        hs_output_cp_stride = tess_constants.hs_cp_stride;
+        hs_output_base = tess_constants.hs_output_base;
     }
 };
 
