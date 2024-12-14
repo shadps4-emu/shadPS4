@@ -247,7 +247,7 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     ImageOperands operands;
     if (ctx.profile.supports_image_load_store_lod) {
         operands.Add(spv::ImageOperandsMask::Lod, lod);
-    } else if (lod.value != 0) {
+    } else if (Sirit::ValidId(lod)) {
         LOG_WARNING(Render, "Image write with LOD not supported by driver");
     }
     ctx.OpImageWrite(image, coords, ctx.OpBitcast(color_type, color), operands.mask,
