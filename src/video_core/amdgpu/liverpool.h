@@ -1279,6 +1279,7 @@ struct Liverpool {
     };
 
     Regs regs{};
+    std::array<ComputeProgram, NumComputeRings> asc_sh_regs{};
 
     // See for a comment in context reg parsing code
     union CbDbExtent {
@@ -1343,6 +1344,10 @@ public:
         gfx_queue.dcb_buffer.reserve(GfxReservedSize);
     }
 
+    inline ComputeProgram& GetCsRegs() {
+        return *curr_cs_regs;
+    }
+
     struct AscQueueInfo {
         VAddr map_addr;
         u32* read_addr;
@@ -1393,6 +1398,14 @@ private:
 
     void Process(std::stop_token stoken);
 
+    inline void SaveDispatchContext() {
+        curr_cs_regs = &regs.cs_program;
+    }
+
+    inline void SaveDispatchContext(u32 vqid) {
+        curr_cs_regs = &asc_sh_regs[vqid];
+    }
+
     struct GpuQueue {
         std::mutex m_access{};
         std::atomic<u32> dcb_buffer_offset;
@@ -1400,7 +1413,6 @@ private:
         std::vector<u32> dcb_buffer;
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
-        ComputeProgram cs_state{};
         VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
@@ -1433,6 +1445,7 @@ private:
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
+    ComputeProgram* curr_cs_regs{&regs.cs_program};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

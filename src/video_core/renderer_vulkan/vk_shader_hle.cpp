@@ -5,16 +5,16 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 
-#include "vk_rasterizer.h"
+extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Vulkan {
 
 static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
-bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                          Rasterizer& rasterizer) {
+bool ExecuteCopyShaderHLE(const Shader::Info& info, Rasterizer& rasterizer) {
     auto& scheduler = rasterizer.GetScheduler();
     auto& buffer_cache = rasterizer.GetBufferCache();
+    const auto& cs_program = liverpool->GetCsRegs();
 
     // Copy shader defines three formatted buffers as inputs: control, source, and destination.
     const auto ctl_buf_sharp = info.texture_buffers[0].GetSharp(info);
@@ -34,9 +34,9 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
     static std::vector<vk::BufferCopy> copies;
     copies.clear();
-    copies.reserve(regs.cs_program.dim_x);
+    copies.reserve(cs_program.dim_x);
 
-    for (u32 i = 0; i < regs.cs_program.dim_x; i++) {
+    for (u32 i = 0; i < cs_program.dim_x; i++) {
         const auto& [dst_idx, src_idx, end] = ctl_buf[i];
         const u32 local_dst_offset = dst_idx * buf_stride;
         const u32 local_src_offset = src_idx * buf_stride;
@@ -121,11 +121,10 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
     return true;
 }
 
-bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      Rasterizer& rasterizer) {
+bool ExecuteShaderHLE(const Shader::Info& info, Rasterizer& rasterizer) {
     switch (info.pgm_hash) {
     case COPY_SHADER_HASH:
-        return ExecuteCopyShaderHLE(info, regs, rasterizer);
+        return ExecuteCopyShaderHLE(info, rasterizer);
     default:
         return false;
     }

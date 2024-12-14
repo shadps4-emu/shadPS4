@@ -15,6 +15,7 @@
 using namespace DebugStateType;
 
 DebugStateImpl& DebugState = *Common::Singleton<DebugStateImpl>::Instance();
+extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 static ThreadID ThisThreadID() {
 #ifdef _WIN32
@@ -142,8 +143,7 @@ void DebugStateImpl::PushQueueDump(QueueDump dump) {
     frame.queues.push_back(std::move(dump));
 }
 
-void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                                  const AmdGpu::Liverpool::Regs& regs, bool is_compute) {
+void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr, bool is_compute) {
     std::scoped_lock lock{frame_dump_list_mutex};
     const auto it = waiting_reg_dumps.find(header_addr);
     if (it == waiting_reg_dumps.end()) {
@@ -153,18 +153,19 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
     waiting_reg_dumps.erase(it);
     waiting_reg_dumps_dbg.erase(waiting_reg_dumps_dbg.find(header_addr));
     auto& dump = frame.regs[header_addr - base_addr];
-    dump.regs = regs;
+    dump.regs = liverpool->regs;
     if (is_compute) {
         dump.is_compute = true;
-        const auto& cs = dump.regs.cs_program;
+        auto& cs = dump.regs.cs_program;
+        cs = liverpool->GetCsRegs();
         dump.cs_data = PipelineComputerProgramDump{
             .cs_program = cs,
             .code = std::vector<u32>{cs.Code().begin(), cs.Code().end()},
         };
     } else {
         for (int i = 0; i < RegDump::MaxShaderStages; i++) {
-            if (regs.stage_enable.IsStageEnabled(i)) {
-                auto stage = regs.ProgramForStage(i);
+            if (dump.regs.stage_enable.IsStageEnabled(i)) {
+                auto stage = dump.regs.ProgramForStage(i);
                 if (stage->address_lo != 0) {
                     auto code = stage->Code();
                     dump.stages[i] = PipelineShaderProgramDump{

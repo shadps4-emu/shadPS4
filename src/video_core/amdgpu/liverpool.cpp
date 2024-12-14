@@ -29,31 +29,23 @@ static_assert(Liverpool::NumComputeRings <= MAX_NAMES);
 
 static const char* acb_task_name[] = NAME_ARRAY(ACB_TASK, MAX_NAMES);
 
-#define YIELD_CE()                                                                                 \
-    mapped_queues[GfxQueueId].cs_state = regs.cs_program;                                          \
+#define YIELD(name)                                                                                \
     FIBER_EXIT;                                                                                    \
     co_yield {};                                                                                   \
-    FIBER_ENTER(ccb_task_name);                                                                    \
-    regs.cs_program = mapped_queues[GfxQueueId].cs_state
+    FIBER_ENTER(name);
 
-#define YIELD_GFX                                                                                  \
-    mapped_queues[GfxQueueId].cs_state = regs.cs_program;                                          \
-    FIBER_EXIT;                                                                                    \
-    co_yield {};                                                                                   \
-    FIBER_ENTER(dcb_task_name);                                                                    \
-    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
-
-#define YIELD_ASC(id)                                                                              \
-    mapped_queues[id + 1].cs_state = regs.cs_program;                                              \
-    FIBER_EXIT;                                                                                    \
-    co_yield {};                                                                                   \
-    FIBER_ENTER(acb_task_name[id]);                                                                \
-    regs.cs_program = mapped_queues[id + 1].cs_state;
+#define YIELD_CE() YIELD(ccb_task_name)
+#define YIELD_GFX() YIELD(dcb_task_name)
+#define YIELD_ASC(id) YIELD(acb_task_name[id])
 
 #define RESUME(task, name)                                                                         \
     FIBER_EXIT;                                                                                    \
     task.handle.resume();                                                                          \
     FIBER_ENTER(name);
+
+#define RESUME_CE(task) RESUME(task, ccb_task_name)
+#define RESUME_GFX(task) RESUME(task, dcb_task_name)
+#define RESUME_ASC(task, id) RESUME(task, acb_task_name[id])
 
 std::array<u8, 48_KB> Liverpool::ConstantEngine::constants_heap;
 
@@ -198,10 +190,11 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task =
                 ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            RESUME_CE(task);
 
             while (!task.handle.done()) {
                 YIELD_CE();
-                RESUME(task, ccb_task_name);
+                RESUME_CE(task);
             }
             break;
         }
@@ -228,6 +221,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (!ccb.empty()) {
         // In case of CCB provided kick off CE asap to have the constant heap ready to use
         ce_task = ProcessCeUpdate(ccb);
+        RESUME_GFX(ce_task);
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
@@ -404,7 +398,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -421,7 +415,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index_off->index_count;
                 regs.draw_initiator = draw_index_off->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -437,7 +431,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -453,7 +447,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(DrawIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -470,7 +464,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(DrawIndexedIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -487,7 +481,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto offset = draw_index_indirect->data_offset;
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header));
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -502,15 +496,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DispatchDirect: {
                 const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
-                regs.cs_program.dim_x = dispatch_direct->dim_x;
-                regs.cs_program.dim_y = dispatch_direct->dim_y;
-                regs.cs_program.dim_z = dispatch_direct->dim_z;
-                regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
+                SaveDispatchContext();
+                auto& cs_program = GetCsRegs();
+                cs_program.dim_x = dispatch_direct->dim_x;
+                cs_program.dim_y = dispatch_direct->dim_y;
+                cs_program.dim_z = dispatch_direct->dim_z;
+                cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs,
-                                            true);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
                 }
-                if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:Dispatch", cmd_address));
                     rasterizer->DispatchDirect();
@@ -521,14 +516,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::DispatchIndirect: {
                 const auto* dispatch_indirect =
                     reinterpret_cast<const PM4CmdDispatchIndirect*>(header);
+                SaveDispatchContext();
+                auto& cs_program = GetCsRegs();
                 const auto offset = dispatch_indirect->data_offset;
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
                 const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
                 if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs,
-                                            true);
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
                 }
-                if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("dcb:{}:DispatchIndirect", cmd_address));
@@ -641,7 +637,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::Rewind: {
                 const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
                 while (!rewind->Valid()) {
-                    YIELD_GFX;
+                    YIELD_GFX();
                 }
                 break;
             }
@@ -657,7 +653,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
                 }
                 while (!wait_reg_mem->Test()) {
-                    YIELD_GFX;
+                    YIELD_GFX();
                 }
                 break;
             }
@@ -665,11 +661,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
                 auto task = ProcessGraphics(
                     {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
-                RESUME(task, dcb_task_name);
+                RESUME_GFX(task);
 
                 while (!task.handle.done()) {
-                    YIELD_GFX;
-                    RESUME(task, dcb_task_name);
+                    YIELD_GFX();
+                    RESUME_GFX(task);
                 }
                 break;
             }
@@ -679,7 +675,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::WaitOnCeCounter: {
                 while (cblock.ce_count <= cblock.de_count) {
-                    RESUME(ce_task, dcb_task_name);
+                    RESUME_GFX(ce_task);
                 }
                 break;
             }
@@ -732,11 +728,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task = ProcessCompute<true>(
                 {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
-            RESUME(task, acb_task_name[vqid]);
+            RESUME_ASC(task, vqid);
 
             while (!task.handle.done()) {
                 YIELD_ASC(vqid);
-                RESUME(task, acb_task_name[vqid]);
+                RESUME_ASC(task, vqid);
             }
             break;
         }
@@ -781,20 +777,32 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::SetShReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-            std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                        (count - 1) * sizeof(u32));
+            const auto set_size = (count - 1) * sizeof(u32);
+
+            if (set_data->reg_offset >= 0x200 &&
+                set_data->reg_offset <= (0x200 + sizeof(ComputeProgram) / 4)) {
+                ASSERT(set_size <= sizeof(ComputeProgram));
+                auto* addr =
+                    reinterpret_cast<u32*>(&asc_sh_regs[vqid]) + (set_data->reg_offset - 0x200);
+                std::memcpy(addr, header + 2, set_size);
+            } else {
+                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
+                            set_size);
+            }
             break;
         }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
-            regs.cs_program.dim_x = dispatch_direct->dim_x;
-            regs.cs_program.dim_y = dispatch_direct->dim_y;
-            regs.cs_program.dim_z = dispatch_direct->dim_z;
-            regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
+            SaveDispatchContext(vqid);
+            auto& cs_program = GetCsRegs();
+            cs_program.dim_x = dispatch_direct->dim_x;
+            cs_program.dim_y = dispatch_direct->dim_y;
+            cs_program.dim_z = dispatch_direct->dim_z;
+            cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (DebugState.DumpingCurrentReg()) {
-                DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs, true);
+                DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), true);
             }
-            if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+            if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
                 rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
                 rasterizer->DispatchDirect();

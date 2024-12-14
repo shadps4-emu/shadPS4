@@ -11,7 +11,6 @@
 #include <queue>
 
 #include "common/types.h"
-#include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
 #ifdef _WIN32
@@ -203,8 +202,7 @@ public:
 
     void PushQueueDump(QueueDump dump);
 
-    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
+    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr, bool is_compute = false);
 
     void CollectShader(const std::string& name, Shader::LogicalStage l_stage,
                        vk::ShaderModule module, std::span<const u32> spv,
