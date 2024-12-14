@@ -120,7 +120,7 @@ struct HullRuntimeInfo {
     // In that case, it should be fine to assume passthrough and declare some extra
     // output control points and attributes that shouldnt be read by the TES anyways
     bool IsPassthrough() const {
-        return hs_output_base == 0 && num_threads == 1;
+        return hs_output_base == 0 && ls_stride == hs_output_cp_stride && num_threads == 1;
     };
 
     // regs.ls_hs_config.hs_output_control_points contains the number of threads, which

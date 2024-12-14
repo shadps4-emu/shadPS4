@@ -6,7 +6,9 @@
 
 namespace Shader::Optimiation::PatternMatching {
 
-// Bad pattern matching attempt
+// Attempt at pattern matching for Insts and Values
+// Needs improvement, mostly a convenience
+
 template <typename Derived>
 struct MatchObject {
     inline bool Match(IR::Value v) {
@@ -50,7 +52,6 @@ private:
     IR::Value& return_val;
 };
 
-// Specific
 struct MatchAttribute : MatchObject<MatchAttribute> {
     MatchAttribute(IR::Attribute attribute_) : attribute(attribute_) {}
 
@@ -62,7 +63,6 @@ private:
     IR::Attribute attribute;
 };
 
-// Specific
 struct MatchU32 : MatchObject<MatchU32> {
     MatchU32(u32 imm_) : imm(imm_) {}
 
