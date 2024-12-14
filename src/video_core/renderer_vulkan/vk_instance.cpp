@@ -68,11 +68,10 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     }
     // Other miscellaneous formats, e.g. for color buffers, swizzles, or compatibility
     static constexpr std::array misc_formats = {
-        vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
-        vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
-        vk::Format::eB8G8R8A8Snorm,          vk::Format::eB8G8R8A8Uint,
-        vk::Format::eB8G8R8A8Sint,           vk::Format::eB8G8R8A8Srgb,
-        vk::Format::eR5G6B5UnormPack16,      vk::Format::eD24UnormS8Uint,
+        vk::Format::eA2R10G10B10UnormPack32,
+        vk::Format::eB8G8R8A8Unorm,
+        vk::Format::eB8G8R8A8Srgb,
+        vk::Format::eD24UnormS8Uint,
     };
     for (const auto& format : misc_formats) {
         if (!format_properties.contains(format)) {
@@ -583,8 +582,6 @@ bool Instance::IsFormatSupported(const vk::Format format,
 
 static vk::Format GetAlternativeFormat(const vk::Format format) {
     switch (format) {
-    case vk::Format::eB5G6R5UnormPack16:
-        return vk::Format::eR5G6B5UnormPack16;
     case vk::Format::eD16UnormS8Uint:
         return vk::Format::eD24UnormS8Uint;
     default:
@@ -602,21 +599,6 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
         return alternative;
     }
     return format;
-}
-
-vk::ComponentMapping Instance::GetSupportedComponentSwizzle(
-    const vk::Format format, const vk::ComponentMapping swizzle,
-    const vk::FormatFeatureFlags2 flags) const {
-    if (IsFormatSupported(format, flags)) [[likely]] {
-        return swizzle;
-    }
-
-    vk::ComponentMapping supported_swizzle = swizzle;
-    if (format == vk::Format::eB5G6R5UnormPack16) {
-        // B5G6R5 -> R5G6B5
-        std::swap(supported_swizzle.r, supported_swizzle.b);
-    }
-    return supported_swizzle;
 }
 
 } // namespace Vulkan
