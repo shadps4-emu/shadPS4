@@ -929,11 +929,6 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
             cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eBack, back.stencil_mask);
         }
     }
-    if (instance.IsPatchControlPointsDynamicState()) {
-        if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
-            cmdbuf.setPatchControlPointsEXT(regs.ls_hs_config.hs_input_control_points);
-        }
-    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {

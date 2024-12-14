@@ -306,7 +306,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     key.patch_control_points = 0;
-    if (regs.stage_enable.hs_en.Value() && !instance.IsPatchControlPointsDynamicState()) {
+    if (regs.stage_enable.hs_en.Value()) {
         key.patch_control_points = regs.ls_hs_config.hs_input_control_points.Value();
     }
 

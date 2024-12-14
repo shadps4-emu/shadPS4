@@ -31,7 +31,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
-    const bool uses_tessellation = stages[u32(Shader::LogicalStage::TessellationControl)];
 
     const vk::PushConstantRange push_constants = {
         .stageFlags = gp_stage_flags,
@@ -173,9 +172,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
     } else {
         dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
-    }
-    if (uses_tessellation && instance.IsPatchControlPointsDynamicState()) {
-        dynamic_states.push_back(vk::DynamicState::ePatchControlPointsEXT);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -326,9 +322,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pStages = shader_stages.data(),
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
-        .pTessellationState = (uses_tessellation && !instance.IsPatchControlPointsDynamicState())
-                                  ? &tessellation_state
-                                  : nullptr,
+        .pTessellationState =
+            stages[u32(Shader::LogicalStage::TessellationControl)] ? &tessellation_state : nullptr,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,

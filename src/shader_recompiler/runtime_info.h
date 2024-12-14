@@ -119,9 +119,6 @@ struct HullRuntimeInfo {
     // dumb situation.
     // In that case, it should be fine to assume passthrough and declare some extra
     // output control points and attributes that shouldnt be read by the TES anyways
-    //
-    // TODO now having patch control points dynamic state is kind of pointless if we depend on
-    // num_input_control_points
     bool IsPassthrough() const {
         return hs_output_base == 0 && num_threads == 1;
     };
