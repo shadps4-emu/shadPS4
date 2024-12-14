@@ -173,9 +173,9 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
         break;
     }
     case Stage::Compute: {
-        const auto& cs_pgm = regs.cs_program;
+        const auto& cs_pgm = liverpool->GetCsRegs();
         info.num_user_data = cs_pgm.settings.num_user_regs;
-        info.num_allocated_vgprs = regs.cs_program.settings.num_vgprs * 4;
+        info.num_allocated_vgprs = cs_pgm.settings.num_vgprs * 4;
         info.cs_info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                        cs_pgm.num_thread_z.full};
         info.cs_info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
@@ -476,8 +476,8 @@ bool PipelineCache::RefreshGraphicsKey() {
 
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
-    const auto* cs_pgm = &liverpool->regs.cs_program;
-    const auto cs_params = Liverpool::GetParams(*cs_pgm);
+    const auto& cs_pgm = liverpool->GetCsRegs();
+    const auto cs_params = Liverpool::GetParams(cs_pgm);
     std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
         GetProgram(Shader::Stage::Compute, LogicalStage::Compute, cs_params, binding);
     return true;
@@ -529,6 +529,7 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
         return std::make_tuple(&program->info, module, spec.fetch_shader_data,
                                HashCombine(params.hash, 0));
     }
+    it_pgm.value()->info.user_data = params.user_data;
 
     auto& program = it_pgm.value();
     auto& info = program->info;

@@ -57,3 +57,6 @@ enum MarkersPalette : int {
     tracy::SourceLocationData{nullptr, name, TracyFile, (uint32_t)TracyLine, 0};
 
 #define FRAME_END FrameMark
+
+#define FIBER_ENTER(name) TracyFiberEnter(name)
+#define FIBER_EXIT TracyFiberLeave

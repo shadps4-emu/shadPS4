@@ -212,6 +212,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
     case vk::Format::eBc6HUfloatBlock:
+    case vk::Format::eR32G32B32A32Uint:
     case vk::Format::eR32G32B32A32Sfloat:
         return vk::Format::eR32G32B32A32Uint;
     default:

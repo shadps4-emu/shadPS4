@@ -16,6 +16,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
+#include "common/slot_vector.h"
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
@@ -45,7 +46,8 @@ struct Liverpool {
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
     static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
     static constexpr u32 NumQueuesPerPipe = 8u;
-    static constexpr u32 NumTotalQueues = NumGfxRings + (NumComputePipes * NumQueuesPerPipe);
+    static constexpr u32 NumComputeRings = NumComputePipes * NumQueuesPerPipe;
+    static constexpr u32 NumTotalQueues = NumGfxRings + NumComputeRings;
     static_assert(NumTotalQueues < 64u); // need to fit into u64 bitmap for ffs
 
     static constexpr u32 NumColorBuffers = 8;
@@ -1143,7 +1145,7 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20);
             ShaderProgram ls_program;
             INSERT_PADDING_WORDS(0xA4);
-            ComputeProgram cs_program;
+            ComputeProgram cs_program; // shadowed by `cs_state` in `mapped_queues`
             INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80 - 3 - 5);
             DepthRenderControl depth_render_control;
             INSERT_PADDING_WORDS(1);
@@ -1298,7 +1300,7 @@ public:
     ~Liverpool();
 
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
-    void SubmitAsc(u32 vqid, std::span<const u32> acb);
+    void SubmitAsc(u32 gnm_vqid, std::span<const u32> acb);
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};
@@ -1341,6 +1343,18 @@ public:
         gfx_queue.dcb_buffer.reserve(GfxReservedSize);
     }
 
+    inline ComputeProgram& GetCsRegs() {
+        return mapped_queues[curr_qid].cs_state;
+    }
+
+    struct AscQueueInfo {
+        VAddr map_addr;
+        u32* read_addr;
+        u32 ring_size_dw;
+        u32 pipe_id;
+    };
+    Common::SlotVector<AscQueueInfo> asc_queues{};
+
 private:
     struct Task {
         struct promise_type {
@@ -1378,7 +1392,8 @@ private:
                                                                          std::span<const u32> ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
-    Task ProcessCompute(std::span<const u32> acb, int vqid);
+    template <bool is_indirect = false>
+    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
 
     void Process(std::stop_token stoken);
 
@@ -1393,6 +1408,7 @@ private:
         VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
+    u32 num_mapped_queues{1u}; // GFX is always available
 
     struct ConstantEngine {
         void Reset() {
@@ -1421,6 +1437,7 @@ private:
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
+    int curr_qid{-1};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
