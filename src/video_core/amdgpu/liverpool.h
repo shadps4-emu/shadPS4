@@ -143,6 +143,13 @@ struct Liverpool {
         }
     };
 
+    struct HsTessFactorClamp {
+        // I've only seen min=0.0, max=1.0 so far.
+        // TODO why is max set to 1.0? Makes no sense
+        float hs_max_tess;
+        float hs_min_tess;
+    };
+
     struct ComputeProgram {
         u32 dispatch_initiator;
         u32 dim_x;
@@ -956,6 +963,7 @@ struct Liverpool {
         enum VgtStages : u32 {
             Vs = 0u, // always enabled
             EsGs = 0xB0u,
+            LsHs = 0x45u,
         };
 
         VgtStages raw;
@@ -963,7 +971,8 @@ struct Liverpool {
         BitField<2, 1, u32> hs_en;
         BitField<3, 2, u32> es_en;
         BitField<5, 1, u32> gs_en;
-        BitField<6, 1, u32> vs_en;
+        BitField<6, 2, u32> vs_en;
+        BitField<8, 1, u32> dynamic_hs;
 
         bool IsStageEnabled(u32 stage) const {
             switch (stage) {
@@ -1059,6 +1068,28 @@ struct Liverpool {
         };
     };
 
+    union LsHsConfig {
+        u32 raw;
+        BitField<0, 8, u32> num_patches;
+        BitField<8, 6, u32> hs_input_control_points;
+        BitField<14, 6, u32> hs_output_control_points;
+    };
+
+    union TessellationConfig {
+        u32 raw;
+        BitField<0, 2, TessellationType> type;
+        BitField<2, 3, TessellationPartitioning> partitioning;
+        BitField<5, 3, TessellationTopology> topology;
+    };
+
+    union TessFactorMemoryBase {
+        u32 base;
+
+        u64 MemoryBase() const {
+            return static_cast<u64>(base) << 8;
+        }
+    };
+
     union Eqaa {
         u32 raw;
         BitField<0, 1, u32> max_anchor_samples;
@@ -1109,7 +1140,7 @@ struct Liverpool {
             ShaderProgram es_program;
             INSERT_PADDING_WORDS(0x2C);
             ShaderProgram hs_program;
-            INSERT_PADDING_WORDS(0x2C);
+            INSERT_PADDING_WORDS(0x2D48 - 0x2d08 - 20);
             ShaderProgram ls_program;
             INSERT_PADDING_WORDS(0xA4);
             ComputeProgram cs_program;
@@ -1176,7 +1207,9 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA290 - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 1);
+            HsTessFactorClamp hs_clamp;
+            INSERT_PADDING_WORDS(0xA290 - 0xA287 - 2);
             GsMode vgt_gs_mode;
             INSERT_PADDING_WORDS(1);
             ModeControl mode_control;
@@ -1200,9 +1233,10 @@ struct Liverpool {
             BitField<0, 11, u32> vgt_gs_max_vert_out;
             INSERT_PADDING_WORDS(0xA2D5 - 0xA2CE - 1);
             ShaderStageEnable stage_enable;
-            INSERT_PADDING_WORDS(1);
+            LsHsConfig ls_hs_config;
             u32 vgt_gs_vert_itemsize[4];
-            INSERT_PADDING_WORDS(4);
+            TessellationConfig tess_config;
+            INSERT_PADDING_WORDS(3);
             PolygonOffset poly_offset;
             GsInstances vgt_gs_instance_cnt;
             StreamOutConfig vgt_strmout_config;
@@ -1216,6 +1250,8 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xC24C - 0xC243);
             u32 num_indices;
             VgtNumInstances num_instances;
+            INSERT_PADDING_WORDS(0xC250 - 0xC24D - 1);
+            TessFactorMemoryBase vgt_tf_memory_base;
         };
         std::array<u32, NumRegs> reg_array{};
 
@@ -1431,6 +1467,7 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(hs_clamp) == 0xA287);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_mode) == 0xA290);
 static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_out_prim_type) == 0xA29B);
@@ -1445,6 +1482,7 @@ static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_max_vert_out) == 0xA2CE);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_vert_itemsize[0]) == 0xA2D7);
+static_assert(GFX6_3D_REG_INDEX(tess_config) == 0xA2DB);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_instance_cnt) == 0xA2E4);
 static_assert(GFX6_3D_REG_INDEX(vgt_strmout_config) == 0xA2E5);
@@ -1456,6 +1494,7 @@ static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[7].base_address) == 0xA381);
 static_assert(GFX6_3D_REG_INDEX(primitive_type) == 0xC242);
 static_assert(GFX6_3D_REG_INDEX(num_instances) == 0xC24D);
+static_assert(GFX6_3D_REG_INDEX(vgt_tf_memory_base) == 0xc250);
 
 #undef GFX6_3D_REG_INDEX
 

@@ -216,6 +216,18 @@ void FoldAdd(IR::Block& block, IR::Inst& inst) {
     }
 }
 
+template <typename T>
+void FoldMul(IR::Block& block, IR::Inst& inst) {
+    if (!FoldCommutative<T>(inst, [](T a, T b) { return a * b; })) {
+        return;
+    }
+    const IR::Value rhs{inst.Arg(1)};
+    if (rhs.IsImmediate() && Arg<T>(rhs) == 0) {
+        inst.ReplaceUsesWithAndRemove(IR::Value(0u));
+        return;
+    }
+}
+
 void FoldCmpClass(IR::Block& block, IR::Inst& inst) {
     ASSERT_MSG(inst.Arg(1).IsImmediate(), "Unable to resolve compare operation");
     const auto class_mask = static_cast<IR::FloatClassFunc>(inst.Arg(1).U32());
@@ -292,7 +304,19 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         FoldWhenAllImmediates(inst, [](u32 a) { return static_cast<float>(a); });
         return;
     case IR::Opcode::IMul32:
-        FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a * b; });
+        FoldMul<u32>(block, inst);
+        return;
+    case IR::Opcode::UDiv32:
+        FoldWhenAllImmediates(inst, [](u32 a, u32 b) {
+            ASSERT_MSG(b != 0, "Folding UDiv32 with divisor 0");
+            return a / b;
+        });
+        return;
+    case IR::Opcode::UMod32:
+        FoldWhenAllImmediates(inst, [](u32 a, u32 b) {
+            ASSERT_MSG(b != 0, "Folding UMod32 with modulo 0");
+            return a % b;
+        });
         return;
     case IR::Opcode::FPCmpClass32:
         FoldCmpClass(block, inst);

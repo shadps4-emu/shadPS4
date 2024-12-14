@@ -60,6 +60,10 @@ OPCODE(SetGotoVariable,                                     Void,           U32,
 OPCODE(GetAttribute,                                        F32,            Attribute,      U32,            U32,                                            )
 OPCODE(GetAttributeU32,                                     U32,            Attribute,      U32,                                                            )
 OPCODE(SetAttribute,                                        Void,           Attribute,      F32,            U32,                                            )
+OPCODE(GetPatch,                                            F32,            Patch,                                                                          )
+OPCODE(SetPatch,                                            Void,           Patch,          F32,                                                            )
+OPCODE(GetTessGenericAttribute,                             F32,            U32,            U32,            U32,                                            )
+OPCODE(SetTcsGenericAttribute,                              Void,           F32,            U32,            U32,                                            )
 
 // Flags
 OPCODE(GetScc,                                              U1,             Void,                                                                           )

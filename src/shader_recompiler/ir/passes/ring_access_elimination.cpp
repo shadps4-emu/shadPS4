@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/recompiler.h"
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Optimization {
 
@@ -23,12 +25,45 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
     };
 
     switch (stage) {
+    case Stage::Local: {
+        ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
+            const auto opcode = inst.GetOpcode();
+            switch (opcode) {
+            case IR::Opcode::WriteSharedU64:
+            case IR::Opcode::WriteSharedU32: {
+                bool is_composite = opcode == IR::Opcode::WriteSharedU64;
+                u32 num_components = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
+
+                u32 offset = 0;
+                const auto* addr = inst.Arg(0).InstRecursive();
+                if (addr->GetOpcode() == IR::Opcode::IAdd32) {
+                    ASSERT(addr->Arg(1).IsImmediate());
+                    offset = addr->Arg(1).U32();
+                }
+                IR::Value data = inst.Arg(1).Resolve();
+                for (s32 i = 0; i < num_components; i++) {
+                    const auto attrib = IR::Attribute::Param0 + (offset / 16);
+                    const auto comp = (offset / 4) % 4;
+                    const IR::U32 value = IR::U32{is_composite ? data.Inst()->Arg(i) : data};
+                    ir.SetAttribute(attrib, ir.BitCast<IR::F32, IR::U32>(value), comp);
+                    offset += 4;
+                }
+                inst.Invalidate();
+                break;
+            }
+            default:
+                break;
+            }
+        });
+        break;
+    }
     case Stage::Export: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
             case IR::Opcode::StoreBufferU32: {
-                if (!inst.Flags<IR::BufferInstInfo>().ring_access) {
+                const auto info = inst.Flags<IR::BufferInstInfo>();
+                if (!info.system_coherent || !info.globally_coherent) {
                     break;
                 }
 
@@ -61,12 +96,13 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
             case IR::Opcode::LoadBufferU32: {
-                if (!inst.Flags<IR::BufferInstInfo>().ring_access) {
+                const auto info = inst.Flags<IR::BufferInstInfo>();
+                if (!info.system_coherent || !info.globally_coherent) {
                     break;
                 }
 
                 const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = shl_inst->Arg(0).Resolve().U32() >> 2;
+                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
                 const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
                 const auto bucket = offset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
@@ -80,7 +116,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 break;
             }
             case IR::Opcode::StoreBufferU32: {
-                if (!inst.Flags<IR::BufferInstInfo>().ring_access) {
+                const auto buffer_info = inst.Flags<IR::BufferInstInfo>();
+                if (!buffer_info.system_coherent || !buffer_info.globally_coherent) {
                     break;
                 }
 

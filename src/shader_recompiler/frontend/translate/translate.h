@@ -94,7 +94,8 @@ public:
     void S_ASHR_I32(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
-    void S_BFE_U32(const GcnInst& inst);
+    void S_BFE(const GcnInst& inst, bool is_signed);
+    void S_BFE_I32(const GcnInst& inst);
     void S_ABSDIFF_I32(const GcnInst& inst);
     void S_NOT_B32(const GcnInst& inst);
 
@@ -217,7 +218,7 @@ public:
 
     // VOP3a
     void V_MAD_F32(const GcnInst& inst);
-    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = false);
+    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = true);
     void V_MAD_U32_U24(const GcnInst& inst);
     void V_CUBEID_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);

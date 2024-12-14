@@ -1060,8 +1060,14 @@ void Translator::V_CUBEMA_F32(const GcnInst& inst) {
 
 void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{ir.BitwiseAnd(GetSrc(inst.src[1]), ir.Imm32(0x1F))};
-    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
+    IR::U32 src1{GetSrc(inst.src[1])};
+    IR::U32 src2{GetSrc(inst.src[2])};
+    if (!src1.IsImmediate()) {
+        src1 = ir.BitwiseAnd(src1, ir.Imm32(0x1F));
+    }
+    if (!src2.IsImmediate()) {
+        src2 = ir.BitwiseAnd(src2, ir.Imm32(0x1F));
+    }
     SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 

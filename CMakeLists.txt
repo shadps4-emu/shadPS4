@@ -664,6 +664,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/flatten_extended_userdata_pass.cpp
+                      src/shader_recompiler/ir/passes/hull_shader_transform.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
@@ -683,6 +684,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
+                      src/shader_recompiler/ir/patch.cpp
+                      src/shader_recompiler/ir/patch.h
                       src/shader_recompiler/ir/post_order.cpp
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp

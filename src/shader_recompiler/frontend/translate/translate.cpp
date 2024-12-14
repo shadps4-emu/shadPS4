@@ -8,6 +8,8 @@
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/types.h"
@@ -34,9 +36,8 @@ void Translator::EmitPrologue() {
     }
 
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
-    switch (info.stage) {
-    case Stage::Vertex:
-    case Stage::Export:
+    switch (info.l_stage) {
+    case LogicalStage::Vertex:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
         // v1: instance ID, step rate 0
@@ -52,7 +53,7 @@ void Translator::EmitPrologue() {
             ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
         }
         break;
-    case Stage::Fragment:
+    case LogicalStage::Fragment:
         dst_vreg = IR::VectorReg::V0;
         if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
             ++dst_vreg; // I
@@ -122,7 +123,30 @@ void Translator::EmitPrologue() {
             }
         }
         break;
-    case Stage::Compute:
+    case LogicalStage::TessellationControl: {
+        // Should be laid out like:
+        // [0:8]: patch id within VGT
+        // [8:12]: output control point id
+        ir.SetVectorReg(IR::VectorReg::V1,
+                        ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
+        // TODO PrimitiveId is probably V2 but haven't seen it yet
+        break;
+    }
+    case LogicalStage::TessellationEval:
+        ir.SetVectorReg(IR::VectorReg::V0,
+                        ir.GetAttribute(IR::Attribute::TessellationEvaluationPointU));
+        ir.SetVectorReg(IR::VectorReg::V1,
+                        ir.GetAttribute(IR::Attribute::TessellationEvaluationPointV));
+        // V2 is similar to PrimitiveID but not the same. It seems to only be used in
+        // compiler-generated address calculations. Its probably the patch id within the
+        // patches running locally on a given VGT (or CU, whichever is the granularity of LDS
+        // memory)
+        // Set to 0. See explanation in comment describing hull/domain passes
+        ir.SetVectorReg(IR::VectorReg::V2, ir.Imm32(0u));
+        // V3 is the actual PrimitiveID as intended by the shader author.
+        ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        break;
+    case LogicalStage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 1));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 2));
@@ -137,7 +161,7 @@ void Translator::EmitPrologue() {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
         }
         break;
-    case Stage::Geometry:
+    case LogicalStage::Geometry:
         switch (runtime_info.gs_info.out_primitive[0]) {
         case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
             ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
@@ -152,7 +176,7 @@ void Translator::EmitPrologue() {
         ir.SetVectorReg(IR::VectorReg::V2, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
     default:
-        throw NotImplementedException("Unknown shader stage");
+        UNREACHABLE_MSG("Unknown shader stage");
     }
 }
 
@@ -503,7 +527,8 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
 
         // Special case for emitting fetch shader.
         if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export);
+            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export ||
+                   info.stage == Stage::Local);
             translator.EmitFetch(inst);
             continue;
         }
