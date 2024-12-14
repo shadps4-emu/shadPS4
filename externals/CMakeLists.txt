@@ -110,7 +110,7 @@ if (NOT TARGET glslang::glslang)
     set(ENABLE_OPT OFF CACHE BOOL "")
     add_subdirectory(glslang)
     file(COPY glslang/SPIRV DESTINATION glslang/glslang FILES_MATCHING PATTERN "*.h")
-    target_include_directories(SPIRV INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
+    target_include_directories(glslang INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
 endif()
 
 # Robin-map
