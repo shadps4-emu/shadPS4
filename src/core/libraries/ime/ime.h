@@ -26,6 +26,24 @@ enum class OrbisImeKeyboardOption : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
 
+enum class OrbisImeOption : u32 {
+    DEFAULT = 0,
+    MULTILINE = 1,
+    NO_AUTO_CAPITALIZATION = 2,
+    PASSWORD = 4,
+    LANGUAGES_FORCED = 8,
+    EXT_KEYBOARD = 16,
+    NO_LEARNING = 32,
+    FIXED_POSITION = 64,
+    DISABLE_RESUME = 256,
+    DISABLE_AUTO_SPACE = 512,
+    DISABLE_POSITION_ADJUSTMENT = 2048,
+    EXPANDED_PREEDIT_BUFFER = 4096,
+    USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
+    USE_2K_COORDINATES = 16384,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption)
+
 struct OrbisImeKeyboardParam {
     OrbisImeKeyboardOption option;
     s8 reserved1[4];
@@ -41,9 +59,9 @@ struct OrbisImeParam {
     OrbisImeEnterLabel enter_label;
     OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
-    u32 option;
-    u32 max_text_length;
-    char16_t* input_text_buffer;
+    OrbisImeOption option;
+    u32 maxTextLength;
+    char16_t* inputTextBuffer;
     float posx;
     float posy;
     OrbisImeHorizontalAlignment horizontal_alignment;
@@ -93,7 +111,7 @@ int PS4_SYSV_ABI sceImeOpenInternal();
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param);
 int PS4_SYSV_ABI sceImeSetCandidateIndex();
 s32 PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret);
-int PS4_SYSV_ABI sceImeSetText();
+s32 PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length);
 int PS4_SYSV_ABI sceImeSetTextGeometry();
 s32 PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler);
 int PS4_SYSV_ABI sceImeVshClearPreedit();

@@ -7,6 +7,7 @@
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
@@ -122,6 +123,8 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     }
     case Shader::Stage::Fragment: {
         BuildCommon(regs.ps_program);
+        info.fs_info.en_flags = regs.ps_input_ena;
+        info.fs_info.addr_flags = regs.ps_input_addr;
         const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
         for (u32 i = 0; i < regs.num_interp; i++) {
@@ -168,6 +171,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_explicit_workgroup_layout = true,
+        .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
+        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
+                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -183,10 +189,19 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = graphics_pipeline_pool.Create(instance, scheduler, desc_heap, graphics_key,
-                                                   *pipeline_cache, infos, modules);
+        it.value() =
+            std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, graphics_key,
+                                               *pipeline_cache, infos, fetch_shader, modules);
+        if (Config::collectShadersForDebug()) {
+            for (auto stage = 0; stage < MaxShaderStages; ++stage) {
+                if (infos[stage]) {
+                    auto& m = modules[stage];
+                    module_related_pipelines[m].emplace_back(graphics_key);
+                }
+            }
+        }
     }
-    return it->second;
+    return it->second.get();
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
@@ -195,10 +210,14 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = compute_pipeline_pool.Create(instance, scheduler, desc_heap, *pipeline_cache,
-                                                  compute_key, *infos[0], modules[0]);
+        it.value() = std::make_unique<ComputePipeline>(
+            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
+        if (Config::collectShadersForDebug()) {
+            auto& m = modules[0];
+            module_related_pipelines[m].emplace_back(compute_key);
+        }
     }
-    return it->second;
+    return it->second.get();
 }
 
 bool PipelineCache::RefreshGraphicsKey() {
@@ -249,6 +268,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
     // order. We need to do some arrays compaction at this stage
+    key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
     key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
     key.blend_controls.fill({});
@@ -258,11 +278,19 @@ bool PipelineCache::RefreshGraphicsKey() {
 
     // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
     // recompiler.
-    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
         if (skip_cb_binding || !col_buf) {
+            // No attachment bound and no incremented index.
             continue;
         }
+
+        const auto remapped_cb = key.num_color_attachments++;
+        if (!regs.color_target_mask.GetMask(cb)) {
+            // Bound to null handle, skip over this attachment index.
+            continue;
+        }
+
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         key.color_formats[remapped_cb] =
@@ -271,9 +299,9 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
         }
-
-        ++remapped_cb;
     }
+
+    fetch_shader = std::nullopt;
 
     Shader::Backend::Bindings binding{};
     const auto& TryBindStageRemap = [&](Shader::Stage stage_in, Shader::Stage stage_out) -> bool {
@@ -301,8 +329,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         auto params = Liverpool::GetParams(*pgm);
-        std::tie(infos[stage_out_idx], modules[stage_out_idx], key.stage_hashes[stage_out_idx]) =
-            GetProgram(stage_in, params, binding);
+        std::optional<Shader::Gcn::FetchShaderData> fetch_shader_;
+        std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader_,
+                 key.stage_hashes[stage_out_idx]) = GetProgram(stage_in, params, binding);
+        if (fetch_shader_) {
+            fetch_shader = fetch_shader_;
+        }
         return true;
     };
 
@@ -338,16 +370,14 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     }
 
-    const auto* vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
-    if (vs_info && !instance.IsVertexInputDynamicState()) {
+    const auto vs_info = infos[static_cast<u32>(Shader::Stage::Vertex)];
+    if (vs_info && fetch_shader && !instance.IsVertexInputDynamicState()) {
         u32 vertex_binding = 0;
-        for (const auto& input : vs_info->vs_inputs) {
-            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+        for (const auto& attrib : fetch_shader->attributes) {
+            if (attrib.UsesStepRates()) {
                 continue;
             }
-            const auto& buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto& buffer = attrib.GetSharp(*vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
@@ -362,9 +392,18 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || (key.mrt_mask & (1u << cb)) == 0) {
-            key.color_formats[cb] = vk::Format::eUndefined;
-            key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+        if (skip_cb_binding || !col_buf) {
+            // No attachment bound and no incremented index.
+            continue;
+        }
+
+        if (!regs.color_target_mask.GetMask(cb) || (key.mrt_mask & (1u << cb)) == 0) {
+            // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
+            // of the latter we need to change format to undefined, and either way we need to
+            // increment the index for the null attachment binding.
+            key.color_formats[remapped_cb] = vk::Format::eUndefined;
+            key.mrt_swizzles[remapped_cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+            ++remapped_cb;
             continue;
         }
 
@@ -373,10 +412,9 @@ bool PipelineCache::RefreshGraphicsKey() {
                                                       !col_buf.info.blend_bypass);
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
+        ++remapped_cb;
 
         num_samples = std::max(num_samples, 1u << col_buf.attrib.num_samples_log2);
-
-        ++remapped_cb;
     }
 
     // It seems that the number of samples > 1 set in the AA config doesn't mean we're always
@@ -391,7 +429,7 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const auto cs_params = Liverpool::GetParams(*cs_pgm);
-    std::tie(infos[0], modules[0], compute_key) =
+    std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
         GetProgram(Shader::Stage::Compute, cs_params, binding);
     return true;
 }
@@ -407,36 +445,47 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+    vk::ShaderModule module;
+
     auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
-    if (patch) {
-        spv = *patch;
+    const bool is_patched = patch && Config::patchShaders();
+    if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
+        module = CompileSPV(*patch, instance.GetDevice());
+    } else {
+        module = CompileSPV(spv, instance.GetDevice());
     }
 
-    const auto module = CompileSPV(spv, instance.GetDevice());
-    const auto name = fmt::format("{}_{:#x}_{}", info.stage, info.pgm_hash, perm_idx);
+    const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
+    if (Config::collectShadersForDebug()) {
+        DebugState.CollectShader(name, module, spv, code, patch ? *patch : std::span<const u32>{},
+                                 is_patched);
+    }
     return module;
 }
 
-std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram(
-    Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding) {
+std::tuple<const Shader::Info*, vk::ShaderModule, std::optional<Shader::Gcn::FetchShaderData>, u64>
+PipelineCache::GetProgram(Shader::Stage stage, Shader::ShaderParams params,
+                          Shader::Backend::Bindings& binding) {
     const auto runtime_info = BuildRuntimeInfo(stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
-        Program* program = program_pool.Create(stage, params);
+        it_pgm.value() = std::make_unique<Program>(stage, params);
+        auto& program = it_pgm.value();
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start);
+        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         program->AddPermut(module, std::move(spec));
-        it_pgm.value() = program;
-        return std::make_tuple(&program->info, module, HashCombine(params.hash, 0));
+        return std::make_tuple(&program->info, module, spec.fetch_shader_data,
+                               HashCombine(params.hash, 0));
     }
 
-    Program* program = it_pgm->second;
+    auto& program = it_pgm.value();
     auto& info = program->info;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, binding);
+    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
 
@@ -450,7 +499,36 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
     }
-    return std::make_tuple(&info, module, HashCombine(params.hash, perm_idx));
+    return std::make_tuple(&info, module, spec.fetch_shader_data,
+                           HashCombine(params.hash, perm_idx));
+}
+
+std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,
+                                                             std::span<const u32> spv_code) {
+    std::optional<vk::ShaderModule> new_module{};
+    for (const auto& [_, program] : program_cache) {
+        for (auto& m : program->modules) {
+            if (m.module == module) {
+                const auto& d = instance.GetDevice();
+                d.destroyShaderModule(m.module);
+                m.module = CompileSPV(spv_code, d);
+                new_module = m.module;
+            }
+        }
+    }
+    if (module_related_pipelines.contains(module)) {
+        auto& pipeline_keys = module_related_pipelines[module];
+        for (auto& key : pipeline_keys) {
+            if (std::holds_alternative<GraphicsPipelineKey>(key)) {
+                auto& graphics_key = std::get<GraphicsPipelineKey>(key);
+                graphics_pipelines.erase(graphics_key);
+            } else if (std::holds_alternative<ComputePipelineKey>(key)) {
+                auto& compute_key = std::get<ComputePipelineKey>(key);
+                compute_pipelines.erase(compute_key);
+            }
+        }
+    }
+    return new_module;
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
@@ -472,9 +550,6 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
 std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
                                                               size_t perm_idx,
                                                               std::string_view ext) {
-    if (!Config::patchShaders()) {
-        return {};
-    }
 
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";

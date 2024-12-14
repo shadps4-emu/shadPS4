@@ -164,7 +164,6 @@ IR::Opcode UndefOpcode(const FlagTag) noexcept {
 enum class Status {
     Start,
     SetValue,
-    PreparePhiArgument,
     PushPhiArgument,
 };
 
@@ -253,11 +252,9 @@ public:
                 IR::Inst* const phi{stack.back().phi};
                 phi->AddPhiOperand(*stack.back().pred_it, stack.back().result);
                 ++stack.back().pred_it;
-            }
-                [[fallthrough]];
-            case Status::PreparePhiArgument:
                 prepare_phi_operand();
                 break;
+            }
             }
         } while (stack.size() > 1);
         return stack.back().result;
@@ -266,9 +263,7 @@ public:
     void SealBlock(IR::Block* block) {
         const auto it{incomplete_phis.find(block)};
         if (it != incomplete_phis.end()) {
-            for (auto& pair : it->second) {
-                auto& variant{pair.first};
-                auto& phi{pair.second};
+            for (auto& [variant, phi] : it->second) {
                 std::visit([&](auto& variable) { AddPhiOperands(variable, *phi, block); }, variant);
             }
         }
@@ -289,7 +284,7 @@ private:
         const size_t num_args{phi.NumArgs()};
         for (size_t arg_index = 0; arg_index < num_args; ++arg_index) {
             const IR::Value& op{phi.Arg(arg_index)};
-            if (op.Resolve() == same.Resolve() || op == IR::Value{&phi}) {
+            if (op.Resolve() == same.Resolve() || op.Resolve() == IR::Value{&phi}) {
                 // Unique value or self-reference
                 continue;
             }
@@ -314,9 +309,15 @@ private:
             ++reinsert_point;
         }
         // Reinsert the phi node and reroute all its uses to the "same" value
+        const auto users = phi.Uses();
         list.insert(reinsert_point, phi);
         phi.ReplaceUsesWith(same);
-        // TODO: Try to recursively remove all phi users, which might have become trivial
+        // Try to recursively remove all phi users, which might have become trivial
+        for (const auto& [user, arg_index] : users) {
+            if (user->GetOpcode() == IR::Opcode::Phi) {
+                TryRemoveTrivialPhi(*user, user->GetParent(), undef_opcode);
+            }
+        }
         return same;
     }
 

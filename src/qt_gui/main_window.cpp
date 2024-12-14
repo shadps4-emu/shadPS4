@@ -39,7 +39,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 MainWindow::~MainWindow() {
     SaveWindowState();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::save(config_dir / "config.toml");
+    Config::saveMainWindow(config_dir / "config.toml");
 }
 
 bool MainWindow::Init() {
@@ -1016,7 +1016,7 @@ void MainWindow::AddRecentFiles(QString filePath) {
     }
     Config::setRecentFiles(vec);
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::save(config_dir / "config.toml");
+    Config::saveMainWindow(config_dir / "config.toml");
     CreateRecentGameActions(); // Refresh the QActions.
 }
 

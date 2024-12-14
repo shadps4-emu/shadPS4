@@ -179,6 +179,16 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FFBH_U32(inst);
     case Opcode::V_FFBL_B32:
         return V_FFBL_B32(inst);
+    case Opcode::V_FREXP_EXP_I32_F64:
+        return V_FREXP_EXP_I32_F64(inst);
+    case Opcode::V_FREXP_MANT_F64:
+        return V_FREXP_MANT_F64(inst);
+    case Opcode::V_FRACT_F64:
+        return V_FRACT_F64(inst);
+    case Opcode::V_FREXP_EXP_I32_F32:
+        return V_FREXP_EXP_I32_F32(inst);
+    case Opcode::V_FREXP_MANT_F32:
+        return V_FREXP_MANT_F32(inst);
     case Opcode::V_MOVRELD_B32:
         return V_MOVRELD_B32(inst);
     case Opcode::V_MOVRELS_B32:
@@ -733,7 +743,7 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    SetDst(inst.dst[0], ir.Fract(src0));
+    SetDst(inst.dst[0], ir.FPFract(src0));
 }
 
 void Translator::V_TRUNC_F32(const GcnInst& inst) {
@@ -820,6 +830,31 @@ void Translator::V_FFBH_U32(const GcnInst& inst) {
 void Translator::V_FFBL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.FindILsb(src0));
+}
+
+void Translator::V_FREXP_EXP_I32_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpExp(src0));
+}
+
+void Translator::V_FREXP_MANT_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFrexpSig(src0));
+}
+
+void Translator::V_FRACT_F64(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFract(src0));
+}
+
+void Translator::V_FREXP_EXP_I32_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpExp(src0));
+}
+
+void Translator::V_FREXP_MANT_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPFrexpSig(src0));
 }
 
 void Translator::V_MOVRELD_B32(const GcnInst& inst) {
@@ -1155,15 +1190,23 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    if (src0.IsImmediate() && src0.U64() == -1) {
-        ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
-        ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
-        return;
+    if (src0.IsImmediate()) {
+        if (src0.U64() == -1) {
+            // If src0 is a fixed -1, the result will always be -1.
+            ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
+            ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
+            return;
+        }
+        if (src1.IsImmediate()) {
+            // If both src0 and src1 are immediates, we can calculate the result now.
+            // Note that according to the manual, only bits 4:0 are used from src1.
+            const u64 result = src0.U64() << (src1.U64() & 0x1F);
+            ir.SetVectorReg(dst_reg, ir.Imm32(static_cast<u32>(result)));
+            ir.SetVectorReg(dst_reg + 1, ir.Imm32(static_cast<u32>(result >> 32)));
+            return;
+        }
     }
-    ASSERT_MSG(src0.IsImmediate() && src0.U64() == 0 && src1.IsImmediate() && src1.U64() == 0,
-               "V_LSHL_B64 with non-zero src0 or src1 is not supported");
-    ir.SetVectorReg(dst_reg, ir.Imm32(0));
-    ir.SetVectorReg(dst_reg + 1, ir.Imm32(0));
+    UNREACHABLE_MSG("Unimplemented V_LSHL_B64 arguments");
 }
 
 void Translator::V_MUL_F64(const GcnInst& inst) {

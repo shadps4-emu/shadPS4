@@ -142,7 +142,7 @@ struct OrbisImeKeycode {
 
 struct OrbisImeKeyboardResourceIdArray {
     s32 userId;
-    u32 resource_id[6];
+    u32 resourceId[5];
 };
 
 enum class OrbisImeCaretMovementDirection : u32 {

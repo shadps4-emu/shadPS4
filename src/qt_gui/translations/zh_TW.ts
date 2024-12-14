@@ -840,8 +840,8 @@
 		<name>CheatsPatches</name>
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
-			<source>Cheats / Patches</source>
-			<translation>作弊碼 / 修補檔</translation>
+			<source>Cheats / Patches for </source>
+			<translation>Cheats / Patches for </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -1358,6 +1358,11 @@
 			<location filename="../game_list_frame.cpp" line="38"/>
 			<source>Play Time</source>
 			<translation>遊玩時間</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="108"/>
+			<source>Never Played</source>
+			<translation>Never Played</translation>
 		</message>
 	</context>
 	<context>

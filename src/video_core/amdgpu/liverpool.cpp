@@ -46,7 +46,7 @@ Liverpool::~Liverpool() {
 }
 
 void Liverpool::Process(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:GPU_CommandProcessor");
+    Common::SetCurrentThreadName("shadPS4:GpuCommandProcessor");
 
     while (!stoken.stop_requested()) {
         {
@@ -159,6 +159,19 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
                 co_yield {};
                 TracyFiberEnter(ccb_task_name);
             }
+            break;
+        }
+        case PM4ItOpcode::IndirectBufferConst: {
+            const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            auto task =
+                ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            while (!task.handle.done()) {
+                task.handle.resume();
+
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(ccb_task_name);
+            };
             break;
         }
         default:
@@ -552,7 +565,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DmaData: {
                 const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
-                if (dma_data->dst_addr_lo == 0x3022C) {
+                if (dma_data->dst_addr_lo == 0x3022C || !rasterizer) {
                     break;
                 }
                 if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
@@ -597,6 +610,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
                 break;
             }
+            case PM4ItOpcode::Rewind: {
+                const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+                while (!rewind->Valid()) {
+                    mapped_queues[GfxQueueId].cs_state = regs.cs_program;
+                    TracyFiberLeave;
+                    co_yield {};
+                    TracyFiberEnter(dcb_task_name);
+                    regs.cs_program = mapped_queues[GfxQueueId].cs_state;
+                }
+                break;
+            }
             case PM4ItOpcode::WaitRegMem: {
                 const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
                 // ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
@@ -615,6 +639,19 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     TracyFiberEnter(dcb_task_name);
                     regs.cs_program = mapped_queues[GfxQueueId].cs_state;
                 }
+                break;
+            }
+            case PM4ItOpcode::IndirectBuffer: {
+                const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+                auto task = ProcessGraphics(
+                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
+                while (!task.handle.done()) {
+                    task.handle.resume();
+
+                    TracyFiberLeave;
+                    co_yield {};
+                    TracyFiberEnter(dcb_task_name);
+                };
                 break;
             }
             case PM4ItOpcode::IncrementDeCounter: {
@@ -687,7 +724,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::DmaData: {
             const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
-            if (dma_data->dst_addr_lo == 0x3022C) {
+            if (dma_data->dst_addr_lo == 0x3022C || !rasterizer) {
                 break;
             }
             if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
@@ -702,7 +739,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
                                        false);
             } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
-                LOG_WARNING(Render_Vulkan, "GDS memory read");
+                // LOG_WARNING(Render_Vulkan, "GDS memory read");
             } else if (dma_data->src_sel == DmaDataSrc::Memory &&
                        dma_data->dst_sel == DmaDataDst::Memory) {
                 rasterizer->InlineData(dma_data->DstAddress<VAddr>(),
@@ -715,6 +752,17 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             break;
         }
         case PM4ItOpcode::AcquireMem: {
+            break;
+        }
+        case PM4ItOpcode::Rewind: {
+            const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+            while (!rewind->Valid()) {
+                mapped_queues[vqid].cs_state = regs.cs_program;
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(acb_task_name);
+                regs.cs_program = mapped_queues[vqid].cs_state;
+            }
             break;
         }
         case PM4ItOpcode::SetShReg: {

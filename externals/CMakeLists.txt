@@ -8,6 +8,9 @@ set_directory_properties(PROPERTIES
     SYSTEM ON
 )
 
+# Set CMP0069 policy to "NEW" in order to ensure consistent behavior when building external targets with LTO enabled
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+
 if (MSVC)
     # Silence "deprecation" warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
@@ -35,7 +38,7 @@ else()
     if (NOT TARGET cryptopp::cryptopp)
         set(CRYPTOPP_INSTALL OFF)
         set(CRYPTOPP_BUILD_TESTING OFF)
-        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
+        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp)
         add_subdirectory(cryptopp-cmake)
         file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
         # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
@@ -69,7 +72,7 @@ if (NOT TARGET ZLIB::ZLIB)
     FetchContent_MakeAvailable(ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlib)
     # libpng expects this variable to exist after its find_package(ZLIB)
-    get_target_property(ZLIB_INCLUDE_DIRS zlib INTERFACE_INCLUDE_DIRECTORIES)
+    set(ZLIB_INCLUDE_DIRS "${FETCHCONTENT_BASE_DIR}/zlib-build")
 endif()
 
 # SDL3
@@ -216,9 +219,16 @@ endif()
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     set(BUILD_EXAMPLES OFF)
-    add_subdirectory(discord-rpc/)
+    add_subdirectory(discord-rpc)
     target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 endif()
 
 # GCN Headers
 add_subdirectory(gcn)
+
+# stb
+if (NOT TARGET stb::headers)
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE stb)
+    add_library(stb::headers ALIAS stb)
+endif()

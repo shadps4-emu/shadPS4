@@ -113,13 +113,14 @@ find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
-find_package(magic_enum 0.9.6 CONFIG)
+find_package(magic_enum 0.9.7 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
+find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.3.289 CONFIG)
+find_package(VulkanHeaders 1.4.303 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -209,7 +210,10 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/threads/condvar.cpp
+set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
+               src/core/libraries/kernel/sync/mutex.h
+               src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
                src/core/libraries/kernel/threads/exception.h
@@ -435,10 +439,14 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
               src/core/devtools/widget/imgui_memory_editor.h
+              src/core/devtools/widget/memory_map.cpp
+              src/core/devtools/widget/memory_map.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp
               src/core/devtools/widget/reg_view.h
+              src/core/devtools/widget/shader_list.cpp
+              src/core/devtools/widget/shader_list.h
               src/core/devtools/widget/text_editor.cpp
               src/core/devtools/widget/text_editor.h
 )
@@ -491,6 +499,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h
+           src/common/stb.cpp
+           src/common/stb.h
            src/common/string_util.cpp
            src/common/string_util.h
            src/common/thread.cpp
@@ -498,6 +508,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/types.h
            src/common/uint128.h
            src/common/unique_function.h
+           src/common/va_ctx.h
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
@@ -522,6 +533,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h
          src/core/crypto/keys.h
+         src/core/devices/base_device.cpp
+         src/core/devices/base_device.h
+         src/core/devices/ioccom.h
+         src/core/devices/logger.cpp
+         src/core/devices/logger.h
+         src/core/devices/nop_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h
@@ -721,6 +738,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_shader_hle.cpp
+               src/video_core/renderer_vulkan/vk_shader_hle.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
@@ -862,10 +881,18 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
+
+if (ENABLE_DISCORD_RPC)
+    target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+endif()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+endif()
 
 if (APPLE)
   option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)

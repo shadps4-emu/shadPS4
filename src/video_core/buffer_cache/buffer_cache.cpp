@@ -5,6 +5,7 @@
 #include "common/alignment.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -107,7 +108,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     }
 }
 
-bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
+bool BufferCache::BindVertexBuffers(
+    const Shader::Info& vs_info, const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader) {
     boost::container::small_vector<vk::VertexInputAttributeDescription2EXT, 16> attributes;
     boost::container::small_vector<vk::VertexInputBindingDescription2EXT, 16> bindings;
     SCOPE_EXIT {
@@ -126,7 +128,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
     };
 
-    if (vs_info.vs_inputs.empty()) {
+    if (!fetch_shader || fetch_shader->attributes.empty()) {
         return false;
     }
 
@@ -150,30 +152,29 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
     // Calculate buffers memory overlaps
     bool has_step_rate = false;
     boost::container::static_vector<BufferRange, NumVertexBuffers> ranges{};
-    for (const auto& input : vs_info.vs_inputs) {
-        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+    for (const auto& attrib : fetch_shader->attributes) {
+        if (attrib.UsesStepRates()) {
             has_step_rate = true;
             continue;
         }
 
-        const auto& buffer = vs_info.ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto& buffer = attrib.GetSharp(vs_info);
         if (buffer.GetSize() == 0) {
             continue;
         }
         guest_buffers.emplace_back(buffer);
         ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
         attributes.push_back({
-            .location = input.binding,
-            .binding = input.binding,
+            .location = attrib.semantic,
+            .binding = attrib.semantic,
             .format =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back({
-            .binding = input.binding,
+            .binding = attrib.semantic,
             .stride = buffer.GetStride(),
-            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+            .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
                              ? vk::VertexInputRate::eVertex
                              : vk::VertexInputRate::eInstance,
             .divisor = 1,
@@ -236,7 +237,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList && !is_indexed) {
         is_indexed = true;
 
         // Emit indices.
@@ -261,6 +262,32 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
     VAddr index_address = regs.index_base_address.Address<VAddr>();
     index_address += index_offset * index_size;
+
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+        // Convert indices.
+        const u32 new_index_size = regs.num_indices * index_size * 6 / 4;
+        const auto [data, offset] = stream_buffer.Map(new_index_size);
+        const auto index_ptr = reinterpret_cast<u8*>(index_address);
+        switch (index_type) {
+        case vk::IndexType::eUint16:
+            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u16>(data, index_ptr,
+                                                                         regs.num_indices);
+            break;
+        case vk::IndexType::eUint32:
+            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u32>(data, index_ptr,
+                                                                         regs.num_indices);
+            break;
+        default:
+            UNREACHABLE_MSG("Unsupported QuadList index type {}", vk::to_string(index_type));
+            break;
+        }
+        stream_buffer.Commit();
+
+        // Bind index buffer.
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, index_type);
+        return new_index_size / index_size;
+    }
 
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
@@ -333,7 +360,8 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, bool prefer_gpu) {
+    // Check if any buffer contains the full requested range.
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
@@ -343,6 +371,13 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size) 
             return {&buffer, buffer.Offset(gpu_addr)};
         }
     }
+    // If no buffer contains the full requested range but some buffer within was GPU-modified,
+    // fall back to ObtainBuffer to create a full buffer and avoid losing GPU modifications.
+    // This is only done if the request prefers to use GPU memory, otherwise we can skip it.
+    if (prefer_gpu && memory_tracker.IsRegionGpuModified(gpu_addr, size)) {
+        return ObtainBuffer(gpu_addr, size, false, false);
+    }
+    // In all other cases, just do a CPU copy to the staging buffer.
     const u32 offset = staging_buffer.Copy(gpu_addr, size, 16);
     return {&staging_buffer, offset};
 }

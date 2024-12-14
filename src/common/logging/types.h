@@ -35,6 +35,7 @@ enum class Class : u8 {
     Common_Memory,         ///< Memory mapping and management functions
     Core,                  ///< LLE emulation core
     Core_Linker,           ///< The module linker
+    Core_Devices,          ///< Devices emulation
     Config,                ///< Emulator configuration (including commandline)
     Debug,                 ///< Debugging tools
     Kernel,                ///< The HLE implementation of the PS4 kernel.

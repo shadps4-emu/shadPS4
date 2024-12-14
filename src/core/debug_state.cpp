@@ -157,7 +157,7 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
     if (is_compute) {
         dump.is_compute = true;
         const auto& cs = dump.regs.cs_program;
-        dump.cs_data = ComputerShaderDump{
+        dump.cs_data = PipelineComputerProgramDump{
             .cs_program = cs,
             .code = std::vector<u32>{cs.Code().begin(), cs.Code().end()},
         };
@@ -167,7 +167,7 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
                 auto stage = regs.ProgramForStage(i);
                 if (stage->address_lo != 0) {
                     auto code = stage->Code();
-                    dump.stages[i] = ShaderDump{
+                    dump.stages[i] = PipelineShaderProgramDump{
                         .user_data = *stage,
                         .code = std::vector<u32>{code.begin(), code.end()},
                     };
@@ -175,4 +175,12 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
             }
         }
     }
+}
+
+void DebugStateImpl::CollectShader(const std::string& name, vk::ShaderModule module,
+                                   std::span<const u32> spv, std::span<const u32> raw_code,
+                                   std::span<const u32> patch_spv, bool is_patched) {
+    shader_dump_list.emplace_back(name, module, std::vector<u32>{spv.begin(), spv.end()},
+                                  std::vector<u32>{raw_code.begin(), raw_code.end()},
+                                  std::vector<u32>{patch_spv.begin(), patch_spv.end()}, is_patched);
 }

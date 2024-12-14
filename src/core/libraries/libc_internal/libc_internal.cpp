@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <cstdio>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -63,6 +64,15 @@ size_t PS4_SYSV_ABI internal_strlen(const char* str) {
 
 char* PS4_SYSV_ABI internal_strncpy(char* dest, const char* src, std::size_t count) {
     return std::strncpy(dest, src, count);
+}
+
+int PS4_SYSV_ABI internal_strncpy_s(char* dest, size_t destsz, const char* src, size_t count) {
+#ifdef _WIN64
+    return strncpy_s(dest, destsz, src, count);
+#else
+    std::strcpy(dest, src);
+    return 0;
+#endif
 }
 
 char* PS4_SYSV_ABI internal_strcat(char* dest, const char* src) {
@@ -237,6 +247,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_strlen);
     LIB_FUNCTION("6sJWiWSRuqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_strncpy);
+    LIB_FUNCTION("YNzNkJzYqEg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strncpy_s);
     LIB_FUNCTION("Ls4tzzhimqQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_strcat);
     LIB_FUNCTION("ob5xAW4ln-0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,

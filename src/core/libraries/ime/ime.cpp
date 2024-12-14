@@ -44,10 +44,14 @@ public:
             openEvent.param.rect.y = m_param.ime.posy;
         } else {
             openEvent.param.resource_id_array.userId = 1;
-            openEvent.param.resource_id_array.resource_id[0] = 1;
+            openEvent.param.resource_id_array.resourceId[0] = 1;
         }
 
-        Execute(nullptr, &openEvent, true);
+        // Are we supposed to call the event handler on init with
+        // ADD_OSK?
+        if (!ime_mode && False(m_param.key.option & OrbisImeKeyboardOption::AddOsk)) {
+            Execute(nullptr, &openEvent, true);
+        }
 
         if (ime_mode) {
             g_ime_state = ImeState(&m_param.ime);
@@ -56,6 +60,11 @@ public:
     }
 
     s32 Update(OrbisImeEventHandler handler) {
+        if (!m_ime_mode) {
+            /* We don't handle any events for ImeKeyboard */
+            return ORBIS_OK;
+        }
+
         std::unique_lock lock{g_ime_state.queue_mutex};
 
         while (!g_ime_state.event_queue.empty()) {
@@ -85,6 +94,16 @@ public:
         }
     }
 
+    s32 SetText(const char16_t* text, u32 length) {
+        g_ime_state.SetText(text, length);
+        return ORBIS_OK;
+    }
+
+    s32 SetCaret(const OrbisImeCaret* caret) {
+        g_ime_state.SetCaret(caret->index);
+        return ORBIS_OK;
+    }
+
     bool IsIme() {
         return m_ime_mode;
     }
@@ -98,6 +117,7 @@ private:
 };
 
 static std::unique_ptr<ImeHandler> g_ime_handler;
+static std::unique_ptr<ImeHandler> g_keyboard_handler;
 
 int PS4_SYSV_ABI FinalizeImeModule() {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
@@ -128,9 +148,6 @@ s32 PS4_SYSV_ABI sceImeClose() {
     LOG_INFO(Lib_Ime, "(STUBBED) called");
 
     if (!g_ime_handler) {
-        return ORBIS_IME_ERROR_NOT_OPENED;
-    }
-    if (!g_ime_handler->IsIme()) {
         return ORBIS_IME_ERROR_NOT_OPENED;
     }
 
@@ -233,14 +250,11 @@ s32 PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32*
 s32 PS4_SYSV_ABI sceImeKeyboardClose(s32 userId) {
     LOG_INFO(Lib_Ime, "(STUBBED) called");
 
-    if (!g_ime_handler) {
-        return ORBIS_IME_ERROR_NOT_OPENED;
-    }
-    if (g_ime_handler->IsIme()) {
+    if (!g_keyboard_handler) {
         return ORBIS_IME_ERROR_NOT_OPENED;
     }
 
-    g_ime_handler.release();
+    g_keyboard_handler.release();
     return ORBIS_OK;
 }
 
@@ -255,18 +269,17 @@ int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
 }
 
 s32 PS4_SYSV_ABI sceImeKeyboardOpen(s32 userId, const OrbisImeKeyboardParam* param) {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+    LOG_INFO(Lib_Ime, "called");
 
     if (!param) {
         return ORBIS_IME_ERROR_INVALID_ADDRESS;
     }
-    if (g_ime_handler) {
+    if (g_keyboard_handler) {
         return ORBIS_IME_ERROR_BUSY;
     }
 
-    // g_ime_handler = std::make_unique<ImeHandler>(param);
-    // return ORBIS_OK;
-    return ORBIS_IME_ERROR_CONNECTION_FAILED; // Fixup
+    g_keyboard_handler = std::make_unique<ImeHandler>(param);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceImeKeyboardOpenInternal() {
@@ -287,16 +300,14 @@ int PS4_SYSV_ABI sceImeKeyboardUpdate() {
 s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const void* extended) {
     LOG_INFO(Lib_Ime, "called");
 
-    if (!g_ime_handler) {
-        g_ime_handler = std::make_unique<ImeHandler>(param);
-    } else {
-        if (g_ime_handler->IsIme()) {
-            return ORBIS_IME_ERROR_BUSY;
-        }
-
-        g_ime_handler->Init((void*)param, true);
+    if (!param) {
+        return ORBIS_IME_ERROR_INVALID_ADDRESS;
+    }
+    if (g_ime_handler) {
+        return ORBIS_IME_ERROR_BUSY;
     }
 
+    g_ime_handler = std::make_unique<ImeHandler>(param);
     return ORBIS_OK;
 }
 
@@ -322,13 +333,29 @@ int PS4_SYSV_ABI sceImeSetCandidateIndex() {
 }
 
 int PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret) {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_Ime, "called");
+
+    if (!g_ime_handler) {
+        return ORBIS_IME_ERROR_NOT_OPENED;
+    }
+    if (!caret) {
+        return ORBIS_IME_ERROR_INVALID_ADDRESS;
+    }
+
+    return g_ime_handler->SetCaret(caret);
 }
 
-int PS4_SYSV_ABI sceImeSetText() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
+    LOG_TRACE(Lib_Ime, "called");
+
+    if (!g_ime_handler) {
+        return ORBIS_IME_ERROR_NOT_OPENED;
+    }
+    if (!text) {
+        return ORBIS_IME_ERROR_INVALID_ADDRESS;
+    }
+
+    return g_ime_handler->SetText(text, length);
 }
 
 int PS4_SYSV_ABI sceImeSetTextGeometry() {
@@ -337,13 +364,19 @@ int PS4_SYSV_ABI sceImeSetTextGeometry() {
 }
 
 s32 PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
-    LOG_TRACE(Lib_Ime, "called");
+    if (g_ime_handler) {
+        g_ime_handler->Update(handler);
+    }
 
-    if (!g_ime_handler) {
+    if (g_keyboard_handler) {
+        g_keyboard_handler->Update(handler);
+    }
+
+    if (!g_ime_handler || !g_keyboard_handler) {
         return ORBIS_IME_ERROR_NOT_OPENED;
     }
 
-    return g_ime_handler->Update(handler);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceImeVshClearPreedit() {

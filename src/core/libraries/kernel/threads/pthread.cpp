@@ -206,6 +206,7 @@ static void RunThread(void* arg) {
     DebugState.AddCurrentThreadToGuestList();
 
     /* Run the current thread's start routine with argument: */
+    curthread->native_thr.Initialize();
     void* ret = Core::ExecuteGuest(curthread->start_routine, curthread->arg);
 
     /* Remove thread from tracking */
@@ -241,6 +242,13 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
 
     static int TidCounter = 1;
     new_thread->tid = ++TidCounter;
+
+    if (new_thread->attr.stackaddr_attr == 0) {
+        /* Enforce minimum stack size of 64 KB */
+        static constexpr size_t MinimumStack = 64_KB;
+        auto& stacksize = new_thread->attr.stacksize_attr;
+        stacksize = std::max(stacksize, MinimumStack);
+    }
 
     if (thread_state->CreateStack(&new_thread->attr) != 0) {
         /* Insufficient memory to create a stack: */
@@ -280,8 +288,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
-    new_thread->native_thr = Core::Thread();
-    int ret = new_thread->native_thr.Create(RunThread, new_thread);
+    new_thread->native_thr = Core::NativeThread();
+    int ret = new_thread->native_thr.Create(RunThread, new_thread, &new_thread->attr);
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
     if (ret) {
         *thread = nullptr;
@@ -379,6 +387,7 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 
 int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     LOG_INFO(Kernel_Pthread, "name = {}", name);
+    Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
     thread->name = name;
     return ORBIS_OK;
 }
@@ -409,6 +418,33 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
     param->sched_priority = pthread->attr.prio;
     pthread->lock.unlock();
     thread_state->RefDelete(pthread);
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy policy,
+                                             const SchedParam* param) {
+    if (pthread == nullptr || param == nullptr) {
+        return POSIX_EINVAL;
+    }
+
+    auto* thread_state = ThrState::Instance();
+    if (pthread == g_curthread) {
+        g_curthread->lock.lock();
+    } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ 0); ret != 0) {
+        return ret;
+    }
+
+    if (pthread->attr.sched_policy == policy &&
+        (policy == SchedPolicy::Other || pthread->attr.prio == param->sched_priority)) {
+        pthread->attr.prio = param->sched_priority;
+        pthread->lock.unlock();
+        return 0;
+    }
+
+    // TODO: _thr_setscheduler
+    pthread->attr.sched_policy = policy;
+    pthread->attr.prio = param->sched_priority;
+    pthread->lock.unlock();
     return 0;
 }
 
@@ -495,6 +531,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setprio);
     LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
+    LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 
     // Posix-Kernel
@@ -510,6 +547,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("onNY9Byn-W8", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_join));
     LIB_FUNCTION("P41kTWUS3EI", "libkernel", 1, "libkernel", 1, 1,
                  ORBIS(posix_pthread_getschedparam));
+    LIB_FUNCTION("oIRFTjoILbg", "libkernel", 1, "libkernel", 1, 1,
+                 ORBIS(posix_pthread_setschedparam));
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);

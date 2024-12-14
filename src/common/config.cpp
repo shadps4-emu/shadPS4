@@ -47,6 +47,7 @@ static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
+static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
 static bool isNullGpu = false;
@@ -159,6 +160,10 @@ bool debugDump() {
     return isDebugDump;
 }
 
+bool collectShadersForDebug() {
+    return isShaderDebug;
+}
+
 bool showSplash() {
     return isShowSplash;
 }
@@ -233,6 +238,10 @@ void setScreenHeight(u32 height) {
 
 void setDebugDump(bool enable) {
     isDebugDump = enable;
+}
+
+void setCollectShaderForDebug(bool enable) {
+    isShaderDebug = enable;
 }
 
 void setShowSplash(bool enable) {
@@ -413,6 +422,10 @@ void setEmulatorLanguage(std::string language) {
     emulator_language = language;
 }
 
+void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config) {
+    settings_install_dirs = settings_install_dirs_config;
+}
+
 u32 getMainWindowGeometryX() {
     return main_window_geometry_x;
 }
@@ -571,6 +584,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
+        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
     }
 
     if (data.contains("GUI")) {
@@ -662,14 +676,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
     data["Debug"]["DebugDump"] = isDebugDump;
-    data["GUI"]["theme"] = mw_themes;
-    data["GUI"]["iconSize"] = m_icon_size;
-    data["GUI"]["sliderPos"] = m_slider_pos;
-    data["GUI"]["iconSizeGrid"] = m_icon_size_grid;
-    data["GUI"]["sliderPosGrid"] = m_slider_pos_grid;
-    data["GUI"]["gameTableMode"] = m_table_mode;
-    data["GUI"]["mw_width"] = m_window_size_W;
-    data["GUI"]["mw_height"] = m_window_size_H;
+    data["Debug"]["CollectShader"] = isShaderDebug;
 
     std::vector<std::string> install_dirs;
     for (const auto& dirString : settings_install_dirs) {
@@ -679,6 +686,43 @@ void save(const std::filesystem::path& path) {
 
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+    data["GUI"]["emulatorLanguage"] = emulator_language;
+    data["Settings"]["consoleLanguage"] = m_language;
+
+    std::ofstream file(path, std::ios::binary);
+    file << data;
+    file.close();
+}
+
+void saveMainWindow(const std::filesystem::path& path) {
+    toml::value data;
+
+    std::error_code error;
+    if (std::filesystem::exists(path, error)) {
+        try {
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifs.open(path, std::ios_base::binary);
+            data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+        } catch (const std::exception& ex) {
+            fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
+            return;
+        }
+    } else {
+        if (error) {
+            fmt::print("Filesystem error: {}\n", error.message());
+        }
+        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
+    }
+
+    data["GUI"]["mw_width"] = m_window_size_W;
+    data["GUI"]["mw_height"] = m_window_size_H;
+    data["GUI"]["theme"] = mw_themes;
+    data["GUI"]["iconSize"] = m_icon_size;
+    data["GUI"]["sliderPos"] = m_slider_pos;
+    data["GUI"]["iconSizeGrid"] = m_icon_size_grid;
+    data["GUI"]["sliderPosGrid"] = m_slider_pos_grid;
+    data["GUI"]["gameTableMode"] = m_table_mode;
     data["GUI"]["geometry_x"] = main_window_geometry_x;
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;
@@ -686,9 +730,6 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
-    data["GUI"]["emulatorLanguage"] = emulator_language;
-
-    data["Settings"]["consoleLanguage"] = m_language;
 
     std::ofstream file(path, std::ios::binary);
     file << data;
@@ -717,6 +758,7 @@ void setDefaultValues() {
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
+    isShaderDebug = false;
     isShowSplash = false;
     isAutoUpdate = false;
     isNullGpu = false;
@@ -731,6 +773,7 @@ void setDefaultValues() {
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;
+    separateupdatefolder = false;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {

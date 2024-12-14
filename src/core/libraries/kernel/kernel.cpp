@@ -9,6 +9,9 @@
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
+#include "common/va_ctx.h"
+#include "core/file_sys/fs.h"
+#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
@@ -24,6 +27,7 @@
 #ifdef _WIN64
 #include <Rpc.h>
 #endif
+#include <common/singleton.h>
 
 namespace Libraries::Kernel {
 
@@ -42,7 +46,7 @@ void KernelSignalRequest() {
 }
 
 static void KernelServiceThread(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:Kernel_ServiceThread");
+    Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
 
     while (!stoken.stop_requested()) {
         HLE_TRACE;
@@ -63,19 +67,6 @@ static void KernelServiceThread(std::stop_token stoken) {
 
 static PS4_SYSV_ABI void stack_chk_fail() {
     UNREACHABLE();
-}
-
-struct iovec {
-    void* iov_base; /* Base	address. */
-    size_t iov_len; /* Length. */
-};
-
-size_t PS4_SYSV_ABI _writev(int fd, const struct iovec* iov, int iovcn) {
-    size_t total_written = 0;
-    for (int i = 0; i < iovcn; i++) {
-        total_written += ::fwrite(iov[i].iov_base, 1, iov[i].iov_len, stdout);
-    }
-    return total_written;
 }
 
 static thread_local int g_posix_errno = 0;
@@ -142,24 +133,11 @@ void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
 }
 
 s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
-    if (d <= 2) { // stdin,stdout,stderr
-        std::string_view str{buf};
-        if (str[nbytes - 1] == '\n') {
-            str = str.substr(0, nbytes - 1);
-        }
-        LOG_INFO(Tty, "{}", str);
-        return nbytes;
-    }
-    LOG_ERROR(Kernel, "(STUBBED) called d = {} nbytes = {} ", d, nbytes);
-    UNREACHABLE();
-    return ORBIS_OK;
+    return sceKernelWrite(d, buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
-    ASSERT_MSG(d == 0, "d is not 0!");
-
-    return static_cast<s64>(
-        strlen(std::fgets(static_cast<char*>(buf), static_cast<int>(nbytes), stdin)));
+    return sceKernelRead(d, buf, nbytes);
 }
 
 struct OrbisKernelUuid {
@@ -189,6 +167,29 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
     return 0;
 }
 
+int PS4_SYSV_ABI kernel_ioctl(int fd, u64 cmd, VA_ARGS) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
+        g_posix_errno = POSIX_EBADF;
+        return -1;
+    }
+    if (file->type != Core::FileSys::FileType::Device) {
+        LOG_WARNING(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file->type != Device", fd, cmd);
+        g_posix_errno = ENOTTY;
+        return -1;
+    }
+    VA_CTX(ctx);
+    int result = file->device->ioctl(cmd, &ctx);
+    LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
     const char* path = "sys";
     return path;
@@ -203,7 +204,7 @@ int PS4_SYSV_ABI _sigprocmask() {
 }
 
 int PS4_SYSV_ABI posix_getpagesize() {
-    return 4096;
+    return 16_KB;
 }
 
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
@@ -219,19 +220,20 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterException(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
+    LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", 1, 1, _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
-    LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
     LIB_FUNCTION("k+AXqu2-eBc", "libkernel", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
+    LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, ps4__write);
 }
 
 } // namespace Libraries::Kernel

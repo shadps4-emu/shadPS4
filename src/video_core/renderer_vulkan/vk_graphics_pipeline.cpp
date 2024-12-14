@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <utility>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
@@ -10,6 +11,8 @@
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
+
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -20,8 +23,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
+                                   std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
                                    std::span<const vk::ShaderModule> modules)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_} {
+    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
+      fetch_shader{std::move(fetch_shader_)} {
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
@@ -46,32 +51,31 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
-    if (!instance.IsVertexInputDynamicState()) {
-        const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
-        for (const auto& input : vs_info->vs_inputs) {
-            if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
-                input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+    if (fetch_shader && !instance.IsVertexInputDynamicState()) {
+        const auto& vs_info = GetStage(Shader::Stage::Vertex);
+        for (const auto& attrib : fetch_shader->attributes) {
+            if (attrib.UsesStepRates()) {
                 // Skip attribute binding as the data will be pulled by shader
                 continue;
             }
 
-            const auto buffer =
-                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+            const auto buffer = attrib.GetSharp(vs_info);
             if (buffer.GetSize() == 0) {
                 continue;
             }
             vertex_attributes.push_back({
-                .location = input.binding,
-                .binding = input.binding,
+                .location = attrib.semantic,
+                .binding = attrib.semantic,
                 .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
                 .offset = 0,
             });
             vertex_bindings.push_back({
-                .binding = input.binding,
+                .binding = attrib.semantic,
                 .stride = buffer.GetStride(),
-                .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
-                                 ? vk::VertexInputRate::eVertex
-                                 : vk::VertexInputRate::eInstance,
+                .inputRate =
+                    attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
+                        ? vk::VertexInputRate::eVertex
+                        : vk::VertexInputRate::eInstance,
             });
         }
     }
@@ -106,7 +110,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
+        .cullMode = LiverpoolToVK::IsPrimitiveCulled(key.prim_type)
+                        ? LiverpoolToVK::CullMode(key.cull_mode)
+                        : vk::CullModeFlagBits::eNone,
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
@@ -223,17 +229,15 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         });
     }
 
-    const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
-    const u32 num_color_formats = std::distance(key.color_formats.begin(), it);
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = num_color_formats,
+        .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
         .stencilAttachmentFormat = key.stencil_format,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
-    for (u32 i = 0; i < num_color_formats; i++) {
+    for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
         const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
@@ -286,7 +290,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
         .logicOpEnable = false,
         .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = num_color_formats,
+        .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };

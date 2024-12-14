@@ -42,7 +42,9 @@ public:
     ~EmitContext();
 
     Id Def(const IR::Value& value);
+
     void DefineBufferOffsets();
+    void DefineInterpolatedAttribs();
 
     [[nodiscard]] Id DefineInput(Id type, u32 location) {
         const Id input_id{DefineVar(type, spv::StorageClass::Input)};
@@ -146,6 +148,8 @@ public:
 
     Id full_result_i32x2;
     Id full_result_u32x2;
+    Id frexp_result_f32;
+    Id frexp_result_f64;
 
     Id pi_x2;
 
@@ -197,6 +201,9 @@ public:
 
     Id shared_memory_u32_type{};
 
+    Id interpolate_func{};
+    Id gl_bary_coord_id{};
+
     struct TextureDefinition {
         const VectorIds* data_types;
         Id id;
@@ -218,6 +225,7 @@ public:
     struct TextureBufferDefinition {
         Id id;
         Id coord_offset;
+        Id coord_shift;
         u32 binding;
         Id image_type;
         Id result_type;
@@ -241,7 +249,7 @@ public:
         Id component_type;
         u32 num_components;
         bool is_integer{};
-        bool is_default{};
+        bool is_loaded{};
         s32 buffer_handle{-1};
     };
     std::array<SpirvAttribute, IR::NumParams> input_params{};

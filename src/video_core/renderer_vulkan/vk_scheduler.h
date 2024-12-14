@@ -10,15 +10,17 @@
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
 
+namespace tracy {
+class VkCtxScope;
+}
+
 namespace Vulkan {
 
 class Instance;
 
 struct RenderState {
     std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
-    std::array<vk::Image, 8> color_images{};
     vk::RenderingAttachmentInfo depth_attachment{};
-    vk::Image depth_image{};
     u32 num_color_attachments{};
     bool has_depth{};
     bool has_stencil{};

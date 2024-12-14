@@ -1306,7 +1306,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 if (batch.id == batch_bp) { // highlight batch at breakpoint
                     PushStyleColor(ImGuiCol_Header, ImVec4{1.0f, 0.5f, 0.5f, 0.5f});
                 }
-                if (batch.id == highlight_batch) {
+                if (batch.id == highlight_batch && !group_batches) {
                     PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 0.7f, 0.7f, 1.0f});
                 }
 
@@ -1459,7 +1459,7 @@ void CmdListViewer::Draw(bool only_batches_view) {
                     }
                 }
 
-                if (batch.id == highlight_batch) {
+                if (batch.id == highlight_batch && !group_batches) {
                     PopStyleColor();
                 }
 

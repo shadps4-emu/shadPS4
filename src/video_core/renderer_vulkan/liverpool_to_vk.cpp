@@ -6,7 +6,7 @@
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #define INVALID_NUMBER_FORMAT_COMBO                                                                \
     LOG_ERROR(Render_Vulkan, "Unsupported number type {} for format {}", number_type, format);
@@ -62,6 +62,33 @@ vk::CompareOp CompareOp(Liverpool::CompareFunc func) {
     default:
         UNREACHABLE();
         return vk::CompareOp::eAlways;
+    }
+}
+
+bool IsPrimitiveCulled(AmdGpu::PrimitiveType type) {
+    switch (type) {
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::TriangleFan:
+    case AmdGpu::PrimitiveType::TriangleStrip:
+    case AmdGpu::PrimitiveType::PatchPrimitive:
+    case AmdGpu::PrimitiveType::AdjTriangleList:
+    case AmdGpu::PrimitiveType::AdjTriangleStrip:
+    case AmdGpu::PrimitiveType::QuadList:
+    case AmdGpu::PrimitiveType::QuadStrip:
+    case AmdGpu::PrimitiveType::Polygon:
+        return true;
+    case AmdGpu::PrimitiveType::None:
+    case AmdGpu::PrimitiveType::PointList:
+    case AmdGpu::PrimitiveType::LineList:
+    case AmdGpu::PrimitiveType::LineStrip:
+    case AmdGpu::PrimitiveType::AdjLineList:
+    case AmdGpu::PrimitiveType::AdjLineStrip:
+    case AmdGpu::PrimitiveType::RectList: // Screen-aligned rectangles that are not culled
+    case AmdGpu::PrimitiveType::LineLoop:
+        return false;
+    default:
+        UNREACHABLE();
+        return true;
     }
 }
 
@@ -672,15 +699,6 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         default:
             break;
         }
-    } else if (comp_swap_reverse) {
-        switch (base_format) {
-        case vk::Format::eR8G8B8A8Unorm:
-            return vk::Format::eA8B8G8R8UnormPack32;
-        case vk::Format::eR8G8B8A8Srgb:
-            return vk::Format::eA8B8G8R8SrgbPack32;
-        default:
-            break;
-        }
     }
     return base_format;
 }
@@ -724,19 +742,6 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
     ASSERT_MSG(format != formats.end(), "Unknown z_format={} and stencil_format={}",
                static_cast<u32>(z_format), static_cast<u32>(stencil_format));
     return format->vk_format;
-}
-
-void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
-    static constexpr u16 NumVerticesPerQuad = 4;
-    u16* out_data = reinterpret_cast<u16*>(out_ptr);
-    for (u16 i = 0; i < num_vertices; i += NumVerticesPerQuad) {
-        *out_data++ = i;
-        *out_data++ = i + 1;
-        *out_data++ = i + 2;
-        *out_data++ = i;
-        *out_data++ = i + 2;
-        *out_data++ = i + 3;
-    }
 }
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {

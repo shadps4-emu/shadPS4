@@ -92,6 +92,10 @@ struct Image {
         return image_view_ids[std::distance(image_view_infos.begin(), it)];
     }
 
+    void AssociateDepth(ImageId image_id) {
+        depth_id = image_id;
+    }
+
     boost::container::small_vector<vk::ImageMemoryBarrier2, 32> GetBarriers(
         vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
         vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range);
@@ -116,6 +120,7 @@ struct Image {
     VAddr track_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
+    ImageId depth_id{};
 
     // Resource state tracking
     struct {

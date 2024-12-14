@@ -145,15 +145,18 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
              const ImageInfo& info_)
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()} {
+    if (info.pixel_format == vk::Format::eUndefined) {
+        return;
+    }
     mip_hashes.resize(info.resources.levels);
-    ASSERT(info.pixel_format != vk::Format::eUndefined);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
-    const bool can_be_cube = (info.type == vk::ImageType::e2D) &&
-                             (info.resources.layers % 6 == 0) &&
-                             (info.size.width == info.size.height);
+    const bool can_be_cube =
+        (info.type == vk::ImageType::e2D) &&
+        ((info.props.is_pow2 ? (info.resources.layers % 8) : (info.resources.layers % 6)) == 0) &&
+        (info.size.width == info.size.height);
     if (info.props.is_cube || can_be_cube) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;
     } else if (info.props.is_volume) {

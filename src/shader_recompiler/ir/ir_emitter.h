@@ -158,6 +158,7 @@ public:
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPMul(const F32F64& a, const F32F64& b);
+    [[nodiscard]] F32F64 FPDiv(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPFma(const F32F64& a, const F32F64& b, const F32F64& c);
 
     [[nodiscard]] F32F64 FPAbs(const F32F64& value);
@@ -179,7 +180,9 @@ public:
     [[nodiscard]] F32F64 FPFloor(const F32F64& value);
     [[nodiscard]] F32F64 FPCeil(const F32F64& value);
     [[nodiscard]] F32F64 FPTrunc(const F32F64& value);
-    [[nodiscard]] F32 Fract(const F32& value);
+    [[nodiscard]] F32F64 FPFract(const F32F64& value);
+    [[nodiscard]] F32F64 FPFrexpSig(const F32F64& value);
+    [[nodiscard]] U32 FPFrexpExp(const F32F64& value);
 
     [[nodiscard]] U1 FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPNotEqual(const F32F64& lhs, const F32F64& rhs, bool ordered = true);

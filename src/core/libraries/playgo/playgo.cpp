@@ -137,8 +137,8 @@ s32 PS4_SYSV_ABI scePlayGoGetLanguageMask(OrbisPlayGoHandle handle,
 
 s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,
                                    uint32_t numberOfEntries, OrbisPlayGoLocus* outLoci) {
-    LOG_INFO(Lib_PlayGo, "called handle = {}, chunkIds = {}, numberOfEntries = {}", handle,
-             *chunkIds, numberOfEntries);
+    LOG_DEBUG(Lib_PlayGo, "called handle = {}, chunkIds = {}, numberOfEntries = {}", handle,
+              *chunkIds, numberOfEntries);
 
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;

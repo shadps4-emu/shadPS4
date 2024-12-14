@@ -96,12 +96,12 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t siz
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                               int memory_type) {
     std::scoped_lock lk{mutex};
+    alignment = alignment > 0 ? alignment : 16_KB;
 
     auto dmem_area = FindDmemArea(search_start);
 
     const auto is_suitable = [&] {
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
-                                                : dmem_area->second.base;
+        const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
         const auto alignment_size = aligned_base - dmem_area->second.base;
         const auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
@@ -114,7 +114,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
 
     // Align free position
     PAddr free_addr = dmem_area->second.base;
-    free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
+    free_addr = Common::AlignUp(free_addr, alignment);
 
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(free_addr, size)->second;
@@ -328,7 +328,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     }
 
     // Map the file.
-    impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
+    impl.MapFile(mapped_addr, size_aligned, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
     auto& new_vma = CarveVMA(mapped_addr, size_aligned)->second;
@@ -375,12 +375,12 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
-void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
-    UnmapMemoryImpl(virtual_addr, size);
+    return UnmapMemoryImpl(virtual_addr, size);
 }
 
-void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
     ASSERT_MSG(vma_base.Contains(virtual_addr, size),
@@ -415,6 +415,8 @@ void MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
                has_backing, readonly_file);
     TRACK_FREE(virtual_addr, "VMEM");
+
+    return ORBIS_OK;
 }
 
 int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
@@ -512,9 +514,8 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_stack.Assign(vma.type == VMAType::Stack);
-    info->is_pooled.Assign(vma.type == VMAType::Pooled);
-    info->is_committed.Assign(vma.type != VMAType::Free && vma.type != VMAType::Reserved &&
-                              vma.type != VMAType::PoolReserved);
+    info->is_pooled.Assign(vma.type == VMAType::PoolReserved);
+    info->is_committed.Assign(vma.type == VMAType::Pooled);
     vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
@@ -585,6 +586,13 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
                "Range provided is not fully contained in vma");
     it->second.name = name;
 }
+
+void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
+    if (rasterizer) {
+        rasterizer->InvalidateMemory(addr, size);
+    }
+}
+
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
     // If the requested address is below the mapped range, start search from the lowest address
     auto min_search_address = impl.SystemManagedVirtualBase();
@@ -691,7 +699,7 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, size_t of
     new_area.size -= offset_in_area;
 
     return dmem_map.emplace_hint(std::next(dmem_handle), new_area.base, new_area);
-};
+}
 
 int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {

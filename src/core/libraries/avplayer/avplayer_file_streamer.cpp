@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm> // std::max, std::min
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 
 extern "C" {

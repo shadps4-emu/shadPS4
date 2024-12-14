@@ -56,24 +56,27 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     UntrackImage(image_id);
 }
 
-void TextureCache::InvalidateMemory(VAddr addr, VAddr page_addr, size_t size) {
+void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
-    ForEachImageInRegion(page_addr, size, [&](ImageId image_id, Image& image) {
+    const auto end = addr + size;
+    const auto pages_start = PageManager::GetPageAddr(addr);
+    const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
+    ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
         const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size_bytes;
-        const auto page_end = page_addr + size;
-        if (image_begin <= addr && addr < image_end) {
-            // This image was definitely accessed by this page fault.
-            // Untrack image, so the range is unprotected and the guest can write freely
+        if (image_begin < end && addr < image_end) {
+            // Start or end of the modified region is in the image, or the image is entirely within
+            // the modified region, so the image was definitely accessed by this page fault.
+            // Untrack the image, so that the range is unprotected and the guest can write freely.
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
-        } else if (page_end < image_end) {
+        } else if (pages_end < image_end) {
             // This page access may or may not modify the image.
             // We should not mark it as dirty now. If it really was modified
             // it will receive more invalidations on its other pages.
             // Remove tracking from this page only.
             UntrackImageHead(image_id);
-        } else if (image_begin < page_addr) {
+        } else if (image_begin < pages_start) {
             // This page access does not modify the image but the page should be untracked.
             // We should not mark this image as dirty now. If it really was modified
             // it will receive more invalidations on its other pages.
@@ -321,6 +324,10 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
             continue;
         }
+        if (True(flags & FindFlags::ExactFmt) &&
+            info.pixel_format != cache_image.info.pixel_format) {
+            continue;
+        }
         ASSERT((cache_image.info.type == info.type || info.size == Extent3D{1, 1, 1} ||
                 True(flags & FindFlags::RelaxFmt)));
         image_id = cache_id;
@@ -345,9 +352,12 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
     }
 
     if (image_id) {
-        Image& image_resoved = slot_images[image_id];
-
-        if (image_resoved.info.resources < info.resources) {
+        Image& image_resolved = slot_images[image_id];
+        if (True(flags & FindFlags::ExactFmt) &&
+            info.pixel_format != image_resolved.info.pixel_format) {
+            // Cannot reuse this image as we need the exact requested format.
+            image_id = {};
+        } else if (image_resolved.info.resources < info.resources) {
             // The image was clearly picked up wrong.
             FreeImage(image_id);
             image_id = {};
@@ -398,17 +408,15 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     // Register meta data for this color buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
         if (desc.info.meta_info.cmask_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.cmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.cmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::CMask});
             image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
 
         if (desc.info.meta_info.fmask_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.fmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.fmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::FMask});
             image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
@@ -428,12 +436,32 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
         if (desc.info.meta_info.htile_addr) {
-            surface_metas.emplace(
-                desc.info.meta_info.htile_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
+            surface_metas.emplace(desc.info.meta_info.htile_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::HTile});
             image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }
+    }
+
+    // If there is a stencil attachment, link depth and stencil.
+    if (desc.info.stencil_addr != 0) {
+        ImageId stencil_id{};
+        ForEachImageInRegion(desc.info.stencil_addr, desc.info.stencil_size,
+                             [&](ImageId image_id, Image& image) {
+                                 if (image.info.guest_address == desc.info.stencil_addr) {
+                                     stencil_id = image_id;
+                                 }
+                             });
+        if (!stencil_id) {
+            ImageInfo info{};
+            info.guest_address = desc.info.stencil_addr;
+            info.guest_size_bytes = desc.info.stencil_size;
+            info.size = desc.info.size;
+            stencil_id = slot_images.insert(instance, scheduler, info);
+            RegisterImage(stencil_id);
+        }
+        Image& image = slot_images[stencil_id];
+        image.AssociateDepth(image_id);
     }
 
     return RegisterImageView(image_id, desc.view_info);
@@ -469,6 +497,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     const auto& num_mips = image.info.resources.levels;
     ASSERT(num_mips == image.info.mips_layout.size());
 
+    const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
+    const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
+
     boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
@@ -478,8 +509,6 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         const auto& mip = image.info.mips_layout[m];
 
         // Protect GPU modified resources from accidental CPU reuploads.
-        const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-        const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
         if (is_gpu_modified && !is_gpu_dirty) {
             const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
             const u64 hash = XXH3_64bits(addr + mip.offset, mip.size);
@@ -518,7 +547,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size_bytes;
-    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainViewBuffer(image_addr, image_size);
+    const auto [vk_buffer, buf_offset] =
+        buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
     // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,

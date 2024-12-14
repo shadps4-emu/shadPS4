@@ -8,7 +8,7 @@
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -18,16 +18,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-// The av_err2str macro in libavutil/error.h does not play nice with C++
-#ifdef av_err2str
-#undef av_err2str
-#include <string>
-av_always_inline std::string av_err2string(int errnum) {
-    char errbuf[AV_ERROR_MAX_STRING_SIZE];
-    return av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE, errnum);
-}
-#define av_err2str(err) av_err2string(err).c_str()
-#endif // av_err2str
+#include "common/support/avdec.h"
 
 namespace Libraries::AvPlayer {
 
