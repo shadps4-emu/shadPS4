@@ -1344,7 +1344,7 @@ public:
     }
 
     inline ComputeProgram& GetCsRegs() {
-        return mapped_queues[curr_gnm_queue_id].cs_state;
+        return mapped_queues[curr_qid].cs_state;
     }
 
     struct AscQueueInfo {
@@ -1397,14 +1397,6 @@ private:
 
     void Process(std::stop_token stoken);
 
-    inline void SaveDispatchContext() {
-        curr_gnm_queue_id = GfxQueueId;
-    }
-
-    inline void SaveDispatchContext(u32 vqid) {
-        curr_gnm_queue_id = vqid + 1;
-    }
-
     struct GpuQueue {
         std::mutex m_access{};
         std::atomic<u32> dcb_buffer_offset;
@@ -1445,7 +1437,7 @@ private:
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
-    u32 curr_gnm_queue_id{GfxQueueId}; // Gnm queue processing dispatch
+    int curr_qid{-1};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

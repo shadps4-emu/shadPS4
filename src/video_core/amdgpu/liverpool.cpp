@@ -87,7 +87,7 @@ void Liverpool::Process(std::stop_token stoken) {
 
         VideoCore::StartCapture();
 
-        int qid = -1;
+        curr_qid = -1;
 
         while (num_submits || num_commands) {
 
@@ -106,9 +106,9 @@ void Liverpool::Process(std::stop_token stoken) {
                 --num_commands;
             }
 
-            qid = (qid + 1) % num_mapped_queues;
+            curr_qid = (curr_qid + 1) % num_mapped_queues;
 
-            auto& queue = mapped_queues[qid];
+            auto& queue = mapped_queues[curr_qid];
 
             Task::Handle task{};
             {
@@ -506,7 +506,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DispatchDirect: {
                 const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
-                SaveDispatchContext();
                 auto& cs_program = GetCsRegs();
                 cs_program.dim_x = dispatch_direct->dim_x;
                 cs_program.dim_y = dispatch_direct->dim_y;
@@ -527,7 +526,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::DispatchIndirect: {
                 const auto* dispatch_indirect =
                     reinterpret_cast<const PM4CmdDispatchIndirect*>(header);
-                SaveDispatchContext();
                 auto& cs_program = GetCsRegs();
                 const auto offset = dispatch_indirect->data_offset;
                 const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
@@ -805,7 +803,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
-            SaveDispatchContext(vqid);
             auto& cs_program = GetCsRegs();
             cs_program.dim_x = dispatch_direct->dim_x;
             cs_program.dim_y = dispatch_direct->dim_y;
