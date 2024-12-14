@@ -336,12 +336,13 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
 
 void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
     if (!dst_gds && !IsRegionRegistered(dst, num_bytes)) {
-        if (src_gds || IsRegionRegistered(src, num_bytes)) {
-            LOG_CRITICAL(Render_Vulkan, "readback is not implemented");
+        if (!src_gds && !IsRegionRegistered(src, num_bytes)) {
+            // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+            memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
             return;
         }
-        memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
-        return;
+        // Without a readback there's nothing we can do with this
+        // Fallback to creating dst buffer on GPU to at least have this data there
     }
     if (!src_gds && !IsRegionRegistered(src, num_bytes)) {
         InlineData(dst, std::bit_cast<void*>(src), num_bytes, dst_gds);

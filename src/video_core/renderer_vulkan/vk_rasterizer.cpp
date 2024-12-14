@@ -263,6 +263,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     auto state = PrepareRenderState(pipeline->GetMrtMask());
+
     if (!BindResources(pipeline)) {
         return;
     }
@@ -352,9 +353,6 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     if (!BindResources(pipeline)) {
         return;
     }
-
-    LOG_CRITICAL(Render_Vulkan, "DispatchIndirect addr = {:#x}",
-                 std::bit_cast<uintptr_t>(address + offset));
 
     scheduler.EndRendering();
 
