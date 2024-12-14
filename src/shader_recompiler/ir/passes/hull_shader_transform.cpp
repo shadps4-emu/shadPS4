@@ -392,15 +392,11 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,
                     // with the 3 edge factors followed by the 1 interior factor.
-                    // For quads, it does the expected 4 edge factors then 2 interior.
+                    // For quads, it does 4 edge factors then 2 interior.
                     // There is a tess factor stride member of the GNMX hull constants struct in
                     // a hull program shader binary archive, but this doesn't seem to be
-                    // communicated to the driver. The fixed function tessellator would need to know
-                    // this somehow. It's probably implied by the type of the abstract domain. If
-                    // this is causing problems, good idea to check the hs_regs argument to
-                    // sceGnmSetHsShader. The memory containing the tess factor stride probably
-                    // follows the memory for hs_regs if the app is providing a pointer into the
-                    // program they loaded from disk
+                    // communicated to the driver.
+                    // The layout seems to be implied by the type of the abstract domain.
                     switch (runtime_info.hs_info.tess_type) {
                     case AmdGpu::TessellationType::Quad:
                         ASSERT(gcn_factor_idx < 6);
@@ -595,54 +591,63 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
     }
 }
 
-// Run before copy prop
+// Run before either hull or domain transform
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
     TessellationDataConstantBuffer tess_constants;
     Shader::Info& info = program.info;
     // Find the TessellationDataConstantBuffer V#
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            switch (inst.GetOpcode()) {
-            case IR::Opcode::LoadSharedU32:
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
-            case IR::Opcode::WriteSharedU32:
-            case IR::Opcode::WriteSharedU64:
-            case IR::Opcode::WriteSharedU128: {
-                IR::Value addr = inst.Arg(0);
-                auto read_const_buffer = IR::BreadthFirstSearch(
-                    addr, [](IR::Inst* maybe_tess_const) -> std::optional<IR::Inst*> {
-                        if (maybe_tess_const->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                            return maybe_tess_const;
+            auto found_tess_consts_sharp = [&]() -> bool {
+                switch (inst.GetOpcode()) {
+                case IR::Opcode::LoadSharedU32:
+                case IR::Opcode::LoadSharedU64:
+                case IR::Opcode::LoadSharedU128:
+                case IR::Opcode::WriteSharedU32:
+                case IR::Opcode::WriteSharedU64:
+                case IR::Opcode::WriteSharedU128: {
+                    IR::Value addr = inst.Arg(0);
+                    auto read_const_buffer = IR::BreadthFirstSearch(
+                        addr, [](IR::Inst* maybe_tess_const) -> std::optional<IR::Inst*> {
+                            if (maybe_tess_const->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                                return maybe_tess_const;
+                            }
+                            return std::nullopt;
+                        });
+                    if (read_const_buffer) {
+                        auto sharp_location = FindTessConstantSharp(read_const_buffer.value());
+                        if (sharp_location) {
+                            if (info.tess_consts_dword_offset >= 0) {
+                                // Its possible theres a readconstbuffer that contributes to an
+                                // LDS address and isnt a TessConstant V# read. Could improve on
+                                // this somehow
+                                ASSERT_MSG(static_cast<s32>(sharp_location->dword_off) ==
+                                                   info.tess_consts_dword_offset &&
+                                               sharp_location->ptr_base ==
+                                                   info.tess_consts_ptr_base,
+                                           "TessConstants V# is ambiguous");
+                            }
+                            InitTessConstants(sharp_location->ptr_base,
+                                              static_cast<s32>(sharp_location->dword_off), info,
+                                              runtime_info, tess_constants);
+                            return true;
                         }
-                        return std::nullopt;
-                    });
-                if (read_const_buffer) {
-                    auto sharp_location = FindTessConstantSharp(read_const_buffer.value());
-                    if (sharp_location) {
-                        if (info.FoundTessConstantsSharp()) {
-                            ASSERT(static_cast<s32>(sharp_location->dword_off) ==
-                                       info.tess_consts_dword_offset &&
-                                   sharp_location->ptr_base == info.tess_consts_ptr_base);
-                        }
-                        InitTessConstants(sharp_location->ptr_base,
-                                          static_cast<s32>(sharp_location->dword_off), info,
-                                          runtime_info, tess_constants);
-                        break; // break out of switch and loop
+                        UNREACHABLE_MSG("Failed to match tess constant sharp");
                     }
-                    UNREACHABLE_MSG("Failed to match tess constant sharp");
+                    return false;
                 }
-                continue;
-            }
-            default:
-                continue;
-            }
+                default:
+                    return false;
+                }
+            }();
 
-            break;
+            if (found_tess_consts_sharp) {
+                break;
+            }
         }
     }
 
-    ASSERT(info.FoundTessConstantsSharp());
+    ASSERT(info.tess_consts_dword_offset >= 0);
 
     TessConstantUseWalker walker;
 

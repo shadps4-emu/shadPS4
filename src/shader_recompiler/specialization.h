@@ -127,6 +127,18 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
                          spec.force_unnormalized = sharp.force_unnormalized;
                      });
+
+        // Initialize runtime_info fields that rely on analysis in tessellation passes
+        if (info->l_stage == LogicalStage::TessellationControl ||
+            info->l_stage == LogicalStage::TessellationEval) {
+            Shader::TessellationDataConstantBuffer tess_constants;
+            info->ReadTessConstantBuffer(tess_constants);
+            if (info->l_stage == LogicalStage::TessellationControl) {
+                runtime_info.hs_info.InitFromTessConstants(tess_constants);
+            } else {
+                runtime_info.vs_info.InitFromTessConstants(tess_constants);
+            }
+        }
     }
 
     void ForEachSharp(auto& spec_list, auto& desc_list, auto&& func) {

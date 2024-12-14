@@ -67,13 +67,15 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
 
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
-    Shader::Optimization::ConstantPropagationPass(
-        program.post_order_blocks); // TODO const fold spam for now while testing
     if (info.l_stage == LogicalStage::TessellationControl) {
+        // Tess passes require previous const prop passes for now (for simplicity). TODO allow
+        // fine grained folding or opportunistic folding we set an operand to an immediate
+        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::HullShaderTransform(program, runtime_info);
     } else if (info.l_stage == LogicalStage::TessellationEval) {
+        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::DomainShaderTransform(program, runtime_info);

@@ -9,7 +9,6 @@
 #include "common/path_util.h"
 #include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
-#include "shader_recompiler/frontend/tessellation.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
@@ -533,15 +532,6 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
     auto& program = it_pgm.value();
     auto& info = program->info;
     info.RefreshFlatBuf();
-    if (l_stage == LogicalStage::TessellationControl || l_stage == LogicalStage::TessellationEval) {
-        Shader::TessellationDataConstantBuffer tess_constants;
-        info.ReadTessConstantBuffer(tess_constants);
-        if (l_stage == LogicalStage::TessellationControl) {
-            runtime_info.hs_info.InitFromTessConstants(tess_constants);
-        } else {
-            runtime_info.vs_info.InitFromTessConstants(tess_constants);
-        }
-    }
     const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
     size_t perm_idx = program->modules.size();
     vk::ShaderModule module{};
