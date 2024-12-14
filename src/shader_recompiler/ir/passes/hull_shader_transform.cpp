@@ -198,7 +198,7 @@ std::optional<TessSharpLocation> FindTessConstantSharp(IR::Inst* read_const_buff
 class TessConstantUseWalker {
 public:
     void MarkTessAttributeUsers(IR::Inst* read_const_buffer, TessConstantAttribute attr) {
-        uint inc;
+        u32 inc;
         switch (attr) {
         case TessConstantAttribute::HsNumPatch:
         case TessConstantAttribute::HsOutputBase:
@@ -219,7 +219,7 @@ public:
     }
 
 private:
-    void MarkTessAttributeUsersHelper(IR::Use use, uint inc) {
+    void MarkTessAttributeUsersHelper(IR::Use use, u32 inc) {
         IR::Inst* inst = use.user;
 
         switch (use.user->GetOpcode()) {
@@ -229,7 +229,7 @@ private:
         case IR::Opcode::WriteSharedU32:
         case IR::Opcode::WriteSharedU64:
         case IR::Opcode::WriteSharedU128: {
-            uint counter = inst->Flags<u32>();
+            u32 counter = inst->Flags<u32>();
             inst->SetFlags<u32>(counter + inc);
             // Stop here
             return;
@@ -275,7 +275,7 @@ private:
         }
     }
 
-    uint seq_num{1u};
+    u32 seq_num{1u};
 };
 
 enum class AttributeRegion : u32 { InputCP, OutputCP, PatchConst };
