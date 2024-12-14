@@ -161,8 +161,9 @@ void Translator::EmitSOPK(const GcnInst& inst) {
     switch (inst.opcode) {
         // SOPK
     case Opcode::S_MOVK_I32:
-        return S_MOVK(inst);
-
+        return S_MOVK(inst, false);
+    case Opcode::S_CMOVK_I32:
+        return S_MOVK(inst, true);
     case Opcode::S_CMPK_EQ_I32:
         return S_CMPK(ConditionOp::EQ, true, inst);
     case Opcode::S_CMPK_LG_I32:
@@ -458,13 +459,16 @@ void Translator::S_ABSDIFF_I32(const GcnInst& inst) {
 
 // SOPK
 
-void Translator::S_MOVK(const GcnInst& inst) {
-    const auto simm16 = inst.control.sopk.simm;
-    if (simm16 & (1 << 15)) {
-        // TODO: need to verify the case of imm sign extension
-        UNREACHABLE();
+void Translator::S_MOVK(const GcnInst& inst, bool is_conditional) {
+    const s16 simm16 = inst.control.sopk.simm;
+    // do the sign extension
+    const s32 simm32 = static_cast<s32>(simm16);
+    IR::U32 val = ir.Imm32(simm32);
+    if (is_conditional) {
+        // if !SCC its a NOP
+        val = IR::U32{ir.Select(ir.GetScc(), val, GetSrc(inst.dst[0]))};
     }
-    SetDst(inst.dst[0], ir.Imm32(simm16));
+    SetDst(inst.dst[0], val);
 }
 
 void Translator::S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst) {
