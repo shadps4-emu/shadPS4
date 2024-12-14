@@ -80,6 +80,7 @@ void CFG::EmitLabels() {
         if (inst.IsUnconditionalBranch()) {
             const u32 target = inst.BranchTarget(pc);
             AddLabel(target);
+            AddLabel(pc + inst.length);
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
             const u32 false_label = pc + inst.length;
