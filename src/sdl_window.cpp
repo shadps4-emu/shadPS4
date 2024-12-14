@@ -69,7 +69,7 @@ static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint3
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controller{controller_} {
-    if (!SDL_SetHint(SDL_HINT_APP_NAME,"shadPS4")) {
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "shadPS4")) {
         UNREACHABLE_MSG("Failed to set SDL window hint: {}", SDL_GetError());
     }
     if (!SDL_Init(SDL_INIT_VIDEO)) {
