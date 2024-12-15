@@ -398,8 +398,8 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     // communicated to the driver.
                     // The layout seems to be implied by the type of the abstract domain.
                     switch (runtime_info.hs_info.tess_type) {
-                    case AmdGpu::TessellationType::Quad:
-                        ASSERT(gcn_factor_idx < 6);
+                    case AmdGpu::TessellationType::Isoline:
+                        ASSERT(gcn_factor_idx < 2);
                         return IR::PatchFactor(gcn_factor_idx);
                     case AmdGpu::TessellationType::Triangle:
                         ASSERT(gcn_factor_idx < 4);
@@ -407,9 +407,11 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                             return IR::Patch::TessellationLodInteriorU;
                         }
                         return IR::PatchFactor(gcn_factor_idx);
+                    case AmdGpu::TessellationType::Quad:
+                        ASSERT(gcn_factor_idx < 6);
+                        return IR::PatchFactor(gcn_factor_idx);
                     default:
-                        // Point domain types haven't been seen so far
-                        UNREACHABLE_MSG("Unhandled tess type");
+                        UNREACHABLE();
                     }
                 };
 

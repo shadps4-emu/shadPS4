@@ -100,7 +100,7 @@ public:
     void S_NOT_B32(const GcnInst& inst);
 
     // SOPK
-    void S_MOVK(const GcnInst& inst);
+    void S_MOVK(const GcnInst& inst, bool is_conditional);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
     void S_ADDK_I32(const GcnInst& inst);
     void S_MULK_I32(const GcnInst& inst);
