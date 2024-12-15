@@ -420,7 +420,8 @@ void CheckUpdate::Install() {
         "Remove-Item -Force -LiteralPath '%3\\update.ps1'\n"
         "Remove-Item -Force -LiteralPath '%3\\temp_download_update.zip'\n"
         "Remove-Item -Recurse -Force '%2'\n"
-        "Start-Process -FilePath '%3\\shadps4.exe' -WorkingDirectory ([WildcardPattern]::Escape('%3'))\n");
+        "Start-Process -FilePath '%3\\shadps4.exe' "
+        "-WorkingDirectory ([WildcardPattern]::Escape('%3'))\n");
     arguments << "-ExecutionPolicy"
               << "Bypass"
               << "-File" << scriptFileName;
