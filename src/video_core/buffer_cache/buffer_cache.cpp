@@ -235,24 +235,43 @@ bool BufferCache::BindVertexBuffers(
 }
 
 u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
-    // Emulate QuadList primitive type with CPU made index buffer.
+    // Emulate QuadList and Polygon primitive types with CPU made index buffer.
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList && !is_indexed) {
-        is_indexed = true;
+    if (!is_indexed) {
+        bool needs_index_buffer = false;
+        if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList ||
+            regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+            needs_index_buffer = true;
+        }
+
+        if (!needs_index_buffer) {
+            return regs.num_indices;
+        }
 
         // Emit indices.
         const u32 index_size = 3 * regs.num_indices;
         const auto [data, offset] = stream_buffer.Map(index_size);
-        Vulkan::LiverpoolToVK::EmitQuadToTriangleListIndices(data, regs.num_indices);
+
+        switch (regs.primitive_type) {
+        case AmdGpu::PrimitiveType::QuadList:
+            Vulkan::LiverpoolToVK::EmitQuadToTriangleListIndices(data, regs.num_indices);
+            break;
+        case AmdGpu::PrimitiveType::Polygon:
+            Vulkan::LiverpoolToVK::EmitPolygonToTriangleListIndices(data, regs.num_indices);
+            break;
+        default:
+            UNREACHABLE();
+            break;
+        }
+
         stream_buffer.Commit();
 
         // Bind index buffer.
+        is_indexed = true;
+
         const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, vk::IndexType::eUint16);
         return index_size / sizeof(u16);
-    }
-    if (!is_indexed) {
-        return regs.num_indices;
     }
 
     // Figure out index type and size.
@@ -287,6 +306,9 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
         const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, index_type);
         return new_index_size / index_size;
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+        UNREACHABLE();
     }
 
     // Bind index buffer.
