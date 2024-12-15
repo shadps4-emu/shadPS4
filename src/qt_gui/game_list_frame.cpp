@@ -123,7 +123,7 @@ void GameListFrame::PopulateGameList() {
             formattedPlayTime = formattedPlayTime.trimmed();
             m_game_info->m_games[i].play_time = playTime.toStdString();
             if (formattedPlayTime.isEmpty()) {
-                SetTableItem(i, 7, "0");
+                SetTableItem(i, 7, QString("%1s").arg(seconds));
             } else {
                 SetTableItem(i, 7, formattedPlayTime);
             }
