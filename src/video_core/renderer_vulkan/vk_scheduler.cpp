@@ -30,7 +30,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto witdh =
+    const auto width =
         render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
     const auto height =
         render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
@@ -39,7 +39,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {witdh, height},
+                .extent = {width, height},
             },
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,

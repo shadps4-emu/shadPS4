@@ -74,7 +74,6 @@ private:
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();
-    void UpdateDepthStencilState();
 
     bool FilterDraw();
 
