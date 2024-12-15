@@ -111,6 +111,7 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeGreen);
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
+    m_theme_act_group->addAction(ui->setThemeGruvbox);
 }
 
 void MainWindow::AddUiWidgets() {
@@ -540,6 +541,14 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+    connect(ui->setThemeGruvbox, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::Gruvbox, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::Gruvbox));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
+    });
 }
 
 void MainWindow::StartGame() {
@@ -910,6 +919,10 @@ void MainWindow::SetLastUsedTheme() {
         break;
     case Theme::Violet:
         ui->setThemeViolet->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
+    case Theme::Gruvbox:
+        ui->setThemeGruvbox->setChecked(true);
         isIconBlack = false;
         SetUiIcons(false);
         break;

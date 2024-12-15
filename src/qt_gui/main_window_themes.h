@@ -7,13 +7,7 @@
 #include <QLineEdit>
 #include <QWidget>
 
-enum class Theme : int {
-    Dark,
-    Light,
-    Green,
-    Blue,
-    Violet,
-};
+enum class Theme : int { Dark, Light, Green, Blue, Violet, Gruvbox };
 
 class WindowThemes : public QObject {
     Q_OBJECT
