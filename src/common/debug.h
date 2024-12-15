@@ -17,6 +17,8 @@ static inline bool IsProfilerConnected() {
     return tracy::GetProfiler().IsConnected();
 }
 
+#define TRACY_GPU_ENABLED 0
+
 #define CUSTOM_LOCK(type, varname)                                                                 \
     tracy::LockableCtx varname {                                                                   \
         []() -> const tracy::SourceLocationData* {                                                 \
@@ -58,5 +60,10 @@ enum MarkersPalette : int {
 
 #define FRAME_END FrameMark
 
+#ifdef TRACY_FIBERS
 #define FIBER_ENTER(name) TracyFiberEnter(name)
 #define FIBER_EXIT TracyFiberLeave
+#else
+#define FIBER_ENTER(name)
+#define FIBER_EXIT
+#endif

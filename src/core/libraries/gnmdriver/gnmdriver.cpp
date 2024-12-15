@@ -488,6 +488,7 @@ int PS4_SYSV_ABI sceGnmDestroyWorkloadStream() {
 }
 
 void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
+    HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "vqid {}, offset_dw {}", gnm_vqid, next_offs_dw);
 
     if (gnm_vqid == 0) {
@@ -2166,6 +2167,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                        u32* dcb_sizes_in_bytes,
                                                        const u32* ccb_gpu_addrs[],
                                                        u32* ccb_sizes_in_bytes) {
+    HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
 
     if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
@@ -2258,6 +2260,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
 }
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {
+    HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
     WaitGpuIdle();
     if (!liverpool->IsGpuIdle()) {

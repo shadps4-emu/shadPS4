@@ -193,7 +193,7 @@ option(TRACY_ENABLE "" ON)
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
 option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
-option(TRACY_FIBERS "" ON) # For AmdGpu frontend profiling
+option(TRACY_FIBERS "" OFF) # For AmdGpu frontend profiling, disabled due to instability
 option(TRACY_NO_SYSTEM_TRACING "" ON)
 option(TRACY_NO_CALLSTACK "" ON)
 option(TRACY_NO_CODE_TRANSFER "" ON)

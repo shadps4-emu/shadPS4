@@ -9,6 +9,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/debug.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -261,7 +262,8 @@ bool Instance::CreateDevice() {
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
-    const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const bool calibrated_timestamps =
+        TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
