@@ -15,7 +15,6 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Window, QColor(50, 50, 50));
         themePalette.setColor(QPalette::WindowText, Qt::white);
         themePalette.setColor(QPalette::Base, QColor(20, 20, 20));
-        themePalette.setColor(QPalette::AlternateBase, QColor(25, 25, 25));
         themePalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
         themePalette.setColor(QPalette::ToolTipBase, Qt::white);
         themePalette.setColor(QPalette::ToolTipText, Qt::white);
@@ -28,7 +27,6 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
         break;
-
     case Theme::Light:
         mw_searchbar->setStyleSheet("background-color: #ffffff;" // Light gray background
                                     "color: #000000;"            // Black text
@@ -115,6 +113,26 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218)); // Light blue highlight
         themePalette.setColor(QPalette::HighlightedText, Qt::black);      // Black highlighted text
 
+        qApp->setPalette(themePalette);
+        break;
+    case Theme::Gruvbox:
+        mw_searchbar->setStyleSheet("background-color: #1d2021;"
+                                    "color: #f9f5d7;"
+                                    "border: 2px solid #f9f5d7;"
+                                    "padding: 5px;");
+        themePalette.setColor(QPalette::Window, QColor(29, 32, 33));
+        themePalette.setColor(QPalette::WindowText, QColor(249, 245, 215));
+        themePalette.setColor(QPalette::Base, QColor(29, 32, 33));
+        themePalette.setColor(QPalette::AlternateBase, QColor(50, 48, 47));
+        themePalette.setColor(QPalette::ToolTipBase, QColor(249, 245, 215));
+        themePalette.setColor(QPalette::ToolTipText, QColor(249, 245, 215));
+        themePalette.setColor(QPalette::Text, QColor(249, 245, 215));
+        themePalette.setColor(QPalette::Button, QColor(40, 40, 40));
+        themePalette.setColor(QPalette::ButtonText, QColor(249, 245, 215));
+        themePalette.setColor(QPalette::BrightText, QColor(251, 73, 52));
+        themePalette.setColor(QPalette::Link, QColor(131, 165, 152));
+        themePalette.setColor(QPalette::Highlight, QColor(131, 165, 152));
+        themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
         break;
     }
