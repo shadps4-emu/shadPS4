@@ -47,6 +47,19 @@ void Rasterizer::CpSync() {
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
 }
 
+void Rasterizer::GlobalBarrier() {
+    scheduler.EndRendering();
+    auto cmdbuf = scheduler.CommandBuffer();
+
+    const vk::MemoryBarrier mem_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+        .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eAllCommands,
+                           vk::DependencyFlagBits::eByRegion, {mem_barrier}, {}, {});
+}
+
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an

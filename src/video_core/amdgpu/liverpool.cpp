@@ -289,6 +289,25 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::ContextControl: {
                 break;
             }
+            case PM4ItOpcode::MemSemaphore: {
+                const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
+                const auto addr = mem_semaphore->Address<VAddr>();
+                const auto select = mem_semaphore->semSel;
+                const auto client = mem_semaphore->clientCode;
+                const auto signal_type = mem_semaphore->signalType;
+                LOG_WARNING(Lib_GnmDriver, "MemSemaphore ignored: addr {:#X}, select {}, client {}, signal {}, wait {}, mailbox {}",
+                    addr,
+                    select.Value() == PM4CmdMemSemaphore::MemSemaphoreSelect::SignalSemaphore ? "signal" : "wait",
+                    client.Value() == PM4CmdMemSemaphore::MemSemaphoreClientCode::CP ? "CP" : std::to_string(std::to_underlying(client.Value())),
+                    std::to_underlying(signal_type.Value()) == 1 ? "increment/decrement" : "set 1/do nothing",
+                    mem_semaphore->waitOnSignal.Value(),
+                    std::to_underlying(mem_semaphore->useMailbox.Value())
+                );
+                if (rasterizer) {
+                    rasterizer->GlobalBarrier();
+                }
+                break;
+            }
             case PM4ItOpcode::ClearState: {
                 regs.SetDefaults();
                 break;
@@ -843,6 +862,25 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
             release_mem->SignalFence(static_cast<Platform::InterruptId>(queue.pipe_id));
+            break;
+        }
+        case PM4ItOpcode::MemSemaphore: {
+            const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
+            const auto addr = mem_semaphore->Address<VAddr>();
+            const auto select = mem_semaphore->semSel;
+            const auto client = mem_semaphore->clientCode;
+            const auto signal_type = mem_semaphore->signalType;
+            LOG_WARNING(Lib_GnmDriver, "MemSemaphore ignored: addr {:#X}, select {}, client {}, signal {}, wait {}, mailbox {}",
+                addr,
+                select.Value() == PM4CmdMemSemaphore::MemSemaphoreSelect::SignalSemaphore ? "signal" : "wait",
+                client.Value() == PM4CmdMemSemaphore::MemSemaphoreClientCode::CP ? "CP" : std::to_string(std::to_underlying(client.Value())),
+                std::to_underlying(signal_type.Value()) == 1 ? "increment/decrement" : "set 1/do nothing",
+                mem_semaphore->waitOnSignal.Value(),
+                std::to_underlying(mem_semaphore->useMailbox.Value())
+            );
+            if (rasterizer) {
+                rasterizer->GlobalBarrier();
+            }
             break;
         }
         default:

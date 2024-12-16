@@ -876,15 +876,15 @@ struct PM4CmdMemSemaphore {
     };
     enum class MemSemaphoreSelect : u32 {
         SignalSemaphore = 0b110u,
-        WaitSemaphore = 0b1111u
+        WaitSemaphore = 0b111u
     };
     enum class MemSemaphoreUseMailbox : u32 {
         DoNotWaitForMailboxToBeWritten = 0u,
         WaitForMailboxToBeWritten = 1u
     };
     enum class MemSemaphoreSignalType : u32 {
-        SignalIncrementOrWait = 0u,
-        SignalSetOne = 1u
+        SignalIncrementOrDecrement = 0u,
+        SignalSetOneOrDoNothing = 1u
     };
 
     PM4Type3Header header; ///< header
@@ -906,7 +906,7 @@ struct PM4CmdMemSemaphore {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr_lo | u64(addr_hi) << 32);
+        return reinterpret_cast<T>(u64(addr_lo) << 3 | (u64(addr_hi) << 32));
     }
 };
 
