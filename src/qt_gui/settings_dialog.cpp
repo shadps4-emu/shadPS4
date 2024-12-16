@@ -295,6 +295,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
     ui->rdocCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "rdocEnable", false));
     ui->GammaSlider->setValue(toml::find_or<int>(data, "GPU", "GammaValue", 1000));
+    ui->GammaLabel->setText(QString::number(ui->GammaSlider->value()));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -375,6 +376,7 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
 }
 
 void SettingsDialog::GammaSliderChange(int value) {
+    ui->GammaLabel->setText(QString::number(ui->GammaSlider->value()));
     float Gammafloat = static_cast<float>((value / 1000.0f));
 
     if (isGameRunning) {
