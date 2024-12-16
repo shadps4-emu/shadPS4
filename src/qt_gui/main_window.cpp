@@ -26,6 +26,8 @@
 #include "common/discord_rpc_handler.h"
 #endif
 
+bool isGameRunning = false;
+
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
     installEventFilter(this);

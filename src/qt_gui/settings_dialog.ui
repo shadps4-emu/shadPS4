@@ -60,8 +60,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>832</width>
-        <height>431</height>
+        <width>815</width>
+        <height>623</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -696,7 +696,7 @@
                   <property name="bottomMargin">
                    <number>5</number>
                   </property>
-                  <item alignment="Qt::AlignmentFlag::AlignHCenter">
+                  <item>
                    <widget class="QSpinBox" name="idleTimeoutSpinBox">
                     <property name="enabled">
                      <bool>true</bool>
@@ -897,20 +897,34 @@
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widgetgraphicsBottom" native="true">
-              <layout class="QHBoxLayout" name="widgetgraphicsBottomHLayout">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>Gamma Correction</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_9">
+               <item>
+                <widget class="QSlider" name="GammaSlider">
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>2000</number>
+                 </property>
+                 <property name="value">
+                  <number>1000</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="ResetGammaButton">
+                 <property name="text">
+                  <string>Reset Gamma</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

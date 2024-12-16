@@ -19,6 +19,9 @@
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 QStringList languageNames = {"Arabic",
                              "Czech",
                              "Danish",
@@ -108,6 +111,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
                     ResetInstallFolders();
                 }
+
                 if (Common::Log::IsActive()) {
                     Common::Log::Filter filter;
                     filter.ParseFilterString(Config::getLogFilter());
@@ -146,6 +150,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                 [this](s16 index) { OnCursorStateChanged(index); });
+    }
+
+    // Graphics TAB
+    {
+        connect(ui->GammaSlider, &QSlider::valueChanged, this,
+                [this](int value) { GammaSliderChange(value); });
+        connect(ui->ResetGammaButton, &QPushButton::clicked, this, [this]() { ResetGamma(); });
     }
 
     // PATH TAB
@@ -207,6 +218,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
+        ui->GammaSlider->installEventFilter(this);
 
         // Paths
         ui->gameFoldersGroupBox->installEventFilter(this);
@@ -282,6 +294,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
     ui->rdocCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "rdocEnable", false));
+    ui->GammaSlider->setValue(toml::find_or<int>(data, "GPU", "GammaValue", 1000));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -359,6 +372,18 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
             ui->idleTimeoutGroupBox->hide();
         }
     }
+}
+
+void SettingsDialog::GammaSliderChange(int value) {
+    float Gammafloat = static_cast<float>((value / 1000.0f));
+
+    if (isGameRunning) {
+        presenter->GetGammaRef() = Gammafloat;
+    }
+}
+
+void SettingsDialog::ResetGamma() {
+    ui->GammaSlider->setValue(1000);
 }
 
 int SettingsDialog::exec() {
@@ -509,6 +534,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setRdocEnabled(ui->rdocCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
+    Config::setGammaValue(ui->GammaSlider->value());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();

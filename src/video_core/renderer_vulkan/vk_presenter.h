@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 
+#include "common/config.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -42,7 +43,7 @@ class Rasterizer;
 
 class Presenter {
     struct PostProcessSettings {
-        float gamma = 1.0f;
+        float gamma = static_cast<float>((Config::getGammaValue() / 1000.0f));
     };
 
 public:

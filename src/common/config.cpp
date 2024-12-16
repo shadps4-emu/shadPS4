@@ -64,6 +64,7 @@ static bool vkCrashDiagnostic = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
+static int GammaValue = 1000;
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -224,6 +225,10 @@ bool getSeparateUpdateEnabled() {
     return separateupdatefolder;
 }
 
+int getGammaValue() {
+    return GammaValue;
+}
+
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -342,6 +347,10 @@ void setSpecialPadClass(int type) {
 
 void setSeparateUpdateEnabled(bool use) {
     separateupdatefolder = use;
+}
+
+void setGammaValue(int value) {
+    GammaValue = value;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -566,6 +575,7 @@ void load(const std::filesystem::path& path) {
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
+        GammaValue = toml::find_or<int>(gpu, "GammaValue", 1000);
     }
 
     if (data.contains("Vulkan")) {
@@ -668,6 +678,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["patchShaders"] = shouldPatchShaders;
     data["GPU"]["vblankDivider"] = vblankDivider;
+    data["GPU"]["GammaValue"] = GammaValue;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
@@ -775,6 +786,7 @@ void setDefaultValues() {
     m_language = 1;
     gpuId = -1;
     separateupdatefolder = false;
+    GammaValue = 1000;
 }
 
 } // namespace Config

@@ -21,6 +21,7 @@ bool getPlayBGM();
 int getBGMvolume();
 bool getEnableDiscordRPC();
 bool getSeparateUpdateEnabled();
+int getGammaValue();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -68,6 +69,7 @@ void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
+void setGammaValue(int value);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
 
 void setCursorState(s16 cursorState);
