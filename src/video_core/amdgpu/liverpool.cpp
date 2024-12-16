@@ -293,15 +293,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
                 const auto addr = mem_semaphore->Address<VAddr>();
                 const auto select = mem_semaphore->semSel;
-                const auto client = mem_semaphore->clientCode;
                 const auto signal_type = mem_semaphore->signalType;
-                LOG_WARNING(Lib_GnmDriver, "MemSemaphore ignored: addr {:#X}, select {}, client {}, signal {}, wait {}, mailbox {}",
+                using enum PM4CmdMemSemaphore::MemSemaphoreSelect;
+                using enum PM4CmdMemSemaphore::MemSemaphoreSignalType;
+                LOG_DEBUG(Lib_GnmDriver,
+                    "MemSemaphore GFX addr = {:#X}: {}, {}",
                     addr,
-                    select.Value() == PM4CmdMemSemaphore::MemSemaphoreSelect::SignalSemaphore ? "signal" : "wait",
-                    client.Value() == PM4CmdMemSemaphore::MemSemaphoreClientCode::CP ? "CP" : std::to_string(std::to_underlying(client.Value())),
-                    std::to_underlying(signal_type.Value()) == 1 ? "increment/decrement" : "set 1/do nothing",
-                    mem_semaphore->waitOnSignal.Value(),
-                    std::to_underlying(mem_semaphore->useMailbox.Value())
+                    select.Value() == SignalSemaphore ? "signal" : "wait",
+                    signal_type.Value() == SignalIncrementOrDecrement
+                        ? "increment/decrement" : "set 1/do nothing"
                 );
                 if (rasterizer) {
                     rasterizer->GlobalBarrier();
@@ -868,15 +868,14 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
             const auto addr = mem_semaphore->Address<VAddr>();
             const auto select = mem_semaphore->semSel;
-            const auto client = mem_semaphore->clientCode;
             const auto signal_type = mem_semaphore->signalType;
-            LOG_WARNING(Lib_GnmDriver, "MemSemaphore ignored: addr {:#X}, select {}, client {}, signal {}, wait {}, mailbox {}",
+            using enum PM4CmdMemSemaphore::MemSemaphoreSelect;
+            using enum PM4CmdMemSemaphore::MemSemaphoreSignalType;
+            LOG_DEBUG(Lib_GnmDriver, "MemSemaphore CE addr = {:#X}: {}, {}",
                 addr,
-                select.Value() == PM4CmdMemSemaphore::MemSemaphoreSelect::SignalSemaphore ? "signal" : "wait",
-                client.Value() == PM4CmdMemSemaphore::MemSemaphoreClientCode::CP ? "CP" : std::to_string(std::to_underlying(client.Value())),
-                std::to_underlying(signal_type.Value()) == 1 ? "increment/decrement" : "set 1/do nothing",
-                mem_semaphore->waitOnSignal.Value(),
-                std::to_underlying(mem_semaphore->useMailbox.Value())
+                select.Value() == SignalSemaphore ? "signal" : "wait",
+                signal_type.Value() == SignalIncrementOrDecrement
+                    ? "increment/decrement" : "set 1/do nothing"
             );
             if (rasterizer) {
                 rasterizer->GlobalBarrier();
