@@ -109,9 +109,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                     Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
-                    ResetInstallFolders();
+                    SyncRealTimeWidgetstoConfig();
                 }
-
                 if (Common::Log::IsActive()) {
                     Common::Log::Filter filter;
                     filter.ParseFilterString(Config::getLogFilter());
@@ -294,8 +293,6 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
     ui->rdocCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "rdocEnable", false));
-    ui->GammaSlider->setValue(toml::find_or<int>(data, "GPU", "GammaValue", 1000));
-    ui->GammaLabel->setText(QString::number(ui->GammaSlider->value()));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -316,7 +313,10 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
-    ResetInstallFolders();
+    SyncRealTimeWidgetstoConfig();
+
+    float Gammafloat = static_cast<float>((ui->GammaSlider->value() / 1000.0f));
+    ui->GammaLabel->setText(QString::number(Gammafloat));
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -376,9 +376,10 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
 }
 
 void SettingsDialog::GammaSliderChange(int value) {
-    ui->GammaLabel->setText(QString::number(ui->GammaSlider->value()));
     float Gammafloat = static_cast<float>((value / 1000.0f));
+    ui->GammaLabel->setText(QString::number(Gammafloat));
 
+    // presenter crashes if game is running, set isGameRunning to off when stop game is implemented
     if (isGameRunning) {
         presenter->GetGammaRef() = Gammafloat;
     }
@@ -551,7 +552,7 @@ void SettingsDialog::UpdateSettings() {
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
 }
 
-void SettingsDialog::ResetInstallFolders() {
+void SettingsDialog::SyncRealTimeWidgetstoConfig() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const toml::value data = toml::parse(userdir / "config.toml");
@@ -577,4 +578,6 @@ void SettingsDialog::ResetInstallFolders() {
         }
         Config::setGameInstallDirs(settings_install_dirs_config);
     }
+
+    ui->GammaSlider->setValue(toml::find_or<int>(data, "GPU", "GammaValue", 1000));
 }
