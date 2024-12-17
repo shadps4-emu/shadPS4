@@ -22,7 +22,7 @@ class MntPoints {
 public:
     struct MntPair {
         std::filesystem::path host_path;
-        std::string mount; // e.g /app0/
+        std::string mount; // e.g /app0
         bool read_only;
     };
 
@@ -39,8 +39,11 @@ public:
 
     const MntPair* GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
-        const auto it = std::ranges::find_if(
-            m_mnt_pairs, [&](const auto& mount) { return guest_path.starts_with(mount.mount); });
+        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
+            // When doing starts-with check, add a trailing slash to make sure we don't match
+            // against only part of the mount path.
+            return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
+        });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
