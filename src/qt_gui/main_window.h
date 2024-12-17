@@ -22,7 +22,10 @@
 #include "main_window_ui.h"
 #include "pkg_viewer.h"
 
-extern bool isGameRunning;
+namespace QtExternal {
+    extern bool isGameRunning;
+}
+
 class GameListFrame;
 
 class MainWindow : public QMainWindow {
