@@ -1,17 +1,29 @@
 # SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-# Prepare version information
+# Prepare MoltenVK Git revision
 find_package(Git)
 if(GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
             OUTPUT_VARIABLE MVK_GIT_REV
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK
             ERROR_QUIET
             OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
-set(MVK_VERSION "1.2.12")
 set(MVK_GENERATED_INCLUDES ${CMAKE_CURRENT_BINARY_DIR}/Generated)
 file(WRITE ${MVK_GENERATED_INCLUDES}/mvkGitRevDerived.h "static const char* mvkRevString = \"${MVK_GIT_REV}\";")
+message(STATUS "MoltenVK revision: ${MVK_GIT_REV}")
+
+# Prepare MoltenVK version
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK/MoltenVK/MoltenVK/API/mvk_private_api.h MVK_PRIVATE_API)
+string(REGEX MATCH "#define MVK_VERSION_MAJOR   [0-9]+" MVK_VERSION_MAJOR_LINE "${MVK_PRIVATE_API}")
+string(REGEX MATCH "[0-9]+" MVK_VERSION_MAJOR "${MVK_VERSION_MAJOR_LINE}")
+string(REGEX MATCH "#define MVK_VERSION_MINOR   [0-9]+" MVK_VERSION_MINOR_LINE "${MVK_PRIVATE_API}")
+string(REGEX MATCH "[0-9]+" MVK_VERSION_MINOR "${MVK_VERSION_MINOR_LINE}")
+string(REGEX MATCH "#define MVK_VERSION_PATCH   [0-9]+" MVK_VERSION_PATCH_LINE "${MVK_PRIVATE_API}")
+string(REGEX MATCH "[0-9]+" MVK_VERSION_PATCH "${MVK_VERSION_PATCH_LINE}")
+set(MVK_VERSION "${MVK_VERSION_MAJOR}.${MVK_VERSION_MINOR}.${MVK_VERSION_PATCH}")
+message(STATUS "MoltenVK version: ${MVK_VERSION}")
 
 # Find required system libraries
 find_library(APPKIT_LIBRARY AppKit REQUIRED)

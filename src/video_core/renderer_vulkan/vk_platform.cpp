@@ -14,21 +14,13 @@
 #endif
 
 #include <vector>
+#include <fmt/ranges.h>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
-
-#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
-static vk::detail::DynamicLoader dl;
-#else
-extern "C" {
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,
-                                                               const char* pName);
-}
-#endif
 
 namespace Vulkan {
 
@@ -199,15 +191,57 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     return extensions;
 }
 
+std::vector<const char*> GetInstanceLayers(bool enable_validation, bool enable_crash_diagnostic) {
+    const auto [properties_result, properties] = vk::enumerateInstanceLayerProperties();
+    if (properties_result != vk::Result::eSuccess || properties.empty()) {
+        LOG_ERROR(Render_Vulkan, "Failed to query layer properties: {}",
+                  vk::to_string(properties_result));
+        return {};
+    }
+
+    std::vector<const char*> layers;
+    layers.reserve(2);
+
+    if (enable_validation) {
+        layers.push_back(VALIDATION_LAYER_NAME);
+    }
+    if (enable_crash_diagnostic) {
+        layers.push_back(CRASH_DIAGNOSTIC_LAYER_NAME);
+    }
+
+    // Sanitize layer list
+    std::erase_if(layers, [&](const char* layer) -> bool {
+        const auto it = std::ranges::find_if(properties, [layer](const auto& prop) {
+            return std::strcmp(layer, prop.layerName) == 0;
+        });
+        if (it == properties.end()) {
+            LOG_ERROR(Render_Vulkan, "Requested layer {} is not available", layer);
+            return true;
+        }
+        return false;
+    });
+
+    return layers;
+}
+
 vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
                                   bool enable_crash_diagnostic) {
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
-#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
-    auto vkGetInstanceProcAddr =
-        dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+#ifdef __APPLE__
+    // If the Vulkan loader exists in /usr/local/lib, give it priority. The Vulkan SDK
+    // installs it here by default but it is not in the default library search path.
+    // The loader has a clause to check for it, but at a lower priority than the bundled
+    // libMoltenVK.dylib, so we need to handle it ourselves to give it priority.
+    static const std::string usr_local_path = "/usr/local/lib/libvulkan.dylib";
+    static vk::detail::DynamicLoader dl = std::filesystem::exists(usr_local_path)
+                                              ? vk::detail::DynamicLoader(usr_local_path)
+                                              : vk::detail::DynamicLoader();
+#else
+    static vk::detail::DynamicLoader dl;
 #endif
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(
+        dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr"));
 
     const auto [available_version_result, available_version] =
         VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
@@ -230,38 +264,25 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         .apiVersion = available_version,
     };
 
-    u32 num_layers = 0;
-    std::array<const char*, 2> layers;
+    const auto layers = GetInstanceLayers(enable_validation, enable_crash_diagnostic);
 
-    vk::Bool32 enable_force_barriers = vk::False;
-    const char* log_path{};
+    const std::string extensions_string = fmt::format("{}", fmt::join(extensions, ", "));
+    const std::string layers_string = fmt::format("{}", fmt::join(layers, ", "));
+    LOG_INFO(Render_Vulkan, "Enabled instance extensions: {}", extensions_string);
+    LOG_INFO(Render_Vulkan, "Enabled instance layers: {}", layers_string);
 
-#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
-    if (enable_validation) {
-        layers[num_layers++] = VALIDATION_LAYER_NAME;
-    }
+    // Validation settings
+    vk::Bool32 enable_sync = Config::vkValidationSyncEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_gpuav = Config::vkValidationSyncEnabled() ? vk::True : vk::False;
+    const char* gpuav_mode =
+        Config::vkValidationGpuEnabled() ? "GPU_BASED_GPU_ASSISTED" : "GPU_BASED_NONE";
 
-    if (enable_crash_diagnostic) {
-        layers[num_layers++] = CRASH_DIAGNOSTIC_LAYER_NAME;
-        static const auto crash_diagnostic_path =
-            Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
-        log_path = crash_diagnostic_path.c_str();
-        enable_force_barriers = vk::True;
-    }
-#else
-    if (enable_validation || enable_crash_diagnostic) {
-        LOG_WARNING(Render_Vulkan,
-                    "Skipping loading Vulkan layers as dynamic loading is not enabled.");
-    }
-#endif
+    // Crash diagnostics settings
+    static const auto crash_diagnostic_path =
+        Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
+    const char* log_path = crash_diagnostic_path.c_str();
+    vk::Bool32 enable_force_barriers = vk::True;
 
-    vk::Bool32 enable_sync =
-        enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
-    vk::Bool32 enable_gpuav =
-        enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
-    const char* gpuav_mode = enable_validation && Config::vkValidationGpuEnabled()
-                                 ? "GPU_BASED_GPU_ASSISTED"
-                                 : "GPU_BASED_NONE";
     const std::array layer_setings = {
         vk::LayerSettingEXT{
             .pLayerName = VALIDATION_LAYER_NAME,
@@ -331,7 +352,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
         vk::InstanceCreateInfo{
             .pApplicationInfo = &application_info,
-            .enabledLayerCount = num_layers,
+            .enabledLayerCount = static_cast<u32>(layers.size()),
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),

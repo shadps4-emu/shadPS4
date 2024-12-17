@@ -892,11 +892,16 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 if (APPLE)
-  option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)
-  if (USE_SYSTEM_VULKAN_LOADER)
-      target_compile_definitions(shadps4 PRIVATE USE_SYSTEM_VULKAN_LOADER=1)
+  if (ENABLE_QT_GUI)
+      # Include MoltenVK in the app bundle, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
+      target_sources(shadps4 PRIVATE externals/MoltenVK/MoltenVK_icd.json)
+      set_source_files_properties(externals/MoltenVK/MoltenVK_icd.json
+          PROPERTIES MACOSX_PACKAGE_LOCATION Resources/vulkan/icd.d)
+      add_custom_command(TARGET shadps4 POST_BUILD
+          COMMAND cmake -E copy $<TARGET_LINKER_FILE:MoltenVK> $<TARGET_BUNDLE_DIR:shadps4>/Contents/Frameworks/libMoltenVK.dylib)
+      set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
   else()
-      # Link MoltenVK for Vulkan support
+      # For non-bundled SDL build, just do a normal library link.
       target_link_libraries(shadps4 PRIVATE MoltenVK)
   endif()
 
