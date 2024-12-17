@@ -119,7 +119,7 @@ void MainWindow::CreateActions() {
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
-    QApplication::setStyle("Fusion");
+    QApplication::style()->objectName();
     ui->toolBar->setObjectName("mw_toolbar");
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
