@@ -112,6 +112,7 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
     m_theme_act_group->addAction(ui->setThemeGruvbox);
+    m_theme_act_group->addAction(ui->setThemeTokyoNight);
 }
 
 void MainWindow::AddUiWidgets() {
@@ -549,6 +550,14 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+    connect(ui->setThemeTokyoNight, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::TokyoNight, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::TokyoNight));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
+    });
 }
 
 void MainWindow::StartGame() {
@@ -924,6 +933,11 @@ void MainWindow::SetLastUsedTheme() {
         break;
     case Theme::Gruvbox:
         ui->setThemeGruvbox->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
+        break;
+    case Theme::TokyoNight:
+        ui->setThemeTokyoNight->setChecked(true);
         isIconBlack = false;
         SetUiIcons(false);
         break;
