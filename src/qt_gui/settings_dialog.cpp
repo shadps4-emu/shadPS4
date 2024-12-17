@@ -316,7 +316,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     SyncRealTimeWidgetstoConfig();
 
     float Gammafloat = static_cast<float>((ui->GammaSlider->value() / 1000.0f));
-    ui->GammaLabel->setText(QString::number(Gammafloat));
+    ui->GammaLabel->setText(QString::number(Gammafloat, 'f', 3));
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -377,7 +377,7 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
 
 void SettingsDialog::GammaSliderChange(int value) {
     float Gammafloat = static_cast<float>((value / 1000.0f));
-    ui->GammaLabel->setText(QString::number(Gammafloat));
+    ui->GammaLabel->setText(QString::number(Gammafloat, 'f', 3));
 
     // presenter crashes if game is running, set isGameRunning to off when stop game is implemented
     if (isGameRunning) {
