@@ -9,6 +9,7 @@
 #include <vector>
 #include <tsl/robin_map.h>
 #include "common/io_file.h"
+#include "common/logging/formatter.h"
 #include "core/devices/base_device.h"
 
 namespace Core::FileSys {
@@ -36,6 +37,14 @@ public:
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
                                       bool* is_read_only = nullptr);
+
+    const MntPair* GetMountFromHostPath(const std::string& host_path) {
+        std::scoped_lock lock{m_mutex};
+        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
+            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+        });
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
+    }
 
     const MntPair* GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
@@ -86,6 +95,7 @@ public:
     void DeleteHandle(int d);
     File* GetFile(int d);
     File* GetFile(const std::filesystem::path& host_name);
+    int GetFileDescriptor(File* file);
 
     void CreateStdHandles();
 

@@ -199,4 +199,14 @@ void HandleTable::CreateStdHandles() {
     setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
 }
 
+int HandleTable::GetFileDescriptor(File* file) {
+    std::scoped_lock lock{m_mutex};
+    auto it = std::find(m_files.begin(), m_files.end(), file);
+
+    if (it != m_files.end()) {
+        return std::distance(m_files.begin(), it);
+    }
+    return 0;
+}
+
 } // namespace Core::FileSys
