@@ -380,7 +380,8 @@ void SettingsDialog::GammaSliderChange(int value) {
     float Gammafloat = static_cast<float>((value / 1000.0f));
     ui->GammaLabel->setText(QString::number(Gammafloat, 'f', 3));
 
-    // GetGammaRef crashes if no game is running, set isGameRunning to false when MainWindow::StopGame is implemented
+    // GetGammaRef crashes if no game running, set isGameRunning to false
+    // when MainWindow::StopGame is implemented in the future
     if (QtExternal::isGameRunning) {
         presenter->GetGammaRef() = Gammafloat;
     }

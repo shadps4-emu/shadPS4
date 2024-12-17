@@ -27,7 +27,7 @@
 #endif
 
 namespace QtExternal {
-    static bool isGameRunning = false;
+extern bool isGameRunning = false;
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -558,7 +558,7 @@ void MainWindow::CreateConnects() {
 void MainWindow::StartGame() {
     using namespace QtExternal;
     QtExternal::isGameRunning = true;
-    
+
     BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = Config::getTableMode();
