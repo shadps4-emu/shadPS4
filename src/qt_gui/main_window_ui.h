@@ -38,6 +38,8 @@ public:
     QAction* setThemeViolet;
     QAction* setThemeGruvbox;
     QAction* setThemeTokyoNight;
+    QAction* setThemeSystemDark;
+    QAction* setThemeSystemLight;
     QWidget* centralWidget;
     QLineEdit* mw_searchbar;
     QPushButton* playButton;
@@ -166,6 +168,12 @@ public:
         setThemeTokyoNight = new QAction(MainWindow);
         setThemeTokyoNight->setObjectName("setThemeTokyoNight");
         setThemeTokyoNight->setCheckable(true);
+        setThemeSystemDark = new QAction(MainWindow);
+        setThemeSystemDark->setObjectName("setThemeSystem");
+        setThemeSystemDark->setCheckable(true);
+        setThemeSystemLight = new QAction(MainWindow);
+        setThemeSystemLight->setObjectName("setThemeSystemLight");
+        setThemeSystemLight->setCheckable(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName("centralWidget");
         sizePolicy.setHeightForWidth(centralWidget->sizePolicy().hasHeightForWidth());
@@ -292,6 +300,8 @@ public:
         menuThemes->addAction(setThemeViolet);
         menuThemes->addAction(setThemeGruvbox);
         menuThemes->addAction(setThemeTokyoNight);
+        menuThemes->addAction(setThemeSystemDark);
+        menuThemes->addAction(setThemeSystemLight);
         menuGame_List_Icons->addAction(setIconSizeTinyAct);
         menuGame_List_Icons->addAction(setIconSizeSmallAct);
         menuGame_List_Icons->addAction(setIconSizeMediumAct);
@@ -380,6 +390,8 @@ public:
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
         setThemeGruvbox->setText("Gruvbox");
         setThemeTokyoNight->setText("Tokyo Night");
+        setThemeSystemDark->setText(QCoreApplication::translate("MainWindow", "System (Dark)", nullptr));
+        setThemeSystemLight->setText(QCoreApplication::translate("MainWindow", "System (Light)", nullptr));
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
     } // retranslateUi
 };

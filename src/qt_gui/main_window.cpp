@@ -113,6 +113,8 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeViolet);
     m_theme_act_group->addAction(ui->setThemeGruvbox);
     m_theme_act_group->addAction(ui->setThemeTokyoNight);
+    m_theme_act_group->addAction(ui->setThemeSystemDark);
+    m_theme_act_group->addAction(ui->setThemeSystemLight);
 }
 
 void MainWindow::AddUiWidgets() {
@@ -558,6 +560,22 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+    connect(ui->setThemeSystemDark, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::SystemDark, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::SystemDark));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
+    });
+    connect(ui->setThemeSystemLight, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::SystemLight, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::SystemLight));
+        if (!isIconBlack) {
+            SetUiIcons(true);
+            isIconBlack = true;
+        }
+    });
 }
 
 void MainWindow::StartGame() {
@@ -940,6 +958,15 @@ void MainWindow::SetLastUsedTheme() {
         ui->setThemeTokyoNight->setChecked(true);
         isIconBlack = false;
         SetUiIcons(false);
+        break;
+    case Theme::SystemDark:
+        ui->setThemeSystemDark->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
+        break;
+    case Theme::SystemLight:
+        ui->setThemeLight->setChecked(true);
+        isIconBlack = true;
         break;
     }
 }
