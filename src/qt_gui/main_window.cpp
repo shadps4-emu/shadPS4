@@ -27,7 +27,7 @@
 #endif
 
 namespace QtExternal {
-extern bool isGameRunning = false;
+bool isGameRunning = false;
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {

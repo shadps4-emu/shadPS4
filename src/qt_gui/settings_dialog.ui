@@ -946,11 +946,11 @@
                 </widget>
                </item>
                <item>
-                <layout class="QHBoxLayout" name="LighterDarkerHLayout">
+                <layout class="QHBoxLayout" name="BrighterDarkerHLayout">
                  <item>
-                  <widget class="QLabel" name="LighterLabel">
+                  <widget class="QLabel" name="BrighterLabel">
                    <property name="text">
-                    <string>Lighter</string>
+                    <string>Brighter</string>
                    </property>
                   </widget>
                  </item>

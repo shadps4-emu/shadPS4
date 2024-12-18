@@ -1257,6 +1257,11 @@
 			<translation>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select "Auto Select" to automatically determine it.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="319"/>
+			<source>GammaGroupBox</source>
+			<translation>Gamma Correction:\nApplies additional processing to brighten or darken the game. Overrides and is overriden by in-game brightness settings, the last change to either will take effect.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
 			<source>resolutionLayout</source>
 			<translation>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
