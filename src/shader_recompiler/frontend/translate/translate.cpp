@@ -439,7 +439,8 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
         ir.SetVectorReg(IR::VectorReg(operand.code + 1), hi);
         return ir.SetVectorReg(IR::VectorReg(operand.code), lo);
     case OperandField::VccLo:
-        UNREACHABLE();
+        ir.SetVccLo(lo);
+        return ir.SetVccHi(hi);
     case OperandField::VccHi:
         UNREACHABLE();
     case OperandField::M0:
