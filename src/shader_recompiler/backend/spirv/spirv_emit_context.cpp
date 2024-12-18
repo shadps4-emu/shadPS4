@@ -697,6 +697,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         return spv::ImageFormat::R32ui;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Sint) {
+        return spv::ImageFormat::R32i;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::R32f;
     }
