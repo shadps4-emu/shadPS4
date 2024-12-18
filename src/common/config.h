@@ -24,6 +24,7 @@ bool getSeparateUpdateEnabled();
 
 std::string getLogFilter();
 std::string getLogType();
+std::string getWidgetStyle();
 std::string getUserName();
 std::string getUpdateChannel();
 
@@ -78,6 +79,7 @@ void setSpecialPadClass(int type);
 
 void setLogType(const std::string& type);
 void setLogFilter(const std::string& type);
+void setWidgetStyle(const std::string& type);
 
 void setVkValidation(bool enable);
 void setVkSyncValidation(bool enable);
