@@ -23,7 +23,7 @@
 #include "pkg_viewer.h"
 
 namespace QtExternal {
-    extern bool isGameRunning;
+extern bool isGameRunning;
 }
 
 class GameListFrame;
