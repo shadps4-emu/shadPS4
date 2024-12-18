@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -59,7 +57,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-23</y>
+        <y>0</y>
         <width>822</width>
         <height>554</height>
        </rect>
@@ -637,8 +635,8 @@
                  <property name="title">
                   <string>Current Widget Style</string>
                  </property>
-                 <layout class="QGridLayout" name="gridLayout">
-                  <item row="0" column="0">
+                 <layout class="QVBoxLayout" name="verticalLayout">
+                  <item>
                    <widget class="QComboBox" name="currentwidgetComboBox">
                     <property name="enabled">
                      <bool>true</bool>
