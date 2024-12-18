@@ -168,22 +168,6 @@ Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
 }
 
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
-                  const IR::Value& offset, Id ms) {
-    const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id image = ctx.OpLoad(texture.image_type, texture.id);
-    const Id result_type = texture.data_types->Get(4);
-    ImageOperands operands;
-    operands.AddOffset(ctx, offset);
-    operands.Add(spv::ImageOperandsMask::Lod, lod);
-    operands.Add(spv::ImageOperandsMask::Sample, ms);
-    const Id texel =
-        texture.is_storage
-            ? ctx.OpImageRead(result_type, image, coords, operands.mask, operands.operands)
-            : ctx.OpImageFetch(result_type, image, coords, operands.mask, operands.operands);
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texel) : texel;
-}
-
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool has_mips) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
@@ -236,15 +220,34 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
 }
 
-Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id lod) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
-}
-
-void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id color) {
+Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id color_type = texture.data_types->Get(4);
     ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Sample, ms);
+    Id texel;
+    if (!texture.is_storage) {
+        operands.Add(spv::ImageOperandsMask::Lod, lod);
+        texel = ctx.OpImageFetch(color_type, image, coords, operands.mask, operands.operands);
+    } else {
+        if (ctx.profile.supports_image_load_store_lod) {
+            operands.Add(spv::ImageOperandsMask::Lod, lod);
+        } else if (Sirit::ValidId(lod)) {
+            LOG_WARNING(Render, "Image read with LOD not supported by driver");
+        }
+        texel = ctx.OpImageRead(color_type, image, coords, operands.mask, operands.operands);
+    }
+    return !texture.is_integer ? ctx.OpBitcast(ctx.U32[4], texel) : texel;
+}
+
+void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,
+                    Id color) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    const Id color_type = texture.data_types->Get(4);
+    ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Sample, ms);
     if (ctx.profile.supports_image_load_store_lod) {
         operands.Add(spv::ImageOperandsMask::Lod, lod);
     } else if (Sirit::ValidId(lod)) {

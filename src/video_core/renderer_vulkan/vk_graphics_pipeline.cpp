@@ -378,8 +378,9 @@ void GraphicsPipeline::BuildDescSetLayout() {
         for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
-                                                   : vk::DescriptorType::eSampledImage,
+                .descriptorType = image.IsStorage(image.GetSharp(*stage))
+                                      ? vk::DescriptorType::eStorageImage
+                                      : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
                 .stageFlags = gp_stage_flags,
             });
