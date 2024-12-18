@@ -577,9 +577,9 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="EmptyTabLayoutRight">
+           <layout class="QVBoxLayout" name="WidgetTabLayoutRight">
             <item>
-             <widget class="QGroupBox" name="updaterGroupBox_2">
+             <widget class="QGroupBox" name="widgetGroupBox">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
                 <horstretch>0</horstretch>
@@ -615,9 +615,9 @@
                 <number>11</number>
                </property>
                <item>
-                <widget class="QGroupBox" name="updaterComboBox_2">
+                <widget class="QGroupBox" name="widgetComboBox">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -637,53 +637,49 @@
                  <property name="title">
                   <string>Current Widget Style</string>
                  </property>
-                 <widget class="QComboBox" name="updateComboBox_2">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="geometry">
-                   <rect>
-                    <x>14</x>
-                    <y>37</y>
-                    <width>221</width>
-                    <height>29</height>
-                   </rect>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="sizeIncrement">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="baseSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Fusion</string>
-                   </property>
+                 <layout class="QGridLayout" name="gridLayout">
+                  <item row="0" column="0">
+                   <widget class="QComboBox" name="currentwidgetComboBox">
+                    <property name="enabled">
+                     <bool>true</bool>
+                    </property>
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="sizeIncrement">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="baseSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Fusion</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>System</string>
+                     </property>
+                    </item>
+                   </widget>
                   </item>
-                  <item>
-                   <property name="text">
-                    <string>System</string>
-                   </property>
-                  </item>
-                 </widget>
+                 </layout>
                 </widget>
                </item>
                <item>
