@@ -380,28 +380,26 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     return UnmapMemoryImpl(virtual_addr, size);
 }
 
-s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
-    const auto it = FindVMA(virtual_addr);
-    const auto& vma_base = it->second;
-    ASSERT_MSG(vma_base.Contains(virtual_addr, size),
-               "Existing mapping does not contain requested unmap range");
-
+size_t MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base,
+                                          size_t size) {
     const auto vma_base_addr = vma_base.base;
     const auto vma_base_size = vma_base.size;
     const auto phys_base = vma_base.phys_base;
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
+    const auto adjusted_size =
+        vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
     const auto type = vma_base.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
     if (type == VMAType::Direct) {
-        rasterizer->UnmapMemory(virtual_addr, size);
+        rasterizer->UnmapMemory(virtual_addr, adjusted_size);
     }
     if (type == VMAType::Flexible) {
-        flexible_usage -= size;
+        flexible_usage -= adjusted_size;
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
-    const auto new_it = CarveVMA(virtual_addr, size);
+    const auto new_it = CarveVMA(virtual_addr, adjusted_size);
     auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
@@ -412,9 +410,23 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
 
     // Unmap the memory region.
-    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-               has_backing, readonly_file);
+    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + adjusted_size, phys_base,
+               is_exec, has_backing, readonly_file);
     TRACK_FREE(virtual_addr, "VMEM");
+
+    return adjusted_size;
+}
+
+s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
+    auto unmapped_bytes = 0;
+    do {
+        auto it = FindVMA(virtual_addr + unmapped_bytes);
+        auto& vma_base = it->second;
+        auto unmapped =
+            UnmapBytesFromEntry(virtual_addr + unmapped_bytes, vma_base, size - unmapped_bytes);
+        ASSERT_MSG(unmapped > 0, "Failed to unmap memory, progress is impossible");
+        unmapped_bytes += unmapped;
+    } while (unmapped_bytes < size);
 
     return ORBIS_OK;
 }
@@ -636,6 +648,12 @@ MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size
 
     const VAddr start_in_vma = virtual_addr - vma.base;
     const VAddr end_in_vma = start_in_vma + size;
+
+    if (start_in_vma == 0 && size == vma.size) {
+        // if requsting the whole VMA, return it
+        return vma_handle;
+    }
+
     ASSERT_MSG(end_in_vma <= vma.size, "Mapping cannot fit inside free region");
 
     if (end_in_vma != vma.size) {
