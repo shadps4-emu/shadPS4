@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -599,7 +601,7 @@
               <property name="title">
                <string>Widget Style</string>
               </property>
-              <layout class="QVBoxLayout" name="UpdateLayout_2" stretch="0,0">
+              <layout class="QVBoxLayout" name="widgetLayout" stretch="0,0">
                <property name="spacing">
                 <number>5</number>
                </property>
@@ -635,7 +637,7 @@
                  <property name="title">
                   <string>Current Widget Style</string>
                  </property>
-                 <layout class="QVBoxLayout" name="verticalLayout">
+                 <layout class="QVBoxLayout" name="currentwidgetLayout">
                   <item>
                    <widget class="QComboBox" name="currentwidgetComboBox">
                     <property name="enabled">
