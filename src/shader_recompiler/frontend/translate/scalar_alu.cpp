@@ -602,6 +602,8 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
             return ir.GetVcc();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::ExecLo:
+            return ir.GetExec();
         default:
             UNREACHABLE();
         }
