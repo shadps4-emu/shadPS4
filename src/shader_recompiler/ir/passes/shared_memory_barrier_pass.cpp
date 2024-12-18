@@ -4,11 +4,12 @@
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader::Optimization {
 
-void SharedMemoryBarrierPass(IR::Program& program) {
-    if (!program.info.uses_shared) {
+void SharedMemoryBarrierPass(IR::Program& program, const Profile& profile) {
+    if (!program.info.uses_shared || !profile.needs_lds_barriers) {
         return;
     }
     using Type = IR::AbstractSyntaxNode::Type;

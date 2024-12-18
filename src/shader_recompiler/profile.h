@@ -27,6 +27,7 @@ struct Profile {
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
+    bool needs_lds_barriers{};
     u64 min_ssbo_alignment{};
 };
 
