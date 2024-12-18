@@ -194,6 +194,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->updaterGroupBox->installEventFilter(this);
 #endif
         ui->GUIgroupBox->installEventFilter(this);
+        ui->widgetGroupBox->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -264,6 +265,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
+    ui->currentwidgetComboBox->setCurrentText(
+        QString::fromStdString(toml::find_or<std::string>(data, "GUI", "widgetStyle", "fusion")));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
@@ -397,6 +400,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
 #endif
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
+    } else if (elementName == "widgetGroupBox") {
+        text = tr("widgetGroupBox");
     }
 
     // Input
@@ -494,6 +499,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
     Config::setBGMvolume(ui->BGMVolumeSlider->value());
+    Config::setWidgetStyle(ui->currentwidgetComboBox->currentText().toStdString());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setScreenWidth(ui->widthSpinBox->value());
