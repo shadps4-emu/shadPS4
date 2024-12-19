@@ -554,7 +554,6 @@ void MainWindow::CreateConnects() {
 }
 
 void MainWindow::StartGame() {
-    isGameRunning = true;
     BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = Config::getTableMode();
@@ -577,13 +576,12 @@ void MainWindow::StartGame() {
     }
     if (gamePath != "") {
         AddRecentFiles(gamePath);
-        Core::Emulator emulator;
         const auto path = Common::FS::PathFromQString(gamePath);
         if (!std::filesystem::exists(path)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(path);
+        StartEmulator(path);
     }
 }
 
@@ -680,13 +678,12 @@ void MainWindow::BootGame() {
                                   QString(tr("Only one file can be selected!")));
         } else {
             std::filesystem::path path = Common::FS::PathFromQString(fileNames[0]);
-            Core::Emulator emulator;
             if (!std::filesystem::exists(path)) {
                 QMessageBox::critical(nullptr, tr("Run Game"),
                                       QString(tr("Eboot.bin file not found")));
                 return;
             }
-            emulator.Run(path);
+            StartEmulator(path);
         }
     }
 }
@@ -1040,12 +1037,11 @@ void MainWindow::CreateRecentGameActions() {
     connect(m_recent_files_group, &QActionGroup::triggered, this, [this](QAction* action) {
         auto gamePath = Common::FS::PathFromQString(action->text());
         AddRecentFiles(action->text()); // Update the list.
-        Core::Emulator emulator;
         if (!std::filesystem::exists(gamePath)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(gamePath);
+        StartEmulator(gamePath);
     });
 }
 
@@ -1093,4 +1089,17 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
         }
     }
     return QMainWindow::eventFilter(obj, event);
+}
+
+void MainWindow::StartEmulator(std::filesystem::path path) {
+    if (isGameRunning) {
+        QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
+        return;
+    }
+    std::thread emulator_thread([=] {
+        Core::Emulator emulator;
+        emulator.Run(path);
+    });
+    emulator_thread.detach();
+    isGameRunning = true;
 }
