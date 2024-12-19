@@ -158,16 +158,17 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             DebugState.ShowDebugMessage(msg);
         }
         if (compile) {
-            static std::map<std::string, std::string> stage_arg = {
-                {"vs", "vert"},
-                {"gs", "geom"},
-                {"fs", "frag"},
-                {"cs", "comp"},
+            static std::map<Shader::LogicalStage, std::string> stage_arg = {
+                {Shader::LogicalStage::Vertex, "vert"},
+                {Shader::LogicalStage::TessellationControl, "tesc"},
+                {Shader::LogicalStage::TessellationEval, "tese"},
+                {Shader::LogicalStage::Geometry, "geom"},
+                {Shader::LogicalStage::Fragment, "frag"},
+                {Shader::LogicalStage::Compute, "comp"},
             };
-            auto stage = stage_arg.find(value.name.substr(0, 2));
+            auto stage = stage_arg.find(value.l_stage);
             if (stage == stage_arg.end()) {
-                DebugState.ShowDebugMessage(std::string{"Invalid shader stage: "} +
-                                            value.name.substr(0, 2));
+                DebugState.ShowDebugMessage(std::string{"Invalid shader stage"});
             } else {
                 std::string cmd =
                     fmt::format("glslc --target-env=vulkan1.3 --target-spv=spv1.6 "

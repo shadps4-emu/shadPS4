@@ -586,12 +586,13 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const auto dimensions =
         unnormalized ? ir.ImageQueryDimension(ir.Imm32(image_binding), ir.Imm32(0u), ir.Imm1(false))
                      : IR::Value{};
-    const auto get_coord = [&](u32 idx, u32 dim_idx) -> IR::Value {
-        const auto coord = get_addr_reg(idx);
+    const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
+        const auto coord = get_addr_reg(coord_idx);
         if (unnormalized) {
             // Normalize the coordinate for sampling, dividing by its corresponding dimension.
-            return ir.FPDiv(coord,
-                            ir.BitCast<IR::F32>(IR::U32{ir.CompositeExtract(dimensions, dim_idx)}));
+            const auto dim =
+                ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
+            return ir.FPDiv(coord, dim);
         }
         return coord;
     };
@@ -771,14 +772,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     inst.SetArg(1, coords);
 
     if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(2, SwizzleVector(ir, image, inst.Arg(2)));
+        inst.SetArg(3, SwizzleVector(ir, image, inst.Arg(3)));
     }
 
     if (inst_info.has_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
+        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
+               inst.GetOpcode() == IR::Opcode::ImageRead ||
+               inst.GetOpcode() == IR::Opcode::ImageWrite);
         ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
                image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
-        inst.SetArg(3, arg);
+        inst.SetArg(2, arg);
     } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
         inst.SetArg(4, arg);

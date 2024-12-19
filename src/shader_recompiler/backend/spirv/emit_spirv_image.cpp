@@ -168,8 +168,8 @@ Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
 }
 
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const IR::Value& offset,
-                  Id lod, Id ms) {
+Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
+                  const IR::Value& offset, Id ms) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id result_type = texture.data_types->Get(4);
@@ -236,15 +236,22 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
 }
 
-Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords) {
+Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id lod) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color) {
+void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id color) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id color_type = texture.data_types->Get(4);
-    ctx.OpImageWrite(image, coords, ctx.OpBitcast(color_type, color));
+    ImageOperands operands;
+    if (ctx.profile.supports_image_load_store_lod) {
+        operands.Add(spv::ImageOperandsMask::Lod, lod);
+    } else if (Sirit::ValidId(lod)) {
+        LOG_WARNING(Render, "Image write with LOD not supported by driver");
+    }
+    ctx.OpImageWrite(image, coords, ctx.OpBitcast(color_type, color), operands.mask,
+                     operands.operands);
 }
 
 } // namespace Shader::Backend::SPIRV

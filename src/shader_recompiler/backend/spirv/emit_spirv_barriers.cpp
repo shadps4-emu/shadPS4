@@ -18,9 +18,16 @@ void MemoryBarrier(EmitContext& ctx, spv::Scope scope) {
 
 void EmitBarrier(EmitContext& ctx) {
     const auto execution{spv::Scope::Workgroup};
-    const auto memory{spv::Scope::Workgroup};
-    const auto memory_semantics{spv::MemorySemanticsMask::AcquireRelease |
-                                spv::MemorySemanticsMask::WorkgroupMemory};
+    spv::Scope memory;
+    spv::MemorySemanticsMask memory_semantics;
+    if (ctx.l_stage == Shader::LogicalStage::TessellationControl) {
+        memory = spv::Scope::Invocation;
+        memory_semantics = spv::MemorySemanticsMask::MaskNone;
+    } else {
+        memory = spv::Scope::Workgroup;
+        memory_semantics =
+            spv::MemorySemanticsMask::AcquireRelease | spv::MemorySemanticsMask::WorkgroupMemory;
+    }
     ctx.OpControlBarrier(ctx.ConstU32(static_cast<u32>(execution)),
                          ctx.ConstU32(static_cast<u32>(memory)),
                          ctx.ConstU32(static_cast<u32>(memory_semantics)));

@@ -34,11 +34,13 @@ struct Program {
         vk::ShaderModule module;
         Shader::StageSpecialization spec;
     };
+    using ModuleList = boost::container::small_vector<Module, 8>;
 
     Shader::Info info;
-    boost::container::small_vector<Module, 8> modules;
+    ModuleList modules;
 
-    explicit Program(Shader::Stage stage, Shader::ShaderParams params) : info{stage, params} {}
+    explicit Program(Shader::Stage stage, Shader::LogicalStage l_stage, Shader::ShaderParams params)
+        : info{stage, l_stage, params} {}
 
     void AddPermut(vk::ShaderModule module, const Shader::StageSpecialization&& spec) {
         modules.emplace_back(module, std::move(spec));
@@ -55,10 +57,10 @@ public:
 
     const ComputePipeline* GetComputePipeline();
 
-    std::tuple<const Shader::Info*, vk::ShaderModule, std::optional<Shader::Gcn::FetchShaderData>,
-               u64>
-    GetProgram(Shader::Stage stage, Shader::ShaderParams params,
-               Shader::Backend::Bindings& binding);
+    using Result = std::tuple<const Shader::Info*, vk::ShaderModule,
+                              std::optional<Shader::Gcn::FetchShaderData>, u64>;
+    Result GetProgram(Shader::Stage stage, Shader::LogicalStage l_stage,
+                      Shader::ShaderParams params, Shader::Backend::Bindings& binding);
 
     std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
                                                   std::span<const u32> spv_code);
@@ -71,10 +73,10 @@ private:
                     std::string_view ext);
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
                                                    std::string_view ext);
-    vk::ShaderModule CompileModule(Shader::Info& info, const Shader::RuntimeInfo& runtime_info,
+    vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
-    Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage);
+    Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
 
 private:
     const Instance& instance;

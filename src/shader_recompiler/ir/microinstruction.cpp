@@ -52,6 +52,8 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::Discard:
     case Opcode::DiscardCond:
     case Opcode::SetAttribute:
+    case Opcode::SetTcsGenericAttribute:
+    case Opcode::SetPatch:
     case Opcode::StoreBufferU32:
     case Opcode::StoreBufferU32x2:
     case Opcode::StoreBufferU32x3:

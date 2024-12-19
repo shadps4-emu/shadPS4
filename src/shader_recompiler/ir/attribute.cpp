@@ -104,6 +104,8 @@ std::string NameOf(Attribute attribute) {
         return "VertexId";
     case Attribute::InstanceId:
         return "InstanceId";
+    case Attribute::PrimitiveId:
+        return "PrimitiveId";
     case Attribute::FragCoord:
         return "FragCoord";
     case Attribute::IsFrontFace:
@@ -114,6 +116,16 @@ std::string NameOf(Attribute attribute) {
         return "LocalInvocationId";
     case Attribute::LocalInvocationIndex:
         return "LocalInvocationIndex";
+    case Attribute::InvocationId:
+        return "InvocationId";
+    case Attribute::PatchVertices:
+        return "PatchVertices";
+    case Attribute::TessellationEvaluationPointU:
+        return "TessellationEvaluationPointU";
+    case Attribute::TessellationEvaluationPointV:
+        return "TessellationEvaluationPointV";
+    case Attribute::PackedHullInvocationInfo:
+        return "PackedHullInvocationInfo";
     default:
         break;
     }

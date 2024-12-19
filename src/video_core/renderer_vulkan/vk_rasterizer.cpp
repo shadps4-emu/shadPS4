@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "core/memory.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -48,10 +49,6 @@ void Rasterizer::CpSync() {
 
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
-    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
-        return false;
-    }
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
     // actual draw hence can skip pipeline creation.
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
@@ -214,7 +211,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
@@ -271,7 +268,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     buffer_cache.BindIndexBuffer(is_indexed, 0);
@@ -320,14 +317,14 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
-    const auto& cs_program = liverpool->regs.cs_program;
+    const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
         return;
     }
 
-    const auto& cs = pipeline->GetStage(Shader::Stage::Compute);
-    if (ExecuteShaderHLE(cs, liverpool->regs, *this)) {
+    const auto& cs = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
         return;
     }
 
@@ -347,7 +344,7 @@ void Rasterizer::DispatchDirect() {
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
 
-    const auto& cs_program = liverpool->regs.cs_program;
+    const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
         return;
@@ -387,7 +384,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     const auto& regs = liverpool->regs;
 
     if (pipeline->IsCompute()) {
-        const auto& info = pipeline->GetStage(Shader::Stage::Compute);
+        const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
         // Most of the time when a metadata is updated with a shader it gets cleared. It means
         // we can skip the whole dispatch and update the tracked state instead. Also, it is not

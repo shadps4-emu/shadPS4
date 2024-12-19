@@ -1159,7 +1159,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name "CUSA00000-UPDATE" where the CUSA ID matches the game's ID.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>

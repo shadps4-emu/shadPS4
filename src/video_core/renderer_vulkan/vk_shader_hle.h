@@ -15,6 +15,6 @@ class Rasterizer;
 
 /// Attempts to execute a shader using HLE if possible.
 bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      Rasterizer& rasterizer);
+                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer);
 
 } // namespace Vulkan

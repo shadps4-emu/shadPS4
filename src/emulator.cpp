@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <set>
 #include <fmt/core.h>
 
 #include "common/config.h"
@@ -106,9 +107,11 @@ Emulator::~Emulator() {
 void Emulator::Run(const std::filesystem::path& file) {
 
     // Use the eboot from the separated updates folder if it's there
-    std::filesystem::path game_patch_folder = file.parent_path().concat("-UPDATE");
-    bool use_game_patch = std::filesystem::exists(game_patch_folder / "sce_sys");
-    std::filesystem::path eboot_path = use_game_patch ? game_patch_folder / file.filename() : file;
+    std::filesystem::path game_patch_folder = file.parent_path();
+    game_patch_folder += "-UPDATE";
+    std::filesystem::path eboot_path = std::filesystem::exists(game_patch_folder / file.filename())
+                                           ? game_patch_folder / file.filename()
+                                           : file;
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -226,18 +229,35 @@ void Emulator::Run(const std::filesystem::path& file) {
     LoadSystemModules(eboot_path, game_info.game_serial);
 
     // Load all prx from game's sce_module folder
-    std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
-    if (std::filesystem::is_directory(sce_module_folder)) {
-        for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
-            std::filesystem::path module_path = entry.path();
-            std::filesystem::path update_module_path =
-                eboot_path.parent_path() / "sce_module" / entry.path().filename();
-            if (std::filesystem::exists(update_module_path) && use_game_patch) {
-                module_path = update_module_path;
+    std::vector<std::filesystem::path> modules_to_load;
+    std::filesystem::path game_module_folder = file.parent_path() / "sce_module";
+    if (std::filesystem::is_directory(game_module_folder)) {
+        for (const auto& entry : std::filesystem::directory_iterator(game_module_folder)) {
+            if (entry.is_regular_file()) {
+                modules_to_load.push_back(entry.path());
             }
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(module_path.u8string()));
-            linker->LoadModule(module_path);
         }
+    }
+
+    // Load all prx from separate update's sce_module folder
+    std::filesystem::path update_module_folder = game_patch_folder / "sce_module";
+    if (std::filesystem::is_directory(update_module_folder)) {
+        for (const auto& entry : std::filesystem::directory_iterator(update_module_folder)) {
+            auto it = std::find_if(modules_to_load.begin(), modules_to_load.end(),
+                                   [&entry](const std::filesystem::path& p) {
+                                       return p.filename() == entry.path().filename();
+                                   });
+            if (it != modules_to_load.end()) {
+                *it = entry.path();
+            } else {
+                modules_to_load.push_back(entry.path());
+            }
+        }
+    }
+
+    for (const auto& module_path : modules_to_load) {
+        LOG_INFO(Loader, "Loading {}", fmt::UTF(module_path.u8string()));
+        linker->LoadModule(module_path);
     }
 
 #ifdef ENABLE_DISCORD_RPC

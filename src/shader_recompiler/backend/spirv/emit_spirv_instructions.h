@@ -9,6 +9,7 @@
 namespace Shader::IR {
 enum class Attribute : u64;
 enum class ScalarReg : u32;
+enum class Patch : u64;
 class Inst;
 class Value;
 } // namespace Shader::IR
@@ -27,8 +28,6 @@ Id EmitConditionRef(EmitContext& ctx, const IR::Value& value);
 void EmitReference(EmitContext&);
 void EmitPhiMove(EmitContext&);
 void EmitJoin(EmitContext& ctx);
-void EmitWorkgroupMemoryBarrier(EmitContext& ctx);
-void EmitDeviceMemoryBarrier(EmitContext& ctx);
 void EmitGetScc(EmitContext& ctx);
 void EmitGetExec(EmitContext& ctx);
 void EmitGetVcc(EmitContext& ctx);
@@ -85,9 +84,13 @@ Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index);
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
+Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index);
+void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index);
+Id EmitGetPatch(EmitContext& ctx, IR::Patch patch);
+void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value);
 void EmitSetFragColor(EmitContext& ctx, u32 index, u32 component, Id value);
 void EmitSetSampleMask(EmitContext& ctx, Id value);
 void EmitSetFragDepth(EmitContext& ctx, Id value);
@@ -392,14 +395,14 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                    const IR::Value& offset);
 Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                        const IR::Value& offset, Id dref);
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const IR::Value& offset,
-                  Id lod, Id ms);
+Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
+                  const IR::Value& offset, Id ms);
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips);
 Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords);
 Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id derivatives_dx,
                      Id derivatives_dy, const IR::Value& offset, const IR::Value& lod_clamp);
-Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords);
-void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color);
+Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id lod);
+void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id color);
 
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);

@@ -172,6 +172,7 @@ void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool is_
 
 vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
+    case vk::Format::eR8Uint:
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
     case vk::Format::eR4G4B4A4UnormPack16:
@@ -212,6 +213,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
     case vk::Format::eBc6HUfloatBlock:
+    case vk::Format::eR32G32B32A32Uint:
     case vk::Format::eR32G32B32A32Sfloat:
         return vk::Format::eR32G32B32A32Uint;
     default:

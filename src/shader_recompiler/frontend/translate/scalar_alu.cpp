@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
+#include "common/assert.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 
 namespace Shader::Gcn {
@@ -78,8 +80,10 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_BFM_B32(inst);
         case Opcode::S_MUL_I32:
             return S_MUL_I32(inst);
+        case Opcode::S_BFE_I32:
+            return S_BFE(inst, true);
         case Opcode::S_BFE_U32:
-            return S_BFE_U32(inst);
+            return S_BFE(inst, false);
         case Opcode::S_ABSDIFF_I32:
             return S_ABSDIFF_I32(inst);
 
@@ -94,8 +98,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             break;
         case Opcode::S_BREV_B32:
             return S_BREV_B32(inst);
-        case Opcode::S_BCNT1_I32_B64:
-            return S_BCNT1_I32_B64(inst);
+        case Opcode::S_BCNT1_I32_B32:
+            return S_BCNT1_I32_B32(inst);
         case Opcode::S_FF1_I32_B32:
             return S_FF1_I32_B32(inst);
         case Opcode::S_AND_SAVEEXEC_B64:
@@ -157,8 +161,9 @@ void Translator::EmitSOPK(const GcnInst& inst) {
     switch (inst.opcode) {
         // SOPK
     case Opcode::S_MOVK_I32:
-        return S_MOVK(inst);
-
+        return S_MOVK(inst, false);
+    case Opcode::S_CMOVK_I32:
+        return S_MOVK(inst, true);
     case Opcode::S_CMPK_EQ_I32:
         return S_CMPK(ConditionOp::EQ, true, inst);
     case Opcode::S_CMPK_LG_I32:
@@ -434,12 +439,12 @@ void Translator::S_MUL_I32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
 }
 
-void Translator::S_BFE_U32(const GcnInst& inst) {
+void Translator::S_BFE(const GcnInst& inst, bool is_signed) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 offset{ir.BitwiseAnd(src1, ir.Imm32(0x1F))};
     const IR::U32 count{ir.BitFieldExtract(src1, ir.Imm32(16), ir.Imm32(7))};
-    const IR::U32 result{ir.BitFieldExtract(src0, offset, count)};
+    const IR::U32 result{ir.BitFieldExtract(src0, offset, count, is_signed)};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
@@ -454,13 +459,16 @@ void Translator::S_ABSDIFF_I32(const GcnInst& inst) {
 
 // SOPK
 
-void Translator::S_MOVK(const GcnInst& inst) {
-    const auto simm16 = inst.control.sopk.simm;
-    if (simm16 & (1 << 15)) {
-        // TODO: need to verify the case of imm sign extension
-        UNREACHABLE();
+void Translator::S_MOVK(const GcnInst& inst, bool is_conditional) {
+    const s16 simm16 = inst.control.sopk.simm;
+    // do the sign extension
+    const s32 simm32 = static_cast<s32>(simm16);
+    IR::U32 val = ir.Imm32(simm32);
+    if (is_conditional) {
+        // if !SCC its a NOP
+        val = IR::U32{ir.Select(ir.GetScc(), val, GetSrc(inst.dst[0]))};
     }
-    SetDst(inst.dst[0], ir.Imm32(simm16));
+    SetDst(inst.dst[0], val);
 }
 
 void Translator::S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst) {
@@ -571,7 +579,7 @@ void Translator::S_BREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
 }
 
-void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
+void Translator::S_BCNT1_I32_B32(const GcnInst& inst) {
     const IR::U32 result = ir.BitCount(GetSrc(inst.src[0]));
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
@@ -594,6 +602,8 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
             return ir.GetVcc();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::ExecLo:
+            return ir.GetExec();
         default:
             UNREACHABLE();
         }

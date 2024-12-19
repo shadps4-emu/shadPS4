@@ -49,7 +49,8 @@ union BufferInstInfo {
     BitField<0, 1, u32> index_enable;
     BitField<1, 1, u32> offset_enable;
     BitField<2, 12, u32> inst_offset;
-    BitField<14, 1, u32> ring_access; // global + system coherency
+    BitField<14, 1, u32> system_coherent;
+    BitField<15, 1, u32> globally_coherent;
 };
 
 enum class ScalarReg : u32 {

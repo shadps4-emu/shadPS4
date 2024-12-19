@@ -15,7 +15,7 @@ enum class Type {
     ScalarReg = 1 << 1,
     VectorReg = 1 << 2,
     Attribute = 1 << 3,
-    SystemValue = 1 << 4,
+    Patch = 1 << 4,
     U1 = 1 << 5,
     U8 = 1 << 6,
     U16 = 1 << 7,

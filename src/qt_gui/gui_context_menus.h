@@ -122,11 +122,11 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            QString game_update_path;
-            Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
             std::filesystem::path game_folder_path = m_games[itemID].path;
-            if (std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
-                game_folder_path = Common::FS::PathFromQString(game_update_path);
+            std::filesystem::path game_update_path = game_folder_path;
+            game_update_path += "UPDATE";
+            if (std::filesystem::exists(game_update_path)) {
+                game_folder_path = game_update_path;
             }
             if (psf.Open(game_folder_path / "sce_sys" / "param.sfo")) {
                 int rows = psf.GetEntries().size();
@@ -320,21 +320,17 @@ public:
             bool error = false;
             QString folder_path, game_update_path, dlc_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
-            Common::FS::PathToQString(game_update_path, m_games[itemID].path.concat("-UPDATE"));
+            game_update_path = folder_path + "-UPDATE";
             Common::FS::PathToQString(
                 dlc_path, Config::getAddonInstallDir() /
                               Common::FS::PathFromQString(folder_path).parent_path().filename());
             QString message_type = tr("Game");
 
             if (selected == deleteUpdate) {
-                if (!Config::getSeparateUpdateEnabled()) {
-                    QMessageBox::critical(nullptr, tr("Error"),
-                                          QString(tr("requiresEnableSeparateUpdateFolder_MSG")));
-                    error = true;
-                } else if (!std::filesystem::exists(
-                               Common::FS::PathFromQString(game_update_path))) {
-                    QMessageBox::critical(nullptr, tr("Error"),
-                                          QString(tr("This game has no update to delete!")));
+                if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This game has no separate update to delete!")));
                     error = true;
                 } else {
                     folder_path = game_update_path;

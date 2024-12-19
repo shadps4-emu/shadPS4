@@ -10,16 +10,28 @@
 
 namespace Core::FileSys {
 
+std::string RemoveTrailingSlashes(const std::string& path) {
+    // Remove trailing slashes to make comparisons simpler.
+    std::string path_sanitized = path;
+    while (path_sanitized.ends_with("/")) {
+        path_sanitized.pop_back();
+    }
+    return path_sanitized;
+}
+
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
-    m_mnt_pairs.emplace_back(host_folder, guest_folder, read_only);
+    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only);
 }
 
 void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(),
-                             [&](const MntPair& pair) { return pair.mount == guest_folder; });
+    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
+        return pair.mount == guest_folder_sanitized;
+    });
     m_mnt_pairs.erase(it, m_mnt_pairs.end());
 }
 
@@ -47,7 +59,8 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Nothing to do if getting the mount itself.
-    if (corrected_path == mount->mount) {
+    const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
+    if (corrected_path_sanitized == mount->mount) {
         return mount->host_path;
     }
 
@@ -184,6 +197,16 @@ void HandleTable::CreateStdHandles() {
     setup("/dev/stdin", new Devices::NopDevice(0));             // stdin
     setup("/dev/stdout", new Devices::Logger("stdout", false)); // stdout
     setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
+}
+
+int HandleTable::GetFileDescriptor(File* file) {
+    std::scoped_lock lock{m_mutex};
+    auto it = std::find(m_files.begin(), m_files.end(), file);
+
+    if (it != m_files.end()) {
+        return std::distance(m_files.begin(), it);
+    }
+    return 0;
 }
 
 } // namespace Core::FileSys
