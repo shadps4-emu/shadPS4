@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -71,7 +69,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="generalTab">
        <attribute name="title">
@@ -1235,8 +1233,8 @@
             <widget class="QListWidget" name="gameFoldersListWidget">
              <property name="geometry">
               <rect>
-               <x>0</x>
-               <y>20</y>
+               <x>6</x>
+               <y>32</y>
                <width>401</width>
                <height>331</height>
               </rect>
@@ -1246,9 +1244,9 @@
              <property name="geometry">
               <rect>
                <x>100</x>
-               <y>360</y>
+               <y>380</y>
                <width>91</width>
-               <height>24</height>
+               <height>42</height>
               </rect>
              </property>
              <property name="text">
@@ -1259,9 +1257,9 @@
              <property name="geometry">
               <rect>
                <x>199</x>
-               <y>360</y>
+               <y>380</y>
                <width>91</width>
-               <height>24</height>
+               <height>42</height>
               </rect>
              </property>
              <property name="text">
