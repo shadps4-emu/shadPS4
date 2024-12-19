@@ -64,7 +64,6 @@ private:
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
-    void RepaintWidgets();
     void InstallPkg();
     void BootGame();
     void AddRecentFiles(QString filePath);

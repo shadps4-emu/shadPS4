@@ -6,12 +6,12 @@
 void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
     QPalette themePalette;
 
-    static QPalette s_unthemed_palette;
-    static bool s_unthemed_style_name_set;
+    static QPalette s_system_palette;
+    static bool s_system_style_name_set;
 
-    if (!s_unthemed_style_name_set) {
-        s_unthemed_style_name_set = true;
-        s_unthemed_palette = QApplication::palette();
+    if (!s_system_style_name_set) {
+        s_system_style_name_set = true;
+        s_system_palette = QApplication::palette();
     }
 
     switch (theme) {
@@ -157,9 +157,8 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
                                     "border-radius: 4px; padding: 5px; }"
                                     "QLineEdit:focus {"
                                     "border: 1px solid; }");
-        qApp->setPalette(s_unthemed_palette);
+        qApp->setPalette(s_system_palette);
         qApp->setStyleSheet(QString());
-        qApp->setStyle(QApplication::style()->objectName());
         break;
     case Theme::SystemLight:
         mw_searchbar->setStyleSheet("QLineEdit {"
@@ -167,9 +166,8 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
                                     "border-radius: 4px; padding: 5px; }"
                                     "QLineEdit:focus {"
                                     "border: 1px solid; }");
-        qApp->setPalette(s_unthemed_palette);
+        qApp->setPalette(s_system_palette);
         qApp->setStyleSheet(QString());
-        qApp->setStyle(QApplication::style()->objectName());
         break;
     }
 }

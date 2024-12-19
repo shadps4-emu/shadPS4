@@ -165,7 +165,7 @@ public:
         setThemeGruvbox->setObjectName("setThemeGruvbox");
         setThemeGruvbox->setCheckable(true);
         setThemeSystemDark = new QAction(MainWindow);
-        setThemeSystemDark->setObjectName("setThemeSystem");
+        setThemeSystemDark->setObjectName("setThemeSystemDark");
         setThemeSystemDark->setCheckable(true);
         setThemeSystemLight = new QAction(MainWindow);
         setThemeSystemLight->setObjectName("setThemeSystemLight");
