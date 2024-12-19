@@ -3,7 +3,13 @@
 
 #pragma once
 
+#include <unordered_map>
+#include <QDir>
+#include <QDirIterator>
+#include <QImage>
+#include <QString>
 #include "common/path_util.h"
+#include "compatibility_info.h"
 
 struct GameInfo {
     std::filesystem::path path;      // root path of game directory
@@ -21,6 +27,7 @@ struct GameInfo {
     std::string fw = "Unknown";
 
     std::string play_time = "Unknown";
+    CompatibilityEntry compatibility = CompatibilityEntry{CompatibilityStatus::Unknown};
 };
 
 class GameListUtils {
