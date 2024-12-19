@@ -72,6 +72,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     if (!SDL_SetHint(SDL_HINT_APP_NAME, "shadPS4")) {
         UNREACHABLE_MSG("Failed to set SDL window hint: {}", SDL_GetError());
     }
+#if defined(SDL_PLATFORM_LINUX)
+    if (getenv("WAYLAND_DISPLAY") && !SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland")) {
+        UNREACHABLE_MSG("Failed to set video driver hint to Wayland: {}", SDL_GetError());
+    }
+#endif
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
