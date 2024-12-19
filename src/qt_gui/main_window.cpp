@@ -119,11 +119,21 @@ void MainWindow::CreateActions() {
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
+    static QString s_system_style_name;
+    static bool s_system_style_name_set;
+
+    if (!s_system_style_name_set) {
+        s_system_style_name_set = true;
+        s_system_style_name = QApplication::style()->objectName();
+    }
+
     std::string widget_style = Config::getWidgetStyle();
     if (widget_style == "Fusion") {
-        QApplication::setStyle("Fusion");
+        qApp->setStyle(QStyleFactory::create("Fusion"));
+        qApp->setStyleSheet(QString());
     } else if (widget_style == "System") {
-        QApplication::style()->objectName();
+        qApp->setStyle(s_system_style_name);
+        qApp->setStyleSheet(QString());
     }
     ui->toolBar->setObjectName("mw_toolbar");
     ui->toolBar->addWidget(ui->playButton);
