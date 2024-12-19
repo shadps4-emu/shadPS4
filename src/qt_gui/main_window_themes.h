@@ -9,7 +9,7 @@
 #include <QStyleFactory>
 #include <QWidget>
 
-enum class Theme : int { Dark, Light, Green, Blue, Violet, Gruvbox, TokyoNight, SystemDark, SystemLight };
+enum class Theme : int { Dark, Light, Green, Blue, Violet, Gruvbox, SystemDark, SystemLight };
 
 class WindowThemes : public QObject {
     Q_OBJECT

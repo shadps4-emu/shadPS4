@@ -112,7 +112,6 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
     m_theme_act_group->addAction(ui->setThemeGruvbox);
-    m_theme_act_group->addAction(ui->setThemeTokyoNight);
     m_theme_act_group->addAction(ui->setThemeSystemDark);
     m_theme_act_group->addAction(ui->setThemeSystemLight);
 }
@@ -569,14 +568,6 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
-    connect(ui->setThemeTokyoNight, &QAction::triggered, &m_window_themes, [this]() {
-        m_window_themes.SetWindowTheme(Theme::TokyoNight, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::TokyoNight));
-        if (isIconBlack) {
-            SetUiIcons(false);
-            isIconBlack = false;
-        }
-    });
     connect(ui->setThemeSystemDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::SystemDark, ui->mw_searchbar);
         Config::setMainWindowTheme(static_cast<int>(Theme::SystemDark));
@@ -968,11 +959,6 @@ void MainWindow::SetLastUsedTheme() {
         break;
     case Theme::Gruvbox:
         ui->setThemeGruvbox->setChecked(true);
-        isIconBlack = false;
-        SetUiIcons(false);
-        break;
-    case Theme::TokyoNight:
-        ui->setThemeTokyoNight->setChecked(true);
         isIconBlack = false;
         SetUiIcons(false);
         break;
