@@ -5,6 +5,7 @@
 
 #include <QActionGroup>
 #include <QDragEnterEvent>
+#include <QStyleFactory>
 #include <QTranslator>
 
 #include "background_music_player.h"
@@ -62,6 +63,7 @@ private:
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
+    void RepaintWidgets();
     void InstallPkg();
     void BootGame();
     void AddRecentFiles(QString filePath);
