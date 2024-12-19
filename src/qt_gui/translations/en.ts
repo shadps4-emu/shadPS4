@@ -1202,6 +1202,11 @@
 			<translation>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="307"/>
+			<source>widgetGroupBox</source>
+			<translation>Widget Styles:\nChoose the widget style to be applied at startup. Defaults to Fusion. "System" uses your system's widget style (Breeze, Oxygen, Kvantum etc). Requires an app restart to apply.</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
