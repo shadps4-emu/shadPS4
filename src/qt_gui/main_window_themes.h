@@ -5,8 +5,8 @@
 
 #include <QApplication>
 #include <QLineEdit>
-#include <QWidget>
 #include <QStyle>
+#include <QWidget>
 
 enum class Theme : int { Dark, Light, Green, Blue, Violet, Gruvbox, TokyoNight, SystemDark, SystemLight };
 
