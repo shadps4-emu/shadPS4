@@ -1,12 +1,17 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QToolTip>
+#include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "game_list_frame.h"
+#include "game_list_utils.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
-    : QTableWidget(parent), m_game_info(game_info_get) {
+GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
+                             std::shared_ptr<CompatibilityInfoClass> compat_info_get,
+                             QWidget* parent)
+    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
     icon_size = Config::getIconSize();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -17,29 +22,30 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->verticalScrollBar()->installEventFilter(this);
     this->verticalScrollBar()->setSingleStep(20);
     this->horizontalScrollBar()->setSingleStep(20);
-    this->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    this->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     this->verticalHeader()->setVisible(false);
     this->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     this->horizontalHeader()->setHighlightSections(false);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
-    this->setColumnCount(9);
+    this->setColumnCount(10);
     this->setColumnWidth(1, 300); // Name
-    this->setColumnWidth(2, 120); // Serial
-    this->setColumnWidth(3, 90);  // Region
-    this->setColumnWidth(4, 90);  // Firmware
-    this->setColumnWidth(5, 90);  // Size
-    this->setColumnWidth(6, 90);  // Version
-    this->setColumnWidth(7, 120); // Play Time
+    this->setColumnWidth(2, 140); // Compatibility
+    this->setColumnWidth(3, 120); // Serial
+    this->setColumnWidth(4, 90);  // Region
+    this->setColumnWidth(5, 90);  // Firmware
+    this->setColumnWidth(6, 90);  // Size
+    this->setColumnWidth(7, 90);  // Version
+    this->setColumnWidth(8, 120); // Play Time
     QStringList headers;
-    headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
-            << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
+    headers << tr("Icon") << tr("Name") << tr("Compatibility") << tr("Serial") << tr("Region")
+            << tr("Firmware") << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    this->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
+    this->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
     PopulateGameList();
 
     connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
@@ -67,6 +73,12 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
+    });
+
+    connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
+        if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
+            QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
+        }
     });
 }
 
@@ -96,16 +108,20 @@ void GameListFrame::PopulateGameList() {
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
-        SetTableItem(i, 2, QString::fromStdString(m_game_info->m_games[i].serial));
-        SetRegionFlag(i, 3, QString::fromStdString(m_game_info->m_games[i].region));
-        SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
-        SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
-        SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
+        SetTableItem(i, 3, QString::fromStdString(m_game_info->m_games[i].serial));
+        SetRegionFlag(i, 4, QString::fromStdString(m_game_info->m_games[i].region));
+        SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].fw));
+        SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
+        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
+
+        m_game_info->m_games[i].compatibility =
+            m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
+        SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility);
 
         QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
         if (playTime.isEmpty()) {
             m_game_info->m_games[i].play_time = "0:00:00";
-            SetTableItem(i, 7, tr("Never Played"));
+            SetTableItem(i, 8, tr("Never Played"));
         } else {
             QStringList timeParts = playTime.split(':');
             int hours = timeParts[0].toInt();
@@ -123,15 +139,15 @@ void GameListFrame::PopulateGameList() {
             formattedPlayTime = formattedPlayTime.trimmed();
             m_game_info->m_games[i].play_time = playTime.toStdString();
             if (formattedPlayTime.isEmpty()) {
-                SetTableItem(i, 7, QString("%1s").arg(seconds));
+                SetTableItem(i, 8, QString("%1s").arg(seconds));
             } else {
-                SetTableItem(i, 7, formattedPlayTime);
+                SetTableItem(i, 8, formattedPlayTime);
             }
         }
 
         QString path;
         Common::FS::PathToQString(path, m_game_info->m_games[i].path);
-        SetTableItem(i, 8, path);
+        SetTableItem(i, 9, path);
     }
 }
 
@@ -201,6 +217,89 @@ void GameListFrame::ResizeIcons(int iconSize) {
         index++;
     }
     this->horizontalHeader()->setSectionResizeMode(8, QHeaderView::ResizeToContents);
+}
+
+void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry entry) {
+    QTableWidgetItem* item = new QTableWidgetItem();
+    QWidget* widget = new QWidget(this);
+    QGridLayout* layout = new QGridLayout(widget);
+
+    widget->setStyleSheet("QToolTip {background-color: black; color: white;}");
+
+    QColor color;
+    QString status_explanation;
+
+    switch (entry.status) {
+    case CompatibilityStatus::Unknown:
+        color = QStringLiteral("#000000");
+        status_explanation = tr("Compatibility is untested");
+        break;
+    case CompatibilityStatus::Nothing:
+        color = QStringLiteral("#212121");
+        status_explanation = tr("Games does not initialize properly / crashes the emulator");
+        break;
+    case CompatibilityStatus::Boots:
+        color = QStringLiteral("#828282");
+        status_explanation = tr("Game boots, but only displays a blank screen");
+        break;
+    case CompatibilityStatus::Menus:
+        color = QStringLiteral("#FF0000");
+        status_explanation = tr("Game displays an image but does not go past the menu");
+        break;
+    case CompatibilityStatus::Ingame:
+        color = QStringLiteral("#F2D624");
+        status_explanation = tr("Game has game-breaking glitches or unplayable performance");
+        break;
+    case CompatibilityStatus::Playable:
+        color = QStringLiteral("#47D35C");
+        status_explanation =
+            tr("Game can be completed with playable performance and no major glitches");
+        break;
+    }
+
+    QString tooltip_string;
+
+    if (entry.status == CompatibilityStatus::Unknown) {
+        tooltip_string = status_explanation;
+    } else {
+        tooltip_string =
+            "<p> <i>" + tr("Click to go to issue") + "</i>" + "<br>" + tr("Last updated") +
+            QString(": %1 (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
+            "<br>" + status_explanation + "</p>";
+    }
+
+    QPixmap circle_pixmap(16, 16);
+    circle_pixmap.fill(Qt::transparent);
+    QPainter painter(&circle_pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(color);
+    painter.setBrush(color);
+    painter.drawEllipse({circle_pixmap.width() / 2.0, circle_pixmap.height() / 2.0}, 6.0, 6.0);
+
+    QLabel* dotLabel = new QLabel("", widget);
+    dotLabel->setPixmap(circle_pixmap);
+
+    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
+
+    label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
+
+    // Create shadow effect
+    QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
+    shadowEffect->setBlurRadius(5);               // Set the blur radius of the shadow
+    shadowEffect->setColor(QColor(0, 0, 0, 160)); // Set the color and opacity of the shadow
+    shadowEffect->setOffset(2, 2);                // Set the offset of the shadow
+
+    label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
+
+    layout->addWidget(dotLabel, 0, 0, -1, 1);
+    layout->addWidget(label, 0, 1, 1, 1);
+    layout->setAlignment(Qt::AlignLeft);
+    widget->setLayout(layout);
+    widget->setToolTip(tooltip_string);
+    this->setItem(row, column, item);
+    this->setCellWidget(row, column, widget);
+
+    return;
 }
 
 void GameListFrame::SetTableItem(int row, int column, QString itemStr) {

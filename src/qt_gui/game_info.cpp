@@ -4,6 +4,7 @@
 #include <QProgressDialog>
 
 #include "common/path_util.h"
+#include "compatibility_info.h"
 #include "game_info.h"
 
 GameInfoClass::GameInfoClass() = default;
@@ -22,6 +23,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
             }
         }
     }
+
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
                   return readGameInfo(Common::FS::PathFromQString(path));
               }).results();
