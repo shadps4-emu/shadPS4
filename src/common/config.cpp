@@ -325,7 +325,7 @@ void setLogFilter(const std::string& type) {
     logFilter = type;
 }
 
-void setWidgetStyle(const std::string &type) {
+void setWidgetStyle(const std::string& type) {
     widgetStyle = type;
 }
 
