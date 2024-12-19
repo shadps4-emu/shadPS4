@@ -10,6 +10,7 @@
 #include "background_music_player.h"
 #include "common/config.h"
 #include "common/path_util.h"
+#include "compatibility_info.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "elf_viewer.h"
@@ -92,6 +93,8 @@ private:
     PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
+    std::shared_ptr<CompatibilityInfoClass> m_compat_info =
+        std::make_shared<CompatibilityInfoClass>();
 
     QTranslator* translator;
 

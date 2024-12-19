@@ -347,7 +347,11 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
 
         QString userPath;
         Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+#ifdef Q_OS_WIN
+        QString tempDownloadPath = QString(getenv("LOCALAPPDATA")) + "/Temp/temp_download_update";
+#else
         QString tempDownloadPath = userPath + "/temp_download_update";
+#endif
         QDir dir(tempDownloadPath);
         if (!dir.exists()) {
             dir.mkpath(".");
@@ -393,6 +397,11 @@ void CheckUpdate::Install() {
     QString processCommand;
 
 #ifdef Q_OS_WIN
+    // On windows, overwrite tempDirPath with AppData/Local/Temp folder
+    // due to PowerShell Expand-Archive not being able to handle correctly
+    // paths in square brackets (ie: ./[shadps4])
+    tempDirPath = QString(getenv("LOCALAPPDATA")) + "/Temp/temp_download_update";
+
     // Windows Batch Script
     scriptFileName = tempDirPath + "/update.ps1";
     scriptContent = QStringLiteral(
@@ -408,10 +417,11 @@ void CheckUpdate::Install() {
         "Start-Sleep -Seconds 3\n"
         "Copy-Item -Recurse -Force '%2\\*' '%3\\'\n"
         "Start-Sleep -Seconds 2\n"
-        "Remove-Item -Force '%3\\update.ps1'\n"
-        "Remove-Item -Force '%3\\temp_download_update.zip'\n"
-        "Start-Process '%3\\shadps4.exe'\n"
-        "Remove-Item -Recurse -Force '%2'\n");
+        "Remove-Item -Force -LiteralPath '%3\\update.ps1'\n"
+        "Remove-Item -Force -LiteralPath '%3\\temp_download_update.zip'\n"
+        "Remove-Item -Recurse -Force '%2'\n"
+        "Start-Process -FilePath '%3\\shadps4.exe' "
+        "-WorkingDirectory ([WildcardPattern]::Escape('%3'))\n");
     arguments << "-ExecutionPolicy"
               << "Bypass"
               << "-File" << scriptFileName;
