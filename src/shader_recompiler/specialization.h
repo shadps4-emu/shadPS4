@@ -31,6 +31,7 @@ struct BufferSpecialization {
 
 struct TextureBufferSpecialization {
     bool is_integer = false;
+    u32 dst_select = 0;
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
@@ -38,8 +39,12 @@ struct TextureBufferSpecialization {
 struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
+    u32 dst_select = 0;
 
-    auto operator<=>(const ImageSpecialization&) const = default;
+    bool operator==(const ImageSpecialization& other) const {
+        return type == other.type && is_integer == other.is_integer &&
+               (dst_select != 0 ? dst_select == other.dst_select : true);
+    }
 };
 
 struct FMaskSpecialization {
@@ -47,6 +52,12 @@ struct FMaskSpecialization {
     u32 height;
 
     auto operator<=>(const FMaskSpecialization&) const = default;
+};
+
+struct SamplerSpecialization {
+    bool force_unnormalized = false;
+
+    auto operator<=>(const SamplerSpecialization&) const = default;
 };
 
 /**
@@ -67,6 +78,7 @@ struct StageSpecialization {
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     boost::container::small_vector<FMaskSpecialization, 8> fmasks;
+    boost::container::small_vector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
     explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
@@ -96,17 +108,37 @@ struct StageSpecialization {
         ForEachSharp(binding, tex_buffers, info->texture_buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
+                         spec.dst_select = sharp.DstSelect();
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.type = sharp.GetBoundType();
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
+                         if (desc.is_storage) {
+                             spec.dst_select = sharp.DstSelect();
+                         }
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.width = sharp.width;
                          spec.height = sharp.height;
                      });
+        ForEachSharp(samplers, info->samplers,
+                     [](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
+                         spec.force_unnormalized = sharp.force_unnormalized;
+                     });
+
+        // Initialize runtime_info fields that rely on analysis in tessellation passes
+        if (info->l_stage == LogicalStage::TessellationControl ||
+            info->l_stage == LogicalStage::TessellationEval) {
+            Shader::TessellationDataConstantBuffer tess_constants;
+            info->ReadTessConstantBuffer(tess_constants);
+            if (info->l_stage == LogicalStage::TessellationControl) {
+                runtime_info.hs_info.InitFromTessConstants(tess_constants);
+            } else {
+                runtime_info.vs_info.InitFromTessConstants(tess_constants);
+            }
+        }
     }
 
     void ForEachSharp(auto& spec_list, auto& desc_list, auto&& func) {
@@ -172,6 +204,11 @@ struct StageSpecialization {
         }
         for (u32 i = 0; i < fmasks.size(); i++) {
             if (other.bitset[binding++] && fmasks[i] != other.fmasks[i]) {
+                return false;
+            }
+        }
+        for (u32 i = 0; i < samplers.size(); i++) {
+            if (samplers[i] != other.samplers[i]) {
                 return false;
             }
         }

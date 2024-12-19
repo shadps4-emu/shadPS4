@@ -69,7 +69,7 @@ struct ImageInfo {
     } props{}; // Surface properties with impact on various calculation factors
 
     vk::Format pixel_format = vk::Format::eUndefined;
-    vk::ImageType type = vk::ImageType::e1D;
+    vk::ImageType type = vk::ImageType::e2D;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
     u32 num_bits{};

@@ -23,9 +23,11 @@ struct Profile {
     bool support_fp32_denorm_flush{};
     bool support_explicit_workgroup_layout{};
     bool support_legacy_vertex_attributes{};
+    bool supports_image_load_store_lod{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
+    bool needs_lds_barriers{};
     u64 min_ssbo_alignment{};
 };
 

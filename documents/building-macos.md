@@ -24,22 +24,20 @@ eval $(/opt/homebrew/bin/brew shellenv)
 brew install clang-format cmake
 ```
 
-Next, install x86_64 Homebrew and libraries.
+Next, install x86_64 Qt. You can skip these steps and move on to **Cloning and compiling** if you do not intend to build the Qt GUI.
 
 **If you are on an ARM Mac:**
 ```
 # Installs x86_64 Homebrew to /usr/local
 arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # Installs libraries.
-arch -x86_64 /usr/local/bin/brew install molten-vk qt@6
+arch -x86_64 /usr/local/bin/brew install qt@6
 ```
 
 **If you are on an x86_64 Mac:**
 ```
-brew install molten-vk qt@6
+brew install qt@6
 ```
-
-If you don't need the Qt GUI you can remove `qt@6` from the last command.
 
 ### Cloning and compiling:
 

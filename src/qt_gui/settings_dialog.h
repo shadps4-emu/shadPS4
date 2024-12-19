@@ -31,6 +31,8 @@ signals:
 
 private:
     void LoadValuesFromConfig();
+    void UpdateSettings();
+    void ResetInstallFolders();
     void InitializeEmulatorLanguages();
     void OnLanguageChanged(int index);
     void OnCursorStateChanged(s16 index);

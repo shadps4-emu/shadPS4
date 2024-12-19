@@ -11,7 +11,6 @@
 #include <queue>
 
 #include "common/types.h"
-#include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
 #ifdef _WIN32
@@ -76,6 +75,7 @@ struct FrameDump {
 
 struct ShaderDump {
     std::string name;
+    Shader::LogicalStage l_stage;
     vk::ShaderModule module;
 
     std::vector<u32> spv;
@@ -90,16 +90,17 @@ struct ShaderDump {
     std::string cache_isa_disasm{};
     std::string cache_patch_disasm{};
 
-    ShaderDump(std::string name, vk::ShaderModule module, std::vector<u32> spv,
-               std::vector<u32> isa, std::vector<u32> patch_spv, bool is_patched)
-        : name(std::move(name)), module(module), spv(std::move(spv)), isa(std::move(isa)),
-          patch_spv(std::move(patch_spv)), is_patched(is_patched) {}
+    ShaderDump(std::string name, Shader::LogicalStage l_stage, vk::ShaderModule module,
+               std::vector<u32> spv, std::vector<u32> isa, std::vector<u32> patch_spv,
+               bool is_patched)
+        : name(std::move(name)), l_stage(l_stage), module(module), spv(std::move(spv)),
+          isa(std::move(isa)), patch_spv(std::move(patch_spv)), is_patched(is_patched) {}
 
     ShaderDump(const ShaderDump& other) = delete;
     ShaderDump(ShaderDump&& other) noexcept
-        : name{std::move(other.name)}, module{std::move(other.module)}, spv{std::move(other.spv)},
-          isa{std::move(other.isa)}, patch_spv{std::move(other.patch_spv)},
-          patch_source{std::move(other.patch_source)},
+        : name{std::move(other.name)}, l_stage(other.l_stage), module{std::move(other.module)},
+          spv{std::move(other.spv)}, isa{std::move(other.isa)},
+          patch_spv{std::move(other.patch_spv)}, patch_source{std::move(other.patch_source)},
           cache_spv_disasm{std::move(other.cache_spv_disasm)},
           cache_isa_disasm{std::move(other.cache_isa_disasm)},
           cache_patch_disasm{std::move(other.cache_patch_disasm)} {}
@@ -108,6 +109,7 @@ struct ShaderDump {
         if (this == &other)
             return *this;
         name = std::move(other.name);
+        l_stage = other.l_stage;
         module = std::move(other.module);
         spv = std::move(other.spv);
         isa = std::move(other.isa);
@@ -201,11 +203,17 @@ public:
     void PushQueueDump(QueueDump dump);
 
     void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
+                      const AmdGpu::Liverpool::Regs& regs);
+    using CsState = AmdGpu::Liverpool::ComputeProgram;
+    void PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_addr, const CsState& cs_state);
 
-    void CollectShader(const std::string& name, vk::ShaderModule module, std::span<const u32> spv,
+    void CollectShader(const std::string& name, Shader::LogicalStage l_stage,
+                       vk::ShaderModule module, std::span<const u32> spv,
                        std::span<const u32> raw_code, std::span<const u32> patch_spv,
                        bool is_patched);
+
+private:
+    std::optional<RegDump*> GetRegDump(uintptr_t base_addr, uintptr_t header_addr);
 };
 } // namespace DebugStateType
 

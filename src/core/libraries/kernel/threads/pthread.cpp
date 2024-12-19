@@ -327,7 +327,8 @@ void PS4_SYSV_ABI sched_yield() {
     std::this_thread::yield();
 }
 
-int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control, void (*init_routine)()) {
+int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
+                                    void PS4_SYSV_ABI (*init_routine)()) {
     for (;;) {
         auto state = once_control->state.load();
         if (state == PthreadOnceState::Done) {

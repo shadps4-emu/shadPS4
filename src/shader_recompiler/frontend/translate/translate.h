@@ -94,12 +94,13 @@ public:
     void S_ASHR_I32(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
-    void S_BFE_U32(const GcnInst& inst);
+    void S_BFE(const GcnInst& inst, bool is_signed);
+    void S_BFE_I32(const GcnInst& inst);
     void S_ABSDIFF_I32(const GcnInst& inst);
     void S_NOT_B32(const GcnInst& inst);
 
     // SOPK
-    void S_MOVK(const GcnInst& inst);
+    void S_MOVK(const GcnInst& inst, bool is_conditional);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
     void S_ADDK_I32(const GcnInst& inst);
     void S_MULK_I32(const GcnInst& inst);
@@ -109,7 +110,7 @@ public:
     void S_MOV_B64(const GcnInst& inst);
     void S_NOT_B64(const GcnInst& inst);
     void S_BREV_B32(const GcnInst& inst);
-    void S_BCNT1_I32_B64(const GcnInst& inst);
+    void S_BCNT1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
@@ -200,6 +201,11 @@ public:
     void V_BFREV_B32(const GcnInst& inst);
     void V_FFBH_U32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
+    void V_FREXP_EXP_I32_F64(const GcnInst& inst);
+    void V_FREXP_MANT_F64(const GcnInst& inst);
+    void V_FRACT_F64(const GcnInst& inst);
+    void V_FREXP_EXP_I32_F32(const GcnInst& inst);
+    void V_FREXP_MANT_F32(const GcnInst& inst);
     void V_MOVRELD_B32(const GcnInst& inst);
     void V_MOVRELS_B32(const GcnInst& inst);
     void V_MOVRELSD_B32(const GcnInst& inst);
@@ -212,7 +218,7 @@ public:
 
     // VOP3a
     void V_MAD_F32(const GcnInst& inst);
-    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = false);
+    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = true);
     void V_MAD_U32_U24(const GcnInst& inst);
     void V_CUBEID_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);
@@ -271,7 +277,7 @@ public:
     // Image Memory
     // MIMG
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
-    void IMAGE_STORE(const GcnInst& inst);
+    void IMAGE_STORE(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_RESINFO(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
     void IMAGE_SAMPLE(const GcnInst& inst);

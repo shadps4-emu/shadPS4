@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "core/memory.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -48,10 +49,6 @@ void Rasterizer::CpSync() {
 
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
-    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (regs.primitive_type == AmdGpu::PrimitiveType::PatchPrimitive) {
-        return false;
-    }
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
     // actual draw hence can skip pipeline creation.
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
@@ -100,6 +97,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         // an unnecessary transition and may result in state conflict if the resource is already
         // bound for reading.
         if ((mrt_mask & (1 << col_buf_id)) == 0) {
+            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
             continue;
         }
 
@@ -213,7 +211,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
@@ -270,7 +268,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
     buffer_cache.BindIndexBuffer(is_indexed, 0);
@@ -319,14 +317,14 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
-    const auto& cs_program = liverpool->regs.cs_program;
+    const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
         return;
     }
 
-    const auto& cs = pipeline->GetStage(Shader::Stage::Compute);
-    if (ExecuteShaderHLE(cs, liverpool->regs, *this)) {
+    const auto& cs = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
         return;
     }
 
@@ -346,7 +344,7 @@ void Rasterizer::DispatchDirect() {
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
 
-    const auto& cs_program = liverpool->regs.cs_program;
+    const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
         return;
@@ -386,7 +384,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     const auto& regs = liverpool->regs;
 
     if (pipeline->IsCompute()) {
-        const auto& info = pipeline->GetStage(Shader::Stage::Compute);
+        const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
         // Most of the time when a metadata is updated with a shader it gets cleared. It means
         // we can skip the whole dispatch and update the tracked state instead. Also, it is not
@@ -615,18 +613,24 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         auto& [image_id, desc] = image_bindings.emplace_back(std::piecewise_construct, std::tuple{},
                                                              std::tuple{tsharp, image_desc});
         image_id = texture_cache.FindImage(desc);
-        auto& image = texture_cache.GetImage(image_id);
-        if (image.binding.is_bound) {
+        auto* image = &texture_cache.GetImage(image_id);
+        if (image->depth_id) {
+            // If this image has an associated depth image, it's a stencil attachment.
+            // Redirect the access to the actual depth-stencil buffer.
+            image_id = image->depth_id;
+            image = &texture_cache.GetImage(image_id);
+        }
+        if (image->binding.is_bound) {
             // The image is already bound. In case if it is about to be used as storage we need
             // to force general layout on it.
-            image.binding.force_general |= image_desc.is_storage;
+            image->binding.force_general |= image_desc.is_storage;
         }
-        if (image.binding.is_target) {
+        if (image->binding.is_target) {
             // The image is already bound as target. Since we read and output to it need to force
             // general layout too.
-            image.binding.force_general = 1u;
+            image->binding.force_general = 1u;
         }
-        image.binding.is_bound = 1u;
+        image->binding.is_bound = 1u;
     }
 
     // Second pass to re-bind images that were updated after binding

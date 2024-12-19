@@ -98,7 +98,9 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
         // Buffer store operations
     case Opcode::IMAGE_STORE:
-        return IMAGE_STORE(inst);
+        return IMAGE_STORE(false, inst);
+    case Opcode::IMAGE_STORE_MIP:
+        return IMAGE_STORE(true, inst);
 
         // Image misc operations
     case Opcode::IMAGE_GET_RESINFO:
@@ -187,7 +189,8 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     buffer_info.index_enable.Assign(mtbuf.idxen);
     buffer_info.offset_enable.Assign(mtbuf.offen);
     buffer_info.inst_offset.Assign(mtbuf.offset);
-    buffer_info.ring_access.Assign(is_ring);
+    buffer_info.globally_coherent.Assign(mtbuf.glc);
+    buffer_info.system_coherent.Assign(mtbuf.slc);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
@@ -245,9 +248,13 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
 
-    if (info.stage != Stage::Export && info.stage != Stage::Geometry) {
+    if (info.stage != Stage::Export && info.stage != Stage::Hull && info.stage != Stage::Geometry) {
         ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
                    "Non immediate offset not supported");
+    }
+
+    if (info.stage == Stage::Hull) {
+        // printf("here\n"); // break
     }
 
     IR::Value address = [&] -> IR::Value {
@@ -267,7 +274,8 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     buffer_info.index_enable.Assign(mtbuf.idxen);
     buffer_info.offset_enable.Assign(mtbuf.offen);
     buffer_info.inst_offset.Assign(mtbuf.offset);
-    buffer_info.ring_access.Assign(is_ring);
+    buffer_info.globally_coherent.Assign(mtbuf.glc);
+    buffer_info.system_coherent.Assign(mtbuf.slc);
     if (is_typed) {
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
         const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
@@ -423,7 +431,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
     }
 }
 
-void Translator::IMAGE_STORE(const GcnInst& inst) {
+void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg data_reg{inst.dst[0].code};
@@ -434,6 +442,9 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
         ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
                               ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
 
+    IR::TextureInstInfo info{};
+    info.has_lod.Assign(has_mip);
+
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
         if (((mimg.dmask >> i) & 1) == 0) {
@@ -443,7 +454,7 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
         comps.push_back(ir.GetVectorReg<IR::F32>(data_reg++));
     }
     const IR::Value value = ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
-    ir.ImageWrite(handle, body, value, {});
+    ir.ImageWrite(handle, body, {}, value, info);
 }
 
 void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
@@ -527,6 +538,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     info.has_lod.Assign(flags.any(MimgModifier::Lod));
     info.is_array.Assign(mimg.da);
+    info.is_unnormalized.Assign(mimg.unrm);
 
     if (gather) {
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);

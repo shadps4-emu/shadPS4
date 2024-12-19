@@ -266,8 +266,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, IR::Value index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), index);
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -276,6 +276,24 @@ U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
 
 void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp) {
     Inst(Opcode::SetAttribute, attribute, value, Imm32(comp));
+}
+
+F32 IREmitter::GetTessGenericAttribute(const U32& vertex_index, const U32& attr_index,
+                                       const U32& comp_index) {
+    return Inst<F32>(IR::Opcode::GetTessGenericAttribute, vertex_index, attr_index, comp_index);
+}
+
+void IREmitter::SetTcsGenericAttribute(const F32& value, const U32& attr_index,
+                                       const U32& comp_index) {
+    Inst(Opcode::SetTcsGenericAttribute, value, attr_index, comp_index);
+}
+
+F32 IREmitter::GetPatch(Patch patch) {
+    return Inst<F32>(Opcode::GetPatch, patch);
+}
+
+void IREmitter::SetPatch(Patch patch, const F32& value) {
+    Inst(Opcode::SetPatch, patch, value);
 }
 
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
@@ -552,6 +570,19 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     }
 }
 
+Value IREmitter::CompositeConstruct(std::span<const Value> elements) {
+    switch (elements.size()) {
+    case 2:
+        return CompositeConstruct(elements[0], elements[1]);
+    case 3:
+        return CompositeConstruct(elements[0], elements[1], elements[2]);
+    case 4:
+        return CompositeConstruct(elements[0], elements[1], elements[2], elements[3]);
+    default:
+        UNREACHABLE_MSG("Composite construct with greater than 4 elements");
+    }
+}
+
 Value IREmitter::CompositeExtract(const Value& vector, size_t element) {
     const auto read{[&](Opcode opcode, size_t limit) -> Value {
         if (element >= limit) {
@@ -687,6 +718,20 @@ F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
         return Inst<F32>(Opcode::FPMul32, a, b);
     case Type::F64:
         return Inst<F64>(Opcode::FPMul64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
+F32F64 IREmitter::FPDiv(const F32F64& a, const F32F64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPDiv32, a, b);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPDiv64, a, b);
     default:
         ThrowInvalidType(a.Type());
     }
@@ -855,8 +900,37 @@ F32F64 IREmitter::FPTrunc(const F32F64& value) {
     }
 }
 
-F32 IREmitter::Fract(const F32& value) {
-    return Inst<F32>(Opcode::FPFract, value);
+F32F64 IREmitter::FPFract(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFract32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFract64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+F32F64 IREmitter::FPFrexpSig(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPFrexpSig32, value);
+    case Type::F64:
+        return Inst<F64>(Opcode::FPFrexpSig64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+U32 IREmitter::FPFrexpExp(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<U32>(Opcode::FPFrexpExp32, value);
+    case Type::F64:
+        return Inst<U32>(Opcode::FPFrexpExp64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U1 IREmitter::FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {
@@ -1556,9 +1630,9 @@ Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const
     return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, dref);
 }
 
-Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const Value& offset,
-                            const U32& lod, const U32& multisampling, TextureInstInfo info) {
-    return Inst(Opcode::ImageFetch, Flags{info}, handle, coords, offset, lod, multisampling);
+Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const U32& lod,
+                            const Value& offset, const U32& multisampling, TextureInstInfo info) {
+    return Inst(Opcode::ImageFetch, Flags{info}, handle, coords, lod, offset, multisampling);
 }
 
 Value IREmitter::ImageQueryDimension(const Value& handle, const IR::U32& lod,
@@ -1582,13 +1656,14 @@ Value IREmitter::ImageGradient(const Value& handle, const Value& coords,
                 offset, lod_clamp);
 }
 
-Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInstInfo info) {
-    return Inst(Opcode::ImageRead, Flags{info}, handle, coords);
+Value IREmitter::ImageRead(const Value& handle, const Value& coords, const U32& lod,
+                           TextureInstInfo info) {
+    return Inst(Opcode::ImageRead, Flags{info}, handle, coords, lod);
 }
 
-void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
-                           TextureInstInfo info) {
-    Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& lod,
+                           const Value& color, TextureInstInfo info) {
+    Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, color);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

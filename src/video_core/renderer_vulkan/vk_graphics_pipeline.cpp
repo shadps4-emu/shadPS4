@@ -8,6 +8,7 @@
 
 #include "common/assert.h"
 #include "common/scope_exit.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -52,7 +53,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
     if (fetch_shader && !instance.IsVertexInputDynamicState()) {
-        const auto& vs_info = GetStage(Shader::Stage::Vertex);
+        const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
         for (const auto& attrib : fetch_shader->attributes) {
             if (attrib.UsesStepRates()) {
                 // Skip attribute binding as the data will be pulled by shader
@@ -106,11 +107,17 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
+    const vk::PipelineTessellationStateCreateInfo tessellation_state = {
+        .patchControlPoints = key.patch_control_points,
+    };
+
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
+        .cullMode = LiverpoolToVK::IsPrimitiveCulled(key.prim_type)
+                        ? LiverpoolToVK::CullMode(key.cull_mode)
+                        : vk::CullModeFlagBits::eNone,
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
@@ -202,7 +209,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
-    auto stage = u32(Shader::Stage::Vertex);
+    auto stage = u32(Shader::LogicalStage::Vertex);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -210,7 +217,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(Shader::Stage::Geometry);
+    stage = u32(Shader::LogicalStage::Geometry);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eGeometry,
@@ -218,7 +225,23 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     }
-    stage = u32(Shader::Stage::Fragment);
+    stage = u32(Shader::LogicalStage::TessellationControl);
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationControl,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
+    stage = u32(Shader::LogicalStage::TessellationEval);
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
+    stage = u32(Shader::LogicalStage::Fragment);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,
@@ -227,17 +250,15 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         });
     }
 
-    const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
-    const u32 num_color_formats = std::distance(key.color_formats.begin(), it);
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = num_color_formats,
+        .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
         .stencilAttachmentFormat = key.stencil_format,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
-    for (u32 i = 0; i < num_color_formats; i++) {
+    for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
         const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
@@ -290,7 +311,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
         .logicOpEnable = false,
         .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = num_color_formats,
+        .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };
@@ -301,6 +322,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pStages = shader_stages.data(),
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
+        .pTessellationState =
+            stages[u32(Shader::LogicalStage::TessellationControl)] ? &tessellation_state : nullptr,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,
@@ -327,7 +350,6 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
-
         if (stage->has_readconst) {
             bindings.push_back({
                 .binding = binding++,

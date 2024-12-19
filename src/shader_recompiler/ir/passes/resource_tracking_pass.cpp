@@ -137,6 +137,35 @@ bool IsImageInstruction(const IR::Inst& inst) {
     }
 }
 
+IR::Value SwizzleVector(IR::IREmitter& ir, auto sharp, IR::Value texel) {
+    boost::container::static_vector<IR::Value, 4> comps;
+    for (u32 i = 0; i < 4; i++) {
+        switch (sharp.GetSwizzle(i)) {
+        case AmdGpu::CompSwizzle::Zero:
+            comps.emplace_back(ir.Imm32(0.f));
+            break;
+        case AmdGpu::CompSwizzle::One:
+            comps.emplace_back(ir.Imm32(1.f));
+            break;
+        case AmdGpu::CompSwizzle::Red:
+            comps.emplace_back(ir.CompositeExtract(texel, 0));
+            break;
+        case AmdGpu::CompSwizzle::Green:
+            comps.emplace_back(ir.CompositeExtract(texel, 1));
+            break;
+        case AmdGpu::CompSwizzle::Blue:
+            comps.emplace_back(ir.CompositeExtract(texel, 2));
+            break;
+        case AmdGpu::CompSwizzle::Alpha:
+            comps.emplace_back(ir.CompositeExtract(texel, 3));
+            break;
+        default:
+            UNREACHABLE();
+        }
+    }
+    return ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
+};
+
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
@@ -388,6 +417,15 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+
+    // Apply dst_sel swizzle on formatted buffer instructions
+    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
+        inst.SetArg(2, SwizzleVector(ir, buffer, inst.Arg(2)));
+    } else {
+        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
+        inst.ReplaceUsesWith(SwizzleVector(ir, buffer, texel));
+    }
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
@@ -420,26 +458,29 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                  Descriptors& descriptors, const IR::Inst* producer,
                                  const u32 image_binding, const AmdGpu::Image& image) {
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    const u32 sampler_binding = [&] {
+    const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
         ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
         const IR::Value& handle = producer->Arg(1);
         // Inline sampler resource.
         if (handle.IsImmediate()) {
             LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-            return descriptors.Add(SamplerResource{
+            const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
+            const auto binding = descriptors.Add(SamplerResource{
                 .sharp_idx = std::numeric_limits<u32>::max(),
-                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
+                .inline_sampler = inline_sampler,
             });
+            return {binding, inline_sampler};
         }
         // Normal sampler resource.
         const auto ssharp_handle = handle.InstRecursive();
         const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
         const auto ssharp = TrackSharp(ssharp_ud, info);
-        return descriptors.Add(SamplerResource{
+        const auto binding = descriptors.Add(SamplerResource{
             .sharp_idx = ssharp,
             .associated_image = image_binding,
             .disable_aniso = disable_aniso,
         });
+        return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
     }();
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -539,28 +580,47 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         }
     }();
 
+    const auto unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
+    // Query dimensions of image if needed for normalization.
+    // We can't use the image sharp because it could be bound to a different image later.
+    const auto dimensions =
+        unnormalized ? ir.ImageQueryDimension(ir.Imm32(image_binding), ir.Imm32(0u), ir.Imm1(false))
+                     : IR::Value{};
+    const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
+        const auto coord = get_addr_reg(coord_idx);
+        if (unnormalized) {
+            // Normalize the coordinate for sampling, dividing by its corresponding dimension.
+            const auto dim =
+                ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
+            return ir.FPDiv(coord, dim);
+        }
+        return coord;
+    };
+
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     const IR::Value coords = [&] -> IR::Value {
         switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D: // x
             addr_reg = addr_reg + 1;
-            return get_addr_reg(addr_reg - 1);
+            return get_coord(addr_reg - 1, 0);
         case AmdGpu::ImageType::Color1DArray: // x, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color2D: // x, y
             addr_reg = addr_reg + 2;
-            return ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1));
+            return ir.CompositeConstruct(get_coord(addr_reg - 2, 0), get_coord(addr_reg - 1, 1));
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             [[fallthrough]];
         case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
-            [[fallthrough]];
+            addr_reg = addr_reg + 3;
+            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
+                                         get_addr_reg(addr_reg - 1));
         case AmdGpu::ImageType::Color3D: // x, y, z
             addr_reg = addr_reg + 3;
-            return ir.CompositeConstruct(get_addr_reg(addr_reg - 3), get_addr_reg(addr_reg - 2),
-                                         get_addr_reg(addr_reg - 1));
+            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
+                                         get_coord(addr_reg - 1, 2));
         case AmdGpu::ImageType::Cube: // x, y, face
             addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, get_addr_reg(addr_reg - 3), get_addr_reg(addr_reg - 2),
+            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                   get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
@@ -711,11 +771,17 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }();
     inst.SetArg(1, coords);
 
+    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
+        inst.SetArg(3, SwizzleVector(ir, image, inst.Arg(3)));
+    }
+
     if (inst_info.has_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch);
+        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
+               inst.GetOpcode() == IR::Opcode::ImageRead ||
+               inst.GetOpcode() == IR::Opcode::ImageWrite);
         ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
                image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
-        inst.SetArg(3, arg);
+        inst.SetArg(2, arg);
     } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
         inst.SetArg(4, arg);

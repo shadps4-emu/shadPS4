@@ -8,6 +8,9 @@ set_directory_properties(PROPERTIES
     SYSTEM ON
 )
 
+# Set CMP0069 policy to "NEW" in order to ensure consistent behavior when building external targets with LTO enabled
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+
 if (MSVC)
     # Silence "deprecation" warnings
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
@@ -107,7 +110,7 @@ if (NOT TARGET glslang::glslang)
     set(ENABLE_OPT OFF CACHE BOOL "")
     add_subdirectory(glslang)
     file(COPY glslang/SPIRV DESTINATION glslang/glslang FILES_MATCHING PATTERN "*.h")
-    target_include_directories(SPIRV INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
+    target_include_directories(glslang INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
 endif()
 
 # Robin-map
@@ -174,15 +177,6 @@ if (NOT TARGET PNG::PNG)
     add_library(PNG::PNG ALIAS png_static)
 endif()
 
-if (APPLE)
-    # date
-    if (NOT TARGET date::date-tz)
-        option(BUILD_TZ_LIB "" ON)
-        option(USE_SYSTEM_TZ_DB "" ON)
-        add_subdirectory(date)
-    endif()
-endif()
-
 # Dear ImGui
 add_library(Dear_ImGui
         dear_imgui/imgui.cpp
@@ -199,7 +193,7 @@ option(TRACY_ENABLE "" ON)
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
 option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
-option(TRACY_FIBERS "" ON) # For AmdGpu frontend profiling
+option(TRACY_FIBERS "" OFF) # For AmdGpu frontend profiling, disabled due to instability
 option(TRACY_NO_SYSTEM_TRACING "" ON)
 option(TRACY_NO_CALLSTACK "" ON)
 option(TRACY_NO_CODE_TRANSFER "" ON)
@@ -228,4 +222,19 @@ if (NOT TARGET stb::headers)
     add_library(stb INTERFACE)
     target_include_directories(stb INTERFACE stb)
     add_library(stb::headers ALIAS stb)
+endif()
+
+# Apple-only dependencies
+if (APPLE)
+    # date
+    if (NOT TARGET date::date-tz)
+        option(BUILD_TZ_LIB "" ON)
+        option(USE_SYSTEM_TZ_DB "" ON)
+        add_subdirectory(date)
+    endif()
+
+    # MoltenVK
+    if (NOT TARGET MoltenVK)
+        add_subdirectory(MoltenVK)
+    endif()
 endif()

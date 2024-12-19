@@ -87,6 +87,14 @@ Id EmitFPMul64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return Decorate(ctx, inst, ctx.OpFMul(ctx.F64[1], a, b));
 }
 
+Id EmitFPDiv32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    return Decorate(ctx, inst, ctx.OpFDiv(ctx.F32[1], a, b));
+}
+
+Id EmitFPDiv64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    return Decorate(ctx, inst, ctx.OpFDiv(ctx.F64[1], a, b));
+}
+
 Id EmitFPNeg16(EmitContext& ctx, Id value) {
     return ctx.OpFNegate(ctx.F16[1], value);
 }
@@ -217,8 +225,32 @@ Id EmitFPTrunc64(EmitContext& ctx, Id value) {
     return ctx.OpTrunc(ctx.F64[1], value);
 }
 
-Id EmitFPFract(EmitContext& ctx, Id value) {
+Id EmitFPFract32(EmitContext& ctx, Id value) {
     return ctx.OpFract(ctx.F32[1], value);
+}
+
+Id EmitFPFract64(EmitContext& ctx, Id value) {
+    return ctx.OpFract(ctx.F64[1], value);
+}
+
+Id EmitFPFrexpSig32(EmitContext& ctx, Id value) {
+    const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f32, value);
+    return ctx.OpCompositeExtract(ctx.F32[1], frexp, 0);
+}
+
+Id EmitFPFrexpSig64(EmitContext& ctx, Id value) {
+    const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f64, value);
+    return ctx.OpCompositeExtract(ctx.F64[1], frexp, 0);
+}
+
+Id EmitFPFrexpExp32(EmitContext& ctx, Id value) {
+    const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f32, value);
+    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
+}
+
+Id EmitFPFrexpExp64(EmitContext& ctx, Id value) {
+    const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f64, value);
+    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
 }
 
 Id EmitFPOrdEqual16(EmitContext& ctx, Id lhs, Id rhs) {

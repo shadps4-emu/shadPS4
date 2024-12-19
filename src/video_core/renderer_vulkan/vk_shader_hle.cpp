@@ -2,17 +2,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/info.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 
-#include "vk_rasterizer.h"
+extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Vulkan {
 
 static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
-bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                          Rasterizer& rasterizer) {
+static bool ExecuteCopyShaderHLE(const Shader::Info& info,
+                                 const AmdGpu::Liverpool::ComputeProgram& cs_program,
+                                 Rasterizer& rasterizer) {
     auto& scheduler = rasterizer.GetScheduler();
     auto& buffer_cache = rasterizer.GetBufferCache();
 
@@ -34,9 +36,9 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
     static std::vector<vk::BufferCopy> copies;
     copies.clear();
-    copies.reserve(regs.cs_program.dim_x);
+    copies.reserve(cs_program.dim_x);
 
-    for (u32 i = 0; i < regs.cs_program.dim_x; i++) {
+    for (u32 i = 0; i < cs_program.dim_x; i++) {
         const auto& [dst_idx, src_idx, end] = ctl_buf[i];
         const u32 local_dst_offset = dst_idx * buf_stride;
         const u32 local_src_offset = src_idx * buf_stride;
@@ -60,7 +62,7 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 
     static constexpr vk::DeviceSize MaxDistanceForMerge = 64_MB;
     u32 batch_start = 0;
-    u32 batch_end = 1;
+    u32 batch_end = 0;
 
     while (batch_end < copies.size()) {
         // Place first copy into the current batch
@@ -70,19 +72,19 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
         auto dst_offset_min = copy.dstOffset;
         auto dst_offset_max = copy.dstOffset + copy.size;
 
-        for (int i = batch_start + 1; i < copies.size(); i++) {
+        for (++batch_end; batch_end < copies.size(); batch_end++) {
             // Compute new src and dst bounds if we were to batch this copy
-            const auto [src_offset, dst_offset, size] = copies[i];
+            const auto& [src_offset, dst_offset, size] = copies[batch_end];
             auto new_src_offset_min = std::min(src_offset_min, src_offset);
             auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
             if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
-                continue;
+                break;
             }
 
             auto new_dst_offset_min = std::min(dst_offset_min, dst_offset);
             auto new_dst_offset_max = std::max(dst_offset_max, dst_offset + size);
             if (new_dst_offset_max - new_dst_offset_min > MaxDistanceForMerge) {
-                continue;
+                break;
             }
 
             // We can batch this copy
@@ -90,10 +92,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
             src_offset_max = new_src_offset_max;
             dst_offset_min = new_dst_offset_min;
             dst_offset_max = new_dst_offset_max;
-            if (i != batch_end) {
-                std::swap(copies[i], copies[batch_end]);
-            }
-            ++batch_end;
         }
 
         // Obtain buffers for the total source and destination ranges.
@@ -116,7 +114,6 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
                   src_offset_max - src_offset_min, dst_offset_max - dst_offset_min);
         scheduler.CommandBuffer().copyBuffer(src_buf->Handle(), dst_buf->Handle(), vk_copies);
         batch_start = batch_end;
-        ++batch_end;
     }
 
     scheduler.CommandBuffer().pipelineBarrier(
@@ -127,10 +124,10 @@ bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Reg
 }
 
 bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      Rasterizer& rasterizer) {
+                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer) {
     switch (info.pgm_hash) {
     case COPY_SHADER_HASH:
-        return ExecuteCopyShaderHLE(info, regs, rasterizer);
+        return ExecuteCopyShaderHLE(info, cs_program, rasterizer);
     default:
         return false;
     }

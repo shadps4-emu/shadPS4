@@ -94,6 +94,8 @@ static std::string ArgToIndex(std::map<const Inst*, size_t>& inst_to_index, size
         return fmt::format("{}", arg.VectorReg());
     case Type::Attribute:
         return fmt::format("{}", arg.Attribute());
+    case Type::Patch:
+        return fmt::format("{}", arg.Patch());
     default:
         return "<unknown immediate type>";
     }
