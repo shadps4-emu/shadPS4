@@ -138,7 +138,7 @@ void MainWindow::CreateDockWindows() {
     setCentralWidget(phCentralWidget);
 
     m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
-    m_game_list_frame.reset(new GameListFrame(m_game_info, this));
+    m_game_list_frame.reset(new GameListFrame(m_game_info, m_compat_info, this));
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));
     m_game_grid_frame->setObjectName("gamegridlist");
@@ -184,6 +184,8 @@ void MainWindow::CreateDockWindows() {
 }
 
 void MainWindow::LoadGameLists() {
+    // Update compatibility database
+    m_compat_info->UpdateCompatibilityDatabase(this);
     // Get game info from game folders.
     m_game_info->GetGameInfo(this);
     if (isTableList) {
