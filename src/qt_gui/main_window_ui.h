@@ -390,8 +390,10 @@ public:
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
         setThemeGruvbox->setText("Gruvbox");
         setThemeTokyoNight->setText("Tokyo Night");
-        setThemeSystemDark->setText(QCoreApplication::translate("MainWindow", "System (Dark)", nullptr));
-        setThemeSystemLight->setText(QCoreApplication::translate("MainWindow", "System (Light)", nullptr));
+        setThemeSystemDark->setText(
+            QCoreApplication::translate("MainWindow", "System (Dark)", nullptr));
+        setThemeSystemLight->setText(
+            QCoreApplication::translate("MainWindow", "System (Light)", nullptr));
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
     } // retranslateUi
 };
