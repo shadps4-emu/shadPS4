@@ -245,13 +245,23 @@ void ParseInputConfig(const std::string game_id = "") {
     std::string line = "";
     while (std::getline(file, line)) {
         lineCount++;
-        // strip the ; and whitespace
+        // Strip the ; and whitespace
         line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
-        if (line[line.length() - 1] == ';') {
+        if (line.empty()) {
+            continue;
+        }
+        // Truncate lines starting at #
+        std::size_t comment_pos = line.find('#');
+        if (comment_pos != std::string::npos) {
+            line = line.substr(0, comment_pos);
+        }
+
+        // Remove trailing semicolon
+        if (!line.empty() && line[line.length() - 1] == ';') {
             line = line.substr(0, line.length() - 1);
         }
-        // Ignore comment lines
-        if (line.empty() || line[0] == '#') {
+
+        if (line.empty()) {
             continue;
         }
         // Split the line by '='
@@ -552,6 +562,10 @@ bool UpdatePressedKeys(u32 value, bool is_pressed) {
 // Check if a given binding's all keys are currently active.
 // For now it also extracts the analog inputs' parameters.
 void IsInputActive(BindingConnection& connection, bool& active, bool& analog) {
+    if (pressed_keys.empty()) {
+        active = false;
+        return;
+    }
     InputBinding i = connection.binding;
     // Extract keys from InputBinding and ignore unused (0) or toggled keys
     std::list<u32> input_keys = {i.key1, i.key2, i.key3};
