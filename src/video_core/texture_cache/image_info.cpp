@@ -359,7 +359,10 @@ void ImageInfo::UpdateSize() {
             mip_d = std::bit_ceil(mip_d);
         }
 
-        switch (tiling_mode) {
+        auto size_mode_adj =
+            tiling_idx == 0x13 ? AmdGpu::TilingMode::Texture_MicroTiled : tiling_mode;
+
+        switch (size_mode_adj) {
         case AmdGpu::TilingMode::Display_Linear: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);

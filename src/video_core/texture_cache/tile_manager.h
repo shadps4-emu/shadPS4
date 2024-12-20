@@ -24,6 +24,8 @@ enum DetilerType : u32 {
     Micro32x2,
     Micro32x4,
 
+    Macro32x1,
+
     Max
 };
 

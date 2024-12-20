@@ -12,6 +12,7 @@
 #include "video_core/host_shaders/detile_m32x4_comp.h"
 #include "video_core/host_shaders/detile_m8x1_comp.h"
 #include "video_core/host_shaders/detile_m8x2_comp.h"
+#include "video_core/host_shaders/detile_macro32x1_comp.h"
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum/magic_enum.hpp>
@@ -233,7 +234,8 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
 const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
 
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled) {
+    switch (image.info.tiling_mode) {
+    case AmdGpu::TilingMode::Texture_MicroTiled:
         switch (format) {
         case vk::Format::eR8Uint:
             return &detilers[DetilerType::Micro8x1];
@@ -248,13 +250,29 @@ const DetilerContext* TileManager::GetDetiler(const Image& image) const {
         default:
             return nullptr;
         }
+    case AmdGpu::TilingMode::Texture_Volume:
+        switch (format) {
+        case vk::Format::eR32Uint:
+            if (image.info.size.width % 8 == 0 && image.info.size.height % 8 == 0) {
+                return &detilers[DetilerType::Macro32x1];
+            } else {
+                // Need to test non-tile aligned images
+                return nullptr;
+            }
+        default:
+            return nullptr;
+        }
+        break;
+    default:
+        return nullptr;
     }
-    return nullptr;
 }
 
 struct DetilerParams {
     u32 num_levels;
     u32 pitch0;
+    u32 height;
+    u32 depth;
     u32 sizes[14];
 };
 
@@ -263,7 +281,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
-        HostShaders::DETILE_M32X4_COMP,
+        HostShaders::DETILE_M32X4_COMP, HostShaders::DETILE_MACRO32X1_COMP,
     };
 
     boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
@@ -448,6 +466,8 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
 
     DetilerParams params;
     params.pitch0 = image.info.pitch >> (image.info.props.is_block ? 2u : 0u);
+    params.height = image.info.size.height;
+    params.depth = image.info.size.depth;
     params.num_levels = image.info.resources.levels;
 
     ASSERT(image.info.resources.levels <= 14);
