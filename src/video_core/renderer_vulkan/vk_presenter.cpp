@@ -634,9 +634,11 @@ void Presenter::Present(Frame* frame) {
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
-    ImGui::Core::NewFrame();
+    if (!swapchain.AcquireNextImage()) {
+        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+    }
 
-    swapchain.AcquireNextImage();
+    ImGui::Core::NewFrame();
 
     const vk::Image swapchain_image = swapchain.Image();
 
@@ -731,7 +733,9 @@ void Presenter::Present(Frame* frame) {
 
     // Present to swapchain.
     std::scoped_lock submit_lock{Scheduler::submit_mutex};
-    swapchain.Present();
+    if (!swapchain.Present()) {
+        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+    }
 
     // Free the frame for reuse
     std::scoped_lock fl{free_mutex};
