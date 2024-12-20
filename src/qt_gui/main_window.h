@@ -24,6 +24,8 @@
 #include "main_window_ui.h"
 #include "pkg_viewer.h"
 
+extern std::string s_system_style_name;
+
 class GameListFrame;
 
 class MainWindow : public QMainWindow {

@@ -16,6 +16,7 @@
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "common/logging/formatter.h"
+#include "common/logging/log.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
@@ -527,6 +528,18 @@ void SettingsDialog::UpdateSettings() {
 #endif
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
+
+    if (Config::getWidgetStyle() == "Fusion") {
+        qApp->setStyle(QStyleFactory::create("Fusion"));
+    } else if (Config::getWidgetStyle() == "System") {
+        qApp->setStyle(QString::fromStdString(s_system_style_name));
+    }
+    printf("%s", s_system_style_name.c_str());
+
+    foreach (QWidget* widget, QApplication::topLevelWidgets()) {
+        widget->update();
+    }
+    QCoreApplication::processEvents();
 }
 
 void SettingsDialog::ResetInstallFolders() {

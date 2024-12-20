@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QProgressDialog>
+#include <QStyleHints>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -25,6 +26,8 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+
+std::string s_system_style_name;
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -118,21 +121,15 @@ void MainWindow::CreateActions() {
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
-    static QString s_system_style_name;
-    static bool s_system_style_name_set;
-
-    if (!s_system_style_name_set) {
-        s_system_style_name_set = true;
-        s_system_style_name = QApplication::style()->objectName();
-    }
+    QString qsystem_style_name;
+    qsystem_style_name = QApplication::style()->objectName();
+    s_system_style_name = qsystem_style_name.toStdString();
 
     std::string widget_style = Config::getWidgetStyle();
     if (widget_style == "Fusion") {
         qApp->setStyle(QStyleFactory::create("Fusion"));
-        qApp->setStyleSheet(QString());
     } else if (widget_style == "System") {
-        qApp->setStyle(s_system_style_name);
-        qApp->setStyleSheet(QString());
+        qApp->setStyle(qsystem_style_name);
     }
     ui->toolBar->setObjectName("mw_toolbar");
     ui->toolBar->addWidget(ui->playButton);
@@ -571,10 +568,35 @@ void MainWindow::CreateConnects() {
     connect(ui->setThemeSystemDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::SystemDark, ui->mw_searchbar);
         Config::setMainWindowTheme(static_cast<int>(Theme::SystemDark));
-        if (isIconBlack) {
+
+        bool isSystemDarkMode;
+    #ifdef __linux__ 
+        const QPalette defaultPalette;
+        const auto text = defaultPalette.color(QPalette::WindowText);
+        const auto window = defaultPalette.color(QPalette::Window);
+        if (text.lightness() > window.lightness()) {
+            isSystemDarkMode = true;
+        } else {
+            isSystemDarkMode = false;
+        }
+    #else
+        if(QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
+            isSystemDarkMode = true;
+        } else {
+            isSystemDarkMode = false;
+        }
+    #endif
+        if(isSystemDarkMode) {
+            if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
-        }
+            }    
+        } else {
+            if (!isIconBlack) {
+            SetUiIcons(true);
+            isIconBlack = true;
+            }
+        }    
     });
     connect(ui->setThemeSystemLight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::SystemLight, ui->mw_searchbar);
