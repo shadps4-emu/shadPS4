@@ -3,18 +3,19 @@
 
 #pragma once
 
-#include "array"
+#include <array>
+#include <map>
+#include <string>
+#include <unordered_set>
+
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_timer.h"
+
 #include "common/logging/log.h"
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 #include "fmt/format.h"
 #include "input/controller.h"
-#include "map"
-#include "string"
-#include "unordered_set"
-
-#include "SDL3/SDL_events.h"
-#include "SDL3/SDL_timer.h"
 
 // +1 and +2 is taken
 #define SDL_MOUSE_WHEEL_UP SDL_EVENT_MOUSE_WHEEL + 3

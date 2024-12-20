@@ -230,7 +230,7 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
     // get the event's id, if it's keyup or keydown
-    bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
+    const bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
                       event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                       event->type == SDL_EVENT_MOUSE_WHEEL;
     u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);

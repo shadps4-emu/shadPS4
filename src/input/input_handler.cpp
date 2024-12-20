@@ -3,14 +3,17 @@
 
 #include "input_handler.h"
 
-#include "fstream"
-#include "iostream"
-#include "list"
-#include "map"
-#include "sstream"
-#include "string"
-#include "unordered_map"
-#include "vector"
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <map>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <typeinfo>
+#include <unordered_map>
+#include <vector>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
@@ -59,9 +62,9 @@ bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmod
 
 std::list<std::pair<u32, bool>> pressed_keys;
 std::list<u32> toggled_keys;
-std::list<BindingConnection> connections = std::list<BindingConnection>();
+static std::vector<BindingConnection> connections;
 
-ControllerOutput output_array[] = {
+auto output_array = std::array{
     // Important: these have to be the first, or else they will update in the wrong order
     ControllerOutput((OrbisPadButtonDataOffset)LEFTJOYSTICK_HALFMODE),
     ControllerOutput((OrbisPadButtonDataOffset)RIGHTJOYSTICK_HALFMODE),
@@ -158,17 +161,9 @@ u32 GetControllerButtonInputId(u32 cbutton) {
 InputBinding GetBindingFromString(std::string& line) {
     u32 key1 = 0, key2 = 0, key3 = 0;
 
-    // Split the string by commas
-    std::vector<std::string> tokens;
-    std::stringstream ss(line);
-    std::string token;
-
-    while (std::getline(ss, token, ',')) {
-        tokens.push_back(token);
-    }
-
     // Check and process tokens
-    for (const auto& t : tokens) {
+    for (const auto token : std::views::split(line, ',')) { // Split by comma
+        const std::string t(token.begin(), token.end());
         if (string_to_keyboard_key_map.find(t) != string_to_keyboard_key_map.end()) {
             // Map to keyboard key
             u32 key_id = string_to_keyboard_key_map.at(t);
@@ -204,6 +199,7 @@ InputBinding GetBindingFromString(std::string& line) {
                 key3 = cbutton_id;
         } else {
             // Invalid token found; return default binding
+            LOG_DEBUG(Input, "Invalid token found: {}", t);
             return InputBinding(0, 0, 0);
         }
     }
@@ -211,21 +207,7 @@ InputBinding GetBindingFromString(std::string& line) {
     return InputBinding(key1, key2, key3);
 }
 
-// function that takes a controlleroutput, and returns the array's corresponding element's pointer
-ControllerOutput* GetOutputPointer(const ControllerOutput& parsed) {
-    // i wonder how long until someone notices this or I get rid of it
-    int i = 0;
-    for (; i[output_array] != ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax);
-         i++) {
-        if (i[output_array] == parsed) {
-            return &output_array[i];
-        }
-    }
-    return &output_array[i];
-}
-
 void ParseInputConfig(const std::string game_id = "") {
-
     const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
 
     // todo: change usages of this to GetFoolproofKbmConfigFile (in the gui)
@@ -245,15 +227,25 @@ void ParseInputConfig(const std::string game_id = "") {
     std::string line = "";
     while (std::getline(file, line)) {
         lineCount++;
-        // strip the ; and whitespace
+
+        // Strip the ; and whitespace
         line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
-        if (line[line.length() - 1] == ';') {
-            line = line.substr(0, line.length() - 1);
-        }
-        // Ignore comment lines
-        if (line.empty() || line[0] == '#') {
+        if (line.empty()) {
             continue;
         }
+        // Truncate lines starting at #
+        std::size_t comment_pos = line.find('#');
+        if (comment_pos != std::string::npos) {
+            line = line.substr(0, comment_pos);
+        }
+        // Remove trailing semicolon
+        if (!line.empty() && line[line.length() - 1] == ';') {
+            line = line.substr(0, line.length() - 1);
+        }
+        if (line.empty()) {
+            continue;
+        }
+
         // Split the line by '='
         std::size_t equal_pos = line.find('=');
         if (equal_pos == std::string::npos) {
@@ -288,7 +280,7 @@ void ParseInputConfig(const std::string game_id = "") {
                     continue;
                 }
                 ControllerOutput* toggle_out =
-                    GetOutputPointer(ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
+                    &*std::ranges::find(output_array, ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
                 BindingConnection toggle_connection =
                     BindingConnection(InputBinding(toggle_keys.key2), toggle_out, toggle_keys.key3);
                 connections.insert(connections.end(), toggle_connection);
@@ -322,8 +314,8 @@ void ParseInputConfig(const std::string game_id = "") {
             continue;
         }
         if (button_it != string_to_cbutton_map.end()) {
-            connection =
-                BindingConnection(binding, GetOutputPointer(ControllerOutput(button_it->second)));
+            connection = BindingConnection(
+                binding, &*std::ranges::find(output_array, ControllerOutput(button_it->second)));
             connections.insert(connections.end(), connection);
 
         } else if (axis_it != string_to_axis_map.end()) {
@@ -334,7 +326,7 @@ void ParseInputConfig(const std::string game_id = "") {
                                    : axis_it->second.value;
             connection =
                 BindingConnection(binding,
-                                  GetOutputPointer(ControllerOutput(OrbisPadButtonDataOffset::None,
+                &*std::ranges::find(output_array, ControllerOutput(OrbisPadButtonDataOffset::None,
                                                                     axis_it->second.axis)),
                                   value_to_set);
             connections.insert(connections.end(), connection);
@@ -346,7 +338,7 @@ void ParseInputConfig(const std::string game_id = "") {
         // LOG_INFO(Input, "Succesfully parsed line {}", lineCount);
     }
     file.close();
-    connections.sort();
+    std::sort(connections.begin(), connections.end());
     LOG_DEBUG(Input, "Done parsing the input config!");
 }
 
@@ -552,6 +544,10 @@ bool UpdatePressedKeys(u32 value, bool is_pressed) {
 // Check if a given binding's all keys are currently active.
 // For now it also extracts the analog inputs' parameters.
 void IsInputActive(BindingConnection& connection, bool& active, bool& analog) {
+    if (pressed_keys.empty()) {
+        active = false;
+        return;
+    }
     InputBinding i = connection.binding;
     // Extract keys from InputBinding and ignore unused (0) or toggled keys
     std::list<u32> input_keys = {i.key1, i.key2, i.key3};
@@ -649,9 +645,11 @@ void ActivateOutputsFromInputs() {
     }
 }
 
-void UpdateMouse(GameController* controller) {
+Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
+    auto* controller = (GameController*)param;
     if (!mouse_enabled)
-        return;
+        return interval;
+
     Axis axis_x, axis_y;
     switch (mouse_joystick_binding) {
     case 1:
@@ -664,7 +662,7 @@ void UpdateMouse(GameController* controller) {
         break;
     case 0:
     default:
-        return; // no update needed
+        return interval; // no update needed
     }
 
     float d_x = 0, d_y = 0;
@@ -684,10 +682,7 @@ void UpdateMouse(GameController* controller) {
         controller->Axis(0, axis_x, GetAxis(-0x80, 0x80, 0));
         controller->Axis(0, axis_y, GetAxis(-0x80, 0x80, 0));
     }
-}
-Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
-    auto* data = (GameController*)param;
-    UpdateMouse(data);
+
     return interval;
 }
 
