@@ -9,7 +9,7 @@
 #include "splash.h"
 
 bool Splash::Open(const std::filesystem::path& filepath) {
-    ASSERT_MSG(filepath.stem().string() != "png", "Unexpected file format passed");
+    ASSERT_MSG(filepath.extension().string() == ".png", "Unexpected file format passed");
 
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {

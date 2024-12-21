@@ -117,6 +117,7 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     case AmdGpu::PrimitiveType::PatchPrimitive:
         return vk::PrimitiveTopology::ePatchList;
     case AmdGpu::PrimitiveType::QuadList:
+    case AmdGpu::PrimitiveType::Polygon:
         // Needs to generate index buffer on the fly.
         return vk::PrimitiveTopology::eTriangleList;
     case AmdGpu::PrimitiveType::RectList:
