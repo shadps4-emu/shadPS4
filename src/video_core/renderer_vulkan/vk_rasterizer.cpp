@@ -246,11 +246,12 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
-        // For QuadList we use generated index buffer to convert quads to triangles. Since it
+    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList ||
+        regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+        // We use a generated index buffer to convert quad lists and polygons to triangles. Since it
         // changes type of the draw, arguments are not valid for this case. We need to run a
         // conversion pass to repack the indirect arguments buffer first.
-        LOG_WARNING(Render_Vulkan, "QuadList primitive type is not supported for indirect draw");
+        LOG_WARNING(Render_Vulkan, "Primitive type is not supported for indirect draw");
         return;
     }
 
