@@ -1202,6 +1202,11 @@
 			<translation>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="267"/>
+			<source>disableTrophycheckBox</source>
+			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>

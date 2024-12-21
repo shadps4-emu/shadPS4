@@ -19,6 +19,7 @@ bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
+bool getisTrophyPopupDisabled();
 bool getEnableDiscordRPC();
 bool getSeparateUpdateEnabled();
 
@@ -60,6 +61,7 @@ void setGpuId(s32 selectedGpuId);
 void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
+void setisTrophyPopupDisabled(bool disable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
 void setEnableDiscordRPC(bool enable);
