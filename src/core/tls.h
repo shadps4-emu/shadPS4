@@ -9,6 +9,10 @@ namespace Xbyak {
 class CodeGenerator;
 }
 
+namespace Libraries::Fiber {
+struct OrbisFiberContext;
+}
+
 namespace Core {
 
 union DtvEntry {
@@ -20,6 +24,7 @@ struct Tcb {
     Tcb* tcb_self;
     DtvEntry* tcb_dtv;
     void* tcb_thread;
+    ::Libraries::Fiber::OrbisFiberContext* tcb_fiber;
 };
 
 #ifdef _WIN32
