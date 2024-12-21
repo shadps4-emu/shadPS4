@@ -16,7 +16,6 @@ layout(push_constant) uniform image_info {
     uint num_levels;
     uint pitch;
     uint height;
-    uint depth;
     uint sizes[14];
 } info;
 

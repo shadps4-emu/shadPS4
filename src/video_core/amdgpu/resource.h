@@ -141,6 +141,8 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Texture_MicroTiled";
     case TilingMode::Texture_MacroTiled:
         return "Texture_MacroTiled";
+    case TilingMode::Texture_Volume:
+        return "Texture_Volume";
     default:
         return "Unknown";
     }

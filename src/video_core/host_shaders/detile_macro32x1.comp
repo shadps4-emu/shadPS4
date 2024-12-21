@@ -16,8 +16,8 @@ layout(push_constant) uniform image_info {
     uint num_levels;
     uint pitch;
     uint height;
-    uint depth;
-    uint sizes[14];
+    uint c0;
+    uint c1;
 } info;
 
 // Each LUT is 64 bytes, so should fit into K$ given tiled slices locality
@@ -78,14 +78,13 @@ void main() {
     uint row = bitfieldExtract(y, 0, 3);
     uint lut = bitfieldExtract(z, 0, 2);
     uint idx = lut_32bpp[lut][col + row * MICRO_TILE_DIM];
-    uint elem_offs = idx * BPP;
 
-    uint slice_offs = (z / 4) * MICRO_TILE_DIM * MICRO_TILE_DIM * MICRO_TILE_SZ; 
+    uint slice_offs = (z >> 2u) * info.c1 * MICRO_TILE_SZ; 
     uint tile_row = y / MICRO_TILE_DIM;
     uint tile_column = x / MICRO_TILE_DIM;
-    uint tile_offs = ((tile_row * MICRO_TILE_DIM) + tile_column) * MICRO_TILE_SZ;
-    uint offs = ((slice_offs + tile_offs) * MICRO_TILE_DIM + elem_offs) / MICRO_TILE_DIM;
+    uint tile_offs = ((tile_row * info.c0) + tile_column) * MICRO_TILE_SZ;
+    uint offs = slice_offs + tile_offs + (idx * BPP / 8);
 
-    uint p0 = in_data[offs / (BPP / 8)];
+    uint p0 = in_data[offs >> 2u];
     out_data[gl_GlobalInvocationID.x] = p0;
 }
