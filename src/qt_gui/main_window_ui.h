@@ -379,8 +379,7 @@ public:
         setThemeBlue->setText(QCoreApplication::translate("MainWindow", "Blue", nullptr));
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
         setThemeGruvbox->setText("Gruvbox");
-        setThemeSystem->setText(
-            QCoreApplication::translate("MainWindow", "System", nullptr));
+        setThemeSystem->setText(QCoreApplication::translate("MainWindow", "System", nullptr));
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
     } // retranslateUi
 };

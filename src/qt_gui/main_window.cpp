@@ -978,7 +978,7 @@ void MainWindow::SetLastUsedTheme() {
     case Theme::System:
         ui->setThemeSystem->setChecked(true);
         bool isSystemDarkMode;
-    #ifdef __linux__
+#ifdef __linux__
         const QPalette defaultPalette;
         const auto text = defaultPalette.color(QPalette::WindowText);
         const auto window = defaultPalette.color(QPalette::Window);
@@ -987,13 +987,13 @@ void MainWindow::SetLastUsedTheme() {
         } else {
             isSystemDarkMode = false;
         }
-    #else
+#else
         if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
             isSystemDarkMode = true;
         } else {
             isSystemDarkMode = false;
         }
-    #endif
+#endif
         if (isSystemDarkMode = true) {
             isIconBlack = false;
             SetUiIcons(false);
