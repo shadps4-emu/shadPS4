@@ -37,8 +37,7 @@ public:
     QAction* setThemeBlue;
     QAction* setThemeViolet;
     QAction* setThemeGruvbox;
-    QAction* setThemeSystemDark;
-    QAction* setThemeSystemLight;
+    QAction* setThemeSystem;
     QWidget* centralWidget;
     QLineEdit* mw_searchbar;
     QPushButton* playButton;
@@ -164,12 +163,9 @@ public:
         setThemeGruvbox = new QAction(MainWindow);
         setThemeGruvbox->setObjectName("setThemeGruvbox");
         setThemeGruvbox->setCheckable(true);
-        setThemeSystemDark = new QAction(MainWindow);
-        setThemeSystemDark->setObjectName("setThemeSystemDark");
-        setThemeSystemDark->setCheckable(true);
-        setThemeSystemLight = new QAction(MainWindow);
-        setThemeSystemLight->setObjectName("setThemeSystemLight");
-        setThemeSystemLight->setCheckable(true);
+        setThemeSystem = new QAction(MainWindow);
+        setThemeSystem->setObjectName("setThemeSystem");
+        setThemeSystem->setCheckable(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName("centralWidget");
         sizePolicy.setHeightForWidth(centralWidget->sizePolicy().hasHeightForWidth());
@@ -295,8 +291,7 @@ public:
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);
         menuThemes->addAction(setThemeGruvbox);
-        menuThemes->addAction(setThemeSystemDark);
-        menuThemes->addAction(setThemeSystemLight);
+        menuThemes->addAction(setThemeSystem);
         menuGame_List_Icons->addAction(setIconSizeTinyAct);
         menuGame_List_Icons->addAction(setIconSizeSmallAct);
         menuGame_List_Icons->addAction(setIconSizeMediumAct);
@@ -384,10 +379,8 @@ public:
         setThemeBlue->setText(QCoreApplication::translate("MainWindow", "Blue", nullptr));
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
         setThemeGruvbox->setText("Gruvbox");
-        setThemeSystemDark->setText(
-            QCoreApplication::translate("MainWindow", "System (Dark)", nullptr));
-        setThemeSystemLight->setText(
-            QCoreApplication::translate("MainWindow", "System (Light)", nullptr));
+        setThemeSystem->setText(
+            QCoreApplication::translate("MainWindow", "System", nullptr));
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
     } // retranslateUi
 };

@@ -151,16 +151,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
         break;
-    case Theme::SystemDark:
-        mw_searchbar->setStyleSheet("QLineEdit {"
-                                    "border: 1px solid;"
-                                    "border-radius: 4px; padding: 5px; }"
-                                    "QLineEdit:focus {"
-                                    "border: 1px solid; }");
-        qApp->setPalette(s_system_palette);
-        qApp->setStyleSheet(QString());
-        break;
-    case Theme::SystemLight:
+    case Theme::System:
         mw_searchbar->setStyleSheet("QLineEdit {"
                                     "border: 1px solid;"
                                     "border-radius: 4px; padding: 5px; }"

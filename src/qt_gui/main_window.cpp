@@ -115,8 +115,7 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
     m_theme_act_group->addAction(ui->setThemeGruvbox);
-    m_theme_act_group->addAction(ui->setThemeSystemDark);
-    m_theme_act_group->addAction(ui->setThemeSystemLight);
+    m_theme_act_group->addAction(ui->setThemeSystem);
 }
 
 void MainWindow::AddUiWidgets() {
@@ -565,12 +564,12 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
-    connect(ui->setThemeSystemDark, &QAction::triggered, &m_window_themes, [this]() {
-        m_window_themes.SetWindowTheme(Theme::SystemDark, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::SystemDark));
+    connect(ui->setThemeSystem, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::System, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::System));
 
         bool isSystemDarkMode;
-    #ifdef __linux__ 
+#ifdef __linux__
         const QPalette defaultPalette;
         const auto text = defaultPalette.color(QPalette::WindowText);
         const auto window = defaultPalette.color(QPalette::Window);
@@ -579,31 +578,23 @@ void MainWindow::CreateConnects() {
         } else {
             isSystemDarkMode = false;
         }
-    #else
+#else
         if(QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
             isSystemDarkMode = true;
         } else {
             isSystemDarkMode = false;
         }
-    #endif
-        if(isSystemDarkMode) {
+#endif
+        if (isSystemDarkMode) {
             if (isIconBlack) {
-            SetUiIcons(false);
-            isIconBlack = false;
-            }    
+                SetUiIcons(false);
+                isIconBlack = false;
+            }
         } else {
             if (!isIconBlack) {
-            SetUiIcons(true);
-            isIconBlack = true;
+                SetUiIcons(true);
+                isIconBlack = true;
             }
-        }    
-    });
-    connect(ui->setThemeSystemLight, &QAction::triggered, &m_window_themes, [this]() {
-        m_window_themes.SetWindowTheme(Theme::SystemLight, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::SystemLight));
-        if (!isIconBlack) {
-            SetUiIcons(true);
-            isIconBlack = true;
         }
     });
 }
@@ -984,14 +975,32 @@ void MainWindow::SetLastUsedTheme() {
         isIconBlack = false;
         SetUiIcons(false);
         break;
-    case Theme::SystemDark:
-        ui->setThemeSystemDark->setChecked(true);
-        isIconBlack = false;
-        SetUiIcons(false);
-        break;
-    case Theme::SystemLight:
-        ui->setThemeLight->setChecked(true);
-        isIconBlack = true;
+    case Theme::System:
+        ui->setThemeSystem->setChecked(true);
+        bool isSystemDarkMode;
+    #ifdef __linux__
+        const QPalette defaultPalette;
+        const auto text = defaultPalette.color(QPalette::WindowText);
+        const auto window = defaultPalette.color(QPalette::Window);
+        if (text.lightness() > window.lightness()) {
+            isSystemDarkMode = true;
+        } else {
+            isSystemDarkMode = false;
+        }
+    #else
+        if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
+            isSystemDarkMode = true;
+        } else {
+            isSystemDarkMode = false;
+        }
+    #endif
+        if (isSystemDarkMode = true) {
+            isIconBlack = false;
+            SetUiIcons(false);
+        } else if (isSystemDarkMode = false) {
+            isIconBlack = true;
+            SetUiIcons(true);
+        }
         break;
     }
 }
