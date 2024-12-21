@@ -171,6 +171,9 @@ void HandleTable::DeleteHandle(int d) {
 
 File* HandleTable::GetFile(int d) {
     std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
     return m_files.at(d);
 }
 
