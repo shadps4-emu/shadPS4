@@ -21,6 +21,7 @@ class Instance;
 struct RenderState {
     std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
     vk::RenderingAttachmentInfo depth_attachment{};
+    vk::RenderingAttachmentInfo stencil_attachment{};
     u32 num_color_attachments{};
     bool has_depth{};
     bool has_stencil{};
