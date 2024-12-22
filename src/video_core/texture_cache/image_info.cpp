@@ -266,7 +266,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     props.is_tiled = buffer.IsTiled();
     tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
-    num_samples = 1 << buffer.attrib.num_fragments_log2;
+    num_samples = buffer.NumSamples();
     num_bits = NumBits(buffer.info.format);
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -289,7 +289,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     props.is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
-    num_samples = 1 << buffer.z_info.num_samples; // spec doesn't say it is a log2
+    num_samples = buffer.NumSamples();
     num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
