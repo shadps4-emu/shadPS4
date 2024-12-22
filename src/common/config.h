@@ -21,6 +21,8 @@ bool getPlayBGM();
 int getBGMvolume();
 bool getEnableDiscordRPC();
 bool getSeparateUpdateEnabled();
+bool getCompatibilityEnabled();
+bool getCheckCompatibilityOnStartup();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -69,6 +71,8 @@ void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setCompatibilityEnabled(bool use);
+void setCheckCompatibilityOnStartup(bool use);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
