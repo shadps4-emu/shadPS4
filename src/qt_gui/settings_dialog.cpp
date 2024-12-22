@@ -196,6 +196,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 #endif
         ui->GUIgroupBox->installEventFilter(this);
         ui->widgetComboBox->installEventFilter(this);
+        ui->disableTrophycheckBox->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -268,6 +269,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->currentwidgetComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "GUI", "widgetStyle", "fusion")));
+    ui->disableTrophycheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
@@ -403,6 +406,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("GUIgroupBox");
     } else if (elementName == "widgetComboBox") {
         text = tr("widgetComboBox");
+    } else if (elementName == "disableTrophycheckBox") {
+        text = tr("disableTrophycheckBox");
     }
 
     // Input
