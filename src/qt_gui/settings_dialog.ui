@@ -59,9 +59,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-97</y>
-        <width>815</width>
-        <height>618</height>
+        <y>0</y>
+        <width>836</width>
+        <height>705</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -448,7 +448,7 @@
             <item alignment="Qt::AlignmentFlag::AlignTop">
              <widget class="QGroupBox" name="GUIgroupBox">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -493,6 +493,21 @@
                   <string>Current Widget Style</string>
                  </property>
                  <layout class="QVBoxLayout" name="currentwidgetLayout">
+                  <property name="spacing">
+                   <number>7</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>11</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>11</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>11</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>11</number>
+                  </property>
                   <item>
                    <widget class="QComboBox" name="currentwidgetComboBox">
                     <property name="enabled">
