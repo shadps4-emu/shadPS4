@@ -81,8 +81,10 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
         }
     });
 
-    // Disable status column for now
-    this->setColumnHidden(2, true);
+    // Do not show status column if it is not enabled
+    if (!Config::getCompatibilityEnabled()) {
+        this->setColumnHidden(2, true);
+    }
 }
 
 void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
