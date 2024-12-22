@@ -189,7 +189,11 @@ add_library(Dear_ImGui
 target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
 
 # Tracy
-option(TRACY_ENABLE "" ON)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    option(TRACY_ENABLE "" OFF)
+else()
+    option(TRACY_ENABLE "" ON)
+endif()
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
 option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
