@@ -71,6 +71,7 @@ private:
     RenderState PrepareRenderState(u32 mrt_mask);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
+    void EliminateFastClear();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();

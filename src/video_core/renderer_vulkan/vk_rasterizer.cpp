@@ -51,10 +51,6 @@ bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
     // actual draw hence can skip pipeline creation.
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
-        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
-        return false;
-    }
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
         // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
@@ -201,6 +197,35 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
     return {vertex_offset, instance_offset};
 }
 
+void Rasterizer::EliminateFastClear() {
+    auto& col_buf = liverpool->regs.color_buffers[0];
+    if (!col_buf || !col_buf.info.fast_clear) {
+        return;
+    }
+    if (!texture_cache.IsMetaCleared(col_buf.CmaskAddress(), col_buf.view.slice_start)) {
+        return;
+    }
+    for (u32 slice = col_buf.view.slice_start; slice <= col_buf.view.slice_max; ++slice) {
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
+    }
+    const auto& hint = liverpool->last_cb_extent[0];
+    auto& [_, desc] =
+        cb_descs.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{col_buf, hint});
+    const auto& image_view = texture_cache.FindRenderTarget(desc);
+    const auto& image = texture_cache.GetImage(image_view.image_id);
+    const vk::ImageSubresourceRange range = {
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = col_buf.view.slice_start,
+        .layerCount = col_buf.view.slice_max - col_buf.view.slice_start + 1,
+    };
+    scheduler.EndRendering();
+    scheduler.CommandBuffer().clearColorImage(image.image, vk::ImageLayout::eColorAttachmentOptimal,
+                                              LiverpoolToVK::ColorBufferClearValue(col_buf).color,
+                                              range);
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
@@ -209,6 +234,12 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 
     const auto& regs = liverpool->regs;
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        // Clears the render target if FCE is launched before any draws
+        EliminateFastClear();
+        return;
+    }
+
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
