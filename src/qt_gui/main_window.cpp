@@ -51,6 +51,7 @@ bool MainWindow::Init() {
     SetLastUsedTheme();
     SetLastIconSizeBullet();
     GetPhysicalDevices();
+    showMaximized();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     std::string window_title = "";
