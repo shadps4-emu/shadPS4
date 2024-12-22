@@ -154,7 +154,7 @@ void Presenter::CreatePostProcessPipeline() {
     const auto& fs_module =
         Vulkan::Compile(pp_shaders[1], vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
     ASSERT(fs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "post_process.frag");
+    Vulkan::SetObjectName(instance.GetDevice(), fs_module, "post_process.frag");
 
     const std::array shaders_ci{
         vk::PipelineShaderStageCreateInfo{

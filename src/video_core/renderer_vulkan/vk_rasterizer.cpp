@@ -87,9 +87,11 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
     }
 
+    const bool skip_cb_binding =
+        regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
-        if (!col_buf) {
+        if (skip_cb_binding || !col_buf) {
             continue;
         }
 
@@ -134,12 +136,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         };
     }
 
-    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
-    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
-    if (regs.depth_buffer.Address() != 0 &&
-        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
-         (regs.depth_control.stencil_enable &&
-          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
+    if ((regs.depth_control.depth_enable && regs.depth_buffer.DepthValid()) ||
+        (regs.depth_control.stencil_enable && regs.depth_buffer.StencilValid())) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const auto& hint = liverpool->last_db_extent;
         auto& [image_id, desc] =
@@ -159,25 +157,29 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
-        state.depth_attachment = {
-            .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eUndefined,
-            .loadOp = is_depth_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear}},
-        };
-        state.stencil_attachment = {
-            .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eUndefined,
-            .loadOp = is_stencil_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-            .clearValue = vk::ClearValue{.depthStencil = {.stencil = regs.stencil_clear}},
-        };
+        state.has_depth = regs.depth_buffer.DepthValid();
+        state.has_stencil = regs.depth_buffer.StencilValid();
+        if (state.has_depth) {
+            state.depth_attachment = {
+                .imageView = *image_view.image_view,
+                .imageLayout = vk::ImageLayout::eUndefined,
+                .loadOp =
+                    is_depth_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+                .storeOp = vk::AttachmentStoreOp::eStore,
+                .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear}},
+            };
+        }
+        if (state.has_stencil) {
+            state.stencil_attachment = {
+                .imageView = *image_view.image_view,
+                .imageLayout = vk::ImageLayout::eUndefined,
+                .loadOp =
+                    is_stencil_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+                .storeOp = vk::AttachmentStoreOp::eStore,
+                .clearValue = vk::ClearValue{.depthStencil = {.stencil = regs.stencil_clear}},
+            };
+        }
         texture_cache.TouchMeta(htile_address, slice, false);
-        state.has_depth =
-            regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
-        state.has_stencil = regs.depth_buffer.stencil_info.format !=
-                            AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
 
     return state;
@@ -815,34 +817,60 @@ void Rasterizer::Resolve() {
     mrt1_range.base.layer = liverpool->regs.color_buffers[1].view.slice_start;
     mrt1_range.extent.layers = liverpool->regs.color_buffers[1].NumSlices() - mrt1_range.base.layer;
 
-    vk::ImageResolve region = {
-        .srcSubresource =
-            {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
-                .baseArrayLayer = mrt0_range.base.layer,
-                .layerCount = mrt0_range.extent.layers,
-            },
-        .srcOffset = {0, 0, 0},
-        .dstSubresource =
-            {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
-                .baseArrayLayer = mrt1_range.base.layer,
-                .layerCount = mrt1_range.extent.layers,
-            },
-        .dstOffset = {0, 0, 0},
-        .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
-    };
-
     mrt0_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
                        mrt0_range);
 
     mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
                        mrt1_range);
 
-    cmdbuf.resolveImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal, mrt1_image.image,
-                        vk::ImageLayout::eTransferDstOptimal, region);
+    if (mrt0_image.info.num_samples == 1) {
+        // Vulkan does not allow resolve from a single sample image, so change it to a copy.
+        // Note that resolving a single-sampled image doesn't really make sense, but a game might do
+        // it.
+        vk::ImageCopy region = {
+            .srcSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = mrt0_range.base.layer,
+                    .layerCount = mrt0_range.extent.layers,
+                },
+            .srcOffset = {0, 0, 0},
+            .dstSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = mrt1_range.base.layer,
+                    .layerCount = mrt1_range.extent.layers,
+                },
+            .dstOffset = {0, 0, 0},
+            .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
+        };
+        cmdbuf.copyImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal, mrt1_image.image,
+                         vk::ImageLayout::eTransferDstOptimal, region);
+    } else {
+        vk::ImageResolve region = {
+            .srcSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = mrt0_range.base.layer,
+                    .layerCount = mrt0_range.extent.layers,
+                },
+            .srcOffset = {0, 0, 0},
+            .dstSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = mrt1_range.base.layer,
+                    .layerCount = mrt1_range.extent.layers,
+                },
+            .dstOffset = {0, 0, 0},
+            .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
+        };
+        cmdbuf.resolveImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal,
+                            mrt1_image.image, vk::ImageLayout::eTransferDstOptimal, region);
+    }
 }
 
 void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
@@ -998,6 +1026,10 @@ void Rasterizer::UpdateViewportScissorState() {
         enable_offset ? regs.window_offset.window_y_offset : 0);
 
     for (u32 idx = 0; idx < Liverpool::NumViewports; idx++) {
+        if (regs.viewports[idx].xscale == 0) {
+            // Scissor and viewport counts should be equal.
+            continue;
+        }
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
             vp_scsr.top_left_x =
@@ -1018,13 +1050,6 @@ void Rasterizer::UpdateViewportScissorState() {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setViewport(0, viewports);
     cmdbuf.setScissor(0, scissors);
-}
-
-void Rasterizer::UpdateDepthStencilState() {
-    auto& depth = liverpool->regs.depth_control;
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.setDepthBoundsTestEnable(depth.depth_bounds_enable);
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {

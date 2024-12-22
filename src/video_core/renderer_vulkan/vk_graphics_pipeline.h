@@ -85,10 +85,6 @@ public:
         return key.mrt_mask;
     }
 
-    bool IsDepthEnabled() const {
-        return key.depth_stencil.depth_enable.Value();
-    }
-
     [[nodiscard]] bool IsPrimitiveListTopology() const {
         return key.prim_type == AmdGpu::PrimitiveType::PointList ||
                key.prim_type == AmdGpu::PrimitiveType::LineList ||
