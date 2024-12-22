@@ -1167,5 +1167,32 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
             }
         }
     }
+    if (event->type() == QEvent::ApplicationPaletteChange) {
+        if (ui->setThemeSystem->isChecked()) {
+
+            bool isSystemDarkMode;
+
+#ifdef __linux__
+            const QPalette defaultPalette;
+            const auto text = defaultPalette.color(QPalette::WindowText);
+            const auto window = defaultPalette.color(QPalette::Window);
+            isSystemDarkMode = (text.lightness() > window.lightness());
+#else
+            isSystemDarkMode =
+                (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
+#endif
+            if (isSystemDarkMode) {
+                if (isIconBlack) {
+                    SetUiIcons(false);
+                    isIconBlack = false;
+                }
+            } else {
+                if (!isIconBlack) {
+                    SetUiIcons(true);
+                    isIconBlack = true;
+                }
+            }
+        }
+    }
     return QMainWindow::eventFilter(obj, event);
 }

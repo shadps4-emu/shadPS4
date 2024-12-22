@@ -538,7 +538,6 @@ void SettingsDialog::UpdateSettings() {
     foreach (QWidget* widget, QApplication::topLevelWidgets()) {
         widget->update();
     }
-    QCoreApplication::processEvents();
 }
 
 void SettingsDialog::ResetInstallFolders() {
