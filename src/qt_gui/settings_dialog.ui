@@ -1205,54 +1205,37 @@
             <property name="title">
              <string>Game Folders</string>
             </property>
-            <widget class="QListWidget" name="gameFoldersListWidget">
-             <property name="geometry">
-              <rect>
-               <x>16</x>
-               <y>32</y>
-               <width>401</width>
-               <height>331</height>
-              </rect>
-             </property>
-            </widget>
-            <widget class="QPushButton" name="addFolderButton">
-             <property name="geometry">
-              <rect>
-               <x>108</x>
-               <y>380</y>
-               <width>80</width>
-               <height>42</height>
-              </rect>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Add...</string>
-             </property>
-            </widget>
-            <widget class="QPushButton" name="removeFolderButton">
-             <property name="geometry">
-              <rect>
-               <x>208</x>
-               <y>380</y>
-               <width>80</width>
-               <height>42</height>
-              </rect>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Remove</string>
-             </property>
-            </widget>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="0" column="0" colspan="2">
+              <widget class="QListWidget" name="gameFoldersListWidget"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="addFolderButton">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Add...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QPushButton" name="removeFolderButton">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Remove</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
