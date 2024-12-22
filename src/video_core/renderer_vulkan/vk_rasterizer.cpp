@@ -51,6 +51,11 @@ bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
     // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
     // actual draw hence can skip pipeline creation.
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        // Clears the render target if FCE is launched before any draws
+        EliminateFastClear();
+        return false;
+    }
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
         // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
@@ -209,8 +214,7 @@ void Rasterizer::EliminateFastClear() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
     }
     const auto& hint = liverpool->last_cb_extent[0];
-    auto& [_, desc] =
-        cb_descs.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{col_buf, hint});
+    VideoCore::TextureCache::RenderTargetDesc desc(col_buf, hint);
     const auto& image_view = texture_cache.FindRenderTarget(desc);
     const auto& image = texture_cache.GetImage(image_view.image_id);
     const vk::ImageSubresourceRange range = {
@@ -234,12 +238,6 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 
     const auto& regs = liverpool->regs;
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
-        // Clears the render target if FCE is launched before any draws
-        EliminateFastClear();
-        return;
-    }
-
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
