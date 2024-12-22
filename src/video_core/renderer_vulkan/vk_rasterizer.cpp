@@ -152,8 +152,9 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         image.binding.is_target = 1u;
 
         const auto slice = image_view.info.range.base.layer;
-        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
-                              texture_cache.IsMetaCleared(htile_address, slice);
+        const bool is_depth_clear = regs.depth_render_control.depth_clear_enable ||
+                                    texture_cache.IsMetaCleared(htile_address, slice);
+        const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
         ASSERT(desc.view_info.range.extent.layers == 1);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
@@ -161,16 +162,14 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         state.depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
-            .loadOp = is_clear && regs.depth_control.depth_enable ? vk::AttachmentLoadOp::eClear
-                                                                  : vk::AttachmentLoadOp::eLoad,
+            .loadOp = is_depth_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear}},
         };
         state.stencil_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
-            .loadOp = is_clear && regs.depth_control.stencil_enable ? vk::AttachmentLoadOp::eClear
-                                                                    : vk::AttachmentLoadOp::eLoad,
+            .loadOp = is_stencil_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.stencil = regs.stencil_clear}},
         };
