@@ -534,7 +534,6 @@ void SettingsDialog::UpdateSettings() {
     } else if (Config::getWidgetStyle() == "System") {
         qApp->setStyle(QString::fromStdString(s_system_style_name));
     }
-    printf("%s", s_system_style_name.c_str());
 
     foreach (QWidget* widget, QApplication::topLevelWidgets()) {
         widget->update();
