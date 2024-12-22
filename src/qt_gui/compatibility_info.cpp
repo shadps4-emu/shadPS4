@@ -67,7 +67,7 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
                 }
                 replies[i]->deleteLater();
             } else {
-                // This means the request timed out 
+                // This means the request timed out
                 return;
             }
         }

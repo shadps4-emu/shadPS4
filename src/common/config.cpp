@@ -563,7 +563,8 @@ void load(const std::filesystem::path& path) {
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
-        checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
+        checkCompatibilityOnStartup =
+            toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
     }
 
     if (data.contains("Input")) {
