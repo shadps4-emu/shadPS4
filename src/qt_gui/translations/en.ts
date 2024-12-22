@@ -1204,7 +1204,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="307"/>
 			<source>widgetComboBox</source>
-			<translation>Widget Styles:\nChoose the widget style to be applied at startup. Defaults to Fusion. "System" uses your system's widget style (Breeze, Oxygen, Kvantum etc). Requires an app restart to apply.</translation>
+			<translation>Widget Styles:\nChoose the widget style for the app. Defaults to Fusion. "System" uses your system's widget style (Breeze, Oxygen, Kvantum etc).</translation>
 		</message>
 	    <message>
 			<location filename="../settings_dialog.cpp" line="267"/>
