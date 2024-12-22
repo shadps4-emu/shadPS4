@@ -536,6 +536,7 @@ void CheckUpdate::Install() {
     QFile scriptFile(scriptFileName);
     if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&scriptFile);
+        scriptFile.write("\xEF\xBB\xBF");
 #ifdef Q_OS_WIN
         out << scriptContent.arg(binaryStartingUpdate).arg(tempDirPath).arg(rootPath);
 #endif
