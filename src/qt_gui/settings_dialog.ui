@@ -1208,8 +1208,8 @@
             <widget class="QListWidget" name="gameFoldersListWidget">
              <property name="geometry">
               <rect>
-               <x>0</x>
-               <y>20</y>
+               <x>16</x>
+               <y>32</y>
                <width>401</width>
                <height>331</height>
               </rect>
@@ -1218,11 +1218,17 @@
             <widget class="QPushButton" name="addFolderButton">
              <property name="geometry">
               <rect>
-               <x>100</x>
-               <y>360</y>
-               <width>91</width>
-               <height>24</height>
+               <x>108</x>
+               <y>380</y>
+               <width>80</width>
+               <height>42</height>
               </rect>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
              <property name="text">
               <string>Add...</string>
@@ -1231,33 +1237,23 @@
             <widget class="QPushButton" name="removeFolderButton">
              <property name="geometry">
               <rect>
-               <x>199</x>
-               <y>360</y>
-               <width>91</width>
-               <height>24</height>
+               <x>208</x>
+               <y>380</y>
+               <width>80</width>
+               <height>42</height>
               </rect>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
              <property name="text">
               <string>Remove</string>
              </property>
             </widget>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Policy::Preferred</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </item>
