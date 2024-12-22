@@ -59,9 +59,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>832</width>
-        <height>431</height>
+        <y>-97</y>
+        <width>815</width>
+        <height>618</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -470,6 +470,13 @@
                 <number>11</number>
                </property>
                <item>
+                <widget class="QCheckBox" name="disableTrophycheckBox">
+                 <property name="text">
+                  <string>Disable Trophy Pop-ups</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <layout class="QVBoxLayout" name="GUIMusicLayout">
                  <property name="topMargin">
                   <number>1</number>
@@ -560,16 +567,6 @@
                   </widget>
                  </item>
                 </layout>
-               </item>
-               <item>
-                <widget class="QWidget" name="GUIwidgetSpacer" native="true">
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>61</height>
-                  </size>
-                 </property>
-                </widget>
                </item>
               </layout>
              </widget>
@@ -696,7 +693,7 @@
                   <property name="bottomMargin">
                    <number>5</number>
                   </property>
-                  <item alignment="Qt::AlignmentFlag::AlignHCenter">
+                  <item>
                    <widget class="QSpinBox" name="idleTimeoutSpinBox">
                     <property name="enabled">
                      <bool>true</bool>
