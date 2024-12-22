@@ -1098,10 +1098,16 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
         QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
         return;
     }
+    isGameRunning = true;
+#ifdef __APPLE__
+    // SDL on macOS requires main thread.
+    Core::Emulator emulator;
+    emulator.Run(path);
+#else
     std::thread emulator_thread([=] {
         Core::Emulator emulator;
         emulator.Run(path);
     });
     emulator_thread.detach();
-    isGameRunning = true;
+#endif
 }
