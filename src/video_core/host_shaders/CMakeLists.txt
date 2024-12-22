@@ -7,6 +7,8 @@ set(SHADER_FILES
     detile_m32x1.comp
     detile_m32x2.comp
     detile_m32x4.comp
+    detile_macro32x1.comp
+    detile_macro32x2.comp
     fs_tri.vert
     post_process.frag
 )

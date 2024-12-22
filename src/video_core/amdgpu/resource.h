@@ -126,6 +126,7 @@ enum class TilingMode : u32 {
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
     Texture_MacroTiled = 0xEu,
+    Texture_Volume = 0x13u,
 };
 
 constexpr std::string_view NameOf(TilingMode type) {
@@ -140,6 +141,8 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Texture_MicroTiled";
     case TilingMode::Texture_MacroTiled:
         return "Texture_MacroTiled";
+    case TilingMode::Texture_Volume:
+        return "Texture_Volume";
     default:
         return "Unknown";
     }
@@ -293,9 +296,6 @@ struct Image {
         if (tiling_index >= 0 && tiling_index <= 7) {
             return tiling_index == 5 ? TilingMode::Texture_MicroTiled
                                      : TilingMode::Depth_MacroTiled;
-        }
-        if (tiling_index == 0x13) {
-            return TilingMode::Texture_MicroTiled;
         }
         return static_cast<TilingMode>(tiling_index);
     }
