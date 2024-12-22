@@ -1203,7 +1203,7 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="307"/>
-			<source>widgetGroupBox</source>
+			<source>widgetComboBox</source>
 			<translation>Widget Styles:\nChoose the widget style to be applied at startup. Defaults to Fusion. "System" uses your system's widget style (Breeze, Oxygen, Kvantum etc). Requires an app restart to apply.</translation>
 		</message>
 		<message>

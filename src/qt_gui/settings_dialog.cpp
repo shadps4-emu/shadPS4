@@ -195,7 +195,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->updaterGroupBox->installEventFilter(this);
 #endif
         ui->GUIgroupBox->installEventFilter(this);
-        ui->widgetGroupBox->installEventFilter(this);
+        ui->widgetComboBox->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -401,8 +401,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
 #endif
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
-    } else if (elementName == "widgetGroupBox") {
-        text = tr("widgetGroupBox");
+    } else if (elementName == "widgetComboBox") {
+        text = tr("widgetComboBox");
     }
 
     // Input

@@ -996,10 +996,10 @@ void MainWindow::SetLastUsedTheme() {
             isSystemDarkMode = false;
         }
 #endif
-        if (isSystemDarkMode = true) {
+        if (isSystemDarkMode == true) {
             isIconBlack = false;
             SetUiIcons(false);
-        } else if (isSystemDarkMode = false) {
+        } else if (isSystemDarkMode == false) {
             isIconBlack = true;
             SetUiIcons(true);
         }
@@ -1169,7 +1169,6 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     }
     if (event->type() == QEvent::ApplicationPaletteChange) {
         if (ui->setThemeSystem->isChecked()) {
-
             bool isSystemDarkMode;
 
 #ifdef __linux__
