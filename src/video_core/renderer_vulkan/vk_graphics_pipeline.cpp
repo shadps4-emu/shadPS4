@@ -8,22 +8,27 @@
 
 #include "common/assert.h"
 #include "common/scope_exit.h"
+#include "common/io_file.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
-
-#include "shader_recompiler/frontend/fetch_shader.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
+using Shader::Backend::SPIRV::AuxShaderType;
+
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
+                                   std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
                                    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
                                    std::span<const vk::ShaderModule> modules)
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
@@ -88,11 +93,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
-    if (key.prim_type == AmdGpu::PrimitiveType::RectList && !IsEmbeddedVs()) {
-        LOG_WARNING(Render_Vulkan,
-                    "Rectangle List primitive type is only supported for embedded VS");
-    }
-
     auto prim_restart = key.enable_primitive_restart != 0;
     if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
         LOG_WARNING(Render_Vulkan,
@@ -106,9 +106,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
-
+    const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
+    const size_t num_fs_inputs =
+        runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info.num_inputs;
     const vk::PipelineTessellationStateCreateInfo tessellation_state = {
-        .patchControlPoints = key.patch_control_points,
+        .patchControlPoints = is_rect_list ? 3U : key.patch_control_points,
     };
 
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
@@ -232,12 +234,27 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .module = modules[stage],
             .pName = "main",
         });
+    } else if (is_rect_list) {
+        auto tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::RectListTCS,
+                                                                  num_fs_inputs);
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationControl,
+            .module = CompileSPV(tcs, instance.GetDevice()),
+            .pName = "main",
+        });
     }
     stage = u32(Shader::LogicalStage::TessellationEval);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
             .module = modules[stage],
+            .pName = "main",
+        });
+    } else if (is_rect_list) {
+        auto tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES, num_fs_inputs);
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
+            .module = CompileSPV(tes, instance.GetDevice()),
             .pName = "main",
         });
     }
@@ -322,8 +339,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pStages = shader_stages.data(),
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
-        .pTessellationState =
-            stages[u32(Shader::LogicalStage::TessellationControl)] ? &tessellation_state : nullptr,
+        .pTessellationState = &tessellation_state,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,

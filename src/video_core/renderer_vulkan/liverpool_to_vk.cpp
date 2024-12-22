@@ -121,7 +121,7 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
         // Needs to generate index buffer on the fly.
         return vk::PrimitiveTopology::eTriangleList;
     case AmdGpu::PrimitiveType::RectList:
-        return vk::PrimitiveTopology::eTriangleStrip;
+        return vk::PrimitiveTopology::ePatchList;
     default:
         UNREACHABLE();
         return vk::PrimitiveTopology::eTriangleList;

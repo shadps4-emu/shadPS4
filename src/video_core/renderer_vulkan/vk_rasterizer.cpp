@@ -238,7 +238,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
                            instance_offset);
     } else {
         const u32 num_vertices =
-            regs.primitive_type == AmdGpu::PrimitiveType::RectList ? 4 : regs.num_indices;
+            regs.primitive_type == AmdGpu::PrimitiveType::RectList ? 3 : regs.num_indices;
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
