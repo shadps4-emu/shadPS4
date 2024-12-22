@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QTimer>
 
 #include "common/path_util.h"
 #include "compatibility_info.h"
@@ -22,7 +23,8 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
         return;
 
     QNetworkReply* reply = FetchPage(1);
-    WaitForReply(reply);
+    if (!WaitForReply(reply))
+        return;
 
     QProgressDialog dialog(tr("Fetching compatibility data, please wait"), tr("Cancel"), 0, 0,
                            parent);
@@ -57,12 +59,17 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
     }
 
     future_watcher.setFuture(QtConcurrent::map(replies, WaitForReply));
-    connect(&future_watcher, &QFutureWatcher<QByteArray>::finished, [&]() {
+    connect(&future_watcher, &QFutureWatcher<void>::finished, [&]() {
         for (int i = 0; i < remaining_pages; i++) {
-            if (replies[i]->error() == QNetworkReply::NoError) {
-                ExtractCompatibilityInfo(replies[i]->readAll());
+            if (replies[i]->bytesAvailable()) {
+                if (replies[i]->error() == QNetworkReply::NoError) {
+                    ExtractCompatibilityInfo(replies[i]->readAll());
+                }
+                replies[i]->deleteLater();
+            } else {
+                // This means the request timed out
+                return;
             }
-            replies[i]->deleteLater();
         }
 
         QFile compatibility_file(m_compatibility_filename);
@@ -82,6 +89,16 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
         compatibility_file.close();
 
         dialog.reset();
+    });
+    connect(&future_watcher, &QFutureWatcher<void>::canceled, [&]() {
+        // Cleanup if user cancels pulling data
+        for (int i = 0; i < remaining_pages; i++) {
+            if (!replies[i]->bytesAvailable()) {
+                replies[i]->deleteLater();
+            } else if (!replies[i]->isFinished()) {
+                replies[i]->abort();
+            }
+        }
     });
     connect(&dialog, &QProgressDialog::canceled, &future_watcher, &QFutureWatcher<void>::cancel);
     dialog.setRange(0, remaining_pages);
@@ -105,20 +122,34 @@ QNetworkReply* CompatibilityInfoClass::FetchPage(int page_num) {
     return reply;
 }
 
-void CompatibilityInfoClass::WaitForReply(QNetworkReply* reply) {
+bool CompatibilityInfoClass::WaitForReply(QNetworkReply* reply) {
+    // Returns true if reply succeeded, false if reply timed out
+    QTimer timer;
+    timer.setSingleShot(true);
+
     QEventLoop loop;
     connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+    timer.start(5000);
     loop.exec();
-    return;
+
+    if (timer.isActive()) {
+        timer.stop();
+        return true;
+    } else {
+        disconnect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+        reply->abort();
+        return false;
+    }
 };
 
 CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::string& serial) {
     QString title_id = QString::fromStdString(serial);
     if (m_compatibility_database.contains(title_id)) {
         {
+            QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
             for (int os_int = 0; os_int != static_cast<int>(OSType::Last); os_int++) {
                 QString os_string = OSTypeToString.at(static_cast<OSType>(os_int));
-                QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
                 if (compatibility_obj.contains(os_string)) {
                     QJsonObject compatibility_entry_obj = compatibility_obj[os_string].toObject();
                     CompatibilityEntry compatibility_entry{
@@ -133,7 +164,9 @@ CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::strin
             }
         }
     }
-    return CompatibilityEntry{CompatibilityStatus::Unknown};
+
+    return CompatibilityEntry{CompatibilityStatus::Unknown, "", QDateTime::currentDateTime(), "",
+                              0};
 }
 
 bool CompatibilityInfoClass::LoadCompatibilityFile() {

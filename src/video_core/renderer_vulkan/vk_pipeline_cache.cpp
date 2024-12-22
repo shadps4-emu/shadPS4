@@ -258,32 +258,28 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& key = graphics_key;
 
     key.depth_stencil = regs.depth_control;
+    key.stencil = regs.stencil_control;
     key.depth_stencil.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
                                                 !regs.depth_render_control.depth_clear_enable);
     key.depth_bias_enable = regs.polygon_control.NeedsBias();
 
-    const auto& db = regs.depth_buffer;
-    const auto ds_format = instance.GetSupportedFormat(
-        LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format),
+    const auto depth_format = instance.GetSupportedFormat(
+        LiverpoolToVK::DepthFormat(regs.depth_buffer.z_info.format,
+                                   regs.depth_buffer.stencil_info.format),
         vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
-    if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
-        key.depth_format = ds_format;
+    if (regs.depth_buffer.DepthValid()) {
+        key.depth_format = depth_format;
     } else {
         key.depth_format = vk::Format::eUndefined;
+        key.depth_stencil.depth_enable.Assign(false);
     }
-    if (regs.depth_control.depth_enable) {
-        key.depth_stencil.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
-    }
-    key.stencil = regs.stencil_control;
-
-    if (db.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid) {
-        key.stencil_format = key.depth_format;
+    if (regs.depth_buffer.StencilValid()) {
+        key.stencil_format = depth_format;
     } else {
         key.stencil_format = vk::Format::eUndefined;
+        key.depth_stencil.stencil_enable.Assign(false);
     }
-    if (key.depth_stencil.stencil_enable) {
-        key.depth_stencil.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
-    }
+
     key.prim_type = regs.primitive_type;
     key.enable_primitive_restart = regs.enable_primitive_restart & 1;
     key.primitive_restart_index = regs.primitive_restart_index;
@@ -291,7 +287,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
     key.front_face = regs.polygon_control.front_face;
-    key.num_samples = regs.aa_config.NumSamples();
+    key.num_samples = regs.NumSamples();
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
@@ -437,8 +433,6 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
     }
 
-    u32 num_samples = 1u;
-
     // Second pass to fill remain CB pipeline key data
     for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
@@ -463,14 +457,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
         ++remapped_cb;
-
-        num_samples = std::max(num_samples, 1u << col_buf.attrib.num_samples_log2);
     }
-
-    // It seems that the number of samples > 1 set in the AA config doesn't mean we're always
-    // rendering with MSAA, so we need to derive MS ratio from the CB settings.
-    num_samples = std::max(num_samples, regs.depth_buffer.NumSamples());
-    key.num_samples = num_samples;
 
     return true;
 } // namespace Vulkan

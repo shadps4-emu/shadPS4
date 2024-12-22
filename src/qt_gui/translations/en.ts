@@ -1205,6 +1205,11 @@
 			<location filename="../settings_dialog.cpp" line="307"/>
 			<source>widgetGroupBox</source>
 			<translation>Widget Styles:\nChoose the widget style to be applied at startup. Defaults to Fusion. "System" uses your system's widget style (Breeze, Oxygen, Kvantum etc). Requires an app restart to apply.</translation>
+    </message>
+    <message>
+      <location filename="../settings_dialog.cpp" line="267"/>
+			<source>disableTrophycheckBox</source>
+			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
