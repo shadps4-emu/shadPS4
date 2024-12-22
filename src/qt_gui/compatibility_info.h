@@ -57,6 +57,7 @@ class CompatibilityInfoClass : public QObject {
 public:
     // Please think of a better alternative
     inline static const std::unordered_map<QString, CompatibilityStatus> LabelToCompatStatus = {
+        {QStringLiteral("status-unknown"), CompatibilityStatus::Unknown},
         {QStringLiteral("status-nothing"), CompatibilityStatus::Nothing},
         {QStringLiteral("status-boots"), CompatibilityStatus::Boots},
         {QStringLiteral("status-menus"), CompatibilityStatus::Menus},
@@ -87,7 +88,7 @@ public:
     bool LoadCompatibilityFile();
     CompatibilityEntry GetCompatibilityInfo(const std::string& serial);
     void ExtractCompatibilityInfo(QByteArray response);
-    static void WaitForReply(QNetworkReply* reply);
+    static bool WaitForReply(QNetworkReply* reply);
     QNetworkReply* FetchPage(int page_num);
 
 private:

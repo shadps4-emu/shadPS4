@@ -185,7 +185,7 @@ void MainWindow::CreateDockWindows() {
 
 void MainWindow::LoadGameLists() {
     // Update compatibility database
-    m_compat_info->UpdateCompatibilityDatabase(this);
+    // m_compat_info->UpdateCompatibilityDatabase(this);
     // Get game info from game folders.
     m_game_info->GetGameInfo(this);
     if (isTableList) {

@@ -80,6 +80,9 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
             QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
         }
     });
+
+    // Disable status column for now
+    this->setColumnHidden(2, true);
 }
 
 void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
