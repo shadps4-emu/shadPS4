@@ -998,7 +998,6 @@ void MainWindow::SetLastUsedTheme() {
             SetUiIcons(false);
         } else if (isSystemDarkMode == false) {
             isIconBlack = true;
-            SetUiIcons(true);
         }
         break;
     }
