@@ -150,11 +150,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                     emit CompatibilityChanged();
                 });
 
-        connect(ui->enableCompatibilityCheckBox, &QCheckBox::checkStateChanged, this,
-                [this](Qt::CheckState state) {
-                    Config::setCompatibilityEnabled(state);
-                    emit CompatibilityChanged();
-                });
+        connect(ui->enableCompatibilityCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            Config::setCompatibilityEnabled(state);
+            emit CompatibilityChanged();
+        });
     }
 
     // Input TAB
