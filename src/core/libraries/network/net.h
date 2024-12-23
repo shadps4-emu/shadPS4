@@ -24,7 +24,10 @@ using OrbisNetId = s32;
 struct OrbisNetSockaddr {
     u8 sa_len;
     u8 sa_family;
-    char sa_data[14];
+    u16 sin_port;
+    u32 sin_addr;
+    u16 sin_vport;
+    char sin_zero[6];
 };
 
 struct OrbisNetSockaddrIn {
