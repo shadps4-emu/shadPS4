@@ -221,9 +221,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() =
-            std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, graphics_key,
-                                               *pipeline_cache, infos, runtime_infos, fetch_shader, modules);
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap,
+                                                        graphics_key, *pipeline_cache, infos,
+                                                        runtime_infos, fetch_shader, modules);
         if (Config::collectShadersForDebug()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {

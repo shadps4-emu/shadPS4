@@ -65,7 +65,8 @@ struct QuadRectListEmitter : public Sirit::Module {
 
         std::array<Id, 3> point_coord_equal;
         for (int i = 0; i < 3; i++) {
-            // point_coord_equal[i] = equal(gl_in[i].gl_Position.xy, gl_in[(i + 1) % 3].gl_Position.xy);
+            // point_coord_equal[i] = equal(gl_in[i].gl_Position.xy, gl_in[(i + 1) %
+            // 3].gl_Position.xy);
             const Id pos_l_xy{OpVectorShuffle(vec2_id, pos[i], pos[i], 0, 1)};
             const Id pos_r_xy{OpVectorShuffle(vec2_id, pos[(i + 1) % 3], pos[(i + 1) % 3], 0, 1)};
             point_coord_equal[i] = OpFOrdEqual(bvec2_id, pos_l_xy, pos_r_xy);
@@ -104,7 +105,8 @@ struct QuadRectListEmitter : public Sirit::Module {
         const Id invocation_3{OpIEqual(bool_id, invocation_id, Int(3))};
         const Id index{OpSMod(int_id, OpIAdd(int_id, vertex_index, invocation_id), Int(3))};
 
-        // gl_out[gl_InvocationID].gl_Position = gl_InvocationID == 3 ? pos3 : gl_in[index].gl_Position;
+        // gl_out[gl_InvocationID].gl_Position = gl_InvocationID == 3 ? pos3 :
+        // gl_in[index].gl_Position;
         const Id pos3{interpolate(pos[0], pos[1], pos[2])};
         const Id in_ptr{OpAccessChain(input_vec4, gl_in, index, Int(0))};
         const Id position{OpSelect(vec4_id, invocation_3, pos3, OpLoad(vec4_id, in_ptr))};
@@ -136,7 +138,8 @@ struct QuadRectListEmitter : public Sirit::Module {
         const Id invocation_id{OpLoad(int_id, gl_invocation_id)};
 
         // gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
-        const Id in_position{OpLoad(vec4_id, OpAccessChain(input_vec4, gl_in, invocation_id, Int(0)))};
+        const Id in_position{
+            OpLoad(vec4_id, OpAccessChain(input_vec4, gl_in, invocation_id, Int(0)))};
         OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
 
         for (int i = 0; i < num_attribs; i++) {
@@ -302,6 +305,5 @@ std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, size_t num_attribs) 
     }
     return ctx.Assemble();
 }
-
 
 } // namespace Shader::Backend::SPIRV

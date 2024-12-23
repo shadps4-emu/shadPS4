@@ -7,30 +7,30 @@
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
-#include "common/scope_exit.h"
 #include "common/io_file.h"
+#include "common/scope_exit.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
-#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
 using Shader::Backend::SPIRV::AuxShaderType;
 
-GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
-                                   DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
-                                   vk::PipelineCache pipeline_cache,
-                                   std::span<const Shader::Info*, MaxShaderStages> infos,
-                                   std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
-                                   std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
-                                   std::span<const vk::ShaderModule> modules)
+GraphicsPipeline::GraphicsPipeline(
+    const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
+    const GraphicsPipelineKey& key_, vk::PipelineCache pipeline_cache,
+    std::span<const Shader::Info*, MaxShaderStages> infos,
+    std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
+    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
+    std::span<const vk::ShaderModule> modules)
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
       fetch_shader{std::move(fetch_shader_)} {
     const vk::Device device = instance.GetDevice();
@@ -251,7 +251,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .pName = "main",
         });
     } else if (is_rect_list) {
-        auto tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES, num_fs_inputs);
+        auto tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES,
+                                                                  num_fs_inputs);
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
             .module = CompileSPV(tes, instance.GetDevice()),

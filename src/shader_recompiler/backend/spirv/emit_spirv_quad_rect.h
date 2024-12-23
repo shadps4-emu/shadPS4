@@ -9,9 +9,9 @@
 namespace Shader::Backend::SPIRV {
 
 enum class AuxShaderType : u32 {
-	RectListTCS,
-	PassthoughTCS,
-	PassthroughTES,
+    RectListTCS,
+    PassthoughTCS,
+    PassthroughTES,
 };
 
 [[nodiscard]] std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, size_t num_attribs);
