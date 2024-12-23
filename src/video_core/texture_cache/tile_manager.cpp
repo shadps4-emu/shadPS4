@@ -27,6 +27,7 @@ static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
     case vk::Format::eR4G4B4A4UnormPack16:
+    case vk::Format::eB5G6R5UnormPack16:
     case vk::Format::eR5G5B5A1UnormPack16:
     case vk::Format::eR8G8Unorm:
     case vk::Format::eR16Sfloat:
