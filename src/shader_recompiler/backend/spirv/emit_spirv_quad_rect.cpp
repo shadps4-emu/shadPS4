@@ -9,11 +9,11 @@ namespace Shader::Backend::SPIRV {
 
 using Sirit::Id;
 
-constexpr u32 SPIRV_VERSION_1_3 = 0x00010300;
+constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
     explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
-        : Sirit::Module{SPIRV_VERSION_1_3}, fs_info{fs_info_}, inputs{fs_info_.num_inputs},
+        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_}, inputs{fs_info_.num_inputs},
           outputs{fs_info_.num_inputs} {
         void_id = TypeVoid();
         bool_id = TypeBool();
