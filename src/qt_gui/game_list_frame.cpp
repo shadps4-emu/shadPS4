@@ -239,7 +239,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         break;
     case CompatibilityStatus::Nothing:
         color = QStringLiteral("#212121");
-        status_explanation = tr("Games does not initialize properly / crashes the emulator");
+        status_explanation = tr("Game does not initialize properly / crashes the emulator");
         break;
     case CompatibilityStatus::Boots:
         color = QStringLiteral("#828282");
