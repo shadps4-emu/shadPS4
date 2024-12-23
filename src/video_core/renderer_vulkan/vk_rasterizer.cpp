@@ -237,9 +237,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
                            instance_offset);
     } else {
-        const u32 num_vertices =
-            regs.primitive_type == AmdGpu::PrimitiveType::RectList ? 3 : regs.num_indices;
-        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
+        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
 
@@ -255,17 +253,13 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList ||
-        regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
-        // We use a generated index buffer to convert quad lists and polygons to triangles. Since it
+    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+        // We use a generated index buffer to convert polygons to triangles. Since it
         // changes type of the draw, arguments are not valid for this case. We need to run a
         // conversion pass to repack the indirect arguments buffer first.
         LOG_WARNING(Render_Vulkan, "Primitive type is not supported for indirect draw");
         return;
     }
-
-    ASSERT_MSG(regs.primitive_type != AmdGpu::PrimitiveType::RectList,
-               "Unsupported primitive type for indirect draw");
 
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {

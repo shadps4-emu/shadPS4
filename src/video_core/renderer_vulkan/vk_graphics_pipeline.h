@@ -18,7 +18,7 @@ class TextureCache;
 
 namespace Vulkan {
 
-static constexpr u32 MaxShaderStages = 5;
+static constexpr u32 MaxShaderStages = static_cast<u32>(Shader::LogicalStage::NumLogicalStages);
 static constexpr u32 MaxVertexBufferCount = 32;
 
 class Instance;
