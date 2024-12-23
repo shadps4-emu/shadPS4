@@ -15,6 +15,7 @@
 #include <QNetworkRequest>
 #include <QProcess>
 #include <QPushButton>
+#include <QStandardPaths>
 #include <QString>
 #include <QStringList>
 #include <QTextEdit>
@@ -348,7 +349,9 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
         QString userPath;
         Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 #ifdef Q_OS_WIN
-        QString tempDownloadPath = QString(getenv("LOCALAPPDATA")) + "/Temp/temp_download_update";
+        QString tempDownloadPath =
+            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+            "/Temp/temp_download_update";
 #else
         QString tempDownloadPath = userPath + "/temp_download_update";
 #endif
@@ -397,10 +400,11 @@ void CheckUpdate::Install() {
     QString processCommand;
 
 #ifdef Q_OS_WIN
-    // On windows, overwrite tempDirPath with AppData/Local/Temp folder
+    // On windows, overwrite tempDirPath with AppData/Roaming/shadps4/Temp folder
     // due to PowerShell Expand-Archive not being able to handle correctly
     // paths in square brackets (ie: ./[shadps4])
-    tempDirPath = QString(getenv("LOCALAPPDATA")) + "/Temp/temp_download_update";
+    tempDirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+                  "/Temp/temp_download_update";
 
     // Windows Batch Script
     scriptFileName = tempDirPath + "/update.ps1";
@@ -536,6 +540,7 @@ void CheckUpdate::Install() {
     QFile scriptFile(scriptFileName);
     if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&scriptFile);
+        scriptFile.write("\xEF\xBB\xBF");
 #ifdef Q_OS_WIN
         out << scriptContent.arg(binaryStartingUpdate).arg(tempDirPath).arg(rootPath);
 #endif
