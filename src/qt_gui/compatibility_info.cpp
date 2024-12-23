@@ -18,9 +18,10 @@ CompatibilityInfoClass::CompatibilityInfoClass()
 };
 CompatibilityInfoClass::~CompatibilityInfoClass() = default;
 
-void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
-    if (LoadCompatibilityFile())
-        return;
+void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool forced) {
+    if (!forced)
+        if (LoadCompatibilityFile())
+            return;
 
     QNetworkReply* reply = FetchPage(1);
     if (!WaitForReply(reply))
@@ -45,7 +46,8 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent) {
         QMessageBox::critical(parent, tr("Error"),
                               tr("Unable to update compatibility data! Try again later."));
         // Try loading compatibility_file.json again
-        LoadCompatibilityFile();
+        if (!forced)
+            LoadCompatibilityFile();
         return;
     }
 

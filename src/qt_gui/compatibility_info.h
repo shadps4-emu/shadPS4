@@ -84,7 +84,7 @@ public:
 
     CompatibilityInfoClass();
     ~CompatibilityInfoClass();
-    void UpdateCompatibilityDatabase(QWidget* parent = nullptr);
+    void UpdateCompatibilityDatabase(QWidget* parent = nullptr, bool forced = false);
     bool LoadCompatibilityFile();
     CompatibilityEntry GetCompatibilityInfo(const std::string& serial);
     void ExtractCompatibilityInfo(QByteArray response);
