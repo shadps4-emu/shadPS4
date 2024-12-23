@@ -214,8 +214,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    auto state = PrepareRenderState(pipeline->GetMrtMask());
 
+    auto state = PrepareRenderState(pipeline->GetMrtMask());
     if (!BindResources(pipeline)) {
         return;
     }
@@ -973,19 +973,26 @@ void Rasterizer::UpdateViewportScissorState() {
                 regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
             ? 1.0f
             : 0.0f;
+    const auto vp_ctl = regs.viewport_control;
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];
         if (vp.xscale == 0) {
             continue;
         }
+        const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
+        const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
+        const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
+        const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
+        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
         viewports.push_back({
-            .x = vp.xoffset - vp.xscale,
-            .y = vp.yoffset - vp.yscale,
-            .width = vp.xscale * 2.0f,
-            .height = vp.yscale * 2.0f,
-            .minDepth = vp.zoffset - vp.zscale * reduce_z,
-            .maxDepth = vp.zscale + vp.zoffset,
+            .x = xoffset - xscale,
+            .y = yoffset - yscale,
+            .width = xscale * 2.0f,
+            .height = yscale * 2.0f,
+            .minDepth = zoffset - zscale * reduce_z,
+            .maxDepth = zscale + zoffset,
         });
     }
 
