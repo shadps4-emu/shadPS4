@@ -963,7 +963,33 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
         cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
                             regs.poly_offset.back_scale / 16.f);
     }
+
     if (regs.depth_control.stencil_enable) {
+        const auto front_fail_op =
+            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_front);
+        const auto front_pass_op =
+            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_front);
+        const auto front_depth_fail_op =
+            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_front);
+        const auto front_compare_op = LiverpoolToVK::CompareOp(regs.depth_control.stencil_ref_func);
+        if (regs.depth_control.backface_enable) {
+            const auto back_fail_op =
+                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_back);
+            const auto back_pass_op =
+                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_back);
+            const auto back_depth_fail_op =
+                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_back);
+            const auto back_compare_op =
+                LiverpoolToVK::CompareOp(regs.depth_control.stencil_bf_func);
+            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFront, front_fail_op, front_pass_op,
+                                   front_depth_fail_op, front_compare_op);
+            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eBack, back_fail_op, back_pass_op,
+                                   back_depth_fail_op, back_compare_op);
+        } else {
+            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFrontAndBack, front_fail_op,
+                                   front_pass_op, front_depth_fail_op, front_compare_op);
+        }
+
         const auto front = regs.stencil_ref_front;
         const auto back = regs.stencil_ref_back;
         if (front.stencil_test_val == back.stencil_test_val) {
@@ -973,6 +999,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
             cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFront, front.stencil_test_val);
             cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eBack, back.stencil_test_val);
         }
+
         if (front.stencil_write_mask == back.stencil_write_mask) {
             cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFrontAndBack,
                                        front.stencil_write_mask);
@@ -980,6 +1007,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
             cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFront, front.stencil_write_mask);
             cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eBack, back.stencil_write_mask);
         }
+
         if (front.stencil_mask == back.stencil_mask) {
             cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
                                          front.stencil_mask);

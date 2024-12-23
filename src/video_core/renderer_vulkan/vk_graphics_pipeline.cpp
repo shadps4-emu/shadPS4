@@ -123,7 +123,7 @@ GraphicsPipeline::GraphicsPipeline(
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = bool(key.depth_bias_enable),
+        .depthBiasEnable = key.depth_bias_enable,
         .lineWidth = 1.0f,
     };
 
@@ -164,6 +164,7 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthBounds,
         vk::DynamicState::eDepthBias,          vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eStencilOpEXT,
     };
 
     if (instance.IsColorWriteEnableSupported()) {
@@ -182,31 +183,11 @@ GraphicsPipeline::GraphicsPipeline(
     };
 
     const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth_stencil.depth_enable,
-        .depthWriteEnable = key.depth_stencil.depth_write_enable,
-        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth_stencil.depth_func),
-        .depthBoundsTestEnable = key.depth_stencil.depth_bounds_enable,
-        .stencilTestEnable = key.depth_stencil.stencil_enable,
-        .front{
-            .failOp = LiverpoolToVK::StencilOp(key.stencil.stencil_fail_front),
-            .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_front),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_front),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.stencil_ref_func),
-        },
-        .back{
-            .failOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                   ? key.stencil.stencil_fail_back.Value()
-                                                   : key.stencil.stencil_fail_front.Value()),
-            .passOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                   ? key.stencil.stencil_zpass_back.Value()
-                                                   : key.stencil.stencil_zpass_front.Value()),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                        ? key.stencil.stencil_zfail_back.Value()
-                                                        : key.stencil.stencil_zfail_front.Value()),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.backface_enable
-                                                      ? key.depth_stencil.stencil_bf_func.Value()
-                                                      : key.depth_stencil.stencil_ref_func.Value()),
-        },
+        .depthTestEnable = key.depth_test_enable,
+        .depthWriteEnable = key.depth_write_enable,
+        .depthCompareOp = key.depth_compare_op,
+        .depthBoundsTestEnable = key.depth_bounds_test_enable,
+        .stencilTestEnable = key.stencil_test_enable,
     };
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>

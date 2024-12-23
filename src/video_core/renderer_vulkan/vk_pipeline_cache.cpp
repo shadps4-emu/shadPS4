@@ -258,11 +258,13 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    key.depth_stencil = regs.depth_control;
-    key.stencil = regs.stencil_control;
-    key.depth_stencil.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
-                                                !regs.depth_render_control.depth_clear_enable);
+    key.depth_test_enable = regs.depth_control.depth_enable;
+    key.depth_write_enable =
+        regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;
+    key.depth_bounds_test_enable = regs.depth_control.depth_bounds_enable;
     key.depth_bias_enable = regs.polygon_control.NeedsBias();
+    key.depth_compare_op = LiverpoolToVK::CompareOp(regs.depth_control.depth_func);
+    key.stencil_test_enable = regs.depth_control.stencil_enable;
 
     const auto depth_format = instance.GetSupportedFormat(
         LiverpoolToVK::DepthFormat(regs.depth_buffer.z_info.format,
@@ -272,13 +274,13 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.depth_format = depth_format;
     } else {
         key.depth_format = vk::Format::eUndefined;
-        key.depth_stencil.depth_enable.Assign(false);
+        key.depth_test_enable = false;
     }
     if (regs.depth_buffer.StencilValid()) {
         key.stencil_format = depth_format;
     } else {
         key.stencil_format = vk::Format::eUndefined;
-        key.depth_stencil.stencil_enable.Assign(false);
+        key.stencil_test_enable = false;
     }
 
     key.prim_type = regs.primitive_type;
