@@ -216,7 +216,7 @@ void Rasterizer::EliminateFastClear() {
     const auto& hint = liverpool->last_cb_extent[0];
     VideoCore::TextureCache::RenderTargetDesc desc(col_buf, hint);
     const auto& image_view = texture_cache.FindRenderTarget(desc);
-    const auto& image = texture_cache.GetImage(image_view.image_id);
+    auto& image = texture_cache.GetImage(image_view.image_id);
     const vk::ImageSubresourceRange range = {
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -225,7 +225,8 @@ void Rasterizer::EliminateFastClear() {
         .layerCount = col_buf.view.slice_max - col_buf.view.slice_start + 1,
     };
     scheduler.EndRendering();
-    scheduler.CommandBuffer().clearColorImage(image.image, vk::ImageLayout::eColorAttachmentOptimal,
+    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+    scheduler.CommandBuffer().clearColorImage(image.image, image.last_state.layout,
                                               LiverpoolToVK::ColorBufferClearValue(col_buf).color,
                                               range);
 }
