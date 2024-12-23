@@ -108,8 +108,7 @@ GraphicsPipeline::GraphicsPipeline(
                "Primitive restart index other than -1 is not supported yet");
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
     const bool is_quad_list = key.prim_type == AmdGpu::PrimitiveType::QuadList;
-    const size_t num_fs_inputs =
-        runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info.num_inputs;
+    const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
     const vk::PipelineTessellationStateCreateInfo tessellation_state = {
         .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
     };
@@ -237,7 +236,7 @@ GraphicsPipeline::GraphicsPipeline(
         });
     } else if (is_rect_list || is_quad_list) {
         const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
-        auto tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, num_fs_inputs);
+        auto tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,
             .module = CompileSPV(tcs, instance.GetDevice()),
@@ -252,8 +251,8 @@ GraphicsPipeline::GraphicsPipeline(
             .pName = "main",
         });
     } else if (is_rect_list || is_quad_list) {
-        auto tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES,
-                                                                  num_fs_inputs);
+        auto tes =
+            Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES, fs_info);
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
             .module = CompileSPV(tes, instance.GetDevice()),
