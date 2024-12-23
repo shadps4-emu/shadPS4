@@ -214,7 +214,6 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-
     auto state = PrepareRenderState(pipeline->GetMrtMask());
     if (!BindResources(pipeline)) {
         return;
@@ -237,8 +236,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
                            instance_offset);
     } else {
-        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), vertex_offset,
-                    instance_offset);
+        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), vertex_offset, instance_offset);
     }
 
     ResetBindings();

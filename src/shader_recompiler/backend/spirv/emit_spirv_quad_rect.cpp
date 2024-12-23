@@ -8,9 +8,12 @@ namespace Shader::Backend::SPIRV {
 
 using Sirit::Id;
 
+constexpr u32 SPIRV_VERSION_1_3 = 0x00010300;
+
 struct QuadRectListEmitter : public Sirit::Module {
     explicit QuadRectListEmitter(size_t num_attribs_)
-        : num_attribs{num_attribs_}, inputs{num_attribs}, outputs{num_attribs} {
+        : Sirit::Module{SPIRV_VERSION_1_3}, num_attribs{num_attribs_}, inputs{num_attribs},
+          outputs{num_attribs} {
         void_id = TypeVoid();
         bool_id = TypeBool();
         float_id = TypeFloat(32);
