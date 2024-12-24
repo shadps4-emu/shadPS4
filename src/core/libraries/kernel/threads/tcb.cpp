@@ -53,6 +53,7 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
 
     if (tcb) {
         tcb->tcb_thread = thread;
+        tcb->tcb_fiber = nullptr;
     }
     return tcb;
 }
