@@ -36,12 +36,17 @@ struct GraphicsPipelineKey {
     vk::Format depth_format;
     vk::Format stencil_format;
 
-    bool depth_test_enable;
-    bool depth_write_enable;
-    bool depth_bounds_test_enable;
-    bool depth_bias_enable;
+    struct {
+        bool depth_test_enable : 1;
+        bool depth_write_enable : 1;
+        bool depth_bounds_test_enable : 1;
+        bool depth_bias_enable : 1;
+        bool stencil_test_enable : 1;
+        // Must be named to be zero-initialized.
+        u8 _unused : 3;
+    };
     vk::CompareOp depth_compare_op;
-    bool stencil_test_enable;
+
     u32 num_samples;
     u32 mrt_mask;
     AmdGpu::PrimitiveType prim_type;
