@@ -291,7 +291,16 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
         const BufferId buffer_id = FindBuffer(address, num_bytes);
         return &slot_buffers[buffer_id];
     }();
-    const vk::BufferMemoryBarrier2 buf_barrier = {
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = buffer->Handle(),
+        .offset = buffer->Offset(address),
+        .size = num_bytes,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
         .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
@@ -303,9 +312,14 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &buf_barrier,
+        .pBufferMemoryBarriers = &pre_barrier,
     });
-    cmdbuf.updateBuffer(buffer->Handle(), buf_barrier.offset, num_bytes, value);
+    cmdbuf.updateBuffer(buffer->Handle(), buffer->Offset(address), num_bytes, value);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainHostUBO(std::span<const u32> data) {
