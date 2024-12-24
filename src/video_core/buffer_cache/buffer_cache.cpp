@@ -238,32 +238,14 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList and Polygon primitive types with CPU made index buffer.
     const auto& regs = liverpool->regs;
     if (!is_indexed) {
-        bool needs_index_buffer = false;
-        if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList ||
-            regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
-            needs_index_buffer = true;
-        }
-
-        if (!needs_index_buffer) {
+        if (regs.primitive_type != AmdGpu::PrimitiveType::Polygon) {
             return regs.num_indices;
         }
 
         // Emit indices.
         const u32 index_size = 3 * regs.num_indices;
         const auto [data, offset] = stream_buffer.Map(index_size);
-
-        switch (regs.primitive_type) {
-        case AmdGpu::PrimitiveType::QuadList:
-            Vulkan::LiverpoolToVK::EmitQuadToTriangleListIndices(data, regs.num_indices);
-            break;
-        case AmdGpu::PrimitiveType::Polygon:
-            Vulkan::LiverpoolToVK::EmitPolygonToTriangleListIndices(data, regs.num_indices);
-            break;
-        default:
-            UNREACHABLE();
-            break;
-        }
-
+        Vulkan::LiverpoolToVK::EmitPolygonToTriangleListIndices(data, regs.num_indices);
         stream_buffer.Commit();
 
         // Bind index buffer.
@@ -282,31 +264,6 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     VAddr index_address = regs.index_base_address.Address<VAddr>();
     index_address += index_offset * index_size;
 
-    if (regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
-        // Convert indices.
-        const u32 new_index_size = regs.num_indices * index_size * 6 / 4;
-        const auto [data, offset] = stream_buffer.Map(new_index_size);
-        const auto index_ptr = reinterpret_cast<u8*>(index_address);
-        switch (index_type) {
-        case vk::IndexType::eUint16:
-            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u16>(data, index_ptr,
-                                                                         regs.num_indices);
-            break;
-        case vk::IndexType::eUint32:
-            Vulkan::LiverpoolToVK::ConvertQuadToTriangleListIndices<u32>(data, index_ptr,
-                                                                         regs.num_indices);
-            break;
-        default:
-            UNREACHABLE_MSG("Unsupported QuadList index type {}", vk::to_string(index_type));
-            break;
-        }
-        stream_buffer.Commit();
-
-        // Bind index buffer.
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, index_type);
-        return new_index_size / index_size;
-    }
     if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
         UNREACHABLE();
     }

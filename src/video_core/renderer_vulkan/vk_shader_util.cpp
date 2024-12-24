@@ -126,6 +126,10 @@ EShLanguage ToEshShaderStage(vk::ShaderStageFlagBits stage) {
         return EShLanguage::EShLangVertex;
     case vk::ShaderStageFlagBits::eGeometry:
         return EShLanguage::EShLangGeometry;
+    case vk::ShaderStageFlagBits::eTessellationControl:
+        return EShLanguage::EShLangTessControl;
+    case vk::ShaderStageFlagBits::eTessellationEvaluation:
+        return EShLanguage::EShLangTessEvaluation;
     case vk::ShaderStageFlagBits::eFragment:
         return EShLanguage::EShLangFragment;
     case vk::ShaderStageFlagBits::eCompute:

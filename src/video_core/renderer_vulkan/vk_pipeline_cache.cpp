@@ -80,8 +80,8 @@ void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
                    : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
 }
 
-Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
-    auto info = Shader::RuntimeInfo{stage};
+const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
+    auto& info = runtime_infos[u32(l_stage)];
     const auto& regs = liverpool->regs;
     const auto BuildCommon = [&](const auto& program) {
         info.num_user_data = program.settings.num_user_regs;
@@ -90,6 +90,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
     };
+    info.Initialize(stage);
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
@@ -220,9 +221,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() =
-            std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, graphics_key,
-                                               *pipeline_cache, infos, fetch_shader, modules);
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap,
+                                                        graphics_key, *pipeline_cache, infos,
+                                                        runtime_infos, fetch_shader, modules);
         if (Config::collectShadersForDebug()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
