@@ -36,11 +36,19 @@ struct GraphicsPipelineKey {
     vk::Format depth_format;
     vk::Format stencil_format;
 
-    Liverpool::DepthControl depth_stencil;
-    u32 depth_bias_enable;
+    struct {
+        bool depth_test_enable : 1;
+        bool depth_write_enable : 1;
+        bool depth_bounds_test_enable : 1;
+        bool depth_bias_enable : 1;
+        bool stencil_test_enable : 1;
+        // Must be named to be zero-initialized.
+        u8 _unused : 3;
+    };
+    vk::CompareOp depth_compare_op;
+
     u32 num_samples;
     u32 mrt_mask;
-    Liverpool::StencilControl stencil;
     AmdGpu::PrimitiveType prim_type;
     u32 enable_primitive_restart;
     u32 primitive_restart_index;
