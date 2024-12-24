@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 // Include the vulkan platform specific header
 #if defined(ANDROID)
 #define VK_USE_PLATFORM_ANDROID_KHR
