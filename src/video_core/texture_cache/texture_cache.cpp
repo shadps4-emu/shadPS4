@@ -547,7 +547,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     const auto [vk_buffer, buf_offset] =
         buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
 
-    // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW hazard
+    // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
+    // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
         cmdbuf.pipelineBarrier2(vk::DependencyInfo{
@@ -557,7 +558,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         });
     }
 
-    const auto [buffer, offset] = tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image.info);
+    const auto [buffer, offset] =
+        tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image.info);
     for (auto& copy : image_copy) {
         copy.bufferOffset += offset;
     }

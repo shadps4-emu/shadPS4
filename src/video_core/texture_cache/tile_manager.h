@@ -36,7 +36,8 @@ public:
     TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~TileManager();
 
-    std::pair<vk::Buffer, u32> TryDetile(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
+    std::pair<vk::Buffer, u32> TryDetile(vk::Buffer in_buffer, u32 in_offset,
+                                         const ImageInfo& info);
 
     ScratchBuffer AllocBuffer(u32 size, bool is_storage = false);
     void Upload(ScratchBuffer buffer, const void* data, size_t size);
