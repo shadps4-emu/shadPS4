@@ -343,8 +343,8 @@ static IR::U32 TryOptimizeAddressModulo(IR::U32 addr, u32 stride, IR::IREmitter&
 // TODO: can optimize div in control point index similarly to mod
 
 // Read a TCS input (InputCP region) or TES input (OutputCP region)
-static IR::F32 ReadTessInputComponent(IR::U32 addr, const u32 stride, IR::IREmitter& ir,
-                                      u32 off_dw) {
+static IR::F32 ReadTessControlPointAttribute(IR::U32 addr, const u32 stride, IR::IREmitter& ir,
+                                             u32 off_dw, bool is_output_read_in_tcs) {
     if (off_dw > 0) {
         addr = ir.IAdd(addr, ir.Imm32(off_dw));
     }
@@ -354,7 +354,11 @@ static IR::F32 ReadTessInputComponent(IR::U32 addr, const u32 stride, IR::IREmit
         ir.ShiftRightLogical(ir.IMod(addr_for_attrs, ir.Imm32(stride)), ir.Imm32(4u));
     const IR::U32 comp_index =
         ir.ShiftRightLogical(ir.BitwiseAnd(addr_for_attrs, ir.Imm32(0xFU)), ir.Imm32(2u));
-    return ir.GetTessGenericAttribute(control_point_index, attr_index, comp_index);
+    if (is_output_read_in_tcs) {
+        return ir.ReadTcsGenericOuputAttribute(control_point_index, attr_index, comp_index);
+    } else {
+        return ir.GetTessGenericAttribute(control_point_index, attr_index, comp_index);
+    }
 }
 
 } // namespace
@@ -481,21 +485,25 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             case IR::Opcode::LoadSharedU128:
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const IR::U32 addr{inst.Arg(0)};
-                AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
+                const AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
                 const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
                                            ? 1
                                            : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
-                ASSERT_MSG(region == AttributeRegion::InputCP,
-                           "Unhandled read of output or patchconst attribute in hull shader");
+                ASSERT_MSG(region == AttributeRegion::InputCP ||
+                               region == AttributeRegion::OutputCP,
+                           "Unhandled read of patchconst attribute in hull shader");
+                const bool is_tcs_output_read = region == AttributeRegion::OutputCP;
+                const u32 stride = is_tcs_output_read ? runtime_info.hs_info.hs_output_cp_stride
+                                                      : runtime_info.hs_info.ls_stride;
                 IR::Value attr_read;
                 if (num_dwords == 1) {
                     attr_read = ir.BitCast<IR::U32>(
-                        ReadTessInputComponent(addr, runtime_info.hs_info.ls_stride, ir, 0));
+                        ReadTessControlPointAttribute(addr, stride, ir, 0, is_tcs_output_read));
                 } else {
                     boost::container::static_vector<IR::Value, 4> read_components;
                     for (auto i = 0; i < num_dwords; i++) {
                         const IR::F32 component =
-                            ReadTessInputComponent(addr, runtime_info.hs_info.ls_stride, ir, i);
+                            ReadTessControlPointAttribute(addr, stride, ir, i, is_tcs_output_read);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
                     attr_read = ir.CompositeConstruct(read_components);
@@ -565,8 +573,8 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                                            : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
                 const auto GetInput = [&](IR::U32 addr, u32 off_dw) -> IR::F32 {
                     if (region == AttributeRegion::OutputCP) {
-                        return ReadTessInputComponent(
-                            addr, runtime_info.vs_info.hs_output_cp_stride, ir, off_dw);
+                        return ReadTessControlPointAttribute(
+                            addr, runtime_info.vs_info.hs_output_cp_stride, ir, off_dw, false);
                     } else {
                         ASSERT(region == AttributeRegion::PatchConst);
                         return ir.GetPatch(IR::PatchGeneric((addr.U32() >> 2) + off_dw));

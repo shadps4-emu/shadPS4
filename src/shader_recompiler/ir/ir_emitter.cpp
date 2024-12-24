@@ -288,6 +288,12 @@ void IREmitter::SetTcsGenericAttribute(const F32& value, const U32& attr_index,
     Inst(Opcode::SetTcsGenericAttribute, value, attr_index, comp_index);
 }
 
+F32 IREmitter::ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& attr_index,
+                                            const U32& comp_index) {
+    return Inst<F32>(IR::Opcode::ReadTcsGenericOuputAttribute, vertex_index, attr_index,
+                     comp_index);
+}
+
 F32 IREmitter::GetPatch(Patch patch) {
     return Inst<F32>(Opcode::GetPatch, patch);
 }
