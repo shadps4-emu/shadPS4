@@ -340,17 +340,6 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     const auto bpp = image.info.num_bits * (image.info.props.is_block ? 16u : 1u);
     const auto num_tiles = image_size / (64 * (bpp / 8));
     cmdbuf.dispatch(num_tiles, 1, 1);
-
-    const vk::BufferMemoryBarrier post_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-        .buffer = out_buffer.first,
-        .size = image_size,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, post_barrier, {});
-
     return {out_buffer.first, 0};
 }
 

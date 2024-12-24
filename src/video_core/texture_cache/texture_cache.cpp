@@ -566,7 +566,28 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         copy.bufferOffset += offset;
     }
 
+    const vk::BufferMemoryBarrier pre_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+        .buffer = buffer,
+        .offset = offset,
+        .size = image_size,
+    };
+    const vk::BufferMemoryBarrier post_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+        .buffer = buffer,
+        .offset = offset,
+        .size = image_size,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
+                           {}, pre_barrier, {});
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                           vk::PipelineStageFlagBits::eAllCommands,
+                           vk::DependencyFlagBits::eByRegion,
+                           {}, post_barrier, {});
     image.flags &= ~ImageFlagBits::Dirty;
 }
 
