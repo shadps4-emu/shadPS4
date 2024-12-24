@@ -105,7 +105,7 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
 
 void GameListFrame::PopulateGameList() {
     // Do not show status column if it is not enabled
-    this->setColumnHidden(2, Config::getCompatibilityEnabled());
+    this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
 
