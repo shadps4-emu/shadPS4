@@ -85,7 +85,7 @@ int PS4_SYSV_ABI sceGnmGetCoredumpMode();
 int PS4_SYSV_ABI sceGnmGetCoredumpProtectionFaultTimestamp();
 int PS4_SYSV_ABI sceGnmGetDbgGcHandle();
 int PS4_SYSV_ABI sceGnmGetDebugTimestamp();
-int PS4_SYSV_ABI sceGnmGetEqEventType();
+int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev);
 int PS4_SYSV_ABI sceGnmGetEqTimeStamp();
 int PS4_SYSV_ABI sceGnmGetGpuBlockStatus();
 u32 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency();
