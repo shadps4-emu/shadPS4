@@ -51,7 +51,7 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
-    : is_storage{desc.is_storage} {
+    : is_storage{desc.IsStorage(image)} {
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
