@@ -673,6 +673,11 @@
 			<translation>GUI Settings</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="475"/>
+			<source>Disable Trophy Pop-ups</source>
+			<translation>Disable Trophy Pop-ups</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
 			<translation>Play title music</translation>
@@ -681,6 +686,11 @@
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
 			<translation>Update Compatibility Database On Startup</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Game Compatibility</source>
+			<translation>Game Compatibility</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
