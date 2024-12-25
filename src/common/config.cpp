@@ -556,7 +556,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& general = data.at("General");
 
         // isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
-        isNeo = false;
+        isNeo = toml::find_or<bool>(general, "isPS4Pro-temp", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
@@ -676,7 +676,8 @@ void save(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["General"]["isPS4Pro"] = isNeo;
+    // data["General"]["isPS4Pro"] = isNeo;
+    data["General"]["isPS4Pro-temp"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
