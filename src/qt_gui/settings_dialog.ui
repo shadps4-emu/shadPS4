@@ -59,9 +59,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-97</y>
+        <y>0</y>
         <width>815</width>
-        <height>618</height>
+        <height>581</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -145,13 +145,6 @@
                   <widget class="QCheckBox" name="showSplashCheckBox">
                    <property name="text">
                     <string>Show Splash</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="ps4proCheckBox">
-                   <property name="text">
-                    <string>Is PS4 Pro</string>
                    </property>
                   </widget>
                  </item>

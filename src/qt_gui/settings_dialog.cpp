@@ -185,7 +185,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->fullscreenCheckBox->installEventFilter(this);
         ui->separateUpdatesCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
-        ui->ps4proCheckBox->installEventFilter(this);
+        // ui->ps4proCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
         ui->userName->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
@@ -273,7 +273,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
-    ui->ps4proCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4Pro", false));
+    // ui->ps4proCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4Pro", false));
     ui->logTypeComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logType", "async")));
     ui->logFilterLineEdit->setText(
@@ -384,8 +384,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("separateUpdatesCheckBox");
     } else if (elementName == "showSplashCheckBox") {
         text = tr("showSplashCheckBox");
-    } else if (elementName == "ps4proCheckBox") {
-        text = tr("ps4proCheckBox");
+        // } else if (elementName == "ps4proCheckBox") {
+        // text = tr("ps4proCheckBox");
     } else if (elementName == "discordRPCCheckbox") {
         text = tr("discordRPCCheckbox");
     } else if (elementName == "userName") {
@@ -488,11 +488,10 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setNeoMode(ui->ps4proCheckBox->isChecked());
+    // Config::setNeoMode(ui->ps4proCheckBox->isChecked());
     Config::setFullscreenMode(ui->fullscreenCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
-    Config::setNeoMode(ui->ps4proCheckBox->isChecked());
     Config::setLogType(ui->logTypeComboBox->currentText().toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
     Config::setUserName(ui->userNameLineEdit->text().toStdString());

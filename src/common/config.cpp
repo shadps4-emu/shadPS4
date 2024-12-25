@@ -555,7 +555,8 @@ void load(const std::filesystem::path& path) {
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        // isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        isNeo = false;
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
