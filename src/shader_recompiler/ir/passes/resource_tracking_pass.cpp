@@ -776,8 +776,11 @@ void PatchImageInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
         inst.SetArg(4, ApplySwizzle(ir, inst.Arg(4), image.DstSelect()));
     } else if (inst.GetOpcode() == IR::Opcode::ImageRead) {
         const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-        const auto texel = ir.ImageRead(inst.Arg(0), inst.Arg(1), IR::U32{inst.Arg(2)},
-                                        IR::U32{inst.Arg(3)}, inst_info);
+        const auto lod = inst.Arg(2);
+        const auto ms = inst.Arg(3);
+        const auto texel =
+            ir.ImageRead(inst.Arg(0), inst.Arg(1), lod.IsEmpty() ? IR::U32{} : IR::U32{lod},
+                         ms.IsEmpty() ? IR::U32{} : IR::U32{ms}, inst_info);
         const auto swizzled = ApplySwizzle(ir, texel, image.DstSelect());
         inst.ReplaceUsesWith(swizzled);
     }
