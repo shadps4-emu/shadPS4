@@ -475,29 +475,12 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
         // Read the V# of the attribute to figure out component number and type.
         const auto buffer = info.ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
-        const auto comp = [&](AmdGpu::CompSwizzle swizzle) -> IR::F32 {
-            switch (swizzle) {
-            case AmdGpu::CompSwizzle::One:
-                return ir.Imm32(1.f);
-            case AmdGpu::CompSwizzle::Zero:
-                return ir.Imm32(0.f);
-            case AmdGpu::CompSwizzle::Red:
-                return ir.GetAttribute(attr, 0);
-            case AmdGpu::CompSwizzle::Green:
-                return ir.GetAttribute(attr, 1);
-            case AmdGpu::CompSwizzle::Blue:
-                return ir.GetAttribute(attr, 2);
-            case AmdGpu::CompSwizzle::Alpha:
-                return ir.GetAttribute(attr, 3);
-            default:
-                UNREACHABLE();
-            }
-        };
-        const auto [r, g, b, a] = buffer.DstSelect();
-        ir.SetVectorReg(dst_reg++, comp(r));
-        ir.SetVectorReg(dst_reg++, comp(g));
-        ir.SetVectorReg(dst_reg++, comp(b));
-        ir.SetVectorReg(dst_reg++, comp(a));
+        const std::array components = buffer.DstSelect().Apply<IR::F32>(
+            [&](const u32 index) { return ir.GetAttribute(attr, index); },
+            [&](const u32 imm) { return ir.Imm32(float(imm)); });
+        for (u32 i = 0; i < components.size(); i++) {
+            ir.SetVectorReg(dst_reg++, components[i]);
+        }
 
         // In case of programmable step rates we need to fallback to instance data pulling in
         // shader, so VBs should be bound as regular data buffers

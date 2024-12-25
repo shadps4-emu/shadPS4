@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -27,6 +28,45 @@ struct CompMapping {
     CompSwizzle a : 3;
 
     auto operator<=>(const CompMapping& other) const = default;
+
+    template <typename T>
+    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
+        return Apply<T>([&data](const u32 index) { return data[index]; },
+                        [](const u32 imm) { return T(imm); });
+    }
+
+    template <typename T>
+    [[nodiscard]] std::array<T, 4> Apply(const std::function<T(u32)>& get_value,
+                                         const std::function<T(u32)>& get_immediate) const {
+        return {
+            ApplySingle(get_value, get_immediate, r),
+            ApplySingle(get_value, get_immediate, g),
+            ApplySingle(get_value, get_immediate, b),
+            ApplySingle(get_value, get_immediate, a),
+        };
+    }
+
+private:
+    template <typename T>
+    T ApplySingle(const std::function<T(u32)>& get_value,
+                  const std::function<T(u32)>& get_immediate, const CompSwizzle swizzle) const {
+        switch (swizzle) {
+        case CompSwizzle::Zero:
+            return get_immediate(0);
+        case CompSwizzle::One:
+            return get_immediate(1);
+        case CompSwizzle::Red:
+            return get_value(0);
+        case CompSwizzle::Green:
+            return get_value(1);
+        case CompSwizzle::Blue:
+            return get_value(2);
+        case CompSwizzle::Alpha:
+            return get_value(3);
+        default:
+            UNREACHABLE();
+        }
+    }
 };
 
 inline DataFormat RemapDataFormat(const DataFormat format) {

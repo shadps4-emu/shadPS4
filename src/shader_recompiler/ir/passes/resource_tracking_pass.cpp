@@ -129,26 +129,10 @@ bool IsImageInstruction(const IR::Inst& inst) {
 }
 
 IR::Value SwizzleVector(IR::IREmitter& ir, auto sharp, IR::Value texel) {
-    const auto comp = [&](AmdGpu::CompSwizzle swizzle) -> IR::Value {
-        switch (swizzle) {
-        case AmdGpu::CompSwizzle::Zero:
-            return ir.Imm32(0.f);
-        case AmdGpu::CompSwizzle::One:
-            return ir.Imm32(1.f);
-        case AmdGpu::CompSwizzle::Red:
-            return ir.CompositeExtract(texel, 0);
-        case AmdGpu::CompSwizzle::Green:
-            return ir.CompositeExtract(texel, 1);
-        case AmdGpu::CompSwizzle::Blue:
-            return ir.CompositeExtract(texel, 2);
-        case AmdGpu::CompSwizzle::Alpha:
-            return ir.CompositeExtract(texel, 3);
-        default:
-            UNREACHABLE();
-        }
-    };
-    const auto [r, g, b, a] = sharp.DstSelect();
-    return ir.CompositeConstruct(comp(r), comp(g), comp(b), comp(a));
+    const std::array components = sharp.DstSelect().template Apply<IR::Value>(
+        [&](const u32 index) { return ir.CompositeExtract(texel, index); },
+        [&](const u32 imm) { return ir.Imm32(float(imm)); });
+    return ir.CompositeConstruct(components[0], components[1], components[2], components[3]);
 };
 
 class Descriptors {

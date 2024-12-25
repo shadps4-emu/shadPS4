@@ -707,31 +707,6 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     return format->vk_format;
 }
 
-vk::Format AdjustColorBufferFormat(vk::Format base_format,
-                                   Liverpool::ColorBuffer::SwapMode comp_swap) {
-    const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
-    const bool comp_swap_reverse = comp_swap == Liverpool::ColorBuffer::SwapMode::StandardReverse;
-    const bool comp_swap_alt_reverse =
-        comp_swap == Liverpool::ColorBuffer::SwapMode::AlternateReverse;
-    if (comp_swap_alt) {
-        switch (base_format) {
-        case vk::Format::eR8G8B8A8Unorm:
-            return vk::Format::eB8G8R8A8Unorm;
-        case vk::Format::eB8G8R8A8Unorm:
-            return vk::Format::eR8G8B8A8Unorm;
-        case vk::Format::eR8G8B8A8Srgb:
-            return vk::Format::eB8G8R8A8Srgb;
-        case vk::Format::eB8G8R8A8Srgb:
-            return vk::Format::eR8G8B8A8Srgb;
-        case vk::Format::eA2B10G10R10UnormPack32:
-            return vk::Format::eA2R10G10B10UnormPack32;
-        default:
-            break;
-        }
-    }
-    return base_format;
-}
-
 static constexpr DepthFormatInfo CreateDepthFormatInfo(
     const DepthBuffer::ZFormat z_format, const DepthBuffer::StencilFormat stencil_format,
     const vk::Format vk_format) {
@@ -774,21 +749,12 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
 }
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
-    const auto comp_swap = color_buffer.info.comp_swap.Value();
-    const auto format = color_buffer.info.format.Value();
-    const auto number_type = color_buffer.info.number_type.Value();
+    const auto comp_swizzle = color_buffer.Swizzle();
+    const auto format = color_buffer.DataFormat();
+    const auto number_type = color_buffer.NumFormat();
 
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
-    const auto num_bits = AmdGpu::NumBits(color_buffer.info.format);
-    const auto num_components = AmdGpu::NumComponents(format);
-
-    const bool comp_swap_alt =
-        comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::Alternate ||
-        comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::AlternateReverse;
-    const bool comp_swap_reverse =
-        comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::StandardReverse ||
-        comp_swap == AmdGpu::Liverpool::ColorBuffer::SwapMode::AlternateReverse;
 
     vk::ClearColorValue color{};
 
@@ -1109,25 +1075,9 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
         break;
     }
 
-    if (num_components == 1) {
-        if (comp_swap != Liverpool::ColorBuffer::SwapMode::Standard) {
-            color.float32[static_cast<int>(comp_swap)] = color.float32[0];
-            color.float32[0] = 0.0f;
-        }
-    } else {
-        if (comp_swap_alt && num_components == 4) {
-            std::swap(color.float32[0], color.float32[2]);
-        }
-
-        if (comp_swap_reverse) {
-            std::reverse(std::begin(color.float32), std::begin(color.float32) + num_components);
-        }
-
-        if (comp_swap_alt && num_components != 4) {
-            color.float32[3] = color.float32[num_components - 1];
-            color.float32[num_components - 1] = 0.0f;
-        }
-    }
+    color.float32 = comp_swizzle.Apply(color.float32);
+    color.int32 = comp_swizzle.Apply(color.int32);
+    color.uint32 = comp_swizzle.Apply(color.uint32);
 
     return {.color = color};
 }
