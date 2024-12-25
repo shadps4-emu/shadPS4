@@ -273,7 +273,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
-    // ui->ps4proCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4Pro", false));
+    // ui->ps4proCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4ProEnabled",
+    // false));
     ui->logTypeComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logType", "async")));
     ui->logFilterLineEdit->setText(
