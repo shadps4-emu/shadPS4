@@ -912,24 +912,24 @@ struct Liverpool {
                 }},
                 // Alternate
                 std::array<CompMapping, 4>{{
-                    {.r = CompSwizzle::Zero, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
-                    {.r = CompSwizzle::Red, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Green},
-                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Zero, .a = CompSwizzle::Blue},
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Alpha, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Alpha, .a = CompSwizzle::Zero},
                     {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Alpha},
                 }},
                 // StandardReverse
                 std::array<CompMapping, 4>{{
-                    {CompSwizzle::Zero, CompSwizzle::Zero, CompSwizzle::Red, CompSwizzle::Zero},
-                    {CompSwizzle::Green, CompSwizzle::Red, CompSwizzle::Zero, CompSwizzle::Zero},
-                    {CompSwizzle::Blue, CompSwizzle::Green, CompSwizzle::Red, CompSwizzle::Zero},
-                    {CompSwizzle::Alpha, CompSwizzle::Blue, CompSwizzle::Green, CompSwizzle::Red},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Blue, .b = CompSwizzle::Green, .a = CompSwizzle::Red},
                 }},
                 // AlternateReverse
                 std::array<CompMapping, 4>{{
-                    {CompSwizzle::Zero, CompSwizzle::Zero, CompSwizzle::Zero, CompSwizzle::Red},
-                    {CompSwizzle::Green, CompSwizzle::Zero, CompSwizzle::Zero, CompSwizzle::Red},
-                    {CompSwizzle::Blue, CompSwizzle::Green, CompSwizzle::Zero, CompSwizzle::Red},
-                    {CompSwizzle::Alpha, CompSwizzle::Red, CompSwizzle::Green, CompSwizzle::Blue},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Green, .a = CompSwizzle::Blue},
                 }},
             }};
             // clang-format on

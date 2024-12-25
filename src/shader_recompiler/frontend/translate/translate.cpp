@@ -10,6 +10,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/types.h"
@@ -475,11 +476,12 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
         // Read the V# of the attribute to figure out component number and type.
         const auto buffer = info.ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
-        const std::array components = buffer.DstSelect().Apply<IR::F32>(
-            [&](const u32 index) { return ir.GetAttribute(attr, index); },
-            [&](const u32 imm) { return ir.Imm32(float(imm)); });
-        for (u32 i = 0; i < components.size(); i++) {
-            ir.SetVectorReg(dst_reg++, components[i]);
+        const auto values =
+            ir.CompositeConstruct(ir.GetAttribute(attr, 0), ir.GetAttribute(attr, 1),
+                                  ir.GetAttribute(attr, 2), ir.GetAttribute(attr, 3));
+        const auto swizzled = ApplySwizzle(ir, values, buffer.DstSelect());
+        for (u32 i = 0; i < 4; i++) {
+            ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(swizzled, i)});
         }
 
         // In case of programmable step rates we need to fallback to instance data pulling in
