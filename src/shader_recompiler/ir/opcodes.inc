@@ -97,7 +97,7 @@ OPCODE(StoreBufferU32,                                      Void,           Opaq
 OPCODE(StoreBufferU32x2,                                    Void,           Opaque,         Opaque,         U32x2,                                          )
 OPCODE(StoreBufferU32x3,                                    Void,           Opaque,         Opaque,         U32x3,                                          )
 OPCODE(StoreBufferU32x4,                                    Void,           Opaque,         Opaque,         U32x4,                                          )
-OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         U32x4,                                          )
+OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32x4,                                          )
 
 // Buffer atomic operations
 OPCODE(BufferAtomicIAdd32,                                  U32,            Opaque,         Opaque,         U32                                             )
@@ -353,8 +353,8 @@ OPCODE(ImageGatherDref,                                     F32x4,          Opaq
 OPCODE(ImageQueryDimensions,                                U32x4,          Opaque,         U32,            U1,                                             )
 OPCODE(ImageQueryLod,                                       F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(ImageGradient,                                       F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         Opaque,         F32,         )
-OPCODE(ImageRead,                                           U32x4,          Opaque,         Opaque,         U32,            U32,                            )
-OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32,            U32,            U32x4,          )
+OPCODE(ImageRead,                                           F32x4,          Opaque,         Opaque,         U32,            U32,                            )
+OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32,            U32,            F32x4,          )
 
 // Image atomic operations
 OPCODE(ImageAtomicIAdd32,                                   U32,            Opaque,         Opaque,         U32,                                            )
