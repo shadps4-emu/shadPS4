@@ -25,7 +25,7 @@ Once you are within the installer:
 
 Beware, this requires you to create a Qt account. If you do not want to do this, please follow the MSYS2/MinGW compilation method instead.
 
-1. Under the current, non beta version of Qt (at the time of writing 6.7.3), select the option `MSVC 2022 64-bit` or similar.  
+1. Under the current, non beta version of Qt (at the time of writing 6.7.3), select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
    If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `MSVC 2022 ARM64` instead.
 
    Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
