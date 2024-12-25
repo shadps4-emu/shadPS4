@@ -1076,9 +1076,6 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     }
 
     color.float32 = comp_swizzle.Apply(color.float32);
-    color.int32 = comp_swizzle.Apply(color.int32);
-    color.uint32 = comp_swizzle.Apply(color.uint32);
-
     return {.color = color};
 }
 
