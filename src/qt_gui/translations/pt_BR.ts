@@ -685,12 +685,12 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Atualizar compatibilidade ao inicializar</translation>
+			<translation>Atualizar Compatibilidade ao Inicializar</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Game Compatibility</source>
-			<translation>Compatibilidade dos jogos</translation>
+			<translation>Compatibilidade dos Jogos</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
@@ -1249,17 +1249,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na janela principal.\nHabilitar "Atualizar Compatibilidade na Inicialização" para obter informações atualizadas.</translation>
+			<translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na janela principal.\nHabilitar "Atualizar Compatibilidade ao Inicializar" para obter informações atualizadas.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Atualizar compatibilidade na inicialização:\nAtualiza automaticamente o banco de dados de compatibilidade quando o SHADPS4 é iniciado.</translation>
+			<translation>Atualizar Compatibilidade ao inicializar:\nAtualiza automaticamente o banco de dados de compatibilidade quando o SHADPS4 é iniciado.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Atualizar banco de dados de compatibilidade:\nAtualizar imediatamente o banco de dados de compatibilidade.</translation>
+			<translation>Atualizar Lista de Compatibilidade:\nAtualizar imediatamente o banco de dados de compatibilidade.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
