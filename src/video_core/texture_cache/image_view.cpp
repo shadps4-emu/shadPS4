@@ -31,25 +31,6 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     }
 }
 
-vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
-    switch (dst_sel) {
-    case 0:
-        return vk::ComponentSwizzle::eZero;
-    case 1:
-        return vk::ComponentSwizzle::eOne;
-    case 4:
-        return vk::ComponentSwizzle::eR;
-    case 5:
-        return vk::ComponentSwizzle::eG;
-    case 6:
-        return vk::ComponentSwizzle::eB;
-    case 7:
-        return vk::ComponentSwizzle::eA;
-    default:
-        UNREACHABLE();
-    }
-}
-
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
     : is_storage{desc.IsStorage(image)} {
     const auto dfmt = image.GetDataFmt();
@@ -87,10 +68,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     if (!is_storage) {
-        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
     }
 }
 

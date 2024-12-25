@@ -129,32 +129,26 @@ bool IsImageInstruction(const IR::Inst& inst) {
 }
 
 IR::Value SwizzleVector(IR::IREmitter& ir, auto sharp, IR::Value texel) {
-    boost::container::static_vector<IR::Value, 4> comps;
-    for (u32 i = 0; i < 4; i++) {
-        switch (sharp.GetSwizzle(i)) {
+    const auto comp = [&](AmdGpu::CompSwizzle swizzle) -> IR::Value {
+        switch (swizzle) {
         case AmdGpu::CompSwizzle::Zero:
-            comps.emplace_back(ir.Imm32(0.f));
-            break;
+            return ir.Imm32(0.f);
         case AmdGpu::CompSwizzle::One:
-            comps.emplace_back(ir.Imm32(1.f));
-            break;
+            return ir.Imm32(1.f);
         case AmdGpu::CompSwizzle::Red:
-            comps.emplace_back(ir.CompositeExtract(texel, 0));
-            break;
+            return ir.CompositeExtract(texel, 0);
         case AmdGpu::CompSwizzle::Green:
-            comps.emplace_back(ir.CompositeExtract(texel, 1));
-            break;
+            return ir.CompositeExtract(texel, 1);
         case AmdGpu::CompSwizzle::Blue:
-            comps.emplace_back(ir.CompositeExtract(texel, 2));
-            break;
+            return ir.CompositeExtract(texel, 2);
         case AmdGpu::CompSwizzle::Alpha:
-            comps.emplace_back(ir.CompositeExtract(texel, 3));
-            break;
+            return ir.CompositeExtract(texel, 3);
         default:
             UNREACHABLE();
         }
-    }
-    return ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
+    };
+    const auto [r, g, b, a] = sharp.DstSelect();
+    return ir.CompositeConstruct(comp(r), comp(g), comp(b), comp(a));
 };
 
 class Descriptors {

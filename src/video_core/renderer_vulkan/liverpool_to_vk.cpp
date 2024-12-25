@@ -326,6 +326,34 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
     }
 }
 
+vk::ComponentSwizzle ComponentSwizzle(AmdGpu::CompSwizzle comp_swizzle) {
+    switch (comp_swizzle) {
+    case AmdGpu::CompSwizzle::Zero:
+        return vk::ComponentSwizzle::eZero;
+    case AmdGpu::CompSwizzle::One:
+        return vk::ComponentSwizzle::eOne;
+    case AmdGpu::CompSwizzle::Red:
+        return vk::ComponentSwizzle::eR;
+    case AmdGpu::CompSwizzle::Green:
+        return vk::ComponentSwizzle::eG;
+    case AmdGpu::CompSwizzle::Blue:
+        return vk::ComponentSwizzle::eB;
+    case AmdGpu::CompSwizzle::Alpha:
+        return vk::ComponentSwizzle::eA;
+    default:
+        UNREACHABLE();
+    }
+}
+
+vk::ComponentMapping ComponentMapping(AmdGpu::CompMapping comp_mapping) {
+    return vk::ComponentMapping{
+        .r = ComponentSwizzle(comp_mapping.r),
+        .g = ComponentSwizzle(comp_mapping.g),
+        .b = ComponentSwizzle(comp_mapping.b),
+        .a = ComponentSwizzle(comp_mapping.a),
+    };
+}
+
 static constexpr vk::FormatFeatureFlags2 BufferRead =
     vk::FormatFeatureFlagBits2::eUniformTexelBuffer | vk::FormatFeatureFlagBits2::eVertexBuffer;
 static constexpr vk::FormatFeatureFlags2 BufferWrite =
