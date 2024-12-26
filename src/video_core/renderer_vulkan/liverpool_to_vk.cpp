@@ -568,10 +568,8 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
         // 10_11_11
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format10_11_11, AmdGpu::NumberFormat::Float,
                                 vk::Format::eB10G11R11UfloatPack32),
-        // 11_11_10
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format11_11_10, AmdGpu::NumberFormat::Float,
-                                vk::Format::eB10G11R11UfloatPack32),
-        // 10_10_10_2
+        // 11_11_10 - Remapped to 10_11_11.
+        // 10_10_10_2 - Remapped to 2_10_10_10.
         // 2_10_10_10
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eA2B10G10R10UnormPack32),
@@ -644,7 +642,7 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
         // 1_5_5_5
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format1_5_5_5, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eR5G5B5A1UnormPack16),
-        // 5_5_5_1
+        // 5_5_5_1 - Remapped to 1_5_5_5.
         // 4_4_4_4
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format4_4_4_4, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eR4G4B4A4UnormPack16),

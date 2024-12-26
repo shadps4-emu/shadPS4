@@ -61,10 +61,16 @@ private:
 };
 
 inline DataFormat RemapDataFormat(const DataFormat format) {
-    if (format == DataFormat::Format11_11_10) {
+    switch (format) {
+    case DataFormat::Format11_11_10:
         return DataFormat::Format10_11_11;
+    case DataFormat::Format10_10_10_2:
+        return DataFormat::Format2_10_10_10;
+    case DataFormat::Format5_5_5_1:
+        return DataFormat::Format1_5_5_5;
+    default:
+        return format;
     }
-    return format;
 }
 
 inline NumberFormat RemapNumberFormat(const NumberFormat format) {
@@ -72,15 +78,25 @@ inline NumberFormat RemapNumberFormat(const NumberFormat format) {
 }
 
 inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
-    if (format == DataFormat::Format11_11_10) {
+    switch (format) {
+    case DataFormat::Format11_11_10:
         return {
             .r = components.b,
             .g = components.g,
             .b = components.r,
             .a = components.a,
         };
+    case DataFormat::Format10_10_10_2:
+    case DataFormat::Format5_5_5_1:
+        return {
+            .r = components.a,
+            .g = components.b,
+            .b = components.g,
+            .a = components.r,
+        };
+    default:
+        return components;
     }
-    return components;
 }
 
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
