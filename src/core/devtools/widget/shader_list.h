@@ -31,6 +31,8 @@ class ShaderList {
 
     std::vector<Selection> open_shaders{};
 
+    char search_box[128]{};
+
 public:
     bool open = false;
 

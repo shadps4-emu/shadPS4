@@ -229,9 +229,15 @@ void ShaderList::Draw() {
         return;
     }
 
+    InputTextEx("##search_shader", "Search by name", search_box, sizeof(search_box), {},
+                ImGuiInputTextFlags_None, nullptr, nullptr);
+
     auto width = GetContentRegionAvail().x;
     int i = 0;
     for (const auto& shader : DebugState.shader_dump_list) {
+        if (search_box[0] != '\0' && !shader.name.contains(search_box)) {
+            continue;
+        }
         char name[128];
         if (shader.is_patched) {
             snprintf(name, sizeof(name), "%s (PATCH ON)", shader.name.c_str());
