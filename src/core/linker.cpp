@@ -71,7 +71,7 @@ void Linker::Execute() {
     bool use_extended_mem1 = true, use_extended_mem2 = true;
 
     const auto* proc_param = GetProcParam();
-    ASSERT_MSG(proc_param);
+    ASSERT(proc_param);
 
     Core::OrbisKernelMemParam mem_param{};
     if (proc_param->size >= offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
@@ -84,6 +84,13 @@ void Linker::Execute() {
                 }
             }
         }
+    }
+
+    if (mem_param.size < offsetof(OrbisKernelMemParam, extended_memory_1) + sizeof(u64*)) {
+        mem_param.extended_memory_1 = nullptr;
+    }
+    if (mem_param.size < offsetof(OrbisKernelMemParam, extended_memory_2) + sizeof(u64*)) {
+        mem_param.extended_memory_2 = nullptr;
     }
 
     const u64 fw_ver = Common::ElfInfo::Instance().RawFirmwareVer();
