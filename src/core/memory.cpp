@@ -101,13 +101,17 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     auto dmem_area = FindDmemArea(search_start);
 
     const auto is_suitable = [&] {
+        if (dmem_area == dmem_map.end()) {
+            return false;
+        }
         const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
         const auto alignment_size = aligned_base - dmem_area->second.base;
         const auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
         return dmem_area->second.is_free && remaining_size >= size;
     };
-    while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
+    while (dmem_area != dmem_map.end() && !is_suitable() &&
+           dmem_area->second.GetEnd() <= search_end) {
         ++dmem_area;
     }
     ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
