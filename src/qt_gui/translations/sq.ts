@@ -1442,7 +1442,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>"Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha"</translation>
+			<translation>Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha</translation>
 		</message>
 	</context>
 	<context>
