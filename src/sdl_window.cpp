@@ -231,8 +231,8 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 
     // get the event's id, if it's keyup or keydown
     const bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
-                      event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-                      event->type == SDL_EVENT_MOUSE_WHEEL;
+                            event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+                            event->type == SDL_EVENT_MOUSE_WHEEL;
     u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
 
     // Handle window controls outside of the input maps
