@@ -28,6 +28,7 @@
 #include <Rpc.h>
 #endif
 #include <common/singleton.h>
+#include "net.h"
 
 namespace Libraries::Kernel {
 
@@ -195,10 +196,6 @@ const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
     return path;
 }
 
-int PS4_SYSV_ABI posix_connect() {
-    return -1;
-}
-
 int PS4_SYSV_ABI _sigprocmask() {
     return ORBIS_OK;
 }
@@ -218,11 +215,11 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
+    Libraries::Kernel::RegisterNet(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
-    LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", 1, 1, _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
