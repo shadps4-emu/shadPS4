@@ -311,8 +311,9 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
             found_modules, [&](const auto& path) { return path.filename() == module_name; });
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
-            linker->LoadModule(*it);
-            continue;
+            if (linker->LoadModule(*it) != -1) {
+                continue;
+            }
         }
         if (init_func) {
             LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
