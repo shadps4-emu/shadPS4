@@ -21,6 +21,8 @@ public:
     void SetVolume(void* impl, const std::array<int, 8>& ch_volumes) override;
 
 private:
+    static void LogCallback(const char* format, ...);
+
     cubeb* ctx = nullptr;
 };
 

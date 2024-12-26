@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdarg>
 #include <cubeb/cubeb.h>
 
 #include "common/assert.h"
@@ -130,6 +131,7 @@ struct CubebStream {
 };
 
 CubebAudioOut::CubebAudioOut() {
+    cubeb_set_log_callback(CUBEB_LOG_NORMAL, LogCallback);
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
     }
@@ -166,6 +168,15 @@ void CubebAudioOut::SetVolume(void* impl, const std::array<int, 8>& ch_volumes) 
         return;
     }
     static_cast<CubebStream*>(impl)->SetVolume(ch_volumes);
+}
+
+void CubebAudioOut::LogCallback(const char* format, ...) {
+    std::array<char, 512> buffer{};
+    std::va_list args;
+    va_start(args, format);
+    vsnprintf(buffer.data(), buffer.size(), format, args);
+    va_end(args);
+    LOG_DEBUG(Lib_Audio3d, "[cubeb] {}", buffer.data());
 }
 
 } // namespace Libraries::AudioOut
