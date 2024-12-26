@@ -117,7 +117,7 @@ static bool IsDrawCall(AmdGpu::PM4ItOpcode opcode) {
 inline std::optional<std::string> exec_cli(const char* cli) {
     std::array<char, 64> buffer{};
     std::string output;
-    const auto f = popen(cli, "rt");
+    const auto f = popen(cli, "r");
     if (!f) {
         pclose(f);
         return {};
