@@ -7,26 +7,16 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/audio/cubeb_audio.h"
 #include "core/libraries/audio/sdl_audio.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioOut {
 
-struct PortOut {
-    void* impl;
-    u32 samples_num;
-    u32 freq;
-    OrbisAudioOutParamFormat format;
-    OrbisAudioOutPort type;
-    int channels_num;
-    bool is_float;
-    std::array<int, 8> volume;
-    u8 sample_size;
-    bool is_open;
-};
 std::shared_mutex ports_mutex;
 std::array<PortOut, SCE_AUDIO_OUT_NUM_PORTS> ports_out{};
 
@@ -324,7 +314,16 @@ int PS4_SYSV_ABI sceAudioOutInit() {
     if (audio != nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
-    audio = std::make_unique<SDLAudioOut>();
+    const auto backend = Config::getAudioBackend();
+    if (backend == "cubeb") {
+        audio = std::make_unique<CubebAudioOut>();
+    } else if (backend == "sdl") {
+        audio = std::make_unique<SDLAudioOut>();
+    } else {
+        // Cubeb as a default fallback.
+        LOG_ERROR(Lib_AudioOut, "Invalid audio backend '{}', defaulting to cubeb.", backend);
+        audio = std::make_unique<CubebAudioOut>();
+    }
     return ORBIS_OK;
 }
 
@@ -415,7 +414,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     port->sample_size = GetFormatSampleSize(format);
     port->volume.fill(SCE_AUDIO_OUT_VOLUME_0DB);
 
-    port->impl = audio->Open(port->is_float, port->channels_num, port->freq);
+    port->impl = audio->Open(*port);
     return std::distance(ports_out.begin(), port) + 1;
 }
 
@@ -424,7 +423,7 @@ int PS4_SYSV_ABI sceAudioOutOpenEx() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
+s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }

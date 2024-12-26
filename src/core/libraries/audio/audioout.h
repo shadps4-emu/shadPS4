@@ -43,7 +43,7 @@ union OrbisAudioOutParamExtendedInformation {
 
 struct OrbisAudioOutOutputParam {
     s32 handle;
-    const void* ptr;
+    void* ptr;
 };
 
 struct OrbisAudioOutPortState {
@@ -54,6 +54,19 @@ struct OrbisAudioOutPortState {
     u16 rerouteCounter;
     u64 flag;
     u64 reserved64[2];
+};
+
+struct PortOut {
+    void* impl;
+    u32 samples_num;
+    u32 freq;
+    OrbisAudioOutParamFormat format;
+    OrbisAudioOutPort type;
+    int channels_num;
+    bool is_float;
+    std::array<int, 8> volume;
+    u8 sample_size;
+    bool is_open;
 };
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
@@ -94,7 +107,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
                                  u32 sample_rate, OrbisAudioOutParamExtendedInformation param_type);
 int PS4_SYSV_ABI sceAudioOutOpenEx();
-s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr);
+s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr);
 s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num);
 int PS4_SYSV_ABI sceAudioOutPtClose();
 int PS4_SYSV_ABI sceAudioOutPtGetLastOutputTime();
