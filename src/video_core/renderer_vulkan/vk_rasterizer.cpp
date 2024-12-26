@@ -1032,7 +1032,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
-    UpdateViewportScissorState();
+    UpdateViewportScissorState(pipeline);
 
     auto& regs = liverpool->regs;
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1112,7 +1112,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     }
 }
 
-void Rasterizer::UpdateViewportScissorState() {
+void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
     const auto& regs = liverpool->regs;
 
     const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
@@ -1157,20 +1157,6 @@ void Rasterizer::UpdateViewportScissorState() {
         if (vp.xscale == 0) {
             continue;
         }
-        const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
-        const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
-        const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
-        const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
-        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
-        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
-        viewports.push_back({
-            .x = xoffset - xscale,
-            .y = yoffset - yscale,
-            .width = xscale * 2.0f,
-            .height = yscale * 2.0f,
-            .minDepth = zoffset - zscale * reduce_z,
-            .maxDepth = zscale + zoffset,
-        });
 
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
@@ -1187,13 +1173,42 @@ void Rasterizer::UpdateViewportScissorState() {
             .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
             .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
         });
+
+        if (pipeline.IsClipDisabled()) {
+            // In case if clipping is disabled we patch the shader to convert vertex position
+            // from screen space coordinates to NDC by defining a render space as full hardware
+            // window range [0..16383, 0..16383] and setting the viewport to its size.
+            viewports.push_back({
+                .x = enable_offset ? float(regs.window_offset.window_x_offset) : 0.f,
+                .y = enable_offset ? float(regs.window_offset.window_y_offset) : 0.f,
+                .width = float(16_KB),
+                .height = float(16_KB),
+                .minDepth = 0.0,
+                .maxDepth = 1.0,
+            });
+        } else {
+            const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
+            const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
+            const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
+            const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
+            const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+            const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
+            viewports.push_back({
+                .x = xoffset - xscale,
+                .y = yoffset - yscale,
+                .width = xscale * 2.0f,
+                .height = yscale * 2.0f,
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
+            });
+        }
     }
 
     if (viewports.empty()) {
         // Vulkan requires providing at least one viewport.
         constexpr vk::Viewport empty_viewport = {
-            .x = 0.0f,
-            .y = 0.0f,
+            .x = -1.0f,
+            .y = -1.0f,
             .width = 1.0f,
             .height = 1.0f,
             .minDepth = 0.0f,

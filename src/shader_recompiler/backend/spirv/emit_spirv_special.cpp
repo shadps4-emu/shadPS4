@@ -24,9 +24,27 @@ void ConvertDepthMode(EmitContext& ctx) {
     ctx.OpStore(ctx.output_position, vector);
 }
 
+void ConvertPositionToClipSpace(EmitContext& ctx) {
+    const Id type{ctx.F32[1]};
+    Id position{ctx.OpLoad(ctx.F32[4], ctx.output_position)};
+    const Id x{ctx.OpCompositeExtract(type, position, 0u)};
+    const Id y{ctx.OpCompositeExtract(type, position, 1u)};
+    const Id z{ctx.OpCompositeExtract(type, position, 2u)};
+    const Id w{ctx.OpCompositeExtract(type, position, 3u)};
+    const Id ndc_x{ctx.OpFSub(type, ctx.OpFDiv(type, x, ctx.Constant(type, float(8_KB))),
+                              ctx.Constant(type, 1.f))};
+    const Id ndc_y{ctx.OpFSub(type, ctx.OpFDiv(type, y, ctx.Constant(type, float(8_KB))),
+                              ctx.Constant(type, 1.f))};
+    const Id vector{ctx.OpCompositeConstruct(ctx.F32[4], std::array<Id, 4>({ndc_x, ndc_y, z, w}))};
+    ctx.OpStore(ctx.output_position, vector);
+}
+
 void EmitEpilogue(EmitContext& ctx) {
     if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.emulate_depth_negative_one_to_one) {
         ConvertDepthMode(ctx);
+    }
+    if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.clip_disable) {
+        ConvertPositionToClipSpace(ctx);
     }
 }
 

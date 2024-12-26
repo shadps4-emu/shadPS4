@@ -406,6 +406,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
+            .primitiveTopologyPatchListRestart = true,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,
