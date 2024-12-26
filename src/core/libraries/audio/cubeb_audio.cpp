@@ -33,6 +33,9 @@ struct CubebStream {
     CubebStream(cubeb* ctx, const PortOut& port)
         : frame_size(port.channels_num * port.sample_size),
           buffer(static_cast<int>(port.samples_num * frame_size) * 4) {
+        if (!ctx) {
+            return;
+        }
         cubeb_stream_params stream_params = {
             .format = port.is_float ? CUBEB_SAMPLE_FLOAT32LE : CUBEB_SAMPLE_S16LE,
             .rate = port.freq,
@@ -58,10 +61,14 @@ struct CubebStream {
     }
 
     ~CubebStream() {
+        if (!stream) {
+            return;
+        }
         if (const auto ret = cubeb_stream_stop(stream); ret != CUBEB_OK) {
             LOG_WARNING(Lib_AudioOut, "Failed to stop cubeb stream: {}", ret);
         }
         cubeb_stream_destroy(stream);
+        stream = nullptr;
     }
 
     void Output(void* ptr, size_t size) {
@@ -79,6 +86,9 @@ struct CubebStream {
     }
 
     void SetVolume(const std::array<int, 8>& ch_volumes) {
+        if (!stream) {
+            return;
+        }
         // Cubeb does not have per-channel volumes, for now just take the maximum of the channels.
         const auto vol = *std::ranges::max_element(ch_volumes);
         if (const auto ret =
@@ -91,12 +101,12 @@ struct CubebStream {
     static long DataCallback(cubeb_stream* stream, void* user_data, const void* in, void* out,
                              long num_frames) {
         auto* stream_data = static_cast<CubebStream*>(user_data);
-        const auto requested_size = num_frames * stream_data->frame_size;
-        const auto dequeued_size = stream_data->buffer.dequeue(
-            static_cast<u8*>(out), static_cast<int>(num_frames * stream_data->frame_size));
+        const auto out_data = static_cast<u8*>(out);
+        const auto requested_size = static_cast<int>(num_frames * stream_data->frame_size);
+        const auto dequeued_size = stream_data->buffer.dequeue(out_data, requested_size);
         if (dequeued_size < requested_size) {
             // Need to fill remaining space with silence.
-            std::memset(static_cast<u8*>(out) + dequeued_size, 0, requested_size - dequeued_size);
+            std::memset(out_data + dequeued_size, 0, requested_size - dequeued_size);
         }
         return num_frames;
     }
@@ -122,12 +132,15 @@ struct CubebStream {
 CubebAudioOut::CubebAudioOut() {
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
-        return;
     }
 }
 
 CubebAudioOut::~CubebAudioOut() {
+    if (!ctx) {
+        return;
+    }
     cubeb_destroy(ctx);
+    ctx = nullptr;
 }
 
 void* CubebAudioOut::Open(PortOut& port) {
@@ -135,14 +148,23 @@ void* CubebAudioOut::Open(PortOut& port) {
 }
 
 void CubebAudioOut::Close(void* impl) {
+    if (!impl) {
+        return;
+    }
     delete static_cast<CubebStream*>(impl);
 }
 
 void CubebAudioOut::Output(void* impl, void* ptr, size_t size) {
+    if (!impl) {
+        return;
+    }
     static_cast<CubebStream*>(impl)->Output(ptr, size);
 }
 
 void CubebAudioOut::SetVolume(void* impl, const std::array<int, 8>& ch_volumes) {
+    if (!impl) {
+        return;
+    }
     static_cast<CubebStream*>(impl)->SetVolume(ch_volumes);
 }
 
