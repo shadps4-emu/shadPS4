@@ -27,6 +27,8 @@ class FrameDumpViewer {
     s32 selected_queue_num2;
     s32 selected_cmd = -1;
 
+    CmdListFilter filter;
+
 public:
     bool is_open = true;
 
