@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="174"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>میانبر با موفقیت ساخته شد! \n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>میانبر با موفقیت ساخته شد!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="177"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="178"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>مشکلی در هنگام ساخت میانبر بوجود آمد!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>مشکلی در هنگام ساخت میانبر بوجود آمد!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="253"/>

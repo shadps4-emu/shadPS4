@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="174"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Parancsikon sikeresen létrehozva!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Parancsikon sikeresen létrehozva!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="177"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="178"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Hiba a parancsikon létrehozásával!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Hiba a parancsikon létrehozásával!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="253"/>

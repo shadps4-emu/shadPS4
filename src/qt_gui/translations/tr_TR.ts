@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Kısayol başarıyla oluşturuldu!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Kısayol başarıyla oluşturuldu!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Kısayol oluşturulurken hata oluştu!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Kısayol oluşturulurken hata oluştu!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>
