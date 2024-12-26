@@ -208,7 +208,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Questa feature richiede che venga attivata l'opzione "Abilita Cartella Aggiornamenti Separata" per poter funzionare, per favore abilitala.</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
@@ -495,7 +495,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Abilità Cartella Aggiornamenti Separata</translation>
+			<translation>Abilita Cartella Aggiornamenti Separata</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
@@ -675,7 +675,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="475"/>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Disabilita Notifica Trofei</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -685,22 +685,22 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Aggiorna Database Compatibilità all'Avvio</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Compatibilità Gioco</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Mostra Dati Compatibilità</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Aggiorna Database Compatibilità</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
@@ -1249,17 +1249,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Mostra Dati Compatibilità:\nMostra informazioni sulla compatibilità del gioco nella visualizzazione lista. Abilita "Aggiorna Compatiblità all'Avvio" per ottenere informazioni aggiornate.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Aggiorna Compatibilità all'Avvio:\nAggiorna automaticamente il database della compatibilità quando si avvia shadps4.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Aggiorna Database Compatibilità:\nAggiorna immediatamente il database di compatibilità.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1377,7 +1377,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Compatibilità</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -1412,37 +1412,37 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Mai Giocato</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Nessuna informazione sulla compatibilità</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Il gioco non si avvia in modo corretto / forza chiusura dell'emulatore</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Il gioco si avvia, ma mostra solo una schermata nera</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Il gioco mostra immagini ma non va oltre il menu</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Il gioco ha problemi gravi di emulazione oppure framerate troppo basso</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Il gioco può essere completato con buone prestazioni e senza problemi gravi</translation>
 		</message>
 	</context>
 	<context>
