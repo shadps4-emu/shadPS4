@@ -7,48 +7,49 @@
 #include "common/assert.h"
 #include "common/ringbuffer.h"
 #include "core/libraries/audio/audioout.h"
-#include "core/libraries/audio/cubeb_audio.h"
+#include "core/libraries/audio/audioout_backend.h"
 
 namespace Libraries::AudioOut {
 
 constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
 
-static cubeb_channel_layout GetCubebChannelLayout(int num_channels) {
-    switch (num_channels) {
-    case 1:
-        return CUBEB_LAYOUT_MONO;
-    case 2:
-        return CUBEB_LAYOUT_STEREO;
-    case 8:
-        return CUBEB_LAYOUT_3F4_LFE;
-    default:
-        UNREACHABLE();
-    }
-}
-
-struct CubebStream {
-    cubeb_stream* stream{};
-    size_t frame_size;
-    ring_buffer_base<u8> buffer;
-
-    CubebStream(cubeb* ctx, const PortOut& port)
+class CubebPortBackend : public PortBackend {
+public:
+    CubebPortBackend(cubeb* ctx, const PortOut& port)
         : frame_size(port.channels_num * port.sample_size),
           buffer(static_cast<int>(port.samples_num * frame_size) * 4) {
         if (!ctx) {
             return;
         }
+        const auto get_channel_layout = [&port] -> cubeb_channel_layout {
+            switch (port.channels_num) {
+            case 1:
+                return CUBEB_LAYOUT_MONO;
+            case 2:
+                return CUBEB_LAYOUT_STEREO;
+            case 8:
+                return CUBEB_LAYOUT_3F4_LFE;
+            default:
+                UNREACHABLE();
+            }
+        };
         cubeb_stream_params stream_params = {
             .format = port.is_float ? CUBEB_SAMPLE_FLOAT32LE : CUBEB_SAMPLE_S16LE,
             .rate = port.freq,
             .channels = static_cast<u32>(port.channels_num),
-            .layout = GetCubebChannelLayout(port.channels_num),
+            .layout = get_channel_layout(),
+            .prefs = CUBEB_STREAM_PREF_NONE,
         };
         u32 latency_frames = 512;
         if (const auto ret = cubeb_get_min_latency(ctx, &stream_params, &latency_frames);
             ret != CUBEB_OK) {
-            LOG_WARNING(Lib_AudioOut, "Could not get minimum cubeb audio latency: {}", ret);
+            LOG_WARNING(Lib_AudioOut,
+                        "Could not get minimum cubeb audio latency, falling back to default: {}",
+                        ret);
         }
-        if (const auto ret = cubeb_stream_init(ctx, &stream, "shadPS4", nullptr, nullptr, nullptr,
+        char stream_name[64];
+        snprintf(stream_name, sizeof(stream_name), "shadPS4 stream %p", this);
+        if (const auto ret = cubeb_stream_init(ctx, &stream, stream_name, nullptr, nullptr, nullptr,
                                                &stream_params, latency_frames, &DataCallback,
                                                &StateCallback, this);
             ret != CUBEB_OK) {
@@ -61,7 +62,7 @@ struct CubebStream {
         }
     }
 
-    ~CubebStream() {
+    ~CubebPortBackend() override {
         if (!stream) {
             return;
         }
@@ -72,7 +73,7 @@ struct CubebStream {
         stream = nullptr;
     }
 
-    void Output(void* ptr, size_t size) {
+    void Output(void* ptr, size_t size) override {
         auto* data = static_cast<u8*>(ptr);
         while (size > 0) {
             const auto queued = buffer.enqueue(data, static_cast<int>(size));
@@ -86,7 +87,7 @@ struct CubebStream {
         }
     }
 
-    void SetVolume(const std::array<int, 8>& ch_volumes) {
+    void SetVolume(const std::array<int, 8>& ch_volumes) override {
         if (!stream) {
             return;
         }
@@ -99,9 +100,10 @@ struct CubebStream {
         }
     }
 
+private:
     static long DataCallback(cubeb_stream* stream, void* user_data, const void* in, void* out,
                              long num_frames) {
-        auto* stream_data = static_cast<CubebStream*>(user_data);
+        auto* stream_data = static_cast<CubebPortBackend*>(user_data);
         const auto out_data = static_cast<u8*>(out);
         const auto requested_size = static_cast<int>(num_frames * stream_data->frame_size);
         const auto dequeued_size = stream_data->buffer.dequeue(out_data, requested_size);
@@ -128,10 +130,14 @@ struct CubebStream {
             break;
         }
     }
+
+    size_t frame_size;
+    ring_buffer_base<u8> buffer;
+    cubeb_stream* stream{};
 };
 
 CubebAudioOut::CubebAudioOut() {
-    cubeb_set_log_callback(CUBEB_LOG_NORMAL, LogCallback);
+    cubeb_set_log_callback(CUBEB_LOG_DISABLED, nullptr);
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
     }
@@ -145,38 +151,8 @@ CubebAudioOut::~CubebAudioOut() {
     ctx = nullptr;
 }
 
-void* CubebAudioOut::Open(PortOut& port) {
-    return new CubebStream(ctx, port);
-}
-
-void CubebAudioOut::Close(void* impl) {
-    if (!impl) {
-        return;
-    }
-    delete static_cast<CubebStream*>(impl);
-}
-
-void CubebAudioOut::Output(void* impl, void* ptr, size_t size) {
-    if (!impl) {
-        return;
-    }
-    static_cast<CubebStream*>(impl)->Output(ptr, size);
-}
-
-void CubebAudioOut::SetVolume(void* impl, const std::array<int, 8>& ch_volumes) {
-    if (!impl) {
-        return;
-    }
-    static_cast<CubebStream*>(impl)->SetVolume(ch_volumes);
-}
-
-void CubebAudioOut::LogCallback(const char* format, ...) {
-    std::array<char, 512> buffer{};
-    std::va_list args;
-    va_start(args, format);
-    vsnprintf(buffer.data(), buffer.size(), format, args);
-    va_end(args);
-    LOG_DEBUG(Lib_Audio3d, "[cubeb] {}", buffer.data());
+std::unique_ptr<PortBackend> CubebAudioOut::Open(PortOut& port) {
+    return std::make_unique<CubebPortBackend>(ctx, port);
 }
 
 } // namespace Libraries::AudioOut

@@ -3,19 +3,42 @@
 
 #pragma once
 
+typedef struct cubeb cubeb;
+
 namespace Libraries::AudioOut {
 
 struct PortOut;
+
+class PortBackend {
+public:
+    virtual ~PortBackend() = default;
+
+    virtual void Output(void* ptr, size_t size) = 0;
+    virtual void SetVolume(const std::array<int, 8>& ch_volumes) = 0;
+};
 
 class AudioOutBackend {
 public:
     AudioOutBackend() = default;
     virtual ~AudioOutBackend() = default;
 
-    virtual void* Open(PortOut& port) = 0;
-    virtual void Close(void* impl) = 0;
-    virtual void Output(void* impl, void* ptr, size_t size) = 0;
-    virtual void SetVolume(void* impl, const std::array<int, 8>& ch_volumes) = 0;
+    virtual std::unique_ptr<PortBackend> Open(PortOut& port) = 0;
+};
+
+class CubebAudioOut final : public AudioOutBackend {
+public:
+    CubebAudioOut();
+    ~CubebAudioOut() override;
+
+    std::unique_ptr<PortBackend> Open(PortOut& port) override;
+
+private:
+    cubeb* ctx = nullptr;
+};
+
+class SDLAudioOut final : public AudioOutBackend {
+public:
+    std::unique_ptr<PortBackend> Open(PortOut& port) override;
 };
 
 } // namespace Libraries::AudioOut

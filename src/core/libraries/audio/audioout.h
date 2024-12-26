@@ -3,11 +3,14 @@
 
 #pragma once
 
-#include "common/bit_field.h"
+#include <memory>
 
+#include "common/bit_field.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::AudioOut {
+
+class PortBackend;
 
 // Main up to 8 ports, BGM 1 port, voice up to 4 ports,
 // personal up to 4 ports, padspk up to 5 ports, aux 1 port
@@ -57,7 +60,8 @@ struct OrbisAudioOutPortState {
 };
 
 struct PortOut {
-    void* impl;
+    std::unique_ptr<PortBackend> impl{};
+
     u32 samples_num;
     u32 freq;
     OrbisAudioOutParamFormat format;
@@ -66,7 +70,6 @@ struct PortOut {
     bool is_float;
     std::array<int, 8> volume;
     u8 sample_size;
-    bool is_open;
 };
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
