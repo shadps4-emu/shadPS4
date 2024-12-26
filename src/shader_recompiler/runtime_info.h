@@ -227,7 +227,7 @@ struct RuntimeInfo {
         ComputeRuntimeInfo cs_info;
     };
 
-    RuntimeInfo(Stage stage_) {
+    void Initialize(Stage stage_) {
         memset(this, 0, sizeof(*this));
         stage = stage_;
     }

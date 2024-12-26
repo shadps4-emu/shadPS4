@@ -115,25 +115,16 @@ bool IsImageAtomicInstruction(const IR::Inst& inst) {
     }
 }
 
-bool IsImageStorageInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageWrite:
-    case IR::Opcode::ImageRead:
-        return true;
-    default:
-        return IsImageAtomicInstruction(inst);
-    }
-}
-
 bool IsImageInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageFetch:
+    case IR::Opcode::ImageRead:
+    case IR::Opcode::ImageWrite:
     case IR::Opcode::ImageQueryDimensions:
     case IR::Opcode::ImageQueryLod:
     case IR::Opcode::ImageSampleRaw:
         return true;
     default:
-        return IsImageStorageInstruction(inst);
+        return IsImageAtomicInstruction(inst);
     }
 }
 
@@ -201,7 +192,8 @@ public:
             return desc.sharp_idx == existing.sharp_idx;
         })};
         auto& image = image_resources[index];
-        image.is_storage |= desc.is_storage;
+        image.is_read |= desc.is_read;
+        image.is_written |= desc.is_written;
         return index;
     }
 
@@ -429,9 +421,9 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_storage, bool is_array) {
+                         const IR::Value& z, bool is_written, bool is_array) {
     // When cubemap is written with imageStore it is treated like 2DArray.
-    if (is_storage) {
+    if (is_written) {
         return ir.CompositeConstruct(s, t, z);
     }
 
@@ -684,15 +676,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
-    const bool is_storage = IsImageStorageInstruction(inst);
+    const bool is_read = inst.GetOpcode() == IR::Opcode::ImageRead;
+    const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
 
     // Patch image instruction if image is FMask.
     if (image.IsFmask()) {
-        ASSERT_MSG(!is_storage, "FMask storage instructions are not supported");
+        ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
 
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
         switch (inst.GetOpcode()) {
-        case IR::Opcode::ImageFetch:
+        case IR::Opcode::ImageRead:
         case IR::Opcode::ImageSampleRaw: {
             IR::F32 fmaskx = ir.BitCast<IR::F32>(ir.Imm32(0x76543210));
             IR::F32 fmasky = ir.BitCast<IR::F32>(ir.Imm32(0xfedcba98));
@@ -721,10 +714,11 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     u32 image_binding = descriptors.Add(ImageResource{
         .sharp_idx = tsharp,
-        .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
+        .is_read = is_read,
+        .is_written = is_written,
     });
 
     // Sample instructions must be resolved into a new instruction using address register data.
@@ -762,7 +756,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face, [lod]
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_written,
                                    inst_info.is_array),
                     body->Arg(3)};
         default:
@@ -772,19 +766,20 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     inst.SetArg(1, coords);
 
     if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(3, SwizzleVector(ir, image, inst.Arg(3)));
+        inst.SetArg(4, SwizzleVector(ir, image, inst.Arg(4)));
     }
 
     if (inst_info.has_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
-               inst.GetOpcode() == IR::Opcode::ImageRead ||
+        ASSERT(inst.GetOpcode() == IR::Opcode::ImageRead ||
                inst.GetOpcode() == IR::Opcode::ImageWrite);
         ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
                image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
         inst.SetArg(2, arg);
-    } else if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-               image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
-        inst.SetArg(4, arg);
+    } else if ((image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
+                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) &&
+               (inst.GetOpcode() == IR::Opcode::ImageRead ||
+                inst.GetOpcode() == IR::Opcode::ImageWrite)) {
+        inst.SetArg(3, arg);
     }
 }
 

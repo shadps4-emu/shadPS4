@@ -64,7 +64,7 @@ int PS4_SYSV_ABI sceAudioOutA3dExit();
 int PS4_SYSV_ABI sceAudioOutA3dInit();
 int PS4_SYSV_ABI sceAudioOutAttachToApplicationByPid();
 int PS4_SYSV_ABI sceAudioOutChangeAppModuleState();
-int PS4_SYSV_ABI sceAudioOutClose();
+int PS4_SYSV_ABI sceAudioOutClose(s32 handle);
 int PS4_SYSV_ABI sceAudioOutDetachFromApplicationByPid();
 int PS4_SYSV_ABI sceAudioOutExConfigureOutputMode();
 int PS4_SYSV_ABI sceAudioOutExGetSystemInfo();

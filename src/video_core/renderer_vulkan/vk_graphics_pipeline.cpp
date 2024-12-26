@@ -7,25 +7,30 @@
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
+#include "common/io_file.h"
 #include "common/scope_exit.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
-
-#include "shader_recompiler/frontend/fetch_shader.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
-GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
-                                   DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
-                                   vk::PipelineCache pipeline_cache,
-                                   std::span<const Shader::Info*, MaxShaderStages> infos,
-                                   std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
-                                   std::span<const vk::ShaderModule> modules)
+using Shader::Backend::SPIRV::AuxShaderType;
+
+GraphicsPipeline::GraphicsPipeline(
+    const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
+    const GraphicsPipelineKey& key_, vk::PipelineCache pipeline_cache,
+    std::span<const Shader::Info*, MaxShaderStages> infos,
+    std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
+    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
+    std::span<const vk::ShaderModule> modules)
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
       fetch_shader{std::move(fetch_shader_)} {
     const vk::Device device = instance.GetDevice();
@@ -88,11 +93,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
-    if (key.prim_type == AmdGpu::PrimitiveType::RectList && !IsEmbeddedVs()) {
-        LOG_WARNING(Render_Vulkan,
-                    "Rectangle List primitive type is only supported for embedded VS");
-    }
-
     auto prim_restart = key.enable_primitive_restart != 0;
     if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
         LOG_WARNING(Render_Vulkan,
@@ -106,9 +106,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
                    key.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
-
+    const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
+    const bool is_quad_list = key.prim_type == AmdGpu::PrimitiveType::QuadList;
+    const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
     const vk::PipelineTessellationStateCreateInfo tessellation_state = {
-        .patchControlPoints = key.patch_control_points,
+        .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
     };
 
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
@@ -121,7 +123,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = bool(key.depth_bias_enable),
+        .depthBiasEnable = key.depth_bias_enable,
         .lineWidth = 1.0f,
     };
 
@@ -131,37 +133,24 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .sampleShadingEnable = false,
     };
 
-    const vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = 1.0f,
-        .height = 1.0f,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    const vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = {1, 1},
-    };
-
     const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
         .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
     };
 
     const vk::PipelineViewportStateCreateInfo viewport_info = {
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
-        .viewportCount = 1,
-        .pViewports = &viewport,
-        .scissorCount = 1,
-        .pScissors = &scissor,
     };
 
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewport,           vk::DynamicState::eScissor,
-        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthBounds,
-        vk::DynamicState::eDepthBias,          vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eViewportWithCountEXT,
+        vk::DynamicState::eScissorWithCountEXT,
+        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eDepthBounds,
+        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask,
+        vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eStencilOpEXT,
     };
 
     if (instance.IsColorWriteEnableSupported()) {
@@ -180,31 +169,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth_stencil.depth_enable,
-        .depthWriteEnable = key.depth_stencil.depth_write_enable,
-        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth_stencil.depth_func),
-        .depthBoundsTestEnable = key.depth_stencil.depth_bounds_enable,
-        .stencilTestEnable = key.depth_stencil.stencil_enable,
-        .front{
-            .failOp = LiverpoolToVK::StencilOp(key.stencil.stencil_fail_front),
-            .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_front),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_front),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.stencil_ref_func),
-        },
-        .back{
-            .failOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                   ? key.stencil.stencil_fail_back.Value()
-                                                   : key.stencil.stencil_fail_front.Value()),
-            .passOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                   ? key.stencil.stencil_zpass_back.Value()
-                                                   : key.stencil.stencil_zpass_front.Value()),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
-                                                        ? key.stencil.stencil_zfail_back.Value()
-                                                        : key.stencil.stencil_zfail_front.Value()),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.backface_enable
-                                                      ? key.depth_stencil.stencil_bf_func.Value()
-                                                      : key.depth_stencil.stencil_ref_func.Value()),
-        },
+        .depthTestEnable = key.depth_test_enable,
+        .depthWriteEnable = key.depth_write_enable,
+        .depthCompareOp = key.depth_compare_op,
+        .depthBoundsTestEnable = key.depth_bounds_test_enable,
+        .stencilTestEnable = key.stencil_test_enable,
     };
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
@@ -232,12 +201,28 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .module = modules[stage],
             .pName = "main",
         });
+    } else if (is_rect_list || is_quad_list) {
+        const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
+        auto tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationControl,
+            .module = CompileSPV(tcs, instance.GetDevice()),
+            .pName = "main",
+        });
     }
     stage = u32(Shader::LogicalStage::TessellationEval);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
             .module = modules[stage],
+            .pName = "main",
+        });
+    } else if (is_rect_list || is_quad_list) {
+        auto tes =
+            Shader::Backend::SPIRV::EmitAuxilaryTessShader(AuxShaderType::PassthroughTES, fs_info);
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
+            .module = CompileSPV(tes, instance.GetDevice()),
             .pName = "main",
         });
     }
@@ -322,8 +307,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pStages = shader_stages.data(),
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
-        .pTessellationState =
-            stages[u32(Shader::LogicalStage::TessellationControl)] ? &tessellation_state : nullptr,
+        .pTessellationState = &tessellation_state,
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,
@@ -380,8 +364,9 @@ void GraphicsPipeline::BuildDescSetLayout() {
         for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
-                                                   : vk::DescriptorType::eSampledImage,
+                .descriptorType = image.IsStorage(image.GetSharp(*stage))
+                                      ? vk::DescriptorType::eStorageImage
+                                      : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
                 .stageFlags = gp_stage_flags,
             });

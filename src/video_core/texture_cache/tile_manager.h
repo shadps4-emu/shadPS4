@@ -11,18 +11,15 @@ namespace VideoCore {
 
 class TextureCache;
 
-/// Converts tiled texture data to linear format.
-void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool neo);
-
-/// Converts image format to the one used internally by detiler.
-vk::Format DemoteImageFormatForDetiling(vk::Format format);
-
 enum DetilerType : u32 {
     Micro8x1,
     Micro8x2,
     Micro32x1,
     Micro32x2,
     Micro32x4,
+
+    Macro32x1,
+    Macro32x2,
 
     Max
 };

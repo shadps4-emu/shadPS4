@@ -11,7 +11,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>854</width>
+    <width>900</width>
     <height>660</height>
    </rect>
   </property>
@@ -59,9 +59,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>832</width>
-        <height>431</height>
+        <y>-97</y>
+        <width>815</width>
+        <height>618</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -306,7 +306,7 @@
               </property>
               <property name="minimumSize">
                <size>
-                <width>275</width>
+                <width>265</width>
                 <height>0</height>
                </size>
               </property>
@@ -470,6 +470,13 @@
                 <number>11</number>
                </property>
                <item>
+                <widget class="QCheckBox" name="disableTrophycheckBox">
+                 <property name="text">
+                  <string>Disable Trophy Pop-ups</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <layout class="QVBoxLayout" name="GUIMusicLayout">
                  <property name="topMargin">
                   <number>1</number>
@@ -561,40 +568,93 @@
                  </item>
                 </layout>
                </item>
-               <item>
-                <widget class="QWidget" name="GUIwidgetSpacer" native="true">
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>61</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="EmptyTabLayoutRight">
-            <item>
-             <spacer name="emptyHorizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
+           <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0">
+            <item alignment="Qt::AlignmentFlag::AlignTop">
+             <widget class="QGroupBox" name="CompatgroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <property name="sizeHint" stdset="0">
+              <property name="minimumSize">
                <size>
-                <width>40</width>
-                <height>20</height>
+                <width>0</width>
+                <height>0</height>
                </size>
               </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-         </layout>
+              <property name="title">
+               <string>Game Compatibility</string>
+              </property>
+              <layout class="QVBoxLayout" name="CompatLayout">
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>11</number>
+               </property>
+               <item>
+                <widget class="QCheckBox" name="enableCompatibilityCheckBox">
+                 <property name="text">
+                  <string>Display Compatibility Data</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkCompatibilityOnStartupCheckBox">
+                 <property name="text">
+                  <string>Update Compatibility Database On Startup</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="UpdateCompatLayout">
+                 <property name="topMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="updateCompatibilityButton">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>197</width>
+                     <height>28</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Update Compatibility Database</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+              </item>
+            </layout>
+            </widget>
         </item>
+       </layout>
+       </item>
+       </layout>
+       </item>
        </layout>
       </widget>
       <widget class="QWidget" name="inputTab">
@@ -696,7 +756,7 @@
                   <property name="bottomMargin">
                    <number>5</number>
                   </property>
-                  <item alignment="Qt::AlignmentFlag::AlignHCenter">
+                  <item>
                    <widget class="QSpinBox" name="idleTimeoutSpinBox">
                     <property name="enabled">
                      <bool>true</bool>

@@ -772,7 +772,7 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const auto type = image.GetBoundType();
-    const u32 sampled = desc.is_storage ? 2 : 1;
+    const u32 sampled = desc.IsStorage(image) ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
@@ -800,6 +800,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const auto sharp = image_desc.GetSharp(info);
         const auto nfmt = sharp.GetNumberFmt();
         const bool is_integer = AmdGpu::IsInteger(nfmt);
+        const bool is_storage = image_desc.IsStorage(sharp);
         const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
@@ -811,11 +812,11 @@ void EmitContext::DefineImagesAndSamplers() {
         images.push_back({
             .data_types = &data_types,
             .id = id,
-            .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
+            .sampled_type = is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
             .is_integer = is_integer,
-            .is_storage = image_desc.is_storage,
+            .is_storage = is_storage,
         });
         interfaces.push_back(id);
     }

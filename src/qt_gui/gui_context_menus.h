@@ -11,6 +11,9 @@
 #include <QTreeWidgetItem>
 
 #include "cheats_patches.h"
+#include "common/config.h"
+#include "common/version.h"
+#include "compatibility_info.h"
 #include "game_info.h"
 #include "trophy_viewer.h"
 
@@ -27,8 +30,9 @@
 class GuiContextMenus : public QObject {
     Q_OBJECT
 public:
-    void RequestGameMenu(const QPoint& pos, QVector<GameInfo> m_games, QTableWidget* widget,
-                         bool isList) {
+    void RequestGameMenu(const QPoint& pos, QVector<GameInfo> m_games,
+                         std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+                         QTableWidget* widget, bool isList) {
         QPoint global_pos = widget->viewport()->mapToGlobal(pos);
         int itemID = 0;
         if (isList) {
@@ -90,6 +94,21 @@ public:
         deleteMenu->addAction(deleteDLC);
 
         menu.addMenu(deleteMenu);
+
+        // Compatibility submenu.
+        QMenu* compatibilityMenu = new QMenu(tr("Compatibility..."), widget);
+        QAction* updateCompatibility = new QAction(tr("Update database"), widget);
+        QAction* viewCompatibilityReport = new QAction(tr("View report"), widget);
+        QAction* submitCompatibilityReport = new QAction(tr("Submit a report"), widget);
+
+        compatibilityMenu->addAction(updateCompatibility);
+        compatibilityMenu->addAction(viewCompatibilityReport);
+        compatibilityMenu->addAction(submitCompatibilityReport);
+
+        menu.addMenu(compatibilityMenu);
+
+        compatibilityMenu->setEnabled(Config::getCompatibilityEnabled());
+        viewCompatibilityReport->setEnabled(!m_games[itemID].compatibility.url.isEmpty());
 
         // Show menu.
         auto selected = menu.exec(global_pos);
@@ -359,6 +378,31 @@ public:
                     widget->removeRow(itemID);
                 }
             }
+        }
+
+        if (selected == updateCompatibility) {
+            m_compat_info->UpdateCompatibilityDatabase(widget, true);
+        }
+
+        if (selected == viewCompatibilityReport) {
+            if (!m_games[itemID].compatibility.url.isEmpty())
+                QDesktopServices::openUrl(QUrl(m_games[itemID].compatibility.url));
+        }
+
+        if (selected == submitCompatibilityReport) {
+            QUrl url = QUrl("https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new");
+            QUrlQuery query;
+            query.addQueryItem("template", QString("game_compatibility.yml"));
+            query.addQueryItem(
+                "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
+                                                QString::fromStdString(m_games[itemID].name)));
+            query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
+            query.addQueryItem("game-code", QString::fromStdString(m_games[itemID].serial));
+            query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
+            query.addQueryItem("emulator-version", QString(Common::VERSION));
+            url.setQuery(query);
+
+            QDesktopServices::openUrl(url);
         }
     }
 
