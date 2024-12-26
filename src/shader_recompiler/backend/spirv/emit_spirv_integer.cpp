@@ -201,6 +201,10 @@ Id EmitBitCount32(EmitContext& ctx, Id value) {
     return ctx.OpBitCount(ctx.U32[1], value);
 }
 
+Id EmitBitCount64(EmitContext& ctx, Id value) {
+    return ctx.OpBitCount(ctx.U64, value);
+}
+
 Id EmitBitwiseNot32(EmitContext& ctx, Id value) {
     return ctx.OpNot(ctx.U32[1], value);
 }

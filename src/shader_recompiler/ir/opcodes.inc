@@ -284,6 +284,7 @@ OPCODE(BitFieldSExtract,                                    U32,            U32,
 OPCODE(BitFieldUExtract,                                    U32,            U32,            U32,            U32,                                            )
 OPCODE(BitReverse32,                                        U32,            U32,                                                                            )
 OPCODE(BitCount32,                                          U32,            U32,                                                                            )
+OPCODE(BitCount64,                                          U32,            U64,                                                                            )
 OPCODE(BitwiseNot32,                                        U32,            U32,                                                                            )
 
 OPCODE(FindSMsb32,                                          U32,            U32,                                                                            )
