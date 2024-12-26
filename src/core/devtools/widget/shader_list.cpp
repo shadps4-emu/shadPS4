@@ -234,12 +234,13 @@ void ShaderList::Draw() {
     }
 
     InputTextEx("##search_shader", "Search by name", search_box, sizeof(search_box), {},
-                ImGuiInputTextFlags_None, nullptr, nullptr);
+                ImGuiInputTextFlags_None);
 
     auto width = GetContentRegionAvail().x;
     int i = 0;
     for (const auto& shader : DebugState.shader_dump_list) {
         if (search_box[0] != '\0' && !shader.name.contains(search_box)) {
+            i++;
             continue;
         }
         char name[128];
