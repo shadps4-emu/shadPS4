@@ -1254,7 +1254,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdater kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
+			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
@@ -1545,7 +1545,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="310"/>
 			<source>Network error occurred while trying to access the URL</source>
-			<translation>Nettverksfeil oppstod mens du prøvde å få tilgang til URL</translation>
+			<translation>Nettverksfeil oppstod mens vi prøvde å få tilgang til URL</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="330"/>
