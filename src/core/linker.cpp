@@ -73,10 +73,55 @@ void Linker::Execute() {
     const auto* proc_param = GetProcParam();
     ASSERT(proc_param);
 
+    /* TEMP */
+    LOG_INFO(Core_Linker, "---- proc_param ----");
+    LOG_INFO(Core_Linker, "proc_param->size = 0x{:x}", proc_param->size);
+    LOG_INFO(Core_Linker, "proc_param->magic = 0x{:x}", proc_param->magic);
+    LOG_INFO(Core_Linker, "proc_param->sdk_version = 0x{:x}", proc_param->sdk_version);
+    LOG_INFO(Core_Linker, "proc_param->mem_param = {}", fmt::ptr(proc_param->mem_param));
+    LOG_INFO(Core_Linker, "proc_param->unknown1 = 0x{:x}", proc_param->unknown1);
+    /* TEMP */
+
     Core::OrbisKernelMemParam mem_param{};
     if (proc_param->size >= offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
         if (proc_param->mem_param) {
             mem_param = *proc_param->mem_param;
+
+            /* TEMP */
+            LOG_INFO(Core_Linker, "---- mem_param ----");
+            LOG_INFO(Core_Linker, "mem_param->size = 0x{:x}", mem_param.size);
+            LOG_INFO(Core_Linker, "mem_param->extended_page_table = {}",
+                     fmt::ptr(mem_param.extended_page_table));
+            LOG_INFO(Core_Linker, "mem_param->flexible_memory_size = {}",
+                     fmt::ptr(mem_param.flexible_memory_size));
+            LOG_INFO(Core_Linker, "mem_param->extended_memory_1 = {}",
+                     fmt::ptr(mem_param.extended_memory_1));
+            LOG_INFO(Core_Linker, "mem_param->extended_gpu_page_table = {}",
+                     fmt::ptr(mem_param.extended_gpu_page_table));
+            LOG_INFO(Core_Linker, "mem_param->extended_memory_2 = {}",
+                     fmt::ptr(mem_param.extended_memory_2));
+            LOG_INFO(Core_Linker, "mem_param->extended_cpu_page_table = {}",
+                     fmt::ptr(mem_param.extended_cpu_page_table));
+            LOG_INFO(Core_Linker, "-------------------");
+            if (mem_param.size >=
+                    offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*) &&
+                mem_param.flexible_memory_size) {
+                LOG_INFO(Core_Linker, "mem_param->flexible_memory_size = 0x{:x}",
+                         *mem_param.flexible_memory_size);
+            }
+            if (mem_param.size >= offsetof(OrbisKernelMemParam, extended_memory_1) + sizeof(u64*) &&
+                mem_param.extended_memory_1) {
+                LOG_INFO(Core_Linker, "mem_param->extended_memory_1 = 0x{:x}",
+                         *mem_param.extended_memory_1);
+            }
+            if (mem_param.size >= offsetof(OrbisKernelMemParam, extended_memory_2) + sizeof(u64*) &&
+                mem_param.extended_memory_2) {
+                LOG_INFO(Core_Linker, "mem_param->extended_memory_2 = 0x{:x}",
+                         *mem_param.extended_memory_2);
+            }
+            LOG_INFO(Core_Linker, "-------------------");
+            /* TEMP */
+
             if (mem_param.size >=
                 offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
                 if (const auto* flexible_size = mem_param.flexible_memory_size) {
