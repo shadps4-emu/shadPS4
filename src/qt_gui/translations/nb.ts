@@ -685,7 +685,7 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Oppdater kompatibilitetsdatabase ved oppstart</translation>
+			<translation>Oppdater kompatibilitets-database ved oppstart</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
@@ -1254,12 +1254,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdater kompatibilitetsdatabasen automatisk når shadPS4 starter.</translation>
+			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdater kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Oppdater kompatibilitetsdatabase:\nOppdater kompatibilitetsdatabasen nå.</translation>
+			<translation>Oppdater kompatibilitets-database:\nOppdater kompatibilitets-databasen nå.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1442,7 +1442,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Spill kan fullføres med spillbar ytelse og ingen store feil</translation>
+			<translation>Spillet kan fullføres med spillbar ytelse og ingen store feil</translation>
 		</message>
 	</context>
 	<context>
