@@ -675,7 +675,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="475"/>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Çaktivizo njoftimet për Trofetë</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -685,22 +685,22 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë gjatë nisjes</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Përputhshmëria e lojës</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Shfaq të dhënat e përputhshmërisë</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
@@ -866,7 +866,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Mashtrime / Arna për </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -1184,7 +1184,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.</translation>
+			<translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.\nKjo mund të krijohet manualisht duke shtuar përditësimin e shpaketuar në dosjen e lojës me emrin "CUSA00000-UPDATE" ku ID-ja CUSA përputhet me ID-në e lojës.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
@@ -1229,7 +1229,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="267"/>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Çaktivizo njoftimet për Trofetë:\nÇaktivizo njoftimet për trofetë gjatë lojës. Përparimi i trofeve mund të ndiqet duke përdorur Shikuesin e Trofeve (kliko me të djathtën mbi lojën në dritaren kryesore).</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
@@ -1249,17 +1249,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Shfaq të dhënat e përputhshmërisë:\nShfaq informacionin e përputhshmërisë së lojës në formë tabele. Aktivizo 'Përditëso përputhshmërinë gjatë nisjes' për të marrë informacion të përditësuar.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Përditëso përputhshmërinë gjatë nisjes:\nPërditëson automatikisht bazën e të dhënave të përputhshmërisë kur shadPS4 niset.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë:\nPërditëso menjëherë bazën e të dhënave të përputhshmërisë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1377,7 +1377,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Përputhshmëria</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -1412,37 +1412,37 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Nuk është luajtur kurrë</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Përputhshmëria nuk është e testuar</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Loja nuk niset siç duhet / rrëzon emulatorin</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Loja niset, por shfaq vetëm një ekran të zbrazët</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Loja shfaq një imazh, por nuk kalon përtej menysë</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Loja ka probleme kritike ose performancë të papërshtatshme për lojë</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha</translation>
 		</message>
 	</context>
 	<context>
