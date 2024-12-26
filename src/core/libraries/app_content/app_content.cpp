@@ -145,8 +145,10 @@ int PS4_SYSV_ABI sceAppContentDownloadDataFormat() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb() {
+int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb(OrbisAppContentMountPoint* mountPoint,
+                                                              u64* availableSpaceKb) {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+    *availableSpaceKb = 1048576;
     return ORBIS_OK;
 }
 
@@ -294,9 +296,9 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataFormat() {
 }
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
-    const OrbisAppContentMountPoint* mountPoint, size_t* availableSpaceKb) {
+    const OrbisAppContentMountPoint* mountPoint, u64* availableSpaceKb) {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
-    *availableSpaceKb = 1073741824;
+    *availableSpaceKb = 1048576;
     return ORBIS_OK;
 }
 
