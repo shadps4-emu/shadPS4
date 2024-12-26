@@ -112,6 +112,10 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             ReloadShader(value);
         }
     }
+    SameLine();
+    if (Button("Copy name")) {
+        SetClipboardText(value.name.c_str());
+    }
 
     if (value.is_patched) {
         if (BeginCombo("Shader type", showing_bin ? "SPIRV" : "GLSL",
