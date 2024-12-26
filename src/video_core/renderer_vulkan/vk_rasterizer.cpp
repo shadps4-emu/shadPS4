@@ -1057,20 +1057,6 @@ void Rasterizer::UpdateViewportScissorState() {
         if (vp.xscale == 0) {
             continue;
         }
-        const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
-        const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
-        const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
-        const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
-        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
-        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
-        viewports.push_back({
-            .x = xoffset - xscale,
-            .y = yoffset - yscale,
-            .width = xscale * 2.0f,
-            .height = yscale * 2.0f,
-            .minDepth = zoffset - zscale * reduce_z,
-            .maxDepth = zscale + zoffset,
-        });
 
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
@@ -1087,6 +1073,42 @@ void Rasterizer::UpdateViewportScissorState() {
             .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
             .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
         });
+
+        const bool viewport_disabled = !vp_ctl.xoffset_enable && !vp_ctl.xscale_enable &&
+                                       !vp_ctl.yoffset_enable && !vp_ctl.yscale_enable &&
+                                       !vp_ctl.zoffset_enable && !vp_ctl.zscale_enable;
+        if (viewport_disabled) {
+            // If viewport is disabled, normalized device coordinates should be treated as pixel
+            // coordinates and viewport should be at least as large as the scissors.
+            const auto& scissor = scissors.back();
+            const auto xoffset = float(scissor.offset.x);
+            const auto xscale = float(scissor.extent.width);
+            const auto yoffset = float(scissor.offset.y);
+            const auto yscale = float(scissor.extent.height);
+            viewports.push_back({
+                .x = xoffset - xscale,
+                .y = yoffset - yscale,
+                .width = xscale * 2.0f,
+                .height = yscale * 2.0f,
+                .minDepth = 0.0,
+                .maxDepth = 1.0,
+            });
+        } else {
+            const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
+            const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
+            const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
+            const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
+            const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+            const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
+            viewports.push_back({
+                .x = xoffset - xscale,
+                .y = yoffset - yscale,
+                .width = xscale * 2.0f,
+                .height = yscale * 2.0f,
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
+            });
+        }
     }
 
     if (viewports.empty()) {
