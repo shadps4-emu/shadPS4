@@ -209,8 +209,18 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
     FIBER_EXIT;
 }
 
+int firstTime = 10;
+
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
     FIBER_ENTER(dcb_task_name);
+
+    // what is this thread race condition that
+    // crashes Knack every single friggin boot?
+    if (firstTime > 0)
+    {
+        firstTime--;
+        Sleep(10);
+    }
 
     cblock.Reset();
 
