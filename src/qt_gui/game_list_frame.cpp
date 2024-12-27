@@ -133,16 +133,16 @@ void GameListFrame::PopulateGameList() {
 
             QString formattedPlayTime;
             if (hours > 0) {
-                formattedPlayTime += QString("%1h ").arg(hours);
+                formattedPlayTime += QString("%1").arg(hours) + tr("h");
             }
             if (minutes > 0) {
-                formattedPlayTime += QString("%1m ").arg(minutes);
+                formattedPlayTime += QString("%1").arg(minutes) + tr("m");
             }
 
             formattedPlayTime = formattedPlayTime.trimmed();
             m_game_info->m_games[i].play_time = playTime.toStdString();
             if (formattedPlayTime.isEmpty()) {
-                SetTableItem(i, 8, QString("%1s").arg(seconds));
+                SetTableItem(i, 8, QString("%1").arg(seconds) + tr("s"));
             } else {
                 SetTableItem(i, 8, formattedPlayTime);
             }
