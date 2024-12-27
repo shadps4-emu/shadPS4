@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/sampler.h"
@@ -12,6 +14,11 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
     }
     using namespace Vulkan;
+    const bool anisotropyEnable = instance.IsAnisotropicFilteringSupported() &&
+                                  (AmdGpu::IsAnisoFilter(sampler.xy_mag_filter) ||
+                                   AmdGpu::IsAnisoFilter(sampler.xy_min_filter));
+    const float maxAnisotropy =
+        std::clamp(sampler.MaxAniso(), 1.0f, instance.MaxSamplerAnisotropy());
     const vk::SamplerCreateInfo sampler_ci = {
         .magFilter = LiverpoolToVK::Filter(sampler.xy_mag_filter),
         .minFilter = LiverpoolToVK::Filter(sampler.xy_min_filter),
@@ -20,6 +27,8 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         .addressModeV = LiverpoolToVK::ClampMode(sampler.clamp_y),
         .addressModeW = LiverpoolToVK::ClampMode(sampler.clamp_z),
         .mipLodBias = std::min(sampler.LodBias(), instance.MaxSamplerLodBias()),
+        .anisotropyEnable = anisotropyEnable,
+        .maxAnisotropy = maxAnisotropy,
         .compareEnable = sampler.depth_compare_func != AmdGpu::DepthCompare::Never,
         .compareOp = LiverpoolToVK::DepthCompare(sampler.depth_compare_func),
         .minLod = sampler.MinLod(),

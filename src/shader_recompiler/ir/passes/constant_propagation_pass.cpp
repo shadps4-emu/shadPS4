@@ -391,8 +391,11 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::UGreaterThanEqual:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a >= b; });
         return;
-    case IR::Opcode::IEqual:
+    case IR::Opcode::IEqual32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a == b; });
+        return;
+    case IR::Opcode::IEqual64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a == b; });
         return;
     case IR::Opcode::INotEqual:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a != b; });
