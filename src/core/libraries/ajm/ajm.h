@@ -164,10 +164,6 @@ struct AjmSidebandStatisticsEngineParameters {
     float interval[3];
 };
 
-struct SceAjmGetStatisticsParameters {
-    AjmSidebandStatisticsEngineParameters engine;
-};
-
 union AjmInstanceFlags {
     u64 raw;
     struct {
