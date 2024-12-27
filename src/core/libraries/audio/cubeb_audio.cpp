@@ -137,7 +137,6 @@ private:
 };
 
 CubebAudioOut::CubebAudioOut() {
-    cubeb_set_log_callback(CUBEB_LOG_DISABLED, nullptr);
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
     }

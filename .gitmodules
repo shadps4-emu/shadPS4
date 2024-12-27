@@ -122,3 +122,4 @@
 [submodule "externals/cubeb"]
 	path = externals/cubeb
 	url = https://github.com/mozilla/cubeb
+	shallow = true
