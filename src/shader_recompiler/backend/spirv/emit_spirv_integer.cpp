@@ -285,7 +285,11 @@ Id EmitULessThan64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpULessThan(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitIEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitIEqual32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpIEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitIEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpIEqual(ctx.U1[1], lhs, rhs);
 }
 

@@ -1359,7 +1359,9 @@ U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
     }
     switch (lhs.Type()) {
     case Type::U32:
-        return Inst<U1>(Opcode::IEqual, lhs, rhs);
+        return Inst<U1>(Opcode::IEqual32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(Opcode::IEqual64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
     }
