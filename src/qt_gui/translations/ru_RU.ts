@@ -732,6 +732,11 @@
 			<source>Volume</source>
 			<translation>Громкость</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Звуковая Подсистема</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

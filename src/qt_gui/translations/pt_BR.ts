@@ -732,6 +732,11 @@
 			<source>Volume</source>
 			<translation>Volume</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Backend de Áudio</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

@@ -732,6 +732,11 @@
 			<source>Volume</source>
 			<translation>Vëllimi i zërit</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Audio Backend</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
