@@ -5,7 +5,7 @@
 #include <mutex>
 #include <cubeb/cubeb.h>
 
-#include "common/assert.h"
+#include "common/logging/log.h"
 #include "common/ringbuffer.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
@@ -58,6 +58,8 @@ public:
         }
         if (const auto ret = cubeb_stream_start(stream); ret != CUBEB_OK) {
             LOG_ERROR(Lib_AudioOut, "Failed to start cubeb stream: {}", ret);
+            cubeb_stream_destroy(stream);
+            stream = nullptr;
             return;
         }
     }
@@ -74,6 +76,9 @@ public:
     }
 
     void Output(void* ptr, size_t size) override {
+        if (!stream) {
+            return;
+        }
         auto* data = static_cast<u8*>(ptr);
 
         std::unique_lock lock{buffer_mutex};

@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
-
 #include <SDL3/SDL_audio.h>
-#include <SDL3/SDL_init.h>
 
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
@@ -26,18 +24,28 @@ public:
             SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, nullptr, nullptr);
         if (stream == nullptr) {
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
+            return;
         }
-        SDL_ResumeAudioStreamDevice(stream);
+        if (!SDL_ResumeAudioStreamDevice(stream)) {
+            LOG_ERROR(Lib_AudioOut, "Failed to resume SDL audio stream: {}", SDL_GetError());
+            SDL_DestroyAudioStream(stream);
+            stream = nullptr;
+            return;
+        }
     }
 
     ~SDLPortBackend() override {
-        if (stream) {
-            SDL_DestroyAudioStream(stream);
-            stream = nullptr;
+        if (!stream) {
+            return;
         }
+        SDL_DestroyAudioStream(stream);
+        stream = nullptr;
     }
 
     void Output(void* ptr, size_t size) override {
+        if (!stream) {
+            return;
+        }
         SDL_PutAudioStreamData(stream, ptr, static_cast<int>(size));
         while (SDL_GetAudioStreamAvailable(stream) > AUDIO_STREAM_BUFFER_THRESHOLD) {
             // Yield to allow the stream to drain.
@@ -46,7 +54,15 @@ public:
     }
 
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
-        // TODO: Not yet implemented
+        if (!stream) {
+            return;
+        }
+        // SDL does not have per-channel volumes, for now just take the maximum of the channels.
+        const auto vol = *std::ranges::max_element(ch_volumes);
+        if (!SDL_SetAudioStreamGain(stream, static_cast<float>(vol) / SCE_AUDIO_OUT_VOLUME_0DB)) {
+            LOG_WARNING(Lib_AudioOut, "Failed to change SDL audio stream volume: {}",
+                        SDL_GetError());
+        }
     }
 
 private:
