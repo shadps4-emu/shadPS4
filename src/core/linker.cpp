@@ -138,8 +138,8 @@ void Linker::Execute() {
         mem_param.extended_memory_2 = nullptr;
     }
 
-    const u64 fw_ver = Common::ElfInfo::Instance().RawFirmwareVer();
-    if (fw_ver < Common::ElfInfo::FW_50) {
+    const u64 sdk_ver = proc_param->sdk_version;
+    if (sdk_ver < Common::ElfInfo::FW_50) {
         use_extended_mem1 = mem_param.extended_memory_1 ? *mem_param.extended_memory_1 : false;
         use_extended_mem2 = mem_param.extended_memory_2 ? *mem_param.extended_memory_2 : false;
     }
