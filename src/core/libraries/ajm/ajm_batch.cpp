@@ -271,13 +271,13 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         }
 
         const auto control_flags = job_flags.value().control_flags;
+        if (True(control_flags & AjmJobControlFlags::Resample)) {
+            job.input.resample_parameters = input_batch.Consume<AjmSidebandResampleParameters>();
+        }
         if (True(control_flags & AjmJobControlFlags::Initialize)) {
             job.input.init_params = AjmDecAt9InitializeParameters{};
             std::memcpy(&job.input.init_params.value(), input_batch.GetCurrent(),
                         input_batch.BytesRemaining());
-        }
-        if (True(control_flags & AjmJobControlFlags::Resample)) {
-            job.input.resample_parameters = input_batch.Consume<AjmSidebandResampleParameters>();
         }
     }
 
@@ -321,7 +321,7 @@ std::shared_ptr<AjmBatch> AjmBatch::FromBatchBuffer(std::span<u8> data) {
     while (!buffer.IsEmpty()) {
         auto& job_chunk = buffer.Consume<AjmChunkJob>();
         if (job_chunk.header.ident == AjmIdentInlineBuf) {
-            // Inline buffers are used to pass data to sideband, input or output buffers.
+            // Inline buffers are used to store sideband input data.
             // We should just skip them as they do not require any special handling.
             buffer.Advance(job_chunk.size);
             continue;
