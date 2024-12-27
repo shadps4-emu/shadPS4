@@ -106,7 +106,7 @@ git_describe(GIT_DESC --always --long --dirty)
 git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
@@ -520,7 +520,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/number_utils.cpp
            src/common/memory_patcher.h
            src/common/memory_patcher.cpp
-           src/common/scm_rev.cpp
+           ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
 )
 
