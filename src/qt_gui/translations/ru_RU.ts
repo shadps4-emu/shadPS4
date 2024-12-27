@@ -573,6 +573,11 @@
 			<translation>Время скрытия курсора при бездействии</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="816"/>
+			<source>s</source>
+			<translation>сек</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
 			<source>Controller</source>
 			<translation>Контроллер</translation>
@@ -726,6 +731,11 @@
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Громкость</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Звуковая Подсистема</translation>
 		</message>
 	</context>
 	<context>
@@ -1436,6 +1446,21 @@
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
+			<source>h</source>
+			<translation>ч</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>m</source>
+			<translation>м</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>s</source>
+			<translation>с</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility is untested</source>
 			<translation>Совместимость не проверена</translation>
 		</message>
@@ -1592,5 +1617,33 @@
 			<source>Failed to create the update script file</source>
 			<translation>Не удалось создать файл скрипта обновления</translation>
 		</message>
+	</context>
+	<context>
+		<name>GameListUtils</name>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>B</source>
+			<translation>Б</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>KB</source>
+			<translation>КБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>MB</source>
+			<translation>МБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>GB</source>
+			<translation>ГБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>TB</source>
+			<translation>ТБ</translation>
+		</message>		
 	</context>
 </TS>

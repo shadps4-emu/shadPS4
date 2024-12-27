@@ -75,8 +75,8 @@ bool MainWindow::Init() {
     this->setStatusBar(statusBar.data());
     // Update status bar
     int numGames = m_game_info->m_games.size();
-    QString statusMessage =
-        "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
+    QString statusMessage = tr("Games: ") + QString::number(numGames) + " (" +
+                            QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
 
 #ifdef ENABLE_DISCORD_RPC

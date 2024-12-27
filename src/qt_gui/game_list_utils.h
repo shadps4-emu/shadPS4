@@ -30,10 +30,11 @@ struct GameInfo {
     CompatibilityEntry compatibility = CompatibilityEntry{CompatibilityStatus::Unknown};
 };
 
-class GameListUtils {
+class GameListUtils : public QObject {
+    Q_OBJECT
 public:
     static QString FormatSize(qint64 size) {
-        static const QStringList suffixes = {"B", "KB", "MB", "GB", "TB"};
+        static const QStringList suffixes = {tr("B"), tr("KB"), tr("MB"), tr("GB"), tr("TB")};
         int suffixIndex = 0;
 
         double gameSize = static_cast<double>(size);
