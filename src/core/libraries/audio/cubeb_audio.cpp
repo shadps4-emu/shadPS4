@@ -131,7 +131,7 @@ private:
     }
 
     size_t frame_size;
-    ring_buffer_base<u8> buffer;
+    RingBuffer<u8> buffer;
     std::mutex buffer_mutex;
     std::condition_variable buffer_cv;
     cubeb_stream* stream{};

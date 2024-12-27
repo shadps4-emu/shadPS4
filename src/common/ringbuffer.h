@@ -44,17 +44,17 @@
  *   data for further processing.
  */
 template <typename T>
-class ring_buffer_base {
+class RingBuffer {
 public:
     /**
      * Constructor for a ring buffer.
      *
      * This performs an allocation, but is the only allocation that will happen
-     * for the life time of a `ring_buffer_base`.
+     * for the life time of a `RingBuffer`.
      *
      * @param capacity The maximum number of element this ring buffer will hold.
      */
-    ring_buffer_base(int capacity)
+    RingBuffer(int capacity)
         /* One more element to distinguish from empty and full buffer. */
         : capacity_(capacity + 1) {
         ASSERT(storage_capacity() < std::numeric_limits<int>::max() / 2 &&
