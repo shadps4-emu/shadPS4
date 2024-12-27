@@ -11,6 +11,7 @@
 #else
 #include <csignal>
 #include <pthread.h>
+#include <unistd.h>
 #endif
 
 namespace Core {

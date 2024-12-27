@@ -80,8 +80,8 @@ void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
                    : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
 }
 
-Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
-    auto info = Shader::RuntimeInfo{stage};
+const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
+    auto& info = runtime_infos[u32(l_stage)];
     const auto& regs = liverpool->regs;
     const auto BuildCommon = [&](const auto& program) {
         info.num_user_data = program.settings.num_user_regs;
@@ -90,6 +90,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
     };
+    info.Initialize(stage);
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
@@ -204,7 +205,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
-        .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
+        .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
+                              instance.GetDriverID() == vk::DriverId::eMoltenvk,
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -220,9 +222,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() =
-            std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, graphics_key,
-                                               *pipeline_cache, infos, fetch_shader, modules);
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap,
+                                                        graphics_key, *pipeline_cache, infos,
+                                                        runtime_infos, fetch_shader, modules);
         if (Config::collectShadersForDebug()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
@@ -257,11 +259,13 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    key.depth_stencil = regs.depth_control;
-    key.stencil = regs.stencil_control;
-    key.depth_stencil.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
-                                                !regs.depth_render_control.depth_clear_enable);
+    key.depth_test_enable = regs.depth_control.depth_enable;
+    key.depth_write_enable =
+        regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;
+    key.depth_bounds_test_enable = regs.depth_control.depth_bounds_enable;
     key.depth_bias_enable = regs.polygon_control.NeedsBias();
+    key.depth_compare_op = LiverpoolToVK::CompareOp(regs.depth_control.depth_func);
+    key.stencil_test_enable = regs.depth_control.stencil_enable;
 
     const auto depth_format = instance.GetSupportedFormat(
         LiverpoolToVK::DepthFormat(regs.depth_buffer.z_info.format,
@@ -271,13 +275,13 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.depth_format = depth_format;
     } else {
         key.depth_format = vk::Format::eUndefined;
-        key.depth_stencil.depth_enable.Assign(false);
+        key.depth_test_enable = false;
     }
     if (regs.depth_buffer.StencilValid()) {
         key.stencil_format = depth_format;
     } else {
         key.stencil_format = vk::Format::eUndefined;
-        key.depth_stencil.stencil_enable.Assign(false);
+        key.stencil_test_enable = false;
     }
 
     key.prim_type = regs.primitive_type;
@@ -493,7 +497,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         module = CompileSPV(spv, instance.GetDevice());
     }
 
-    const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
+    const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
@@ -568,6 +572,14 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
     return new_module;
 }
 
+std::string PipelineCache::GetShaderName(Shader::Stage stage, u64 hash,
+                                         std::optional<size_t> perm) {
+    if (perm) {
+        return fmt::format("{}_{:#018x}_{}", stage, hash, *perm);
+    }
+    return fmt::format("{}_{:#018x}", stage, hash);
+}
+
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
                                size_t perm_idx, std::string_view ext) {
     if (!Config::dumpShaders()) {
@@ -579,7 +591,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
 }
@@ -593,7 +605,7 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     if (!std::filesystem::exists(patch_dir)) {
         std::filesystem::create_directories(patch_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto filepath = patch_dir / filename;
     if (!std::filesystem::exists(filepath)) {
         return {};

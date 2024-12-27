@@ -90,7 +90,7 @@ public:
         const auto start_time = std::chrono::high_resolution_clock::now();
         auto rel_time_ms = std::chrono::ceil<std::chrono::milliseconds>(rel_time);
 
-        while (rel_time_ms.count() > 0) {
+        do {
             u64 timeout_ms = static_cast<u64>(rel_time_ms.count());
             u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
             if (res == WAIT_OBJECT_0) {
@@ -101,7 +101,7 @@ public:
             } else {
                 return false;
             }
-        }
+        } while (rel_time_ms.count() > 0);
 
         return false;
 #elif defined(__APPLE__)
@@ -117,12 +117,9 @@ public:
     bool try_acquire_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
 #ifdef _WIN64
         const auto start_time = Clock::now();
-        if (start_time >= abs_time) {
-            return false;
-        }
 
         auto rel_time = std::chrono::ceil<std::chrono::milliseconds>(abs_time - start_time);
-        while (rel_time.count() > 0) {
+        do {
             u64 timeout_ms = static_cast<u64>(rel_time.count());
             u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
             if (res == WAIT_OBJECT_0) {
@@ -133,7 +130,7 @@ public:
             } else {
                 return false;
             }
-        }
+        } while (rel_time.count() > 0);
 
         return false;
 #elif defined(__APPLE__)

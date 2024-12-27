@@ -86,32 +86,32 @@ F12 | Trigger RenderDoc Capture
 > [!NOTE]
 > Xbox and DualShock controllers work out of the box.
 
-| Controller button | Keyboard equivelant |
-|-------------|-------------|
-LEFT AXIS UP | W |
-LEFT AXIS DOWN | S |
-LEFT AXIS LEFT | A |
-LEFT AXIS RIGHT | D |
-RIGHT AXIS UP | I |
-RIGHT AXIS DOWN | K |
-RIGHT AXIS LEFT | J |
-RIGHT AXIS RIGHT | L |
-TRIANGLE | Numpad 8 |
-CIRCLE | Numpad 6 |
-CROSS | Numpad 2 |
-SQUARE | Numpad 4 |
-PAD UP | UP |
-PAD DOWN | DOWN |
-PAD LEFT | LEFT |
-PAD RIGHT | RIGHT |
-OPTIONS | RETURN |
-BACK BUTTON / TOUCH PAD | SPACE |
-L1 | Q |
-R1 | U |
-L2 | E |
-R2 | O |
-L3 | X |
-R3 | M |
+| Controller button | Keyboard equivelant | Mac alternative |
+|-------------|-------------|--------------|
+LEFT AXIS UP | W | |
+LEFT AXIS DOWN | S | |
+LEFT AXIS LEFT | A | |
+LEFT AXIS RIGHT | D | |
+RIGHT AXIS UP | I | |
+RIGHT AXIS DOWN | K | |
+RIGHT AXIS LEFT | J | |
+RIGHT AXIS RIGHT | L | |
+TRIANGLE | Numpad 8 | C |
+CIRCLE | Numpad 6 | B |
+CROSS | Numpad 2 | N |
+SQUARE | Numpad 4 | V |
+PAD UP | UP | |
+PAD DOWN | DOWN | |
+PAD LEFT | LEFT | |
+PAD RIGHT | RIGHT | |
+OPTIONS | RETURN | |
+BACK BUTTON / TOUCH PAD | SPACE | |
+L1 | Q | |
+R1 | U | |
+L2 | E | |
+R2 | O | |
+L3 | X | |
+R3 | M | |
 
 # Main team
 

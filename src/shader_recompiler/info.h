@@ -49,11 +49,11 @@ struct BufferResource {
     u8 instance_attrib{};
     bool is_written{};
 
-    bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
+    [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer) const noexcept {
         return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
     }
 
-    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
+    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
 using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
@@ -61,18 +61,24 @@ struct TextureBufferResource {
     u32 sharp_idx;
     bool is_written{};
 
-    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
+    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
 using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
     u32 sharp_idx;
-    bool is_storage{};
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
+    bool is_read{};
+    bool is_written{};
 
-    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
+    [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
+        // Need cube as storage when used with ImageRead.
+        return is_written || (is_read && image.GetBoundType() == AmdGpu::ImageType::Cube);
+    }
+
+    [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
 using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 

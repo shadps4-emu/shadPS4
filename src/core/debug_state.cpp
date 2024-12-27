@@ -11,6 +11,7 @@
 #include "libraries/kernel/time.h"
 #include "libraries/system/msgdialog.h"
 #include "video_core/amdgpu/pm4_cmds.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 
 using namespace DebugStateType;
 
@@ -168,8 +169,12 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
         if ((*dump)->regs.stage_enable.IsStageEnabled(i)) {
             auto stage = (*dump)->regs.ProgramForStage(i);
             if (stage->address_lo != 0) {
+                const auto& info = AmdGpu::Liverpool::SearchBinaryInfo(stage->Address<u32*>());
                 auto code = stage->Code();
                 (*dump)->stages[i] = PipelineShaderProgramDump{
+                    .name = Vulkan::PipelineCache::GetShaderName(Shader::StageFromIndex(i),
+                                                                 info.shader_hash),
+                    .hash = info.shader_hash,
                     .user_data = *stage,
                     .code = std::vector<u32>{code.begin(), code.end()},
                 };
@@ -191,7 +196,10 @@ void DebugStateImpl::PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_a
     auto& cs = (*dump)->regs.cs_program;
     cs = cs_state;
 
+    const auto& info = AmdGpu::Liverpool::SearchBinaryInfo(cs.Address<u32*>());
     (*dump)->cs_data = PipelineComputerProgramDump{
+        .name = Vulkan::PipelineCache::GetShaderName(Shader::Stage::Compute, info.shader_hash),
+        .hash = info.shader_hash,
         .cs_program = cs,
         .code = std::vector<u32>{cs.Code().begin(), cs.Code().end()},
     };

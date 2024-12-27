@@ -14,7 +14,11 @@
 #include <tracy/Tracy.hpp>
 
 static inline bool IsProfilerConnected() {
+#if TRACY_ENABLE
     return tracy::GetProfiler().IsConnected();
+#else
+    return false;
+#endif
 }
 
 #define TRACY_GPU_ENABLED 0

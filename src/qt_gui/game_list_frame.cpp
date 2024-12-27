@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QToolTip>
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
@@ -72,7 +73,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, true);
+        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, this, true);
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
@@ -80,11 +81,6 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
             QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
         }
     });
-
-    // Do not show status column if it is not enabled
-    if (!Config::getCompatibilityEnabled()) {
-        this->setColumnHidden(2, true);
-    }
 }
 
 void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
@@ -108,6 +104,8 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
 }
 
 void GameListFrame::PopulateGameList() {
+    // Do not show status column if it is not enabled
+    this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
 
@@ -241,7 +239,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         break;
     case CompatibilityStatus::Nothing:
         color = QStringLiteral("#212121");
-        status_explanation = tr("Games does not initialize properly / crashes the emulator");
+        status_explanation = tr("Game does not initialize properly / crashes the emulator");
         break;
     case CompatibilityStatus::Boots:
         color = QStringLiteral("#828282");

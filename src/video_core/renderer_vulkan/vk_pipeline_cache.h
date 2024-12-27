@@ -65,6 +65,9 @@ public:
     std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
                                                   std::span<const u32> spv_code);
 
+    static std::string GetShaderName(Shader::Stage stage, u64 hash,
+                                     std::optional<size_t> perm = {});
+
 private:
     bool RefreshGraphicsKey();
     bool RefreshComputeKey();
@@ -76,7 +79,7 @@ private:
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
-    Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
+    const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
 
 private:
     const Instance& instance;
@@ -90,6 +93,7 @@ private:
     tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    std::array<Shader::RuntimeInfo, MaxShaderStages> runtime_infos{};
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
