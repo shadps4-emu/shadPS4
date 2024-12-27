@@ -62,14 +62,16 @@ struct OrbisAudioOutPortState {
 struct PortOut {
     std::unique_ptr<PortBackend> impl{};
 
-    u32 samples_num;
-    u32 freq;
-    OrbisAudioOutParamFormat format;
     OrbisAudioOutPort type;
-    int channels_num;
+    OrbisAudioOutParamFormat format;
     bool is_float;
-    std::array<int, 8> volume;
     u8 sample_size;
+    u8 channels_num;
+    u32 samples_num;
+    u32 frame_size;
+    u32 buffer_size;
+    u32 freq;
+    std::array<int, 8> volume;
 };
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();

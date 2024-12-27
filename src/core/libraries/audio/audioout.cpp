@@ -93,7 +93,7 @@ static bool IsFormatFloat(const OrbisAudioOutParamFormat format) {
     }
 }
 
-static int GetFormatNumChannels(const OrbisAudioOutParamFormat format) {
+static u8 GetFormatNumChannels(const OrbisAudioOutParamFormat format) {
     switch (format) {
     case OrbisAudioOutParamFormat::S16Mono:
     case OrbisAudioOutParamFormat::FloatMono:
@@ -403,12 +403,14 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     }
 
     port->type = port_type;
-    port->samples_num = length;
-    port->freq = sample_rate;
     port->format = format;
     port->is_float = IsFormatFloat(format);
-    port->channels_num = GetFormatNumChannels(format);
     port->sample_size = GetFormatSampleSize(format);
+    port->channels_num = GetFormatNumChannels(format);
+    port->samples_num = length;
+    port->frame_size = port->sample_size * port->channels_num;
+    port->buffer_size = port->frame_size * port->samples_num;
+    port->freq = sample_rate;
     port->volume.fill(SCE_AUDIO_OUT_VOLUME_0DB);
     port->impl = audio->Open(*port);
 
@@ -434,8 +436,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
-    const size_t data_size = port.samples_num * port.sample_size * port.channels_num;
-    port.impl->Output(ptr, data_size);
+    port.impl->Output(ptr, port.buffer_size);
     return ORBIS_OK;
 }
 

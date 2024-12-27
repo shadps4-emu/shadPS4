@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstdarg>
+#include <condition_variable>
+#include <mutex>
 #include <cubeb/cubeb.h>
 
 #include "common/assert.h"
@@ -16,8 +17,7 @@ constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buff
 class CubebPortBackend : public PortBackend {
 public:
     CubebPortBackend(cubeb* ctx, const PortOut& port)
-        : frame_size(port.channels_num * port.sample_size),
-          buffer(static_cast<int>(port.samples_num * frame_size) * 4) {
+        : frame_size(port.frame_size), buffer(static_cast<int>(port.buffer_size) * 4) {
         if (!ctx) {
             return;
         }
@@ -36,7 +36,7 @@ public:
         cubeb_stream_params stream_params = {
             .format = port.is_float ? CUBEB_SAMPLE_FLOAT32LE : CUBEB_SAMPLE_S16LE,
             .rate = port.freq,
-            .channels = static_cast<u32>(port.channels_num),
+            .channels = port.channels_num,
             .layout = get_channel_layout(),
             .prefs = CUBEB_STREAM_PREF_NONE,
         };
@@ -75,16 +75,10 @@ public:
 
     void Output(void* ptr, size_t size) override {
         auto* data = static_cast<u8*>(ptr);
-        while (size > 0) {
-            const auto queued = buffer.enqueue(data, static_cast<int>(size));
-            size -= queued;
-            data += queued;
-            if (size > 0) {
-                // If the data is too large for the ring buffer, yield execution and give it a
-                // chance to drain.
-                std::this_thread::yield();
-            }
-        }
+
+        std::unique_lock lock{buffer_mutex};
+        buffer_cv.wait(lock, [&] { return buffer.available_write() >= size; });
+        buffer.enqueue(data, static_cast<int>(size));
     }
 
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
@@ -106,7 +100,12 @@ private:
         auto* stream_data = static_cast<CubebPortBackend*>(user_data);
         const auto out_data = static_cast<u8*>(out);
         const auto requested_size = static_cast<int>(num_frames * stream_data->frame_size);
+
+        std::unique_lock lock{stream_data->buffer_mutex};
         const auto dequeued_size = stream_data->buffer.dequeue(out_data, requested_size);
+        lock.unlock();
+        stream_data->buffer_cv.notify_one();
+
         if (dequeued_size < requested_size) {
             // Need to fill remaining space with silence.
             std::memset(out_data + dequeued_size, 0, requested_size - dequeued_size);
@@ -133,6 +132,8 @@ private:
 
     size_t frame_size;
     ring_buffer_base<u8> buffer;
+    std::mutex buffer_mutex;
+    std::condition_variable buffer_cv;
     cubeb_stream* stream{};
 };
 
