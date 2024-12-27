@@ -14,6 +14,11 @@ void AjmInstanceStatistics::ExecuteJob(AjmJob& job) {
             job.output.p_engine->usage_interval[idx] = 0.01;
         }
     }
+    if (job.output.p_engine_per_codec) {
+        job.output.p_engine_per_codec->codec_count = 1;
+        job.output.p_engine_per_codec->codec_id[0] = static_cast<u8>(AjmCodecType::At9Dec);
+        job.output.p_engine_per_codec->codec_percentage[0] = 0.01;
+    }
     if (job.output.p_memory) {
         job.output.p_memory->instance_free = 0x400000;
         job.output.p_memory->buffer_free = 0x400000;

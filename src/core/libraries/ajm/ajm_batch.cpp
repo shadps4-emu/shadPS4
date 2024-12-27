@@ -183,6 +183,11 @@ AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buf
             job.output.p_engine = &output_batch.Consume<AjmSidebandStatisticsEngine>();
             *job.output.p_engine = AjmSidebandStatisticsEngine{};
         }
+        if (True(flags.statistics_flags & AjmStatisticsFlags::EnginePerCodec)) {
+            job.output.p_engine_per_codec =
+                &output_batch.Consume<AjmSidebandStatisticsEnginePerCodec>();
+            *job.output.p_engine_per_codec = AjmSidebandStatisticsEnginePerCodec{};
+        }
         if (True(flags.statistics_flags & AjmStatisticsFlags::Memory)) {
             job.output.p_memory = &output_batch.Consume<AjmSidebandStatisticsMemory>();
             *job.output.p_memory = AjmSidebandStatisticsMemory{};

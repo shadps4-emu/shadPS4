@@ -34,6 +34,7 @@ struct AjmJob {
         AjmSidebandStream* p_stream = nullptr;
         AjmSidebandFormat* p_format = nullptr;
         AjmSidebandStatisticsMemory* p_memory = nullptr;
+        AjmSidebandStatisticsEnginePerCodec* p_engine_per_codec = nullptr;
         AjmSidebandStatisticsEngine* p_engine = nullptr;
         AjmSidebandGaplessDecode* p_gapless_decode = nullptr;
         AjmSidebandMFrame* p_mframe = nullptr;

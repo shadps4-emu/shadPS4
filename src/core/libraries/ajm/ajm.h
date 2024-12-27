@@ -76,6 +76,7 @@ union AjmJobFlags {
 
 enum class AjmStatisticsFlags : u64 {
     Memory = 1 << 0,
+    EnginePerCodec = 1 << 15,
     Engine = 1 << 16,
 };
 DECLARE_ENUM_FLAG_OPERATORS(AjmStatisticsFlags)
@@ -145,19 +146,25 @@ union AjmSidebandInitParameters {
     u8 reserved[8];
 };
 
-typedef struct {
+struct AjmSidebandStatisticsEngine {
     float usage_batch;
     float usage_interval[3];
-} AjmSidebandStatisticsEngine;
+};
 
-typedef struct {
+struct AjmSidebandStatisticsEnginePerCodec {
+    u8 codec_count;
+    u8 codec_id[3];
+    float codec_percentage[3];
+};
+
+struct AjmSidebandStatisticsMemory {
     u32 instance_free;
     u32 buffer_free;
     u32 batch_size;
     u32 input_size;
     u32 output_size;
     u32 small_size;
-} AjmSidebandStatisticsMemory;
+};
 
 struct AjmSidebandStatisticsEngineParameters {
     u32 interval_count;
