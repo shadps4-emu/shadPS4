@@ -74,11 +74,11 @@ union AjmJobFlags {
     };
 };
 
-enum class AjmStatisticsFalgs : u64 {
+enum class AjmStatisticsFlags : u64 {
     Memory = 1 << 0,
     Engine = 1 << 16,
 };
-DECLARE_ENUM_FLAG_OPERATORS(AjmStatisticsFalgs)
+DECLARE_ENUM_FLAG_OPERATORS(AjmStatisticsFlags)
 
 union AjmStatisticsJobFlags {
     AjmStatisticsJobFlags(AjmJobFlags job_flags) : raw(job_flags.raw) {}
@@ -87,7 +87,7 @@ union AjmStatisticsJobFlags {
     struct {
         u64 version : 3;
         u64 : 12;
-        AjmStatisticsFalgs statistics_flags : 17;
+        AjmStatisticsFlags statistics_flags : 17;
         u64 : 32;
     };
 };

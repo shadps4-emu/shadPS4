@@ -168,7 +168,7 @@ AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buf
     AjmStatisticsJobFlags flags(job.flags);
     if (input_control_buffer.has_value()) {
         AjmBatchBuffer input_batch(input_control_buffer.value());
-        if (True(flags.statistics_flags & AjmStatisticsFalgs::Engine)) {
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Engine)) {
             job.input.statistics_engine_parameters =
                 input_batch.Consume<AjmSidebandStatisticsEngineParameters>();
         }
@@ -179,11 +179,11 @@ AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buf
         job.output.p_result = &output_batch.Consume<AjmSidebandResult>();
         *job.output.p_result = AjmSidebandResult{};
 
-        if (True(flags.statistics_flags & AjmStatisticsFalgs::Engine)) {
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Engine)) {
             job.output.p_engine = &output_batch.Consume<AjmSidebandStatisticsEngine>();
             *job.output.p_engine = AjmSidebandStatisticsEngine{};
         }
-        if (True(flags.statistics_flags & AjmStatisticsFalgs::Memory)) {
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Memory)) {
             job.output.p_memory = &output_batch.Consume<AjmSidebandStatisticsMemory>();
             *job.output.p_memory = AjmSidebandStatisticsMemory{};
         }
