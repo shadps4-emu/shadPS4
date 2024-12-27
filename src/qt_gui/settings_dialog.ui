@@ -77,8 +77,7 @@
        <number>0</number>
       </property>
       <widget class="QWidget" name="generalTab">
-       <attribute name="title">
-        <attribute name="title">
+      <attribute name="title">
        <string>General</string>
       </attribute>
       <widget class="QWidget" name="generalTabContents">
