@@ -357,6 +357,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         const auto& bininfo = Liverpool::GetBinaryInfo(*pgm);
+		
         if (!bininfo.Valid()) {
             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
             key.stage_hashes[stage_out_idx] = 0;
@@ -470,6 +471,13 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto cs_params = Liverpool::GetParams(cs_pgm);
+	
+    // Knack CS skip
+	if(
+        (cs_params.hash == 0xb3ee396927a8c5ea)
+        )
+		return false;
+	
     std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
         GetProgram(Shader::Stage::Compute, LogicalStage::Compute, cs_params, binding);
     return true;

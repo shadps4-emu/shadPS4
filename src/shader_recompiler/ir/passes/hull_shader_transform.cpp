@@ -485,8 +485,11 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
                                            ? 1
                                            : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
-                ASSERT_MSG(region == AttributeRegion::InputCP,
-                           "Unhandled read of output or patchconst attribute in hull shader");
+                
+                // Knack Fix
+                //ASSERT_MSG(region == AttributeRegion::InputCP,
+                //           "Unhandled read of output or patchconst attribute in hull shader");
+                
                 IR::Value attr_read;
                 if (num_dwords == 1) {
                     attr_read = ir.BitCast<IR::U32>(

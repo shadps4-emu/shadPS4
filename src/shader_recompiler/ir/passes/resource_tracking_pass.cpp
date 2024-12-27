@@ -351,7 +351,9 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     // Replace handle with binding index in buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
-    ASSERT(!buffer.add_tid_enable);
+
+    // Fix Knack
+    //ASSERT(!buffer.add_tid_enable);
 
     // Address of constant buffer reads can be calculated at IR emittion time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {

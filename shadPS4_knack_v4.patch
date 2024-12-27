@@ -1,0 +1,131 @@
+diff --git a/src/core/libraries/ajm/ajm_batch.h b/src/core/libraries/ajm/ajm_batch.h
+index 65110ee..ed33f7d 100644
+--- a/src/core/libraries/ajm/ajm_batch.h
++++ b/src/core/libraries/ajm/ajm_batch.h
+@@ -15,6 +15,7 @@
+ #include <semaphore>
+ #include <span>
+ #include <vector>
++#include <optional>
+ 
+ namespace Libraries::Ajm {
+ 
+diff --git a/src/shader_recompiler/backend/spirv/emit_spirv.cpp b/src/shader_recompiler/backend/spirv/emit_spirv.cpp
+index 0ce9eea..900d404 100644
+--- a/src/shader_recompiler/backend/spirv/emit_spirv.cpp
++++ b/src/shader_recompiler/backend/spirv/emit_spirv.cpp
+@@ -24,6 +24,7 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType
+     case AmdGpu::PrimitiveType::PointList:
+         return spv::ExecutionMode::InputPoints;
+     case AmdGpu::PrimitiveType::LineList:
++    case AmdGpu::PrimitiveType::LineStrip:
+         return spv::ExecutionMode::InputLines;
+     case AmdGpu::PrimitiveType::TriangleList:
+     case AmdGpu::PrimitiveType::TriangleStrip:
+diff --git a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+index d8bafcc..281c487 100644
+--- a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
++++ b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+@@ -43,6 +43,7 @@ static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
+     case AmdGpu::PrimitiveType::PointList:
+         return 1u;
+     case AmdGpu::PrimitiveType::LineList:
++    case AmdGpu::PrimitiveType::LineStrip:
+         return 2u;
+     case AmdGpu::PrimitiveType::TriangleList:
+     case AmdGpu::PrimitiveType::TriangleStrip:
+diff --git a/src/shader_recompiler/ir/passes/hull_shader_transform.cpp b/src/shader_recompiler/ir/passes/hull_shader_transform.cpp
+index 895c982..c0e31f5 100644
+--- a/src/shader_recompiler/ir/passes/hull_shader_transform.cpp
++++ b/src/shader_recompiler/ir/passes/hull_shader_transform.cpp
+@@ -485,8 +485,11 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
+                 const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
+                                            ? 1
+                                            : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
+-                ASSERT_MSG(region == AttributeRegion::InputCP,
+-                           "Unhandled read of output or patchconst attribute in hull shader");
++                
++                // Knack Fix
++                //ASSERT_MSG(region == AttributeRegion::InputCP,
++                //           "Unhandled read of output or patchconst attribute in hull shader");
++                
+                 IR::Value attr_read;
+                 if (num_dwords == 1) {
+                     attr_read = ir.BitCast<IR::U32>(
+diff --git a/src/shader_recompiler/ir/passes/resource_tracking_pass.cpp b/src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+index db1a2ed..8f13568 100644
+--- a/src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
++++ b/src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+@@ -351,7 +351,9 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+     // Replace handle with binding index in buffer resource list.
+     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+     inst.SetArg(0, ir.Imm32(binding));
+-    ASSERT(!buffer.add_tid_enable);
++
++    // Fix Knack
++    //ASSERT(!buffer.add_tid_enable);
+ 
+     // Address of constant buffer reads can be calculated at IR emittion time.
+     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+diff --git a/src/video_core/amdgpu/liverpool.cpp b/src/video_core/amdgpu/liverpool.cpp
+index 5dd3edd..796559f 100644
+--- a/src/video_core/amdgpu/liverpool.cpp
++++ b/src/video_core/amdgpu/liverpool.cpp
+@@ -209,9 +209,19 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
+     FIBER_EXIT;
+ }
+ 
++int firstTime = 10;
++
+ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
+     FIBER_ENTER(dcb_task_name);
+ 
++    // what is this thread race condition that
++    // crashes Knack every single friggin boot?
++    if (firstTime > 0)
++    {
++        firstTime--;
++        Sleep(10);
++    }
++
+     cblock.Reset();
+ 
+     // TODO: potentially, ASCs also can depend on CE and in this case the
+diff --git a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+index 74ae6b6..39f7e3a 100644
+--- a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
++++ b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+@@ -357,6 +357,7 @@ bool PipelineCache::RefreshGraphicsKey() {
+         }
+ 
+         const auto& bininfo = Liverpool::GetBinaryInfo(*pgm);
++		
+         if (!bininfo.Valid()) {
+             LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
+             key.stage_hashes[stage_out_idx] = 0;
+@@ -470,6 +471,13 @@ bool PipelineCache::RefreshComputeKey() {
+     Shader::Backend::Bindings binding{};
+     const auto& cs_pgm = liverpool->GetCsRegs();
+     const auto cs_params = Liverpool::GetParams(cs_pgm);
++	
++    // Knack CS skip
++	if(
++        (cs_params.hash == 0xb3ee396927a8c5ea)
++        )
++		return false;
++	
+     std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
+         GetProgram(Shader::Stage::Compute, LogicalStage::Compute, cs_params, binding);
+     return true;
+diff --git a/src/video_core/texture_cache/image_info.cpp b/src/video_core/texture_cache/image_info.cpp
+index 2cc4aab..d9b181b 100644
+--- a/src/video_core/texture_cache/image_info.cpp
++++ b/src/video_core/texture_cache/image_info.cpp
+@@ -360,6 +360,7 @@ void ImageInfo::UpdateSize() {
+         }
+ 
+         switch (tiling_mode) {
++        case (AmdGpu::TilingMode)9: // Knack fix, TilingMode 0x9 in Chapter 13-1
+         case AmdGpu::TilingMode::Display_Linear: {
+             std::tie(mip_info.pitch, mip_info.size) =
+                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);

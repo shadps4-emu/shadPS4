@@ -360,6 +360,7 @@ void ImageInfo::UpdateSize() {
         }
 
         switch (tiling_mode) {
+        case (AmdGpu::TilingMode)9: // Knack fix, TilingMode 0x9 in Chapter 13-1
         case AmdGpu::TilingMode::Display_Linear: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);

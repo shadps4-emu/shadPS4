@@ -15,6 +15,7 @@
 #include <semaphore>
 #include <span>
 #include <vector>
+#include <optional>
 
 namespace Libraries::Ajm {
 
