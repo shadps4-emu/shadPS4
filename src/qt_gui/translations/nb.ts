@@ -108,32 +108,32 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
 			<source>SFO Viewer</source>
-			<translation>SFO Viser</translation>
+			<translation>SFO viser</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
 			<source>Trophy Viewer</source>
-			<translation>Trofé Viser</translation>
+			<translation>Trofé viser</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
 			<source>Open Folder...</source>
-			<translation>Åpne Mappen...</translation>
+			<translation>Åpne mappen...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
 			<source>Open Game Folder</source>
-			<translation>Åpne Spillmappen</translation>
+			<translation>Åpne spillmappen</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>
 			<source>Open Save Data Folder</source>
-			<translation>Åpne Lagrede Data-mappen</translation>
+			<translation>Åpne lagrede datamappen</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="52"/>
 			<source>Open Log Folder</source>
-			<translation>Åpne Loggmappen</translation>
+			<translation>Åpne loggmappen</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
@@ -143,17 +143,17 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="60"/>
 			<source>Copy Name</source>
-			<translation>Kopier Navn</translation>
+			<translation>Kopier navn</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="61"/>
 			<source>Copy Serial</source>
-			<translation>Kopier Serienummer</translation>
+			<translation>Kopier serienummer</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="62"/>
 			<source>Copy All</source>
-			<translation>Kopier Alle</translation>
+			<translation>Kopier alle</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="72"/>
@@ -163,12 +163,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="73"/>
 			<source>Delete Game</source>
-			<translation>Slett Spill</translation>
+			<translation>Slett spill</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="74"/>
 			<source>Delete Update</source>
-			<translation>Slett Oppdatering</translation>
+			<translation>Slett oppdatering</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
@@ -251,12 +251,12 @@
 		<message>
 			<location filename="../main_window_ui.h" line="312"/>
 			<source>Install Packages (PKG)</source>
-			<translation>Installer Pakker (PKG)</translation>
+			<translation>Installer pakker (PKG)</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="313"/>
 			<source>Boot Game</source>
-			<translation>Start Spill</translation>
+			<translation>Start spill</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="308"/>
@@ -281,7 +281,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="320"/>
 			<source>Recent Games</source>
-			<translation>Nylige Spill</translation>
+			<translation>Nylige spill</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="321"/>
@@ -301,12 +301,12 @@
 		<message>
 			<location filename="../main_window_ui.h" line="330"/>
 			<source>Show Game List</source>
-			<translation>Vis Spill-listen</translation>
+			<translation>Vis spill-listen</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="332"/>
 			<source>Game List Refresh</source>
-			<translation>Oppdater Spill-listen</translation>
+			<translation>Oppdater spill-listen</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="333"/>
@@ -351,17 +351,17 @@
 		<message>
 			<location filename="../main_window_ui.h" line="343"/>
 			<source>Download Cheats/Patches</source>
-			<translation>Last ned Juks /Programrettelse </translation>
+			<translation>Last ned juks/programrettelse</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
 			<source>Dump Game List</source>
-			<translation>Dump Spill-liste</translation>
+			<translation>Dump spill-liste</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="346"/>
 			<source>PKG Viewer</source>
-			<translation>PKG Viser</translation>
+			<translation>PKG viser</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="348"/>
@@ -381,12 +381,12 @@
 		<message>
 			<location filename="../main_window_ui.h" line="352"/>
 			<source>Game List Icons</source>
-			<translation>Spill-liste Ikoner</translation>
+			<translation>Spill-liste ikoner</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="354"/>
 			<source>Game List Mode</source>
-			<translation>Spill-liste Modus</translation>
+			<translation>Spill-liste modus</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="355"/>
@@ -444,7 +444,7 @@
 		<message>
 			<location filename="../pkg_viewer.cpp" line="32"/>
 			<source>Open Folder</source>
-			<translation>Åpne Mappe</translation>
+			<translation>Åpne mappe</translation>
 		</message>
 	</context>
 	<context>
@@ -452,7 +452,7 @@
 		<message>
 			<location filename="../trophy_viewer.cpp" line="8"/>
 			<source>Trophy Viewer</source>
-			<translation>Trofé Viser</translation>
+			<translation>Trofé viser</translation>
 		</message>
 	</context>
 	<context>
@@ -490,17 +490,17 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="122"/>
 			<source>Enable Fullscreen</source>
-			<translation>Aktiver Fullskjerm</translation>
+			<translation>Aktiver fullskjerm</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="140"/>
 			<source>Enable Separate Update Folder</source>
-			<translation>Aktiver Seperat Oppdateringsmappe</translation>
+			<translation>Aktiver seperat oppdateringsmappe</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
-			<translation>Vis Velkomstbilde</translation>
+			<translation>Vis velkomstbilde</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="136"/>
@@ -525,12 +525,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="199"/>
 			<source>Log Type</source>
-			<translation>Log Type</translation>
+			<translation>Logg type</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="235"/>
 			<source>Log Filter</source>
-			<translation>Log Filter</translation>
+			<translation>Logg filter</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="595"/>
@@ -560,7 +560,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="797"/>
 			<source>Back Button Behavior</source>
-			<translation>Tilbakeknapp Atferd</translation>
+			<translation>Tilbakeknapp atferd</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="272"/>
@@ -585,7 +585,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="405"/>
 			<source>Vblank Divider</source>
-			<translation>Vblank Skillelinje</translation>
+			<translation>Vblank skillelinje</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="453"/>
@@ -595,7 +595,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="462"/>
 			<source>Enable Shaders Dumping</source>
-			<translation>Aktiver Skyggelegger Dumping</translation>
+			<translation>Aktiver dumping av skyggelegger</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="469"/>
@@ -630,22 +630,22 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="537"/>
 			<source>Enable Debug Dumping</source>
-			<translation>Aktiver Feilretting Dumping</translation>
+			<translation>Aktiver dumping av feilretting</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="560"/>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Aktiver Vulkan Valideringslag</translation>
+			<translation>Aktiver Vulkan valideringslag</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="567"/>
 			<source>Enable Vulkan Synchronization Validation</source>
-			<translation>Aktiver Vulkan Synkroniseringslag</translation>
+			<translation>Aktiver Vulkan synkroniseringslag</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="574"/>
 			<source>Enable RenderDoc Debugging</source>
-			<translation>Aktiver RenderDoc Feilretting</translation>
+			<translation>Aktiver RenderDoc feilretting</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="274"/>
@@ -670,12 +670,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="354"/>
 			<source>GUI Settings</source>
-			<translation>GUI-Innstillinger</translation>
+			<translation>GUI-innstillinger</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="475"/>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Deaktiver trofé hurtigmeny</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -685,22 +685,22 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Oppdater kompatibilitets-database ved oppstart</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Spill kompatibilitet</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Vis kompatibilitets-data</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Oppdater kompatibilitets-database</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
@@ -728,7 +728,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="328"/>
 			<source>Download Patches For All Games</source>
-			<translation>Last ned oppdateringer for alle spill</translation>
+			<translation>Last ned programrettelser for alle spill</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="363"/>
@@ -778,7 +778,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="623"/>
 			<source>PKG Extraction</source>
-			<translation>PKG-ekstraksjon</translation>
+			<translation>PKG-utpakking</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
@@ -788,7 +788,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>PKG and Game versions match: </source>
-			<translation>PKG- og spillversjoner stemmer overens: </translation>
+			<translation>PKG og spillversjoner stemmer overens: </translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="647"/>
@@ -813,7 +813,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="673"/>
 			<source>DLC Installation</source>
-			<translation>DLC-installasjon</translation>
+			<translation>DLC installasjon</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="674"/>
@@ -833,7 +833,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="674"/>
 			<source>PKG is a patch, please install the game first!</source>
-			<translation>PKG er en oppdatering, vennligst installer spillet først!</translation>
+			<translation>PKG er en programrettelse, vennligst installer spillet først!</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="681"/>
@@ -871,7 +871,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juksene/Programrettelsene,\nvær vennlig å rapportere problemer til jukse/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juks/Programrettelse,\nvær vennlig å rapportere problemer til juks/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
@@ -921,7 +921,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="170"/>
 			<source>You can delete the cheats you don't want after downloading them.</source>
-			<translation>Du kan slette juksene du ikke ønsker etter å ha lastet dem ned.</translation>
+			<translation>Du kan slette juks du ikke ønsker etter å ha lastet dem ned.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="178"/>
@@ -936,7 +936,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="241"/>
 			<source>Download Patches</source>
-			<translation>Last ned programrettelse</translation>
+			<translation>Last ned programrettelser</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="248"/>
@@ -946,7 +946,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="256"/>
 			<source>Cheats</source>
-			<translation>Jukser</translation>
+			<translation>Juks</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="257"/>
@@ -1001,7 +1001,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="470"/>
 			<source>Invalid Source</source>
-			<translation>Ugyldig Kilde</translation>
+			<translation>Ugyldig kilde</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="471"/>
@@ -1011,7 +1011,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="519"/>
 			<source>File Exists</source>
-			<translation>Filen Eksisterer</translation>
+			<translation>Filen eksisterer</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="520"/>
@@ -1031,7 +1031,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
 			<source>Cheats Not Found</source>
-			<translation>Fant ikke juksene</translation>
+			<translation>Fant ikke juks</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
@@ -1041,12 +1041,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="593"/>
 			<source>Cheats Downloaded Successfully</source>
-			<translation>Juksene ble lastet ned</translation>
+			<translation>Juks ble lastet ned</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="594"/>
 			<source>CheatsDownloadedSuccessfully_MSG</source>
-			<translation>Du har lastet ned jukser for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
+			<translation>Du har lastet ned juks for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="747"/>
@@ -1066,7 +1066,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>Programrettelser ble lastet ned! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
+			<translation>Programrettelser ble lastet ned! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med juks. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1136,7 +1136,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Kan ikke bruke juksene før spillet er startet.</translation>
+			<translation>Kan ikke bruke juks før spillet er startet.</translation>
 		</message>
 	</context>
 	<context>
@@ -1189,7 +1189,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Vis Velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
+			<translation>Vis velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
@@ -1209,12 +1209,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>Logtype:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for etterligneren.</translation>
+			<translation>Logg type:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for etterligneren.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>Loggfilter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
+			<translation>Logg filter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
@@ -1229,7 +1229,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="267"/>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Deaktiver trofé hurtigmeny:\nDeaktiver trofévarsler i spillet. Trofé-fremgang kan fortsatt ved help av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
@@ -1249,17 +1249,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Aktiver "Oppdater kompatibilitets-data ved oppstart" for oppdatert informasjon.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Oppdater kompatibilitets-database:\nOppdater kompatibilitets-databasen nå.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1299,7 +1299,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en etterligneren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å bestemme den automatisk.</translation>
+			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en etterligneren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å velge automatisk.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
@@ -1309,12 +1309,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Vblank Skillelinje:\nBildehastigheten som etterligneren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+			<translation>Vblank skillelinje:\nBildehastigheten som etterligneren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
 			<source>dumpShadersCheckBox</source>
-			<translation>Aktiver skyggelegger-dumping:\nFor teknisk feilsøking lagrer skyggeleggene fra spillet i en mappe mens de gjengis.</translation>
+			<translation>Aktiver dumping av skyggelegger:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
@@ -1377,7 +1377,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Kompatibilitet</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -1412,37 +1412,37 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Aldri spilt</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>kompatibilitet er utestet</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Spillet initialiseres ikke riktig / krasjer etterligneren</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Spillet starter, men viser bare en tom skjerm</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Spillet viser et bilde, men går ikke forbi menyen</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Spillet har spillbrytende feil eller uspillbar ytelse</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Spillet kan fullføres med spillbar ytelse og ingen store feil</translation>
 		</message>
 	</context>
 	<context>
@@ -1450,7 +1450,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="34"/>
 			<source>Auto Updater</source>
-			<translation>Automatisk oppdaterering</translation>
+			<translation>Automatisk oppdatering</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="51"/>
@@ -1465,7 +1465,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="73"/>
 			<source>Failed to parse update information.</source>
-			<translation>Kunne ikke analysere oppdateringsinformasjonen.</translation>
+			<translation>Kunne ikke analysere oppdaterings-informasjonen.</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="89"/>
@@ -1545,7 +1545,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="310"/>
 			<source>Network error occurred while trying to access the URL</source>
-			<translation>Nettverksfeil oppstod mens du prøvde å få tilgang til URL</translation>
+			<translation>Nettverksfeil oppstod mens vi prøvde å få tilgang til URL</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="330"/>
