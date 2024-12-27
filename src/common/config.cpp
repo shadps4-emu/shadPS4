@@ -676,7 +676,7 @@ void load(const std::filesystem::path& path) {
 
         m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
-    
+
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
@@ -741,7 +741,7 @@ void save(const std::filesystem::path& path) {
     data["Audio"]["backend"] = audioBackend;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
-    
+
     data["Keys"]["TrophyKey"] = trophyKey;
 
     std::vector<std::string> install_dirs;

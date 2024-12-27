@@ -13,6 +13,7 @@ enum HideCursorState : s16 { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
+void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
