@@ -249,7 +249,7 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
 
     // Select should be based on zero check
     const auto* prod0 = inst->Arg(0).InstRecursive();
-    if (prod0->GetOpcode() != IR::Opcode::IEqual ||
+    if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
         !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
         return not_found;
     }
