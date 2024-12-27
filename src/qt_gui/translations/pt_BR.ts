@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Atalho criado com sucesso!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Atalho criado com sucesso!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Erro ao criar atalho!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Erro ao criar atalho!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>

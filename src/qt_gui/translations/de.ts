@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Verknüpfung erfolgreich erstellt!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Verknüpfung erfolgreich erstellt!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Fehler beim Erstellen der Verknüpfung!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Fehler beim Erstellen der Verknüpfung!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>

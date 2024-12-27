@@ -182,8 +182,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>تم إنشاء الاختصار بنجاح!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>تم إنشاء الاختصار بنجاح!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +192,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>!\n %1 خطأ في إنشاء الاختصار</translation>
+			<source>Error creating shortcut!</source>
+			<translation>خطأ في إنشاء الاختصار</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>

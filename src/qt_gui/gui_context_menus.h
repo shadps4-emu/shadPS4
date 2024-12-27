@@ -287,11 +287,11 @@ public:
 #endif
                         QMessageBox::information(
                             nullptr, tr("Shortcut creation"),
-                            QString(tr("Shortcut created successfully!\n %1")).arg(linkPath));
+                            QString(tr("Shortcut created successfully!") + "\n%1").arg(linkPath));
                     } else {
                         QMessageBox::critical(
                             nullptr, tr("Error"),
-                            QString(tr("Error creating shortcut!\n %1")).arg(linkPath));
+                            QString(tr("Error creating shortcut!") + "\n%1").arg(linkPath));
                     }
                 } else {
                     QMessageBox::critical(nullptr, tr("Error"), tr("Failed to convert icon."));
@@ -305,11 +305,11 @@ public:
 #endif
                     QMessageBox::information(
                         nullptr, tr("Shortcut creation"),
-                        QString(tr("Shortcut created successfully!\n %1")).arg(linkPath));
+                        QString(tr("Shortcut created successfully!") + "\n%1").arg(linkPath));
                 } else {
                     QMessageBox::critical(
                         nullptr, tr("Error"),
-                        QString(tr("Error creating shortcut!\n %1")).arg(linkPath));
+                        QString(tr("Error creating shortcut!") + "\n%1").arg(linkPath));
                 }
             }
         }
