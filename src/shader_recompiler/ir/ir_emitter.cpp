@@ -1296,8 +1296,15 @@ U32 IREmitter::FindUMsb(const U32& value) {
     return Inst<U32>(Opcode::FindUMsb32, value);
 }
 
-U32 IREmitter::FindILsb(const U32& value) {
-    return Inst<U32>(Opcode::FindILsb32, value);
+U32 IREmitter::FindILsb(const U32U64& value) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::FindILsb32, value);
+    case Type::U64:
+        return Inst<U32>(Opcode::FindILsb64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U32 IREmitter::SMin(const U32& a, const U32& b) {
