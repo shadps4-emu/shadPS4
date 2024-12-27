@@ -67,7 +67,7 @@ static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
-std::string trophyKey = "";
+static std::string trophyKey = "";
 static std::string audioBackend = "cubeb";
 
 // Gui

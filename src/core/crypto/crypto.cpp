@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include "crypto.h"
 #include <common/config.h>
+#include "crypto.h"
 
 CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
     CryptoPP::InvertibleRSAFunction params;
