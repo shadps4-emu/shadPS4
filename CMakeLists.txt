@@ -904,11 +904,18 @@ endif()
 if (APPLE)
   if (ENABLE_QT_GUI)
       # Include MoltenVK in the app bundle, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-      set(MVK_DYLIB ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
       set(MVK_ICD ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK_icd.json)
-      target_sources(shadps4 PRIVATE ${MVK_DYLIB} ${MVK_ICD})
-      set_source_files_properties(${MVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+      target_sources(shadps4 PRIVATE ${MVK_ICD})
       set_source_files_properties(${MVK_ICD} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/vulkan/icd.d)
+
+      set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
+      set(MVK_DYLIB_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/Frameworks/libMoltenVK.dylib)
+      add_custom_command(
+          OUTPUT ${MVK_DYLIB_DST}
+          DEPENDS ${MVK_DYLIB_SRC}
+          COMMAND cmake -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
+      add_custom_target(CopyMoltenVK DEPENDS ${MVK_DYLIB_DST})
+      add_dependencies(shadps4 CopyMoltenVK)
       set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
   else()
       # For non-bundled SDL build, just do a normal library link.
