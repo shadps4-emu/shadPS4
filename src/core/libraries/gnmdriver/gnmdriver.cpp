@@ -513,10 +513,14 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     auto vqid = gnm_vqid - 1;
     auto& asc_queue = liverpool->asc_queues[{vqid}];
 
-    const auto& offs_dw = asc_next_offs_dw[vqid];
+    auto& offs_dw = asc_next_offs_dw[vqid];
 
-    if (next_offs_dw < offs_dw) {
-        ASSERT_MSG(next_offs_dw == 0, "ACB submission is split at the end of ring buffer");
+    if (next_offs_dw < offs_dw && next_offs_dw != 0) {
+        // For cases if a submission is split at the end of the ring buffer, we need to submit it in
+        // two parts to handle the wrap
+        liverpool->SubmitAsc(gnm_vqid, {reinterpret_cast<const u32*>(asc_queue.map_addr) + offs_dw,
+                                        asc_queue.ring_size_dw - offs_dw});
+        offs_dw = 0;
     }
 
     const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr) + offs_dw;

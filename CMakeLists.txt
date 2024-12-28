@@ -425,6 +425,8 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
+               src/core/libraries/move/move.cpp
+               src/core/libraries/move/move.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp

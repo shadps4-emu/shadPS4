@@ -37,6 +37,7 @@ public:
     QAction* setThemeBlue;
     QAction* setThemeViolet;
     QAction* setThemeGruvbox;
+    QAction* setThemeTokyoNight;
     QAction* setThemeSystem;
     QWidget* centralWidget;
     QLineEdit* mw_searchbar;
@@ -163,6 +164,9 @@ public:
         setThemeGruvbox = new QAction(MainWindow);
         setThemeGruvbox->setObjectName("setThemeGruvbox");
         setThemeGruvbox->setCheckable(true);
+        setThemeTokyoNight = new QAction(MainWindow);
+        setThemeTokyoNight->setObjectName("setThemeTokyoNight");
+        setThemeTokyoNight->setCheckable(true);
         setThemeSystem = new QAction(MainWindow);
         setThemeSystem->setObjectName("setThemeSystem");
         setThemeSystem->setCheckable(true);
@@ -291,6 +295,7 @@ public:
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);
         menuThemes->addAction(setThemeGruvbox);
+        menuThemes->addAction(setThemeTokyoNight);
         menuThemes->addAction(setThemeSystem);
         menuGame_List_Icons->addAction(setIconSizeTinyAct);
         menuGame_List_Icons->addAction(setIconSizeSmallAct);
@@ -379,6 +384,7 @@ public:
         setThemeBlue->setText(QCoreApplication::translate("MainWindow", "Blue", nullptr));
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
         setThemeGruvbox->setText("Gruvbox");
+        setThemeTokyoNight->setText("Tokyo Night");
         setThemeSystem->setText(QCoreApplication::translate("MainWindow", "System", nullptr));
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
     } // retranslateUi
