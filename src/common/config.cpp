@@ -563,20 +563,9 @@ void load(const std::filesystem::path& path) {
     }
 
     if (data.contains("General")) {
-
-        toml::value& table = toml::find(data, "General");
-        auto findkey = table.as_table().find("isPS4Pro");
-        if (findkey != table.as_table().end()) {
-            table.as_table().erase(findkey);
-            data["General"]["isPS4ProEnabled"] = false;
-            std::ofstream file(path, std::ios::binary);
-            file << data;
-            file.close();
-        }
-
         const toml::value& general = data.at("General");
 
-        isNeo = toml::find_or<bool>(general, "isPS4ProEnabled", false);
+        isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
@@ -702,7 +691,7 @@ void save(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["General"]["isPS4ProEnabled"] = isNeo;
+    data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
