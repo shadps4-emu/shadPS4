@@ -35,6 +35,10 @@ void ParseDepthControl(u32 value, bool begin_table = true);
 void ParseEqaa(u32 value, bool begin_table = true);
 void ParseZInfo(u32 value, bool begin_table = true);
 
+struct CmdListFilter {
+    char shader_name[128]{};
+};
+
 class CmdListViewer {
 
     DebugStateType::FrameDump* frame_dump;
@@ -70,7 +74,7 @@ public:
     explicit CmdListViewer(DebugStateType::FrameDump* frame_dump, const std::vector<u32>& cmd_list,
                            uintptr_t base_addr = 0, std::string name = "");
 
-    void Draw(bool only_batches_view = false);
+    void Draw(bool only_batches_view, CmdListFilter& filter);
 };
 
 } // namespace Core::Devtools::Widget

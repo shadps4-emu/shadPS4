@@ -141,12 +141,9 @@ void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> NPcommID,
                          std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
                          std::span<CryptoPP::byte> decrypted) {
 
-    std::vector<CryptoPP::byte> TrophyKey = {0x21, 0xF4, 0x1A, 0x6B, 0xAD, 0x8A, 0x1D, 0x3E,
-                                             0xCA, 0x7A, 0xD5, 0x86, 0xC1, 0x01, 0xB7, 0xA9};
     std::vector<CryptoPP::byte> TrophyIV = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // step 1: Encrypt NPcommID
     CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
-    encrypt.SetKeyWithIV(TrophyKey.data(), TrophyKey.size(), TrophyIV.data());
 
     std::vector<CryptoPP::byte> trpKey(16);
 

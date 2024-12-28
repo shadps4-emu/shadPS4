@@ -364,6 +364,16 @@ enum class Filter : u64 {
     AnisoLinear = 3,
 };
 
+constexpr bool IsAnisoFilter(const Filter filter) {
+    switch (filter) {
+    case Filter::AnisoPoint:
+    case Filter::AnisoLinear:
+        return true;
+    default:
+        return false;
+    }
+}
+
 enum class MipFilter : u64 {
     None = 0,
     Point = 1,
@@ -434,6 +444,23 @@ struct Sampler {
 
     float MaxLod() const noexcept {
         return static_cast<float>(max_lod.Value()) / 256.0f;
+    }
+
+    float MaxAniso() const {
+        switch (max_aniso) {
+        case AnisoRatio::One:
+            return 1.0f;
+        case AnisoRatio::Two:
+            return 2.0f;
+        case AnisoRatio::Four:
+            return 4.0f;
+        case AnisoRatio::Eight:
+            return 8.0f;
+        case AnisoRatio::Sixteen:
+            return 16.0f;
+        default:
+            UNREACHABLE();
+        }
     }
 };
 

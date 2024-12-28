@@ -201,6 +201,10 @@ Id EmitBitCount32(EmitContext& ctx, Id value) {
     return ctx.OpBitCount(ctx.U32[1], value);
 }
 
+Id EmitBitCount64(EmitContext& ctx, Id value) {
+    return ctx.OpBitCount(ctx.U64, value);
+}
+
 Id EmitBitwiseNot32(EmitContext& ctx, Id value) {
     return ctx.OpNot(ctx.U32[1], value);
 }
@@ -215,6 +219,10 @@ Id EmitFindUMsb32(EmitContext& ctx, Id value) {
 
 Id EmitFindILsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindILsb(ctx.U32[1], value);
+}
+
+Id EmitFindILsb64(EmitContext& ctx, Id value) {
+    return ctx.OpFindILsb(ctx.U64, value);
 }
 
 Id EmitSMin32(EmitContext& ctx, Id a, Id b) {
@@ -277,7 +285,11 @@ Id EmitULessThan64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpULessThan(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitIEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitIEqual32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpIEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitIEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpIEqual(ctx.U1[1], lhs, rhs);
 }
 

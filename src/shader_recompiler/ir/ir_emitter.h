@@ -229,12 +229,12 @@ public:
     [[nodiscard]] U32 BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                       bool is_signed = false);
     [[nodiscard]] U32 BitReverse(const U32& value);
-    [[nodiscard]] U32 BitCount(const U32& value);
+    [[nodiscard]] U32 BitCount(const U32U64& value);
     [[nodiscard]] U32 BitwiseNot(const U32& value);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32& value);
-    [[nodiscard]] U32 FindILsb(const U32& value);
+    [[nodiscard]] U32 FindILsb(const U32U64& value);
     [[nodiscard]] U32 SMin(const U32& a, const U32& b);
     [[nodiscard]] U32 UMin(const U32& a, const U32& b);
     [[nodiscard]] U32 IMin(const U32& a, const U32& b, bool is_signed);

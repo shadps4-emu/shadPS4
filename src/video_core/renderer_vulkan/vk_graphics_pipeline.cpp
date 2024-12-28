@@ -133,37 +133,23 @@ GraphicsPipeline::GraphicsPipeline(
         .sampleShadingEnable = false,
     };
 
-    const vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = 1.0f,
-        .height = 1.0f,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    const vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = {1, 1},
-    };
-
     const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
         .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
     };
 
     const vk::PipelineViewportStateCreateInfo viewport_info = {
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
-        .viewportCount = 1,
-        .pViewports = &viewport,
-        .scissorCount = 1,
-        .pScissors = &scissor,
     };
 
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewport,           vk::DynamicState::eScissor,
-        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthBounds,
-        vk::DynamicState::eDepthBias,          vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eViewportWithCountEXT,
+        vk::DynamicState::eScissorWithCountEXT,
+        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eDepthBounds,
+        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask,
+        vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOpEXT,
     };
 

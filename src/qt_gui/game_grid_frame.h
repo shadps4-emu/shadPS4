@@ -10,6 +10,7 @@
 #include "game_info.h"
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
+#include "qt_gui/compatibility_info.h"
 
 class GameGridFrame : public QTableWidget {
     Q_OBJECT
@@ -29,11 +30,14 @@ private:
     GameListUtils m_game_list_utils;
     GuiContextMenus m_gui_context_menus;
     std::shared_ptr<GameInfoClass> m_game_info;
+    std::shared_ptr<CompatibilityInfoClass> m_compat_info;
     std::shared_ptr<QVector<GameInfo>> m_games_shared;
     bool validCellSelected = false;
 
 public:
-    explicit GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
+    explicit GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
+                           std::shared_ptr<CompatibilityInfoClass> compat_info_get,
+                           QWidget* parent = nullptr);
     void PopulateGameGrid(QVector<GameInfo> m_games, bool fromSearch);
     bool IsValidCellSelected();
 

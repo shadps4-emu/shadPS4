@@ -119,3 +119,7 @@
 	path = externals/MoltenVK/cereal
 	url = https://github.com/USCiLab/cereal
 	shallow = true
+[submodule "externals/cubeb"]
+	path = externals/cubeb
+	url = https://github.com/mozilla/cubeb
+	shallow = true

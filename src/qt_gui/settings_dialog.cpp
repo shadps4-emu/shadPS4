@@ -6,6 +6,8 @@
 #include <QHoverEvent>
 
 #include <common/version.h>
+#include "common/config.h"
+#include "qt_gui/compatibility_info.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
@@ -54,7 +56,9 @@ QStringList languageNames = {"Arabic",
 const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 
-SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
+SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
+                               std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+                               QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
@@ -140,6 +144,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->updaterGroupBox->setVisible(false);
         ui->GUIgroupBox->setMaximumSize(265, 16777215);
 #endif
+        connect(ui->updateCompatibilityButton, &QPushButton::clicked, this,
+                [this, parent, m_compat_info]() {
+                    m_compat_info->UpdateCompatibilityDatabase(this, true);
+                    emit CompatibilityChanged();
+                });
+
+        connect(ui->enableCompatibilityCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            Config::setCompatibilityEnabled(state);
+            emit CompatibilityChanged();
+        });
     }
 
     // Input TAB
@@ -195,6 +209,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 #endif
         ui->GUIgroupBox->installEventFilter(this);
         ui->disableTrophycheckBox->installEventFilter(this);
+        ui->enableCompatibilityCheckBox->installEventFilter(this);
+        ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
+        ui->updateCompatibilityButton->installEventFilter(this);
+        ui->audioBackendComboBox->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -286,6 +304,12 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
     ui->rdocCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "rdocEnable", false));
+    ui->enableCompatibilityCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "compatibilityEnabled", false));
+    ui->checkCompatibilityOnStartupCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "checkCompatibilityOnStartup", false));
+    ui->audioBackendComboBox->setCurrentText(
+        QString::fromStdString(toml::find_or<std::string>(data, "Audio", "backend", "cubeb")));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -403,6 +427,14 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("GUIgroupBox");
     } else if (elementName == "disableTrophycheckBox") {
         text = tr("disableTrophycheckBox");
+    } else if (elementName == "enableCompatibilityCheckBox") {
+        text = tr("enableCompatibilityCheckBox");
+    } else if (elementName == "checkCompatibilityOnStartupCheckBox") {
+        text = tr("checkCompatibilityOnStartupCheckBox");
+    } else if (elementName == "updateCompatibilityButton") {
+        text = tr("updateCompatibilityButton");
+    } else if (elementName == "audioBackendGroupBox") {
+        text = tr("audioBackendGroupBox");
     }
 
     // Input
@@ -515,6 +547,9 @@ void SettingsDialog::UpdateSettings() {
     Config::setRdocEnabled(ui->rdocCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
+    Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
+    Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
+    Config::setAudioBackend(ui->audioBackendComboBox->currentText().toStdString());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();

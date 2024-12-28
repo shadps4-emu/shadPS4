@@ -29,7 +29,7 @@ namespace Libraries::GnmDriver {
 
 using namespace AmdGpu;
 
-enum GnmEventIdents : u64 {
+enum GnmEventType : u64 {
     Compute0RelMem = 0x00,
     Compute1RelMem = 0x01,
     Compute2RelMem = 0x02,
@@ -337,6 +337,12 @@ static inline u32* ClearContextState(u32* cmdbuf) {
     return cmdbuf + ClearStateSequence.size();
 }
 
+static inline bool IsValidEventType(Platform::InterruptId id) {
+    return (static_cast<u32>(id) >= static_cast<u32>(Platform::InterruptId::Compute0RelMem) &&
+            static_cast<u32>(id) <= static_cast<u32>(Platform::InterruptId::Compute6RelMem)) ||
+           static_cast<u32>(id) == static_cast<u32>(Platform::InterruptId::GfxEop);
+}
+
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
@@ -347,8 +353,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
     kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
-    // The library only sets EV_ADD but it is suspected the kernel driver forces EV_CLEAR
-    kernel_event.event.flags = SceKernelEvent::Flags::Clear;
+    kernel_event.event.flags = SceKernelEvent::Flags::Add;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
@@ -357,11 +362,15 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     Platform::IrqC::Instance()->Register(
         static_cast<Platform::InterruptId>(id),
         [=](Platform::InterruptId irq) {
-            ASSERT_MSG(irq == static_cast<Platform::InterruptId>(id),
-                       "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
-                                                     // proper filtering in trigger function
-            eq->TriggerEvent(static_cast<GnmEventIdents>(id), SceKernelEvent::Filter::GraphicsCore,
-                             nullptr);
+            ASSERT_MSG(irq == static_cast<Platform::InterruptId>(id), "An unexpected IRQ occured");
+
+            // We need to convert IRQ# to event id
+            if (!IsValidEventType(irq))
+                return;
+
+            // Event data is expected to be an event type as per sceGnmGetEqEventType.
+            eq->TriggerEvent(static_cast<GnmEventType>(id), SceKernelEvent::Filter::GraphicsCore,
+                             reinterpret_cast<void*>(id));
         },
         eq);
     return ORBIS_OK;
@@ -476,7 +485,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    eq->RemoveEvent(id);
+    eq->RemoveEvent(id, SceKernelEvent::Filter::GraphicsCore);
 
     Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), eq);
     return ORBIS_OK;
@@ -1000,9 +1009,13 @@ int PS4_SYSV_ABI sceGnmGetDebugTimestamp() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetEqEventType() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    auto data = sceKernelGetEventData(ev);
+    ASSERT(static_cast<GnmEventType>(data) == GnmEventType::GfxEop);
+
+    return data;
 }
 
 int PS4_SYSV_ABI sceGnmGetEqTimeStamp() {

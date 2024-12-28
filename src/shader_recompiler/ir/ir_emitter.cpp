@@ -1273,8 +1273,15 @@ U32 IREmitter::BitReverse(const U32& value) {
     return Inst<U32>(Opcode::BitReverse32, value);
 }
 
-U32 IREmitter::BitCount(const U32& value) {
-    return Inst<U32>(Opcode::BitCount32, value);
+U32 IREmitter::BitCount(const U32U64& value) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::BitCount32, value);
+    case Type::U64:
+        return Inst<U32>(Opcode::BitCount64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U32 IREmitter::BitwiseNot(const U32& value) {
@@ -1289,8 +1296,15 @@ U32 IREmitter::FindUMsb(const U32& value) {
     return Inst<U32>(Opcode::FindUMsb32, value);
 }
 
-U32 IREmitter::FindILsb(const U32& value) {
-    return Inst<U32>(Opcode::FindILsb32, value);
+U32 IREmitter::FindILsb(const U32U64& value) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::FindILsb32, value);
+    case Type::U64:
+        return Inst<U32>(Opcode::FindILsb64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U32 IREmitter::SMin(const U32& a, const U32& b) {
@@ -1345,7 +1359,9 @@ U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
     }
     switch (lhs.Type()) {
     case Type::U32:
-        return Inst<U1>(Opcode::IEqual, lhs, rhs);
+        return Inst<U1>(Opcode::IEqual32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(Opcode::IEqual64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
     }

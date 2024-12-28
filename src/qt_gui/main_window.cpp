@@ -75,8 +75,8 @@ bool MainWindow::Init() {
     this->setStatusBar(statusBar.data());
     // Update status bar
     int numGames = m_game_info->m_games.size();
-    QString statusMessage =
-        "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
+    QString statusMessage = tr("Games: ") + QString::number(numGames) + " (" +
+                            QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
 
 #ifdef ENABLE_DISCORD_RPC
@@ -140,7 +140,7 @@ void MainWindow::CreateDockWindows() {
     m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
     m_game_list_frame.reset(new GameListFrame(m_game_info, m_compat_info, this));
     m_game_list_frame->setObjectName("gamelist");
-    m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));
+    m_game_grid_frame.reset(new GameGridFrame(m_game_info, m_compat_info, this));
     m_game_grid_frame->setObjectName("gamegridlist");
     m_elf_viewer.reset(new ElfViewer(this));
     m_elf_viewer->setObjectName("elflist");
@@ -253,19 +253,25 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
+
+        connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
+                &MainWindow::RefreshGameTable);
 
         settingsDialog->exec();
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
+
+        connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
+                &MainWindow::RefreshGameTable);
 
         settingsDialog->exec();
     });

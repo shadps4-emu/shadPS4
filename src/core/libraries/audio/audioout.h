@@ -3,11 +3,14 @@
 
 #pragma once
 
-#include "common/bit_field.h"
+#include <memory>
 
+#include "common/bit_field.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::AudioOut {
+
+class PortBackend;
 
 // Main up to 8 ports, BGM 1 port, voice up to 4 ports,
 // personal up to 4 ports, padspk up to 5 ports, aux 1 port
@@ -43,7 +46,7 @@ union OrbisAudioOutParamExtendedInformation {
 
 struct OrbisAudioOutOutputParam {
     s32 handle;
-    const void* ptr;
+    void* ptr;
 };
 
 struct OrbisAudioOutPortState {
@@ -54,6 +57,21 @@ struct OrbisAudioOutPortState {
     u16 rerouteCounter;
     u64 flag;
     u64 reserved64[2];
+};
+
+struct PortOut {
+    std::unique_ptr<PortBackend> impl{};
+
+    OrbisAudioOutPort type;
+    OrbisAudioOutParamFormat format;
+    bool is_float;
+    u8 sample_size;
+    u8 channels_num;
+    u32 samples_num;
+    u32 frame_size;
+    u32 buffer_size;
+    u32 freq;
+    std::array<int, 8> volume;
 };
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
@@ -94,7 +112,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
                                  u32 sample_rate, OrbisAudioOutParamExtendedInformation param_type);
 int PS4_SYSV_ABI sceAudioOutOpenEx();
-s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr);
+s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr);
 s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num);
 int PS4_SYSV_ABI sceAudioOutPtClose();
 int PS4_SYSV_ABI sceAudioOutPtGetLastOutputTime();

@@ -132,6 +132,15 @@ void FrameDumpViewer::Draw() {
             }
         }
         EndDisabled();
+        SameLine();
+        if (BeginMenu("Filter")) {
+
+            TextUnformatted("Shader name");
+            SameLine();
+            InputText("##filter_shader", filter.shader_name, sizeof(filter.shader_name));
+
+            ImGui::EndMenu();
+        }
 
         TextEx("Submit num");
         SameLine();
@@ -187,7 +196,7 @@ void FrameDumpViewer::Draw() {
         EndGroup();
     }
     if (is_showing && selected_cmd != -1) {
-        cmd_list_viewer[selected_cmd].Draw(is_collapsed);
+        cmd_list_viewer[selected_cmd].Draw(is_collapsed, filter);
     }
     End();
 }

@@ -137,6 +137,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     // Add the windowing system specific extension
     std::vector<const char*> extensions;
     extensions.reserve(7);
+    extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
 
     switch (window_type) {
     case Frontend::WindowSystemType::Headless:
@@ -347,6 +348,17 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
             .valueCount = 1,
             .pValues = &enable_force_barriers,
         },
+#ifdef __APPLE__
+        // MoltenVK debug mode turns on additional device loss error details, so
+        // use the crash diagnostic setting as an indicator of whether to turn it on.
+        vk::LayerSettingEXT{
+            .pLayerName = "MoltenVK",
+            .pSettingName = "MVK_CONFIG_DEBUG",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_crash_diagnostic,
+        }
+#endif
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {

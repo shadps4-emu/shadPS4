@@ -16,6 +16,8 @@ class FrameGraph {
 
     std::array<FrameInfo, FRAME_BUFFER_SIZE> frame_list{};
 
+    void DrawFrameGraph();
+
 public:
     bool is_open = true;
 
