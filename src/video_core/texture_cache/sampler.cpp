@@ -18,7 +18,8 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
                                   (AmdGpu::IsAnisoFilter(sampler.xy_mag_filter) ||
                                    AmdGpu::IsAnisoFilter(sampler.xy_min_filter));
     const float maxAnisotropy =
-        std::clamp(sampler.MaxAniso(), 1.0f, instance.MaxSamplerAnisotropy());
+        anisotropyEnable ? std::clamp(sampler.MaxAniso(), 1.0f, instance.MaxSamplerAnisotropy())
+                         : 1.0f;
     const vk::SamplerCreateInfo sampler_ci = {
         .magFilter = LiverpoolToVK::Filter(sampler.xy_mag_filter),
         .minFilter = LiverpoolToVK::Filter(sampler.xy_min_filter),
