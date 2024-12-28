@@ -6,9 +6,11 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5056_MB; // ~ 5GB
-// TODO: Confirm this value on hardware.
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE_PRO = 5568_MB; // ~ 5.5GB
+constexpr u64 SCE_KERNEL_TOTAL_MEM = 5248_MB;
+constexpr u64 SCE_KERNEL_TOTAL_MEM_PRO = 5888_MB;
+
+constexpr u64 SCE_FLEXIBLE_MEMORY_BASE = 64_MB;
+constexpr u64 SCE_FLEXIBLE_MEMORY_SIZE = 512_MB;
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -128,10 +130,6 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags);
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
-
-void* Malloc(size_t size);
-
-void Free(void* ptr);
 
 void RegisterMemory(Core::Loader::SymbolsResolver* sym);
 
