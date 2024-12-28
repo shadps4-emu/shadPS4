@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -11,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>950</width>
-    <height>834</height>
+    <width>1010</width>
+    <height>930</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -59,24 +57,6 @@
       <property name="widgetResizable">
        <bool>true</bool>
       </property>
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>836</width>
-        <height>705</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="generalTab">
       <attribute name="title">
        <string>General</string>
       </attribute>
@@ -85,8 +65,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>822</width>
-         <height>487</height>
+         <width>986</width>
+         <height>765</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -312,7 +292,7 @@
           <item row="1" column="0">
            <layout class="QVBoxLayout" name="updaterTabLayoutLeft">
             <property name="spacing">
-             <number>-1</number>
+             <number>6</number>
             </property>
             <property name="sizeConstraint">
              <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
@@ -526,21 +506,6 @@
                   <string>Current Widget Style</string>
                  </property>
                  <layout class="QVBoxLayout" name="currentwidgetLayout">
-                  <property name="spacing">
-                   <number>7</number>
-                  </property>
-                  <property name="leftMargin">
-                   <number>11</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>11</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>11</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>11</number>
-                  </property>
                   <item>
                    <widget class="QComboBox" name="currentwidgetComboBox">
                     <property name="enabled">
@@ -779,8 +744,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>396</width>
-         <height>222</height>
+         <width>986</width>
+         <height>765</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -971,7 +936,7 @@
                   <bool>true</bool>
                  </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1070,8 +1035,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>536</width>
-         <height>192</height>
+         <width>986</width>
+         <height>765</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1321,8 +1286,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>146</width>
-         <height>215</height>
+         <width>986</width>
+         <height>765</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
@@ -1333,35 +1298,23 @@
             <property name="title">
              <string>Game Folders</string>
             </property>
-            <layout class="QFormLayout" name="formLayout">
-             <item row="0" column="0" colspan="2">
-              <widget class="QListWidget" name="gameFoldersListWidget"/>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="addFolderButton">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QPushButton" name="removeFolderButton">
+               <property name="text">
+                <string>Remove</string>
                </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="addFolderButton">
                <property name="text">
                 <string>Add...</string>
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="removeFolderButton">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Remove</string>
-               </property>
-              </widget>
+             <item>
+              <widget class="QListWidget" name="gameFoldersListWidget"/>
              </item>
             </layout>
            </widget>
@@ -1383,8 +1336,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>288</width>
-         <height>163</height>
+         <width>986</width>
+         <height>765</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
