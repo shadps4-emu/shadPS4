@@ -89,6 +89,8 @@ const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
 
     switch (image.info.tiling_mode) {
+    case AmdGpu::TilingMode::Depth_MicroTiled:
+    case AmdGpu::TilingMode::Display_MicroTiled:
     case AmdGpu::TilingMode::Texture_MicroTiled:
         switch (format) {
         case vk::Format::eR8Uint:
