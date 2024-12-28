@@ -229,13 +229,6 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QCheckBox" name="ps4proCheckBox">
-                   <property name="text">
-                    <string>Is PS4 Pro</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QCheckBox" name="discordRPCCheckbox">
                    <property name="text">
                     <string>Enable Discord Rich Presence</string>
