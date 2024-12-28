@@ -22,6 +22,7 @@
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
+#include "core/libraries/move/move.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
@@ -91,6 +92,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
     Libraries::RazorCpu::RegisterlibSceRazorCpu(sym);
+    Libraries::Move::RegisterlibSceMove(sym);
 }
 
 } // namespace Libraries
