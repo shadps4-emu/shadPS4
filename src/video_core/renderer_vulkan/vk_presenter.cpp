@@ -636,7 +636,21 @@ void Presenter::Present(Frame* frame) {
 
     if (!swapchain.AcquireNextImage()) {
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
+        if (!swapchain.AcquireNextImage()) {
+            // User resizes the window too fast and GPU can't keep up. Skip this frame.
+            LOG_WARNING(Render_Vulkan, "Skipping frame!");
+            // Free the frame for reuse
+            std::scoped_lock fl{free_mutex};
+            free_queue.push(frame);
+            free_cv.notify_one();
+            return;
+        }
     }
+
+    // Reset fence for queue submission. Do it here instead of GetRenderFrame() because we may
+    // skip frame because of slow swapchain recreation. If a frame skip occurs, we skip signal
+    // the frame's present fence and future GetRenderFrame() call will hang waiting for this frame.
+    instance.GetDevice().resetFences(frame->present_done);
 
     ImGui::Core::NewFrame();
 
@@ -775,9 +789,6 @@ Frame* Presenter::GetRenderFrame() {
             continue;
         }
     }
-
-    // Reset fence for next queue submission.
-    device.resetFences(frame->present_done);
 
     // If the window dimensions changed, recreate this frame
     if (frame->width != window.GetWidth() || frame->height != window.GetHeight()) {
