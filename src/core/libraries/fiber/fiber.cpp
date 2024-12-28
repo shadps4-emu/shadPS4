@@ -511,6 +511,20 @@ s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceFiberGetThreadFramePointerAddress(u64* addr_frame_pointer) {
+    if (!addr_frame_pointer) {
+        return ORBIS_FIBER_ERROR_NULL;
+    }
+
+    OrbisFiberContext* g_ctx = GetFiberContext();
+    if (!g_ctx) {
+        return ORBIS_FIBER_ERROR_PERMISSION;
+    }
+
+    *addr_frame_pointer = g_ctx->rbp;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceFiberRun(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_return) {
     return sceFiberRunImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_return);
 }
@@ -542,6 +556,9 @@ void RegisterlibSceFiber(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Kj4nXMpnM8Y", "libSceFiber", 1, "libSceFiber", 1, 1,
                  sceFiberStopContextSizeCheck);
     LIB_FUNCTION("JzyT91ucGDc", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberRename);
+
+    LIB_FUNCTION("0dy4JtMUcMQ", "libSceFiber", 1, "libSceFiber", 1, 1,
+                 sceFiberGetThreadFramePointerAddress);
 }
 
 } // namespace Libraries::Fiber
