@@ -13,6 +13,8 @@
 
 namespace Core {
 
+void StartAutosave(std::string game_serial);
+
 using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 
 struct SysModules {
@@ -30,7 +32,6 @@ public:
 
 private:
     void LoadSystemModules(const std::filesystem::path& file, std::string game_serial);
-
     Core::MemoryManager* memory;
     Input::GameController* controller;
     Core::Linker* linker;

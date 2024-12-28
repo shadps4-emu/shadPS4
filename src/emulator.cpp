@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+#include <filesystem>
 #include <set>
 #include <fmt/core.h>
+#include <pthread.h>
 
 #include "common/config.h"
 #include "common/debug.h"
@@ -330,6 +333,11 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
             linker->LoadModule(entry.path());
         }
     }
+
+    if (!game_serial.empty()) {
+        std::thread savethread(StartAutosave, game_serial);
+        savethread.detach();
+    }
 }
 
 #ifdef ENABLE_QT_GUI
@@ -401,5 +409,24 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
 }
 #endif
+
+void StartAutosave(std::string game_serial) {
+
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::minutes(5));
+        const auto backup_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
+                                "savedata" / "1" / game_serial / "BACKUPSAVES";
+        const auto save_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" /
+                              "1" / game_serial / "SPRJ0005";
+        try {
+            std::filesystem::copy(save_dir, backup_dir,
+                                  std::filesystem::copy_options::overwrite_existing |
+                                      std::filesystem::copy_options::recursive);
+            LOG_INFO(Config, "Backup saves created");
+        } catch (std::exception& ex) {
+            fmt::print("Error creating backup saves. Exception: {}\n", ex.what());
+        }
+    }
+}
 
 } // namespace Core
