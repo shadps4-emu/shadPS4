@@ -144,8 +144,10 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return IMAGE_SAMPLE(inst);
 
         // Image gather operations
+    case Opcode::IMAGE_GATHER4:
     case Opcode::IMAGE_GATHER4_LZ:
     case Opcode::IMAGE_GATHER4_C:
+    case Opcode::IMAGE_GATHER4_O:
     case Opcode::IMAGE_GATHER4_C_O:
     case Opcode::IMAGE_GATHER4_C_LZ:
     case Opcode::IMAGE_GATHER4_LZ_O:
