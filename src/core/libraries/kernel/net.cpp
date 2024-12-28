@@ -7,20 +7,23 @@
 
 namespace Libraries::Kernel {
 int PS4_SYSV_ABI posix_socket(int domain, int type, int protocol) {
-    auto* socket = Common::Singleton<NetPosixInternal>::Instance();
-    return socket->create_socket(domain, type, protocol);
+    auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
+    return netcall->net_socket(domain, type, protocol);
 }
 int PS4_SYSV_ABI posix_connect(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
     return 0;
 }
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
-    return htonl(hostlong);
+    return ::htonl(hostlong);
 }
 u16 PS4_SYSV_ABI posix_htons(u16 hostshort) {
-    return htons(hostshort);
+    return ::htons(hostshort);
 }
 int PS4_SYSV_ABI posix_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
-    return 0;
+    auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
+    int bind = netcall->net_bind(sockfd, addr, addrlen);
+    // todo check for errors
+    return bind;
 }
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog) {
     return 0;
@@ -39,12 +42,20 @@ void RegisterNet(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3e+4Iv7IJ8U", "libkernel", 1, "libkernel", 1, 1, posix_accept);
 }
 
-int NetPosixInternal::create_socket(int domain, int type, int protocol) {
+int NetPosixInternal::net_socket(int domain, int type, int protocol) {
     std::scoped_lock lock{m_mutex};
-    s_socket sock = socket(domain, type, protocol);
+    s_socket sock = ::socket(domain, type, protocol);
     auto id = ++next_id;
     socks.emplace(id, sock);
     return id;
 }
-
+int NetPosixInternal::net_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+    std::scoped_lock lock{m_mutex};
+    const auto it = socks.find(sockfd);
+    if (it != socks.end()) {
+        s_socket sock = it->second;
+        return ::bind(sock, addr, sizeof(sockaddr_in));
+    }
+    return 0; // TODO logging and error return
+}
 } // namespace Libraries::Kernel
