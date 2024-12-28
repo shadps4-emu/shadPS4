@@ -586,7 +586,7 @@ void MainWindow::CreateConnects() {
         Config::setMainWindowTheme(static_cast<int>(Theme::System));
 
         bool isSystemDarkMode;
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         const QPalette defaultPalette;
         const auto text = defaultPalette.color(QPalette::WindowText);
         const auto window = defaultPalette.color(QPalette::Window);
@@ -997,7 +997,7 @@ void MainWindow::SetLastUsedTheme() {
     case Theme::System:
         ui->setThemeSystem->setChecked(true);
         bool isSystemDarkMode;
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         const QPalette defaultPalette;
         const auto text = defaultPalette.color(QPalette::WindowText);
         const auto window = defaultPalette.color(QPalette::Window);
@@ -1186,7 +1186,7 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
         if (ui->setThemeSystem->isChecked()) {
             bool isSystemDarkMode;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
             const QPalette defaultPalette;
             const auto text = defaultPalette.color(QPalette::WindowText);
             const auto window = defaultPalette.color(QPalette::Window);
