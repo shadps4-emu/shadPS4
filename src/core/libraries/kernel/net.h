@@ -18,8 +18,8 @@ typedef SOCKET s_socket;
 #include <sys/socket.h>
 typedef int s_socket;
 #endif
-#include <mutex>
 #include <map>
+#include <mutex>
 
 namespace Common {
 class NativeClock;
