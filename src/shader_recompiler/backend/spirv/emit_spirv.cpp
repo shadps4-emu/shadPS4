@@ -28,6 +28,7 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
         return spv::ExecutionMode::InputLines;
     case AmdGpu::PrimitiveType::TriangleList:
     case AmdGpu::PrimitiveType::TriangleStrip:
+    case AmdGpu::PrimitiveType::RectList:
         return spv::ExecutionMode::Triangles;
     case AmdGpu::PrimitiveType::AdjTriangleList:
         return spv::ExecutionMode::InputTrianglesAdjacency;
