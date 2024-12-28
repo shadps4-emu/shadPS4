@@ -447,7 +447,7 @@ struct Sampler {
     }
 
     float MaxAniso() const {
-        switch (max_aniso) {
+        switch (max_aniso.Value()) {
         case AnisoRatio::One:
             return 1.0f;
         case AnisoRatio::Two:
