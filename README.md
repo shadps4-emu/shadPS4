@@ -125,6 +125,7 @@ R3 | M | |
 - [**roamic**](https://github.com/vladmikhalin)
 - [**poly**](https://github.com/polybiusproxy)
 - [**squidbus**](https://github.com/squidbus)
+- [**frodo**](https://github.com/baggins183)
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
