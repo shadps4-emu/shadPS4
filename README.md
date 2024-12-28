@@ -121,6 +121,10 @@ R3 | M | |
 - [**skmp**](https://github.com/skmp)
 - [**wheremyfoodat**](https://github.com/wheremyfoodat)
 - [**raziel1000**](https://github.com/raziel1000)
+- [**viniciuslrangel**](https://github.com/viniciuslrangel)
+- [**Roamic**](https://github.com/vladmikhalin)
+- [**Poly**](https://github.com/polybiusproxy)
+- [**squidbus**](https://github.com/squidbus)
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
