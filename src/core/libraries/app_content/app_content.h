@@ -84,7 +84,8 @@ int PS4_SYSV_ABI sceAppContentDownload0Shrink();
 int PS4_SYSV_ABI sceAppContentDownload1Expand();
 int PS4_SYSV_ABI sceAppContentDownload1Shrink();
 int PS4_SYSV_ABI sceAppContentDownloadDataFormat();
-int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb();
+int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb(OrbisAppContentMountPoint* mountPoint,
+                                                              u64* availableSpaceKb);
 int PS4_SYSV_ABI sceAppContentGetAddcontDownloadProgress();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
                                              const OrbisNpUnifiedEntitlementLabel* entitlementLabel,
@@ -105,7 +106,7 @@ int PS4_SYSV_ABI sceAppContentSmallSharedDataMount();
 int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataFormat();
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
-    const OrbisAppContentMountPoint* mountPoint, size_t* availableSpaceKb);
+    const OrbisAppContentMountPoint* mountPoint, u64* availableSpaceKb);
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint);

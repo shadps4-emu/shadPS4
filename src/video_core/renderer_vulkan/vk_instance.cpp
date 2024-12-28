@@ -583,23 +583,20 @@ bool Instance::IsFormatSupported(const vk::Format format,
     return (GetFormatFeatureFlags(format) & flags) == flags;
 }
 
-static vk::Format GetAlternativeFormat(const vk::Format format) {
-    switch (format) {
-    case vk::Format::eD16UnormS8Uint:
-        return vk::Format::eD24UnormS8Uint;
-    default:
-        return format;
-    }
-}
-
 vk::Format Instance::GetSupportedFormat(const vk::Format format,
                                         const vk::FormatFeatureFlags2 flags) const {
-    if (IsFormatSupported(format, flags)) [[likely]] {
-        return format;
-    }
-    const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsFormatSupported(alternative, flags)) [[likely]] {
-        return alternative;
+    if (!IsFormatSupported(format, flags)) [[unlikely]] {
+        switch (format) {
+        case vk::Format::eD16UnormS8Uint:
+            if (IsFormatSupported(vk::Format::eD24UnormS8Uint, flags)) {
+                return vk::Format::eD24UnormS8Uint;
+            }
+            if (IsFormatSupported(vk::Format::eD32SfloatS8Uint, flags)) {
+                return vk::Format::eD32SfloatS8Uint;
+            }
+        default:
+            break;
+        }
     }
     return format;
 }

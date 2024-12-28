@@ -1174,7 +1174,7 @@ CmdListViewer::CmdListViewer(DebugStateType::FrameDump* _frame_dump,
     }
 }
 
-void CmdListViewer::Draw(bool only_batches_view) {
+void CmdListViewer::Draw(bool only_batches_view, CmdListFilter& filter) {
     const auto& ctx = *GetCurrentContext();
 
     if (batch_view.open) {
@@ -1285,6 +1285,41 @@ void CmdListViewer::Draw(bool only_batches_view) {
                 }
 
                 auto& batch = std::get<BatchInfo>(event);
+
+                // filtering
+                {
+                    bool remove = false;
+
+                    if (filter.shader_name[0] != '\0') {
+                        remove = true;
+                        std::string_view shader_name{filter.shader_name};
+                        const auto& data = frame_dump->regs.find(batch.command_addr);
+                        if (data != frame_dump->regs.end()) {
+                            DebugStateType::RegDump& dump = data->second;
+                            if (dump.is_compute) {
+                                if (dump.cs_data.name.contains(shader_name)) {
+                                    remove = false;
+                                    break;
+                                }
+                            } else {
+                                for (int i = 0; i < DebugStateType::RegDump::MaxShaderStages; ++i) {
+                                    if (dump.regs.stage_enable.IsStageEnabled(i)) {
+                                        auto& stage = dump.stages[i];
+                                        if (stage.name.contains(shader_name)) {
+                                            remove = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (remove) {
+                        continue;
+                    }
+                }
+
                 auto const* pm4_hdr =
                     reinterpret_cast<PM4Header const*>(cmdb_addr + batch.start_addr);
 

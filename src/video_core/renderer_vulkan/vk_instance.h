@@ -249,6 +249,11 @@ public:
         return properties.limits.maxSamplerLodBias;
     }
 
+    /// Returns the maximum sampler anisotropy.
+    float MaxSamplerAnisotropy() const {
+        return properties.limits.maxSamplerAnisotropy;
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;

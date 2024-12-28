@@ -176,14 +176,34 @@
 			<translation>Deletar DLC</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="99"/>
+			<source>Compatibility...</source>
+			<translation>Compatibilidade...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="100"/>
+			<source>Update database</source>
+			<translation>Atualizar banco de dados</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="101"/>
+			<source>View report</source>
+			<translation>Ver status</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="102"/>
+			<source>Submit a report</source>
+			<translation>Enviar status</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Criação de atalho</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Atalho criado com sucesso!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Atalho criado com sucesso!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +212,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Erro ao criar atalho!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Erro ao criar atalho!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>
@@ -553,6 +573,11 @@
 			<translation>Tempo de Inatividade para Ocultar Cursor</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="816"/>
+			<source>s</source>
+			<translation>s</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
 			<source>Controller</source>
 			<translation>Controle</translation>
@@ -673,14 +698,44 @@
 			<translation>Configurações da Interface</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="475"/>
+			<source>Disable Trophy Pop-ups</source>
+			<translation>Desabilitar Pop-ups dos Troféus</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
 			<translation>Reproduzir música de abertura</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database On Startup</source>
+			<translation>Atualizar Compatibilidade ao Inicializar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Game Compatibility</source>
+			<translation>Compatibilidade dos Jogos</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Display Compatibility Data</source>
+			<translation>Exibir Dados de Compatibilidade</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database</source>
+			<translation>Atualizar Lista de Compatibilidade</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Volume</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Backend de Áudio</translation>
 		</message>
 	</context>
 	<context>
@@ -1202,6 +1257,11 @@
 			<translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="267"/>
+			<source>disableTrophycheckBox</source>
+			<translation>Desabilitar pop-ups dos troféus:\nDesabilite notificações de troféus no jogo. O progresso do troféu ainda pode ser rastreado usando o Trophy Viewer (clique com o botão direito do mouse no jogo na janela principal).</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Ocultar Cursor:\nEscolha quando o cursor desaparecerá:\nNunca: Você sempre verá o mouse.\nParado: Defina um tempo para ele desaparecer após ficar inativo.\nSempre: Você nunca verá o mouse.</translation>
@@ -1215,6 +1275,21 @@
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
 			<translation>Comportamento do botão Voltar:\nDefine o botão Voltar do controle para emular o toque na posição especificada no touchpad do PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>enableCompatibilityCheckBox</source>
+			<translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na janela principal.\nHabilitar "Atualizar Compatibilidade ao Inicializar" para obter informações atualizadas.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>checkCompatibilityOnStartupCheckBox</source>
+			<translation>Atualizar Compatibilidade ao inicializar:\nAtualiza automaticamente o banco de dados de compatibilidade quando o SHADPS4 é iniciado.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>updateCompatibilityButton</source>
+			<translation>Atualizar Lista de Compatibilidade:\nAtualizar imediatamente o banco de dados de compatibilidade.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1330,6 +1405,11 @@
 			<translation>Serial</translation>
 		</message>
 		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility</source>
+			<translation>Compatibilidade</translation>
+		</message>
+		<message>
 			<location filename="../game_list_frame.cpp" line="36"/>
 			<source>Region</source>
 			<translation>Região</translation>
@@ -1363,6 +1443,51 @@
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
 			<translation>Nunca jogado</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>h</source>
+			<translation>h</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>m</source>
+			<translation>m</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>s</source>
+			<translation>s</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility is untested</source>
+			<translation>Compatibilidade não testada</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game does not initialize properly / crashes the emulator</source>
+			<translation>Jogo não inicializa corretamente / trava o emulador</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game boots, but only displays a blank screen</source>
+			<translation>O jogo inicializa, mas exibe apenas uma tela vazia</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game displays an image but does not go past the menu</source>
+			<translation>Jogo exibe imagem mas não passa do menu</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game has game-breaking glitches or unplayable performance</source>
+			<translation>O jogo tem falhas que interrompem o jogo ou desempenho injogável</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game can be completed with playable performance and no major glitches</source>
+			<translation>O jogo pode ser concluído com desempenho jogável e sem grandes falhas</translation>
 		</message>
 	</context>
 	<context>
@@ -1492,5 +1617,33 @@
 			<source>Failed to create the update script file</source>
 			<translation>Falha ao criar o arquivo de script de atualização</translation>
 		</message>
+	</context>
+	<context>
+		<name>GameListUtils</name>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>B</source>
+			<translation>B</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>KB</source>
+			<translation>KB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>MB</source>
+			<translation>MB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>GB</source>
+			<translation>GB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>TB</source>
+			<translation>TB</translation>
+		</message>		
 	</context>
 </TS>

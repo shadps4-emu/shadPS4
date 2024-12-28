@@ -50,11 +50,15 @@ struct QueueDump {
 };
 
 struct PipelineShaderProgramDump {
+    std::string name;
+    u64 hash;
     Vulkan::Liverpool::ShaderProgram user_data{};
     std::vector<u32> code{};
 };
 
 struct PipelineComputerProgramDump {
+    std::string name;
+    u64 hash;
     Vulkan::Liverpool::ComputeProgram cs_program{};
     std::vector<u32> code{};
 };

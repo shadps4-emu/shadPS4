@@ -5,6 +5,7 @@
 #include <mutex>
 #include <imgui.h>
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
@@ -82,7 +83,10 @@ void TrophyUI::Draw() {
 
 void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName) {
     std::lock_guard<std::mutex> lock(queueMtx);
-    if (current_trophy_ui.has_value()) {
+
+    if (Config::getisTrophyPopupDisabled()) {
+        return;
+    } else if (current_trophy_ui.has_value()) {
         TrophyInfo new_trophy;
         new_trophy.trophy_icon_path = trophyIconPath;
         new_trophy.trophy_name = trophyName;

@@ -22,7 +22,7 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
     if (handler) {
         auto ctx = Ucontext{};
 #ifdef __APPLE__
-        auto& regs = raw_context->uc_mcontext->__ss;
+        const auto& regs = raw_context->uc_mcontext->__ss;
         ctx.uc_mcontext.mc_r8 = regs.__r8;
         ctx.uc_mcontext.mc_r9 = regs.__r9;
         ctx.uc_mcontext.mc_r10 = regs.__r10;
@@ -42,7 +42,7 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         ctx.uc_mcontext.mc_fs = regs.__fs;
         ctx.uc_mcontext.mc_gs = regs.__gs;
 #else
-        auto& regs = raw_context->uc_mcontext.gregs;
+        const auto& regs = raw_context->uc_mcontext.gregs;
         ctx.uc_mcontext.mc_r8 = regs[REG_R8];
         ctx.uc_mcontext.mc_r9 = regs[REG_R9];
         ctx.uc_mcontext.mc_r10 = regs[REG_R10];
@@ -131,8 +131,12 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     LOG_WARNING(Lib_Kernel, "Raising exception on thread '{}'", thread->name);
     ASSERT_MSG(signum == POSIX_SIGUSR1, "Attempting to raise non user defined signal!");
 #ifndef _WIN64
-    pthread_t pthr = *reinterpret_cast<pthread_t*>(thread->native_thr.GetHandle());
-    pthread_kill(pthr, SIGUSR2);
+    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
+    const auto ret = pthread_kill(pthr, SIGUSR2);
+    if (ret != 0) {
+        LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
+                  strerror(ret));
+    }
 #else
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;

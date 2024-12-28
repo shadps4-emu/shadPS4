@@ -34,6 +34,7 @@ namespace Config {
 static bool isNeo = false;
 static bool isFullscreen = false;
 static bool playBGM = false;
+static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
 static bool enableDiscordRPC = false;
 static u32 screenWidth = 1280;
@@ -64,6 +65,9 @@ static bool vkCrashDiagnostic = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
+static bool compatibilityData = false;
+static bool checkCompatibilityOnStartup = false;
+static std::string audioBackend = "cubeb";
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -94,6 +98,10 @@ bool isNeoMode() {
 
 bool isFullscreenMode() {
     return isFullscreen;
+}
+
+bool getisTrophyPopupDisabled() {
+    return isTrophyPopupDisabled;
 }
 
 bool getPlayBGM() {
@@ -224,6 +232,18 @@ bool getSeparateUpdateEnabled() {
     return separateupdatefolder;
 }
 
+bool getCompatibilityEnabled() {
+    return compatibilityData;
+}
+
+bool getCheckCompatibilityOnStartup() {
+    return checkCompatibilityOnStartup;
+}
+
+std::string getAudioBackend() {
+    return audioBackend;
+}
+
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -284,6 +304,10 @@ void setFullscreenMode(bool enable) {
     isFullscreen = enable;
 }
 
+void setisTrophyPopupDisabled(bool disable) {
+    isTrophyPopupDisabled = disable;
+}
+
 void setPlayBGM(bool enable) {
     playBGM = enable;
 }
@@ -342,6 +366,18 @@ void setSpecialPadClass(int type) {
 
 void setSeparateUpdateEnabled(bool use) {
     separateupdatefolder = use;
+}
+
+void setCompatibilityEnabled(bool use) {
+    compatibilityData = use;
+}
+
+void setCheckCompatibilityOnStartup(bool use) {
+    checkCompatibilityOnStartup = use;
+}
+
+void setAudioBackend(std::string backend) {
+    audioBackend = backend;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -531,6 +567,7 @@ void load(const std::filesystem::path& path) {
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
+        isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
@@ -544,6 +581,9 @@ void load(const std::filesystem::path& path) {
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
+        compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
+        checkCompatibilityOnStartup =
+            toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
     }
 
     if (data.contains("Input")) {
@@ -578,6 +618,12 @@ void load(const std::filesystem::path& path) {
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
         vkMarkers = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
         vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
+    }
+
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        audioBackend = toml::find_or<std::string>(audio, "backend", "cubeb");
     }
 
     if (data.contains("Debug")) {
@@ -646,6 +692,7 @@ void save(const std::filesystem::path& path) {
 
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
+    data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
     data["General"]["BGMvolume"] = BGMvolume;
     data["General"]["enableDiscordRPC"] = enableDiscordRPC;
@@ -656,6 +703,8 @@ void save(const std::filesystem::path& path) {
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
+    data["General"]["compatibilityEnabled"] = compatibilityData;
+    data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -675,6 +724,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
+    data["Audio"]["backend"] = audioBackend;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
 
@@ -740,6 +790,7 @@ void saveMainWindow(const std::filesystem::path& path) {
 void setDefaultValues() {
     isNeo = false;
     isFullscreen = false;
+    isTrophyPopupDisabled = false;
     playBGM = false;
     BGMvolume = 50;
     enableDiscordRPC = true;
@@ -775,6 +826,9 @@ void setDefaultValues() {
     m_language = 1;
     gpuId = -1;
     separateupdatefolder = false;
+    compatibilityData = false;
+    checkCompatibilityOnStartup = false;
+    audioBackend = "cubeb";
 }
 
 } // namespace Config

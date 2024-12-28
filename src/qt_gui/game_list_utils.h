@@ -3,7 +3,13 @@
 
 #pragma once
 
+#include <unordered_map>
+#include <QDir>
+#include <QDirIterator>
+#include <QImage>
+#include <QString>
 #include "common/path_util.h"
+#include "compatibility_info.h"
 
 struct GameInfo {
     std::filesystem::path path;      // root path of game directory
@@ -21,12 +27,14 @@ struct GameInfo {
     std::string fw = "Unknown";
 
     std::string play_time = "Unknown";
+    CompatibilityEntry compatibility = CompatibilityEntry{CompatibilityStatus::Unknown};
 };
 
-class GameListUtils {
+class GameListUtils : public QObject {
+    Q_OBJECT
 public:
     static QString FormatSize(qint64 size) {
-        static const QStringList suffixes = {"B", "KB", "MB", "GB", "TB"};
+        static const QStringList suffixes = {tr("B"), tr("KB"), tr("MB"), tr("GB"), tr("TB")};
         int suffixIndex = 0;
 
         double gameSize = static_cast<double>(size);

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -23,9 +24,11 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
     case AmdGpu::PrimitiveType::PointList:
         return spv::ExecutionMode::InputPoints;
     case AmdGpu::PrimitiveType::LineList:
+    case AmdGpu::PrimitiveType::LineStrip:
         return spv::ExecutionMode::InputLines;
     case AmdGpu::PrimitiveType::TriangleList:
     case AmdGpu::PrimitiveType::TriangleStrip:
+    case AmdGpu::PrimitiveType::RectList:
         return spv::ExecutionMode::Triangles;
     case AmdGpu::PrimitiveType::AdjTriangleList:
         return spv::ExecutionMode::InputTrianglesAdjacency;

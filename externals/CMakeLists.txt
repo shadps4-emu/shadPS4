@@ -189,7 +189,11 @@ add_library(Dear_ImGui
 target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
 
 # Tracy
-option(TRACY_ENABLE "" ON)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    option(TRACY_ENABLE "" OFF)
+else()
+    option(TRACY_ENABLE "" ON)
+endif()
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
 option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
@@ -222,6 +226,16 @@ if (NOT TARGET stb::headers)
     add_library(stb INTERFACE)
     target_include_directories(stb INTERFACE stb)
     add_library(stb::headers ALIAS stb)
+endif()
+
+# cubeb
+if (NOT TARGET cubeb::cubeb)
+    option(BUILD_TESTS "" OFF)
+    option(BUILD_TOOLS "" OFF)
+    option(BUNDLE_SPEEX "" ON)
+    option(USE_SANITIZERS "" OFF)
+    add_subdirectory(cubeb)
+    add_library(cubeb::cubeb ALIAS cubeb)
 endif()
 
 # Apple-only dependencies

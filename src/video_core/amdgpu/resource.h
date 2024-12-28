@@ -126,6 +126,7 @@ enum class TilingMode : u32 {
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
     Texture_MacroTiled = 0xEu,
+    Texture_Volume = 0x13u,
 };
 
 constexpr std::string_view NameOf(TilingMode type) {
@@ -140,6 +141,8 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Texture_MicroTiled";
     case TilingMode::Texture_MacroTiled:
         return "Texture_MacroTiled";
+    case TilingMode::Texture_Volume:
+        return "Texture_Volume";
     default:
         return "Unknown";
     }
@@ -294,9 +297,6 @@ struct Image {
             return tiling_index == 5 ? TilingMode::Texture_MicroTiled
                                      : TilingMode::Depth_MacroTiled;
         }
-        if (tiling_index == 0x13) {
-            return TilingMode::Texture_MicroTiled;
-        }
         return static_cast<TilingMode>(tiling_index);
     }
 
@@ -363,6 +363,16 @@ enum class Filter : u64 {
     AnisoPoint = 2,
     AnisoLinear = 3,
 };
+
+constexpr bool IsAnisoFilter(const Filter filter) {
+    switch (filter) {
+    case Filter::AnisoPoint:
+    case Filter::AnisoLinear:
+        return true;
+    default:
+        return false;
+    }
+}
 
 enum class MipFilter : u64 {
     None = 0,
@@ -434,6 +444,23 @@ struct Sampler {
 
     float MaxLod() const noexcept {
         return static_cast<float>(max_lod.Value()) / 256.0f;
+    }
+
+    float MaxAniso() const {
+        switch (max_aniso.Value()) {
+        case AnisoRatio::One:
+            return 1.0f;
+        case AnisoRatio::Two:
+            return 2.0f;
+        case AnisoRatio::Four:
+            return 4.0f;
+        case AnisoRatio::Eight:
+            return 8.0f;
+        case AnisoRatio::Sixteen:
+            return 16.0f;
+        default:
+            UNREACHABLE();
+        }
     }
 };
 

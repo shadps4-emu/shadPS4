@@ -244,8 +244,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->tid = ++TidCounter;
 
     if (new_thread->attr.stackaddr_attr == 0) {
-        /* Enforce minimum stack size of 64 KB */
-        static constexpr size_t MinimumStack = 64_KB;
+        /* Enforce minimum stack size of 128 KB */
+        static constexpr size_t MinimumStack = 128_KB;
         auto& stacksize = new_thread->attr.stacksize_attr;
         stacksize = std::max(stacksize, MinimumStack);
     }
@@ -327,7 +327,8 @@ void PS4_SYSV_ABI sched_yield() {
     std::this_thread::yield();
 }
 
-int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control, void (*init_routine)()) {
+int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
+                                    void PS4_SYSV_ABI (*init_routine)()) {
     for (;;) {
         auto state = once_control->state.load();
         if (state == PthreadOnceState::Done) {

@@ -154,7 +154,7 @@ void Presenter::CreatePostProcessPipeline() {
     const auto& fs_module =
         Vulkan::Compile(pp_shaders[1], vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
     ASSERT(fs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "post_process.frag");
+    Vulkan::SetObjectName(instance.GetDevice(), fs_module, "post_process.frag");
 
     const std::array shaders_ci{
         vk::PipelineShaderStageCreateInfo{
@@ -634,9 +634,11 @@ void Presenter::Present(Frame* frame) {
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
-    ImGui::Core::NewFrame();
+    if (!swapchain.AcquireNextImage()) {
+        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+    }
 
-    swapchain.AcquireNextImage();
+    ImGui::Core::NewFrame();
 
     const vk::Image swapchain_image = swapchain.Image();
 
@@ -731,7 +733,9 @@ void Presenter::Present(Frame* frame) {
 
     // Present to swapchain.
     std::scoped_lock submit_lock{Scheduler::submit_mutex};
-    swapchain.Present();
+    if (!swapchain.Present()) {
+        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+    }
 
     // Free the frame for reuse
     std::scoped_lock fl{free_mutex};

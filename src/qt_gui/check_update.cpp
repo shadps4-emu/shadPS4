@@ -15,6 +15,7 @@
 #include <QNetworkRequest>
 #include <QProcess>
 #include <QPushButton>
+#include <QStandardPaths>
 #include <QString>
 #include <QStringList>
 #include <QTextEdit>
@@ -212,9 +213,9 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
 
     // Don't show changelog button if:
     // The current version is a pre-release and the version to be downloaded is a release.
-    bool current_isRelease = currentRev.startsWith('v', Qt::CaseInsensitive);
-    bool latest_isRelease = latestRev.startsWith('v', Qt::CaseInsensitive);
-    if (!current_isRelease && latest_isRelease) {
+    bool current_isWIP = currentRev.endsWith("WIP", Qt::CaseInsensitive);
+    bool latest_isWIP = latestRev.endsWith("WIP", Qt::CaseInsensitive);
+    if (current_isWIP && !latest_isWIP) {
     } else {
         QTextEdit* textField = new QTextEdit(this);
         textField->setReadOnly(true);
@@ -347,7 +348,13 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
 
         QString userPath;
         Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+#ifdef Q_OS_WIN
+        QString tempDownloadPath =
+            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+            "/Temp/temp_download_update";
+#else
         QString tempDownloadPath = userPath + "/temp_download_update";
+#endif
         QDir dir(tempDownloadPath);
         if (!dir.exists()) {
             dir.mkpath(".");
@@ -393,6 +400,12 @@ void CheckUpdate::Install() {
     QString processCommand;
 
 #ifdef Q_OS_WIN
+    // On windows, overwrite tempDirPath with AppData/Roaming/shadps4/Temp folder
+    // due to PowerShell Expand-Archive not being able to handle correctly
+    // paths in square brackets (ie: ./[shadps4])
+    tempDirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+                  "/Temp/temp_download_update";
+
     // Windows Batch Script
     scriptFileName = tempDirPath + "/update.ps1";
     scriptContent = QStringLiteral(
@@ -408,10 +421,11 @@ void CheckUpdate::Install() {
         "Start-Sleep -Seconds 3\n"
         "Copy-Item -Recurse -Force '%2\\*' '%3\\'\n"
         "Start-Sleep -Seconds 2\n"
-        "Remove-Item -Force '%3\\update.ps1'\n"
-        "Remove-Item -Force '%3\\temp_download_update.zip'\n"
-        "Start-Process '%3\\shadps4.exe'\n"
-        "Remove-Item -Recurse -Force '%2'\n");
+        "Remove-Item -Force -LiteralPath '%3\\update.ps1'\n"
+        "Remove-Item -Force -LiteralPath '%3\\temp_download_update.zip'\n"
+        "Remove-Item -Recurse -Force '%2'\n"
+        "Start-Process -FilePath '%3\\shadps4.exe' "
+        "-WorkingDirectory ([WildcardPattern]::Escape('%3'))\n");
     arguments << "-ExecutionPolicy"
               << "Bypass"
               << "-File" << scriptFileName;
@@ -526,6 +540,7 @@ void CheckUpdate::Install() {
     QFile scriptFile(scriptFileName);
     if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&scriptFile);
+        scriptFile.write("\xEF\xBB\xBF");
 #ifdef Q_OS_WIN
         out << scriptContent.arg(binaryStartingUpdate).arg(tempDirPath).arg(rootPath);
 #endif

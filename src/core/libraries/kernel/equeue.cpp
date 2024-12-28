@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <thread>
+
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
@@ -9,6 +11,8 @@
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
+
+// Events are uniquely identified by id and filter.
 
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
@@ -25,12 +29,13 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
     return true;
 }
 
-bool EqueueInternal::RemoveEvent(u64 id) {
+bool EqueueInternal::RemoveEvent(u64 id, s16 filter) {
     bool has_found = false;
     std::scoped_lock lock{m_mutex};
 
-    const auto& it =
-        std::ranges::find_if(m_events, [id](auto& ev) { return ev.event.ident == id; });
+    const auto& it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
+        return ev.event.ident == id && ev.event.filter == filter;
+    });
     if (it != m_events.cend()) {
         m_events.erase(it);
         has_found = true;
@@ -66,7 +71,7 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
 
     if (ev->flags & SceKernelEvent::Flags::OneShot) {
         for (auto ev_id = 0u; ev_id < count; ++ev_id) {
-            RemoveEvent(ev->ident);
+            RemoveEvent(ev->ident, ev->filter);
         }
     }
 
@@ -92,8 +97,11 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     int count = 0;
     for (auto& event : m_events) {
         if (event.IsTriggered()) {
+            // Event should not trigger again
+            event.ResetTriggerState();
+
             if (event.event.flags & SceKernelEvent::Flags::Clear) {
-                event.Reset();
+                event.Clear();
             }
             ev[count++] = event.event;
             if (count == num) {
@@ -332,7 +340,7 @@ int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (!eq->RemoveEvent(id)) {
+    if (!eq->RemoveEvent(id, SceKernelEvent::Filter::User)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -340,6 +348,10 @@ int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
 
 s16 PS4_SYSV_ABI sceKernelGetEventFilter(const SceKernelEvent* ev) {
     return ev->filter;
+}
+
+u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev) {
+    return ev->data;
 }
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
@@ -354,6 +366,7 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteUserEvent);
     LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventId);
     LIB_FUNCTION("23CPPI1tyBY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventFilter);
+    LIB_FUNCTION("kwGyyjohI50", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventData);
 }
 
 } // namespace Libraries::Kernel

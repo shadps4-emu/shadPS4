@@ -176,14 +176,34 @@
 			<translation>Fshi DLC-në</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="99"/>
+			<source>Compatibility...</source>
+			<translation>Compatibility...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="100"/>
+			<source>Update database</source>
+			<translation>Update database</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="101"/>
+			<source>View report</source>
+			<translation>View report</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="102"/>
+			<source>Submit a report</source>
+			<translation>Submit a report</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Krijimi i shkurtores</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Shkurtorja u krijua me sukses!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Shkurtorja u krijua me sukses!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +212,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Gabim në krijimin e shkurtores!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Gabim në krijimin e shkurtores!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>
@@ -553,6 +573,11 @@
 			<translation>Koha për fshehjen e kursorit joaktiv</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="816"/>
+			<source>s</source>
+			<translation>s</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
 			<source>Controller</source>
 			<translation>Dorezë</translation>
@@ -673,14 +698,44 @@
 			<translation>Cilësimet e GUI</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="475"/>
+			<source>Disable Trophy Pop-ups</source>
+			<translation>Çaktivizo njoftimet për Trofetë</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
 			<translation>Luaj muzikën e titullit</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database On Startup</source>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë gjatë nisjes</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Game Compatibility</source>
+			<translation>Përputhshmëria e lojës</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Display Compatibility Data</source>
+			<translation>Shfaq të dhënat e përputhshmërisë</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database</source>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Vëllimi i zërit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Audio Backend</translation>
 		</message>
 	</context>
 	<context>
@@ -841,7 +896,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Mashtrime / Arna për </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -1159,7 +1214,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.</translation>
+			<translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.\nKjo mund të krijohet manualisht duke shtuar përditësimin e shpaketuar në dosjen e lojës me emrin "CUSA00000-UPDATE" ku ID-ja CUSA përputhet me ID-në e lojës.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
@@ -1202,6 +1257,11 @@
 			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="267"/>
+			<source>disableTrophycheckBox</source>
+			<translation>Çaktivizo njoftimet për Trofetë:\nÇaktivizo njoftimet për trofetë gjatë lojës. Përparimi i trofeve mund të ndiqet duke përdorur Shikuesin e Trofeve (kliko me të djathtën mbi lojën në dritaren kryesore).</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
 			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nInaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
@@ -1215,6 +1275,21 @@
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
 			<translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni mprapa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>enableCompatibilityCheckBox</source>
+			<translation>Shfaq të dhënat e përputhshmërisë:\nShfaq informacionin e përputhshmërisë së lojës në formë tabele. Aktivizo 'Përditëso përputhshmërinë gjatë nisjes' për të marrë informacion të përditësuar.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>checkCompatibilityOnStartupCheckBox</source>
+			<translation>Përditëso përputhshmërinë gjatë nisjes:\nPërditëson automatikisht bazën e të dhënave të përputhshmërisë kur shadPS4 niset.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>updateCompatibilityButton</source>
+			<translation>Përditëso bazën e të dhënave të përputhshmërisë:\nPërditëso menjëherë bazën e të dhënave të përputhshmërisë.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1330,6 +1405,11 @@
 			<translation>Seriku</translation>
 		</message>
 		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility</source>
+			<translation>Përputhshmëria</translation>
+		</message>
+		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Region</source>
 			<translation>Rajoni</translation>
@@ -1362,7 +1442,52 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Nuk është luajtur kurrë</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>h</source>
+			<translation>h</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>m</source>
+			<translation>m</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>s</source>
+			<translation>s</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility is untested</source>
+			<translation>Përputhshmëria nuk është e testuar</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game does not initialize properly / crashes the emulator</source>
+			<translation>Loja nuk niset siç duhet / rrëzon emulatorin</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game boots, but only displays a blank screen</source>
+			<translation>Loja niset, por shfaq vetëm një ekran të zbrazët</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game displays an image but does not go past the menu</source>
+			<translation>Loja shfaq një imazh, por nuk kalon përtej menysë</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game has game-breaking glitches or unplayable performance</source>
+			<translation>Loja ka probleme kritike ose performancë të papërshtatshme për lojë</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game can be completed with playable performance and no major glitches</source>
+			<translation>Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha</translation>
 		</message>
 	</context>
 	<context>
@@ -1492,5 +1617,33 @@
 			<source>Failed to create the update script file</source>
 			<translation>Krijimi i skedarit skript të përditësimit dështoi</translation>
 		</message>
+	</context>
+	<context>
+		<name>GameListUtils</name>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>B</source>
+			<translation>B</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>KB</source>
+			<translation>KB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>MB</source>
+			<translation>MB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>GB</source>
+			<translation>GB</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>TB</source>
+			<translation>TB</translation>
+		</message>		
 	</context>
 </TS>

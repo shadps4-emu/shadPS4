@@ -498,7 +498,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
 s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
                                                  OrbisNpTrophyHandle handle,
                                                  OrbisNpTrophyFlagArray* flags, u32* count) {
-    LOG_INFO(Lib_NpTrophy, "GetTrophyUnlockState called");
+    LOG_INFO(Lib_NpTrophy, "called");
 
     if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
@@ -519,8 +519,9 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     if (!result) {
-        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy xml : {}", result.description());
-        return -1;
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy XML: {}", result.description());
+        *count = 0;
+        return ORBIS_OK;
     }
 
     int num_trophies = 0;

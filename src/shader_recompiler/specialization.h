@@ -39,10 +39,12 @@ struct TextureBufferSpecialization {
 struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
+    bool is_storage = false;
     u32 dst_select = 0;
 
     bool operator==(const ImageSpecialization& other) const {
         return type == other.type && is_integer == other.is_integer &&
+               is_storage == other.is_storage &&
                (dst_select != 0 ? dst_select == other.dst_select : true);
     }
 };
@@ -114,7 +116,8 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.type = sharp.GetBoundType();
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         if (desc.is_storage) {
+                         spec.is_storage = desc.IsStorage(sharp);
+                         if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
                      });

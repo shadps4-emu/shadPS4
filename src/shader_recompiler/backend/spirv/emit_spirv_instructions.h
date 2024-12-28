@@ -304,10 +304,12 @@ Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id
 Id EmitBitFieldUExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count);
 Id EmitBitReverse32(EmitContext& ctx, Id value);
 Id EmitBitCount32(EmitContext& ctx, Id value);
+Id EmitBitCount64(EmitContext& ctx, Id value);
 Id EmitBitwiseNot32(EmitContext& ctx, Id value);
 Id EmitFindSMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb32(EmitContext& ctx, Id value);
 Id EmitFindILsb32(EmitContext& ctx, Id value);
+Id EmitFindILsb64(EmitContext& ctx, Id value);
 Id EmitSMin32(EmitContext& ctx, Id a, Id b);
 Id EmitUMin32(EmitContext& ctx, Id a, Id b);
 Id EmitSMax32(EmitContext& ctx, Id a, Id b);
@@ -318,7 +320,8 @@ Id EmitSLessThan32(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSLessThan64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThan32(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThan64(EmitContext& ctx, Id lhs, Id rhs);
-Id EmitIEqual(EmitContext& ctx, Id lhs, Id rhs);
+Id EmitIEqual32(EmitContext& ctx, Id lhs, Id rhs);
+Id EmitIEqual64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSLessThanEqual(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThanEqual(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSGreaterThan(EmitContext& ctx, Id lhs, Id rhs);
@@ -395,14 +398,13 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                    const IR::Value& offset);
 Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                        const IR::Value& offset, Id dref);
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
-                  const IR::Value& offset, Id ms);
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips);
 Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords);
 Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id derivatives_dx,
                      Id derivatives_dy, const IR::Value& offset, const IR::Value& lod_clamp);
-Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id lod);
-void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id color);
+Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms);
+void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,
+                    Id color);
 
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);

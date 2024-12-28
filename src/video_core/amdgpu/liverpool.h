@@ -428,6 +428,14 @@ struct Liverpool {
             BitField<0, 22, u32> tile_max;
         } depth_slice;
 
+        bool DepthValid() const {
+            return Address() != 0 && z_info.format != ZFormat::Invalid;
+        }
+
+        bool StencilValid() const {
+            return Address() != 0 && stencil_info.format != StencilFormat::Invalid;
+        }
+
         u32 Pitch() const {
             return (depth_size.pitch_tile_max + 1) << 3;
         }
@@ -1273,6 +1281,26 @@ struct Liverpool {
                 return &ls_program;
             }
             return nullptr;
+        }
+
+        u32 NumSamples() const {
+            // It seems that the number of samples > 1 set in the AA config doesn't mean we're
+            // always rendering with MSAA, so we need to derive MS ratio from the CB and DB
+            // settings.
+            u32 num_samples = 1u;
+            if (color_control.mode != ColorControl::OperationMode::Disable) {
+                for (auto cb = 0u; cb < NumColorBuffers; ++cb) {
+                    const auto& col_buf = color_buffers[cb];
+                    if (!col_buf) {
+                        continue;
+                    }
+                    num_samples = std::max(num_samples, col_buf.NumSamples());
+                }
+            }
+            if (depth_buffer.DepthValid() || depth_buffer.StencilValid()) {
+                num_samples = std::max(num_samples, depth_buffer.NumSamples());
+            }
+            return num_samples;
         }
 
         void SetDefaults();
