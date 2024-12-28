@@ -678,7 +678,7 @@ void load(const std::filesystem::path& path) {
     }
 
     if (data.contains("Keys")) {
-        const toml::value& keys = data.at("keys");
+        const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
     }
 }
