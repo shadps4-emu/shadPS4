@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-             SPDX-License-Identifier: GPL-2.0-or-later -->
+         SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
 		<message>
@@ -18,7 +18,7 @@
 		<message>
 			<location filename="../about_dialog.ui" line="78"/>
 			<source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-			<translation>shadPS4 是一款实验性质的开源 PlayStation 4模拟器软件。</translation>
+			<translation>shadPS4 是一款实验性质的开源 PlayStation 4 模拟器软件。</translation>
 		</message>
 		<message>
 			<location filename="../about_dialog.ui" line="99"/>
@@ -103,7 +103,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="48"/>
 			<source>Cheats / Patches</source>
-			<translation>作弊码 / 补丁</translation>
+			<translation>作弊码/补丁</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
@@ -113,7 +113,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
 			<source>Trophy Viewer</source>
-			<translation>Trophy 查看器</translation>
+			<translation>奖杯查看器</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
@@ -128,7 +128,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>
 			<source>Open Save Data Folder</source>
-			<translation>打开保存数据文件夹</translation>
+			<translation>打开存档数据文件夹</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="52"/>
@@ -173,27 +173,27 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="75"/>
 			<source>Delete DLC</source>
-			<translation>删除DLC</translation>
+			<translation>删除 DLC</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="99"/>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>兼容性...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="100"/>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>更新数据库</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="101"/>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>查看报告</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="102"/>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>提交报告</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
@@ -203,7 +203,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
 			<source>Shortcut created successfully!</source>
-			<translation>创建快捷方式成功!</translation>
+			<translation>创建快捷方式成功！</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -213,7 +213,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
 			<source>Error creating shortcut!</source>
-			<translation>创建快捷方式出错!</translation>
+			<translation>创建快捷方式出错！</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>
@@ -228,7 +228,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="305"/>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>这个功能需要‘启用单独的更新目录’配置选项才能正常运行，如果你想要使用这个功能，请启用它。</translation>
+			<translation>这个功能需要“启用单独的更新目录”配置选项才能正常运行，如果你想要使用这个功能，请启用它。</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="312"/>
@@ -243,7 +243,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="321"/>
 			<source>This game has no DLC to delete!</source>
-			<translation>这个游戏没有DLC可以删除！</translation>
+			<translation>这个游戏没有 DLC 可以删除！</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="325"/>
@@ -258,7 +258,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="333"/>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>你确定要删除 %1 的 %2 目录？</translation>
+			<translation>你确定要删除 %1 的%2目录？</translation>
 		</message>
 	</context>
 	<context>
@@ -266,7 +266,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="310"/>
 			<source>Open/Add Elf Folder</source>
-			<translation>打开/添加Elf文件夹</translation>
+			<translation>打开/添加 Elf 文件夹</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="312"/>
@@ -316,7 +316,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="327"/>
 			<source>Exit the application.</source>
-			<translation>退出应用程序.</translation>
+			<translation>退出应用程序。</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="330"/>
@@ -341,12 +341,12 @@
 		<message>
 			<location filename="../main_window_ui.h" line="335"/>
 			<source>Medium</source>
-			<translation>中等</translation>
+			<translation>中</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="336"/>
 			<source>Large</source>
-			<translation>巨大</translation>
+			<translation>大</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="338"/>
@@ -376,7 +376,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="345"/>
 			<source>Dump Game List</source>
-			<translation>转储游戏列表</translation>
+			<translation>导出游戏列表</translation>
 		</message>
 		<message>
 			<location filename="../main_window_ui.h" line="346"/>
@@ -472,7 +472,7 @@
 		<message>
 			<location filename="../trophy_viewer.cpp" line="8"/>
 			<source>Trophy Viewer</source>
-			<translation>Trophy 查看器</translation>
+			<translation>奖杯查看器</translation>
 		</message>
 	</context>
 	<context>
@@ -485,7 +485,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="67"/>
 			<source>General</source>
-			<translation>通用</translation>
+			<translation>常规</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="77"/>
@@ -520,12 +520,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="129"/>
 			<source>Show Splash</source>
-			<translation>显示Splash</translation>
+			<translation>显示启动画面</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="136"/>
 			<source>Is PS4 Pro</source>
-			<translation>是否是 PS4 Pro</translation>
+			<translation>模拟 PS4 Pro</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="154"/>
@@ -570,17 +570,17 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>光标空闲超时隐藏</translation>
+			<translation>光标隐藏闲置时长</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="816"/>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>秒</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
 			<source>Controller</source>
-			<translation>控制器</translation>
+			<translation>手柄</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="797"/>
@@ -595,7 +595,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="282"/>
 			<source>Graphics Device</source>
-			<translation>图像设备</translation>
+			<translation>图形设备</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="326"/>
@@ -700,7 +700,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="475"/>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>禁止弹出奖杯</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
@@ -710,22 +710,22 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>启动时更新兼容性数据库</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>游戏兼容性</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>显示兼容性数据</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>更新兼容性数据库</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
@@ -735,7 +735,7 @@
 		<message>
 			<location filename="../settings_dialog.ui"/>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>音频后端</translation>
 		</message>
 	</context>
 	<context>
@@ -778,12 +778,12 @@
 		<message>
 			<location filename="../main_window.cpp" line="392"/>
 			<source>All Patches available for all games have been downloaded.</source>
-			<translation>所有游戏的所有补丁都已下载。</translation>
+			<translation>所有游戏的可用补丁都已下载。</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="549"/>
 			<source>Games: </source>
-			<translation>游戏: </translation>
+			<translation>游戏：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="575"/>
@@ -798,7 +798,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="600"/>
 			<source>Game Boot</source>
-			<translation>游戏启动</translation>
+			<translation>启动游戏</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="600"/>
@@ -818,7 +818,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="646"/>
 			<source>PKG and Game versions match: </source>
-			<translation>PKG 和游戏版本匹配: </translation>
+			<translation>PKG 和游戏版本匹配：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="647"/>
@@ -828,17 +828,17 @@
 		<message>
 			<location filename="../main_window.cpp" line="639"/>
 			<source>PKG Version %1 is older than installed version: </source>
-			<translation>PKG 版本 %1 比已安装版本更旧: </translation>
+			<translation>PKG 版本 %1 比已安装版本更旧：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="660"/>
 			<source>Game is installed: </source>
-			<translation>游戏已安装: </translation>
+			<translation>游戏已安装：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="660"/>
 			<source>Would you like to install Patch: </source>
-			<translation>您想安装补丁吗: </translation>
+			<translation>您想安装补丁吗：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="673"/>
@@ -848,12 +848,12 @@
 		<message>
 			<location filename="../main_window.cpp" line="674"/>
 			<source>Would you like to install DLC: %1?</source>
-			<translation>您想安装 DLC: %1 吗？</translation>
+			<translation>您想安装 DLC：%1 吗？</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="688"/>
 			<source>DLC already installed:</source>
-			<translation>DLC 已经安装:</translation>
+			<translation>DLC 已经安装：</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="701"/>
@@ -896,42 +896,42 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>作弊码/补丁：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
 			<source>defaultTextEdit_MSG</source>
-			<translation>作弊/补丁是实验性的。\n请小心使用。\n\n通过选择存储库并点击下载按钮，单独下载作弊程序。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊程序/补丁，\n请将问题报告给作弊程序的作者。\n\n创建了新的作弊程序？访问：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+			<translation>作弊码/补丁是实验性的。\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="69"/>
 			<source>No Image Available</source>
-			<translation>没有可用的图像</translation>
+			<translation>没有可用的图片</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="79"/>
 			<source>Serial: </source>
-			<translation>序列号: </translation>
+			<translation>序列号：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="83"/>
 			<source>Version: </source>
-			<translation>版本: </translation>
+			<translation>版本：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="87"/>
 			<source>Size: </source>
-			<translation>大小: </translation>
+			<translation>大小：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="126"/>
 			<source>Select Cheat File:</source>
-			<translation>选择作弊码文件:</translation>
+			<translation>选择作弊码文件：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="133"/>
 			<source>Repository:</source>
-			<translation>存储库:</translation>
+			<translation>存储库：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="149"/>
@@ -961,7 +961,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="213"/>
 			<source>Select Patch File:</source>
-			<translation>选择补丁文件:</translation>
+			<translation>选择补丁文件：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="241"/>
@@ -1016,7 +1016,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="432"/>
 			<source>Failed to parse XML: </source>
-			<translation>解析 XML 失败: </translation>
+			<translation>解析 XML 失败：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="434"/>
@@ -1046,17 +1046,17 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="520"/>
 			<source>File already exists. Do you want to replace it?</source>
-			<translation>文件已存在。您要替换它吗？</translation>
+			<translation>文件已存在，您要替换它吗？</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="539"/>
 			<source>Failed to save file:</source>
-			<translation>保存文件失败:</translation>
+			<translation>保存文件失败：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="545"/>
 			<source>Failed to download file:</source>
-			<translation>下载文件失败:</translation>
+			<translation>下载文件失败：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="556"/>
@@ -1076,17 +1076,17 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="594"/>
 			<source>CheatsDownloadedSuccessfully_MSG</source>
-			<translation>您已成功下载了该游戏版本的作弊码 从所选存储库中。如果有，您还可以尝试从其他存储库下载，或通过从列表中选择文件来使用它们。</translation>
+			<translation>您已从所选存储库中成功下载了该游戏版本的作弊码。您还可以尝试从其他存储库下载，或通过从列表中选择文件来使用它们。</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="747"/>
 			<source>Failed to save:</source>
-			<translation>保存失败:</translation>
+			<translation>保存失败：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="754"/>
 			<source>Failed to download:</source>
-			<translation>下载失败:</translation>
+			<translation>下载失败：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="762"/>
@@ -1096,7 +1096,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="763"/>
 			<source>DownloadComplete_MSG</source>
-			<translation>补丁下载成功！所有可用的补丁已下载完成，无需像作弊码那样单独下载每个游戏的补丁。如果补丁没有出现，可能是该补丁不存在于特定的序列号和游戏版本中。</translation>
+			<translation>补丁下载成功！所有可用的补丁已下载完成，无需像作弊码那样单独下载每个游戏的补丁。如果补丁没有出现，可能是该补丁不适用于当前游戏的序列号和版本。</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="773"/>
@@ -1111,12 +1111,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="850"/>
 			<source>The game is in version: %1</source>
-			<translation>游戏版本: %1</translation>
+			<translation>游戏版本：%1</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="851"/>
 			<source>The downloaded patch only works on version: %1</source>
-			<translation>下载的补丁仅适用于版本: %1</translation>
+			<translation>下载的补丁仅适用于版本：%1</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="856"/>
@@ -1131,12 +1131,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="801"/>
 			<source>Failed to open file:</source>
-			<translation>无法打开文件:</translation>
+			<translation>无法打开文件：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="819"/>
 			<source>XML ERROR:</source>
-			<translation>XML 错误:</translation>
+			<translation>XML 错误：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="826"/>
@@ -1146,12 +1146,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="925"/>
 			<source>Author: </source>
-			<translation>作者: </translation>
+			<translation>作者：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="997"/>
 			<source>Directory does not exist:</source>
-			<translation>目录不存在:</translation>
+			<translation>目录不存在：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="1006"/>
@@ -1161,12 +1161,12 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1006"/>
 			<source>Name:</source>
-			<translation>名称:</translation>
+			<translation>名称：</translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>在游戏开始之前无法应用作弊。</translation>
+			<translation>在游戏启动之前无法应用作弊码。</translation>
 		</message>
 	</context>
 	<context>
@@ -1199,17 +1199,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>控制台语言:\n设置 PS4 游戏中使用的语言。\n建议设置为支持的语言，因为可能因地区而异。</translation>
+			<translation>主机语言：\n设置 PS4 游戏中使用的语言。\n建议设置为支持的语言，这将因地区而异。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
 			<source>emulatorLanguageGroupBox</source>
-			<translation>模拟器语言:\n设置模拟器用户界面的语言。</translation>
+			<translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
 			<source>fullscreenCheckBox</source>
-			<translation>启用全屏模式:\n自动将游戏窗口设置为全屏模式。\n您可以按 F11 键禁用此选项。</translation>
+			<translation>启用全屏：\n以全屏模式启动游戏。\n您可以按 F11 键切换回窗口模式。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>
@@ -1219,77 +1219,77 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>显示启动画面:\n在游戏启动时显示游戏的启动画面（特殊图像）。</translation>
+			<translation>显示启动画面：\n在游戏启动时显示游戏的启动画面（特殊图像）。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
 			<source>ps4proCheckBox</source>
-			<translation>这是 PS4 Pro:\n使模拟器作为 PS4 PRO 运行，可以在支持的游戏中激活特殊功能。</translation>
+			<translation>模拟 PS4 Pro:\n使模拟器作为 PS4 Pro 运行，可以在支持的游戏中激活特殊功能。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="438"/>
 			<source>discordRPCCheckbox</source>
-			<translation>启用 Discord Rich Presence:\n在您的 Discord 个人资料上显示仿真器图标和相关信息。</translation>
+			<translation>启用 Discord Rich Presence：\n在您的 Discord 个人资料上显示模拟器图标和相关信息。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
-			<translation>用户名:\n设置 PS4 帐户的用户名。某些游戏中可能会显示此名称。</translation>
+			<translation>用户名：\n设置 PS4 帐户的用户名，某些游戏中可能会显示此名称。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
-			<translation>日志类型:\n设置是否同步日志窗口的输出以提高性能。这可能会对模拟产生负面影响。</translation>
+			<translation>日志类型：\n设置日志窗口输出的同步方式以提高性能。可能会对模拟产生不良影响。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="303"/>
 			<source>logFilter</source>
-			<translation>日志过滤器:\n过滤日志，仅打印特定信息。\n例如："Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
+			<translation>日志过滤器：\n过滤日志，仅打印特定信息。\n例如："Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>更新:\nRelease: 官方版本，可能非常旧，并且每月发布，但更可靠且经过测试。\nNightly: 开发版本，包含所有最新功能和修复，但可能包含错误且不够稳定。</translation>
+			<translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>播放标题音乐:\n如果游戏支持，在图形界面选择游戏时启用播放特殊音乐。</translation>
+			<translation>播放标题音乐：\n如果游戏支持，在图形界面选择游戏时播放特殊音乐。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="267"/>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>禁止弹出奖杯：\n禁用游戏内奖杯通知。可以在奖杯查看器中继续跟踪奖杯进度（在主窗口中右键点击游戏）。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
-			<translation>隐藏光标:\n选择光标何时消失:\n从不: 您将始终看到鼠标。\n空闲: 设置光标在空闲后消失的时间。\n始终: 您将永远看不到鼠标。</translation>
+			<translation>隐藏光标：\n选择光标何时消失:\n从不: 始终显示光标。\闲置: 光标在闲置若干秒后消失。\n始终: 始终显示光标。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
 			<source>idleTimeoutGroupBox</source>
-			<translation>设置鼠标在空闲后消失的时间。</translation>
+			<translation>光标隐藏闲置时长：\n光标自动隐藏之前的闲置时长。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>返回按钮行为:\n设置控制器的返回按钮以模拟在 PS4 触控板上指定位置的点击。</translation>
+			<translation>返回按钮行为：\n设置手柄的返回按钮模拟在 PS4 触控板上指定位置的点击。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>显示兼容性数据：\n在列表视图中显示游戏兼容性信息。启用“启动时更新兼容性数据库”以获取最新信息。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>启动时更新兼容性数据库：\n当 shadPS4 启动时自动更新兼容性数据库。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>更新兼容性数据库：\n立即更新兼容性数据库。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1299,7 +1299,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="71"/>
 			<source>Idle</source>
-			<translation>空闲</translation>
+			<translation>闲置</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
@@ -1329,62 +1329,62 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>图形设备:\n在具有多个 GPU 的系统中，从下拉列表中选择要使用的 GPU，\n或者选择“自动检测”以自动确定。</translation>
+			<translation>图形设备：\n在具有多个 GPU 的系统中，从下拉列表中选择要使用的 GPU，\n或者选择“自动选择”由模拟器决定。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
 			<source>resolutionLayout</source>
-			<translation>宽度/高度:\n设置启动时模拟器的窗口大小，该大小可以在游戏中更改。\n这与游戏中的分辨率不同。</translation>
+			<translation>宽度/高度：\n设置启动游戏时的窗口大小，游戏过程中可以调整。\n这与游戏内的分辨率不同。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="318"/>
 			<source>heightDivider</source>
-			<translation>Vblank 除数:\n模拟器更新的帧速率乘以此数字。改变此项可能会导致游戏速度加快，或破坏游戏中不期望此变化的关键功能!</translation>
+			<translation>Vblank Divider：\n模拟器刷新的帧率会乘以此数字。改变此项可能会导致游戏速度加快，或破坏游戏中不期望此变化的关键功能！</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="320"/>
 			<source>dumpShadersCheckBox</source>
-			<translation>启用着色器转储:\n为了技术调试，在渲染期间将游戏着色器保存到文件夹中。</translation>
+			<translation>启用着色器转储：\n用于技术调试，在渲染期间将游戏着色器保存到文件夹中。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="322"/>
 			<source>nullGpuCheckBox</source>
-			<translation>启用空 GPU:\n为了技术调试，将游戏渲染禁用，仿佛没有图形卡。</translation>
+			<translation>启用 NULL GPU：\n用于技术调试，禁用游戏渲染，就像没有显卡一样。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>gameFoldersBox</source>
-			<translation>游戏文件夹:\n检查已安装游戏的文件夹列表。</translation>
+			<translation>游戏文件夹：\n检查已安装游戏的文件夹列表。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>addFolderButton</source>
-			<translation>添加:\n将文件夹添加到列表。</translation>
+			<translation>添加：\n将文件夹添加到列表。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="465"/>
 			<source>removeFolderButton</source>
-			<translation>移除:\n从列表中移除文件夹。</translation>
+			<translation>移除：\n从列表中移除文件夹。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>启用调试转储:\n将当前正在运行的 PS4 程序的导入和导出符号及文件头信息保存到目录中。</translation>
+			<translation>启用调试转储：\n将当前正在运行的 PS4 程序的导入和导出符号及文件头信息保存到目录中。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>启用 Vulkan 验证层:\n启用验证 Vulkan 渲染器状态并记录内部状态信息的系统。这可能会降低性能，并可能更改模拟行为。</translation>
+			<translation>启用 Vulkan 验证层：\n启用一个系统来验证 Vulkan 渲染器的状态并记录其内部状态的信息。\n这将降低性能并可能改变模拟的行为。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>启用 Vulkan 同步验证:\n启用验证 Vulkan 渲染任务时间的系统。这可能会降低性能，并可能更改模拟行为。</translation>
+			<translation>启用 Vulkan 同步验证：\n启用一个系统来验证 Vulkan 渲染任务的时间。\n这将降低性能并可能改变模拟的行为。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
 			<source>rdocCheckBox</source>
-			<translation>启用 RenderDoc 调试:\n如果启用，模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
+			<translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
 		</message>
 	</context>
 	<context>
@@ -1407,7 +1407,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>兼容性</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -1442,52 +1442,52 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>未玩过</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>小时</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>m</source>
-			<translation>m</translation>
+			<translation>分钟</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>秒</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>兼容性未经测试</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>游戏无法正确初始化/模拟器崩溃</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>游戏启动，但只显示白屏</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>游戏显示图像但无法通过菜单页面</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>游戏有严重的 Bug 或太卡无法游玩</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp"/>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>游戏能在可玩的性能下完成且没有重大 Bug</translation>
 		</message>
 	</context>
 	<context>
@@ -1525,7 +1525,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="142"/>
 			<source>No download URL found for the specified asset.</source>
-			<translation>未找到指定资产的下载 URL。</translation>
+			<translation>未找到指定资源的下载地址。</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="148"/>
@@ -1560,7 +1560,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="193"/>
 			<source>Show Changelog</source>
-			<translation>显示变更日志</translation>
+			<translation>显示更新日志</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="198"/>
@@ -1580,17 +1580,17 @@
 		<message>
 			<location filename="../check_update.cpp" line="223"/>
 			<source>Hide Changelog</source>
-			<translation>隐藏变更日志</translation>
+			<translation>隐藏更新日志</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="296"/>
 			<source>Changes</source>
-			<translation>变更</translation>
+			<translation>更新日志</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="310"/>
 			<source>Network error occurred while trying to access the URL</source>
-			<translation>尝试访问 URL 时发生网络错误</translation>
+			<translation>尝试访问网址时发生网络错误</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="330"/>
