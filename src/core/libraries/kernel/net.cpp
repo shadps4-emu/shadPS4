@@ -40,6 +40,7 @@ void RegisterNet(Core::Loader::SymbolsResolver* sym) {
 }
 
 int NetPosixInternal::create_socket(int domain, int type, int protocol) {
+    std::scoped_lock lock{m_mutex};
     s_socket sock = socket(domain, type, protocol);
     auto id = ++next_id;
     socks.emplace(id, sock);
