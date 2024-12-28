@@ -8,10 +8,18 @@
 #include "common/types.h"
 
 #ifdef WIN32
-#include <WS2tcpip.h>
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <Ws2tcpip.h>
+#include <iphlpapi.h>
+#include <winsock2.h>
+typedef SOCKET s_socket;
 #else
 #include <sys/socket.h>
+typedef int s_socket;
 #endif
+#include <mutex>
+#include <map>
 
 namespace Common {
 class NativeClock;
@@ -31,5 +39,19 @@ int PS4_SYSV_ABI posix_listen(int sockfd, int backlog);
 int PS4_SYSV_ABI posix_accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen);
 
 void RegisterNet(Core::Loader::SymbolsResolver* sym);
+
+class NetPosixInternal {
+public:
+    explicit NetPosixInternal() = default;
+    ~NetPosixInternal() = default;
+    int create_socket(int domain, int type, int protocol);
+
+public:
+    s_socket sock;
+    std::mutex m_mutex;
+    typedef std::map<int, s_socket> NetSockets;
+    NetSockets socks;
+    int next_id = 0;
+};
 
 } // namespace Libraries::Kernel
