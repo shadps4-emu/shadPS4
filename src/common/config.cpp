@@ -561,7 +561,6 @@ void load(const std::filesystem::path& path) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
-
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
