@@ -27,7 +27,10 @@ int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, soc
     return bind;
 }
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog) {
-    return 0;
+    auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
+    int listen = netcall->net_listen(sockfd,backlog);
+    // todo check for errors
+    return listen;
 }
 int PS4_SYSV_ABI posix_accept(int sockfd, struct OrbisNetSockaddr* addr, socklen_t* addrlen) {
     return 0;
@@ -73,4 +76,14 @@ int NetPosixInternal::net_bind(int sockfd, const struct OrbisNetSockaddr* addr, 
     }
     return 0; // TODO logging and error return
 }
+int NetPosixInternal::net_listen(int sockfd, int backlog) {
+    std::scoped_lock lock{m_mutex};
+    const auto it = socks.find(sockfd);
+    if (it != socks.end()) {
+        s_socket sock = it->second;
+        return ::listen(sock,backlog);
+    }
+    return 0; // TODO logging and error return
+}
+
 } // namespace Libraries::Kernel

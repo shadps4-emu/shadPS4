@@ -55,6 +55,7 @@ public:
     ~NetPosixInternal() = default;
     int net_socket(int domain, int type, int protocol);
     int net_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
+    int net_listen(int sockfd, int backlog);
 
 public:
     s_socket sock;
