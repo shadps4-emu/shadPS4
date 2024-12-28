@@ -3,14 +3,15 @@
 
 #include <common/singleton.h>
 #include <core/libraries/libs.h>
-#include "net.h"
+#include "posix_net.h"
 
 namespace Libraries::Kernel {
 int PS4_SYSV_ABI posix_socket(int domain, int type, int protocol) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
-    return netcall->net_socket(domain, type, protocol);
+    int socket = netcall->net_socket(domain, type, protocol);
+    return socket;
 }
-int PS4_SYSV_ABI posix_connect(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+int PS4_SYSV_ABI posix_connect(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
     return 0;
 }
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
@@ -19,7 +20,7 @@ u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
 u16 PS4_SYSV_ABI posix_htons(u16 hostshort) {
     return ::htons(hostshort);
 }
-int PS4_SYSV_ABI posix_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
     int bind = netcall->net_bind(sockfd, addr, addrlen);
     // todo check for errors
@@ -28,7 +29,7 @@ int PS4_SYSV_ABI posix_bind(int sockfd, const struct sockaddr* addr, socklen_t a
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog) {
     return 0;
 }
-int PS4_SYSV_ABI posix_accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
+int PS4_SYSV_ABI posix_accept(int sockfd, struct OrbisNetSockaddr* addr, socklen_t* addrlen) {
     return 0;
 }
 
@@ -49,12 +50,26 @@ int NetPosixInternal::net_socket(int domain, int type, int protocol) {
     socks.emplace(id, sock);
     return id;
 }
-int NetPosixInternal::net_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
+
+static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst) {
+    if (src == nullptr || dst == nullptr)
+        return;
+    memset(dst, 0, sizeof(sockaddr));
+    const OrbisNetSockaddr* src_in = (const OrbisNetSockaddr*)src;
+    sockaddr_in* dst_in = (sockaddr_in*)dst;
+    dst_in->sin_family = src_in->sa_family;
+    dst_in->sin_port = src_in->sin_port;
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+}
+
+int NetPosixInternal::net_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
     std::scoped_lock lock{m_mutex};
     const auto it = socks.find(sockfd);
     if (it != socks.end()) {
         s_socket sock = it->second;
-        return ::bind(sock, addr, sizeof(sockaddr_in));
+        sockaddr addr2;
+        convertOrbisNetSockaddrToPosix(addr, &addr2);
+        return ::bind(sock, &addr2, sizeof(sockaddr_in));
     }
     return 0; // TODO logging and error return
 }

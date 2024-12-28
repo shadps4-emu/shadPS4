@@ -30,13 +30,22 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Kernel {
+struct OrbisNetSockaddr {
+    u8 sa_len;
+    u8 sa_family;
+    u16 sin_port;
+    u32 sin_addr;
+    u16 sin_vport;
+    char sin_zero[6];
+};
+
 int PS4_SYSV_ABI posix_socket(int domain, int type, int protocol);
-int PS4_SYSV_ABI posix_connect(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
+int PS4_SYSV_ABI posix_connect(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong);
 u16 PS4_SYSV_ABI posix_htons(u16 hostshort);
-int PS4_SYSV_ABI posix_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
+int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog);
-int PS4_SYSV_ABI posix_accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen);
+int PS4_SYSV_ABI posix_accept(int sockfd, struct OrbisNetSockaddr* addr, socklen_t* addrlen);
 
 void RegisterNet(Core::Loader::SymbolsResolver* sym);
 
@@ -45,7 +54,7 @@ public:
     explicit NetPosixInternal() = default;
     ~NetPosixInternal() = default;
     int net_socket(int domain, int type, int protocol);
-    int net_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
+    int net_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
 
 public:
     s_socket sock;

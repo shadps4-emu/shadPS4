@@ -28,7 +28,7 @@
 #include <Rpc.h>
 #endif
 #include <common/singleton.h>
-#include "net.h"
+#include "posix_net.h"
 
 namespace Libraries::Kernel {
 
