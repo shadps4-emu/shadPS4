@@ -44,7 +44,8 @@ class NetPosixInternal {
 public:
     explicit NetPosixInternal() = default;
     ~NetPosixInternal() = default;
-    int create_socket(int domain, int type, int protocol);
+    int net_socket(int domain, int type, int protocol);
+    int net_bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
 
 public:
     s_socket sock;
