@@ -23,7 +23,8 @@ body:
       options:
         - label: I have searched for a similar issue in this repository and did not find one.
           required: true
-        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated it using its in-app updater.
+        - label: |
+            I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated it using its in-app updater.
           required: true
   - type: textarea
     id: desc
