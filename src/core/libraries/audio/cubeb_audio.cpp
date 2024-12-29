@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <condition_variable>
+#include <cstdarg>
 #include <mutex>
 #include <cubeb/cubeb.h>
 
+#include "common/div_ceil.h"
 #include "common/logging/log.h"
 #include "common/ringbuffer.h"
 #include "core/libraries/audio/audioout.h"
@@ -17,7 +19,9 @@ constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buff
 class CubebPortBackend : public PortBackend {
 public:
     CubebPortBackend(cubeb* ctx, const PortOut& port)
-        : frame_size(port.frame_size), buffer(static_cast<int>(port.buffer_size) * 4) {
+        : frame_size(port.frame_size),
+          buffer_time(Common::DivCeil(1000000 * port.samples_num, port.freq)),
+          buffer(static_cast<int>(port.buffer_size) * 4) {
         if (!ctx) {
             return;
         }
@@ -82,8 +86,13 @@ public:
         auto* data = static_cast<u8*>(ptr);
 
         std::unique_lock lock{buffer_mutex};
-        buffer_cv.wait(lock, [&] { return buffer.available_write() >= size; });
-        buffer.enqueue(data, static_cast<int>(size));
+        buffer_cv.wait_for(lock, buffer_time * 2, [&] { return buffer.available_write() >= size; });
+        const auto enqueued_size = buffer.enqueue(data, static_cast<int>(size));
+        if (enqueued_size < size) {
+            // This can happen if the wait condition timed out.
+            LOG_WARNING(Lib_AudioOut, "Dropped {} audio frames",
+                        (size - enqueued_size) / frame_size);
+        }
     }
 
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
@@ -136,6 +145,8 @@ private:
     }
 
     size_t frame_size;
+    // Microseconds of audio per guest output buffer, rounded up
+    std::chrono::microseconds buffer_time;
     RingBuffer<u8> buffer;
     std::mutex buffer_mutex;
     std::condition_variable buffer_cv;
@@ -143,6 +154,7 @@ private:
 };
 
 CubebAudioOut::CubebAudioOut() {
+    cubeb_set_log_callback(CUBEB_LOG_NORMAL, LogCallback);
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
     }
@@ -158,6 +170,15 @@ CubebAudioOut::~CubebAudioOut() {
 
 std::unique_ptr<PortBackend> CubebAudioOut::Open(PortOut& port) {
     return std::make_unique<CubebPortBackend>(ctx, port);
+}
+
+void CubebAudioOut::LogCallback(const char* fmt, ...) {
+    char buffer[512];
+    std::va_list args;
+    va_start(args, fmt);
+    std::vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+    LOG_INFO(Lib_AudioOut, "[cubeb] {}", buffer);
 }
 
 } // namespace Libraries::AudioOut

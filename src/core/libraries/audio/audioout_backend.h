@@ -33,6 +33,8 @@ public:
     std::unique_ptr<PortBackend> Open(PortOut& port) override;
 
 private:
+    static void LogCallback(const char* fmt, ...);
+
     cubeb* ctx = nullptr;
 };
 
