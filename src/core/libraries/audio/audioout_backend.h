@@ -34,6 +34,9 @@ public:
 
 private:
     cubeb* ctx = nullptr;
+#ifdef _WIN32
+    bool owns_com = false;
+#endif
 };
 
 class SDLAudioOut final : public AudioOutBackend {

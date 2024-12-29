@@ -10,9 +10,11 @@
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 
-namespace Libraries::AudioOut {
+#ifdef _WIN32
+#include <Objbase.h>
+#endif
 
-constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
+namespace Libraries::AudioOut {
 
 class CubebPortBackend : public PortBackend {
 public:
@@ -143,17 +145,26 @@ private:
 };
 
 CubebAudioOut::CubebAudioOut() {
+#ifdef _WIN32
+    // Need to initialize COM for this thread on Windows, in case WASAPI backend is used.
+    owns_com = CoInitializeEx(nullptr, COINIT_MULTITHREADED) == S_OK;
+#endif
     if (const auto ret = cubeb_init(&ctx, "shadPS4", nullptr); ret != CUBEB_OK) {
         LOG_CRITICAL(Lib_AudioOut, "Failed to create cubeb context: {}", ret);
     }
 }
 
 CubebAudioOut::~CubebAudioOut() {
-    if (!ctx) {
-        return;
+    if (ctx) {
+        cubeb_destroy(ctx);
+        ctx = nullptr;
     }
-    cubeb_destroy(ctx);
-    ctx = nullptr;
+#ifdef _WIN32
+    if (owns_com) {
+        CoUninitialize();
+        owns_com = false;
+    }
+#endif
 }
 
 std::unique_ptr<PortBackend> CubebAudioOut::Open(PortOut& port) {
