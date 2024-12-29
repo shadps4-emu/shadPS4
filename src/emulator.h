@@ -12,9 +12,6 @@
 #include "sdl_window.h"
 
 namespace Core {
-
-void StartAutosave(std::string game_serial);
-
 using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 
 struct SysModules {
@@ -23,10 +20,12 @@ struct SysModules {
 };
 
 class Emulator {
+
 public:
     Emulator();
     ~Emulator();
 
+    int user_id{};
     void Run(const std::filesystem::path& file);
     void UpdatePlayTime(const std::string& serial);
 
@@ -37,6 +36,7 @@ private:
     Core::Linker* linker;
     std::unique_ptr<Frontend::WindowSDL> window;
     std::chrono::steady_clock::time_point start_time;
+    static void StartAutosave(std::string game_serial);
 };
 
 } // namespace Core

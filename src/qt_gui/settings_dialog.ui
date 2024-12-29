@@ -67,8 +67,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>822</width>
-         <height>487</height>
+         <width>1028</width>
+         <height>649</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -189,6 +189,38 @@
                  </layout>
                 </widget>
                </item>
+               <item>
+                <widget class="QGroupBox" name="BackupSaveGroupBox">
+                 <property name="title">
+                  <string>Backup Saving</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_2">
+                  <item>
+                   <widget class="QCheckBox" name="BackupCheckBox">
+                    <property name="text">
+                     <string>Create backup saves</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="BackupFreqLabel">
+                    <property name="font">
+                     <font>
+                      <pointsize>9</pointsize>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>Backup Frequency (in minutes)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QComboBox" name="BackupFreqComboBox"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -225,13 +257,6 @@
                   <widget class="QCheckBox" name="showSplashCheckBox">
                    <property name="text">
                     <string>Show Splash</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="ps4proCheckBox">
-                   <property name="text">
-                    <string>Is PS4 Pro</string>
                    </property>
                   </widget>
                  </item>
@@ -301,7 +326,7 @@
           <item row="1" column="0">
            <layout class="QVBoxLayout" name="updaterTabLayoutLeft">
             <property name="spacing">
-             <number>-1</number>
+             <number>7</number>
             </property>
             <property name="sizeConstraint">
              <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
@@ -685,8 +710,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>396</width>
-         <height>222</height>
+         <width>922</width>
+         <height>598</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -976,8 +1001,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>536</width>
-         <height>192</height>
+         <width>922</width>
+         <height>598</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1227,8 +1252,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>146</width>
-         <height>215</height>
+         <width>922</width>
+         <height>598</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
@@ -1293,8 +1318,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>288</width>
-         <height>163</height>
+         <width>922</width>
+         <height>598</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">

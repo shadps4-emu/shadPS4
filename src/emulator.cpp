@@ -274,6 +274,12 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 #endif
 
+    // TODO disable with config option
+    if (!game_info.game_serial.empty()) {
+        std::thread savethread(StartAutosave, game_info.game_serial);
+        savethread.detach();
+    }
+
     linker->Execute();
 
     window->InitTimers();
@@ -332,11 +338,6 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
                      game_serial);
             linker->LoadModule(entry.path());
         }
-    }
-
-    if (!game_serial.empty()) {
-        std::thread savethread(StartAutosave, game_serial);
-        savethread.detach();
     }
 }
 
@@ -410,19 +411,24 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
 }
 #endif
 
-void StartAutosave(std::string game_serial) {
+void Emulator::StartAutosave(std::string game_serial) {
 
+    const int SaveInterval = 0; // TODO enable setting backup intervals
+
+    const auto backup_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / "1" / "BACKUPS";
+    const auto save_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / "1" / game_serial;
+    if (!std ::filesystem::exists(backup_dir)) {
+        std::filesystem::create_directory(backup_dir);
+    }
     while (true) {
-        std::this_thread::sleep_for(std::chrono::minutes(5));
-        const auto backup_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                "savedata" / "1" / game_serial / "BACKUPSAVES";
-        const auto save_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" /
-                              "1" / game_serial / "SPRJ0005";
+        std::this_thread::sleep_for(std::chrono::minutes(1));
         try {
-            std::filesystem::copy(save_dir, backup_dir,
+            std::filesystem::copy(save_dir, backup_dir / game_serial,
                                   std::filesystem::copy_options::overwrite_existing |
                                       std::filesystem::copy_options::recursive);
-            LOG_INFO(Config, "Backup saves created");
+            LOG_INFO(Frontend, "Backup saves created");
         } catch (std::exception& ex) {
             fmt::print("Error creating backup saves. Exception: {}\n", ex.what());
         }
