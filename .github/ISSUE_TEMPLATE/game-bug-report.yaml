@@ -67,6 +67,13 @@ body:
       placeholder: "Example: GTX 1650"
     validations:
       required: true
+  - type: input
+    id: ram
+    attributes:
+      label: Amount of RAM in GB
+      placeholder: "Example: 16 GB"
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
