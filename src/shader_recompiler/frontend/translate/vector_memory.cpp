@@ -255,10 +255,6 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
                    "Non immediate offset not supported");
     }
 
-    if (info.stage == Stage::Hull) {
-        // printf("here\n"); // break
-    }
-
     IR::Value address = [&] -> IR::Value {
         if (is_ring) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);

@@ -64,6 +64,8 @@ OPCODE(GetPatch,                                            F32,            Patc
 OPCODE(SetPatch,                                            Void,           Patch,          F32,                                                            )
 OPCODE(GetTessGenericAttribute,                             F32,            U32,            U32,            U32,                                            )
 OPCODE(SetTcsGenericAttribute,                              Void,           F32,            U32,            U32,                                            )
+OPCODE(ReadTcsGenericOuputAttribute,                        F32,            U32,            U32,            U32,                                            )
+
 
 // Flags
 OPCODE(GetScc,                                              U1,             Void,                                                                           )

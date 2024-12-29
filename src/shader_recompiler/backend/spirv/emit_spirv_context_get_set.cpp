@@ -217,14 +217,6 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
             const auto pointer{
                 ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
             return ctx.OpLoad(ctx.F32[1], pointer);
-        } else if (IR::IsParam(attr)) {
-            const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto param = ctx.input_params.at(param_id).id;
-            const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-            const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
-            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
         }
         UNREACHABLE();
     }
@@ -348,6 +340,13 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
 Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
     const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
     return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array,
+                                                    vertex_index, attr_index, comp_index));
+}
+
+Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
+                                    Id comp_index) {
+    const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+    return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.output_attr_array,
                                                     vertex_index, attr_index, comp_index));
 }
 
