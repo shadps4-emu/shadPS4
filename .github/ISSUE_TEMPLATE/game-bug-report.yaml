@@ -86,6 +86,6 @@ body:
     id: logs
     attributes:
       label: "Logs"
-      description: Attach any logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder
+      description: Attach any logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
     validations:
       required: false
