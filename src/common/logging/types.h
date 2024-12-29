@@ -57,8 +57,9 @@ enum class Class : u8 {
     Lib_MsgDlg,            ///< The LibSceMsgDialog implementation.
     Lib_AudioOut,          ///< The LibSceAudioOut implementation.
     Lib_AudioIn,           ///< The LibSceAudioIn implementation.
+    Lib_Move,              ///< The LibSceMove implementation.
     Lib_Net,               ///< The LibSceNet implementation.
-    Lib_NetCtl,            ///< The LibSecNetCtl implementation.
+    Lib_NetCtl,            ///< The LibSceNetCtl implementation.
     Lib_SaveData,          ///< The LibSceSaveData implementation.
     Lib_SaveDataDialog,    ///< The LibSceSaveDataDialog implementation.
     Lib_Ssl,               ///< The LibSceSsl implementation.

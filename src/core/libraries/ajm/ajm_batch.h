@@ -12,6 +12,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <semaphore>
 #include <span>
 #include <vector>

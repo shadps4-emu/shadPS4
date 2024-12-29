@@ -3,6 +3,7 @@
 
 #include "fiber.h"
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
 #include "core/libraries/libs.h"
@@ -41,6 +42,41 @@ void PS4_SYSV_ABI _sceFiberCheckStackOverflow(OrbisFiberContext* ctx) {
     }
 }
 
+s32 PS4_SYSV_ABI _sceFiberAttachContext(OrbisFiber* fiber, void* addr_context, u64 size_context) {
+    if (size_context && size_context < ORBIS_FIBER_CONTEXT_MINIMUM_SIZE) {
+        return ORBIS_FIBER_ERROR_RANGE;
+    }
+    if (size_context & 15) {
+        return ORBIS_FIBER_ERROR_INVALID;
+    }
+    if (!addr_context || !size_context) {
+        return ORBIS_FIBER_ERROR_INVALID;
+    }
+    if (fiber->addr_context) {
+        return ORBIS_FIBER_ERROR_INVALID;
+    }
+
+    fiber->addr_context = addr_context;
+    fiber->size_context = size_context;
+    fiber->context_start = addr_context;
+    fiber->context_end = reinterpret_cast<u8*>(addr_context) + size_context;
+
+    /* Apply signature to start of stack */
+    *(u64*)addr_context = kFiberStackSignature;
+
+    if (fiber->flags & FiberFlags::ContextSizeCheck) {
+        u64* stack_start = reinterpret_cast<u64*>(fiber->context_start);
+        u64* stack_end = reinterpret_cast<u64*>(fiber->context_end);
+
+        u64* stack_ptr = stack_start + 1;
+        while (stack_ptr < stack_end) {
+            *stack_ptr++ = kFiberStackSizeCheck;
+        }
+    }
+
+    return ORBIS_OK;
+}
+
 void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
                                          OrbisFiberContext* ctx) {
     OrbisFiberContext* fiber_ctx = fiber->context;
@@ -62,8 +98,7 @@ void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
     data.entry = fiber->entry;
     data.arg_on_initialize = fiber->arg_on_initialize;
     data.arg_on_run_to = arg_on_run_to;
-    data.stack_addr =
-        reinterpret_cast<void*>(reinterpret_cast<u64>(fiber->addr_context) + fiber->size_context);
+    data.stack_addr = reinterpret_cast<u8*>(fiber->addr_context) + fiber->size_context;
     if (fiber->flags & FiberFlags::SetFpuRegs) {
         data.fpucw = 0x037f;
         data.mxcsr = 0x9fc0;
@@ -111,9 +146,10 @@ void PS4_SYSV_ABI _sceFiberTerminate(OrbisFiber* fiber, u64 arg_on_return, Orbis
     __builtin_trap();
 }
 
-s32 PS4_SYSV_ABI sceFiberInitialize(OrbisFiber* fiber, const char* name, OrbisFiberEntry entry,
-                                    u64 arg_on_initialize, void* addr_context, u64 size_context,
-                                    const OrbisFiberOptParam* opt_param, u32 build_ver) {
+s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, OrbisFiberEntry entry,
+                                        u64 arg_on_initialize, void* addr_context, u64 size_context,
+                                        const OrbisFiberOptParam* opt_param, u32 flags,
+                                        u32 build_ver) {
     if (!fiber || !name || !entry) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -139,12 +175,12 @@ s32 PS4_SYSV_ABI sceFiberInitialize(OrbisFiber* fiber, const char* name, OrbisFi
         return ORBIS_FIBER_ERROR_INVALID;
     }
 
-    u32 flags = FiberFlags::None;
-    if (build_ver >= 0x3500000) {
-        flags |= FiberFlags::SetFpuRegs;
+    u32 user_flags = flags;
+    if (build_ver >= Common::ElfInfo::FW_35) {
+        user_flags |= FiberFlags::SetFpuRegs;
     }
     if (context_size_check) {
-        flags |= FiberFlags::ContextSizeCheck;
+        user_flags |= FiberFlags::ContextSizeCheck;
     }
 
     strncpy(fiber->name, name, ORBIS_FIBER_MAX_NAME_LENGTH);
@@ -154,7 +190,7 @@ s32 PS4_SYSV_ABI sceFiberInitialize(OrbisFiber* fiber, const char* name, OrbisFi
     fiber->addr_context = addr_context;
     fiber->size_context = size_context;
     fiber->context = nullptr;
-    fiber->flags = flags;
+    fiber->flags = user_flags;
 
     /*
         A low stack area is problematic, as we can easily
@@ -169,8 +205,7 @@ s32 PS4_SYSV_ABI sceFiberInitialize(OrbisFiber* fiber, const char* name, OrbisFi
 
     if (addr_context != nullptr) {
         fiber->context_start = addr_context;
-        fiber->context_end =
-            reinterpret_cast<void*>(reinterpret_cast<u64>(addr_context) + size_context);
+        fiber->context_end = reinterpret_cast<u8*>(addr_context) + size_context;
 
         /* Apply signature to start of stack */
         *(u64*)addr_context = kFiberStackSignature;
@@ -221,11 +256,12 @@ s32 PS4_SYSV_ABI sceFiberFinalize(OrbisFiber* fiber) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFiberRun(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_return) {
+s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size_context,
+                                 u64 arg_on_run_to, u64* arg_on_return) {
     if (!fiber) {
         return ORBIS_FIBER_ERROR_NULL;
     }
-    if ((u64)fiber & 7) {
+    if ((u64)fiber & 7 || (u64)addr_context & 15) {
         return ORBIS_FIBER_ERROR_ALIGNMENT;
     }
     if (fiber->magic_start != kFiberSignature0 || fiber->magic_end != kFiberSignature1) {
@@ -235,6 +271,14 @@ s32 PS4_SYSV_ABI sceFiberRun(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_r
     Core::Tcb* tcb = Core::GetTcbBase();
     if (tcb->tcb_fiber) {
         return ORBIS_FIBER_ERROR_PERMISSION;
+    }
+
+    /* Caller wants to attach context and run. */
+    if (addr_context != nullptr || size_context != 0) {
+        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
+        if (res < 0) {
+            return res;
+        }
     }
 
     FiberState expected = FiberState::Idle;
@@ -288,11 +332,12 @@ s32 PS4_SYSV_ABI sceFiberRun(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_r
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_run) {
+s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 size_context,
+                                    u64 arg_on_run_to, u64* arg_on_run) {
     if (!fiber) {
         return ORBIS_FIBER_ERROR_NULL;
     }
-    if ((u64)fiber & 7) {
+    if ((u64)fiber & 7 || (u64)addr_context & 15) {
         return ORBIS_FIBER_ERROR_ALIGNMENT;
     }
     if (fiber->magic_start != kFiberSignature0 || fiber->magic_end != kFiberSignature1) {
@@ -302,6 +347,14 @@ s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_o
     OrbisFiberContext* g_ctx = GetFiberContext();
     if (!g_ctx) {
         return ORBIS_FIBER_ERROR_PERMISSION;
+    }
+
+    /* Caller wants to attach context and switch. */
+    if (addr_context != nullptr || size_context != 0) {
+        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
+        if (res < 0) {
+            return res;
+        }
     }
 
     FiberState expected = FiberState::Idle;
@@ -462,9 +515,39 @@ s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceFiberGetThreadFramePointerAddress(u64* addr_frame_pointer) {
+    if (!addr_frame_pointer) {
+        return ORBIS_FIBER_ERROR_NULL;
+    }
+
+    OrbisFiberContext* g_ctx = GetFiberContext();
+    if (!g_ctx) {
+        return ORBIS_FIBER_ERROR_PERMISSION;
+    }
+
+    *addr_frame_pointer = g_ctx->rbp;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFiberInitialize(OrbisFiber* fiber, const char* name, OrbisFiberEntry entry,
+                                    u64 arg_on_initialize, void* addr_context, u64 size_context,
+                                    const OrbisFiberOptParam* opt_param, u32 build_ver) {
+    return sceFiberInitializeImpl(fiber, name, entry, arg_on_initialize, addr_context, size_context,
+                                  opt_param, 0, build_ver);
+}
+
+s32 PS4_SYSV_ABI sceFiberRun(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_return) {
+    return sceFiberRunImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_return);
+}
+
+s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_on_run) {
+    return sceFiberSwitchImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_run);
+}
+
 void RegisterlibSceFiber(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberInitialize);
-    LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberInitialize);
+    LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber", 1, 1,
+                 sceFiberInitializeImpl); // _sceFiberInitializeWithInternalOptionImpl
     LIB_FUNCTION("asjUJJ+aa8s", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberOptParamInitialize);
     LIB_FUNCTION("JeNX5F-NzQU", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberFinalize);
 
@@ -473,12 +556,20 @@ void RegisterlibSceFiber(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("p+zLIOg27zU", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberGetSelf);
     LIB_FUNCTION("B0ZX2hx9DMw", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberReturnToThread);
 
+    LIB_FUNCTION("avfGJ94g36Q", "libSceFiber", 1, "libSceFiber", 1, 1,
+                 sceFiberRunImpl); // _sceFiberAttachContextAndRun
+    LIB_FUNCTION("ZqhZFuzKT6U", "libSceFiber", 1, "libSceFiber", 1, 1,
+                 sceFiberSwitchImpl); // _sceFiberAttachContextAndSwitch
+
     LIB_FUNCTION("uq2Y5BFz0PE", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberGetInfo);
     LIB_FUNCTION("Lcqty+QNWFc", "libSceFiber", 1, "libSceFiber", 1, 1,
                  sceFiberStartContextSizeCheck);
     LIB_FUNCTION("Kj4nXMpnM8Y", "libSceFiber", 1, "libSceFiber", 1, 1,
                  sceFiberStopContextSizeCheck);
     LIB_FUNCTION("JzyT91ucGDc", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberRename);
+
+    LIB_FUNCTION("0dy4JtMUcMQ", "libSceFiber", 1, "libSceFiber", 1, 1,
+                 sceFiberGetThreadFramePointerAddress);
 }
 
 } // namespace Libraries::Fiber

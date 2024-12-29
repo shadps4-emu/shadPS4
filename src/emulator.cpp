@@ -311,8 +311,9 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
             found_modules, [&](const auto& path) { return path.filename() == module_name; });
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
-            linker->LoadModule(*it);
-            continue;
+            if (linker->LoadModule(*it) != -1) {
+                continue;
+            }
         }
         if (init_func) {
             LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
@@ -321,7 +322,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string 
             LOG_INFO(Loader, "No HLE available for {} module", module_name);
         }
     }
-    if (std::filesystem::exists(sys_module_path / game_serial)) {
+    if (!game_serial.empty() && std::filesystem::exists(sys_module_path / game_serial)) {
         for (const auto& entry :
              std::filesystem::directory_iterator(sys_module_path / game_serial)) {
             LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),

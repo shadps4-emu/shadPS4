@@ -118,7 +118,7 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="49"/>
 			<source>Open Folder...</source>
-			<translation>Открыть Папку...</translation>
+			<translation>Открыть папку...</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="50"/>
@@ -128,12 +128,12 @@
 		<message>
 			<location filename="../gui_context_menus.h" line="51"/>
 			<source>Open Save Data Folder</source>
-			<translation>Открыть Папку Сохранений</translation>
+			<translation>Открыть папку сохранений</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="52"/>
 			<source>Open Log Folder</source>
-			<translation>Открыть Папку Логов</translation>
+			<translation>Открыть папку логов</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="59"/>
@@ -176,14 +176,34 @@
 			<translation>Удалить DLC</translation>
 		</message>
 		<message>
+			<location filename="../gui_context_menus.h" line="99"/>
+			<source>Compatibility...</source>
+			<translation>Совместимость...</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="100"/>
+			<source>Update database</source>
+			<translation>Обновить базу данных</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="101"/>
+			<source>View report</source>
+			<translation>Посмотреть отчет</translation>
+		</message>
+		<message>
+			<location filename="../gui_context_menus.h" line="102"/>
+			<source>Submit a report</source>
+			<translation>Отправить отчет</translation>
+		</message>
+		<message>
 			<location filename="../gui_context_menus.h" line="195"/>
 			<source>Shortcut creation</source>
 			<translation>Создание ярлыка</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="196"/>
-			<source>Shortcut created successfully!\n %1</source>
-			<translation>Ярлык создан успешно!\n %1</translation>
+			<source>Shortcut created successfully!</source>
+			<translation>Ярлык создан успешно!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="199"/>
@@ -192,8 +212,8 @@
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="200"/>
-			<source>Error creating shortcut!\n %1</source>
-			<translation>Ошибка создания ярлыка!\n %1</translation>
+			<source>Error creating shortcut!</source>
+			<translation>Ошибка создания ярлыка!</translation>
 		</message>
 		<message>
 			<location filename="../gui_context_menus.h" line="275"/>
@@ -452,7 +472,7 @@
 		<message>
 			<location filename="../trophy_viewer.cpp" line="8"/>
 			<source>Trophy Viewer</source>
-			<translation>Трофеи</translation>
+			<translation>Просмотр трофеев</translation>
 		</message>
 	</context>
 	<context>
@@ -550,7 +570,12 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="668"/>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>Тайм-аут скрытия курсора при бездействии</translation>
+			<translation>Время скрытия курсора при бездействии</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="816"/>
+			<source>s</source>
+			<translation>сек</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="767"/>
@@ -673,14 +698,44 @@
 			<translation>Интерфейс</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="475"/>
+			<source>Disable Trophy Pop-ups</source>
+			<translation>Отключить уведомления о трофеях</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
 			<source>Play title music</source>
 			<translation>Играть заглавную музыку</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database On Startup</source>
+			<translation>Обновлять базу совместимости при запуске</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Game Compatibility</source>
+			<translation>Совместимость игр</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Display Compatibility Data</source>
+			<translation>Показывать данные совместимости</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Update Compatibility Database</source>
+			<translation>Обновить базу совместимости</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="394"/>
 			<source>Volume</source>
 			<translation>Громкость</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Audio Backend</source>
+			<translation>Звуковая Подсистема</translation>
 		</message>
 	</context>
 	<context>
@@ -738,7 +793,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="594"/>
 			<source>ELF files (*.bin *.elf *.oelf)</source>
-			<translation>Файл ELF (*.bin *.elf *.oelf)</translation>
+			<translation>Файлы ELF (*.bin *.elf *.oelf)</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="600"/>
@@ -793,7 +848,7 @@
 		<message>
 			<location filename="../main_window.cpp" line="674"/>
 			<source>Would you like to install DLC: %1?</source>
-			<translation>Вы хотите установить DLC: %1??</translation>
+			<translation>Вы хотите установить DLC: %1?</translation>
 		</message>
 		<message>
 			<location filename="../main_window.cpp" line="688"/>
@@ -841,7 +896,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="44"/>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Читы и патчи для </translation>
 		</message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="50"/>
@@ -1164,7 +1219,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="295"/>
 			<source>showSplashCheckBox</source>
-			<translation>Показывать заставку:\nОтображает заставку игры (специальное изображение) во время запуска игры.</translation>
+			<translation>Показывать заставку:\nОтображает заставку игры (специальное изображение) во время запуска.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="297"/>
@@ -1202,9 +1257,14 @@
 			<translation>Играть заглавную музыку:\nВключает воспроизведение специальной музыки при выборе игры в списке, если она это поддерживает.</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.cpp" line="267"/>
+			<source>disableTrophycheckBox</source>
+			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню Просмотр трофеев (правая кнопка мыши по игре в главном окне).</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.cpp" line="450"/>
 			<source>hideCursorGroupBox</source>
-			<translation>Скрывать курсор:\nВыберите, когда курсор исчезнет:\nНикогда: Вы всегда будете видеть мышь.\nПри бездействии: Установите время, через которое курсор исчезнет при бездействии.\nВсегда: Вы никогда не будете видеть мышь.</translation>
+			<translation>Скрывать курсор:\nВыберите, когда курсор будет скрыт:\nНикогда: Вы всегда будете видеть курсор.\nПри бездействии: Установите время, через которое курсор будет скрыт при бездействии.\nВсегда: Курсор всегда будет скрыт.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="452"/>
@@ -1215,6 +1275,21 @@
 			<location filename="../settings_dialog.cpp" line="454"/>
 			<source>backButtonBehaviorGroupBox</source>
 			<translation>Поведение кнопки «Назад»:\nНастраивает кнопку «Назад» контроллера на эмуляцию нажатия на указанную область на сенсорной панели контроллера PS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>enableCompatibilityCheckBox</source>
+			<translation>Показывать данные совместимости:\nПоказывает информацию о совместимости игр в таблице. Включите «Обновлять базу совместимости при запуске» для получения актуальной информации.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>checkCompatibilityOnStartupCheckBox</source>
+			<translation>Обновлять базу совместимости при запуске:\nАвтоматически обновлять базу данных совместимости при запуске shadPS4.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>updateCompatibilityButton</source>
+			<translation>Обновить базу совместимости:\nНемедленно обновить базу данных совместимости.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="70"/>
@@ -1254,7 +1329,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Графическое устройство:\nВ системах с несколькими GPU выберите GPU, который будет использовать эмулятор из выпадающего списка,\nили выберите "Auto Select", чтобы определить его автоматически.</translation>
+			<translation>Графическое устройство:\nВ системах с несколькими GPU выберите GPU, который будет использовать эмулятор.\nВыберите "Auto Select", чтобы определить его автоматически.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="314"/>
@@ -1330,6 +1405,11 @@
 			<translation>Серийный номер</translation>
 		</message>
 		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility</source>
+			<translation>Совместимость</translation>
+		</message>
+		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Region</source>
 			<translation>Регион</translation>
@@ -1362,7 +1442,52 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="108"/>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Вы не играли</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>h</source>
+			<translation>ч</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>m</source>
+			<translation>м</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>s</source>
+			<translation>с</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Compatibility is untested</source>
+			<translation>Совместимость не проверена</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game does not initialize properly / crashes the emulator</source>
+			<translation>Игра не иницализируется правильно / крашит эмулятор</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game boots, but only displays a blank screen</source>
+			<translation>Игра запускается, но показывает только пустой экран</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game displays an image but does not go past the menu</source>
+			<translation>Игра показывает картинку, но не проходит дальше меню</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game has game-breaking glitches or unplayable performance</source>
+			<translation>Игра имеет ломающие игру глюки или плохую производительность</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp"/>
+			<source>Game can be completed with playable performance and no major glitches</source>
+			<translation>Игра может быть пройдена с хорошей производительностью и без серьезных сбоев</translation>
 		</message>
 	</context>
 	<context>
@@ -1445,7 +1570,7 @@
 		<message>
 			<location filename="../check_update.cpp" line="199"/>
 			<source>Update</source>
-			<translation>Обновиться</translation>
+			<translation>Обновить</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="200"/>
@@ -1492,5 +1617,33 @@
 			<source>Failed to create the update script file</source>
 			<translation>Не удалось создать файл скрипта обновления</translation>
 		</message>
+	</context>
+	<context>
+		<name>GameListUtils</name>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>B</source>
+			<translation>Б</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>KB</source>
+			<translation>КБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>MB</source>
+			<translation>МБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>GB</source>
+			<translation>ГБ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_utils.h" line="34"/>
+			<source>TB</source>
+			<translation>ТБ</translation>
+		</message>		
 	</context>
 </TS>

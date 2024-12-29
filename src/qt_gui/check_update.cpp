@@ -213,9 +213,9 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
 
     // Don't show changelog button if:
     // The current version is a pre-release and the version to be downloaded is a release.
-    bool current_isRelease = currentRev.startsWith('v', Qt::CaseInsensitive);
-    bool latest_isRelease = latestRev.startsWith('v', Qt::CaseInsensitive);
-    if (!current_isRelease && latest_isRelease) {
+    bool current_isWIP = currentRev.endsWith("WIP", Qt::CaseInsensitive);
+    bool latest_isWIP = latestRev.endsWith("WIP", Qt::CaseInsensitive);
+    if (current_isWIP && !latest_isWIP) {
     } else {
         QTextEdit* textField = new QTextEdit(this);
         textField->setReadOnly(true);

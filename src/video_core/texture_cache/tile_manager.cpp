@@ -25,6 +25,7 @@ static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
     case vk::Format::eR8Uint:
     case vk::Format::eR8Unorm:
+    case vk::Format::eR8Snorm:
         return vk::Format::eR8Uint;
     case vk::Format::eR4G4B4A4UnormPack16:
     case vk::Format::eB5G6R5UnormPack16:
@@ -32,6 +33,7 @@ static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR8G8Unorm:
     case vk::Format::eR16Sfloat:
     case vk::Format::eR16Unorm:
+    case vk::Format::eD16Unorm:
         return vk::Format::eR8G8Uint;
     case vk::Format::eR8G8B8A8Srgb:
     case vk::Format::eB8G8R8A8Srgb:
@@ -40,6 +42,7 @@ static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR8G8B8A8Snorm:
     case vk::Format::eR8G8B8A8Uint:
     case vk::Format::eR32Sfloat:
+    case vk::Format::eD32Sfloat:
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
     case vk::Format::eR16G16Unorm:

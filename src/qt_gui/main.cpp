@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "iostream"
+#include "system_error"
 #include "unordered_map"
 
 #include "common/config.h"
@@ -31,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
-    std::string gamePath;
+    std::string game_path;
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -46,6 +47,7 @@ int main(int argc, char* argv[]) {
                           "  -s, --show-gui                Show the GUI\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
+                          "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
                           "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -57,7 +59,7 @@ int main(int argc, char* argv[]) {
         {"-g",
          [&](int& i) {
              if (i + 1 < argc) {
-                 gamePath = argv[++i];
+                 game_path = argv[++i];
                  has_game_argument = true;
              } else {
                  std::cerr << "Error: Missing argument for -g/--game\n";
@@ -98,6 +100,25 @@ int main(int argc, char* argv[]) {
              Config::setFullscreenMode(is_fullscreen);
          }},
         {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
+        {"--add-game-folder",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --add-game-folder\n";
+                 exit(1);
+             }
+             std::string config_dir(argv[i]);
+             std::filesystem::path config_path = std::filesystem::path(config_dir);
+             std::error_code discard;
+             if (!std::filesystem::is_directory(config_path, discard)) {
+                 std::cerr << "Error: Directory does not exist: " << config_path << "\n";
+                 exit(1);
+             }
+
+             Config::addGameInstallDir(config_path);
+             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             std::cout << "Game folder successfully saved.\n";
+             exit(0);
+         }},
     };
 
     // Parse command-line arguments using the map
@@ -106,6 +127,10 @@ int main(int argc, char* argv[]) {
         auto it = arg_map.find(cur_arg);
         if (it != arg_map.end()) {
             it->second(i); // Call the associated lambda function
+        } else if (i == argc - 1 && !has_game_argument) {
+            // Assume the last argument is the game file if not specified via -g/--game
+            game_path = argv[i];
+            has_game_argument = true;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
@@ -134,14 +159,14 @@ int main(int argc, char* argv[]) {
 
     // Process game path or ID if provided
     if (has_game_argument) {
-        std::filesystem::path game_file_path(gamePath);
+        std::filesystem::path game_file_path(game_path);
 
         // Check if the provided path is a valid file
         if (!std::filesystem::exists(game_file_path)) {
             // If not a file, treat it as a game ID and search in install directories
             bool game_found = false;
             for (const auto& install_dir : Config::getGameInstallDirs()) {
-                auto potential_game_path = install_dir / gamePath / "eboot.bin";
+                auto potential_game_path = install_dir / game_path / "eboot.bin";
                 if (std::filesystem::exists(potential_game_path)) {
                     game_file_path = potential_game_path;
                     game_found = true;
@@ -149,7 +174,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             if (!game_found) {
-                std::cerr << "Error: Game ID or file path not found: " << gamePath << std::endl;
+                std::cerr << "Error: Game ID or file path not found: " << game_path << std::endl;
                 return 1;
             }
         }

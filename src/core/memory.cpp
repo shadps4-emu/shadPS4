@@ -12,12 +12,7 @@
 
 namespace Core {
 
-constexpr u64 SCE_DEFAULT_FLEXIBLE_MEMORY_SIZE = 448_MB;
-
 MemoryManager::MemoryManager() {
-    // Set up the direct and flexible memory regions.
-    SetupMemoryRegions(SCE_DEFAULT_FLEXIBLE_MEMORY_SIZE);
-
     // Insert a virtual memory area that covers the entire area we manage.
     const VAddr system_managed_base = impl.SystemManagedVirtualBase();
     const size_t system_managed_size = impl.SystemManagedVirtualSize();
@@ -38,10 +33,17 @@ MemoryManager::MemoryManager() {
 
 MemoryManager::~MemoryManager() = default;
 
-void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
-    const auto total_size =
-        Config::isNeoMode() ? SCE_KERNEL_MAIN_DMEM_SIZE_PRO : SCE_KERNEL_MAIN_DMEM_SIZE;
-    total_flexible_size = flexible_size;
+void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
+                                       bool use_extended_mem2) {
+    const bool is_neo = Config::isNeoMode();
+    auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
+    if (!use_extended_mem1 && is_neo) {
+        total_size -= 256_MB;
+    }
+    if (!use_extended_mem2 && !is_neo) {
+        total_size -= 128_MB;
+    }
+    total_flexible_size = flexible_size - SCE_FLEXIBLE_MEMORY_BASE;
     total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers direct memory physical block.
@@ -101,13 +103,17 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     auto dmem_area = FindDmemArea(search_start);
 
     const auto is_suitable = [&] {
+        if (dmem_area == dmem_map.end()) {
+            return false;
+        }
         const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
         const auto alignment_size = aligned_base - dmem_area->second.base;
         const auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
         return dmem_area->second.is_free && remaining_size >= size;
     };
-    while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
+    while (dmem_area != dmem_map.end() && !is_suitable() &&
+           dmem_area->second.GetEnd() <= search_end) {
         ++dmem_area;
     }
     ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
