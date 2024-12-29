@@ -11,11 +11,12 @@ body:
         Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
         If you need help using the emulator please make a request on our forums or contact us on discord.
 
-        If you are unsure, start with [discord](https://discord.gg/bFJxfftGW6) or the [forums](https://forums.shadps4.net/).
+        If you are unsure, start with [discord](https://discord.gg/bFJxfftGW6).
+        You can also check the [Game Compatibility Repository](https://github.com/shadps4-emu/shadps4-game-compatibility) for the information about the status of the game.
 
         Please make an effort to make sure your issue isn't already reported.
 
-        Do not create issues involving software piracy, our rules specifically prohibit this and your issue will be closed and you will be banned in this repository.
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
   - type: checkboxes
     id: checklist
     attributes:

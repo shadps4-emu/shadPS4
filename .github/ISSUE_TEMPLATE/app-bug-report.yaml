@@ -1,6 +1,6 @@
 # Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
 name: Application Bug Report
-description: Pproblem with the application itself (ie. bad file path handling, UX issue)
+description: Problem with the application itself (ie. bad file path handling, UX issue)
 title: "[APP BUG]: "
 body:
   - type: markdown
@@ -11,11 +11,11 @@ body:
         Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
         If you need help using the emulator please make a request on our forums or contact us on discord.
 
-        If you are unsure, start with [discord](https://discord.gg/bFJxfftGW6) or the [forums](https://forums.shadps4.net/).
+        If you are unsure, start with [discord](https://discord.gg/bFJxfftGW6).
 
         Please make an effort to make sure your issue isn't already reported.
 
-        Do not create issues involving software piracy, our rules specifically prohibit this and your issue will be closed and you will be banned in this repository.
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
   - type: checkboxes
     id: checklist
     attributes:
@@ -53,24 +53,3 @@ body:
       placeholder: "Example: Windows 11, Arch Linux, MacOS 15"
     validations:
       required: true
-  - type: input
-    id: cpu
-    attributes:
-      label: CPU
-      placeholder: "Example: i7-8700"
-    validations:
-      required: true
-  - type: input
-    id: gpu
-    attributes:
-      label: GPU
-      placeholder: "Example: GTX 1650"
-    validations:
-      required: true
-  - type: textarea
-    id: logs
-    attributes:
-      label: "Logs"
-      description: Attach the logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder
-    validations:
-      required: false

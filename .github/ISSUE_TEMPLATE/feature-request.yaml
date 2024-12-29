@@ -10,8 +10,15 @@ body:
 
         Please make an effort to make sure your issue isn't already reported.
 
-        Do not create issues involving software piracy, our rules specifically prohibit this and your issue will be closed and you will be banned in this repository.
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
 
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar issue in this repository and did not find one.
+          required: true
   - type: textarea
     id: desc
     attributes:
