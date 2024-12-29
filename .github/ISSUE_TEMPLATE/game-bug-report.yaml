@@ -23,7 +23,7 @@ body:
       options:
         - label: I have searched for a similar issue in this repository and did not find one.
           required: true
-        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated it using its in-app updater.
+        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated one of those builds using its in-app updater.
           required: true
         - label: I have re-dumped the game and performed a clean install without mods.
           required: true
