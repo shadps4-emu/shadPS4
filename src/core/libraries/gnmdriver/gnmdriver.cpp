@@ -1015,11 +1015,7 @@ int PS4_SYSV_ABI sceGnmGetDebugTimestamp() {
 
 int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev) {
     LOG_TRACE(Lib_GnmDriver, "called");
-
-    auto data = sceKernelGetEventData(ev);
-    ASSERT(static_cast<GnmEventType>(data) == GnmEventType::GfxEop);
-
-    return data;
+    return sceKernelGetEventData(ev);
 }
 
 int PS4_SYSV_ABI sceGnmGetEqTimeStamp() {
