@@ -12,7 +12,6 @@
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
-#include "vk_rasterizer.h"
 
 #ifdef MemoryBarrier
 #undef MemoryBarrier
@@ -252,7 +251,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
-    const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
+    if (is_indexed) {
+        buffer_cache.BindIndexBuffer(index_offset);
+    }
 
     BeginRendering(*pipeline, state);
     UpdateDynamicState(*pipeline);
@@ -263,10 +264,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
     if (is_indexed) {
-        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
-                           instance_offset);
+        cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
+                           s32(vertex_offset), instance_offset);
     } else {
-        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), vertex_offset, instance_offset);
+        cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
+                    instance_offset);
     }
 
     ResetBindings();
@@ -280,22 +282,12 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    const auto& regs = liverpool->regs;
-    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
-        // We use a generated index buffer to convert polygons to triangles. Since it
-        // changes type of the draw, arguments are not valid for this case. We need to run a
-        // conversion pass to repack the indirect arguments buffer first.
-        LOG_WARNING(Render_Vulkan, "Primitive type is not supported for indirect draw");
-        return;
-    }
-
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
     }
 
     auto state = PrepareRenderState(pipeline->GetMrtMask());
-
     if (!BindResources(pipeline)) {
         return;
     }
@@ -303,7 +295,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     buffer_cache.BindVertexBuffers(vs_info, fetch_shader);
-    buffer_cache.BindIndexBuffer(is_indexed, 0);
+    if (is_indexed) {
+        buffer_cache.BindIndexBuffer(0);
+    }
 
     const auto& [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);

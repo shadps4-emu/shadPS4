@@ -83,7 +83,7 @@ public:
                            const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader);
 
     /// Bind host index buffer for the current draw.
-    u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
+    void BindIndexBuffer(u32 index_offset);
 
     /// Writes a value to GPU buffer.
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);

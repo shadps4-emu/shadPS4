@@ -70,15 +70,6 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
 vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags);
 
-inline void EmitPolygonToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
-    u16* out_data = reinterpret_cast<u16*>(out_ptr);
-    for (u16 i = 1; i < num_vertices - 1; i++) {
-        *out_data++ = 0;
-        *out_data++ = i;
-        *out_data++ = i + 1;
-    }
-}
-
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
     if (fmt == vk::Format::eR32Sfloat) {
         return vk::Format::eD32Sfloat;
