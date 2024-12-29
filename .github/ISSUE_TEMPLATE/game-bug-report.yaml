@@ -1,0 +1,73 @@
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Game Emulation Bug Report
+description: Problem in a game (ie. graphical artifacts, crashes, etc.)
+title: "[GAME BUG]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important: Read First
+
+        Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
+        If you need help using the emulator please make a request on our forums or contact us on discord.
+
+        If you are unsure, start with [discord](https://discord.gg/bFJxfftGW6) or the [forums](https://forums.shadps4.net/).
+
+        Please make an effort to make sure your issue isn't already reported.
+
+        Do not create issues involving software piracy, our rules specifically prohibit this and your issue will be closed and you will be banned in this repository.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar issue in this repository and did not find one.
+          required: true
+        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated it using its in-app updater.
+          required: true
+        - label: I have re-dumped the game and performed a clean install without mods.
+          required: true
+        - label: I have disabled all patches and cheats.
+          required: true
+  - type: textarea
+    id: desc
+    attributes:
+      label: Describe the Bug
+      description: "A clear and concise description of what the bug is"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: "Detailed steps to reproduce the behavior"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Specify OS Version
+      placeholder: "Example: Windows 11, Arch Linux, MacOS 15"
+    validations:
+      required: true
+  - type: input
+    id: cpu
+    attributes:
+      label: CPU
+      placeholder: "Example: i7-8700"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: "Example: GTX 1650"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs"
+      description: Attach any logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder
+    validations:
+      required: false
