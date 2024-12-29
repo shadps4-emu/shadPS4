@@ -23,6 +23,7 @@ struct AjmJob {
     struct Input {
         std::optional<AjmDecAt9InitializeParameters> init_params;
         std::optional<AjmSidebandResampleParameters> resample_parameters;
+        std::optional<AjmSidebandStatisticsEngineParameters> statistics_engine_parameters;
         std::optional<AjmSidebandFormat> format;
         std::optional<AjmSidebandGaplessDecode> gapless_decode;
         std::vector<u8> buffer;
@@ -33,6 +34,9 @@ struct AjmJob {
         AjmSidebandResult* p_result = nullptr;
         AjmSidebandStream* p_stream = nullptr;
         AjmSidebandFormat* p_format = nullptr;
+        AjmSidebandStatisticsMemory* p_memory = nullptr;
+        AjmSidebandStatisticsEnginePerCodec* p_engine_per_codec = nullptr;
+        AjmSidebandStatisticsEngine* p_engine = nullptr;
         AjmSidebandGaplessDecode* p_gapless_decode = nullptr;
         AjmSidebandMFrame* p_mframe = nullptr;
         u8* p_codec_info = nullptr;

@@ -183,13 +183,15 @@ int PS4_SYSV_ABI sceAjmInstanceSwitch() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmMemoryRegister() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
+int PS4_SYSV_ABI sceAjmMemoryRegister(u32 context_id, void* ptr, size_t num_pages) {
+    // All memory is already shared with our implementation since we do not use any hardware.
+    LOG_TRACE(Lib_Ajm, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmMemoryUnregister() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
+int PS4_SYSV_ABI sceAjmMemoryUnregister(u32 context_id, void* ptr) {
+    // All memory is already shared with our implementation since we do not use any hardware.
+    LOG_TRACE(Lib_Ajm, "(STUBBED) called");
     return ORBIS_OK;
 }
 
