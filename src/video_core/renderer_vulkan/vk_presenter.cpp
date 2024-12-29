@@ -628,6 +628,13 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 }
 
 void Presenter::Present(Frame* frame) {
+    // Free the frame for reuse
+    const auto free_frame = [&] {
+        std::scoped_lock fl{free_mutex};
+        free_queue.push(frame);
+        free_cv.notify_one();
+    };
+
     // Recreate the swapchain if the window was resized.
     if (window.GetWidth() != swapchain.GetExtent().width ||
         window.GetHeight() != swapchain.GetExtent().height) {
@@ -639,10 +646,7 @@ void Presenter::Present(Frame* frame) {
         if (!swapchain.AcquireNextImage()) {
             // User resizes the window too fast and GPU can't keep up. Skip this frame.
             LOG_WARNING(Render_Vulkan, "Skipping frame!");
-            // Free the frame for reuse
-            std::scoped_lock fl{free_mutex};
-            free_queue.push(frame);
-            free_cv.notify_one();
+            free_frame();
             return;
         }
     }
@@ -751,11 +755,7 @@ void Presenter::Present(Frame* frame) {
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
-    // Free the frame for reuse
-    std::scoped_lock fl{free_mutex};
-    free_queue.push(frame);
-    free_cv.notify_one();
-
+    free_frame();
     DebugState.IncFlipFrameNum();
 }
 
