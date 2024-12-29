@@ -917,6 +917,7 @@ if (APPLE)
           DEPENDS ${MVK_DYLIB_SRC}
           COMMAND cmake -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
       add_custom_target(CopyMoltenVK DEPENDS ${MVK_DYLIB_DST})
+      add_dependencies(CopyMoltenVK MoltenVK)
       add_dependencies(shadps4 CopyMoltenVK)
       set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
   else()
