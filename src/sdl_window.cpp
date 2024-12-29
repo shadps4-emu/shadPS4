@@ -92,6 +92,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to create window handle: {}", SDL_GetError());
     }
 
+    SDL_SetWindowMinimumSize(window, 640, 360);
     SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
