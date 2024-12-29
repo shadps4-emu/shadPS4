@@ -234,46 +234,22 @@ bool BufferCache::BindVertexBuffers(
     return has_step_rate;
 }
 
-u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
-    // Emulate QuadList and Polygon primitive types with CPU made index buffer.
+void BufferCache::BindIndexBuffer(u32 index_offset) {
     const auto& regs = liverpool->regs;
-    if (!is_indexed) {
-        if (regs.primitive_type != AmdGpu::PrimitiveType::Polygon) {
-            return regs.num_indices;
-        }
-
-        // Emit indices.
-        const u32 index_size = 3 * regs.num_indices;
-        const auto [data, offset] = stream_buffer.Map(index_size);
-        Vulkan::LiverpoolToVK::EmitPolygonToTriangleListIndices(data, regs.num_indices);
-        stream_buffer.Commit();
-
-        // Bind index buffer.
-        is_indexed = true;
-
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindIndexBuffer(stream_buffer.Handle(), offset, vk::IndexType::eUint16);
-        return index_size / sizeof(u16);
-    }
 
     // Figure out index type and size.
     const bool is_index16 =
         regs.index_buffer_type.index_type == AmdGpu::Liverpool::IndexType::Index16;
     const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
-    VAddr index_address = regs.index_base_address.Address<VAddr>();
-    index_address += index_offset * index_size;
-
-    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
-        UNREACHABLE();
-    }
+    const VAddr index_address =
+        regs.index_base_address.Address<VAddr>() + index_offset * index_size;
 
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
     const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size, false);
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
-    return regs.num_indices;
 }
 
 void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
