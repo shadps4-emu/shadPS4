@@ -22,8 +22,9 @@ struct OrbisKernelMemParam {
     u8* extended_memory_1;
     u64* extended_gpu_page_table;
     u8* extended_memory_2;
-    u64* exnteded_cpu_page_table;
+    u64* extended_cpu_page_table;
 };
+static_assert(sizeof(OrbisKernelMemParam) == 0x38);
 
 struct OrbisProcParam {
     u64 size;

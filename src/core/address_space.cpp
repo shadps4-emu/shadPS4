@@ -26,7 +26,7 @@ asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xFBFC00000");
 
 namespace Core {
 
-static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE_PRO;
+static constexpr size_t BackingSize = SCE_KERNEL_TOTAL_MEM_PRO;
 
 #ifdef _WIN32
 

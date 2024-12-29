@@ -143,5 +143,27 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
         break;
+    case Theme::TokyoNight:
+        mw_searchbar->setStyleSheet(
+            "QLineEdit {"
+            "background-color: #1a1b26; color: #9d7cd8; border: 1px solid #9d7cd8; "
+            "border-radius: 4px; padding: 5px; }"
+            "QLineEdit:focus {"
+            "border: 1px solid #7aa2f7; }");
+        themePalette.setColor(QPalette::Window, QColor(31, 35, 53));
+        themePalette.setColor(QPalette::WindowText, QColor(192, 202, 245));
+        themePalette.setColor(QPalette::Base, QColor(25, 28, 39));
+        themePalette.setColor(QPalette::AlternateBase, QColor(36, 40, 59));
+        themePalette.setColor(QPalette::ToolTipBase, QColor(192, 202, 245));
+        themePalette.setColor(QPalette::ToolTipText, QColor(192, 202, 245));
+        themePalette.setColor(QPalette::Text, QColor(192, 202, 245));
+        themePalette.setColor(QPalette::Button, QColor(30, 30, 41));
+        themePalette.setColor(QPalette::ButtonText, QColor(192, 202, 245));
+        themePalette.setColor(QPalette::BrightText, QColor(197, 59, 83));
+        themePalette.setColor(QPalette::Link, QColor(79, 214, 190));
+        themePalette.setColor(QPalette::Highlight, QColor(79, 214, 190));
+        themePalette.setColor(QPalette::HighlightedText, Qt::black);
+        qApp->setPalette(themePalette);
+        break;
     }
 }

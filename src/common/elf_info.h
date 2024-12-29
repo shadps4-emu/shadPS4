@@ -34,6 +34,7 @@ public:
     static constexpr u32 FW_20 = 0x2000000;
     static constexpr u32 FW_25 = 0x2500000;
     static constexpr u32 FW_30 = 0x3000000;
+    static constexpr u32 FW_35 = 0x3500000;
     static constexpr u32 FW_40 = 0x4000000;
     static constexpr u32 FW_45 = 0x4500000;
     static constexpr u32 FW_50 = 0x5000000;

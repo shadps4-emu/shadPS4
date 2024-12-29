@@ -18,6 +18,7 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/move/move.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
@@ -91,6 +92,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Remoteplay::RegisterlibSceRemoteplay(sym);
     Libraries::Videodec::RegisterlibSceVideodec(sym);
     Libraries::RazorCpu::RegisterlibSceRazorCpu(sym);
+    Libraries::Move::RegisterlibSceMove(sym);
 }
 
 } // namespace Libraries
