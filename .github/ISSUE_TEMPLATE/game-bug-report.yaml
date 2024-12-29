@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
 name: Game Emulation Bug Report
 description: Problem in a game (ie. graphical artifacts, crashes, etc.)
@@ -56,14 +58,14 @@ body:
     id: cpu
     attributes:
       label: CPU
-      placeholder: "Example: i7-8700"
+      placeholder: "Example: Intel Core i7-8700"
     validations:
       required: true
   - type: input
     id: gpu
     attributes:
       label: GPU
-      placeholder: "Example: GTX 1650"
+      placeholder: "Example: nVidia GTX 1650"
     validations:
       required: true
   - type: input
@@ -71,6 +73,13 @@ body:
     attributes:
       label: Amount of RAM in GB
       placeholder: "Example: 16 GB"
+    validations:
+      required: true
+  - type: input
+    id: vram
+    attributes:
+      label: Amount of VRAM in GB
+      placeholder: "Example: 8 GB"
     validations:
       required: true
   - type: textarea
