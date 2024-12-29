@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Game Emulation Bug Report
+description: Problem in a game (ie. graphical artifacts, crashes, etc.)
+title: "[GAME BUG]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important: Read First
+
+        Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
+        If you need help using the emulator or unsure about your issue please contact us on [discord](https://discord.gg/bFJxfftGW6).
+
+        You can also check the [Game Compatibility Repository](https://github.com/shadps4-emu/shadps4-game-compatibility) for the information about the status of the game.
+
+        Please make an effort to make sure your issue isn't already reported.
+
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar issue in this repository and did not find one.
+          required: true
+        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated one of those builds using its in-app updater.
+          required: true
+        - label: I have re-dumped the game and performed a clean install without mods.
+          required: true
+        - label: I have disabled all patches and cheats.
+          required: true
+        - label: I have all the required [system modules](https://github.com/shadps4-emu/shadps4-game-compatibility?tab=readme-ov-file#informations) installed.
+          required: true
+  - type: textarea
+    id: desc
+    attributes:
+      label: Describe the Bug
+      description: "A clear and concise description of what the bug is"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: "Detailed steps to reproduce the behavior"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Specify OS Version
+      placeholder: "Example: Windows 11, Arch Linux, MacOS 15"
+    validations:
+      required: true
+  - type: input
+    id: cpu
+    attributes:
+      label: CPU
+      placeholder: "Example: Intel Core i7-8700"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: "Example: nVidia GTX 1650"
+    validations:
+      required: true
+  - type: input
+    id: ram
+    attributes:
+      label: Amount of RAM in GB
+      placeholder: "Example: 16 GB"
+    validations:
+      required: true
+  - type: input
+    id: vram
+    attributes:
+      label: Amount of VRAM in GB
+      placeholder: "Example: 8 GB"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs"
+      description: Attach any logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
+    validations:
+      required: false

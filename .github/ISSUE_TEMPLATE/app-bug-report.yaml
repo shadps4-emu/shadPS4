@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Application Bug Report
+description: Problem with the application itself (ie. bad file path handling, UX issue)
+title: "[APP BUG]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important: Read First
+
+        Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
+        If you need help using the emulator or unsure about your issue please contact us on [discord](https://discord.gg/bFJxfftGW6).
+
+        Please make an effort to make sure your issue isn't already reported.
+
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar issue in this repository and did not find one.
+          required: true
+        - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated one of those builds using its in-app updater.
+          required: true
+  - type: textarea
+    id: desc
+    attributes:
+      label: Describe the Bug
+      description: "A clear and concise description of what the bug is"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: "Detailed steps to reproduce the behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: "A clear and concise description of what you expected to happen"
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Specify OS Version
+      placeholder: "Example: Windows 11, Arch Linux, MacOS 15"
+    validations:
+      required: true
