@@ -825,7 +825,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             const auto* dispatch_indirect = reinterpret_cast<const PM4CmdDispatchIndirect*>(header);
             auto& cs_program = GetCsRegs();
             const auto offset = dispatch_indirect->data_offset;
-            const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
+            const auto ib_address = mapped_queues[vqid].indirect_args_addr;
             const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
             if (DebugState.DumpingCurrentReg()) {
                 DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
@@ -833,7 +833,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
-                rasterizer->ScopeMarkerBegin(fmt::format("acb:{}:DispatchIndirect", cmd_address));
+                rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
                 rasterizer->DispatchIndirect(ib_address, offset, size);
                 rasterizer->ScopeMarkerEnd();
             }
