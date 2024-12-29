@@ -503,6 +503,21 @@
 			<translation>模拟器语言</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="195"/>
+			<source>Backup Saves</source>
+			<translation>Backup Saves</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="201"/>
+			<source>Create backup saves</source>
+			<translation>Create backup saves</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="214"/>
+			<source>Backup Frequency (minutes)</source>
+			<translation>Backup Frequency (minutes)</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="114"/>
 			<source>Emulator</source>
 			<translation>模拟器</translation>
@@ -1205,6 +1220,11 @@
 			<location filename="../settings_dialog.cpp" line="291"/>
 			<source>emulatorLanguageGroupBox</source>
 			<translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="317"/>
+			<source>BackupSaveGroupBox</source>
+			<translation>Backup Saves:\nAutomatically copies all contents of a running game's save folder to this location: (shadps4_folder/user/savedata/1/BACKUPS).</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="293"/>

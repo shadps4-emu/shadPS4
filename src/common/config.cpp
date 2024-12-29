@@ -32,6 +32,8 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 namespace Config {
 
 static bool isNeo = false;
+static bool isBackupSaveEnabled = false;
+static int BackupFrequency = 10;
 static bool isFullscreen = false;
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
@@ -94,6 +96,14 @@ u32 m_language = 1; // english
 
 bool isNeoMode() {
     return isNeo;
+}
+
+bool getBackupSaveEnabled() {
+    return isBackupSaveEnabled;
+}
+
+int getBackupFrequency() {
+    return BackupFrequency;
 }
 
 bool isFullscreenMode() {
@@ -336,6 +346,14 @@ void setNeoMode(bool enable) {
     isNeo = enable;
 }
 
+void setBackupSaveEnabled(bool enable) {
+    isBackupSaveEnabled = enable;
+}
+
+void setBackupFrequency(int frequency) {
+    BackupFrequency = frequency;
+}
+
 void setLogType(const std::string& type) {
     logType = type;
 }
@@ -565,6 +583,8 @@ void load(const std::filesystem::path& path) {
         const toml::value& general = data.at("General");
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        isBackupSaveEnabled = toml::find_or<bool>(general, "isBackupSaveEnabled", false);
+        BackupFrequency = toml::find_or<int>(general, "BackupFrequency", 10);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
@@ -691,6 +711,8 @@ void save(const std::filesystem::path& path) {
     }
 
     data["General"]["isPS4Pro"] = isNeo;
+    data["General"]["isBackupSaveEnabled"] = isBackupSaveEnabled;
+    data["General"]["BackupFrequency"] = BackupFrequency;
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;

@@ -16,6 +16,8 @@ void save(const std::filesystem::path& path);
 void saveMainWindow(const std::filesystem::path& path);
 
 bool isNeoMode();
+bool getBackupSaveEnabled();
+int getBackupFrequency();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
@@ -70,6 +72,8 @@ void setBGMvolume(int volume);
 void setEnableDiscordRPC(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
+void setBackupSaveEnabled(bool enable);
+void setBackupFrequency(int frequency);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setSeparateUpdateEnabled(bool use);

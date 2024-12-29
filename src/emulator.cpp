@@ -1,11 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <chrono>
-#include <filesystem>
 #include <set>
 #include <fmt/core.h>
-#include <pthread.h>
 
 #include "common/config.h"
 #include "common/debug.h"
@@ -274,14 +271,14 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 #endif
 
-    // TODO disable with config option
-    if (!game_info.game_serial.empty()) {
-        std::thread savethread(StartAutosave, game_info.game_serial);
-        savethread.detach();
+    if (Config::getBackupSaveEnabled()) {
+        if (!game_info.game_serial.empty()) {
+            std::thread savethread(StartAutosave, game_info.game_serial);
+            savethread.detach();
+        }
     }
 
     linker->Execute();
-
     window->InitTimers();
     while (window->IsOpen()) {
         window->WaitEvent();
@@ -412,18 +409,18 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
 #endif
 
 void Emulator::StartAutosave(std::string game_serial) {
-
-    const int SaveInterval = 0; // TODO enable setting backup intervals
-
+    const int SaveInterval = Config::getBackupFrequency();
     const auto backup_dir =
         Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / "1" / "BACKUPS";
     const auto save_dir =
         Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / "1" / game_serial;
+
     if (!std ::filesystem::exists(backup_dir)) {
         std::filesystem::create_directory(backup_dir);
     }
+
     while (true) {
-        std::this_thread::sleep_for(std::chrono::minutes(1));
+        std::this_thread::sleep_for(std::chrono::minutes(SaveInterval));
         try {
             std::filesystem::copy(save_dir, backup_dir / game_serial,
                                   std::filesystem::copy_options::overwrite_existing |

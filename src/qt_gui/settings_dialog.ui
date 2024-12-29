@@ -192,7 +192,7 @@
                <item>
                 <widget class="QGroupBox" name="BackupSaveGroupBox">
                  <property name="title">
-                  <string>Backup Saving</string>
+                  <string>Backup Saves</string>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
                   <item>
@@ -206,12 +206,12 @@
                    <widget class="QLabel" name="BackupFreqLabel">
                     <property name="font">
                      <font>
-                      <pointsize>9</pointsize>
+                      <pointsize>11</pointsize>
                       <bold>false</bold>
                      </font>
                     </property>
                     <property name="text">
-                     <string>Backup Frequency (in minutes)</string>
+                     <string>Backup Frequency (minutes)</string>
                     </property>
                    </widget>
                   </item>

@@ -88,6 +88,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
     ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
 
+    const QStringList BackupFreqList = {"5", "10", "15", "20", "25", "30"};
+    ui->BackupFreqComboBox->addItems(BackupFreqList);
+
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
@@ -154,6 +157,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
             Config::setCompatibilityEnabled(state);
             emit CompatibilityChanged();
         });
+
+        connect(ui->BackupCheckBox, &QCheckBox::stateChanged, this,
+                &SettingsDialog::OnBackupStateChanged);
     }
 
     // Input TAB
@@ -212,6 +218,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
         ui->audioBackendComboBox->installEventFilter(this);
+        ui->BackupSaveGroupBox->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -307,6 +314,10 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "General", "checkCompatibilityOnStartup", false));
     ui->audioBackendComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "Audio", "backend", "cubeb")));
+    ui->BackupCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "isBackupSaveEnabled", false));
+    ui->BackupFreqComboBox->setCurrentText(
+        QString::number(toml::find_or<int>(data, "General", "BackupFrequency", 10)));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -325,9 +336,9 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
-
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
+    OnBackupStateChanged();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -386,6 +397,16 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
     }
 }
 
+void SettingsDialog::OnBackupStateChanged() {
+    if (ui->BackupCheckBox->isChecked()) {
+        ui->BackupFreqLabel->show();
+        ui->BackupFreqComboBox->show();
+    } else {
+        ui->BackupFreqLabel->hide();
+        ui->BackupFreqComboBox->hide();
+    }
+}
+
 int SettingsDialog::exec() {
     return QDialog::exec();
 }
@@ -430,6 +451,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("updateCompatibilityButton");
     } else if (elementName == "audioBackendGroupBox") {
         text = tr("audioBackendGroupBox");
+    } else if (elementName == "BackupSaveGroupBox") {
+        text = tr("BackupSaveGroupBox");
     }
 
     // Input
@@ -544,6 +567,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
     Config::setAudioBackend(ui->audioBackendComboBox->currentText().toStdString());
+    Config::setBackupSaveEnabled(ui->BackupCheckBox->isChecked());
+    Config::setBackupFrequency(ui->BackupFreqComboBox->currentText().toInt());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();

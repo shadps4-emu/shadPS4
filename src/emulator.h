@@ -12,6 +12,7 @@
 #include "sdl_window.h"
 
 namespace Core {
+
 using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 
 struct SysModules {
@@ -20,12 +21,10 @@ struct SysModules {
 };
 
 class Emulator {
-
 public:
     Emulator();
     ~Emulator();
 
-    int user_id{};
     void Run(const std::filesystem::path& file);
     void UpdatePlayTime(const std::string& serial);
 
