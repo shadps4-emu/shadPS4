@@ -42,7 +42,7 @@ public:
             .layout = get_channel_layout(),
             .prefs = CUBEB_STREAM_PREF_NONE,
         };
-        u32 latency_frames = 512;
+        u32 latency_frames = port.samples_num;
         if (const auto ret = cubeb_get_min_latency(ctx, &stream_params, &latency_frames);
             ret != CUBEB_OK) {
             LOG_WARNING(Lib_AudioOut,

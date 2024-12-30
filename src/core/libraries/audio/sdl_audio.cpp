@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_hints.h>
 
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
@@ -10,13 +11,20 @@
 
 namespace Libraries::AudioOut {
 
-constexpr int AUDIO_STREAM_BUFFER_THRESHOLD = 65536; // Define constant for buffer threshold
-
 class SDLPortBackend : public PortBackend {
 public:
-    explicit SDLPortBackend(const PortOut& port) {
+    explicit SDLPortBackend(const PortOut& port) : buffer_size(port.buffer_size) {
+        // We want the wait time for delivering frames out to be as small as possible,
+        // so set the sample frames hint to the number of samples per buffer.
+        // Note that this will only apply when the device is first opened, but it still
+        // helps to get a sample of what the game expects from at least one port.
+        const auto samples_num_str = std::to_string(port.samples_num);
+        if (!SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, samples_num_str.c_str())) {
+            LOG_WARNING(Lib_AudioOut, "Failed to set SDL audio sample frames hint to {}: {}",
+                        samples_num_str, SDL_GetError());
+        }
         const SDL_AudioSpec fmt = {
-            .format = port.is_float ? SDL_AUDIO_F32 : SDL_AUDIO_S16,
+            .format = port.is_float ? SDL_AUDIO_F32LE : SDL_AUDIO_S16LE,
             .channels = port.channels_num,
             .freq = static_cast<int>(port.freq),
         };
@@ -46,10 +54,15 @@ public:
         if (!stream) {
             return;
         }
-        SDL_PutAudioStreamData(stream, ptr, static_cast<int>(size));
-        while (SDL_GetAudioStreamAvailable(stream) > AUDIO_STREAM_BUFFER_THRESHOLD) {
+        // Game expects audio output to wait. To prevent choppy audio, we wait when
+        // there are two or more of the guest buffer size already queued.
+        while (SDL_GetAudioStreamQueued(stream) >= buffer_size * 4) {
+            SDL_FlushAudioStream(stream);
             // Yield to allow the stream to drain.
             std::this_thread::yield();
+        }
+        if (!SDL_PutAudioStreamData(stream, ptr, static_cast<int>(size))) {
+            LOG_ERROR(Lib_AudioOut, "Failed to output to SDL audio stream: {}", SDL_GetError());
         }
     }
 
@@ -66,6 +79,7 @@ public:
     }
 
 private:
+    u32 buffer_size;
     SDL_AudioStream* stream;
 };
 
