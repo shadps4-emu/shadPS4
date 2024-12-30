@@ -124,12 +124,12 @@ void Translator::EmitPrologue() {
         }
         break;
     case LogicalStage::TessellationControl: {
+        ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         // Should be laid out like:
         // [0:8]: patch id within VGT
         // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
-        // TODO PrimitiveId is probably V2 but haven't seen it yet
         break;
     }
     case LogicalStage::TessellationEval:
