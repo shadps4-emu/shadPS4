@@ -4,11 +4,12 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
-#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/polyfill_thread.h"
+#include "common/thread.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/audio/audioout_error.h"
@@ -180,6 +181,10 @@ int PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
+    port.output_thread.Stop();
+    std::free(port.output_buffer);
+    port.output_buffer = nullptr;
+    port.output_ready = false;
     port.impl = nullptr;
     return ORBIS_OK;
 }
@@ -311,16 +316,7 @@ int PS4_SYSV_ABI sceAudioOutInit() {
     if (audio != nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
-    const auto backend = Config::getAudioBackend();
-    if (backend == "cubeb") {
-        audio = std::make_unique<CubebAudioOut>();
-    } else if (backend == "sdl") {
-        audio = std::make_unique<SDLAudioOut>();
-    } else {
-        // Cubeb as a default fallback.
-        LOG_ERROR(Lib_AudioOut, "Invalid audio backend '{}', defaulting to cubeb.", backend);
-        audio = std::make_unique<CubebAudioOut>();
-    }
+    audio = std::make_unique<SDLAudioOut>();
     return ORBIS_OK;
 }
 
@@ -352,6 +348,30 @@ int PS4_SYSV_ABI sceAudioOutMasteringTerm() {
 int PS4_SYSV_ABI sceAudioOutMbusInit() {
     LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+static void AudioOutputThread(PortOut* port, const std::stop_token& stop) {
+    {
+        const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port));
+        Common::SetCurrentThreadName(thread_name.c_str());
+    }
+
+    Common::AccurateTimer timer(
+        std::chrono::nanoseconds(1000000000ULL * port->buffer_frames / port->freq));
+    while (true) {
+        timer.Start();
+        {
+            std::unique_lock lock{port->output_mutex};
+            Common::CondvarWait(port->output_cv, lock, stop, [&] { return port->output_ready; });
+            if (stop.stop_requested()) {
+                break;
+            }
+            port->impl->Output(port->output_buffer);
+            port->output_ready = false;
+        }
+        port->output_cv.notify_one();
+        timer.End();
+    }
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
@@ -405,14 +425,20 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     port->type = port_type;
     port->format = format;
     port->is_float = IsFormatFloat(format);
+    port->freq = sample_rate;
     port->sample_size = GetFormatSampleSize(format);
     port->channels_num = GetFormatNumChannels(format);
-    port->samples_num = length;
     port->frame_size = port->sample_size * port->channels_num;
-    port->buffer_size = port->frame_size * port->samples_num;
-    port->freq = sample_rate;
+    port->buffer_frames = length;
+    port->buffer_size = port->frame_size * port->buffer_frames;
     port->volume.fill(SCE_AUDIO_OUT_VOLUME_0DB);
+
     port->impl = audio->Open(*port);
+
+    port->output_buffer = std::malloc(port->buffer_size);
+    port->output_ready = false;
+    port->output_thread.Run(
+        [port](const std::stop_token& stop) { AudioOutputThread(&*port, stop); });
 
     return std::distance(ports_out.begin(), port) + 1;
 }
@@ -426,24 +452,30 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
-    if (ptr == nullptr) {
-        // Nothing to output
-        return ORBIS_OK;
-    }
 
     auto& port = ports_out.at(handle - 1);
     if (!port.impl) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
-    port.impl->Output(ptr, port.buffer_size);
+    {
+        std::unique_lock lock{port.output_mutex};
+        port.output_cv.wait(lock, [&] { return !port.output_ready; });
+        if (ptr != nullptr) {
+            std::memcpy(port.output_buffer, ptr, port.buffer_size);
+            port.output_ready = true;
+        }
+    }
+    port.output_cv.notify_one();
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     for (u32 i = 0; i < num; i++) {
-        if (const auto err = sceAudioOutOutput(param[i].handle, param[i].ptr); err != 0)
-            return err;
+        const auto [handle, ptr] = param[i];
+        if (const auto ret = sceAudioOutOutput(handle, ptr); ret != ORBIS_OK) {
+            return ret;
+        }
     }
     return ORBIS_OK;
 }

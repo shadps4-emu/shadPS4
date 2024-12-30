@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "common/bit_field.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::AudioOut {
@@ -62,15 +63,21 @@ struct OrbisAudioOutPortState {
 struct PortOut {
     std::unique_ptr<PortBackend> impl{};
 
+    void* output_buffer;
+    std::mutex output_mutex;
+    std::condition_variable_any output_cv;
+    bool output_ready;
+    Kernel::Thread output_thread{};
+
     OrbisAudioOutPort type;
     OrbisAudioOutParamFormat format;
     bool is_float;
+    u32 freq;
     u8 sample_size;
     u8 channels_num;
-    u32 samples_num;
     u32 frame_size;
+    u32 buffer_frames;
     u32 buffer_size;
-    u32 freq;
     std::array<int, 8> volume;
 };
 
