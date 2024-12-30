@@ -13,7 +13,8 @@ namespace Libraries::AudioOut {
 
 class SDLPortBackend : public PortBackend {
 public:
-    explicit SDLPortBackend(const PortOut& port) : buffer_size(port.buffer_size) {
+    explicit SDLPortBackend(const PortOut& port)
+        : frame_size(port.frame_size), buffer_size(port.buffer_size) {
         // We want the latency for delivering frames out to be as small as possible,
         // so set the sample frames hint to the number of frames per buffer.
         const auto samples_num_str = std::to_string(port.buffer_frames);
@@ -32,6 +33,7 @@ public:
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
             return;
         }
+        queue_threshold = CalculateQueueThreshold();
         if (!SDL_ResumeAudioStreamDevice(stream)) {
             LOG_ERROR(Lib_AudioOut, "Failed to resume SDL audio stream: {}", SDL_GetError());
             SDL_DestroyAudioStream(stream);
@@ -52,6 +54,17 @@ public:
         if (!stream) {
             return;
         }
+        // AudioOut library manages timing, but we still need to guard against the SDL
+        // audio queue stalling, which may happen during device changes, for example.
+        // Otherwise, latency may grow over time unbounded.
+        if (const auto queued = SDL_GetAudioStreamQueued(stream); queued >= queue_threshold) {
+            LOG_WARNING(Lib_AudioOut,
+                        "SDL audio queue backed up ({} queued, {} threshold), clearing.", queued,
+                        queue_threshold);
+            SDL_ClearAudioStream(stream);
+            // Recalculate the threshold in case this happened because of a device change.
+            queue_threshold = CalculateQueueThreshold();
+        }
         if (!SDL_PutAudioStreamData(stream, ptr, static_cast<int>(buffer_size))) {
             LOG_ERROR(Lib_AudioOut, "Failed to output to SDL audio stream: {}", SDL_GetError());
         }
@@ -70,7 +83,21 @@ public:
     }
 
 private:
+    [[nodiscard]] u32 CalculateQueueThreshold() const {
+        SDL_AudioSpec discard;
+        int sdl_buffer_frames;
+        if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &discard,
+                                      &sdl_buffer_frames)) {
+            LOG_WARNING(Lib_AudioOut, "Failed to get SDL audio stream buffer size: {}",
+                        SDL_GetError());
+            sdl_buffer_frames = 0;
+        }
+        return std::max<u32>(buffer_size, sdl_buffer_frames * frame_size) * 4;
+    }
+
+    u32 frame_size;
     u32 buffer_size;
+    u32 queue_threshold;
     SDL_AudioStream* stream;
 };
 
