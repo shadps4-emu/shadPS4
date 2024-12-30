@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
@@ -116,6 +117,33 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
     AddState(state);
 }
 
+void GameController::Gyro(int id, const float gyro[3]) {
+    //LOG_DEBUG(Lib_Pad, "Gyro update: {} {} {}", gyro[0], gyro[1], gyro[2]);
+    std::scoped_lock lock{m_mutex};
+    auto state = GetLastState();
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
+
+    // Update the angular velocity (gyro data)
+    state.angularVelocity[0] = gyro[0]; // X-axis
+    state.angularVelocity[1] = gyro[1]; // Y-axis
+    state.angularVelocity[2] = gyro[2]; // Z-axis
+
+    AddState(state);
+}
+void GameController::Acceleration(int id, const float acceleration[3]) {
+    //LOG_DEBUG(Lib_Pad, "Accel update: {} {} {}", acceleration[0], acceleration[1], acceleration[2]);
+    std::scoped_lock lock{m_mutex};
+    auto state = GetLastState();
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
+
+    // Update the acceleration values
+    state.acceleration[0] = acceleration[0]; // X-axis
+    state.acceleration[1] = acceleration[1]; // Y-axis
+    state.acceleration[2] = acceleration[2]; // Z-axis
+
+    AddState(state);
+}
+
 void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
     if (m_sdl_gamepad != nullptr) {
         SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
@@ -149,6 +177,12 @@ void GameController::TryOpenSDLController() {
         int gamepad_count;
         SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
         m_sdl_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
+        if (!SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
+        }
+        if (!SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
+        }
         SDL_free(gamepads);
 
         SetLightBarRGB(0, 0, 255);
