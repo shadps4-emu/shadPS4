@@ -202,7 +202,14 @@ Id EmitBitCount32(EmitContext& ctx, Id value) {
 }
 
 Id EmitBitCount64(EmitContext& ctx, Id value) {
-    return ctx.OpBitCount(ctx.U64, value);
+    // Vulkan restricts some bitwise operations to 32-bit only, so decompose into
+    // two 32-bit values and add the result.
+    const Id unpacked{ctx.OpBitcast(ctx.U32[2], value)};
+    const Id lo{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0U)};
+    const Id hi{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1U)};
+    const Id lo_count{ctx.OpBitCount(ctx.U32[1], lo)};
+    const Id hi_count{ctx.OpBitCount(ctx.U32[1], hi)};
+    return ctx.OpIAdd(ctx.U32[1], lo_count, hi_count);
 }
 
 Id EmitBitwiseNot32(EmitContext& ctx, Id value) {
@@ -222,7 +229,15 @@ Id EmitFindILsb32(EmitContext& ctx, Id value) {
 }
 
 Id EmitFindILsb64(EmitContext& ctx, Id value) {
-    return ctx.OpFindILsb(ctx.U64, value);
+    // Vulkan restricts some bitwise operations to 32-bit only, so decompose into
+    // two 32-bit values and select the correct result.
+    const Id unpacked{ctx.OpBitcast(ctx.U32[2], value)};
+    const Id lo{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0U)};
+    const Id hi{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1U)};
+    const Id lo_lsb{ctx.OpFindILsb(ctx.U32[1], lo)};
+    const Id hi_lsb{ctx.OpFindILsb(ctx.U32[1], hi)};
+    const Id found_lo{ctx.OpINotEqual(ctx.U32[1], lo_lsb, ctx.ConstU32(u32(-1)))};
+    return ctx.OpSelect(ctx.U32[1], found_lo, lo_lsb, hi_lsb);
 }
 
 Id EmitSMin32(EmitContext& ctx, Id a, Id b) {
