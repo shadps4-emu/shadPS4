@@ -514,8 +514,13 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="214"/>
-			<source>Backup Frequency (minutes)</source>
-			<translation>Backup Frequency (minutes)</translation>
+			<source>Interval (mins)</source>
+			<translation>Interval (mins)</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="221"/>
+			<source>Number of backups</source>
+			<translation>Number of backups</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="114"/>

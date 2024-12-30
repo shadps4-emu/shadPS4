@@ -91,6 +91,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     const QStringList BackupFreqList = {"5", "10", "15", "20", "25", "30"};
     ui->BackupFreqComboBox->addItems(BackupFreqList);
 
+    const QStringList BackupNumList = {"1", "2", "3", "4", "5"};
+    ui->BackupNumComboBox->addItems(BackupNumList);
+
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
@@ -318,6 +321,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "General", "isBackupSaveEnabled", false));
     ui->BackupFreqComboBox->setCurrentText(
         QString::number(toml::find_or<int>(data, "General", "BackupFrequency", 10)));
+    ui->BackupNumComboBox->setCurrentText(
+        QString::number(toml::find_or<int>(data, "General", "BackupNumber", 2)));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
@@ -401,9 +406,13 @@ void SettingsDialog::OnBackupStateChanged() {
     if (ui->BackupCheckBox->isChecked()) {
         ui->BackupFreqLabel->show();
         ui->BackupFreqComboBox->show();
+        ui->BackupNumLabel->show();
+        ui->BackupNumComboBox->show();
     } else {
         ui->BackupFreqLabel->hide();
         ui->BackupFreqComboBox->hide();
+        ui->BackupNumLabel->hide();
+        ui->BackupNumComboBox->hide();
     }
 }
 
@@ -569,6 +578,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setAudioBackend(ui->audioBackendComboBox->currentText().toStdString());
     Config::setBackupSaveEnabled(ui->BackupCheckBox->isChecked());
     Config::setBackupFrequency(ui->BackupFreqComboBox->currentText().toInt());
+    Config::setBackupNumber(ui->BackupNumComboBox->currentText().toInt());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();

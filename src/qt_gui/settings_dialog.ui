@@ -203,20 +203,47 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLabel" name="BackupFreqLabel">
-                    <property name="font">
-                     <font>
-                      <pointsize>11</pointsize>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="text">
-                     <string>Backup Frequency (minutes)</string>
-                    </property>
-                   </widget>
+                   <layout class="QHBoxLayout" name="BackupLabels">
+                    <item>
+                     <widget class="QLabel" name="BackupFreqLabel">
+                      <property name="font">
+                       <font>
+                        <pointsize>8</pointsize>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="text">
+                       <string>Interval (mins)</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="BackupNumLabel">
+                      <property name="font">
+                       <font>
+                        <pointsize>8</pointsize>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="text">
+                       <string>Number of backups</string>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                   <item>
-                   <widget class="QComboBox" name="BackupFreqComboBox"/>
+                   <layout class="QHBoxLayout" name="horizontalLayout">
+                    <item>
+                     <widget class="QComboBox" name="BackupFreqComboBox"/>
+                    </item>
+                    <item>
+                     <widget class="QComboBox" name="BackupNumComboBox"/>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
                 </widget>
