@@ -263,29 +263,6 @@
                  </item>
                 </layout>
                </item>
-               <item>
-                <widget class="QGroupBox" name="audioBackendGroupBox">
-                 <property name="title">
-                  <string>Audio Backend</string>
-                 </property>
-                 <layout class="QVBoxLayout" name="audioBackendBoxLayout">
-                  <item>
-                   <widget class="QComboBox" name="audioBackendComboBox">
-                    <item>
-                     <property name="text">
-                      <string>cubeb</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>sdl</string>
-                     </property>
-                    </item>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
