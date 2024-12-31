@@ -20,7 +20,6 @@ public:
     u64 GetTimeUS(u64 base_ptc = 0) const;
     u64 GetTimeMS(u64 base_ptc = 0) const;
     u64 GetUptime() const;
-    u64 GetProcessTimeUS() const;
 
 private:
     u64 rdtsc_frequency;
