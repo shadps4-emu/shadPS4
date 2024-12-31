@@ -155,6 +155,13 @@ public:
     [[nodiscard]] Value CompositeExtract(const Value& vector, size_t element);
     [[nodiscard]] Value CompositeInsert(const Value& vector, const Value& object, size_t element);
 
+    [[nodiscard]] Value CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                         size_t comp1);
+    [[nodiscard]] Value CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                         size_t comp1, size_t comp2);
+    [[nodiscard]] Value CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                         size_t comp1, size_t comp2, size_t comp3);
+
     [[nodiscard]] Value Select(const U1& condition, const Value& true_value,
                                const Value& false_value);
 

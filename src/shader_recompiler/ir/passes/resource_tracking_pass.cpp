@@ -8,6 +8,7 @@
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/reinterpret.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
@@ -127,35 +128,6 @@ bool IsImageInstruction(const IR::Inst& inst) {
         return IsImageAtomicInstruction(inst);
     }
 }
-
-IR::Value SwizzleVector(IR::IREmitter& ir, auto sharp, IR::Value texel) {
-    boost::container::static_vector<IR::Value, 4> comps;
-    for (u32 i = 0; i < 4; i++) {
-        switch (sharp.GetSwizzle(i)) {
-        case AmdGpu::CompSwizzle::Zero:
-            comps.emplace_back(ir.Imm32(0.f));
-            break;
-        case AmdGpu::CompSwizzle::One:
-            comps.emplace_back(ir.Imm32(1.f));
-            break;
-        case AmdGpu::CompSwizzle::Red:
-            comps.emplace_back(ir.CompositeExtract(texel, 0));
-            break;
-        case AmdGpu::CompSwizzle::Green:
-            comps.emplace_back(ir.CompositeExtract(texel, 1));
-            break;
-        case AmdGpu::CompSwizzle::Blue:
-            comps.emplace_back(ir.CompositeExtract(texel, 2));
-            break;
-        case AmdGpu::CompSwizzle::Alpha:
-            comps.emplace_back(ir.CompositeExtract(texel, 3));
-            break;
-        default:
-            UNREACHABLE();
-        }
-    }
-    return ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
-};
 
 class Descriptors {
 public:
@@ -409,15 +381,6 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
-
-    // Apply dst_sel swizzle on formatted buffer instructions
-    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        inst.SetArg(2, SwizzleVector(ir, buffer, inst.Arg(2)));
-    } else {
-        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
-        inst.ReplaceUsesWith(SwizzleVector(ir, buffer, texel));
-    }
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
@@ -765,10 +728,6 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }();
     inst.SetArg(1, coords);
 
-    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(4, SwizzleVector(ir, image, inst.Arg(4)));
-    }
-
     if (inst_info.has_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageRead ||
                inst.GetOpcode() == IR::Opcode::ImageWrite);
@@ -780,6 +739,50 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
                (inst.GetOpcode() == IR::Opcode::ImageRead ||
                 inst.GetOpcode() == IR::Opcode::ImageWrite)) {
         inst.SetArg(3, arg);
+    }
+}
+
+void PatchTextureBufferInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
+    const auto binding = inst.Arg(0).U32();
+    const auto buffer_res = info.texture_buffers[binding];
+    const auto buffer = buffer_res.GetSharp(info);
+    if (!buffer.Valid()) {
+        // Don't need to swizzle invalid buffer.
+        return;
+    }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
+        inst.SetArg(2, ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect()));
+    } else if (inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32) {
+        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
+        const auto swizzled = ApplySwizzle(ir, texel, buffer.DstSelect());
+        inst.ReplaceUsesWith(swizzled);
+    }
+}
+
+void PatchImageInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
+    const auto binding = inst.Arg(0).U32();
+    const auto image_res = info.images[binding & 0xFFFF];
+    const auto image = image_res.GetSharp(info);
+    if (!image.Valid() || !image_res.IsStorage(image)) {
+        // Don't need to swizzle invalid or non-storage image.
+        return;
+    }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
+        inst.SetArg(4, ApplySwizzle(ir, inst.Arg(4), image.DstSelect()));
+    } else if (inst.GetOpcode() == IR::Opcode::ImageRead) {
+        const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+        const auto lod = inst.Arg(2);
+        const auto ms = inst.Arg(3);
+        const auto texel =
+            ir.ImageRead(inst.Arg(0), inst.Arg(1), lod.IsEmpty() ? IR::U32{} : IR::U32{lod},
+                         ms.IsEmpty() ? IR::U32{} : IR::U32{ms}, inst_info);
+        const auto swizzled = ApplySwizzle(ir, texel, image.DstSelect());
+        inst.ReplaceUsesWith(swizzled);
     }
 }
 
@@ -849,6 +852,19 @@ void ResourceTrackingPass(IR::Program& program) {
             }
             if (IsDataRingInstruction(inst)) {
                 PatchDataRingInstruction(*block, inst, info, descriptors);
+            }
+        }
+    }
+    // Second pass to reinterpret format read/write where needed, since we now know
+    // the bindings and their properties.
+    for (IR::Block* const block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (IsTextureBufferInstruction(inst)) {
+                PatchTextureBufferInterpretation(*block, inst, info);
+                continue;
+            }
+            if (IsImageInstruction(inst)) {
+                PatchImageInterpretation(*block, inst, info);
             }
         }
     }

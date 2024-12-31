@@ -99,7 +99,7 @@ OPCODE(StoreBufferU32,                                      Void,           Opaq
 OPCODE(StoreBufferU32x2,                                    Void,           Opaque,         Opaque,         U32x2,                                          )
 OPCODE(StoreBufferU32x3,                                    Void,           Opaque,         Opaque,         U32x3,                                          )
 OPCODE(StoreBufferU32x4,                                    Void,           Opaque,         Opaque,         U32x4,                                          )
-OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         U32x4,                                          )
+OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32x4,                                          )
 
 // Buffer atomic operations
 OPCODE(BufferAtomicIAdd32,                                  U32,            Opaque,         Opaque,         U32                                             )
@@ -124,6 +124,9 @@ OPCODE(CompositeExtractU32x4,                               U32,            U32x
 OPCODE(CompositeInsertU32x2,                                U32x2,          U32x2,          U32,            U32,                                            )
 OPCODE(CompositeInsertU32x3,                                U32x3,          U32x3,          U32,            U32,                                            )
 OPCODE(CompositeInsertU32x4,                                U32x4,          U32x4,          U32,            U32,                                            )
+OPCODE(CompositeShuffleU32x2,                               U32x2,          U32x2,          U32x2,          U32,            U32,                            )
+OPCODE(CompositeShuffleU32x3,                               U32x3,          U32x3,          U32x3,          U32,            U32,            U32,            )
+OPCODE(CompositeShuffleU32x4,                               U32x4,          U32x4,          U32x4,          U32,            U32,            U32,            U32,            )
 OPCODE(CompositeConstructF16x2,                             F16x2,          F16,            F16,                                                            )
 OPCODE(CompositeConstructF16x3,                             F16x3,          F16,            F16,            F16,                                            )
 OPCODE(CompositeConstructF16x4,                             F16x4,          F16,            F16,            F16,            F16,                            )
@@ -133,6 +136,9 @@ OPCODE(CompositeExtractF16x4,                               F16,            F16x
 OPCODE(CompositeInsertF16x2,                                F16x2,          F16x2,          F16,            U32,                                            )
 OPCODE(CompositeInsertF16x3,                                F16x3,          F16x3,          F16,            U32,                                            )
 OPCODE(CompositeInsertF16x4,                                F16x4,          F16x4,          F16,            U32,                                            )
+OPCODE(CompositeShuffleF16x2,                               F16x2,          F16x2,          F16x2,          U32,            U32,                            )
+OPCODE(CompositeShuffleF16x3,                               F16x3,          F16x3,          F16x3,          U32,            U32,            U32,            )
+OPCODE(CompositeShuffleF16x4,                               F16x4,          F16x4,          F16x4,          U32,            U32,            U32,            U32,            )
 OPCODE(CompositeConstructF32x2,                             F32x2,          F32,            F32,                                                            )
 OPCODE(CompositeConstructF32x3,                             F32x3,          F32,            F32,            F32,                                            )
 OPCODE(CompositeConstructF32x4,                             F32x4,          F32,            F32,            F32,            F32,                            )
@@ -142,6 +148,9 @@ OPCODE(CompositeExtractF32x4,                               F32,            F32x
 OPCODE(CompositeInsertF32x2,                                F32x2,          F32x2,          F32,            U32,                                            )
 OPCODE(CompositeInsertF32x3,                                F32x3,          F32x3,          F32,            U32,                                            )
 OPCODE(CompositeInsertF32x4,                                F32x4,          F32x4,          F32,            U32,                                            )
+OPCODE(CompositeShuffleF32x2,                               F32x2,          F32x2,          F32x2,          U32,            U32,                            )
+OPCODE(CompositeShuffleF32x3,                               F32x3,          F32x3,          F32x3,          U32,            U32,            U32,            )
+OPCODE(CompositeShuffleF32x4,                               F32x4,          F32x4,          F32x4,          U32,            U32,            U32,            U32,            )
 OPCODE(CompositeConstructF64x2,                             F64x2,          F64,            F64,                                                            )
 OPCODE(CompositeConstructF64x3,                             F64x3,          F64,            F64,            F64,                                            )
 OPCODE(CompositeConstructF64x4,                             F64x4,          F64,            F64,            F64,            F64,                            )
@@ -151,6 +160,9 @@ OPCODE(CompositeExtractF64x4,                               F64,            F64x
 OPCODE(CompositeInsertF64x2,                                F64x2,          F64x2,          F64,            U32,                                            )
 OPCODE(CompositeInsertF64x3,                                F64x3,          F64x3,          F64,            U32,                                            )
 OPCODE(CompositeInsertF64x4,                                F64x4,          F64x4,          F64,            U32,                                            )
+OPCODE(CompositeShuffleF64x2,                               F64x2,          F64x2,          F64x2,          U32,            U32,                            )
+OPCODE(CompositeShuffleF64x3,                               F64x3,          F64x3,          F64x3,          U32,            U32,            U32,            )
+OPCODE(CompositeShuffleF64x4,                               F64x4,          F64x4,          F64x4,          U32,            U32,            U32,            U32,            )
 
 // Select operations
 OPCODE(SelectU1,                                            U1,             U1,             U1,             U1,                                             )
@@ -346,8 +358,8 @@ OPCODE(ImageGatherDref,                                     F32x4,          Opaq
 OPCODE(ImageQueryDimensions,                                U32x4,          Opaque,         U32,            U1,                                             )
 OPCODE(ImageQueryLod,                                       F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(ImageGradient,                                       F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         Opaque,         F32,         )
-OPCODE(ImageRead,                                           U32x4,          Opaque,         Opaque,         U32,            U32,                            )
-OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32,            U32,            U32x4,          )
+OPCODE(ImageRead,                                           F32x4,          Opaque,         Opaque,         U32,            U32,                            )
+OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32,            U32,            F32x4,          )
 
 // Image atomic operations
 OPCODE(ImageAtomicIAdd32,                                   U32,            Opaque,         Opaque,         U32,                                            )

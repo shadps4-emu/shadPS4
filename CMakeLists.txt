@@ -701,6 +701,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp
                       src/shader_recompiler/ir/program.h
+                      src/shader_recompiler/ir/reinterpret.h
                       src/shader_recompiler/ir/reg.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h

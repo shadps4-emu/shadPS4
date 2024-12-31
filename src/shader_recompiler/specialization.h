@@ -31,7 +31,7 @@ struct BufferSpecialization {
 
 struct TextureBufferSpecialization {
     bool is_integer = false;
-    u32 dst_select = 0;
+    AmdGpu::CompMapping dst_select{};
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
@@ -40,13 +40,9 @@ struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
     bool is_storage = false;
-    u32 dst_select = 0;
+    AmdGpu::CompMapping dst_select{};
 
-    bool operator==(const ImageSpecialization& other) const {
-        return type == other.type && is_integer == other.is_integer &&
-               is_storage == other.is_storage &&
-               (dst_select != 0 ? dst_select == other.dst_select : true);
-    }
+    auto operator<=>(const ImageSpecialization&) const = default;
 };
 
 struct FMaskSpecialization {

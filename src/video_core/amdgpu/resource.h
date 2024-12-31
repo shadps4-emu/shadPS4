@@ -20,6 +20,85 @@ enum class CompSwizzle : u32 {
     Alpha = 7,
 };
 
+struct CompMapping {
+    CompSwizzle r : 3;
+    CompSwizzle g : 3;
+    CompSwizzle b : 3;
+    CompSwizzle a : 3;
+
+    auto operator<=>(const CompMapping& other) const = default;
+
+    template <typename T>
+    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
+        return {
+            ApplySingle(data, r),
+            ApplySingle(data, g),
+            ApplySingle(data, b),
+            ApplySingle(data, a),
+        };
+    }
+
+private:
+    template <typename T>
+    T ApplySingle(const std::array<T, 4>& data, const CompSwizzle swizzle) const {
+        switch (swizzle) {
+        case CompSwizzle::Zero:
+            return T(0);
+        case CompSwizzle::One:
+            return T(1);
+        case CompSwizzle::Red:
+            return data[0];
+        case CompSwizzle::Green:
+            return data[1];
+        case CompSwizzle::Blue:
+            return data[2];
+        case CompSwizzle::Alpha:
+            return data[3];
+        default:
+            UNREACHABLE();
+        }
+    }
+};
+
+inline DataFormat RemapDataFormat(const DataFormat format) {
+    switch (format) {
+    case DataFormat::Format11_11_10:
+        return DataFormat::Format10_11_11;
+    case DataFormat::Format10_10_10_2:
+        return DataFormat::Format2_10_10_10;
+    case DataFormat::Format5_5_5_1:
+        return DataFormat::Format1_5_5_5;
+    default:
+        return format;
+    }
+}
+
+inline NumberFormat RemapNumberFormat(const NumberFormat format) {
+    return format;
+}
+
+inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
+    switch (format) {
+    case DataFormat::Format11_11_10:
+        return {
+            .r = components.b,
+            .g = components.g,
+            .b = components.r,
+            .a = components.a,
+        };
+    case DataFormat::Format10_10_10_2:
+    case DataFormat::Format5_5_5_1:
+        return {
+            .r = components.a,
+            .g = components.b,
+            .b = components.g,
+            .a = components.r,
+        };
+    default:
+        return components;
+    }
+}
+
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
@@ -52,21 +131,22 @@ struct Buffer {
         return std::memcmp(this, &other, sizeof(Buffer)) == 0;
     }
 
-    u32 DstSelect() const {
-        return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
-    }
-
-    CompSwizzle GetSwizzle(u32 comp) const noexcept {
-        const std::array select{dst_sel_x, dst_sel_y, dst_sel_z, dst_sel_w};
-        return static_cast<CompSwizzle>(select[comp]);
+    CompMapping DstSelect() const {
+        const CompMapping dst_sel{
+            .r = CompSwizzle(dst_sel_x),
+            .g = CompSwizzle(dst_sel_y),
+            .b = CompSwizzle(dst_sel_z),
+            .a = CompSwizzle(dst_sel_w),
+        };
+        return RemapComponents(DataFormat(data_format), dst_sel);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format);
+        return RemapNumberFormat(NumberFormat(num_format));
     }
 
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format);
+        return RemapDataFormat(DataFormat(data_format));
     }
 
     u32 GetStride() const noexcept {
@@ -186,10 +266,11 @@ struct Image {
     static constexpr Image Null() {
         Image image{};
         image.data_format = u64(DataFormat::Format8_8_8_8);
-        image.dst_sel_x = 4;
-        image.dst_sel_y = 5;
-        image.dst_sel_z = 6;
-        image.dst_sel_w = 7;
+        image.num_format = u64(NumberFormat::Unorm);
+        image.dst_sel_x = u64(CompSwizzle::Red);
+        image.dst_sel_y = u64(CompSwizzle::Green);
+        image.dst_sel_z = u64(CompSwizzle::Blue);
+        image.dst_sel_w = u64(CompSwizzle::Alpha);
         image.tiling_index = u64(TilingMode::Texture_MicroTiled);
         image.type = u64(ImageType::Color2D);
         return image;
@@ -207,43 +288,14 @@ struct Image {
         return base_address != 0;
     }
 
-    u32 DstSelect() const {
-        return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
-    }
-
-    CompSwizzle GetSwizzle(u32 comp) const noexcept {
-        const std::array select{dst_sel_x, dst_sel_y, dst_sel_z, dst_sel_w};
-        return static_cast<CompSwizzle>(select[comp]);
-    }
-
-    static char SelectComp(u32 sel) {
-        switch (sel) {
-        case 0:
-            return '0';
-        case 1:
-            return '1';
-        case 4:
-            return 'R';
-        case 5:
-            return 'G';
-        case 6:
-            return 'B';
-        case 7:
-            return 'A';
-        default:
-            UNREACHABLE();
-        }
-    }
-
-    std::string DstSelectName() const {
-        std::string result = "[";
-        u32 dst_sel = DstSelect();
-        for (u32 i = 0; i < 4; i++) {
-            result += SelectComp(dst_sel & 7);
-            dst_sel >>= 3;
-        }
-        result += ']';
-        return result;
+    CompMapping DstSelect() const {
+        const CompMapping dst_sel{
+            .r = CompSwizzle(dst_sel_x),
+            .g = CompSwizzle(dst_sel_y),
+            .b = CompSwizzle(dst_sel_z),
+            .a = CompSwizzle(dst_sel_w),
+        };
+        return RemapComponents(DataFormat(data_format), dst_sel);
     }
 
     u32 Pitch() const {
@@ -285,11 +337,11 @@ struct Image {
     }
 
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format);
+        return RemapDataFormat(DataFormat(data_format));
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format);
+        return RemapNumberFormat(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {

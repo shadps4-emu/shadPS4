@@ -10,6 +10,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/types.h"
@@ -475,26 +476,12 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
         // Read the V# of the attribute to figure out component number and type.
         const auto buffer = info.ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
+        const auto values =
+            ir.CompositeConstruct(ir.GetAttribute(attr, 0), ir.GetAttribute(attr, 1),
+                                  ir.GetAttribute(attr, 2), ir.GetAttribute(attr, 3));
+        const auto swizzled = ApplySwizzle(ir, values, buffer.DstSelect());
         for (u32 i = 0; i < 4; i++) {
-            const IR::F32 comp = [&] {
-                switch (buffer.GetSwizzle(i)) {
-                case AmdGpu::CompSwizzle::One:
-                    return ir.Imm32(1.f);
-                case AmdGpu::CompSwizzle::Zero:
-                    return ir.Imm32(0.f);
-                case AmdGpu::CompSwizzle::Red:
-                    return ir.GetAttribute(attr, 0);
-                case AmdGpu::CompSwizzle::Green:
-                    return ir.GetAttribute(attr, 1);
-                case AmdGpu::CompSwizzle::Blue:
-                    return ir.GetAttribute(attr, 2);
-                case AmdGpu::CompSwizzle::Alpha:
-                    return ir.GetAttribute(attr, 3);
-                default:
-                    UNREACHABLE();
-                }
-            }();
-            ir.SetVectorReg(dst_reg++, comp);
+            ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(swizzled, i)});
         }
 
         // In case of programmable step rates we need to fallback to instance data pulling in

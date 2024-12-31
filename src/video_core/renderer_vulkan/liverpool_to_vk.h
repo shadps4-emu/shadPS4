@@ -42,6 +42,10 @@ vk::SamplerMipmapMode MipFilter(AmdGpu::MipFilter filter);
 
 vk::BorderColor BorderColor(AmdGpu::BorderColor color);
 
+vk::ComponentSwizzle ComponentSwizzle(AmdGpu::CompSwizzle comp_swizzle);
+
+vk::ComponentMapping ComponentMapping(AmdGpu::CompMapping comp_mapping);
+
 struct SurfaceFormatInfo {
     AmdGpu::DataFormat data_format;
     AmdGpu::NumberFormat number_format;
@@ -51,9 +55,6 @@ struct SurfaceFormatInfo {
 std::span<const SurfaceFormatInfo> SurfaceFormats();
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format);
-
-vk::Format AdjustColorBufferFormat(vk::Format base_format,
-                                   Liverpool::ColorBuffer::SwapMode comp_swap);
 
 struct DepthFormatInfo {
     Liverpool::DepthBuffer::ZFormat z_format;
