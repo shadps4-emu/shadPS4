@@ -14,7 +14,7 @@ namespace Libraries::AudioOut {
 class SDLPortBackend : public PortBackend {
 public:
     explicit SDLPortBackend(const PortOut& port)
-        : frame_size(port.frame_size), buffer_size(port.buffer_size) {
+        : frame_size(port.format_info.FrameSize()), buffer_size(port.BufferSize()) {
         // We want the latency for delivering frames out to be as small as possible,
         // so set the sample frames hint to the number of frames per buffer.
         const auto samples_num_str = std::to_string(port.buffer_frames);
@@ -23,9 +23,9 @@ public:
                         samples_num_str, SDL_GetError());
         }
         const SDL_AudioSpec fmt = {
-            .format = port.is_float ? SDL_AUDIO_F32LE : SDL_AUDIO_S16LE,
-            .channels = port.channels_num,
-            .freq = static_cast<int>(port.freq),
+            .format = port.format_info.is_float ? SDL_AUDIO_F32LE : SDL_AUDIO_S16LE,
+            .channels = port.format_info.num_channels,
+            .freq = static_cast<int>(port.sample_rate),
         };
         stream =
             SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, nullptr, nullptr);
@@ -34,6 +34,14 @@ public:
             return;
         }
         queue_threshold = CalculateQueueThreshold();
+        if (!SDL_SetAudioStreamInputChannelMap(stream, port.format_info.channel_layout.data(),
+                                               port.format_info.num_channels)) {
+            LOG_ERROR(Lib_AudioOut, "Failed to configure SDL audio stream channel map: {}",
+                      SDL_GetError());
+            SDL_DestroyAudioStream(stream);
+            stream = nullptr;
+            return;
+        }
         if (!SDL_ResumeAudioStreamDevice(stream)) {
             LOG_ERROR(Lib_AudioOut, "Failed to resume SDL audio stream: {}", SDL_GetError());
             SDL_DestroyAudioStream(stream);
