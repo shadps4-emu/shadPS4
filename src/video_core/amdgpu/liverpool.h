@@ -889,11 +889,11 @@ struct Liverpool {
             return !info.linear_general;
         }
 
-        [[nodiscard]] DataFormat DataFormat() const {
+        [[nodiscard]] DataFormat GetDataFmt() const {
             return RemapDataFormat(info.format);
         }
 
-        [[nodiscard]] NumberFormat NumFormat() const {
+        [[nodiscard]] NumberFormat GetNumberFmt() const {
             // There is a small difference between T# and CB number types, account for it.
             return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
                                          ? NumberFormat::Srgb
