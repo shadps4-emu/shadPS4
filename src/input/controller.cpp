@@ -141,18 +141,76 @@ void GameController::Acceleration(int id, const float acceleration[3]) {
 
     AddState(state);
 }
+
+// Stolen from
+// https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU/blob/master/x-IMU%20IMU%20and%20AHRS%20Algorithms/x-IMU%20IMU%20and%20AHRS%20Algorithms/AHRS/MahonyAHRS.cs
+float eInt[3] = {0.0f, 0.0f, 0.0f}; // Integral error terms
+const float Kp = 50.0f;             // Proportional gain
+const float Ki = 1.0f;              // Integral gain
+Libraries::Pad::OrbisFQuaternion o = {1, 0, 0, 0};
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                           Libraries::Pad::OrbisFVector3& angularVelocity,
                                           float deltaTime,
                                           Libraries::Pad::OrbisFQuaternion& orientation) {
-    float acceleration_vec_len =
-        sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y +
-             acceleration.z * acceleration.z);
-    orientation.x = acceleration.x / acceleration_vec_len;
-    orientation.y = acceleration.y / acceleration_vec_len;
-    orientation.z = acceleration.z / acceleration_vec_len;
-    orientation.w = 0.0f;
-    LOG_DEBUG(Lib_Pad, "Calculated orientation: {:2f} {:2f} {:2f} {:2f}", orientation.x,
+    float ax = acceleration.x, ay = acceleration.y, az = acceleration.z;
+    float gx = angularVelocity.x, gy = angularVelocity.y, gz = angularVelocity.z;
+
+    float q1 = o.w, q2 = o.x, q3 = o.y, q4 = o.z;
+
+    // Normalize accelerometer measurement
+    float norm = std::sqrt(ax * ax + ay * ay + az * az);
+    if (norm == 0.0f)
+        return; // Handle NaN
+    norm = 1.0f / norm;
+    ax *= norm;
+    ay *= norm;
+    az *= norm;
+
+    // Estimated direction of gravity
+    float vx = 2.0f * (q2 * q4 - q1 * q3);
+    float vy = 2.0f * (q1 * q2 + q3 * q4);
+    float vz = q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4;
+
+    // Error is cross product between estimated direction and measured direction of gravity
+    float ex = (ay * vz - az * vy);
+    float ey = (az * vx - ax * vz);
+    float ez = (ax * vy - ay * vx);
+    if (Ki > 0.0f) {
+        eInt[0] += ex * deltaTime; // Accumulate integral error
+        eInt[1] += ey * deltaTime;
+        eInt[2] += ez * deltaTime;
+    } else {
+        eInt[0] = eInt[1] = eInt[2] = 0.0f; // Prevent integral wind-up
+    }
+
+    // Apply feedback terms
+    gx += Kp * ex + Ki * eInt[0];
+    gy += Kp * ey + Ki * eInt[1];
+    gz += Kp * ez + Ki * eInt[2];
+
+    //// Integrate rate of change of quaternion
+    // float pa = q2, pb = q3, pc = q4;
+    // q1 += (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltaTime);
+    // q2 += (pa * gx + pb * gz - pc * gy) * (0.5f * deltaTime);
+    // q3 += (pb * gy - pa * gz + pc * gx) * (0.5f * deltaTime);
+    // q4 += (pc * gz + pa * gy - pb * gx) * (0.5f * deltaTime);
+    q1 += (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltaTime);
+    q2 += (q1 * gx + q3 * gz - q4 * gy) * (0.5f * deltaTime);
+    q3 += (q1 * gy - q2 * gz + q4 * gx) * (0.5f * deltaTime);
+    q4 += (q1 * gz + q2 * gy - q3 * gx) * (0.5f * deltaTime);
+
+    // Normalize quaternion
+    norm = std::sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
+    norm = 1.0f / norm;
+    orientation.w = q1 * norm;
+    orientation.x = q2 * norm;
+    orientation.y = q3 * norm;
+    orientation.z = q4 * norm;
+    o.w = q1 * norm;
+    o.x = q2 * norm;
+    o.y = q3 * norm;
+    o.z = q4 * norm;
+    LOG_DEBUG(Lib_Pad, "Calculated orientation: {:.2f} {:.2f} {:.2f} {:.2f}", orientation.x,
               orientation.y, orientation.z, orientation.w);
 }
 

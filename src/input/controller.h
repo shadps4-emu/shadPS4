@@ -28,7 +28,6 @@ struct TouchpadEntry {
     u16 y{};
 };
 
-
 struct State {
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
@@ -37,7 +36,7 @@ struct State {
     Libraries::Pad::OrbisFVector3 acceleration = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFQuaternion orientation = {0.0f, 0.0f, 0.0f, 1.0f};
-};
+}; 
 
 inline int GetAxis(int min, int max, int value) {
     int v = (255 * (value - min)) / (max - min);
