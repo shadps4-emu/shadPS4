@@ -78,6 +78,8 @@ static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
         return vk::Format::eD16Unorm;
     } else if (fmt == vk::Format::eR8G8B8A8Unorm) {
         return vk::Format::eR32Uint;
+    } else if (fmt == vk::Format::eR8G8B8A8Srgb) {
+        return vk::Format::eR32Uint;
     }
     UNREACHABLE();
 }
