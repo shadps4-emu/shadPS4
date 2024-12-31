@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/singleton.h>
+#include <core/libraries/error_codes.h>
 #include <core/libraries/libs.h>
 #include "posix_net.h"
 
@@ -28,12 +29,12 @@ int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, soc
 }
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
-    int listen = netcall->net_listen(sockfd,backlog);
+    int listen = netcall->net_listen(sockfd, backlog);
     // todo check for errors
     return listen;
 }
 int PS4_SYSV_ABI posix_accept(int sockfd, struct OrbisNetSockaddr* addr, socklen_t* addrlen) {
-    return 0;
+    return ORBIS_OK;
 }
 
 void RegisterNet(Core::Loader::SymbolsResolver* sym) {
@@ -51,6 +52,7 @@ int NetPosixInternal::net_socket(int domain, int type, int protocol) {
     s_socket sock = ::socket(domain, type, protocol);
     auto id = ++next_id;
     socks.emplace(id, sock);
+    LOG_INFO(Lib_Kernel, "socket created with id = {}", id);
     return id;
 }
 
@@ -58,9 +60,9 @@ static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr
     if (src == nullptr || dst == nullptr)
         return;
     memset(dst, 0, sizeof(sockaddr));
-    const OrbisNetSockaddr* src_in = (const OrbisNetSockaddr*)src;
+    const OrbisNetSockaddrIn* src_in = (const OrbisNetSockaddrIn*)src;
     sockaddr_in* dst_in = (sockaddr_in*)dst;
-    dst_in->sin_family = src_in->sa_family;
+    dst_in->sin_family = src_in->sin_family;
     dst_in->sin_port = src_in->sin_port;
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
@@ -81,7 +83,7 @@ int NetPosixInternal::net_listen(int sockfd, int backlog) {
     const auto it = socks.find(sockfd);
     if (it != socks.end()) {
         s_socket sock = it->second;
-        return ::listen(sock,backlog);
+        return ::listen(sock, backlog);
     }
     return 0; // TODO logging and error return
 }
