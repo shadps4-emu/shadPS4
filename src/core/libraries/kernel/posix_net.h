@@ -8,14 +8,20 @@
 #include "common/types.h"
 
 #ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
 #include <iphlpapi.h>
 #include <winsock2.h>
 typedef SOCKET s_socket;
 #else
+#include <cerrno>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <unistd.h>
 typedef int s_socket;
 #endif
 #include <map>
