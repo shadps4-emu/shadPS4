@@ -10,8 +10,8 @@ body:
       value: |
         ## Important: Read First
 
-        Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only
-        If you need help using the emulator or unsure about your issue please contact us on [discord](https://discord.gg/bFJxfftGW6).
+        **Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only.
+        If you have a support request or are unsure about the nature of your issue please contact us on [discord](https://discord.gg/bFJxfftGW6).**
 
         You can also check the [Game Compatibility Repository](https://github.com/shadps4-emu/shadps4-game-compatibility) for the information about the status of the game.
 
