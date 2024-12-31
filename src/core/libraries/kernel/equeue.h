@@ -21,7 +21,7 @@ class EqueueInternal;
 struct EqueueEvent;
 
 struct SceKernelEvent {
-    enum Filter : int {
+    enum Filter : s16 {
         None = 0,
         Read = -1,
         Write = -2,
