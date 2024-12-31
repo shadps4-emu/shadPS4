@@ -283,6 +283,19 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (eq->HasSmallTimer()) {
+        return eq->RemoveSmallTimer(id) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOENT;
+    } else {
+        return eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer) ? ORBIS_OK
+                                                                    : ORBIS_KERNEL_ERROR_ENOENT;
+    }
+}
+
 int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -362,6 +375,7 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4R6-OvI2cEA", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEvent);
     LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEventEdge);
     LIB_FUNCTION("R74tt43xP6k", "libkernel", 1, "libkernel", 1, 1, sceKernelAddHRTimerEvent);
+    LIB_FUNCTION("J+LF6LwObXU", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteHRTimerEvent);
     LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", 1, 1, sceKernelTriggerUserEvent);
     LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteUserEvent);
     LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventId);

@@ -111,6 +111,13 @@ public:
     bool HasSmallTimer() const {
         return small_timer_event.event.data != 0;
     }
+    bool RemoveSmallTimer(u64 id) {
+        if (HasSmallTimer() && small_timer_event.event.ident == id) {
+            small_timer_event = {};
+            return true;
+        }
+        return false;
+    }
 
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
