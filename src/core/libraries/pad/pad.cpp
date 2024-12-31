@@ -248,8 +248,7 @@ int PS4_SYSV_ABI scePadMbusTerm() {
 }
 
 int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
-    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {} param = {}", userId, type,
-             index, (void*)pParam);
+    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
@@ -472,8 +471,8 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
     if (pParam != nullptr) {
-        //LOG_INFO(Lib_Pad, "scePadSetLightBar called handle = {} rgb = {} {} {}", handle, pParam->r,
-        //         pParam->g, pParam->b);
+        LOG_INFO(Lib_Pad, "scePadSetLightBar called handle = {} rgb = {} {} {}", handle, pParam->r,
+                 pParam->g, pParam->b);
 
         if (pParam->r < 0xD && pParam->g < 0xD && pParam->b < 0xD) {
             LOG_INFO(Lib_Pad, "Invalid lightbar setting");
@@ -546,8 +545,8 @@ int PS4_SYSV_ABI scePadSetUserColor() {
 
 int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pParam) {
     if (pParam != nullptr) {
-        //LOG_DEBUG(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
-        //          pParam->smallMotor, pParam->largeMotor);
+        LOG_DEBUG(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
+                  pParam->smallMotor, pParam->largeMotor);
         auto* controller = Common::Singleton<Input::GameController>::Instance();
         controller->SetVibration(pParam->smallMotor, pParam->largeMotor);
         return ORBIS_OK;
