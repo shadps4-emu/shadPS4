@@ -285,21 +285,8 @@ int PS4_SYSV_ABI scePadOutputReport() {
     return ORBIS_OK;
 }
 
-void CalculateOrientation(const OrbisFVector3& acceleration, const OrbisFVector3& angularVelocity,
-                          float deltaTime, OrbisFQuaternion& orientation) {
-    float acceleration_vec_len =
-        sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y +
-             acceleration.z * acceleration.z);
-    orientation.x = acceleration.x / acceleration_vec_len;
-    orientation.y = acceleration.y / acceleration_vec_len;
-    orientation.z = acceleration.z / acceleration_vec_len;
-    orientation.w = 0.0f;
-    LOG_DEBUG(Lib_Pad, "Calculated orientation: {:2f} {:2f} {:2f} {:2f}", orientation.x,
-             orientation.y, orientation.z, orientation.w);
-}
-
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
-    LOG_DEBUG(Lib_Pad, "called");
+    LOG_TRACE(Lib_Pad, "called");
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
@@ -318,15 +305,15 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].rightStick.y = states[i].axes[static_cast<int>(Input::Axis::RightY)];
         pData[i].analogButtons.l2 = states[i].axes[static_cast<int>(Input::Axis::TriggerLeft)];
         pData[i].analogButtons.r2 = states[i].axes[static_cast<int>(Input::Axis::TriggerRight)];
-        pData[i].acceleration.x = states[i].acceleration[0];
-        pData[i].acceleration.y = states[i].acceleration[1];
-        pData[i].acceleration.z = states[i].acceleration[2];
-        pData[i].angularVelocity.x = states[i].angularVelocity[0];
-        pData[i].angularVelocity.y = states[i].angularVelocity[1];
-        pData[i].angularVelocity.z = states[i].angularVelocity[2];
-        CalculateOrientation(pData[i].acceleration, pData[i].angularVelocity,
-                             1.0f / controller->accel_poll_rate,
-                             pData[i].orientation);
+        pData[i].acceleration.x = states[i].acceleration.x;
+        pData[i].acceleration.y = states[i].acceleration.y;
+        pData[i].acceleration.z = states[i].acceleration.z;
+        pData[i].angularVelocity.x = states[i].angularVelocity.x;
+        pData[i].angularVelocity.y = states[i].angularVelocity.y;
+        pData[i].angularVelocity.z = states[i].angularVelocity.z;
+        Input::GameController::CalculateOrientation(pData[i].acceleration, pData[i].angularVelocity,
+                                                    1.0f / controller->accel_poll_rate,
+                                                    pData[i].orientation);
         pData[i].touchData.touchNum =
             (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
         pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
@@ -365,7 +352,7 @@ int PS4_SYSV_ABI scePadReadHistory() {
 }
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
-    LOG_DEBUG(Lib_Pad, "called");
+    LOG_TRACE(Lib_Pad, "called");
     if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -381,13 +368,15 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->rightStick.y = state.axes[static_cast<int>(Input::Axis::RightY)];
     pData->analogButtons.l2 = state.axes[static_cast<int>(Input::Axis::TriggerLeft)];
     pData->analogButtons.r2 = state.axes[static_cast<int>(Input::Axis::TriggerRight)];
-    pData->acceleration.x = state.acceleration[0];
-    pData->acceleration.y = state.acceleration[1];
-    pData->acceleration.z = state.acceleration[2];
-    pData->angularVelocity.x = state.angularVelocity[0];
-    pData->angularVelocity.y = state.angularVelocity[1];
-    pData->angularVelocity.z = state.angularVelocity[2];
-    CalculateOrientation(pData->acceleration, pData->angularVelocity, 1.0f / controller->accel_poll_rate, pData->orientation);
+    pData->acceleration.x = state.acceleration.x;
+    pData->acceleration.y = state.acceleration.y;
+    pData->acceleration.z = state.acceleration.z;
+    pData->angularVelocity.x = state.angularVelocity.x;
+    pData->angularVelocity.y = state.angularVelocity.y;
+    pData->angularVelocity.z = state.angularVelocity.z;
+    Input::GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
+                                                1.0f / controller->accel_poll_rate,
+                                                pData->orientation);
     pData->touchData.touchNum =
         (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
     pData->touchData.touch[0].x = state.touchpad[0].x;
@@ -508,7 +497,7 @@ int PS4_SYSV_ABI scePadSetLoginUserNumber() {
 
 int PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool bEnable) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK; 
+    return ORBIS_OK;
     // it's already handled by the SDL backend and will be on no matter what
     // (assuming the controller supports it)
 }

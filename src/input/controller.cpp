@@ -118,30 +118,42 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
 }
 
 void GameController::Gyro(int id, const float gyro[3]) {
-    //LOG_DEBUG(Lib_Pad, "Gyro update: {} {} {}", gyro[0], gyro[1], gyro[2]);
     std::scoped_lock lock{m_mutex};
     auto state = GetLastState();
     state.time = Libraries::Kernel::sceKernelGetProcessTime();
 
     // Update the angular velocity (gyro data)
-    state.angularVelocity[0] = gyro[0]; // X-axis
-    state.angularVelocity[1] = gyro[1]; // Y-axis
-    state.angularVelocity[2] = gyro[2]; // Z-axis
+    state.angularVelocity.x = gyro[0]; // X-axis
+    state.angularVelocity.y = gyro[1]; // Y-axis
+    state.angularVelocity.z = gyro[2]; // Z-axis
 
     AddState(state);
 }
 void GameController::Acceleration(int id, const float acceleration[3]) {
-    //LOG_DEBUG(Lib_Pad, "Accel update: {} {} {}", acceleration[0], acceleration[1], acceleration[2]);
     std::scoped_lock lock{m_mutex};
     auto state = GetLastState();
     state.time = Libraries::Kernel::sceKernelGetProcessTime();
 
     // Update the acceleration values
-    state.acceleration[0] = acceleration[0]; // X-axis
-    state.acceleration[1] = acceleration[1]; // Y-axis
-    state.acceleration[2] = acceleration[2]; // Z-axis
+    state.acceleration.x = acceleration[0]; // X-axis
+    state.acceleration.y = acceleration[1]; // Y-axis
+    state.acceleration.z = acceleration[2]; // Z-axis
 
     AddState(state);
+}
+void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
+                                          Libraries::Pad::OrbisFVector3& angularVelocity,
+                                          float deltaTime,
+                                          Libraries::Pad::OrbisFQuaternion& orientation) {
+    float acceleration_vec_len =
+        sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y +
+             acceleration.z * acceleration.z);
+    orientation.x = acceleration.x / acceleration_vec_len;
+    orientation.y = acceleration.y / acceleration_vec_len;
+    orientation.z = acceleration.z / acceleration_vec_len;
+    orientation.w = 0.0f;
+    LOG_DEBUG(Lib_Pad, "Calculated orientation: {:2f} {:2f} {:2f} {:2f}", orientation.x,
+              orientation.y, orientation.z, orientation.w);
 }
 
 void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {

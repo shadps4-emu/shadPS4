@@ -28,13 +28,15 @@ struct TouchpadEntry {
     u16 y{};
 };
 
+
 struct State {
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
     int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
-    float acceleration[3] = {0.0f, 0.0f, 0.0f};
-    float angularVelocity[3] = {0.0f, 0.0f, 0.0f};
+    Libraries::Pad::OrbisFVector3 acceleration = {0.0f, 0.0f, 0.0f};
+    Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
+    Libraries::Pad::OrbisFQuaternion orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 inline int GetAxis(int min, int max, int value) {
@@ -65,6 +67,10 @@ public:
 
     float gyro_poll_rate;
     float accel_poll_rate;
+    static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
+                                     Libraries::Pad::OrbisFVector3& angularVelocity,
+                                     float deltaTime,
+                                     Libraries::Pad::OrbisFQuaternion& orientation);
 
 private:
     struct StateInternal {
