@@ -248,7 +248,8 @@ int PS4_SYSV_ABI scePadMbusTerm() {
 }
 
 int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
-    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
+    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {} param = {}", userId, type,
+             index, (void*)pParam);
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
@@ -285,17 +286,21 @@ int PS4_SYSV_ABI scePadOutputReport() {
     return ORBIS_OK;
 }
 
-OrbisFQuaternion UpdateOrientation(const OrbisFVector3& acceleration) {
-    OrbisFQuaternion orientation;
-    orientation.x = acceleration.x / 9.8f; // uhh suggestions on this are welcome
-    orientation.y = acceleration.y / 9.8f;
-    orientation.z = acceleration.z / 9.8f;
-    orientation.w  = 0;
-
-    return orientation;
+void CalculateOrientation(const OrbisFVector3& acceleration, const OrbisFVector3& angularVelocity,
+                          float deltaTime, OrbisFQuaternion& orientation) {
+    float acceleration_vec_len =
+        sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y +
+             acceleration.z * acceleration.z);
+    orientation.x = acceleration.x / acceleration_vec_len;
+    orientation.y = acceleration.y / acceleration_vec_len;
+    orientation.z = acceleration.z / acceleration_vec_len;
+    orientation.w = 0.0f;
+    LOG_DEBUG(Lib_Pad, "Calculated orientation: {:2f} {:2f} {:2f} {:2f}", orientation.x,
+             orientation.y, orientation.z, orientation.w);
 }
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
+    LOG_DEBUG(Lib_Pad, "called");
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
@@ -320,7 +325,9 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.x = states[i].angularVelocity[0];
         pData[i].angularVelocity.y = states[i].angularVelocity[1];
         pData[i].angularVelocity.z = states[i].angularVelocity[2];
-        pData[i].orientation = UpdateOrientation(pData[i].acceleration);
+        CalculateOrientation(pData[i].acceleration, pData[i].angularVelocity,
+                             1.0f / controller->accel_poll_rate,
+                             pData[i].orientation);
         pData[i].touchData.touchNum =
             (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
         pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
@@ -359,6 +366,7 @@ int PS4_SYSV_ABI scePadReadHistory() {
 }
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
+    LOG_DEBUG(Lib_Pad, "called");
     if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -380,7 +388,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->angularVelocity.x = state.angularVelocity[0];
     pData->angularVelocity.y = state.angularVelocity[1];
     pData->angularVelocity.z = state.angularVelocity[2];
-    pData->orientation = UpdateOrientation(pData->acceleration);
+    CalculateOrientation(pData->acceleration, pData->angularVelocity, 1.0f / controller->accel_poll_rate, pData->orientation);
     pData->touchData.touchNum =
         (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
     pData->touchData.touch[0].x = state.touchpad[0].x;
@@ -500,8 +508,10 @@ int PS4_SYSV_ABI scePadSetLoginUserNumber() {
 }
 
 int PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool bEnable) {
-    LOG_ERROR(Lib_Pad, "(DUMMY) called");
-    return 1; // true?
+    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    return ORBIS_OK; 
+    // it's already handled by the SDL backend and will be on no matter what
+    // (assuming the controller supports it)
 }
 
 int PS4_SYSV_ABI scePadSetProcessFocus() {

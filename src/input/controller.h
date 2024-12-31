@@ -63,6 +63,9 @@ public:
     void TryOpenSDLController();
     u32 Poll();
 
+    float gyro_poll_rate;
+    float accel_poll_rate;
+
 private:
     struct StateInternal {
         bool obtained = false;
