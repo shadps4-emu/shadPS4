@@ -283,6 +283,9 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
     const char* log_path = crash_diagnostic_path.c_str();
     vk::Bool32 enable_force_barriers = vk::True;
+#ifdef __APPLE__
+    const vk::Bool32 mvk_debug_mode = enable_crash_diagnostic ? vk::True : vk::False;
+#endif
 
     const std::array layer_setings = {
         vk::LayerSettingEXT{
@@ -356,7 +359,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
             .pSettingName = "MVK_CONFIG_DEBUG",
             .type = vk::LayerSettingTypeEXT::eBool32,
             .valueCount = 1,
-            .pValues = &enable_crash_diagnostic,
+            .pValues = &mvk_debug_mode,
         }
 #endif
     };

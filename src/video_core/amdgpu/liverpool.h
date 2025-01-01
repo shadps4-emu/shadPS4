@@ -889,10 +889,54 @@ struct Liverpool {
             return !info.linear_general;
         }
 
-        NumberFormat NumFormat() const {
+        [[nodiscard]] DataFormat DataFormat() const {
+            return RemapDataFormat(info.format);
+        }
+
+        [[nodiscard]] NumberFormat NumFormat() const {
             // There is a small difference between T# and CB number types, account for it.
-            return info.number_type == AmdGpu::NumberFormat::SnormNz ? AmdGpu::NumberFormat::Srgb
-                                                                     : info.number_type.Value();
+            return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
+                                         ? NumberFormat::Srgb
+                                         : info.number_type.Value());
+        }
+
+        [[nodiscard]] CompMapping Swizzle() const {
+            // clang-format off
+            static constexpr std::array<std::array<CompMapping, 4>, 4> mrt_swizzles{{
+                // Standard
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Blue, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Blue, .a = CompSwizzle::Alpha},
+                }},
+                // Alternate
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Alpha, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Alpha, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Alpha},
+                }},
+                // StandardReverse
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Blue, .b = CompSwizzle::Green, .a = CompSwizzle::Red},
+                }},
+                // AlternateReverse
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Green, .a = CompSwizzle::Blue},
+                }},
+            }};
+            // clang-format on
+            const auto swap_idx = static_cast<u32>(info.comp_swap.Value());
+            const auto components_idx = NumComponents(info.format) - 1;
+            const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
+            return RemapComponents(info.format, mrt_swizzle);
         }
     };
 

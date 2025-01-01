@@ -9,6 +9,7 @@
 #include "core/libraries/ajm/ajm_context.h"
 #include "core/libraries/ajm/ajm_error.h"
 #include "core/libraries/ajm/ajm_instance.h"
+#include "core/libraries/ajm/ajm_instance_statistics.h"
 #include "core/libraries/ajm/ajm_mp3.h"
 #include "core/libraries/error_codes.h"
 
@@ -70,15 +71,19 @@ void AjmContext::ProcessBatch(u32 id, std::span<AjmJob> jobs) {
         LOG_TRACE(Lib_Ajm, "Processing job {} for instance {}. flags = {:#x}", id, job.instance_id,
                   job.flags.raw);
 
-        std::shared_ptr<AjmInstance> instance;
-        {
-            std::shared_lock lock(instances_mutex);
-            auto* p_instance = instances.Get(job.instance_id);
-            ASSERT_MSG(p_instance != nullptr, "Attempting to execute job on null instance");
-            instance = *p_instance;
-        }
+        if (job.instance_id == AJM_INSTANCE_STATISTICS) {
+            AjmInstanceStatistics::Getinstance().ExecuteJob(job);
+        } else {
+            std::shared_ptr<AjmInstance> instance;
+            {
+                std::shared_lock lock(instances_mutex);
+                auto* p_instance = instances.Get(job.instance_id);
+                ASSERT_MSG(p_instance != nullptr, "Attempting to execute job on null instance");
+                instance = *p_instance;
+            }
 
-        instance->ExecuteJob(job);
+            instance->ExecuteJob(job);
+        }
     }
 }
 

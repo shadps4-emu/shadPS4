@@ -180,7 +180,7 @@ struct FragmentRuntimeInfo {
     std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
         AmdGpu::NumberFormat num_format;
-        MrtSwizzle mrt_swizzle;
+        AmdGpu::CompMapping swizzle;
 
         auto operator<=>(const PsColorBuffer&) const noexcept = default;
     };

@@ -74,6 +74,26 @@ union AjmJobFlags {
     };
 };
 
+enum class AjmStatisticsFlags : u64 {
+    Memory = 1 << 0,
+    EnginePerCodec = 1 << 15,
+    Engine = 1 << 16,
+};
+DECLARE_ENUM_FLAG_OPERATORS(AjmStatisticsFlags)
+
+union AjmStatisticsJobFlags {
+    AjmStatisticsJobFlags(AjmJobFlags job_flags) : raw(job_flags.raw) {}
+
+    u64 raw;
+    struct {
+        u64 version : 3;
+        u64 : 12;
+        AjmStatisticsFlags statistics_flags : 17;
+        u64 : 32;
+    };
+};
+static_assert(sizeof(AjmStatisticsJobFlags) == 8);
+
 struct AjmSidebandResult {
     s32 result;
     s32 internal_result;
@@ -124,6 +144,31 @@ struct AjmDecAt9InitializeParameters {
 union AjmSidebandInitParameters {
     AjmDecAt9InitializeParameters at9;
     u8 reserved[8];
+};
+
+struct AjmSidebandStatisticsEngine {
+    float usage_batch;
+    float usage_interval[3];
+};
+
+struct AjmSidebandStatisticsEnginePerCodec {
+    u8 codec_count;
+    u8 codec_id[3];
+    float codec_percentage[3];
+};
+
+struct AjmSidebandStatisticsMemory {
+    u32 instance_free;
+    u32 buffer_free;
+    u32 batch_size;
+    u32 input_size;
+    u32 output_size;
+    u32 small_size;
+};
+
+struct AjmSidebandStatisticsEngineParameters {
+    u32 interval_count;
+    float interval[3];
 };
 
 union AjmInstanceFlags {
@@ -178,8 +223,8 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmI
 int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context, u32 instance);
 int PS4_SYSV_ABI sceAjmInstanceExtend();
 int PS4_SYSV_ABI sceAjmInstanceSwitch();
-int PS4_SYSV_ABI sceAjmMemoryRegister();
-int PS4_SYSV_ABI sceAjmMemoryUnregister();
+int PS4_SYSV_ABI sceAjmMemoryRegister(u32 context_id, void* ptr, size_t num_pages);
+int PS4_SYSV_ABI sceAjmMemoryUnregister(u32 context_id, void* ptr);
 int PS4_SYSV_ABI sceAjmModuleRegister(u32 context, AjmCodecType codec_type, s64 reserved);
 int PS4_SYSV_ABI sceAjmModuleUnregister();
 int PS4_SYSV_ABI sceAjmStrError();

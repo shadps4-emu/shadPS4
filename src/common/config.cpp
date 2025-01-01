@@ -68,7 +68,6 @@ static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey = "";
-static std::string audioBackend = "cubeb";
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -249,10 +248,6 @@ bool getCheckCompatibilityOnStartup() {
     return checkCompatibilityOnStartup;
 }
 
-std::string getAudioBackend() {
-    return audioBackend;
-}
-
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -383,10 +378,6 @@ void setCompatibilityEnabled(bool use) {
 
 void setCheckCompatibilityOnStartup(bool use) {
     checkCompatibilityOnStartup = use;
-}
-
-void setAudioBackend(std::string backend) {
-    audioBackend = backend;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -629,12 +620,6 @@ void load(const std::filesystem::path& path) {
         vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
     }
 
-    if (data.contains("Audio")) {
-        const toml::value& audio = data.at("Audio");
-
-        audioBackend = toml::find_or<std::string>(audio, "backend", "cubeb");
-    }
-
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
@@ -738,7 +723,6 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
-    data["Audio"]["backend"] = audioBackend;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
 
@@ -844,7 +828,6 @@ void setDefaultValues() {
     separateupdatefolder = false;
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
-    audioBackend = "cubeb";
 }
 
 } // namespace Config

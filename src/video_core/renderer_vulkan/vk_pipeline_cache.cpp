@@ -168,7 +168,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = {
                 .num_format = graphics_key.color_num_formats[i],
-                .mrt_swizzle = static_cast<Shader::MrtSwizzle>(graphics_key.mrt_swizzles[i]),
+                .swizzle = graphics_key.color_swizzles[i],
             };
         }
         break;
@@ -304,7 +304,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
     key.blend_controls.fill({});
     key.write_masks.fill({});
-    key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
+    key.color_swizzles.fill({});
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     key.patch_control_points = 0;
@@ -327,14 +327,10 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
 
-        const auto base_format =
-            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         key.color_formats[remapped_cb] =
-            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
+            LiverpoolToVK::SurfaceFormat(col_buf.DataFormat(), col_buf.NumFormat());
         key.color_num_formats[remapped_cb] = col_buf.NumFormat();
-        if (base_format == key.color_formats[remapped_cb]) {
-            key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
-        }
+        key.color_swizzles[remapped_cb] = col_buf.Swizzle();
     }
 
     fetch_shader = std::nullopt;
@@ -450,7 +446,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
             key.color_formats[remapped_cb] = vk::Format::eUndefined;
-            key.mrt_swizzles[remapped_cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+            key.color_swizzles[remapped_cb] = {};
             ++remapped_cb;
             continue;
         }

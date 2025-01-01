@@ -31,25 +31,6 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     }
 }
 
-vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
-    switch (dst_sel) {
-    case 0:
-        return vk::ComponentSwizzle::eZero;
-    case 1:
-        return vk::ComponentSwizzle::eOne;
-    case 4:
-        return vk::ComponentSwizzle::eR;
-    case 5:
-        return vk::ComponentSwizzle::eG;
-    case 6:
-        return vk::ComponentSwizzle::eB;
-    case 7:
-        return vk::ComponentSwizzle::eA;
-    default:
-        UNREACHABLE();
-    }
-}
-
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
     : is_storage{desc.IsStorage(image)} {
     const auto dfmt = image.GetDataFmt();
@@ -87,21 +68,15 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     if (!is_storage) {
-        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
     }
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept {
-    const auto base_format =
-        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
     range.base.layer = col_buffer.view.slice_start;
     range.extent.layers = col_buffer.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
-    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(base_format,
-                                                            col_buffer.info.comp_swap.Value());
+    format = Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.DataFormat(), col_buffer.NumFormat());
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,

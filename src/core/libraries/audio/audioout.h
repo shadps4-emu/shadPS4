@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "common/bit_field.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::AudioOut {
@@ -14,12 +15,12 @@ class PortBackend;
 
 // Main up to 8 ports, BGM 1 port, voice up to 4 ports,
 // personal up to 4 ports, padspk up to 5 ports, aux 1 port
-constexpr int SCE_AUDIO_OUT_NUM_PORTS = 22;
-constexpr int SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
+constexpr s32 SCE_AUDIO_OUT_NUM_PORTS = 22;
+constexpr s32 SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
 
 enum class OrbisAudioOutPort { Main = 0, Bgm = 1, Voice = 2, Personal = 3, Padspk = 4, Aux = 127 };
 
-enum class OrbisAudioOutParamFormat {
+enum class OrbisAudioOutParamFormat : u32 {
     S16Mono = 0,
     S16Stereo = 1,
     S16_8CH = 2,
@@ -30,7 +31,7 @@ enum class OrbisAudioOutParamFormat {
     Float_8CH_Std = 7
 };
 
-enum class OrbisAudioOutParamAttr {
+enum class OrbisAudioOutParamAttr : u32 {
     None = 0,
     Restricted = 1,
     MixToMain = 2,
@@ -59,19 +60,37 @@ struct OrbisAudioOutPortState {
     u64 reserved64[2];
 };
 
+struct AudioFormatInfo {
+    bool is_float;
+    u8 sample_size;
+    u8 num_channels;
+    /// Layout array remapping channel indices, specified in this order:
+    /// FL, FR, FC, LFE, BL, BR, SL, SR
+    std::array<int, 8> channel_layout;
+
+    [[nodiscard]] u16 FrameSize() const {
+        return sample_size * num_channels;
+    }
+};
+
 struct PortOut {
     std::unique_ptr<PortBackend> impl{};
 
+    void* output_buffer;
+    std::mutex output_mutex;
+    std::condition_variable_any output_cv;
+    bool output_ready;
+    Kernel::Thread output_thread{};
+
     OrbisAudioOutPort type;
-    OrbisAudioOutParamFormat format;
-    bool is_float;
-    u8 sample_size;
-    u8 channels_num;
-    u32 samples_num;
-    u32 frame_size;
-    u32 buffer_size;
-    u32 freq;
-    std::array<int, 8> volume;
+    AudioFormatInfo format_info;
+    u32 sample_rate;
+    u32 buffer_frames;
+    std::array<s32, 8> volume;
+
+    [[nodiscard]] u32 BufferSize() const {
+        return buffer_frames * format_info.FrameSize();
+    }
 };
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();

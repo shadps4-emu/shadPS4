@@ -347,9 +347,8 @@ public:
 
             if (selected == deleteUpdate) {
                 if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
-                    QMessageBox::critical(
-                        nullptr, tr("Error"),
-                        QString(tr("This game has no separate update to delete!")));
+                    QMessageBox::critical(nullptr, tr("Error"),
+                                          QString(tr("This game has no update to delete!")));
                     error = true;
                 } else {
                     folder_path = game_update_path;

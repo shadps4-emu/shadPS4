@@ -288,6 +288,12 @@ void IREmitter::SetTcsGenericAttribute(const F32& value, const U32& attr_index,
     Inst(Opcode::SetTcsGenericAttribute, value, attr_index, comp_index);
 }
 
+F32 IREmitter::ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& attr_index,
+                                            const U32& comp_index) {
+    return Inst<F32>(IR::Opcode::ReadTcsGenericOuputAttribute, vertex_index, attr_index,
+                     comp_index);
+}
+
 F32 IREmitter::GetPatch(Patch patch) {
     return Inst<F32>(Opcode::GetPatch, patch);
 }
@@ -654,6 +660,86 @@ Value IREmitter::CompositeInsert(const Value& vector, const Value& object, size_
         return insert(Opcode::CompositeInsertF64x4, 4);
     default:
         ThrowInvalidType(vector.Type());
+    }
+}
+
+Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                  size_t comp1) {
+    if (vector1.Type() != vector2.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", vector1.Type(), vector2.Type());
+    }
+    if (comp0 >= 4 || comp1 >= 4) {
+        UNREACHABLE_MSG("One or more out of bounds elements {}, {}", comp0, comp1);
+    }
+    const auto shuffle{[&](Opcode opcode) -> Value {
+        return Inst(opcode, vector1, vector2, Value{static_cast<u32>(comp0)},
+                    Value{static_cast<u32>(comp1)});
+    }};
+    switch (vector1.Type()) {
+    case Type::U32x4:
+        return shuffle(Opcode::CompositeShuffleU32x2);
+    case Type::F16x4:
+        return shuffle(Opcode::CompositeShuffleF16x2);
+    case Type::F32x4:
+        return shuffle(Opcode::CompositeShuffleF32x2);
+    case Type::F64x4:
+        return shuffle(Opcode::CompositeShuffleF64x2);
+    default:
+        ThrowInvalidType(vector1.Type());
+    }
+}
+
+Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                  size_t comp1, size_t comp2) {
+    if (vector1.Type() != vector2.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", vector1.Type(), vector2.Type());
+    }
+    if (comp0 >= 6 || comp1 >= 6 || comp2 >= 6) {
+        UNREACHABLE_MSG("One or more out of bounds elements {}, {}, {}", comp0, comp1, comp2);
+    }
+    const auto shuffle{[&](Opcode opcode) -> Value {
+        return Inst(opcode, vector1, vector2, Value{static_cast<u32>(comp0)},
+                    Value{static_cast<u32>(comp1)}, Value{static_cast<u32>(comp2)});
+    }};
+    switch (vector1.Type()) {
+    case Type::U32x4:
+        return shuffle(Opcode::CompositeShuffleU32x3);
+    case Type::F16x4:
+        return shuffle(Opcode::CompositeShuffleF16x3);
+    case Type::F32x4:
+        return shuffle(Opcode::CompositeShuffleF32x3);
+    case Type::F64x4:
+        return shuffle(Opcode::CompositeShuffleF64x3);
+    default:
+        ThrowInvalidType(vector1.Type());
+    }
+}
+
+Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, size_t comp0,
+                                  size_t comp1, size_t comp2, size_t comp3) {
+    if (vector1.Type() != vector2.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", vector1.Type(), vector2.Type());
+    }
+    if (comp0 >= 8 || comp1 >= 8 || comp2 >= 8 || comp3 >= 8) {
+        UNREACHABLE_MSG("One or more out of bounds elements {}, {}, {}, {}", comp0, comp1, comp2,
+                        comp3);
+    }
+    const auto shuffle{[&](Opcode opcode) -> Value {
+        return Inst(opcode, vector1, vector2, Value{static_cast<u32>(comp0)},
+                    Value{static_cast<u32>(comp1)}, Value{static_cast<u32>(comp2)},
+                    Value{static_cast<u32>(comp3)});
+    }};
+    switch (vector1.Type()) {
+    case Type::U32x4:
+        return shuffle(Opcode::CompositeShuffleU32x4);
+    case Type::F16x4:
+        return shuffle(Opcode::CompositeShuffleF16x4);
+    case Type::F32x4:
+        return shuffle(Opcode::CompositeShuffleF32x4);
+    case Type::F64x4:
+        return shuffle(Opcode::CompositeShuffleF64x4);
+    default:
+        ThrowInvalidType(vector1.Type());
     }
 }
 

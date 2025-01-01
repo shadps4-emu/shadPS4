@@ -20,7 +20,7 @@ layout(push_constant) uniform image_info {
 } info;
 
 // Inverse morton LUT, small enough to fit into K$
-uint rmort[16] = {
+const uint rmort[16] = {
     0x11011000, 0x31213020,
     0x13031202, 0x33233222,
     0x51415040, 0x71617060,
