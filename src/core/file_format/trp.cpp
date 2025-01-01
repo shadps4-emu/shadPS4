@@ -34,6 +34,13 @@ static void removePadding(std::vector<u8>& vec) {
     }
 }
 
+static void hexToBytes(const char* hex, unsigned char* dst) {
+    for (size_t i = 0; hex[i] != 0; i++) {
+        const unsigned char value = (hex[i] < 0x3A) ? (hex[i] - 0x30) : (hex[i] - 0x37);
+        dst[i / 2] |= ((i % 2) == 0) ? (value << 4) : (value);
+    }
+}
+
 bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
     if (!std::filesystem::exists(gameSysDir)) {
@@ -41,13 +48,15 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
         return false;
     }
 
-    const auto user_key = Config::getTrophyKey();
-    if (user_key.size() != 16) {
+    const auto user_key_str = Config::getTrophyKey();
+    if (user_key_str.size() != 32) {
         LOG_CRITICAL(Common_Filesystem, "Trophy decryption key is not specified");
         return false;
     }
 
-    const std::span<CryptoPP::byte, 16> key{(CryptoPP::byte*)user_key.data(), 16};
+    std::array<CryptoPP::byte, 16> user_key{};
+    hexToBytes(user_key_str.c_str(), user_key.data());
+    const std::span<CryptoPP::byte, 16> key{user_key.data(), user_key.size()};
 
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
         if (it.is_regular_file()) {

@@ -67,7 +67,7 @@ static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
-static std::vector<u8> trophyKey;
+static std::string trophyKey;
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -92,11 +92,11 @@ std::string emulator_language = "en";
 // Language
 u32 m_language = 1; // english
 
-std::vector<u8> getTrophyKey() {
+std::string getTrophyKey() {
     return trophyKey;
 }
 
-void setTrophyKey(std::vector<u8> key) {
+void setTrophyKey(std::string key) {
     trophyKey = key;
 }
 
@@ -664,9 +664,7 @@ void load(const std::filesystem::path& path) {
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
-        if (keys.contains("TrophyKey") && keys.at("TrophyKey").is_array()) {
-            trophyKey = toml::find<std::vector<u8>>(keys, "TrophyKey");
-        }
+        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
     }
 }
 
