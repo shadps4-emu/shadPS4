@@ -247,6 +247,7 @@ public:
     void V_MAX_F64(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
+    void V_MUL_HI_I32(bool is_signed, const GcnInst& inst);
     void V_MAD_U64_U32(const GcnInst& inst);
 
     // Vector interpolation

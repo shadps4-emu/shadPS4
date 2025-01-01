@@ -387,6 +387,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_LO_U32(inst);
     case Opcode::V_MUL_HI_U32:
         return V_MUL_HI_U32(false, inst);
+    case Opcode::V_MUL_HI_I32:
+        return V_MUL_HI_U32(false, inst);
     case Opcode::V_MUL_LO_I32:
         return V_MUL_LO_U32(inst);
     case Opcode::V_MAD_U64_U32:
