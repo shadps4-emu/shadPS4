@@ -15,8 +15,8 @@ void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 void saveMainWindow(const std::filesystem::path& path);
 
-std::string getTrophyKey();
-void setTrophyKey(std::string key);
+std::vector<u8> getTrophyKey();
+void setTrophyKey(std::vector<u8> key);
 
 bool isNeoMode();
 bool isFullscreenMode();
