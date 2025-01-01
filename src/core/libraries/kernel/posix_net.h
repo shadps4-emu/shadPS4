@@ -68,6 +68,7 @@ public:
     int net_socket(int domain, int type, int protocol);
     int net_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
     int net_listen(int sockfd, int backlog);
+    int net_connect(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen);
 
 public:
     s_socket sock;

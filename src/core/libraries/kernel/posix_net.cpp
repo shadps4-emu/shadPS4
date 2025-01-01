@@ -16,8 +16,12 @@ int PS4_SYSV_ABI posix_socket(int domain, int type, int protocol) {
     return socket;
 }
 int PS4_SYSV_ABI posix_connect(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
-    LOG_ERROR(Lib_Kernel, "(STUBBED) callled");
-    return 0;
+    auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
+    int connect = netcall->net_connect(sockfd, addr, addrlen);
+    if (connect < 0) {
+        LOG_ERROR(Lib_Kernel, "error in connect = {}", connect);
+    }
+    return connect;
 }
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
     return htonl(hostlong);
@@ -93,6 +97,18 @@ int NetPosixInternal::net_listen(int sockfd, int backlog) {
     if (it != socks.end()) {
         s_socket sock = it->second;
         return ::listen(sock, backlog);
+    }
+    return 0; // TODO logging and error return
+}
+
+int NetPosixInternal::net_connect(int sockfd, const OrbisNetSockaddr* addr, socklen_t addrlen) {
+    std::scoped_lock lock{m_mutex};
+    const auto it = socks.find(sockfd);
+    if (it != socks.end()) {
+        s_socket sock = it->second;
+        sockaddr addr2;
+        convertOrbisNetSockaddrToPosix(addr, &addr2);
+        return ::connect(sock, &addr2, sizeof(sockaddr_in));
     }
     return 0; // TODO logging and error return
 }
