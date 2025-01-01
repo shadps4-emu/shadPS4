@@ -815,7 +815,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
-                rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:DispatchIndirect", vqid, cmd_address));
+                rasterizer->ScopeMarkerBegin(
+                    fmt::format("acb[{}]:{}:DispatchIndirect", vqid, cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }
