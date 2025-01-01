@@ -67,6 +67,7 @@ static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
+static std::string trophyKey = "";
 
 // Gui
 std::vector<std::filesystem::path> settings_install_dirs = {};
@@ -90,6 +91,14 @@ std::string emulator_language = "en";
 
 // Language
 u32 m_language = 1; // english
+
+std::string getTrophyKey() {
+    return trophyKey;
+}
+
+void setTrophyKey(std::string key) {
+    trophyKey = key;
+}
 
 bool isNeoMode() {
     return isNeo;
@@ -652,6 +661,11 @@ void load(const std::filesystem::path& path) {
 
         m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
+
+    if (data.contains("Keys")) {
+        const toml::value& keys = data.at("Keys");
+        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
+    }
 }
 
 void save(const std::filesystem::path& path) {
@@ -711,6 +725,8 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
+
+    data["Keys"]["TrophyKey"] = trophyKey;
 
     std::vector<std::string> install_dirs;
     for (const auto& dirString : settings_install_dirs) {

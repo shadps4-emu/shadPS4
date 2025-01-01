@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include <common/config.h>
 #include "crypto.h"
 
 CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
@@ -137,6 +138,13 @@ void Crypto::aesCbcCfb128DecryptEntry(std::span<const CryptoPP::byte, 32> ivkey,
     }
 }
 
+static void hexToBytes(const char* hex, unsigned char* dst) {
+    for (size_t i = 0; hex[i] != 0; i++) {
+        const unsigned char value = (hex[i] < 0x3A) ? (hex[i] - 0x30) : (hex[i] - 0x37);
+        dst[i / 2] |= ((i % 2) == 0) ? (value << 4) : (value);
+    }
+}
+
 void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> NPcommID,
                          std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
                          std::span<CryptoPP::byte> decrypted) {
@@ -145,9 +153,15 @@ void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> NPcommID,
     // step 1: Encrypt NPcommID
     CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
 
+    const char* TrophyKeyget = Config::getTrophyKey().c_str();
+    std::vector<CryptoPP::byte> TrophyKey;
+    hexToBytes(TrophyKeyget, TrophyKey.data());
+
     std::vector<CryptoPP::byte> trpKey(16);
 
     encrypt.ProcessData(trpKey.data(), NPcommID.data(), 16);
+    encrypt.SetKeyWithIV(TrophyKey.data(), TrophyKey.size(), TrophyIV.data());
+
     // step 2: decrypt efsm.
     CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decrypt;
     decrypt.SetKeyWithIV(trpKey.data(), trpKey.size(), efsmIv.data());
