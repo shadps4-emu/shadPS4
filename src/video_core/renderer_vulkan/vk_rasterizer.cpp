@@ -1074,16 +1074,17 @@ void Rasterizer::UpdateViewportScissorState() {
             .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
         });
 
-        const bool viewport_disabled = !vp_ctl.xoffset_enable && !vp_ctl.xscale_enable &&
-                                       !vp_ctl.yoffset_enable && !vp_ctl.yscale_enable &&
-                                       !vp_ctl.zoffset_enable && !vp_ctl.zscale_enable;
-        if (viewport_disabled) {
-            // If viewport is disabled, normalized device coordinates should be treated as pixel
-            // coordinates and viewport should be at least as large as the scissors.
+        const bool vte_passthrough_enabled = !vp_ctl.xoffset_enable && !vp_ctl.xscale_enable &&
+                                             !vp_ctl.yoffset_enable && !vp_ctl.yscale_enable &&
+                                             !vp_ctl.zoffset_enable && !vp_ctl.zscale_enable &&
+                                             vp_ctl.xy_transformed && !vp_ctl.w_transformed;
+        if (vte_passthrough_enabled) {
+            // VTE passthrough is enabled. This means that vertex coordinates should be directly
+            // passed to pixel coordinates. Setup the viewport accordingly.
             const auto& scissor = scissors.back();
             const auto xoffset = float(scissor.offset.x);
-            const auto xscale = float(scissor.extent.width);
             const auto yoffset = float(scissor.offset.y);
+            const auto xscale = float(scissor.extent.width);
             const auto yscale = float(scissor.extent.height);
             viewports.push_back({
                 .x = xoffset - xscale,
@@ -1095,10 +1096,10 @@ void Rasterizer::UpdateViewportScissorState() {
             });
         } else {
             const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
-            const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
             const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
-            const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
             const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+            const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
+            const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
             const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
             viewports.push_back({
                 .x = xoffset - xscale,
