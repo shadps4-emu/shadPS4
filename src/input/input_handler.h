@@ -188,9 +188,6 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"capslock", SDLK_CAPSLOCK},
 };
 
-// literally the only flag that needs external access
-void ToggleMouseEnabled();
-
 void ParseInputConfig(const std::string game_id);
 
 class InputBinding {
@@ -337,10 +334,5 @@ public:
 bool UpdatePressedKeys(u32 button, bool is_pressed);
 
 void ActivateOutputsFromInputs();
-
-void UpdateMouse(GameController* controller);
-
-// Polls the mouse for changes, and simulates joystick movement from it.
-Uint32 MousePolling(void* param, Uint32 id, Uint32 interval);
 
 } // namespace Input

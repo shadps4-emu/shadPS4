@@ -16,6 +16,7 @@
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
+#include "input/input_mouse.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
 

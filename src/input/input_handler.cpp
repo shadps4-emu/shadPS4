@@ -24,6 +24,7 @@
 #include "common/path_util.h"
 #include "common/version.h"
 #include "input/controller.h"
+#include "input/input_mouse.h"
 
 namespace Input {
 /*
@@ -55,10 +56,7 @@ Don't be an idiot and test only the changed part expecting everything else to no
 
 // Flags and values for varying purposes
 // todo: can we change these?
-int mouse_joystick_binding = 0;
-float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
-Uint32 mouse_polling_id = 0;
-bool mouse_enabled = false, leftjoystick_halfmode = false, rightjoystick_halfmode = false;
+bool leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 
 std::list<std::pair<u32, bool>> pressed_keys;
 std::list<u32> toggled_keys;
@@ -97,11 +95,6 @@ auto output_array = std::array{
     // the "sorry, you gave an incorrect value, now we bind it to nothing" output
     ControllerOutput(OrbisPadButtonDataOffset::None, Axis::AxisMax),
 };
-
-// We had to go through 3 files of indirection just to update a flag
-void ToggleMouseEnabled() {
-    mouse_enabled ^= true;
-}
 
 // parsing related functions
 u32 GetAxisInputId(AxisMapping a) {
@@ -218,9 +211,9 @@ void ParseInputConfig(const std::string game_id = "") {
     // we reset these here so in case the user fucks up or doesn't include this,
     // we can fall back to default
     connections.clear();
-    mouse_deadzone_offset = 0.5;
-    mouse_speed = 1;
-    mouse_speed_offset = 0.125;
+    float mouse_deadzone_offset = 0.5;
+    float mouse_speed = 1;
+    float mouse_speed_offset = 0.125;
     int lineCount = 0;
 
     std::ifstream file(config_file);
@@ -260,11 +253,12 @@ void ParseInputConfig(const std::string game_id = "") {
 
         if (output_string == "mouse_to_joystick") {
             if (input_string == "left") {
-                mouse_joystick_binding = 1;
+                SetMouseToJoystick(1);
             } else if (input_string == "right") {
-                mouse_joystick_binding = 2;
+                SetMouseToJoystick(2);
             } else {
-                mouse_joystick_binding = 0; // default to 'none' or invalid
+                LOG_WARNING(Input, "Invalid argument for mouse-to-joystick binding");
+                SetMouseToJoystick(0);
             }
             continue;
         }
@@ -643,47 +637,6 @@ void ActivateOutputsFromInputs() {
     for (auto& it : output_array) {
         it.FinalizeUpdate();
     }
-}
-
-Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
-    auto* controller = (GameController*)param;
-    if (!mouse_enabled)
-        return interval;
-
-    Axis axis_x, axis_y;
-    switch (mouse_joystick_binding) {
-    case 1:
-        axis_x = Axis::LeftX;
-        axis_y = Axis::LeftY;
-        break;
-    case 2:
-        axis_x = Axis::RightX;
-        axis_y = Axis::RightY;
-        break;
-    case 0:
-    default:
-        return interval; // no update needed
-    }
-
-    float d_x = 0, d_y = 0;
-    SDL_GetRelativeMouseState(&d_x, &d_y);
-
-    float output_speed =
-        SDL_clamp((sqrt(d_x * d_x + d_y * d_y) + mouse_speed_offset * 128) * mouse_speed,
-                  mouse_deadzone_offset * 128, 128.0);
-
-    float angle = atan2(d_y, d_x);
-    float a_x = cos(angle) * output_speed, a_y = sin(angle) * output_speed;
-
-    if (d_x != 0 && d_y != 0) {
-        controller->Axis(0, axis_x, GetAxis(-0x80, 0x80, a_x));
-        controller->Axis(0, axis_y, GetAxis(-0x80, 0x80, a_y));
-    } else {
-        controller->Axis(0, axis_x, GetAxis(-0x80, 0x80, 0));
-        controller->Axis(0, axis_y, GetAxis(-0x80, 0x80, 0));
-    }
-
-    return interval;
 }
 
 } // namespace Input
