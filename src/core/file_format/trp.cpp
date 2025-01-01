@@ -56,7 +56,6 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
 
     std::array<CryptoPP::byte, 16> user_key{};
     hexToBytes(user_key_str.c_str(), user_key.data());
-    const std::span<CryptoPP::byte, 16> key{user_key.data(), user_key.size()};
 
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
         if (it.is_regular_file()) {
@@ -116,7 +115,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                         return false;
                     }
                     file.Read(ESFM);
-                    crypto.decryptEFSM(key, np_comm_id, esfmIv, ESFM, XML); // decrypt
+                    crypto.decryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
                     removePadding(XML);
                     std::string xml_name = entry.entry_name;
                     size_t pos = xml_name.find("ESFM");
