@@ -10,9 +10,13 @@ namespace Libraries::Kernel {
 int PS4_SYSV_ABI posix_socket(int domain, int type, int protocol) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
     int socket = netcall->net_socket(domain, type, protocol);
+    if (socket < 0) {
+        LOG_ERROR(Lib_Kernel, "error in socket creation = {}", socket);
+    }
     return socket;
 }
 int PS4_SYSV_ABI posix_connect(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) callled");
     return 0;
 }
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
@@ -24,16 +28,21 @@ u16 PS4_SYSV_ABI posix_htons(u16 hostshort) {
 int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
     int bind = netcall->net_bind(sockfd, addr, addrlen);
-    // todo check for errors
+    if (bind < 0) {
+        LOG_ERROR(Lib_Kernel, "error in binding = {}", bind);
+    }
     return bind;
 }
 int PS4_SYSV_ABI posix_listen(int sockfd, int backlog) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
     int listen = netcall->net_listen(sockfd, backlog);
-    // todo check for errors
+    if (listen < 0) {
+        LOG_ERROR(Lib_Kernel, "error in listen = {}", listen);
+    }
     return listen;
 }
 int PS4_SYSV_ABI posix_accept(int sockfd, struct OrbisNetSockaddr* addr, socklen_t* addrlen) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) callled");
     return ORBIS_OK;
 }
 
