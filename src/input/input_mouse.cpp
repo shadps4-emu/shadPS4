@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "input_mouse.h"
+#include <cmath>
 
 #include "common/types.h"
-#include "controller.h"
+#include "input/controller.h"
+#include "input_mouse.h"
 
 #include "SDL3/SDL.h"
 

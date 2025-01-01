@@ -222,7 +222,10 @@ void ParseInputConfig(const std::string game_id = "") {
         lineCount++;
 
         // Strip the ; and whitespace
-        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+        line.erase(std::remove_if(line.begin(), line.end(),
+                                  [](unsigned char c) { return std::isspace(c); }),
+                   line.end());
+
         if (line.empty()) {
             continue;
         }
