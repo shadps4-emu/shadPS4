@@ -664,7 +664,9 @@ void load(const std::filesystem::path& path) {
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
-        trophyKey = toml::find<std::vector<u8>>(keys, "TrophyKey");
+        if (keys.contains("TrophyKey") && keys.at("TrophyKey").is_array()) {
+            trophyKey = toml::find<std::vector<u8>>(keys, "TrophyKey");
+        }
     }
 }
 
