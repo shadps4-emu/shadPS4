@@ -20,10 +20,10 @@ int PS4_SYSV_ABI posix_connect(int sockfd, const struct OrbisNetSockaddr* addr, 
     return 0;
 }
 u32 PS4_SYSV_ABI posix_htonl(u32 hostlong) {
-    return ::htonl(hostlong);
+    return htonl(hostlong);
 }
 u16 PS4_SYSV_ABI posix_htons(u16 hostshort) {
-    return ::htons(hostshort);
+    return htons(hostshort);
 }
 int PS4_SYSV_ABI posix_bind(int sockfd, const struct OrbisNetSockaddr* addr, socklen_t addrlen) {
     auto* netcall = Common::Singleton<NetPosixInternal>::Instance();
