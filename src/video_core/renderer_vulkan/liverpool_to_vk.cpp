@@ -691,16 +691,40 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
     return formats;
 }
 
+// Table 8.13 Data and Image Formats [Sea Islands Series Instruction Set Architecture]
+static const size_t amd_gpu_data_format_bit_size = 6;   // All values are under 64
+static const size_t amd_gpu_number_format_bit_size = 4; // All values are under 16
+
+static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
+                                         AmdGpu::NumberFormat num_format) {
+    DEBUG_ASSERT(data_format < 1 << amd_gpu_data_format_bit_size);
+    DEBUG_ASSERT(num_format < 1 << amd_gpu_number_format_bit_size);
+    size_t result = static_cast<size_t>(num_format) |
+                    (static_cast<size_t>(data_format) << amd_gpu_number_format_bit_size);
+    return result;
+}
+
+static auto surface_format_table = []() constexpr {
+    std::array<vk::Format, 1 << amd_gpu_data_format_bit_size * 1 << amd_gpu_number_format_bit_size>
+        result;
+    for (auto& entry : result) {
+        entry = vk::Format::eUndefined;
+    }
+    for (const auto& supported_format : SurfaceFormats()) {
+        result[GetSurfaceFormatTableIndex(supported_format.data_format,
+                                          supported_format.number_format)] =
+            supported_format.vk_format;
+    }
+    return result;
+}();
+
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
-    const auto& formats = SurfaceFormats();
-    const auto format =
-        std::find_if(formats.begin(), formats.end(), [&](const SurfaceFormatInfo& format_info) {
-            return format_info.data_format == data_format &&
-                   format_info.number_format == num_format;
-        });
-    ASSERT_MSG(format != formats.end(), "Unknown data_format={} and num_format={}",
-               static_cast<u32>(data_format), static_cast<u32>(num_format));
-    return format->vk_format;
+    vk::Format result = surface_format_table[GetSurfaceFormatTableIndex(data_format, num_format)];
+    bool found =
+        result != vk::Format::eUndefined || data_format == AmdGpu::DataFormat::FormatInvalid;
+    ASSERT_MSG(found, "Unknown data_format={} and num_format={}", static_cast<u32>(data_format),
+               static_cast<u32>(num_format));
+    return result;
 }
 
 static constexpr DepthFormatInfo CreateDepthFormatInfo(
