@@ -311,6 +311,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         QString::fromStdString(toml::find_or<std::string>(data, "General", "userName", "shadPS4")));
     ui->trophyKeyLineEdit->setText(
         QString::fromStdString(toml::find_or<std::string>(data, "Keys", "TrophyKey", "")));
+    ui->trophyKeyLineEdit->setEchoMode(QLineEdit::Password);    
     ui->debugDump->setChecked(toml::find_or<bool>(data, "Debug", "DebugDump", false));
     ui->vkValidationCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "validation", false));
     ui->vkSyncValidationCheckBox->setChecked(

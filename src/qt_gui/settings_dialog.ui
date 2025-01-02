@@ -614,7 +614,7 @@
             <property name="bottomMargin">
              <number>0</number>
             </property>
-            <item alignment="Qt::AlignmentFlag::Qt::AlignmentFlag::AlignTop">
+            <item alignment="Qt::AlignmentFlag::AlignTop">
              <widget class="QGroupBox" name="cursorGroupBox">
               <property name="title">
                <string>Cursor</string>
