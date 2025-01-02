@@ -363,7 +363,7 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
             continue;
         }
         std::shared_lock lk{mutex};
-        Buffer& buffer = slot_buffers[*buffer_id];
+        Buffer& buffer = slot_buffers[buffer_id];
         const VAddr buf_start_addr = buffer.CpuAddr();
         const VAddr buf_end_addr = buf_start_addr + buffer.SizeBytes();
         if (buf_start_addr < end_addr && addr < buf_end_addr) {
