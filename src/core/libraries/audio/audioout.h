@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 #include "common/bit_field.h"
 #include "core/libraries/kernel/threads.h"
@@ -74,10 +76,10 @@ struct AudioFormatInfo {
 };
 
 struct PortOut {
+    std::mutex mutex;
     std::unique_ptr<PortBackend> impl{};
 
     void* output_buffer;
-    std::mutex output_mutex;
     std::condition_variable_any output_cv;
     bool output_ready;
     Kernel::Thread output_thread{};
@@ -87,6 +89,10 @@ struct PortOut {
     u32 sample_rate;
     u32 buffer_frames;
     std::array<s32, 8> volume;
+
+    [[nodiscard]] bool IsOpen() const {
+        return impl != nullptr;
+    }
 
     [[nodiscard]] u32 BufferSize() const {
         return buffer_frames * format_info.FrameSize();
