@@ -1249,7 +1249,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp"/>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nChave usada para descriptografar troféus.\nDeve conter apenas os caracteres hexadecimais de 'Trophy Key, type Release (CEX)', sem vírgulas ou 0x</translation>
+			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
