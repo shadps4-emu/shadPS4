@@ -1252,11 +1252,6 @@
 			<translation>Trophy Key:\nKey used to decrypt trophies.\nMust contain only the hex characters of 'Trophy Key, type Release (CEX)', without commas or 0x</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.cpp"/>
-			<source>TrophyKey</source>
-			<translation>Trophy Key:\nMust contain only the hex characters of 'Trophy Key, type Release (CEX)', without commas or 0x</translation>
-		</message>
-		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
 			<source>logTypeGroupBox</source>
 			<translation>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
