@@ -72,7 +72,7 @@ s32 AvPlayerSource::GetStreamCount() {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream count. NULL context.");
         return -1;
     }
-    LOG_INFO(Lib_AvPlayer, "Stream Count: {}", m_avformat_context->nb_streams);
+    LOG_TRACE(Lib_AvPlayer, "Stream Count: {}", m_avformat_context->nb_streams);
     return m_avformat_context->nb_streams;
 }
 
@@ -110,13 +110,13 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
     info.duration = p_stream->duration;
     const auto p_lang_node = av_dict_get(p_stream->metadata, "language", nullptr, 0);
     if (p_lang_node != nullptr) {
-        LOG_INFO(Lib_AvPlayer, "Stream {} language = {}", stream_index, p_lang_node->value);
+        LOG_TRACE(Lib_AvPlayer, "Stream {} language = {}", stream_index, p_lang_node->value);
     } else {
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
     case SceAvPlayerStreamType::Video: {
-        LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
+        LOG_TRACE(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
         auto width = u32(p_stream->codecpar->width);
@@ -134,7 +134,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         break;
     }
     case SceAvPlayerStreamType::Audio: {
-        LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
+        LOG_TRACE(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
         info.details.audio.size = 0; // sceAvPlayerGetStreamInfo() is expected to set this to 0
@@ -226,6 +226,24 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
                     magic_enum::enum_name(stream->codecpar->codec_type), stream_index);
         break;
     }
+    return true;
+}
+
+bool AvPlayerSource::Pause() {
+    if (m_is_paused) {
+        return false;
+    }
+    m_is_paused = true;
+    return true;
+}
+
+bool AvPlayerSource::Resume() {
+    if (!m_is_paused) {
+        return false;
+    }
+    m_is_paused = false;
+    m_video_packets_cv.Notify();
+    m_audio_packets_cv.Notify();
     return true;
 }
 
@@ -601,8 +619,9 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
 
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread started");
     while ((!m_is_eof || m_video_packets.Size() != 0) && !stop.stop_requested()) {
-        if (!m_video_packets_cv.Wait(stop,
-                                     [this] { return m_video_packets.Size() != 0 || m_is_eof; })) {
+        if (!m_video_packets_cv.Wait(stop, [this] {
+                return !m_is_paused && (m_video_packets.Size() != 0 || m_is_eof);
+            })) {
             continue;
         }
         const auto packet = m_video_packets.Pop();
@@ -723,8 +742,9 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
 
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread started");
     while ((!m_is_eof || m_audio_packets.Size() != 0) && !stop.stop_requested()) {
-        if (!m_audio_packets_cv.Wait(stop,
-                                     [this] { return m_audio_packets.Size() != 0 || m_is_eof; })) {
+        if (!m_audio_packets_cv.Wait(stop, [this] {
+                return !m_is_paused && (m_audio_packets.Size() != 0 || m_is_eof);
+            })) {
             continue;
         }
         const auto packet = m_audio_packets.Pop();

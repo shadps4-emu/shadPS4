@@ -179,11 +179,11 @@ s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) 
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerPause(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Pause();
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerPostInit(SceAvPlayerHandle handle, SceAvPlayerPostInitData* data) {
@@ -202,11 +202,11 @@ s32 PS4_SYSV_ABI sceAvPlayerPrintf(const char* format, ...) {
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerResume(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Resume();
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(SceAvPlayerHandle handle,

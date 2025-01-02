@@ -188,6 +188,20 @@ s32 AvPlayer::Stop() {
     return ORBIS_OK;
 }
 
+s32 AvPlayer::Pause() {
+    if (m_state == nullptr || !m_state->Pause()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
+}
+
+s32 AvPlayer::Resume() {
+    if (m_state == nullptr || !m_state->Resume()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
+}
+
 bool AvPlayer::SetLooping(bool is_looping) {
     if (m_state == nullptr) {
         return false;
