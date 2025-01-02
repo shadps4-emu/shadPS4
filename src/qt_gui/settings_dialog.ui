@@ -134,6 +134,35 @@
                    </property>
                   </widget>
                  </item>
+				 <item>
+                  <widget class="QGroupBox" name="fullscreenModeGroupBox">
+                   <property name="title">
+                    <string>Fullscreen Mode</string>
+                   </property>
+                   <layout class="QVBoxLayout" name="fullscreenModeLayout">
+                    <item>
+                     <widget class="QComboBox" name="fullscreenModeComboBox">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <item>
+                       <property name="text">
+                        <string>Borderless</string>
+                       </property>
+                      </item>
+                      <item>
+                       <property name="text">
+                        <string>True</string>
+                       </property>
+                      </item>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
                  <item>
                   <widget class="QCheckBox" name="separateUpdatesCheckBox">
                    <property name="text">
