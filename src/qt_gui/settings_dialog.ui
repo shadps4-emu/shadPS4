@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>670</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -565,6 +565,9 @@
                    <property name="leftMargin">
                     <number>0</number>
                    </property>
+                   <property name="bottomMargin">
+                    <number>80</number>
+                   </property>
                    <item>
                     <layout class="QHBoxLayout" name="hLayoutTrophy">
                      <item>
@@ -594,6 +597,12 @@
                             <width>0</width>
                             <height>0</height>
                            </size>
+                          </property>
+                          <property name="font">
+                           <font>
+                            <pointsize>10</pointsize>
+                            <bold>false</bold>
+                           </font>
                           </property>
                          </widget>
                         </item>
