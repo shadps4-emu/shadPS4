@@ -66,7 +66,7 @@ void RegPopup::DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer) {
             "GetColorSliceSize()",  buffer.GetColorSliceSize(),
             "GetTilingMode()",      buffer.GetTilingMode(),
             "IsTiled()",            buffer.IsTiled(),
-            "NumFormat()",          buffer.NumFormat()
+            "NumFormat()",          buffer.GetNumberFmt()
         );
 
         // clang-format on

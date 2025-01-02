@@ -538,6 +538,16 @@
 			<translation>Nazwa użytkownika</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy Key</source>
+			<translation>Trophy Key</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy</source>
+			<translation>Trophy</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
 			<source>Logger</source>
 			<translation>Dziennik zdarzeń</translation>
@@ -1235,6 +1245,11 @@
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Nazwa użytkownika:\nUstala nazwę użytkownika konta PS4, która może być wyświetlana w niektórych grach.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>TrophyKey</source>
+			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>

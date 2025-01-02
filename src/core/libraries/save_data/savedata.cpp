@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <span>
+#include <thread>
 #include <vector>
 
 #include <core/libraries/system/msgdialog_ui.h>
@@ -1139,10 +1140,6 @@ Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getPar
         LOG_INFO(Lib_SaveData, "called without save memory initialized");
         return Error::MEMORY_NOT_READY;
     }
-    if (SaveMemory::IsSaving()) {
-        LOG_TRACE(Lib_SaveData, "called while saving");
-        return Error::BUSY_FOR_SAVING;
-    }
     LOG_DEBUG(Lib_SaveData, "called");
     auto data = getParam->data;
     if (data != nullptr) {
@@ -1502,8 +1499,14 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* 
         return Error::MEMORY_NOT_READY;
     }
     if (SaveMemory::IsSaving()) {
-        LOG_TRACE(Lib_SaveData, "called while saving");
-        return Error::BUSY_FOR_SAVING;
+        int count = 0;
+        while (++count < 100 && SaveMemory::IsSaving()) { // try for more 10 seconds
+            std::this_thread::sleep_for(chrono::milliseconds(100));
+        }
+        if (SaveMemory::IsSaving()) {
+            LOG_TRACE(Lib_SaveData, "called while saving");
+            return Error::BUSY_FOR_SAVING;
+        }
     }
     LOG_DEBUG(Lib_SaveData, "called");
     auto data = setParam->data;
@@ -1584,8 +1587,8 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
             } else {
                 SaveMemory::SetIcon(nullptr, 0);
             }
+            SaveMemory::TriggerSaveWithoutEvent();
         }
-        SaveMemory::TriggerSaveWithoutEvent();
         if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
             result->existedMemorySize = existed_size;
         }

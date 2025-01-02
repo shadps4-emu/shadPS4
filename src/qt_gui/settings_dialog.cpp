@@ -213,6 +213,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->showSplashCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
         ui->userName->installEventFilter(this);
+        ui->label_Trophy->installEventFilter(this);
+        ui->trophyKeyLineEdit->installEventFilter(this);
         ui->logTypeGroupBox->installEventFilter(this);
         ui->logFilter->installEventFilter(this);
 #ifdef ENABLE_UPDATER
@@ -307,6 +309,9 @@ void SettingsDialog::LoadValuesFromConfig() {
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logFilter", "")));
     ui->userNameLineEdit->setText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "userName", "shadPS4")));
+    ui->trophyKeyLineEdit->setText(
+        QString::fromStdString(toml::find_or<std::string>(data, "Keys", "TrophyKey", "")));
+    ui->trophyKeyLineEdit->setEchoMode(QLineEdit::Password);
     ui->debugDump->setChecked(toml::find_or<bool>(data, "Debug", "DebugDump", false));
     ui->vkValidationCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "validation", false));
     ui->vkSyncValidationCheckBox->setChecked(
@@ -419,6 +424,10 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("discordRPCCheckbox");
     } else if (elementName == "userName") {
         text = tr("userName");
+    } else if (elementName == "label_Trophy") {
+        text = tr("TrophyKey");
+    } else if (elementName == "trophyKeyLineEdit") {
+        text = tr("TrophyKey");
     } else if (elementName == "logTypeGroupBox") {
         text = tr("logTypeGroupBox");
     } else if (elementName == "logFilter") {
@@ -529,6 +538,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setLogType(ui->logTypeComboBox->currentText().toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
     Config::setUserName(ui->userNameLineEdit->text().toStdString());
+    Config::setTrophyKey(ui->trophyKeyLineEdit->text().toStdString());
     Config::setCursorState(ui->hideCursorComboBox->currentIndex());
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
