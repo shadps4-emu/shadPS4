@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>700</height>
+    <height>670</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -562,7 +562,7 @@
                          <widget class="QLineEdit" name="trophyKeyLineEdit">
                           <property name="minimumSize">
                            <size>
-                            <width>290</width>
+                            <width>0</width>
                             <height>0</height>
                            </size>
                           </property>
