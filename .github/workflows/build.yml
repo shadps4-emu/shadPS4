@@ -326,7 +326,7 @@ jobs:
         tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
     - uses: actions/upload-artifact@v4
       with:
-        name: shadps4-linux-sdl-clang-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: Shadps4-sdl.AppImage
 
   linux-qt-clang:
@@ -373,7 +373,7 @@ jobs:
         tar cf shadps4-linux-qt.tar.gz -C ${{github.workspace}}/build shadps4
     - uses: actions/upload-artifact@v4
       with:
-        name: shadps4-linux-qt-clang-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        name: shadps4-linux-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: Shadps4-qt.AppImage
 
   linux-sdl-gcc:
@@ -411,17 +411,6 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
-  
-    - name: Run AppImage packaging script
-      run:  ./.github/linux-appimage-sdl.sh
-      
-    - name: Package and Upload Linux SDL artifact
-      run: |
-        tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
-    - uses: actions/upload-artifact@v4
-      with:
-        name: shadps4-linux-sdl-gcc-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: Shadps4-sdl.AppImage
 
   linux-qt-gcc:
     runs-on: ubuntu-24.04
@@ -459,20 +448,9 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
 
-    - name: Run AppImage packaging script
-      run:  ./.github/linux-appimage-qt.sh
-
-    - name: Package and Upload Linux Qt artifact
-      run: |
-        tar cf shadps4-linux-qt.tar.gz -C ${{github.workspace}}/build shadps4
-    - uses: actions/upload-artifact@v4
-      with:
-        name: shadps4-linux-qt-gcc-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: Shadps4-qt.AppImage
-
   pre-release:
     if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4' && github.event_name == 'push'
-    needs: [get-info, windows-sdl, windows-qt, macos-sdl, macos-qt, linux-sdl-clang, linux-qt-clang, linux-sdl-gcc, linux-qt-gcc]
+    needs: [get-info, windows-sdl, windows-qt, macos-sdl, macos-qt, linux-sdl-clang, linux-qt-clang]
     runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
