@@ -697,8 +697,8 @@ static const size_t amd_gpu_number_format_bit_size = 4; // All values are under 
 
 static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
                                          AmdGpu::NumberFormat num_format) {
-    DEBUG_ASSERT(data_format < 1 << amd_gpu_data_format_bit_size);
-    DEBUG_ASSERT(num_format < 1 << amd_gpu_number_format_bit_size);
+    DEBUG_ASSERT(u32(data_format) < 1 << amd_gpu_data_format_bit_size);
+    DEBUG_ASSERT(u32(num_format) < 1 << amd_gpu_number_format_bit_size);
     size_t result = static_cast<size_t>(num_format) |
                     (static_cast<size_t>(data_format) << amd_gpu_number_format_bit_size);
     return result;
