@@ -4,9 +4,9 @@
 #pragma once
 
 #include <array>
+#include <mutex>
 #include <span>
 #include <utility>
-#include <mutex>
 
 #include "common/spin_lock.h"
 #include "common/types.h"
