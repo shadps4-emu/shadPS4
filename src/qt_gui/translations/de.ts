@@ -538,6 +538,16 @@
 			<translation>Benutzername</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy Key</source>
+			<translation>Trophy Key</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy</source>
+			<translation>Trophy</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
 			<source>Logger</source>
 			<translation>Logger</translation>
@@ -1235,6 +1245,11 @@
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>Benutzername:\nLegt den Namen des PS4-Kontos fest, der in einigen Spielen angezeigt werden kann.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>TrophyKey</source>
+			<translation>Trophy Key:\nKey used to decrypt trophies.\nMust contain only the hex characters of 'Trophy Key, type Release (CEX)', without commas or 0x</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>
