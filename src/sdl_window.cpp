@@ -92,6 +92,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to create window handle: {}", SDL_GetError());
     }
 
+    SDL_SetWindowMinimumSize(window, 640, 360);
+
     bool error = false;
     const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
     if (displayIndex < 0) {
