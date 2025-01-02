@@ -542,31 +542,62 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     sched_ptr->EndRendering();
 
     const auto cmdbuf = sched_ptr->CommandBuffer();
-    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {},
-                  cmdbuf);
-
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size_bytes;
     const auto [vk_buffer, buf_offset] =
         buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
+
     // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
-        const auto dependencies = vk::DependencyInfo{
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers = &barrier.value(),
-        };
-        cmdbuf.pipelineBarrier2(dependencies);
+        });
     }
 
-    const auto [buffer, offset] = tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image);
+    const auto [buffer, offset] =
+        tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image.info);
     for (auto& copy : image_copy) {
         copy.bufferOffset += offset;
     }
 
+    const vk::BufferMemoryBarrier2 pre_barrier{
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
+        .buffer = buffer,
+        .offset = offset,
+        .size = image_size,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier{
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = buffer,
+        .offset = offset,
+        .size = image_size,
+    };
+    const auto image_barriers =
+        image.GetBarriers(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
+                          vk::PipelineStageFlagBits2::eTransfer, {});
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+        .imageMemoryBarrierCount = static_cast<u32>(image_barriers.size()),
+        .pImageMemoryBarriers = image_barriers.data(),
+    });
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
     image.flags &= ~ImageFlagBits::Dirty;
 }
 

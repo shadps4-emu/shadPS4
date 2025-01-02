@@ -4,6 +4,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
 
@@ -86,10 +87,10 @@ static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     return format;
 }
 
-const DetilerContext* TileManager::GetDetiler(const Image& image) const {
-    const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
+const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
+    const auto format = DemoteImageFormatForDetiling(info.pixel_format);
 
-    switch (image.info.tiling_mode) {
+    switch (info.tiling_mode) {
     case AmdGpu::TilingMode::Texture_MicroTiled:
         switch (format) {
         case vk::Format::eR8Uint:
@@ -258,23 +259,23 @@ void TileManager::FreeBuffer(ScratchBuffer buffer) {
 }
 
 std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_offset,
-                                                  Image& image) {
-    if (!image.info.props.is_tiled) {
+                                                  const ImageInfo& info) {
+    if (!info.props.is_tiled) {
         return {in_buffer, in_offset};
     }
 
-    const auto* detiler = GetDetiler(image);
+    const auto* detiler = GetDetiler(info);
     if (!detiler) {
-        if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled &&
-            image.info.tiling_mode != AmdGpu::TilingMode::Display_MacroTiled &&
-            image.info.tiling_mode != AmdGpu::TilingMode::Depth_MacroTiled) {
+        if (info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled &&
+            info.tiling_mode != AmdGpu::TilingMode::Display_MacroTiled &&
+            info.tiling_mode != AmdGpu::TilingMode::Depth_MacroTiled) {
             LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
-                      vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
+                      vk::to_string(info.pixel_format), NameOf(info.tiling_mode));
         }
         return {in_buffer, in_offset};
     }
 
-    const u32 image_size = image.info.guest_size_bytes;
+    const u32 image_size = info.guest_size_bytes;
 
     // Prepare output buffer
     auto out_buffer = AllocBuffer(image_size, true);
@@ -317,22 +318,21 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                                 set_writes);
 
     DetilerParams params;
-    params.num_levels = image.info.resources.levels;
-    params.pitch0 = image.info.pitch >> (image.info.props.is_block ? 2u : 0u);
-    params.height = image.info.size.height;
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_Volume) {
-        ASSERT(image.info.resources.levels == 1);
-        ASSERT(image.info.num_bits >= 32);
-        const auto tiles_per_row = image.info.pitch / 8u;
-        const auto tiles_per_slice = tiles_per_row * ((image.info.size.height + 7u) / 8u);
+    params.num_levels = info.resources.levels;
+    params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
+    params.height = info.size.height;
+    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume) {
+        ASSERT(info.resources.levels == 1);
+        ASSERT(info.num_bits >= 32);
+        const auto tiles_per_row = info.pitch / 8u;
+        const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
     } else {
-
-        ASSERT(image.info.resources.levels <= 14);
+        ASSERT(info.resources.levels <= 14);
         std::memset(&params.sizes, 0, sizeof(params.sizes));
-        for (int m = 0; m < image.info.resources.levels; ++m) {
-            params.sizes[m] = image.info.mips_layout[m].size * image.info.resources.layers +
+        for (int m = 0; m < info.resources.levels; ++m) {
+            params.sizes[m] = info.mips_layout[m].size * info.resources.layers +
                               (m > 0 ? params.sizes[m - 1] : 0);
         }
     }
@@ -341,20 +341,9 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                          &params);
 
     ASSERT((image_size % 64) == 0);
-    const auto bpp = image.info.num_bits * (image.info.props.is_block ? 16u : 1u);
+    const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
     const auto num_tiles = image_size / (64 * (bpp / 8));
     cmdbuf.dispatch(num_tiles, 1, 1);
-
-    const vk::BufferMemoryBarrier post_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-        .buffer = out_buffer.first,
-        .size = image_size,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, post_barrier, {});
-
     return {out_buffer.first, 0};
 }
 
