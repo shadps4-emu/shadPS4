@@ -76,7 +76,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) n
     range.base.layer = col_buffer.view.slice_start;
     range.extent.layers = col_buffer.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
-    format = Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.DataFormat(), col_buffer.NumFormat());
+    format =
+        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.GetDataFmt(), col_buffer.GetNumberFmt());
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
