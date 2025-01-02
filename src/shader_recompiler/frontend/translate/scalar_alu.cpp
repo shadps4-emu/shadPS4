@@ -597,14 +597,13 @@ void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
 
 void Translator::S_FF1_I32_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 result{ir.Select(ir.IEqual(src0, ir.Imm32(0U)), ir.Imm32(-1), ir.FindILsb(src0))};
+    const IR::U32 result{ir.FindILsb(src0)};
     SetDst(inst.dst[0], result);
 }
 
 void Translator::S_FF1_I32_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
-    const IR::U32 result{
-        ir.Select(ir.IEqual(src0, ir.Imm64(u64(0))), ir.Imm32(-1), ir.FindILsb(src0))};
+    const IR::U32 result{ir.FindILsb(src0)};
     SetDst(inst.dst[0], result);
 }
 

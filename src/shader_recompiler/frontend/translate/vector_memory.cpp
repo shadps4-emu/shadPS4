@@ -255,10 +255,6 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
                    "Non immediate offset not supported");
     }
 
-    if (info.stage == Stage::Hull) {
-        // printf("here\n"); // break
-    }
-
     IR::Value address = [&] -> IR::Value {
         if (is_ring) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
@@ -330,7 +326,7 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst) {
 
     const IR::VectorReg src_reg{inst.src[1].code};
 
-    std::array<IR::Value, 4> comps{};
+    std::array<IR::F32, 4> comps{};
     for (u32 i = 0; i < num_dwords; i++) {
         comps[i] = ir.GetVectorReg<IR::F32>(src_reg + i);
     }
@@ -428,7 +424,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
         if (((mimg.dmask >> i) & 1) == 0) {
             continue;
         }
-        IR::U32 value = IR::U32{ir.CompositeExtract(texel, i)};
+        IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
         ir.SetVectorReg(dest_reg++, value);
     }
 }

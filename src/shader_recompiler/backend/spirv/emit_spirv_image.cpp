@@ -238,7 +238,7 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
         }
         texel = ctx.OpImageRead(color_type, image, coords, operands.mask, operands.operands);
     }
-    return !texture.is_integer ? ctx.OpBitcast(ctx.U32[4], texel) : texel;
+    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texel) : texel;
 }
 
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,
@@ -253,8 +253,8 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     } else if (Sirit::ValidId(lod)) {
         LOG_WARNING(Render, "Image write with LOD not supported by driver");
     }
-    ctx.OpImageWrite(image, coords, ctx.OpBitcast(color_type, color), operands.mask,
-                     operands.operands);
+    const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
+    ctx.OpImageWrite(image, coords, texel, operands.mask, operands.operands);
 }
 
 } // namespace Shader::Backend::SPIRV

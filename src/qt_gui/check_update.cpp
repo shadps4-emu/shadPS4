@@ -14,6 +14,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QString>
@@ -24,11 +25,9 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include <common/version.h>
-#include <qprogressbar.h>
 #include "check_update.h"
 
 using namespace Common::FS;
-namespace fs = std::filesystem;
 
 CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
     : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
@@ -254,7 +253,11 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     connect(noButton, &QPushButton::clicked, this, [this]() { close(); });
 
     autoUpdateCheckBox->setChecked(Config::autoUpdate());
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
     connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+#else
+    connect(autoUpdateCheckBox, &QCheckBox::checkStateChanged, this, [](Qt::CheckState state) {
+#endif
         const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
         Config::setAutoUpdate(state == Qt::Checked);
         Config::save(user_dir / "config.toml");

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <mutex>
+#include <shared_mutex>
 #include <boost/container/small_vector.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
@@ -83,7 +83,7 @@ public:
                            const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader);
 
     /// Bind host index buffer for the current draw.
-    u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
+    void BindIndexBuffer(u32 index_offset);
 
     /// Writes a value to GPU buffer.
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
@@ -157,7 +157,7 @@ private:
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
-    std::mutex mutex;
+    std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
     vk::BufferView null_buffer_view;

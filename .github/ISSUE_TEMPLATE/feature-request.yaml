@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Feature Request
+description: Suggest a new feature or improve an existing one
+title: "[Feature Request]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important: Read First
+
+        Please make an effort to make sure your issue isn't already reported.
+
+        Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar issue in this repository and did not find one.
+          required: true
+  - type: textarea
+    id: desc
+    attributes:
+      label: Description
+      description: |
+        A concise description of the feature you want
+
+        Include step by step examples of how the feature should work under various circumstances
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+      description: |
+        Give a reason why you want this feature
+        - How will it make things easier for you?
+        - How does this feature help your enjoyment of the emulator?
+        - What does it provide that isn't being provided currently?
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: |
+        Provide examples of the feature as implemented by other software
+
+        Include screenshots or video if you like to help demonstrate how you'd like this feature to work
+    validations:
+      required: false

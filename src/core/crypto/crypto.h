@@ -32,7 +32,8 @@ public:
     void aesCbcCfb128DecryptEntry(std::span<const CryptoPP::byte, 32> ivkey,
                                   std::span<CryptoPP::byte> ciphertext,
                                   std::span<CryptoPP::byte> decrypted);
-    void decryptEFSM(std::span<CryptoPP::byte, 16>, std::span<CryptoPP::byte, 16> efsmIv,
+    void decryptEFSM(std::span<CryptoPP::byte, 16> trophyKey,
+                     std::span<CryptoPP::byte, 16> NPcommID, std::span<CryptoPP::byte, 16> efsmIv,
                      std::span<CryptoPP::byte> ciphertext, std::span<CryptoPP::byte> decrypted);
     void PfsGenCryptoKey(std::span<const CryptoPP::byte, 32> ekpfs,
                          std::span<const CryptoPP::byte, 16> seed,

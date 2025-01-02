@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+
 #include "crypto.h"
 
 CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
@@ -137,17 +138,20 @@ void Crypto::aesCbcCfb128DecryptEntry(std::span<const CryptoPP::byte, 32> ivkey,
     }
 }
 
-void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> NPcommID,
+void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> trophyKey,
+                         std::span<CryptoPP::byte, 16> NPcommID,
                          std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
                          std::span<CryptoPP::byte> decrypted) {
 
-    std::vector<CryptoPP::byte> TrophyIV = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // step 1: Encrypt NPcommID
     CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
 
+    std::vector<CryptoPP::byte> trophyIv(16, 0);
     std::vector<CryptoPP::byte> trpKey(16);
 
+    encrypt.SetKeyWithIV(trophyKey.data(), trophyKey.size(), trophyIv.data());
     encrypt.ProcessData(trpKey.data(), NPcommID.data(), 16);
+
     // step 2: decrypt efsm.
     CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decrypt;
     decrypt.SetKeyWithIV(trpKey.data(), trpKey.size(), efsmIv.data());
