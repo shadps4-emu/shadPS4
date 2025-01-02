@@ -15,6 +15,7 @@
 #include "video_core/host_shaders/detile_m8x2_comp.h"
 #include "video_core/host_shaders/detile_macro32x1_comp.h"
 #include "video_core/host_shaders/detile_macro32x2_comp.h"
+#include "video_core/host_shaders/detile_macro8x1_comp.h"
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum/magic_enum.hpp>
@@ -108,6 +109,8 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
         }
     case AmdGpu::TilingMode::Texture_Volume:
         switch (format) {
+        case vk::Format::eR8Uint:
+            return &detilers[DetilerType::Macro8x1];
         case vk::Format::eR32Uint:
             return &detilers[DetilerType::Macro32x1];
         case vk::Format::eR32G32Uint:
@@ -133,8 +136,8 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,      HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP,     HostShaders::DETILE_M32X2_COMP,
-        HostShaders::DETILE_M32X4_COMP,     HostShaders::DETILE_MACRO32X1_COMP,
-        HostShaders::DETILE_MACRO32X2_COMP,
+        HostShaders::DETILE_M32X4_COMP,     HostShaders::DETILE_MACRO8X1_COMP,
+        HostShaders::DETILE_MACRO32X1_COMP, HostShaders::DETILE_MACRO32X2_COMP,
     };
 
     boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
@@ -323,7 +326,6 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     params.height = info.size.height;
     if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume) {
         ASSERT(info.resources.levels == 1);
-        ASSERT(info.num_bits >= 32);
         const auto tiles_per_row = info.pitch / 8u;
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;

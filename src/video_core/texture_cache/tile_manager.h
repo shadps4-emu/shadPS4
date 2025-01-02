@@ -18,6 +18,7 @@ enum DetilerType : u32 {
     Micro32x2,
     Micro32x4,
 
+    Macro8x1,
     Macro32x1,
     Macro32x2,
 
