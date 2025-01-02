@@ -41,19 +41,19 @@ public:
     /// Mark region as CPU modified, notifying the device_tracker about this change
     void MarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size) {
         IteratePages<false>(dirty_cpu_addr, query_size,
-                           [](RegionManager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::CPU, true>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
+                            [](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::CPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
     }
 
     /// Mark region as modified from the host GPU
     void MarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
         IteratePages<false>(dirty_cpu_addr, query_size,
-                           [](RegionManager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::GPU, true>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
+                            [](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::GPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
