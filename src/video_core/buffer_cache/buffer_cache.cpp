@@ -357,8 +357,8 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     const VAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
     for (u64 page = addr >> CACHING_PAGEBITS; page < page_end;) {
-        const BufferId* buffer_id = page_table.find(page);
-        if (!buffer_id || !*buffer_id) {
+        const BufferId buffer_id = page_table[page];
+        if (!buffer_id) {
             ++page;
             continue;
         }
