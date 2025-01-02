@@ -972,11 +972,8 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
 }
 
 int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) {
-    LOG_INFO(Lib_NpManager, "user_id {}", user_id);
-    const auto name = Config::getUserName();
-    std::memset(np_id, 0, sizeof(OrbisNpId));
-    name.copy(np_id->handle.data, sizeof(np_id->handle.data));
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
@@ -986,10 +983,7 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
 
 int PS4_SYSV_ABI sceNpGetOnlineId(s32 user_id, OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
-    const auto name = Config::getUserName();
-    std::memset(online_id, 0, sizeof(OrbisNpOnlineId));
-    name.copy(online_id->data, sizeof(online_id->data));
-    return ORBIS_OK;
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetParentalControlInfo() {
