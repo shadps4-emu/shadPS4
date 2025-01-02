@@ -300,8 +300,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
-    ui->fullscreenModeComboBox->setCurrentText(
-        QString::fromStdString(toml::find_or<std::string>(data, "General", "FullscreenMode", "Borderless")));
+    ui->fullscreenModeComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "FullscreenMode", "Borderless")));
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
