@@ -79,21 +79,23 @@ inline NumberFormat RemapNumberFormat(const NumberFormat format) {
 
 inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
     switch (format) {
-    case DataFormat::Format11_11_10:
-        return {
-            .r = components.b,
-            .g = components.g,
-            .b = components.r,
-            .a = components.a,
-        };
+    case DataFormat::Format11_11_10: {
+        CompMapping result;
+        result.r = components.b;
+        result.g = components.g;
+        result.b = components.r;
+        result.a = components.a;
+        return result;
+    }
     case DataFormat::Format10_10_10_2:
-    case DataFormat::Format5_5_5_1:
-        return {
-            .r = components.a,
-            .g = components.b,
-            .b = components.g,
-            .a = components.r,
-        };
+    case DataFormat::Format5_5_5_1: {
+        CompMapping result;
+        result.r = components.a;
+        result.g = components.b;
+        result.b = components.g;
+        result.a = components.r;
+        return result;
+    }
     default:
         return components;
     }

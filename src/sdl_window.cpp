@@ -161,6 +161,20 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         OnGamepadEvent(&event);
         break;
+    // i really would have appreciated ANY KIND OF DOCUMENTATION ON THIS
+    // AND IT DOESN'T EVEN USE PROPER ENUMS
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+        switch ((SDL_SensorType)event.gsensor.sensor) {
+        case SDL_SENSOR_GYRO:
+            controller->Gyro(0, event.gsensor.data);
+            break;
+        case SDL_SENSOR_ACCEL:
+            controller->Acceleration(0, event.gsensor.data);
+            break;
+        default:
+            break;
+        }
+        break;
     case SDL_EVENT_QUIT:
         is_open = false;
         break;

@@ -505,6 +505,41 @@ int PS4_SYSV_ABI posix_munmap(void* addr, size_t len) {
     return result;
 }
 
+static constexpr int MAX_PRT_APERTURES = 3;
+static constexpr VAddr PRT_AREA_START_ADDR = 0x1000000000;
+static constexpr size_t PRT_AREA_SIZE = 0xec00000000;
+static std::array<std::pair<VAddr, size_t>, MAX_PRT_APERTURES> PrtApertures{};
+
+int PS4_SYSV_ABI sceKernelSetPrtAperture(int id, VAddr address, size_t size) {
+    if (id < 0 || id >= MAX_PRT_APERTURES) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (address < PRT_AREA_START_ADDR || address + size > PRT_AREA_START_ADDR + PRT_AREA_SIZE) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (address % 4096 != 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    LOG_WARNING(Kernel_Vmm,
+                "PRT aperture id = {}, address = {:#x}, size = {:#x} is set but not used", id,
+                address, size);
+
+    PrtApertures[id] = {address, size};
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelGetPrtAperture(int id, VAddr* address, size_t* size) {
+    if (id < 0 || id >= MAX_PRT_APERTURES) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    std::tie(*address, *size) = PrtApertures[id];
+    return ORBIS_OK;
+}
+
 void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
     LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", 1, 1,
@@ -551,6 +586,10 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", 1, 1, posix_munmap);
     LIB_FUNCTION("UqDGjXA5yUM", "libScePosix", 1, "libkernel", 1, 1, posix_munmap);
+
+    // PRT memory management
+    LIB_FUNCTION("BohYr-F7-is", "libkernel", 1, "libkernel", 1, 1, sceKernelSetPrtAperture);
+    LIB_FUNCTION("L0v2Go5jOuM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetPrtAperture);
 }
 
 } // namespace Libraries::Kernel

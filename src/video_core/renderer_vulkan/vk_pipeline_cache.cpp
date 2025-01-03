@@ -328,8 +328,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         key.color_formats[remapped_cb] =
-            LiverpoolToVK::SurfaceFormat(col_buf.DataFormat(), col_buf.NumFormat());
-        key.color_num_formats[remapped_cb] = col_buf.NumFormat();
+            LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
+        key.color_num_formats[remapped_cb] = col_buf.GetNumberFmt();
         key.color_swizzles[remapped_cb] = col_buf.Swizzle();
     }
 

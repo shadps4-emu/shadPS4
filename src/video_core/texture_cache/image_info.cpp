@@ -265,9 +265,9 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
     props.is_tiled = buffer.IsTiled();
     tiling_mode = buffer.GetTilingMode();
-    pixel_format = LiverpoolToVK::SurfaceFormat(buffer.DataFormat(), buffer.NumFormat());
+    pixel_format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
     num_samples = buffer.NumSamples();
-    num_bits = NumBits(buffer.DataFormat());
+    num_bits = NumBits(buffer.GetDataFmt());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();

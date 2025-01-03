@@ -538,6 +538,16 @@
 			<translation>用户名</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy Key</source>
+			<translation>Trophy Key</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui"/>
+			<source>Trophy</source>
+			<translation>Trophy</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="178"/>
 			<source>Logger</source>
 			<translation>日志</translation>
@@ -1235,6 +1245,11 @@
 			<location filename="../settings_dialog.cpp" line="299"/>
 			<source>userName</source>
 			<translation>用户名：\n设置 PS4 帐户的用户名，某些游戏中可能会显示此名称。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp"/>
+			<source>TrophyKey</source>
+			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="301"/>

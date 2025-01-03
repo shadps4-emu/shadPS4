@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <mutex>
+#include <shared_mutex>
 #include <boost/container/small_vector.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
@@ -157,7 +157,7 @@ private:
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
-    std::mutex mutex;
+    std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
     vk::BufferView null_buffer_view;

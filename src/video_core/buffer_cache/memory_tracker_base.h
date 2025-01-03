@@ -15,13 +15,8 @@ namespace VideoCore {
 class MemoryTracker {
 public:
     static constexpr size_t MAX_CPU_PAGE_BITS = 40;
-    static constexpr size_t HIGHER_PAGE_BITS = 22;
-    static constexpr size_t HIGHER_PAGE_SIZE = 1ULL << HIGHER_PAGE_BITS;
-    static constexpr size_t HIGHER_PAGE_MASK = HIGHER_PAGE_SIZE - 1ULL;
     static constexpr size_t NUM_HIGH_PAGES = 1ULL << (MAX_CPU_PAGE_BITS - HIGHER_PAGE_BITS);
     static constexpr size_t MANAGER_POOL_SIZE = 32;
-    static constexpr size_t WORDS_STACK_NEEDED = HIGHER_PAGE_SIZE / BYTES_PER_WORD;
-    using Manager = WordManager<WORDS_STACK_NEEDED>;
 
 public:
     explicit MemoryTracker(PageManager* tracker_) : tracker{tracker_} {}
@@ -30,7 +25,7 @@ public:
     /// Returns true if a region has been modified from the CPU
     [[nodiscard]] bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<true>(
-            query_cpu_addr, query_size, [](Manager* manager, u64 offset, size_t size) {
+            query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 return manager->template IsRegionModified<Type::CPU>(offset, size);
             });
     }
@@ -38,52 +33,34 @@ public:
     /// Returns true if a region has been modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<false>(
-            query_cpu_addr, query_size, [](Manager* manager, u64 offset, size_t size) {
+            query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 return manager->template IsRegionModified<Type::GPU>(offset, size);
             });
     }
 
     /// Mark region as CPU modified, notifying the device_tracker about this change
     void MarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size) {
-        IteratePages<true>(dirty_cpu_addr, query_size,
-                           [](Manager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::CPU, true>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
-    }
-
-    /// Unmark region as CPU modified, notifying the device_tracker about this change
-    void UnmarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size) {
-        IteratePages<true>(dirty_cpu_addr, query_size,
-                           [](Manager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::CPU, false>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
+        IteratePages<false>(dirty_cpu_addr, query_size,
+                            [](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::CPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
     }
 
     /// Mark region as modified from the host GPU
     void MarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
-        IteratePages<true>(dirty_cpu_addr, query_size,
-                           [](Manager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::GPU, true>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
-    }
-
-    /// Unmark region as modified from the host GPU
-    void UnmarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
-        IteratePages<true>(dirty_cpu_addr, query_size,
-                           [](Manager* manager, u64 offset, size_t size) {
-                               manager->template ChangeRegionState<Type::GPU, false>(
-                                   manager->GetCpuAddr() + offset, size);
-                           });
+        IteratePages<false>(dirty_cpu_addr, query_size,
+                            [](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::GPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
     template <typename Func>
     void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, Func&& func) {
         IteratePages<true>(query_cpu_range, query_size,
-                           [&func](Manager* manager, u64 offset, size_t size) {
+                           [&func](RegionManager* manager, u64 offset, size_t size) {
                                manager->template ForEachModifiedRange<Type::CPU, true>(
                                    manager->GetCpuAddr() + offset, size, func);
                            });
@@ -93,7 +70,7 @@ public:
     template <bool clear, typename Func>
     void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, Func&& func) {
         IteratePages<false>(query_cpu_range, query_size,
-                            [&func](Manager* manager, u64 offset, size_t size) {
+                            [&func](RegionManager* manager, u64 offset, size_t size) {
                                 if constexpr (clear) {
                                     manager->template ForEachModifiedRange<Type::GPU, true>(
                                         manager->GetCpuAddr() + offset, size, func);
@@ -114,7 +91,7 @@ private:
      */
     template <bool create_region_on_fail, typename Func>
     bool IteratePages(VAddr cpu_address, size_t size, Func&& func) {
-        using FuncReturn = typename std::invoke_result<Func, Manager*, u64, size_t>::type;
+        using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         std::size_t remaining_size{size};
         std::size_t page_index{cpu_address >> HIGHER_PAGE_BITS};
@@ -155,7 +132,7 @@ private:
             manager_pool.emplace_back();
             auto& last_pool = manager_pool.back();
             for (size_t i = 0; i < MANAGER_POOL_SIZE; i++) {
-                std::construct_at(&last_pool[i], tracker, 0, HIGHER_PAGE_SIZE);
+                std::construct_at(&last_pool[i], tracker, 0);
                 free_managers.push_back(&last_pool[i]);
             }
         }
@@ -167,9 +144,9 @@ private:
     }
 
     PageManager* tracker;
-    std::deque<std::array<Manager, MANAGER_POOL_SIZE>> manager_pool;
-    std::vector<Manager*> free_managers;
-    std::array<Manager*, NUM_HIGH_PAGES> top_tier{};
+    std::deque<std::array<RegionManager, MANAGER_POOL_SIZE>> manager_pool;
+    std::vector<RegionManager*> free_managers;
+    std::array<RegionManager*, NUM_HIGH_PAGES> top_tier{};
 };
 
 } // namespace VideoCore

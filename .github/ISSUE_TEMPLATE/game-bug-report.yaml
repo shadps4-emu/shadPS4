@@ -13,7 +13,11 @@ body:
         **Please do not make support requests on GitHub. Our issue tracker is for tracking bugs and feature requests only.
         If you have a support request or are unsure about the nature of your issue please contact us on [discord](https://discord.gg/bFJxfftGW6).**
 
-        You can also check the [Game Compatibility Repository](https://github.com/shadps4-emu/shadps4-game-compatibility) for the information about the status of the game.
+        This repository does not provide support for modded games. You should perform and test a clean game installation before submitting an issue.
+
+        This repository does not provide support for game patches. If you are having issues with patches please refer to [Cheats and Patches Repository](https://github.com/shadps4-emu/ps4_cheats).
+
+        Before submitting an issue please check [Game Compatibility Repository](https://github.com/shadps4-emu/shadps4-game-compatibility) for the information about the status of the game.
 
         Please make an effort to make sure your issue isn't already reported.
 
@@ -21,15 +25,15 @@ body:
   - type: checkboxes
     id: checklist
     attributes:
-      label: Checklist
+      label: Checklist (we expect you to perform these steps before opening the issue)
       options:
         - label: I have searched for a similar issue in this repository and did not find one.
           required: true
         - label: I am using an official build obtained from [releases](https://github.com/shadps4-emu/shadPS4/releases) or updated one of those builds using its in-app updater.
           required: true
-        - label: I have re-dumped the game and performed a clean install without mods.
+        - label: I have re-dumped the game and performed a clean install without mods and the issue is still present.
           required: true
-        - label: I have disabled all patches and cheats.
+        - label: I have disabled all patches and cheats and the issue is still present.
           required: true
         - label: I have all the required [system modules](https://github.com/shadps4-emu/shadps4-game-compatibility?tab=readme-ov-file#informations) installed.
           required: true

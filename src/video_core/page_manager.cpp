@@ -185,7 +185,7 @@ void PageManager::OnGpuUnmap(VAddr address, size_t size) {
 void PageManager::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
     static constexpr u64 PageShift = 12;
 
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{lock};
     const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
     const u64 page_start = addr >> PageShift;
     const u64 page_end = page_start + num_pages;

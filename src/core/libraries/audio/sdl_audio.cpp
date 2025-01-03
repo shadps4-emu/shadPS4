@@ -14,7 +14,7 @@ namespace Libraries::AudioOut {
 class SDLPortBackend : public PortBackend {
 public:
     explicit SDLPortBackend(const PortOut& port)
-        : frame_size(port.format_info.FrameSize()), buffer_size(port.BufferSize()) {
+        : frame_size(port.format_info.FrameSize()), guest_buffer_size(port.BufferSize()) {
         // We want the latency for delivering frames out to be as small as possible,
         // so set the sample frames hint to the number of frames per buffer.
         const auto samples_num_str = std::to_string(port.buffer_frames);
@@ -33,7 +33,7 @@ public:
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
             return;
         }
-        queue_threshold = CalculateQueueThreshold();
+        CalculateQueueThreshold();
         if (!SDL_SetAudioStreamInputChannelMap(stream, port.format_info.channel_layout.data(),
                                                port.format_info.num_channels)) {
             LOG_ERROR(Lib_AudioOut, "Failed to configure SDL audio stream channel map: {}",
@@ -71,9 +71,9 @@ public:
                         queue_threshold);
             SDL_ClearAudioStream(stream);
             // Recalculate the threshold in case this happened because of a device change.
-            queue_threshold = CalculateQueueThreshold();
+            CalculateQueueThreshold();
         }
-        if (!SDL_PutAudioStreamData(stream, ptr, static_cast<int>(buffer_size))) {
+        if (!SDL_PutAudioStreamData(stream, ptr, static_cast<int>(guest_buffer_size))) {
             LOG_ERROR(Lib_AudioOut, "Failed to output to SDL audio stream: {}", SDL_GetError());
         }
     }
@@ -91,7 +91,7 @@ public:
     }
 
 private:
-    [[nodiscard]] u32 CalculateQueueThreshold() const {
+    void CalculateQueueThreshold() {
         SDL_AudioSpec discard;
         int sdl_buffer_frames;
         if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &discard,
@@ -100,13 +100,22 @@ private:
                         SDL_GetError());
             sdl_buffer_frames = 0;
         }
-        return std::max<u32>(buffer_size, sdl_buffer_frames * frame_size) * 4;
+        const auto sdl_buffer_size = sdl_buffer_frames * frame_size;
+        const auto new_threshold = std::max(guest_buffer_size, sdl_buffer_size) * 4;
+        if (host_buffer_size != sdl_buffer_size || queue_threshold != new_threshold) {
+            host_buffer_size = sdl_buffer_size;
+            queue_threshold = new_threshold;
+            LOG_INFO(Lib_AudioOut,
+                     "SDL audio buffers: guest = {} bytes, host = {} bytes, threshold = {} bytes",
+                     guest_buffer_size, host_buffer_size, queue_threshold);
+        }
     }
 
     u32 frame_size;
-    u32 buffer_size;
-    u32 queue_threshold;
-    SDL_AudioStream* stream;
+    u32 guest_buffer_size;
+    u32 host_buffer_size{};
+    u32 queue_threshold{};
+    SDL_AudioStream* stream{};
 };
 
 std::unique_ptr<PortBackend> SDLAudioOut::Open(PortOut& port) {
