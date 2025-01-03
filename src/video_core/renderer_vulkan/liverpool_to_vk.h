@@ -71,13 +71,17 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
 vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags);
 
-static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
-    if (fmt == vk::Format::eR32Sfloat) {
+static vk::Format PromoteFormatToDepth(vk::Format fmt) {
+    switch (fmt) {
+    case vk::Format::eR32Sfloat:
         return vk::Format::eD32Sfloat;
-    } else if (fmt == vk::Format::eR16Unorm) {
+    case vk::Format::eR16Unorm:
         return vk::Format::eD16Unorm;
+    default:
+        LOG_ERROR(Render_Vulkan, "Unexpected Depth Format {}", vk::to_string(fmt));
+        break;
     }
-    UNREACHABLE();
+    return fmt;
 }
 
 } // namespace Vulkan::LiverpoolToVK
