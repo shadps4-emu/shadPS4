@@ -15,13 +15,6 @@ class SDLPortBackend : public PortBackend {
 public:
     explicit SDLPortBackend(const PortOut& port)
         : frame_size(port.format_info.FrameSize()), guest_buffer_size(port.BufferSize()) {
-        // We want the latency for delivering frames out to be as small as possible,
-        // so set the sample frames hint to the number of frames per buffer.
-        const auto samples_num_str = std::to_string(port.buffer_frames);
-        if (!SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, samples_num_str.c_str())) {
-            LOG_WARNING(Lib_AudioOut, "Failed to set SDL audio sample frames hint to {}: {}",
-                        samples_num_str, SDL_GetError());
-        }
         const SDL_AudioSpec fmt = {
             .format = port.format_info.is_float ? SDL_AUDIO_F32LE : SDL_AUDIO_S16LE,
             .channels = port.format_info.num_channels,
