@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "core/libraries/kernel/process.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/texture_cache/image_info.h"
 
@@ -252,7 +253,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
     if (!props.is_tiled) {
         guest_size = pitch * size.height * 4;
     } else {
-        if (Config::isNeoMode()) {
+        if (Libraries::Kernel::sceKernelIsNeoMode()) {
             guest_size = pitch * ((size.height + 127) & (~127)) * 4;
         } else {
             guest_size = pitch * ((size.height + 63) & (~63)) * 4;

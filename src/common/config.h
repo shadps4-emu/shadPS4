@@ -18,7 +18,7 @@ void saveMainWindow(const std::filesystem::path& path);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
 
-bool isNeoMode();
+bool isNeoModeConsole();
 bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
