@@ -815,6 +815,13 @@
                  </layout>
                 </widget>
                </item>
+				  <item>
+					  <widget class="QCheckBox" name="motionControlsCheckBox"> 
+						  <property name="text">
+							  <string>Enable Motion Controls</string>
+						  </property>
+					  </widget>
+				  </item>
                <item>
                 <widget class="QWidget" name="controllerWidgetSpacer" native="true">
                  <property name="enabled">
