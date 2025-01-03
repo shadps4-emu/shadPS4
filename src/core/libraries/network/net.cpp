@@ -15,6 +15,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "net_error.h"
 
 namespace Libraries::Net {
 
@@ -640,11 +641,6 @@ int PS4_SYSV_ABI sceNetGetIfnameNumList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetMacAddress() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNetGetMemoryPoolStats() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -1122,6 +1118,33 @@ int PS4_SYSV_ABI sceNetEmulationGet() {
 
 int PS4_SYSV_ABI sceNetEmulationSet() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+/*
+**  Utility functions
+**
+*/
+int PS4_SYSV_ABI sceNetGetMacAddress(OrbisNetEtherAddr* addr, int flags) {
+    if (addr == nullptr) {
+        net_errno = ORBIS_NET_EINVAL;
+        LOG_ERROR(Lib_Net, "address in null");
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+#ifdef _WIN32
+    IP_ADAPTER_INFO AdapterInfo[16];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
+        net_errno = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    } else {
+        memcpy(addr->data, AdapterInfo[0].Address, 6); // get MAC Address from first adapter
+    }
+#else
+    // TODO: Implement the function for non Windows OS
+    char fakeaddress[6] = {0x9A, 0x9D, 0xCA, 0xED, 0xA5, 0xCB};
+    memcpy(addr->data, fakeaddress, 6);
+#endif
     return ORBIS_OK;
 }
 

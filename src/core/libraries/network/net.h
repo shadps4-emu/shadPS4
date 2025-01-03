@@ -36,6 +36,12 @@ struct OrbisNetSockaddrIn {
     char sin_zero[6];
 };
 
+#define SCE_NET_ETHER_ADDR_LEN 6
+
+struct OrbisNetEtherAddr {
+    u8 data[6];
+};
+
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
 int PS4_SYSV_ABI sce_net_dummy();
@@ -160,7 +166,7 @@ int PS4_SYSV_ABI sceNetGetIfList();
 int PS4_SYSV_ABI sceNetGetIfListOnce();
 int PS4_SYSV_ABI sceNetGetIfName();
 int PS4_SYSV_ABI sceNetGetIfnameNumList();
-int PS4_SYSV_ABI sceNetGetMacAddress();
+int PS4_SYSV_ABI sceNetGetMacAddress(OrbisNetEtherAddr* addr, int flags);
 int PS4_SYSV_ABI sceNetGetMemoryPoolStats();
 int PS4_SYSV_ABI sceNetGetNameToIndex();
 int PS4_SYSV_ABI sceNetGetpeername();
