@@ -250,15 +250,15 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
 
     guest_address = cpu_address;
     if (!props.is_tiled) {
-        guest_size_bytes = pitch * size.height * 4;
+        guest_size = pitch * size.height * 4;
     } else {
         if (Config::isNeoMode()) {
-            guest_size_bytes = pitch * ((size.height + 127) & (~127)) * 4;
+            guest_size = pitch * ((size.height + 127) & (~127)) * 4;
         } else {
-            guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
+            guest_size = pitch * ((size.height + 63) & (~63)) * 4;
         }
     }
-    mips_layout.emplace_back(guest_size_bytes, pitch, 0);
+    mips_layout.emplace_back(guest_size, pitch, 0);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
@@ -279,7 +279,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
 
     guest_address = buffer.Address();
     const auto color_slice_sz = buffer.GetColorSliceSize();
-    guest_size_bytes = color_slice_sz * buffer.NumSlices();
+    guest_size = color_slice_sz * buffer.NumSlices();
     mips_layout.emplace_back(color_slice_sz, pitch, 0);
     tiling_idx = static_cast<u32>(buffer.attrib.tile_mode_index.Value());
 }
@@ -303,7 +303,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
 
     guest_address = buffer.Address();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
-    guest_size_bytes = depth_slice_sz * num_slices;
+    guest_size = depth_slice_sz * num_slices;
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
 }
 
@@ -339,7 +339,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
 void ImageInfo::UpdateSize() {
     mips_layout.clear();
     MipInfo mip_info{};
-    guest_size_bytes = 0;
+    guest_size = 0;
     for (auto mip = 0u; mip < resources.levels; ++mip) {
         auto bpp = num_bits;
         auto mip_w = pitch >> mip;
@@ -392,11 +392,11 @@ void ImageInfo::UpdateSize() {
         }
         }
         mip_info.size *= mip_d;
-        mip_info.offset = guest_size_bytes;
+        mip_info.offset = guest_size;
         mips_layout.emplace_back(mip_info);
-        guest_size_bytes += mip_info.size;
+        guest_size += mip_info.size;
     }
-    guest_size_bytes *= resources.layers;
+    guest_size *= resources.layers;
 }
 
 int ImageInfo::IsMipOf(const ImageInfo& info) const {
@@ -468,18 +468,18 @@ int ImageInfo::IsSliceOf(const ImageInfo& info) const {
     }
 
     // Check for size alignment.
-    const bool slice_size = info.guest_size_bytes / info.resources.layers;
-    if (guest_size_bytes % slice_size != 0) {
+    const bool slice_size = info.guest_size / info.resources.layers;
+    if (guest_size % slice_size != 0) {
         return -1;
     }
 
     // Ensure that address is aligned too.
     const auto addr_diff = guest_address - info.guest_address;
-    if ((addr_diff % guest_size_bytes) != 0) {
+    if ((addr_diff % guest_size) != 0) {
         return -1;
     }
 
-    return addr_diff / guest_size_bytes;
+    return addr_diff / guest_size;
 }
 
 } // namespace VideoCore

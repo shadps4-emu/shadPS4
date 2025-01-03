@@ -210,7 +210,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {:#x}:{:#x}",
                           info.size.width, info.size.height, info.size.depth, info.guest_address,
-                          info.guest_size_bytes);
+                          info.guest_size);
 }
 
 boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(

@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(SHADER_FILES
-    detile_m8x1.comp
-    detile_m8x2.comp
-    detile_m32x1.comp
-    detile_m32x2.comp
-    detile_m32x4.comp
-    detile_macro8x1.comp
-    detile_macro32x1.comp
-    detile_macro32x2.comp
+    detilers/macro_32bpp.comp
+    detilers/macro_64bpp.comp
+    detilers/macro_8bpp.comp
+    detilers/micro_128bpp.comp
+    detilers/micro_16bpp.comp
+    detilers/micro_32bpp.comp
+    detilers/micro_64bpp.comp
+    detilers/micro_8bpp.comp
     fs_tri.vert
     post_process.frag
 )

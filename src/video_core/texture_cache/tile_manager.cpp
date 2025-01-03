@@ -8,128 +8,47 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
 
-#include "video_core/host_shaders/detile_m32x1_comp.h"
-#include "video_core/host_shaders/detile_m32x2_comp.h"
-#include "video_core/host_shaders/detile_m32x4_comp.h"
-#include "video_core/host_shaders/detile_m8x1_comp.h"
-#include "video_core/host_shaders/detile_m8x2_comp.h"
-#include "video_core/host_shaders/detile_macro32x1_comp.h"
-#include "video_core/host_shaders/detile_macro32x2_comp.h"
-#include "video_core/host_shaders/detile_macro8x1_comp.h"
+#include "video_core/host_shaders/detilers/macro_32bpp_comp.h"
+#include "video_core/host_shaders/detilers/macro_64bpp_comp.h"
+#include "video_core/host_shaders/detilers/macro_8bpp_comp.h"
+#include "video_core/host_shaders/detilers/micro_128bpp_comp.h"
+#include "video_core/host_shaders/detilers/micro_16bpp_comp.h"
+#include "video_core/host_shaders/detilers/micro_32bpp_comp.h"
+#include "video_core/host_shaders/detilers/micro_64bpp_comp.h"
+#include "video_core/host_shaders/detilers/micro_8bpp_comp.h"
 
-#include <boost/container/static_vector.hpp>
+// #include <boost/container/static_vector.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <vk_mem_alloc.h>
 
 namespace VideoCore {
 
-static vk::Format DemoteImageFormatForDetiling(vk::Format format) {
-    switch (format) {
-    case vk::Format::eR8Unorm:
-    case vk::Format::eR8Snorm:
-    case vk::Format::eR8Uint:
-    case vk::Format::eR8Srgb:
-        return vk::Format::eR8Uint;
-    case vk::Format::eR8G8Unorm:
-    case vk::Format::eR8G8Snorm:
-    case vk::Format::eR8G8Uint:
-    case vk::Format::eR8G8Srgb:
-    case vk::Format::eR16Unorm:
-    case vk::Format::eR16Snorm:
-    case vk::Format::eR16Uint:
-    case vk::Format::eR16Sfloat:
-    case vk::Format::eD16Unorm:
-    case vk::Format::eR4G4B4A4UnormPack16:
-    case vk::Format::eR5G5B5A1UnormPack16:
-    case vk::Format::eB5G5R5A1UnormPack16:
-    case vk::Format::eB5G6R5UnormPack16:
-        return vk::Format::eR8G8Uint;
-    case vk::Format::eR8G8B8A8Unorm:
-    case vk::Format::eR8G8B8A8Snorm:
-    case vk::Format::eR8G8B8A8Uint:
-    case vk::Format::eR8G8B8A8Srgb:
-    case vk::Format::eB8G8R8A8Unorm:
-    case vk::Format::eB8G8R8A8Snorm:
-    case vk::Format::eB8G8R8A8Uint:
-    case vk::Format::eB8G8R8A8Srgb:
-    case vk::Format::eR16G16Unorm:
-    case vk::Format::eR16G16Snorm:
-    case vk::Format::eR16G16Uint:
-    case vk::Format::eR16G16Sfloat:
-    case vk::Format::eR32Uint:
-    case vk::Format::eR32Sfloat:
-    case vk::Format::eD32Sfloat:
-    case vk::Format::eA2B10G10R10UnormPack32:
-    case vk::Format::eA2B10G10R10SnormPack32:
-    case vk::Format::eA2B10G10R10UintPack32:
-    case vk::Format::eB10G11R11UfloatPack32:
-    case vk::Format::eE5B9G9R9UfloatPack32:
-        return vk::Format::eR32Uint;
-    case vk::Format::eR16G16B16A16Unorm:
-    case vk::Format::eR16G16B16A16Snorm:
-    case vk::Format::eR16G16B16A16Uint:
-    case vk::Format::eR16G16B16A16Sfloat:
-    case vk::Format::eR32G32Uint:
-    case vk::Format::eR32G32Sfloat:
-    case vk::Format::eBc1RgbaUnormBlock:
-    case vk::Format::eBc1RgbaSrgbBlock:
-    case vk::Format::eBc4UnormBlock:
-    case vk::Format::eBc4SnormBlock:
-        return vk::Format::eR32G32Uint;
-    case vk::Format::eR32G32B32A32Uint:
-    case vk::Format::eR32G32B32A32Sfloat:
-    case vk::Format::eBc2UnormBlock:
-    case vk::Format::eBc2SrgbBlock:
-    case vk::Format::eBc3UnormBlock:
-    case vk::Format::eBc3SrgbBlock:
-    case vk::Format::eBc5UnormBlock:
-    case vk::Format::eBc5SnormBlock:
-    case vk::Format::eBc6HUfloatBlock:
-    case vk::Format::eBc6HSfloatBlock:
-    case vk::Format::eBc7UnormBlock:
-    case vk::Format::eBc7SrgbBlock:
-        return vk::Format::eR32G32B32A32Uint;
-    default:
-        break;
-    }
-
-    // Log missing formats only once to avoid spamming the log.
-    static constexpr size_t MaxFormatIndex = 256;
-    static std::array<bool, MaxFormatIndex> logged_formats{};
-    if (const u32 index = u32(format); !logged_formats[index]) {
-        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
-        logged_formats[index] = true;
-    }
-    return format;
-}
-
 const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
-    const auto format = DemoteImageFormatForDetiling(info.pixel_format);
-
+    const auto bpp = info.num_bits * (info.props.is_block ? 16 : 1);
     switch (info.tiling_mode) {
     case AmdGpu::TilingMode::Texture_MicroTiled:
-        switch (format) {
-        case vk::Format::eR8Uint:
-            return &detilers[DetilerType::Micro8x1];
-        case vk::Format::eR8G8Uint:
-            return &detilers[DetilerType::Micro8x2];
-        case vk::Format::eR32Uint:
-            return &detilers[DetilerType::Micro32x1];
-        case vk::Format::eR32G32Uint:
-            return &detilers[DetilerType::Micro32x2];
-        case vk::Format::eR32G32B32A32Uint:
-            return &detilers[DetilerType::Micro32x4];
+        switch (bpp) {
+        case 8:
+            return &detilers[DetilerType::Micro8];
+        case 16:
+            return &detilers[DetilerType::Micro16];
+        case 32:
+            return &detilers[DetilerType::Micro32];
+        case 64:
+            return &detilers[DetilerType::Micro64];
+        case 128:
+            return &detilers[DetilerType::Micro128];
         default:
             return nullptr;
         }
     case AmdGpu::TilingMode::Texture_Volume:
-        switch (format) {
-        case vk::Format::eR8Uint:
-            return &detilers[DetilerType::Macro8x1];
-        case vk::Format::eR32Uint:
-            return &detilers[DetilerType::Macro32x1];
-        case vk::Format::eR32G32Uint:
-            return &detilers[DetilerType::Macro32x2];
+        switch (bpp) {
+        case 8:
+            return &detilers[DetilerType::Macro8];
+        case 32:
+            return &detilers[DetilerType::Macro32];
+        case 64:
+            return &detilers[DetilerType::Macro64];
         default:
             return nullptr;
         }
@@ -149,10 +68,10 @@ struct DetilerParams {
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler} {
     static const std::array detiler_shaders{
-        HostShaders::DETILE_M8X1_COMP,      HostShaders::DETILE_M8X2_COMP,
-        HostShaders::DETILE_M32X1_COMP,     HostShaders::DETILE_M32X2_COMP,
-        HostShaders::DETILE_M32X4_COMP,     HostShaders::DETILE_MACRO8X1_COMP,
-        HostShaders::DETILE_MACRO32X1_COMP, HostShaders::DETILE_MACRO32X2_COMP,
+        HostShaders::MICRO_8BPP_COMP,   HostShaders::MICRO_16BPP_COMP,
+        HostShaders::MICRO_32BPP_COMP,  HostShaders::MICRO_64BPP_COMP,
+        HostShaders::MICRO_128BPP_COMP, HostShaders::MACRO_8BPP_COMP,
+        HostShaders::MACRO_32BPP_COMP,  HostShaders::MACRO_64BPP_COMP,
     };
 
     boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
@@ -293,7 +212,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
         return {in_buffer, in_offset};
     }
 
-    const u32 image_size = info.guest_size_bytes;
+    const u32 image_size = info.guest_size;
 
     // Prepare output buffer
     auto out_buffer = AllocBuffer(image_size, true);
