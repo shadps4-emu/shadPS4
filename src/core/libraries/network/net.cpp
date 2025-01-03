@@ -1158,7 +1158,7 @@ int PS4_SYSV_ABI sceNetGetMacAddress(OrbisNetEtherAddr* addr, int flags) {
     }
 #else
     // TODO: Implement the function for non Windows OS
-    char fakeaddress[6] = {0x9A, 0x9D, 0xCA, 0xED, 0xA5, 0xCB};
+    char fakeaddress[] = {0x9A, 0x9D, 0xCA, 0xED, 0xA5, 0xCB};
     memcpy(addr->data, fakeaddress, 6);
 #endif
     return ORBIS_OK;
