@@ -26,22 +26,29 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut) {
-    if (searchStart < 0 || searchEnd <= searchStart) {
+    if (searchStart < 0 || searchEnd < 0) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = searchEnd - searchStart >= len;
-    if (len <= 0 || !Common::Is16KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+    if (len <= 0 || !Common::Is16KBAligned(len)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is16KBAligned(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+    if (memoryType > 10) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     if (physAddrOut == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Result physical address pointer is null!");
         return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (searchEnd <= searchStart || searchEnd < len || !is_in_range) {
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     }
 
     auto* memory = Core::Memory::Instance();
