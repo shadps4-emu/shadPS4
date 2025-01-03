@@ -257,7 +257,7 @@ void GameController::TryOpenSDLController() {
                 LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
             }
         }
-        
+
         SDL_free(gamepads);
 
         SetLightBarRGB(0, 0, 255);
