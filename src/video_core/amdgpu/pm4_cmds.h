@@ -204,6 +204,11 @@ struct PM4CmdSetData {
     static constexpr u32* SetShReg(u32* cmdbuf, Args... data) {
         return WritePacket<PM4ItOpcode::SetShReg>(cmdbuf, type, data...);
     }
+
+    template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
+    static constexpr u32* SetUconfigReg(u32* cmdbuf, Args... data) {
+        return WritePacket<PM4ItOpcode::SetUconfigReg>(cmdbuf, type, data...);
+    }
 };
 
 struct PM4CmdNop {

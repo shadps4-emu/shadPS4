@@ -12,6 +12,7 @@
 #include "core/address_space.h"
 #include "core/debug_state.h"
 #include "core/libraries/gnmdriver/gnm_error.h"
+#include "core/libraries/gnmdriver/gnmdriver_init.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
@@ -54,244 +55,11 @@ enum ShaderStages : u32 {
 
 static constexpr std::array indirect_sgpr_offsets{0u, 0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
 
-static constexpr auto HwInitPacketSize = 0x100u;
-
-// clang-format off
-static constexpr std::array InitSequence{
-    // A fake preamble to mimic context reset sent by FW
-    0xc0001200u, 0u, // IT_CLEAR_STATE
-
-    // Actual init state sequence
-    0xc0017600u, 0x216u, 0xffffffffu,
-    0xc0017600u, 0x217u, 0xffffffffu,
-    0xc0017600u, 0x215u, 0u,
-    0xc0016900u, 0x2f9u, 0x2du,
-    0xc0016900u, 0x282u, 8u,
-    0xc0016900u, 0x280u, 0x80008u,
-    0xc0016900u, 0x281u, 0xffff0000u,
-    0xc0016900u, 0x204u, 0u,
-    0xc0016900u, 0x206u, 0x43fu,
-    0xc0016900u, 0x83u,  0xffffu,
-    0xc0016900u, 0x317u, 0x10u,
-    0xc0016900u, 0x2fau, 0x3f800000u,
-    0xc0016900u, 0x2fcu, 0x3f800000u,
-    0xc0016900u, 0x2fbu, 0x3f800000u,
-    0xc0016900u, 0x2fdu, 0x3f800000u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0016900u, 0x30eu, 0xffffffffu,
-    0xc0016900u, 0x30fu, 0xffffffffu,
-    0xc0002f00u, 1u,
-    0xc0017600u, 7u,     0x1ffu,
-    0xc0017600u, 0x46u,  0x1ffu,
-    0xc0017600u, 0x87u,  0x1ffu,
-    0xc0017600u, 0xc7u,  0x1ffu,
-    0xc0017600u, 0x107u, 0u,
-    0xc0017600u, 0x147u, 0x1ffu,
-    0xc0016900u, 0x1b1u, 2u,
-    0xc0016900u, 0x101u, 0u,
-    0xc0016900u, 0x100u, 0xffffffffu,
-    0xc0016900u, 0x103u, 0u,
-    0xc0016900u, 0x284u, 0u,
-    0xc0016900u, 0x290u, 0u,
-    0xc0016900u, 0x2aeu, 0u,
-    0xc0016900u, 0x292u, 0u,
-    0xc0016900u, 0x293u, 0x6000000u,
-    0xc0016900u, 0x2f8u, 0u,
-    0xc0016900u, 0x2deu, 0x1e9u,
-    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
-    0xc0017900u, 0x200u, 0xe0000000u,
-};
-static_assert(InitSequence.size() == 0x73 + 2);
-
-static constexpr std::array InitSequence175{
-    // A fake preamble to mimic context reset sent by FW
-    0xc0001200u, 0u, // IT_CLEAR_STATE
-
-    // Actual init state sequence 
-    0xc0017600u, 0x216u, 0xffffffffu,
-    0xc0017600u, 0x217u, 0xffffffffu,
-    0xc0017600u, 0x215u, 0u,
-    0xc0016900u, 0x2f9u, 0x2du,
-    0xc0016900u, 0x282u, 8u,
-    0xc0016900u, 0x280u, 0x80008u,
-    0xc0016900u, 0x281u, 0xffff0000u,
-    0xc0016900u, 0x204u, 0u,
-    0xc0016900u, 0x206u, 0x43fu,
-    0xc0016900u, 0x83u,  0xffffu,
-    0xc0016900u, 0x317u, 0x10u,
-    0xc0016900u, 0x2fau, 0x3f800000u,
-    0xc0016900u, 0x2fcu, 0x3f800000u,
-    0xc0016900u, 0x2fbu, 0x3f800000u,
-    0xc0016900u, 0x2fdu, 0x3f800000u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0016900u, 0x30eu, 0xffffffffu,
-    0xc0016900u, 0x30fu, 0xffffffffu,
-    0xc0002f00u, 1u,
-    0xc0017600u, 7u,     0x1ffu,
-    0xc0017600u, 0x46u,  0x1ffu,
-    0xc0017600u, 0x87u,  0x1ffu,
-    0xc0017600u, 0xc7u,  0x1ffu,
-    0xc0017600u, 0x107u, 0u,
-    0xc0017600u, 0x147u, 0x1ffu,
-    0xc0016900u, 0x1b1u, 2u,
-    0xc0016900u, 0x101u, 0u,
-    0xc0016900u, 0x100u, 0xffffffffu,
-    0xc0016900u, 0x103u, 0u,
-    0xc0016900u, 0x284u, 0u,
-    0xc0016900u, 0x290u, 0u,
-    0xc0016900u, 0x2aeu, 0u,
-    0xc0016900u, 0x292u, 0u,
-    0xc0016900u, 0x293u, 0x6020000u,
-    0xc0016900u, 0x2f8u, 0u,
-    0xc0016900u, 0x2deu, 0x1e9u,
-    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
-    0xc0017900u, 0x200u, 0xe0000000u,
-};
-static_assert(InitSequence175.size() == 0x73 + 2);
-
-static constexpr std::array InitSequence200{
-    // A fake preamble to mimic context reset sent by FW
-    0xc0001200u, 0u, // IT_CLEAR_STATE
-
-    // Actual init state sequence    
-    0xc0017600u, 0x216u, 0xffffffffu,
-    0xc0017600u, 0x217u, 0xffffffffu,
-    0xc0017600u, 0x215u, 0u,
-    0xc0016900u, 0x2f9u, 0x2du,
-    0xc0016900u, 0x282u, 8u,
-    0xc0016900u, 0x280u, 0x80008u,
-    0xc0016900u, 0x281u, 0xffff0000u,
-    0xc0016900u, 0x204u, 0u,
-    0xc0016900u, 0x206u, 0x43fu,
-    0xc0016900u, 0x83u,  0xffffu,
-    0xc0016900u, 0x317u, 0x10u,
-    0xc0016900u, 0x2fau, 0x3f800000u,
-    0xc0016900u, 0x2fcu, 0x3f800000u,
-    0xc0016900u, 0x2fbu, 0x3f800000u,
-    0xc0016900u, 0x2fdu, 0x3f800000u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0016900u, 0x30eu, 0xffffffffu,
-    0xc0016900u, 0x30fu, 0xffffffffu,
-    0xc0002f00u, 1u,
-    0xc0017600u, 7u,     0x1701ffu,
-    0xc0017600u, 0x46u,  0x1701fdu,
-    0xc0017600u, 0x87u,  0x1701ffu,
-    0xc0017600u, 0xc7u,  0x1701fdu,
-    0xc0017600u, 0x107u, 0x17u,
-    0xc0017600u, 0x147u, 0x1701fdu,
-    0xc0017600u, 0x47u,  0x1cu,
-    0xc0016900u, 0x1b1u, 2u,
-    0xc0016900u, 0x101u, 0u,
-    0xc0016900u, 0x100u, 0xffffffffu,
-    0xc0016900u, 0x103u, 0u,
-    0xc0016900u, 0x284u, 0u,
-    0xc0016900u, 0x290u, 0u,
-    0xc0016900u, 0x2aeu, 0u,
-    0xc0016900u, 0x292u, 0u,
-    0xc0016900u, 0x293u, 0x6020000u,
-    0xc0016900u, 0x2f8u, 0u,
-    0xc0016900u, 0x2deu, 0x1e9u,
-    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
-    0xc0017900u, 0x200u, 0xe0000000u,
-};
-static_assert(InitSequence200.size() == 0x76 + 2);
-
-static constexpr std::array InitSequence350{
-    // A fake preamble to mimic context reset sent by FW
-    0xc0001200u, 0u, // IT_CLEAR_STATE
-
-    // Actual init state sequence    
-    0xc0017600u, 0x216u, 0xffffffffu,
-    0xc0017600u, 0x217u, 0xffffffffu,
-    0xc0017600u, 0x215u, 0u,
-    0xc0016900u, 0x2f9u, 0x2du,
-    0xc0016900u, 0x282u, 8u,
-    0xc0016900u, 0x280u, 0x80008u,
-    0xc0016900u, 0x281u, 0xffff0000u,
-    0xc0016900u, 0x204u, 0u,
-    0xc0016900u, 0x206u, 0x43fu,
-    0xc0016900u, 0x83u,  0xffffu,
-    0xc0016900u, 0x317u, 0x10u,
-    0xc0016900u, 0x2fau, 0x3f800000u,
-    0xc0016900u, 0x2fcu, 0x3f800000u,
-    0xc0016900u, 0x2fbu, 0x3f800000u,
-    0xc0016900u, 0x2fdu, 0x3f800000u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0016900u, 0x30eu, 0xffffffffu,
-    0xc0016900u, 0x30fu, 0xffffffffu,
-    0xc0002f00u, 1u,
-    0xc0017600u, 7u,    0x1701ffu,
-    0xc0017600u, 0x46u,  0x1701fdu,
-    0xc0017600u, 0x87u,  0x1701ffu,
-    0xc0017600u, 0xc7u,  0x1701fdu,
-    0xc0017600u, 0x107u, 0x17u,
-    0xc0017600u, 0x147u, 0x1701fdu,
-    0xc0017600u, 0x47u,  0x1cu,
-    0xc0016900u, 0x1b1u, 2u,
-    0xc0016900u, 0x101u, 0u,
-    0xc0016900u, 0x100u, 0xffffffffu,
-    0xc0016900u, 0x103u, 0u,
-    0xc0016900u, 0x284u, 0u,
-    0xc0016900u, 0x290u, 0u,
-    0xc0016900u, 0x2aeu, 0u,
-    0xc0016900u, 0x102u, 0u,
-    0xc0016900u, 0x292u, 0u,
-    0xc0016900u, 0x293u, 0x6020000u,
-    0xc0016900u, 0x2f8u, 0u,
-    0xc0016900u, 0x2deu, 0x1e9u,
-    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
-    0xc0017900u, 0x200u, 0xe0000000u,
-    0xc0016900u, 0x2aau, 0xffu,
-};
-static_assert(InitSequence350.size() == 0x7c + 2);
-
-static constexpr std::array CtxInitSequence{
-    0xc0012800u, 0x80000000u, 0x80000000u,
-    0xc0001200u, 0u,
-    0xc0002f00u, 1u,
-    0xc0016900u, 0x102u, 0u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0111000u, 0u
-};
-static_assert(CtxInitSequence.size() == 0x0f);
-
-static constexpr std::array CtxInitSequence400{
-    0xc0012800u, 0x80000000u, 0x80000000u,
-    0xc0001200u, 0u,
-    0xc0016900u, 0x2f9u, 0x2du,
-    0xc0016900u, 0x282u, 8u,
-    0xc0016900u, 0x280u, 0x80008u,
-    0xc0016900u, 0x281u, 0xffff0000u,
-    0xc0016900u, 0x204u, 0u,
-    0xc0016900u, 0x206u, 0x43fu,
-    0xc0016900u, 0x83u,  0xffffu,
-    0xc0016900u, 0x317u, 0x10u,
-    0xc0016900u, 0x2fau, 0x3f800000u,
-    0xc0016900u, 0x2fcu, 0x3f800000u,
-    0xc0016900u, 0x2fbu, 0x3f800000u,
-    0xc0016900u, 0x2fdu, 0x3f800000u,
-    0xc0016900u, 0x202u, 0xcc0010u,
-    0xc0016900u, 0x30eu, 0xffffffffu,
-    0xc0016900u, 0x30fu, 0xffffffffu,
-    0xc0002f00u, 1u,
-    0xc0016900u, 0x1b1u, 2u,
-    0xc0016900u, 0x101u, 0u,
-    0xc0016900u, 0x100u, 0xffffffffu,
-    0xc0016900u, 0x103u, 0u,
-    0xc0016900u, 0x284u, 0u,
-    0xc0016900u, 0x290u, 0u,
-    0xc0016900u, 0x2aeu, 0u,
-    0xc0016900u, 0x102u, 0u,
-    0xc0016900u, 0x292u, 0u,
-    0xc0016900u, 0x293u, 0x6020000u,
-    0xc0016900u, 0x2f8u, 0u,
-    0xc0016900u, 0x2deu, 0x1e9u,
-    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
-    0xc0016900u, 0x2aau, 0xffu,
-    0xc09e1000u,
-};
-static_assert(CtxInitSequence400.size() == 0x61);
-// clang-format on
+// Gates use of what appear to be the neo-mode init sequences but with the older
+// IA_MULTI_VGT_PARAM register address. No idea what this is for as the ioctl
+// that controls it is still a mystery, but leaving the sequences in gated behind
+// this flag in case we need it in the future.
+static constexpr bool UseNeoCompatSequences = false;
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
@@ -315,6 +83,14 @@ static void WaitGpuIdle() {
     HLE_TRACE;
     std::unique_lock lock{m_submission};
     cv_lock.wait(lock, [] { return submission_lock == 0; });
+}
+
+// Write a special ending NOP packet with N DWs data block
+static inline u32* WriteTrailingNop(u32* cmdbuf, u32 data_block_size) {
+    auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
+    nop->header = PM4Type3Header{PM4ItOpcode::Nop, data_block_size - 1};
+    nop->data_block[0] = 0u; // only one out of `data_block_size` is initialized
+    return cmdbuf + data_block_size + 1 /* header */;
 }
 
 // Write a special ending NOP packet with N DWs data block
@@ -619,17 +395,30 @@ u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {
         return 0;
     }
 
-    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x216u,
-                                     0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
-    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x217u,
-                                     0xffffffffu);            // COMPUTE_STATIC_THREAD_MGMT_SE1
-    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
+    cmdbuf = PM4CmdSetData::SetShReg<PM4ShaderType::ShaderCompute>(
+        cmdbuf, 0x216u,
+        0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
+    cmdbuf = PM4CmdSetData::SetShReg<PM4ShaderType::ShaderCompute>(
+        cmdbuf, 0x217u,
+        0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE1
+
+    if (sceKernelIsNeoMode()) {
+        cmdbuf = PM4CmdSetData::SetShReg<PM4ShaderType::ShaderCompute>(
+            cmdbuf, 0x219u,
+            0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE2
+        cmdbuf = PM4CmdSetData::SetShReg<PM4ShaderType::ShaderCompute>(
+            cmdbuf, 0x21au,
+            0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE3
+    }
+
+    cmdbuf = PM4CmdSetData::SetShReg<PM4ShaderType::ShaderCompute>(
+        cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
 
     cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(cmdbuf, 6);
-    cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u, 0u);
+    cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u, 0xau);
 
-    cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
-    cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
+    cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, sceKernelIsNeoMode() ? 0xe9 : 0xef);
+    cmdbuf = WriteBody(cmdbuf, 0u);
     return HwInitPacketSize;
 }
 
@@ -646,7 +435,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr
         draw_index->index_base_lo = u32(index_addr);
         draw_index->index_base_hi = u32(index_addr >> 32);
         draw_index->index_count = index_count;
-        draw_index->draw_initiator = 0;
+        draw_index->draw_initiator = sceKernelIsNeoMode() ? flags & 0xe0000000u : 0;
 
         WriteTrailingNop<3>(cmdbuf + 6);
         return ORBIS_OK;
@@ -659,8 +448,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32
 
     if (cmdbuf && (size == 7) &&
         (flags & 0x1ffffffe) == 0) { // no predication will be set in the packet
-        cmdbuf = WritePacket<PM4ItOpcode::DrawIndexAuto>(cmdbuf, PM4ShaderType::ShaderGraphics,
-                                                         index_count, 2u);
+        cmdbuf = WritePacket<PM4ItOpcode::DrawIndexAuto>(
+            cmdbuf, PM4ShaderType::ShaderGraphics, index_count,
+            sceKernelIsNeoMode() ? flags & 0xe0000000u | 2u : 2u);
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
     }
@@ -684,7 +474,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset,
         cmdbuf[0] = data_offset;
         cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[2] = instance_sgpr_offset == 0 ? 0 : (instance_sgpr_offset & 0xffffu) + sgpr_offset;
-        cmdbuf[3] = 0;
+        cmdbuf[3] = sceKernelIsNeoMode() ? flags & 0xe0000000u : 0u;
 
         cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
@@ -699,8 +489,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
                                                    u32 flags) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (cmdbuf && (size == 16) && (shader_stage < ShaderStages::Max) &&
-        (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u)) {
+    if ((!sceKernelIsNeoMode() || !UseNeoCompatSequences) && !cmdbuf && (size == 16) &&
+        (shader_stage < ShaderStages::Max) && (vertex_sgpr_offset < 0x10u) &&
+        (instance_sgpr_offset < 0x10u)) {
 
         cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 2);
         cmdbuf = WriteBody(cmdbuf, 0u);
@@ -719,7 +510,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
         cmdbuf[4] = max_count;
         *(u64*)(&cmdbuf[5]) = count_addr;
         cmdbuf[7] = sizeof(DrawIndexedIndirectArgs);
-        cmdbuf[8] = 0;
+        cmdbuf[8] = sceKernelIsNeoMode() ? flags & 0xe0000000u : 0;
 
         cmdbuf += 9;
         WriteTrailingNop<2>(cmdbuf);
@@ -748,7 +539,8 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, 
         const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
         cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexOffset2>(
             cmdbuf, 4, PM4ShaderType::ShaderGraphics, predicate);
-        cmdbuf = WriteBody(cmdbuf, index_count, index_offset, index_count, 0u);
+        cmdbuf = WriteBody(cmdbuf, index_count, index_offset, index_count,
+                           sceKernelIsNeoMode() ? flags & 0xe0000000u : 0u);
 
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
@@ -772,7 +564,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 
         cmdbuf[0] = data_offset;
         cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[2] = instance_sgpr_offset == 0 ? 0 : (instance_sgpr_offset & 0xffffu) + sgpr_offset;
-        cmdbuf[3] = 2; // auto index
+        cmdbuf[3] = sceKernelIsNeoMode() ? flags & 0xe0000000u | 2u : 2u; // auto index
 
         cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
@@ -801,6 +593,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size) {
     }
 
     const auto& SetupContext = [](u32* cmdbuf, u32 size, bool clear_state) {
+        const auto* cmdbuf_end = cmdbuf + HwInitPacketSize;
         if (clear_state) {
             cmdbuf = ClearContextState(cmdbuf);
         }
@@ -808,10 +601,8 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size) {
         std::memcpy(cmdbuf, &InitSequence[2], (InitSequence.size() - 2) * 4);
         cmdbuf += InitSequence.size() - 2;
 
-        const auto cmdbuf_left =
-            HwInitPacketSize - (InitSequence.size() - 2) - (clear_state ? 0xc : 0) - 1;
-        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
-        cmdbuf = WriteBody(cmdbuf, 0u);
+        const auto cmdbuf_left = cmdbuf_end - cmdbuf - 1;
+        WriteTrailingNop(cmdbuf, cmdbuf_left);
 
         return HwInitPacketSize;
     };
@@ -826,12 +617,13 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
         return 0;
     }
 
+    const auto* cmdbuf_end = cmdbuf + HwInitPacketSize;
     cmdbuf = ClearContextState(cmdbuf);
     std::memcpy(cmdbuf, &InitSequence175[2], (InitSequence175.size() - 2) * 4);
     cmdbuf += InitSequence175.size() - 2;
 
-    constexpr auto cmdbuf_left = HwInitPacketSize - (InitSequence175.size() - 2) - 0xc - 1;
-    WriteTrailingNop<cmdbuf_left>(cmdbuf);
+    const auto cmdbuf_left = cmdbuf_end - cmdbuf - 1;
+    WriteTrailingNop(cmdbuf, cmdbuf_left);
 
     return HwInitPacketSize;
 }
@@ -844,17 +636,27 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
     }
 
     const auto& SetupContext200 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        const auto* cmdbuf_end = cmdbuf + HwInitPacketSize;
         if (clear_state) {
             cmdbuf = ClearContextState(cmdbuf);
         }
 
-        std::memcpy(cmdbuf, &InitSequence200[2], (InitSequence200.size() - 2) * 4);
-        cmdbuf += InitSequence200.size() - 2;
+        if (sceKernelIsNeoMode()) {
+            if (!UseNeoCompatSequences) {
+                std::memcpy(cmdbuf, &InitSequence200Neo[2], (InitSequence200Neo.size() - 2) * 4);
+                cmdbuf += InitSequence200Neo.size() - 2;
+            } else {
+                std::memcpy(cmdbuf, &InitSequence200NeoCompat[2],
+                            (InitSequence200NeoCompat.size() - 2) * 4);
+                cmdbuf += InitSequence200NeoCompat.size() - 2;
+            }
+        } else {
+            std::memcpy(cmdbuf, &InitSequence200[2], (InitSequence200.size() - 2) * 4);
+            cmdbuf += InitSequence200.size() - 2;
+        }
 
-        const auto cmdbuf_left =
-            HwInitPacketSize - (InitSequence200.size() - 2) - (clear_state ? 0xc : 0) - 1;
-        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
-        cmdbuf = WriteBody(cmdbuf, 0u);
+        const auto cmdbuf_left = cmdbuf_end - cmdbuf - 1;
+        WriteTrailingNop(cmdbuf, cmdbuf_left);
 
         return HwInitPacketSize;
     };
@@ -870,17 +672,27 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
     }
 
     const auto& SetupContext350 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        const auto* cmdbuf_end = cmdbuf + HwInitPacketSize;
         if (clear_state) {
             cmdbuf = ClearContextState(cmdbuf);
         }
 
-        std::memcpy(cmdbuf, &InitSequence350[2], (InitSequence350.size() - 2) * 4);
-        cmdbuf += InitSequence350.size() - 2;
+        if (sceKernelIsNeoMode()) {
+            if (!UseNeoCompatSequences) {
+                std::memcpy(cmdbuf, &InitSequence350Neo[2], (InitSequence350Neo.size() - 2) * 4);
+                cmdbuf += InitSequence350Neo.size() - 2;
+            } else {
+                std::memcpy(cmdbuf, &InitSequence350NeoCompat[2],
+                            (InitSequence350NeoCompat.size() - 2) * 4);
+                cmdbuf += InitSequence350NeoCompat.size() - 2;
+            }
+        } else {
+            std::memcpy(cmdbuf, &InitSequence350[2], (InitSequence350.size() - 2) * 4);
+            cmdbuf += InitSequence350.size() - 2;
+        }
 
-        const auto cmdbuf_left =
-            HwInitPacketSize - (InitSequence350.size() - 2) - (clear_state ? 0xc : 0) - 1;
-        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
-        cmdbuf = WriteBody(cmdbuf, 0u);
+        const auto cmdbuf_left = cmdbuf_end - cmdbuf - 1;
+        WriteTrailingNop(cmdbuf, cmdbuf_left);
 
         return HwInitPacketSize;
     };
@@ -896,7 +708,11 @@ u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState(u32* cmdbuf, u32 size) {
         return 0;
     }
 
-    std::memcpy(cmdbuf, CtxInitSequence.data(), CtxInitSequence.size() * 4);
+    if (sceKernelIsNeoMode()) {
+        std::memcpy(cmdbuf, CtxInitSequenceNeo.data(), CtxInitSequenceNeo.size() * 4);
+    } else {
+        std::memcpy(cmdbuf, CtxInitSequence.data(), CtxInitSequence.size() * 4);
+    }
     return CtxInitPacketSize;
 }
 
@@ -908,7 +724,16 @@ u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400(u32* cmdbuf, u32 size) {
         return 0;
     }
 
-    std::memcpy(cmdbuf, CtxInitSequence400.data(), CtxInitSequence400.size() * 4);
+    if (sceKernelIsNeoMode()) {
+        if (!UseNeoCompatSequences) {
+            std::memcpy(cmdbuf, CtxInitSequence400Neo.data(), CtxInitSequence400Neo.size() * 4);
+        } else {
+            std::memcpy(cmdbuf, CtxInitSequence400NeoCompat.data(),
+                        CtxInitSequence400NeoCompat.size() * 4);
+        }
+    } else {
+        std::memcpy(cmdbuf, CtxInitSequence400.data(), CtxInitSequence400.size() * 4);
+    }
     return CtxInitPacketSize;
 }
 
@@ -1030,7 +855,8 @@ int PS4_SYSV_ABI sceGnmGetGpuBlockStatus() {
 
 u32 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return Config::isNeoMode() ? 911'000'000 : 800'000'000;
+    // On console this uses an ioctl check, but we assume it is equal to just checking for neo mode.
+    return sceKernelIsNeoMode() ? 911'000'000 : 800'000'000;
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuInfoStatus() {
@@ -1369,7 +1195,15 @@ s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size) {
     if (cmdbuf == nullptr || size != 3) {
         return -1;
     }
-    PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, 0xffu); // IA_MULTI_VGT_PARAM
+    if (sceKernelIsNeoMode()) {
+        if (!UseNeoCompatSequences) {
+            PM4CmdSetData::SetUconfigReg(cmdbuf, 0x40000258u, 0x6d007fu); // IA_MULTI_VGT_PARAM
+        } else {
+            PM4CmdSetData::SetContextReg(cmdbuf, 0x100002aau, 0xd00ffu); // IA_MULTI_VGT_PARAM
+        }
+    } else {
+        PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, 0xffu); // IA_MULTI_VGT_PARAM
+    }
     return ORBIS_OK;
 }
 
@@ -1830,9 +1664,25 @@ s32 PS4_SYSV_ABI sceGnmSetVgtControl(u32* cmdbuf, u32 size, u32 prim_group_sz_mi
         return -1;
     }
 
-    const u32 reg_value =
-        ((partial_vs_wave_mode & 1) << 0x10) | (prim_group_sz_minus_one & 0xffffu);
-    PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, reg_value); // IA_MULTI_VGT_PARAM
+    if (sceKernelIsNeoMode()) {
+        const u32 wd_switch_on_eop = u32(wd_switch_only_on_eop_mode != 0) << 0x14;
+        const u32 switch_on_eoi = u32(wd_switch_only_on_eop_mode == 0) << 0x13;
+        const u32 reg_value =
+            wd_switch_only_on_eop_mode != 0
+                ? (partial_vs_wave_mode & 1) << 0x10 | prim_group_sz_minus_one | wd_switch_on_eop |
+                      switch_on_eoi | 0x40000u
+                : prim_group_sz_minus_one & 0x1cffffu | wd_switch_on_eop | switch_on_eoi | 0x50000u;
+        if (!UseNeoCompatSequences) {
+            PM4CmdSetData::SetUconfigReg(cmdbuf, 0x40000258u,
+                                         reg_value | 0x600000u); // IA_MULTI_VGT_PARAM
+        } else {
+            PM4CmdSetData::SetContextReg(cmdbuf, 0x100002aau, reg_value); // IA_MULTI_VGT_PARAM
+        }
+    } else {
+        const u32 reg_value =
+            ((partial_vs_wave_mode & 1) << 0x10) | (prim_group_sz_minus_one & 0xffffu);
+        PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, reg_value); // IA_MULTI_VGT_PARAM
+    }
     return ORBIS_OK;
 }
 
@@ -2215,9 +2065,25 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
         if (sdk_version <= 0x1ffffffu) {
             liverpool->SubmitGfx(InitSequence, {});
         } else if (sdk_version <= 0x3ffffffu) {
-            liverpool->SubmitGfx(InitSequence200, {});
+            if (sceKernelIsNeoMode()) {
+                if (!UseNeoCompatSequences) {
+                    liverpool->SubmitGfx(InitSequence200Neo, {});
+                } else {
+                    liverpool->SubmitGfx(InitSequence200NeoCompat, {});
+                }
+            } else {
+                liverpool->SubmitGfx(InitSequence200, {});
+            }
         } else {
-            liverpool->SubmitGfx(InitSequence350, {});
+            if (sceKernelIsNeoMode()) {
+                if (!UseNeoCompatSequences) {
+                    liverpool->SubmitGfx(InitSequence350Neo, {});
+                } else {
+                    liverpool->SubmitGfx(InitSequence350NeoCompat, {});
+                }
+            } else {
+                liverpool->SubmitGfx(InitSequence350, {});
+            }
         }
         send_init_packet = false;
     }
