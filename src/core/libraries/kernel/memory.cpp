@@ -49,7 +49,8 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 
     const bool is_in_range = searchEnd - searchStart >= len;
     if (searchEnd <= searchStart || searchEnd < len || !is_in_range) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is too small!"
+        LOG_ERROR(Kernel_Vmm,
+                  "Provided address range is too small!"
                   " searchStart = {:#x}, searchEnd = {:#x}, length = {:#x}",
                   searchStart, searchEnd, len);
         return ORBIS_KERNEL_ERROR_EAGAIN;
