@@ -222,12 +222,13 @@ int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords();
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
 int PS4_SYSV_ABI sceNetSend();
 int PS4_SYSV_ABI sceNetSendmsg();
-int PS4_SYSV_ABI sceNetSendto();
+int PS4_SYSV_ABI sceNetSendto(int s, const void* buf, unsigned int len, int flags,
+                              const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetSetDns6Info();
 int PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
 int PS4_SYSV_ABI sceNetSetDnsInfo();
 int PS4_SYSV_ABI sceNetSetDnsInfoToKernel();
-int PS4_SYSV_ABI sceNetSetsockopt();
+int PS4_SYSV_ABI sceNetSetsockopt(int s, int level, int optname, const void* optval, u32 optlen);
 int PS4_SYSV_ABI sceNetShowIfconfig();
 int PS4_SYSV_ABI sceNetShowIfconfigForBuffer();
 int PS4_SYSV_ABI sceNetShowIfconfigWithMemory();

@@ -10,12 +10,14 @@
 #include <arpa/inet.h>
 #endif
 
+#include <common/singleton.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
 #include "net_error.h"
+#include "net_obj.h"
 
 namespace Libraries::Net {
 
@@ -921,11 +923,6 @@ int PS4_SYSV_ABI sceNetSendmsg() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSendto() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNetSetDns6Info() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -946,7 +943,7 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSetsockopt() {
+int PS4_SYSV_ABI sceNetSetsockopt(int s, int level, int optname, const void* optval, u32 optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1037,8 +1034,13 @@ int PS4_SYSV_ABI sceNetShutdown() {
 }
 
 int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    // TODO unfinished
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    int socket = netcall->net_socket(family, type, protocol);
+    if (socket < 0) {
+        LOG_ERROR(Lib_Kernel, "error in socket creation = {}", socket);
+    }
+    return socket;
 }
 
 int PS4_SYSV_ABI sceNetSocketAbort() {
@@ -1120,7 +1122,21 @@ int PS4_SYSV_ABI sceNetEmulationSet() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
-
+/*
+**  Network communication functions functions (standard)
+**
+*/
+int PS4_SYSV_ABI sceNetSendto(int s, const void* buf, unsigned int len, int flags,
+                              const OrbisNetSockaddr* addr, u32 addrlen) {
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->findsock(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket is invalid");
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return netcall->send_packet(sock, buf, len, flags, addr, addrlen);
+}
 /*
 **  Utility functions
 **
