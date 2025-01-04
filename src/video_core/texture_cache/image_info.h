@@ -86,6 +86,7 @@ struct ImageInfo {
     VAddr guest_address{0};
     u32 guest_size{0};
     u32 tiling_idx{0}; // TODO: merge with existing!
+    bool alt_tile{false};
 
     VAddr stencil_addr{0};
     u32 stencil_size{0};
