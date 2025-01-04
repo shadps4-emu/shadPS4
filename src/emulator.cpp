@@ -217,41 +217,15 @@ void Emulator::Run(const std::filesystem::path& file) {
     linker->LoadModule(eboot_path);
 
     // check if we have system modules to load
-    LoadSystemModules(eboot_path, game_info.game_serial);
+    LoadSystemModules(game_info.game_serial);
 
     // Load all prx from game's sce_module folder
-    std::vector<std::filesystem::path> modules_to_load;
-    std::filesystem::path game_module_folder = file.parent_path() / "sce_module";
-    if (std::filesystem::is_directory(game_module_folder)) {
-        for (const auto& entry : std::filesystem::directory_iterator(game_module_folder)) {
-            if (entry.is_regular_file()) {
-                modules_to_load.push_back(entry.path());
-            }
+    mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
+        if (is_file) {
+            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
+            linker->LoadModule(path);
         }
-    }
-
-    // Load all prx from separate update's sce_module folder
-    std::filesystem::path game_patch_folder = game_folder;
-    game_patch_folder += "-UPDATE";
-    std::filesystem::path update_module_folder = game_patch_folder / "sce_module";
-    if (std::filesystem::is_directory(update_module_folder)) {
-        for (const auto& entry : std::filesystem::directory_iterator(update_module_folder)) {
-            auto it = std::find_if(modules_to_load.begin(), modules_to_load.end(),
-                                   [&entry](const std::filesystem::path& p) {
-                                       return p.filename() == entry.path().filename();
-                                   });
-            if (it != modules_to_load.end()) {
-                *it = entry.path();
-            } else {
-                modules_to_load.push_back(entry.path());
-            }
-        }
-    }
-
-    for (const auto& module_path : modules_to_load) {
-        LOG_INFO(Loader, "Loading {}", fmt::UTF(module_path.u8string()));
-        linker->LoadModule(module_path);
-    }
+    });
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
@@ -278,7 +252,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::exit(0);
 }
 
-void Emulator::LoadSystemModules(const std::filesystem::path& file, std::string game_serial) {
+void Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr std::array<SysModules, 11> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
