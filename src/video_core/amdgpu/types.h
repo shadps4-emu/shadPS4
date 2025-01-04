@@ -177,7 +177,7 @@ enum class NumberFormat : u32 {
     Float = 7,
     Srgb = 9,
     Ubnorm = 10,
-    UbnromNz = 11,
+    UbnormNz = 11,
     Ubint = 12,
     Ubscaled = 13,
 };
