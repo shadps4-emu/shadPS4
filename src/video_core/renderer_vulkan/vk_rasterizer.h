@@ -108,7 +108,7 @@ private:
         std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
         cb_descs;
     std::optional<std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc>> db_desc;
-    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 64> image_infos;
     boost::container::static_vector<vk::BufferView, 8> buffer_views;
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<VideoCore::ImageId, 64> bound_images;
@@ -121,7 +121,7 @@ private:
     using TexBufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
     boost::container::static_vector<TexBufferBindingInfo, 32> texbuffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
-    boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
+    boost::container::static_vector<ImageBindingInfo, 64> image_bindings;
 };
 
 } // namespace Vulkan
