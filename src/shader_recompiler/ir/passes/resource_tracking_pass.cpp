@@ -839,7 +839,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             auto texel = inst.Arg(4);
             if (is_storage) {
                 // Storage image requires shader swizzle.
-                ApplySwizzle(ir, texel, image.DstSelect());
+                texel = ApplySwizzle(ir, texel, image.DstSelect());
             }
             const auto converted =
                 ApplyWriteNumberConversionVec4(ir, texel, image.GetNumberConversion());
