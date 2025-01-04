@@ -266,6 +266,7 @@ void GameController::TryOpenSDLController() {
 }
 
 u32 GameController::Poll() {
+    std::scoped_lock lock{m_mutex};
     if (m_connected) {
         auto time = Libraries::Kernel::sceKernelGetProcessTime();
         if (m_states_num == 0) {
