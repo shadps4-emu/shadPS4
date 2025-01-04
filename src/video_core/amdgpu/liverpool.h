@@ -902,6 +902,10 @@ struct Liverpool {
                                          : info.number_type.Value());
         }
 
+        [[nodiscard]] NumberConversion GetNumberConversion() const {
+            return MapNumberConversion(info.number_type);
+        }
+
         [[nodiscard]] CompMapping Swizzle() const {
             // clang-format off
             static constexpr std::array<std::array<CompMapping, 4>, 4> mrt_swizzles{{

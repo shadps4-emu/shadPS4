@@ -21,4 +21,66 @@ inline Value ApplySwizzle(IREmitter& ir, const Value& vector, const AmdGpu::Comp
     return swizzled;
 }
 
+/// Applies a number conversion in the read direction.
+inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
+                                     const AmdGpu::NumberConversion& conversion) {
+    switch (conversion) {
+    case AmdGpu::NumberConversion::None:
+        return value;
+    case AmdGpu::NumberConversion::UintToUscaled:
+        return ir.ConvertUToF(32, 32, value);
+    case AmdGpu::NumberConversion::SintToSscaled:
+        return ir.ConvertSToF(32, 32, value);
+    case AmdGpu::NumberConversion::UnormToUbnorm:
+        // Convert 0...1 to -1...1
+        return ir.FPSub(ir.FPMul(value, ir.Imm32(2.f)), ir.Imm32(1.f));
+    default:
+        UNREACHABLE();
+    }
+}
+
+inline Value ApplyReadNumberConversionVec4(IREmitter& ir, const Value& value,
+                                           const AmdGpu::NumberConversion& conversion) {
+    if (conversion == AmdGpu::NumberConversion::None) {
+        return value;
+    }
+    const auto x = ApplyReadNumberConversion(ir, F32{ir.CompositeExtract(value, 0)}, conversion);
+    const auto y = ApplyReadNumberConversion(ir, F32{ir.CompositeExtract(value, 1)}, conversion);
+    const auto z = ApplyReadNumberConversion(ir, F32{ir.CompositeExtract(value, 2)}, conversion);
+    const auto w = ApplyReadNumberConversion(ir, F32{ir.CompositeExtract(value, 3)}, conversion);
+    return ir.CompositeConstruct(x, y, z, w);
+}
+
+/// Applies a number conversion in the write direction.
+inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
+                                      const AmdGpu::NumberConversion& conversion) {
+    switch (conversion) {
+    case AmdGpu::NumberConversion::None:
+        return value;
+    case AmdGpu::NumberConversion::UintToUscaled:
+        // Need to return float type to maintain IR semantics.
+        return ir.BitCast<F32>(U32{ir.ConvertFToU(32, value)});
+    case AmdGpu::NumberConversion::SintToSscaled:
+        // Need to return float type to maintain IR semantics.
+        return ir.BitCast<F32>(U32{ir.ConvertFToS(32, value)});
+    case AmdGpu::NumberConversion::UnormToUbnorm:
+        // Convert -1...1 to 0...1
+        return ir.FPDiv(ir.FPAdd(value, ir.Imm32(1.f)), ir.Imm32(2.f));
+    default:
+        UNREACHABLE();
+    }
+}
+
+inline Value ApplyWriteNumberConversionVec4(IREmitter& ir, const Value& value,
+                                            const AmdGpu::NumberConversion& conversion) {
+    if (conversion == AmdGpu::NumberConversion::None) {
+        return value;
+    }
+    const auto x = ApplyWriteNumberConversion(ir, F32{ir.CompositeExtract(value, 0)}, conversion);
+    const auto y = ApplyWriteNumberConversion(ir, F32{ir.CompositeExtract(value, 1)}, conversion);
+    const auto z = ApplyWriteNumberConversion(ir, F32{ir.CompositeExtract(value, 2)}, conversion);
+    const auto w = ApplyWriteNumberConversion(ir, F32{ir.CompositeExtract(value, 3)}, conversion);
+    return ir.CompositeConstruct(x, y, z, w);
+}
+
 } // namespace Shader::IR

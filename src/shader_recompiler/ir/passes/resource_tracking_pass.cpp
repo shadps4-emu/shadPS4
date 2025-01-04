@@ -753,12 +753,17 @@ void PatchTextureBufferInterpretation(IR::Block& block, IR::Inst& inst, Info& in
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        inst.SetArg(2, ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect()));
+        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
+        const auto converted =
+            ApplyWriteNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
+        inst.SetArg(2, converted);
     } else if (inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32) {
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
         const auto swizzled = ApplySwizzle(ir, texel, buffer.DstSelect());
-        inst.ReplaceUsesWith(swizzled);
+        const auto converted =
+            ApplyReadNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
+        inst.ReplaceUsesWith(converted);
     }
 }
 
@@ -773,7 +778,10 @@ void PatchImageInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(4, ApplySwizzle(ir, inst.Arg(4), image.DstSelect()));
+        const auto swizzled = ApplySwizzle(ir, inst.Arg(4), image.DstSelect());
+        const auto converted =
+            ApplyWriteNumberConversionVec4(ir, swizzled, image.GetNumberConversion());
+        inst.SetArg(4, converted);
     } else if (inst.GetOpcode() == IR::Opcode::ImageRead) {
         const auto inst_info = inst.Flags<IR::TextureInstInfo>();
         const auto lod = inst.Arg(2);
@@ -782,7 +790,9 @@ void PatchImageInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
             ir.ImageRead(inst.Arg(0), inst.Arg(1), lod.IsEmpty() ? IR::U32{} : IR::U32{lod},
                          ms.IsEmpty() ? IR::U32{} : IR::U32{ms}, inst_info);
         const auto swizzled = ApplySwizzle(ir, texel, image.DstSelect());
-        inst.ReplaceUsesWith(swizzled);
+        const auto converted =
+            ApplyReadNumberConversionVec4(ir, swizzled, image.GetNumberConversion());
+        inst.ReplaceUsesWith(converted);
     }
 }
 

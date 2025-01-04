@@ -74,7 +74,16 @@ inline DataFormat RemapDataFormat(const DataFormat format) {
 }
 
 inline NumberFormat RemapNumberFormat(const NumberFormat format) {
-    return format;
+    switch (format) {
+    case NumberFormat::Uscaled:
+        return NumberFormat::Uint;
+    case NumberFormat::Sscaled:
+        return NumberFormat::Sint;
+    case NumberFormat::Ubnorm:
+        return NumberFormat::Unorm;
+    default:
+        return format;
+    }
 }
 
 inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
@@ -98,6 +107,26 @@ inline CompMapping RemapComponents(const DataFormat format, const CompMapping co
     }
     default:
         return components;
+    }
+}
+
+enum NumberConversion {
+    None,
+    UintToUscaled,
+    SintToSscaled,
+    UnormToUbnorm,
+};
+
+inline NumberConversion MapNumberConversion(const NumberFormat format) {
+    switch (format) {
+    case NumberFormat::Uscaled:
+        return UintToUscaled;
+    case NumberFormat::Sscaled:
+        return SintToSscaled;
+    case NumberFormat::Ubnorm:
+        return UnormToUbnorm;
+    default:
+        return None;
     }
 }
 
@@ -149,6 +178,10 @@ struct Buffer {
 
     DataFormat GetDataFmt() const noexcept {
         return RemapDataFormat(DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     u32 GetStride() const noexcept {
@@ -352,6 +385,10 @@ struct Image {
 
     NumberFormat GetNumberFmt() const noexcept {
         return RemapNumberFormat(NumberFormat(num_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {
