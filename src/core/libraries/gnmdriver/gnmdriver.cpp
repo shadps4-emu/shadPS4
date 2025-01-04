@@ -383,9 +383,16 @@ s32 PS4_SYSV_ABI sceGnmDispatchIndirect(u32* cmdbuf, u32 size, u32 data_offset, 
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmDispatchIndirectOnMec() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmDispatchIndirectOnMec(u32* cmdbuf, u32 size, VAddr args, u32 modifier) {
+    if (cmdbuf != nullptr && size == 8 && args != 0 && ((args & 3u) == 0)) {
+        cmdbuf[0] = 0xc0021602 | (modifier & 1u);
+        *(VAddr*)(&cmdbuf[1]) = args;
+        cmdbuf[3] = (modifier & 0x18) | 1u;
+        cmdbuf[4] = 0xc0021000;
+        cmdbuf[5] = 0;
+        return ORBIS_OK;
+    }
+    return ORBIS_FAIL;
 }
 
 u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {

@@ -796,6 +796,18 @@ struct PM4CmdDispatchIndirect {
     u32 dispatch_initiator; ///< Dispatch Initiator Register
 };
 
+struct PM4CmdDispatchIndirectMec {
+    PM4Type3Header header;
+    u32 address0;
+    u32 address1;
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+
+    template <typename T>
+    T Address() const {
+        return reinterpret_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+    }
+};
+
 struct DrawIndirectArgs {
     u32 vertex_count_per_instance;
     u32 instance_count;
