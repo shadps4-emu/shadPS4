@@ -375,6 +375,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_SAD_U32(inst);
     case Opcode::V_CVT_PK_U16_U32:
         return V_CVT_PK_U16_U32(inst);
+    case Opcode::V_CVT_PK_I16_I32:
+        return V_CVT_PK_I16_I32(inst);        
     case Opcode::V_CVT_PK_U8_F32:
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
@@ -1179,6 +1181,17 @@ void Translator::V_CVT_PK_U16_U32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 lo = ir.IMin(src0, ir.Imm32(0xFFFF), false);
     const IR::U32 hi = ir.IMin(src1, ir.Imm32(0xFFFF), false);
+    SetDst(inst.dst[0], ir.BitFieldInsert(lo, hi, ir.Imm32(16), ir.Imm32(16)));
+}
+
+void Translator::V_CVT_PK_I16_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    //Clamp the underflow then clamp the overflow from the result
+    IR::U32 lo = ir.IMax(src0, ir.Imm32(0x8000), true);
+    lo = ir.IMin(lo, ir.Imm32(0x7FFF), true);
+    IR::U32 hi = ir.IMax(src1, ir.Imm32(0x8000), true);
+    hi = ir.IMin(hi, ir.Imm32(0x7FFF), true);
     SetDst(inst.dst[0], ir.BitFieldInsert(lo, hi, ir.Imm32(16), ir.Imm32(16)));
 }
 
