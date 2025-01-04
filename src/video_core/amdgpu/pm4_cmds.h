@@ -804,7 +804,7 @@ struct PM4CmdDispatchIndirectMec {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+        return std::bit_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
     }
 };
 

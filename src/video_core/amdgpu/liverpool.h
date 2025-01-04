@@ -1479,10 +1479,11 @@ private:
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
-        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    VAddr indirect_args_addr{};
 
     struct ConstantEngine {
         void Reset() {
