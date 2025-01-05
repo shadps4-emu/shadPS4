@@ -16,6 +16,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "epoll.h"
 #include "net_error.h"
 #include "sockets.h"
 
@@ -560,8 +561,12 @@ int PS4_SYSV_ABI sceNetEpollControl() {
 }
 
 int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_Net, "name = {} flags= {}", std::string(name), flags);
+    auto* net_epoll = Common::Singleton<NetEpollInternal>::Instance();
+    auto epoll = std::make_shared<NetEpoll>();
+    auto id = ++net_epoll->next_epool_sock_id;
+    net_epoll->epolls.emplace(id, epoll);
+    return id;
 }
 
 int PS4_SYSV_ABI sceNetEpollDestroy(int eid) {
