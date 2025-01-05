@@ -582,8 +582,8 @@ int PS4_SYSV_ABI sceHttpUriUnescape() {
 }
 
 int PS4_SYSV_ABI sceHttpWaitRequest() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Http, "(STUBBED) called");
+    return 0; // Number of events returned
 }
 
 void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym) {
