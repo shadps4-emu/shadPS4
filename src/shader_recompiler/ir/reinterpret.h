@@ -28,9 +28,9 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
     case AmdGpu::NumberConversion::None:
         return value;
     case AmdGpu::NumberConversion::UintToUscaled:
-        return ir.ConvertUToF(32, 32, value);
+        return ir.ConvertUToF(32, 32, ir.BitCast<U32>(value));
     case AmdGpu::NumberConversion::SintToSscaled:
-        return ir.ConvertSToF(32, 32, value);
+        return ir.ConvertSToF(32, 32, ir.BitCast<U32>(value));
     case AmdGpu::NumberConversion::UnormToUbnorm:
         // Convert 0...1 to -1...1
         return ir.FPSub(ir.FPMul(value, ir.Imm32(2.f)), ir.Imm32(1.f));
