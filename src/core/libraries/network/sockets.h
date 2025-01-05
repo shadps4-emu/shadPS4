@@ -32,20 +32,30 @@ typedef std::shared_ptr<Socket> SocketPtr;
 
 struct Socket {
     explicit Socket(int domain, int type, int protocol) {}
-
     virtual ~Socket() = default;
+    virtual int SetSocketOptions(int level, int optname, const void* optval,
+                                 unsigned int optlen) = 0;
 };
 
 struct PosixSocket : public Socket {
     net_socket sock;
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {}
+    int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
 };
 
 class NetInternal {
 public:
     explicit NetInternal() = default;
     ~NetInternal() = default;
+    SocketPtr FindSocket(int sockid) {
+        std::scoped_lock lock{m_mutex};
+        const auto it = socks.find(sockid);
+        if (it != socks.end()) {
+            return it->second;
+        }
+        return nullptr;
+    }
 
 public:
     std::mutex m_mutex;

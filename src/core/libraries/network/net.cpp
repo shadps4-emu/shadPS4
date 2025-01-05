@@ -16,6 +16,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "net_error.h"
 #include "sockets.h"
 
 namespace Libraries::Net {
@@ -959,7 +960,14 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
 int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                   u32 optlen) {
     LOG_ERROR(Lib_Net, "s = {} level = {} optname = {} optlen = {}", s, level, optname, optlen);
-    return ORBIS_OK;
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return sock->SetSocketOptions(level, optname, optval, optlen);
 }
 
 int PS4_SYSV_ABI sceNetShowIfconfig() {
