@@ -38,6 +38,45 @@ enum OrbisNetSocketType : u32 {
     ORBIS_NET_SOCK_STREAM_P2P = 10
 };
 
+enum OrbisNetSocketOption : u32 {
+    /* IP */
+    ORBIS_NET_IP_HDRINCL = 2,
+    ORBIS_NET_IP_TOS = 3,
+    ORBIS_NET_IP_TTL = 4,
+    ORBIS_NET_IP_MULTICAST_IF = 9,
+    ORBIS_NET_IP_MULTICAST_TTL = 10,
+    ORBIS_NET_IP_MULTICAST_LOOP = 11,
+    ORBIS_NET_IP_ADD_MEMBERSHIP = 12,
+    ORBIS_NET_IP_DROP_MEMBERSHIP = 13,
+    ORBIS_NET_IP_TTLCHK = 23,
+    ORBIS_NET_IP_MAXTTL = 24,
+    /* TCP */
+    ORBIS_NET_TCP_NODELAY = 1,
+    ORBIS_NET_TCP_MAXSEG = 2,
+    ORBIS_NET_TCP_MSS_TO_ADVERTISE = 3,
+    /* SOCKET */
+    ORBIS_NET_SO_REUSEADDR = 0x00000004,
+    ORBIS_NET_SO_KEEPALIVE = 0x00000008,
+    ORBIS_NET_SO_BROADCAST = 0x00000020,
+    ORBIS_NET_SO_LINGER = 0x00000080,
+    ORBIS_NET_SO_OOBINLINE = 0x00000100,
+    ORBIS_NET_SO_REUSEPORT = 0x00000200,
+    ORBIS_NET_SO_ONESBCAST = 0x00000800,
+    ORBIS_NET_SO_USECRYPTO = 0x00001000,
+    ORBIS_NET_SO_USESIGNATURE = 0x00002000,
+    ORBIS_NET_SO_SNDBUF = 0x1001,
+    ORBIS_NET_SO_RCVBUF = 0x1002,
+    ORBIS_NET_SO_SNDLOWAT = 0x1003,
+    ORBIS_NET_SO_RCVLOWAT = 0x1004,
+    ORBIS_NET_SO_SNDTIMEO = 0x1005,
+    ORBIS_NET_SO_RCVTIMEO = 0x1006,
+    ORBIS_NET_SO_ERROR = 0x1007,
+    ORBIS_NET_SO_TYPE = 0x1008,
+    ORBIS_NET_SO_NBIO = 0x1100,
+    ORBIS_NET_SO_TPPOLICY = 0x1101,
+    ORBIS_NET_SO_NAME = 0x1102
+};
+
 struct OrbisNetSockaddr {
     u8 sa_len;
     u8 sa_family;
@@ -230,7 +269,8 @@ int PS4_SYSV_ABI sceNetSetDns6Info();
 int PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
 int PS4_SYSV_ABI sceNetSetDnsInfo();
 int PS4_SYSV_ABI sceNetSetDnsInfoToKernel();
-int PS4_SYSV_ABI sceNetSetsockopt();
+int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
+                                  u32 optlen);
 int PS4_SYSV_ABI sceNetShowIfconfig();
 int PS4_SYSV_ABI sceNetShowIfconfigForBuffer();
 int PS4_SYSV_ABI sceNetShowIfconfigWithMemory();

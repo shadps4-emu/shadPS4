@@ -956,8 +956,9 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSetsockopt() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
+                                  u32 optlen) {
+    LOG_ERROR(Lib_Net, "s = {} level = {} optname = {} optlen = {}", s, level, optname, optlen);
     return ORBIS_OK;
 }
 
@@ -1047,8 +1048,8 @@ int PS4_SYSV_ABI sceNetShutdown() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_ERROR(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name),
-              family, type, protocol);
+    LOG_ERROR(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name), family,
+              type, protocol);
     SocketPtr sock;
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
