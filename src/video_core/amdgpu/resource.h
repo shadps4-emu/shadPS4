@@ -11,125 +11,6 @@
 
 namespace AmdGpu {
 
-enum class CompSwizzle : u32 {
-    Zero = 0,
-    One = 1,
-    Red = 4,
-    Green = 5,
-    Blue = 6,
-    Alpha = 7,
-};
-
-struct CompMapping {
-    CompSwizzle r : 3;
-    CompSwizzle g : 3;
-    CompSwizzle b : 3;
-    CompSwizzle a : 3;
-
-    auto operator<=>(const CompMapping& other) const = default;
-
-    template <typename T>
-    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
-        return {
-            ApplySingle(data, r),
-            ApplySingle(data, g),
-            ApplySingle(data, b),
-            ApplySingle(data, a),
-        };
-    }
-
-private:
-    template <typename T>
-    T ApplySingle(const std::array<T, 4>& data, const CompSwizzle swizzle) const {
-        switch (swizzle) {
-        case CompSwizzle::Zero:
-            return T(0);
-        case CompSwizzle::One:
-            return T(1);
-        case CompSwizzle::Red:
-            return data[0];
-        case CompSwizzle::Green:
-            return data[1];
-        case CompSwizzle::Blue:
-            return data[2];
-        case CompSwizzle::Alpha:
-            return data[3];
-        default:
-            UNREACHABLE();
-        }
-    }
-};
-
-inline DataFormat RemapDataFormat(const DataFormat format) {
-    switch (format) {
-    case DataFormat::Format11_11_10:
-        return DataFormat::Format10_11_11;
-    case DataFormat::Format10_10_10_2:
-        return DataFormat::Format2_10_10_10;
-    case DataFormat::Format5_5_5_1:
-        return DataFormat::Format1_5_5_5;
-    default:
-        return format;
-    }
-}
-
-inline NumberFormat RemapNumberFormat(const NumberFormat format) {
-    switch (format) {
-    case NumberFormat::Uscaled:
-        return NumberFormat::Uint;
-    case NumberFormat::Sscaled:
-        return NumberFormat::Sint;
-    case NumberFormat::Ubnorm:
-        return NumberFormat::Unorm;
-    default:
-        return format;
-    }
-}
-
-inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
-    switch (format) {
-    case DataFormat::Format11_11_10: {
-        CompMapping result;
-        result.r = components.b;
-        result.g = components.g;
-        result.b = components.r;
-        result.a = components.a;
-        return result;
-    }
-    case DataFormat::Format10_10_10_2:
-    case DataFormat::Format5_5_5_1: {
-        CompMapping result;
-        result.r = components.a;
-        result.g = components.b;
-        result.b = components.g;
-        result.a = components.r;
-        return result;
-    }
-    default:
-        return components;
-    }
-}
-
-enum NumberConversion {
-    None,
-    UintToUscaled,
-    SintToSscaled,
-    UnormToUbnorm,
-};
-
-inline NumberConversion MapNumberConversion(const NumberFormat format) {
-    switch (format) {
-    case NumberFormat::Uscaled:
-        return UintToUscaled;
-    case NumberFormat::Sscaled:
-        return SintToSscaled;
-    case NumberFormat::Ubnorm:
-        return UnormToUbnorm;
-    default:
-        return None;
-    }
-}
-
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
@@ -169,7 +50,7 @@ struct Buffer {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
@@ -338,7 +219,7 @@ struct Image {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     u32 Pitch() const {
