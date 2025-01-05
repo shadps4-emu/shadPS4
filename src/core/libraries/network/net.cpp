@@ -12,9 +12,11 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "sockets.h"
 
 namespace Libraries::Net {
 
@@ -1044,10 +1046,27 @@ int PS4_SYSV_ABI sceNetShutdown() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_ERROR(Lib_Net, "(STUBBED) name = {} family = {} type = {} protocol = {}", std::string(name),
+OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
+    LOG_ERROR(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name),
               family, type, protocol);
-    return ORBIS_OK;
+    SocketPtr sock;
+    switch (type) {
+    case ORBIS_NET_SOCK_STREAM:
+    case ORBIS_NET_SOCK_DGRAM:
+    case ORBIS_NET_SOCK_RAW:
+        sock = std::make_shared<PosixSocket>(family, type, protocol);
+        break;
+    case ORBIS_NET_SOCK_DGRAM_P2P:
+    case ORBIS_NET_SOCK_STREAM_P2P:
+        UNREACHABLE_MSG("we don't support P2P");
+        break;
+    default:
+        UNREACHABLE_MSG("Unknown type {}", type);
+    }
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto id = ++netcall->next_sock_id;
+    netcall->socks.emplace(id, sock);
+    return id;
 }
 
 int PS4_SYSV_ABI sceNetSocketAbort() {

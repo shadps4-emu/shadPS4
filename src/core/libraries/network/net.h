@@ -21,6 +21,23 @@ namespace Libraries::Net {
 
 using OrbisNetId = s32;
 
+enum OrbisNetProtocol : u32 {
+    ORBIS_NET_IPPROTO_IP = 0,
+    ORBIS_NET_IPPROTO_ICMP = 1,
+    ORBIS_NET_IPPROTO_IGMP = 2,
+    ORBIS_NET_IPPROTO_TCP = 6,
+    ORBIS_NET_IPPROTO_UDP = 17,
+    ORBIS_NET_SOL_SOCKET = 0xFFFF
+};
+
+enum OrbisNetSocketType : u32 {
+    ORBIS_NET_SOCK_STREAM = 1,
+    ORBIS_NET_SOCK_DGRAM = 2,
+    ORBIS_NET_SOCK_RAW = 3,
+    ORBIS_NET_SOCK_DGRAM_P2P = 6,
+    ORBIS_NET_SOCK_STREAM_P2P = 10
+};
+
 struct OrbisNetSockaddr {
     u8 sa_len;
     u8 sa_family;
@@ -231,7 +248,7 @@ int PS4_SYSV_ABI sceNetShowRoute6WithMemory();
 int PS4_SYSV_ABI sceNetShowRouteForBuffer();
 int PS4_SYSV_ABI sceNetShowRouteWithMemory();
 int PS4_SYSV_ABI sceNetShutdown();
-int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol);
+OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol);
 int PS4_SYSV_ABI sceNetSocketAbort();
 int PS4_SYSV_ABI sceNetSocketClose();
 int PS4_SYSV_ABI sceNetSyncCreate();
