@@ -550,12 +550,12 @@ int PS4_SYSV_ABI sceNetEpollControl() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollCreate() {
+int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollDestroy() {
+int PS4_SYSV_ABI sceNetEpollDestroy(int eid) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -870,9 +870,9 @@ int PS4_SYSV_ABI sceNetResolverConnectDestroy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int memid, int flags) {
+    LOG_ERROR(Lib_Net, "(DUMMY) name = {} memid ={} flags={}", std::string(name), memid, flags);
+    return 100; // return a fake resolver id
 }
 
 int PS4_SYSV_ABI sceNetResolverDestroy() {
@@ -885,8 +885,12 @@ int PS4_SYSV_ABI sceNetResolverGetError() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverStartAton() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetResolverStartAton(int rid, const u32* addr, char* hostname, int hostname_len,
+                                         int timeout, int retry, int flags) {
+    LOG_ERROR(Lib_Net, "rid = {} , hostname_len ={} timeout={} retry={} flags={}", rid,
+              hostname_len, timeout, retry, flags);
+    struct hostent* resolved = gethostbyaddr((const char*)addr, hostname_len, AF_INET);
+    strcpy(hostname, resolved->h_name);
     return ORBIS_OK;
 }
 
@@ -1041,7 +1045,8 @@ int PS4_SYSV_ABI sceNetShutdown() {
 }
 
 int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    LOG_ERROR(Lib_Net, "(STUBBED) name = {} family = {} type = {} protocol = {}", std::string(name),
+              family, type, protocol);
     return ORBIS_OK;
 }
 
