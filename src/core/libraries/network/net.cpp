@@ -124,8 +124,14 @@ int PS4_SYSV_ABI sceNetBandwidthControlSetPolicy() {
 }
 
 int PS4_SYSV_ABI sceNetBind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return sock->Bind(addr, addrlen);
 }
 
 int PS4_SYSV_ABI sceNetClearDnsCache() {
@@ -784,9 +790,15 @@ int PS4_SYSV_ABI sceNetIoctl() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetListen() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetListen(OrbisNetId s, int backlog) {
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return sock->Listen(backlog);
 }
 
 int PS4_SYSV_ABI sceNetMemoryAllocate() {

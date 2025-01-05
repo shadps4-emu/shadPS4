@@ -19,15 +19,45 @@ static int ConvertLevels(int level) {
     return -1;
 }
 
+static int ConvertReturnErrorCode(int retval) {
+    if (retval < 0) {
+        UNREACHABLE_MSG("Function returned an errorCode = {}", retval);
+    }
+    // if it is 0 or positive return it as it is
+    return retval;
+}
+
+static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst) {
+    if (src == nullptr || dst == nullptr)
+        return;
+    memset(dst, 0, sizeof(sockaddr));
+    const OrbisNetSockaddrIn* src_in = (const OrbisNetSockaddrIn*)src;
+    sockaddr_in* dst_in = (sockaddr_in*)dst;
+    dst_in->sin_family = src_in->sin_family;
+    dst_in->sin_port = src_in->sin_port;
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+}
+
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) {
     level = ConvertLevels(level);
     if (level == SOL_SOCKET) {
         switch (optname) {
         case ORBIS_NET_SO_REUSEADDR:
-            return setsockopt(sock, level, SO_REUSEADDR, (const char*)optval, optlen);
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_REUSEADDR, (const char*)optval, optlen));
         }
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }
+int PosixSocket::Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) {
+    sockaddr addr2;
+    convertOrbisNetSockaddrToPosix(addr, &addr2);
+    return ConvertReturnErrorCode(::bind(sock, &addr2, sizeof(sockaddr_in)));
+}
+
+int PosixSocket::Listen(int backlog) {
+    return ConvertReturnErrorCode(::listen(sock, backlog));
+}
+
 } // namespace Libraries::Net

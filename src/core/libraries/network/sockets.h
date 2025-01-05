@@ -22,6 +22,7 @@ typedef int socklen_t;
 typedef int net_socket;
 #endif
 #include <map>
+#include <memory>
 #include <mutex>
 
 namespace Libraries::Net {
@@ -35,6 +36,8 @@ struct Socket {
     virtual ~Socket() = default;
     virtual int SetSocketOptions(int level, int optname, const void* optval,
                                  unsigned int optlen) = 0;
+    virtual int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) = 0;
+    virtual int Listen(int backlog) = 0;
 };
 
 struct PosixSocket : public Socket {
@@ -42,6 +45,8 @@ struct PosixSocket : public Socket {
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {}
     int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
+    int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) override;
+    int Listen(int backlog) override;
 };
 
 class NetInternal {
@@ -54,7 +59,7 @@ public:
         if (it != socks.end()) {
             return it->second;
         }
-        return nullptr;
+        return 0;
     }
 
 public:

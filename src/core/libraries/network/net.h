@@ -83,6 +83,15 @@ struct OrbisNetSockaddr {
     char sa_data[14];
 };
 
+struct OrbisNetSockaddrIn {
+    u8 sin_len;
+    u8 sin_family;
+    u16 sin_port;
+    u32 sin_addr;
+    u16 sin_vport;
+    char sin_zero[6];
+};
+
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
 int PS4_SYSV_ABI sce_net_dummy();
@@ -233,7 +242,7 @@ int PS4_SYSV_ABI sceNetInfoDumpStop();
 int PS4_SYSV_ABI sceNetInit();
 int PS4_SYSV_ABI sceNetInitParam();
 int PS4_SYSV_ABI sceNetIoctl();
-int PS4_SYSV_ABI sceNetListen();
+int PS4_SYSV_ABI sceNetListen(OrbisNetId s, int backlog);
 int PS4_SYSV_ABI sceNetMemoryAllocate();
 int PS4_SYSV_ABI sceNetMemoryFree();
 u32 PS4_SYSV_ABI sceNetNtohl(u32 net32);
