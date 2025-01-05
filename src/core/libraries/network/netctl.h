@@ -49,6 +49,7 @@ union OrbisNetCtlInfo {
 
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
+constexpr int ORBIS_NET_CTL_INFO_MTU = 3;
 constexpr int ORBIS_NET_CTL_INFO_LINK = 4;
 constexpr int ORBIS_NET_CTL_INFO_IP_ADDRESS = 14;
 

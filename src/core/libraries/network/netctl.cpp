@@ -181,8 +181,10 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
                 }
             }
         }
+    } break;
+    case ORBIS_NET_CTL_INFO_MTU:
+        info->mtu = 1500; // default value
         break;
-    }
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }
