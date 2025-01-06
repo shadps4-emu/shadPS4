@@ -126,6 +126,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Vdec2)                                                                                \
     SUB(Lib, Videodec)                                                                             \
     SUB(Lib, RazorCpu)                                                                             \
+    SUB(Lib, Mouse)                                                                                \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
