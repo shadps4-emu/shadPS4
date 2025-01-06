@@ -7,6 +7,7 @@
 #include "common/debug.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -35,7 +36,7 @@ MemoryManager::~MemoryManager() = default;
 
 void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
                                        bool use_extended_mem2) {
-    const bool is_neo = Config::isNeoMode();
+    const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;

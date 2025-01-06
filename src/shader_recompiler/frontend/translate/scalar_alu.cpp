@@ -106,6 +106,10 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_FF1_I32_B32(inst);
         case Opcode::S_FF1_I32_B64:
             return S_FF1_I32_B64(inst);
+        case Opcode::S_BITSET0_B32:
+            return S_BITSET_B32(inst, 0);
+        case Opcode::S_BITSET1_B32:
+            return S_BITSET_B32(inst, 1);
         case Opcode::S_AND_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::None, false, inst);
         case Opcode::S_ORN2_SAVEEXEC_B64:
@@ -604,6 +608,13 @@ void Translator::S_FF1_I32_B32(const GcnInst& inst) {
 void Translator::S_FF1_I32_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U32 result{ir.FindILsb(src0)};
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 offset{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0U), ir.Imm32(5U))};
+    const IR::U32 result{ir.BitFieldInsert(old_value, ir.Imm32(bit_value), offset, ir.Imm32(1U))};
     SetDst(inst.dst[0], result);
 }
 

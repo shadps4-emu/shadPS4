@@ -12,15 +12,15 @@ class TextureCache;
 struct ImageInfo;
 
 enum DetilerType : u32 {
-    Micro8x1,
-    Micro8x2,
-    Micro32x1,
-    Micro32x2,
-    Micro32x4,
+    Micro8,
+    Micro16,
+    Micro32,
+    Micro64,
+    Micro128,
 
-    Macro8x1,
-    Macro32x1,
-    Macro32x2,
+    Macro8,
+    Macro32,
+    Macro64,
 
     Max
 };
