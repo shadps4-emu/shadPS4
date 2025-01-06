@@ -18,6 +18,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
     auto& info = stages[int(Shader::LogicalStage::Compute)];
     info = &info_;
+    const auto debug_str = GetDebugString();
 
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
@@ -89,8 +90,9 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
+    const auto device = instance.GetDevice();
     auto [descriptor_set_result, descriptor_set] =
-        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+        device.createDescriptorSetLayoutUnique(desc_layout_ci);
     ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
                "Failed to create compute descriptor set layout: {}",
                vk::to_string(descriptor_set_result));
@@ -107,6 +109,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
+    SetObjectName(device, *pipeline_layout, "Compute PipelineLayout {}", debug_str);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
@@ -117,6 +120,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    SetObjectName(device, *pipeline, "Compute Pipeline {}", debug_str);
 }
 
 ComputePipeline::~ComputePipeline() = default;
