@@ -395,12 +395,16 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(vma_base.Contains(virtual_addr, size),
                "Existing mapping does not contain requested unmap range");
 
+    const auto type = vma_base.type;
+    if (type == VMAType::Free) {
+        return ORBIS_OK;
+    }
+
     const auto vma_base_addr = vma_base.base;
     const auto vma_base_size = vma_base.size;
     const auto phys_base = vma_base.phys_base;
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
-    const auto type = vma_base.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
     if (type == VMAType::Direct) {
         rasterizer->UnmapMemory(virtual_addr, size);
