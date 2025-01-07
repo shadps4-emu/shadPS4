@@ -773,8 +773,8 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
-    const auto type = desc.GetBoundType(image);
-    const u32 sampled = desc.IsStorage(image) ? 2 : 1;
+    const auto type = image.GetBoundType(desc.is_array);
+    const u32 sampled = desc.is_written ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
@@ -799,7 +799,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const auto sharp = image_desc.GetSharp(info);
         const auto nfmt = sharp.GetNumberFmt();
         const bool is_integer = AmdGpu::IsInteger(nfmt);
-        const bool is_storage = image_desc.IsStorage(sharp);
+        const bool is_storage = image_desc.is_written;
         const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
@@ -814,7 +814,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
-            .bound_type = image_desc.GetBoundType(sharp),
+            .bound_type = sharp.GetBoundType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
         });

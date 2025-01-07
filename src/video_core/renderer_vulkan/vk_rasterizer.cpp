@@ -661,7 +661,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         if (image->binding.is_bound) {
             // The image is already bound. In case if it is about to be used as storage we need
             // to force general layout on it.
-            image->binding.force_general |= image_desc.IsStorage(tsharp);
+            image->binding.force_general |= image_desc.is_written;
         }
         if (image->binding.is_target) {
             // The image is already bound as target. Since we read and output to it need to force

@@ -30,7 +30,7 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
-    : is_storage{desc.IsStorage(image)} {
+    : is_storage{desc.is_written} {
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
@@ -43,9 +43,9 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
 
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
-    range.extent.levels = desc.NumViewLevels(image);
-    range.extent.layers = desc.NumViewLayers(image);
-    type = ConvertImageViewType(desc.GetBoundType(image));
+    range.extent.levels = image.NumViewLevels(desc.is_array);
+    range.extent.layers = image.NumViewLayers(desc.is_array);
+    type = ConvertImageViewType(image.GetBoundType(desc.is_array));
 
     if (!is_storage) {
         mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());

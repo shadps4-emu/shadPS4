@@ -287,6 +287,42 @@ struct Image {
         return GetDataFmt() >= DataFormat::FormatFmask8_1 &&
                GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
+
+    [[nodiscard]] ImageType GetBoundType(const bool is_array) const noexcept {
+        const auto base_type = GetType();
+        if (base_type == ImageType::Color1DArray && !is_array) {
+            return ImageType::Color1D;
+        }
+        if (base_type == ImageType::Color2DArray && !is_array) {
+            return ImageType::Color2D;
+        }
+        if (base_type == ImageType::Color2DMsaaArray && !is_array) {
+            return ImageType::Color2DMsaa;
+        }
+        return base_type;
+    }
+
+    [[nodiscard]] u32 NumViewLevels(const bool is_array) const noexcept {
+        switch (GetBoundType(is_array)) {
+        case ImageType::Color2DMsaa:
+        case ImageType::Color2DMsaaArray:
+            return 1;
+        default:
+            return last_level - base_level + 1;
+        }
+    }
+
+    [[nodiscard]] u32 NumViewLayers(const bool is_array) const noexcept {
+        switch (GetBoundType(is_array)) {
+        case ImageType::Color1D:
+        case ImageType::Color2D:
+        case ImageType::Color2DMsaa:
+        case ImageType::Color3D:
+            return 1;
+        default:
+            return last_array - base_array + 1;
+        }
+    }
 };
 static_assert(sizeof(Image) == 32); // 256bits
 

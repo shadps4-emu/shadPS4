@@ -164,7 +164,6 @@ public:
             return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
-        image.is_read |= desc.is_read;
         image.is_written |= desc.is_written;
         return index;
     }
@@ -361,7 +360,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
-    const bool is_read = inst.GetOpcode() == IR::Opcode::ImageRead;
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
 
     // Patch image instruction if image is FMask.
@@ -402,7 +400,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
-        .is_read = is_read,
         .is_written = is_written,
     });
 
@@ -785,7 +782,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
-    const auto is_storage = image_res.IsStorage(image);
+    const auto is_storage = image_res.is_written;
     if (inst.GetOpcode() == IR::Opcode::ImageRead) {
         auto texel = ir.ImageRead(handle, coords, lod, ms, inst_info);
         if (is_storage) {

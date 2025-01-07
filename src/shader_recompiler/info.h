@@ -70,48 +70,7 @@ struct ImageResource {
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
-    bool is_read{};
     bool is_written{};
-
-    [[nodiscard]] AmdGpu::ImageType GetBoundType(const AmdGpu::Image& image) const noexcept {
-        const auto base_type = image.GetType();
-        if (base_type == AmdGpu::ImageType::Color1DArray && !is_array) {
-            return AmdGpu::ImageType::Color1D;
-        }
-        if (base_type == AmdGpu::ImageType::Color2DArray && !is_array) {
-            return AmdGpu::ImageType::Color2D;
-        }
-        if (base_type == AmdGpu::ImageType::Color2DMsaaArray && !is_array) {
-            return AmdGpu::ImageType::Color2DMsaa;
-        }
-        return base_type;
-    }
-
-    [[nodiscard]] u32 NumViewLevels(const AmdGpu::Image& image) const noexcept {
-        switch (GetBoundType(image)) {
-        case AmdGpu::ImageType::Color2DMsaa:
-        case AmdGpu::ImageType::Color2DMsaaArray:
-            return 1;
-        default:
-            return image.last_level - image.base_level + 1;
-        }
-    }
-
-    [[nodiscard]] u32 NumViewLayers(const AmdGpu::Image image) const noexcept {
-        switch (GetBoundType(image)) {
-        case AmdGpu::ImageType::Color1D:
-        case AmdGpu::ImageType::Color2D:
-        case AmdGpu::ImageType::Color2DMsaa:
-        case AmdGpu::ImageType::Color3D:
-            return 1;
-        default:
-            return image.last_array - image.base_array + 1;
-        }
-    }
-
-    [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
-        return is_written;
-    }
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
