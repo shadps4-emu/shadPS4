@@ -342,6 +342,9 @@ public:
     void ImageWrite(const Value& handle, const Value& coords, const U32& lod,
                     const U32& multisampling, const Value& color, TextureInstInfo info);
 
+    [[nodiscard]] Value CubeFaceCoord(const Value& cube_coords);
+    [[nodiscard]] F32 CubeFaceIndex(const Value& cube_coords);
+
     void EmitVertex();
     void EmitPrimitive();
 

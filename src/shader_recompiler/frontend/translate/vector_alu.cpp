@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
 
@@ -1061,14 +1062,19 @@ void Translator::V_CUBEID_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
-    const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
-    const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
-    const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
-    const IR::F32 y_face{ir.Select(y_neg_cond, ir.Imm32(3.f), ir.Imm32(2.f))};
-    const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        result = ir.CubeFaceIndex(ir.CompositeConstruct(x, y, z));
+    } else {
+        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+        const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
+        const IR::F32 y_face{ir.Select(y_neg_cond, ir.Imm32(3.f), ir.Imm32(2.f))};
+        const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
 
-    const auto result{SelectCubeResult(x, y, z, x_face, y_face, z_face)};
+        result = SelectCubeResult(x, y, z, x_face, y_face, z_face);
+    }
     SetDst(inst.dst[0], result);
 }
 
@@ -1077,12 +1083,18 @@ void Translator::V_CUBESC_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
-    const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
-    const IR::F32 x_sc{ir.Select(x_neg_cond, ir.FPNeg(x), x)};
-    const IR::F32 z_sc{ir.Select(z_neg_cond, z, ir.FPNeg(z))};
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
+        result = IR::F32{ir.CompositeExtract(coords, 0)};
+    } else {
+        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+        const IR::F32 x_sc{ir.Select(x_neg_cond, ir.FPNeg(x), x)};
+        const IR::F32 z_sc{ir.Select(z_neg_cond, z, ir.FPNeg(z))};
 
-    const auto result{SelectCubeResult(x, y, z, x_sc, x, z_sc)};
+        result = SelectCubeResult(x, y, z, x_sc, x, z_sc);
+    }
     SetDst(inst.dst[0], result);
 }
 
@@ -1091,11 +1103,17 @@ void Translator::V_CUBETC_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
-    const IR::F32 x_z_sc{ir.FPNeg(y)};
-    const IR::F32 y_sc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
+        result = IR::F32{ir.CompositeExtract(coords, 1)};
+    } else {
+        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+        const IR::F32 x_z_sc{ir.FPNeg(y)};
+        const IR::F32 y_sc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
 
-    const auto result{SelectCubeResult(x, y, z, x_z_sc, y_sc, x_z_sc)};
+        result = SelectCubeResult(x, y, z, x_z_sc, y_sc, x_z_sc);
+    }
     SetDst(inst.dst[0], result);
 }
 
