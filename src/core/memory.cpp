@@ -406,7 +406,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
-    if (type == VMAType::Direct) {
+    if (type == VMAType::Direct || type == VMAType::Pooled) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
     if (type == VMAType::Flexible) {
@@ -424,7 +424,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     MergeAdjacent(vma_map, new_it);
     bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
 
-    if (type != VMAType::Reserved) {
+    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
                    is_exec, has_backing, readonly_file);
