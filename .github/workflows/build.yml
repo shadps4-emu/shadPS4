@@ -14,14 +14,14 @@ env:
 
 jobs:
   reuse:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
     - uses: actions/checkout@v4
     - uses: fsfe/reuse-action@v5
 
   clang-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
     - uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       run: ./.ci/clang-format.sh
       
   get-info:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       date: ${{ steps.vars.outputs.date }}
       shorthash: ${{ steps.vars.outputs.shorthash }}
@@ -57,7 +57,7 @@ jobs:
         echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   windows-sdl:
-    runs-on: windows-latest
+    runs-on: windows-2025
     needs: get-info
     steps:
     - uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
         path: ${{github.workspace}}/build/shadPS4.exe
 
   windows-qt:
-    runs-on: windows-latest
+    runs-on: windows-2025
     needs: get-info
     steps:
     - uses: actions/checkout@v4
