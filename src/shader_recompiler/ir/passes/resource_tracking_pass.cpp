@@ -560,32 +560,6 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_written, bool is_array) {
-    // When cubemap is written with imageStore it is treated like 2DArray.
-    if (is_written) {
-        return ir.CompositeConstruct(s, t, z);
-    }
-
-    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
-
-    // We need to fix x and y coordinate,
-    // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
-    // We already force the scale value to be 1.0 when handling v_cubema_f32,
-    // here we subtract 1.5 to recover the original value.
-    const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
-    const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    if (is_array) {
-        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
-        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
-        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
-        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
-                                     ir.ConvertIToF(32, 32, false, slice_id));
-    } else {
-        return ir.CompositeConstruct(x, y, z);
-    }
-}
-
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
                           const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
@@ -649,7 +623,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color2DMsaa:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             return ir.CompositeConstruct(read(0), read(8), read(16));
         default:
             UNREACHABLE();
@@ -675,7 +648,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
                     ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1))};
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             // (du/dx, dv/dx, dw/dx), (du/dy, dv/dy, dw/dy)
             addr_reg = addr_reg + 6;
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 6), get_addr_reg(addr_reg - 5),
@@ -725,10 +697,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_coord(addr_reg - 1, 2));
-        case AmdGpu::ImageType::Cube: // x, y, face
-            addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
-                                  get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
         }
@@ -806,10 +774,6 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube: // x, y, face, [lod]
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2),
-                                   inst.GetOpcode() == IR::Opcode::ImageWrite, inst_info.is_array),
-                    body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }

@@ -81,16 +81,36 @@ struct ImageResource {
         if (base_type == AmdGpu::ImageType::Color2DArray && !is_array) {
             return AmdGpu::ImageType::Color2D;
         }
-        if (image.IsPartialCubemap()) {
-            // Partial cube map
-            return AmdGpu::ImageType::Color2DArray;
+        if (base_type == AmdGpu::ImageType::Color2DMsaaArray && !is_array) {
+            return AmdGpu::ImageType::Color2DMsaa;
         }
         return base_type;
     }
 
+    [[nodiscard]] u32 NumViewLevels(const AmdGpu::Image& image) const noexcept {
+        switch (GetBoundType(image)) {
+        case AmdGpu::ImageType::Color2DMsaa:
+        case AmdGpu::ImageType::Color2DMsaaArray:
+            return 1;
+        default:
+            return image.last_level - image.base_level + 1;
+        }
+    }
+
+    [[nodiscard]] u32 NumViewLayers(const AmdGpu::Image image) const noexcept {
+        switch (GetBoundType(image)) {
+        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color2DMsaa:
+        case AmdGpu::ImageType::Color3D:
+            return 1;
+        default:
+            return image.last_array - image.base_array + 1;
+        }
+    }
+
     [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
-        // Need cube as storage when used with ImageRead.
-        return is_written || (is_read && GetBoundType(image) == AmdGpu::ImageType::Cube);
+        return is_written;
     }
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
@@ -206,8 +226,6 @@ struct Info {
     u64 pgm_hash{};
     VAddr pgm_base;
     bool has_storage_images{};
-    bool has_cube_arrays{};
-    bool has_storage_cube_arrays{};
     bool has_image_buffers{};
     bool has_texel_buffers{};
     bool has_discard{};

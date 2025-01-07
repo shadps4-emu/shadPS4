@@ -190,12 +190,6 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     case AmdGpu::ImageType::Color2DArray:
     case AmdGpu::ImageType::Color3D:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
-    case AmdGpu::ImageType::Cube:
-        // Cube arrays do not have their own type to distinguish by.
-        if (texture.is_array) {
-            return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
-        }
-        return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     default:
         UNREACHABLE_MSG("SPIR-V Instruction");
     }

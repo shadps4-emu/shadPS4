@@ -226,15 +226,13 @@ struct Image {
         return pitch + 1;
     }
 
-    u32 NumLayers(bool is_array) const {
-        u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
-        if (GetType() == ImageType::Cube) {
-            if (is_array) {
-                slices = last_array + 1;
-                ASSERT(slices % 6 == 0);
-            } else {
-                slices = 6;
-            }
+    [[nodiscard]] u32 NumLayers() const noexcept {
+        u32 slices = depth + 1;
+        const auto img_type = static_cast<ImageType>(type);
+        if (img_type == ImageType::Color3D) {
+            slices = 1;
+        } else if (img_type == ImageType::Cube) {
+            slices *= 6;
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -257,7 +255,8 @@ struct Image {
     }
 
     ImageType GetType() const noexcept {
-        return static_cast<ImageType>(type);
+        const auto img_type = static_cast<ImageType>(type);
+        return img_type == ImageType::Cube ? ImageType::Color2DArray : img_type;
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -287,11 +286,6 @@ struct Image {
     bool IsFmask() const noexcept {
         return GetDataFmt() >= DataFormat::FormatFmask8_1 &&
                GetDataFmt() <= DataFormat::FormatFmask64_8;
-    }
-
-    bool IsPartialCubemap() const {
-        const auto viewed_slice = last_array - base_array + 1;
-        return GetType() == ImageType::Cube && viewed_slice < 6;
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits
