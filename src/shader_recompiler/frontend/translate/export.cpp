@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Gcn {
@@ -31,14 +32,16 @@ void Translator::EmitExport(const GcnInst& inst) {
             return;
         }
         const u32 index = u32(attrib) - u32(IR::Attribute::RenderTarget0);
-        const auto [r, g, b, a] = runtime_info.fs_info.color_buffers[index].swizzle;
+        const auto col_buf = runtime_info.fs_info.color_buffers[index];
+        const auto converted = IR::ApplyWriteNumberConversion(ir, value, col_buf.num_conversion);
+        const auto [r, g, b, a] = col_buf.swizzle;
         const std::array swizzle_array = {r, g, b, a};
         const auto swizzled_comp = swizzle_array[comp];
         if (u32(swizzled_comp) < u32(AmdGpu::CompSwizzle::Red)) {
-            ir.SetAttribute(attrib, value, comp);
+            ir.SetAttribute(attrib, converted, comp);
             return;
         }
-        ir.SetAttribute(attrib, value, u32(swizzled_comp) - u32(AmdGpu::CompSwizzle::Red));
+        ir.SetAttribute(attrib, converted, u32(swizzled_comp) - u32(AmdGpu::CompSwizzle::Red));
     };
 
     const auto unpack = [&](u32 idx) {
