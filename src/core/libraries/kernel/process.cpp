@@ -15,7 +15,7 @@ namespace Libraries::Kernel {
 int PS4_SYSV_ABI sceKernelIsNeoMode() {
     LOG_DEBUG(Kernel_Sce, "called");
     return Config::isNeoModeConsole() &&
-           Common::ElfInfo::Instance().PSFAttributes().support_neo_mode;
+           Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
 }
 
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
