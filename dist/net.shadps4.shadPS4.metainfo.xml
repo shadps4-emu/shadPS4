@@ -62,7 +62,6 @@
       <url>https://github.com/shadps4-emu/shadPS4/releases/tag/v0.0.1</url>
     </release>
   </releases>
-  </releases>
   <content_rating type="oars-1.1"/>
   <supports>
     <control translate="no">keyboard</control>
