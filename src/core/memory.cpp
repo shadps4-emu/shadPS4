@@ -418,10 +418,12 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     MergeAdjacent(vma_map, new_it);
     bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
 
-    // Unmap the memory region.
-    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-               has_backing, readonly_file);
-    TRACK_FREE(virtual_addr, "VMEM");
+    if (type != VMAType::Reserved) {
+        // Unmap the memory region.
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
+                   has_backing, readonly_file);
+        TRACK_FREE(virtual_addr, "VMEM");
+    }
 
     return ORBIS_OK;
 }
