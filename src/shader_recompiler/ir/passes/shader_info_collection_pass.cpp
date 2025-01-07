@@ -5,7 +5,7 @@
 
 namespace Shader::Optimization {
 
-void Visit(Info& info, IR::Inst& inst) {
+void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU32:
@@ -87,12 +87,25 @@ void Visit(Info& info, IR::Inst& inst) {
     }
 }
 
+void VisitImage(Info& info, const ImageResource& image) {
+    const auto sharp = image.GetSharp(info);
+    if (image.GetBoundType(sharp) == AmdGpu::ImageType::Cube && image.is_array) {
+        info.has_cube_arrays = true;
+        if (image.IsStorage(sharp)) {
+            info.has_storage_cube_arrays = true;
+        }
+    }
+}
+
 void CollectShaderInfoPass(IR::Program& program) {
     Info& info{program.info};
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             Visit(info, inst);
         }
+    }
+    for (const auto& image : program.info.images) {
+        VisitImage(info, image);
     }
 }
 

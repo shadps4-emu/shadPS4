@@ -225,6 +225,7 @@ public:
         AmdGpu::ImageType bound_type;
         bool is_integer = false;
         bool is_storage = false;
+        bool is_array = false;
     };
 
     struct BufferDefinition {

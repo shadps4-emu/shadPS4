@@ -820,6 +820,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .bound_type = image_desc.GetBoundType(sharp),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .is_array = image_desc.is_array,
         });
         interfaces.push_back(id);
     }

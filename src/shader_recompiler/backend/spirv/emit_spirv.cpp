@@ -259,6 +259,14 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
             ctx.AddCapability(spv::Capability::ImageReadWriteLodAMD);
         }
     }
+    if (info.has_cube_arrays) {
+        if (info.has_storage_cube_arrays) {
+            // Implies SampledCubeArray
+            ctx.AddCapability(spv::Capability::ImageCubeArray);
+        } else {
+            ctx.AddCapability(spv::Capability::SampledCubeArray);
+        }
+    }
     if (info.has_texel_buffers) {
         ctx.AddCapability(spv::Capability::SampledBuffer);
     }

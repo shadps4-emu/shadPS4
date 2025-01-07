@@ -73,7 +73,7 @@ struct ImageResource {
     bool is_read{};
     bool is_written{};
 
-    AmdGpu::ImageType GetBoundType(const AmdGpu::Image& image) const noexcept {
+    [[nodiscard]] AmdGpu::ImageType GetBoundType(const AmdGpu::Image& image) const noexcept {
         const auto base_type = image.GetType();
         if (base_type == AmdGpu::ImageType::Color1DArray && !is_array) {
             return AmdGpu::ImageType::Color1D;
@@ -206,6 +206,8 @@ struct Info {
     u64 pgm_hash{};
     VAddr pgm_base;
     bool has_storage_images{};
+    bool has_cube_arrays{};
+    bool has_storage_cube_arrays{};
     bool has_image_buffers{};
     bool has_texel_buffers{};
     bool has_discard{};

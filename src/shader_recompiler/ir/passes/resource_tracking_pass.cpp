@@ -161,7 +161,7 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
         image.is_read |= desc.is_read;
@@ -691,7 +691,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     // Query dimensions of image if needed for normalization.
     // We can't use the image sharp because it could be bound to a different image later.
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false)) : IR::Value{};
+        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
+                     : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
         if (unnormalized) {
