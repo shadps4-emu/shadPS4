@@ -89,7 +89,7 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: "Logs"
-      description: Attach any logs here. Log can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
+      label: "Log File"
+      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
     validations:
-      required: false
+      required: true

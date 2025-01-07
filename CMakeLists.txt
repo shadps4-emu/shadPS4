@@ -209,6 +209,7 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
+            src/core/libraries/gnmdriver/gnmdriver_init.h
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
@@ -335,6 +336,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/share_play/shareplay.h
                 src/core/libraries/razor_cpu/razor_cpu.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
+                src/core/libraries/mouse/mouse.cpp
+                src/core/libraries/mouse/mouse.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -1039,7 +1042,6 @@ install(TARGETS shadps4 BUNDLE DESTINATION .)
 
 if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES "dist/net.shadps4.shadPS4.desktop" DESTINATION "share/applications")
-    install(FILES "dist/net.shadps4.shadPS4.releases.xml" DESTINATION "share/metainfo/releases")
     install(FILES "dist/net.shadps4.shadPS4.metainfo.xml" DESTINATION "share/metainfo")
     install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "net.shadps4.shadPS4.png")
     install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")

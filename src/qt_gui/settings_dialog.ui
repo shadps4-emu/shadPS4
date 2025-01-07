@@ -134,6 +134,35 @@
                    </property>
                   </widget>
                  </item>
+				 <item>
+                  <widget class="QGroupBox" name="fullscreenModeGroupBox">
+                   <property name="title">
+                    <string>Fullscreen Mode</string>
+                   </property>
+                   <layout class="QVBoxLayout" name="fullscreenModeLayout">
+                    <item>
+                     <widget class="QComboBox" name="fullscreenModeComboBox">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <item>
+                       <property name="text">
+                        <string>Borderless</string>
+                       </property>
+                      </item>
+                      <item>
+                       <property name="text">
+                        <string>True</string>
+                       </property>
+                      </item>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
                  <item>
                   <widget class="QCheckBox" name="separateUpdatesCheckBox">
                    <property name="text">
@@ -604,6 +633,9 @@
                    <property name="leftMargin">
                     <number>0</number>
                    </property>
+                   <property name="bottomMargin">
+                    <number>80</number>
+                   </property>
                    <item>
                     <layout class="QHBoxLayout" name="hLayoutTrophy">
                      <item>
@@ -633,6 +665,12 @@
                             <width>0</width>
                             <height>0</height>
                            </size>
+                          </property>
+                          <property name="font">
+                           <font>
+                            <pointsize>10</pointsize>
+                            <bold>false</bold>
+                           </font>
                           </property>
                          </widget>
                         </item>
@@ -883,6 +921,13 @@
                  </layout>
                 </widget>
                </item>
+				  <item>
+					  <widget class="QCheckBox" name="motionControlsCheckBox"> 
+						  <property name="text">
+							  <string>Enable Motion Controls</string>
+						  </property>
+					  </widget>
+				  </item>
                <item>
                 <widget class="QWidget" name="controllerWidgetSpacer" native="true">
                  <property name="enabled">
