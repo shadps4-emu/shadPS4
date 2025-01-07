@@ -51,7 +51,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         range.extent.levels = image.last_level - image.base_level + 1;
     }
     range.extent.layers = image.last_array - image.base_array + 1;
-    type = ConvertImageViewType(image.GetBoundType());
+    type = ConvertImageViewType(desc.GetBoundType(image));
 
     // Adjust view type for arrays
     if (type == vk::ImageViewType::eCube) {

@@ -113,7 +113,7 @@ struct StageSpecialization {
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
-                         spec.type = sharp.GetBoundType();
+                         spec.type = desc.GetBoundType(sharp);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.IsStorage(sharp);
                          if (spec.is_storage) {

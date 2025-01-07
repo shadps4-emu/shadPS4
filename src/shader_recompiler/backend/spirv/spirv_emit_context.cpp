@@ -773,7 +773,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
-    const auto type = image.GetBoundType();
+    const auto type = desc.GetBoundType(image);
     const u32 sampled = desc.IsStorage(image) ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
@@ -817,6 +817,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
+            .bound_type = image_desc.GetBoundType(sharp),
             .is_integer = is_integer,
             .is_storage = is_storage,
         });

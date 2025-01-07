@@ -73,9 +73,24 @@ struct ImageResource {
     bool is_read{};
     bool is_written{};
 
+    AmdGpu::ImageType GetBoundType(const AmdGpu::Image& image) const noexcept {
+        const auto base_type = image.GetType();
+        if (base_type == AmdGpu::ImageType::Color1DArray && !is_array) {
+            return AmdGpu::ImageType::Color1D;
+        }
+        if (base_type == AmdGpu::ImageType::Color2DArray && !is_array) {
+            return AmdGpu::ImageType::Color2D;
+        }
+        if (image.IsPartialCubemap()) {
+            // Partial cube map
+            return AmdGpu::ImageType::Color2DArray;
+        }
+        return base_type;
+    }
+
     [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
         // Need cube as storage when used with ImageRead.
-        return is_written || (is_read && image.GetBoundType() == AmdGpu::ImageType::Cube);
+        return is_written || (is_read && GetBoundType(image) == AmdGpu::ImageType::Cube);
     }
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
