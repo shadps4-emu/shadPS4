@@ -39,7 +39,7 @@ int PS4_SYSV_ABI sceGnmDisableMipStatsReport();
 s32 PS4_SYSV_ABI sceGnmDispatchDirect(u32* cmdbuf, u32 size, u32 threads_x, u32 threads_y,
                                       u32 threads_z, u32 flags);
 s32 PS4_SYSV_ABI sceGnmDispatchIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 flags);
-int PS4_SYSV_ABI sceGnmDispatchIndirectOnMec();
+s32 PS4_SYSV_ABI sceGnmDispatchIndirectOnMec(u32* cmdbuf, u32 size, VAddr args, u32 modifier);
 u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr_t index_addr,
                                  u32 flags, u32 type);

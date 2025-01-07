@@ -8,7 +8,6 @@
 
 #include "common/assert.h"
 #include "common/io_file.h"
-#include "common/scope_exit.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
@@ -16,6 +15,7 @@
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -36,6 +36,7 @@ GraphicsPipeline::GraphicsPipeline(
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
+    const auto debug_str = GetDebugString();
 
     const vk::PushConstantRange push_constants = {
         .stageFlags = gp_stage_flags,
@@ -54,6 +55,7 @@ GraphicsPipeline::GraphicsPipeline(
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create graphics pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
+    SetObjectName(device, *pipeline_layout, "Graphics PipelineLayout {}", debug_str);
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
@@ -322,6 +324,7 @@ GraphicsPipeline::GraphicsPipeline(
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    SetObjectName(device, *pipeline, "Graphics Pipeline {}", debug_str);
 }
 
 GraphicsPipeline::~GraphicsPipeline() = default;

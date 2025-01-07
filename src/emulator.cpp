@@ -28,8 +28,6 @@
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
-#include "core/libraries/fiber/fiber.h"
-#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -59,8 +57,8 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
-    LOG_INFO(Config, "General Logtype: {}", Config::getLogType());
-    LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
+    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
@@ -101,19 +99,12 @@ Emulator::~Emulator() {
 }
 
 void Emulator::Run(const std::filesystem::path& file) {
-
-    // Use the eboot from the separated updates folder if it's there
-    std::filesystem::path game_patch_folder = file.parent_path();
-    game_patch_folder += "-UPDATE";
-    std::filesystem::path eboot_path = std::filesystem::exists(game_patch_folder / file.filename())
-                                           ? game_patch_folder / file.filename()
-                                           : file;
-
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(file.parent_path(), "/app0");
+    const auto game_folder = file.parent_path();
+    mnt->Mount(game_folder, "/app0");
     // Certain games may use /hostapp as well such as CUSA001100
-    mnt->Mount(file.parent_path(), "/hostapp");
+    mnt->Mount(game_folder, "/hostapp");
 
     auto& game_info = Common::ElfInfo::Instance();
 
@@ -122,50 +113,52 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::string title;
     std::string app_version;
     u32 fw_version;
+    Common::PSFAttributes psf_attributes{};
 
-    std::filesystem::path sce_sys_folder = eboot_path.parent_path() / "sce_sys";
-    if (std::filesystem::is_directory(sce_sys_folder)) {
-        for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
-            if (entry.path().filename() == "param.sfo") {
-                auto* param_sfo = Common::Singleton<PSF>::Instance();
-                const bool success = param_sfo->Open(sce_sys_folder / "param.sfo");
-                ASSERT_MSG(success, "Failed to open param.sfo");
-                const auto content_id = param_sfo->GetString("CONTENT_ID");
-                ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
-                id = std::string(*content_id, 7, 9);
-                Libraries::NpTrophy::game_serial = id;
-                const auto trophyDir =
-                    Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
-                if (!std::filesystem::exists(trophyDir)) {
-                    TRP trp;
-                    if (!trp.Extract(eboot_path.parent_path(), id)) {
-                        LOG_ERROR(Loader, "Couldn't extract trophies");
-                    }
-                }
+    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    if (std::filesystem::exists(param_sfo_path)) {
+        auto* param_sfo = Common::Singleton<PSF>::Instance();
+        const bool success = param_sfo->Open(param_sfo_path);
+        ASSERT_MSG(success, "Failed to open param.sfo");
+        const auto content_id = param_sfo->GetString("CONTENT_ID");
+        ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
+        id = std::string(*content_id, 7, 9);
+        Libraries::NpTrophy::game_serial = id;
+        const auto trophyDir =
+            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
+        if (!std::filesystem::exists(trophyDir)) {
+            TRP trp;
+            if (!trp.Extract(game_folder, id)) {
+                LOG_ERROR(Loader, "Couldn't extract trophies");
+            }
+        }
 #ifdef ENABLE_QT_GUI
-                MemoryPatcher::g_game_serial = id;
+        MemoryPatcher::g_game_serial = id;
 
-                // Timer for 'Play Time'
-                QTimer* timer = new QTimer();
-                QObject::connect(timer, &QTimer::timeout, [this, id]() {
-                    UpdatePlayTime(id);
-                    start_time = std::chrono::steady_clock::now();
-                });
-                timer->start(60000); // 60000 ms = 1 minute
+        // Timer for 'Play Time'
+        QTimer* timer = new QTimer();
+        QObject::connect(timer, &QTimer::timeout, [this, id]() {
+            UpdatePlayTime(id);
+            start_time = std::chrono::steady_clock::now();
+        });
+        timer->start(60000); // 60000 ms = 1 minute
 #endif
-                title = param_sfo->GetString("TITLE").value_or("Unknown title");
-                LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-                fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-                app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-                LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-            } else if (entry.path().filename() == "pic1.png") {
-                auto* splash = Common::Singleton<Splash>::Instance();
-                if (splash->IsLoaded()) {
-                    continue;
-                }
-                if (!splash->Open(entry.path())) {
-                    LOG_ERROR(Loader, "Game splash: unable to open file");
-                }
+        title = param_sfo->GetString("TITLE").value_or("Unknown title");
+        LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
+        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+        LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+            psf_attributes.raw = *raw_attributes;
+        }
+    }
+
+    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
+    if (std::filesystem::exists(pic1_path)) {
+        auto* splash = Common::Singleton<Splash>::Instance();
+        if (!splash->IsLoaded()) {
+            if (!splash->Open(pic1_path)) {
+                LOG_ERROR(Loader, "Game splash: unable to open file");
             }
         }
     }
@@ -176,6 +169,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
+    game_info.psf_attributes = psf_attributes;
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
@@ -219,6 +213,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
+    const auto eboot_path = mnt->GetHostPath("/app0/" + file.filename().string());
     linker->LoadModule(eboot_path);
 
     // check if we have system modules to load
@@ -236,6 +231,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 
     // Load all prx from separate update's sce_module folder
+    std::filesystem::path game_patch_folder = game_folder;
+    game_patch_folder += "-UPDATE";
     std::filesystem::path update_module_folder = game_patch_folder / "sce_module";
     if (std::filesystem::is_directory(update_module_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(update_module_folder)) {

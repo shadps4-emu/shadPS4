@@ -168,6 +168,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = {
                 .num_format = graphics_key.color_num_formats[i],
+                .num_conversion = graphics_key.color_num_conversions[i],
                 .swizzle = graphics_key.color_swizzles[i],
             };
         }
@@ -302,6 +303,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
     key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
+    key.color_num_conversions.fill(AmdGpu::NumberConversion::None);
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.color_swizzles.fill({});
@@ -330,6 +332,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
         key.color_num_formats[remapped_cb] = col_buf.GetNumberFmt();
+        key.color_num_conversions[remapped_cb] = col_buf.GetNumberConversion();
         key.color_swizzles[remapped_cb] = col_buf.Swizzle();
     }
 
