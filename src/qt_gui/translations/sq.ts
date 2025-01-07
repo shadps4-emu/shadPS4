@@ -802,7 +802,7 @@
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nInaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
+			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nJoaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
