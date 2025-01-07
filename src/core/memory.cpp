@@ -422,8 +422,8 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
 
     if (type != VMAType::Reserved) {
         // Unmap the memory region.
-        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-                   has_backing, readonly_file);
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
+                   is_exec, has_backing, readonly_file);
         TRACK_FREE(virtual_addr, "VMEM");
     }
 
