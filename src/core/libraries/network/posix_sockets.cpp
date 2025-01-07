@@ -48,6 +48,9 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         case ORBIS_NET_SO_BROADCAST:
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, SO_BROADCAST, (const char*)optval, optlen));
+        case ORBIS_NET_SO_SNDTIMEO:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_SNDTIMEO, (const char*)optval, optlen));
         }
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
