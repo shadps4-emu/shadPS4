@@ -904,7 +904,7 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         case ConditionOp::GE:
             return ir.FPGreaterThanEqual(src0, src1);
         case ConditionOp::U:
-            return ir.LogicalNot(ir.LogicalAnd(ir.FPIsNan(src0), ir.FPIsNan(src1)));
+            return ir.LogicalOr(ir.FPIsNan(src0), ir.FPIsNan(src1));
         default:
             UNREACHABLE();
         }
