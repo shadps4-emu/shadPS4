@@ -111,7 +111,7 @@ public:
         return raw_firmware_ver;
     }
 
-    [[nodiscard]] const PSFAttributes& PSFAttributes() const {
+    [[nodiscard]] const PSFAttributes& GetPSFAttributes() const {
         ASSERT(initialized);
         return psf_attributes;
     }
