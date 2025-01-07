@@ -34,21 +34,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
     // Ensure the first slot is used for the null buffer
     const auto null_id =
-        slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 1);
+        slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 16);
     ASSERT(null_id.index == 0);
     const vk::Buffer& null_buffer = slot_buffers[null_id].buffer;
     Vulkan::SetObjectName(instance.GetDevice(), null_buffer, "Null Buffer");
-
-    const vk::BufferViewCreateInfo null_view_ci = {
-        .buffer = null_buffer,
-        .format = vk::Format::eR8Unorm,
-        .offset = 0,
-        .range = VK_WHOLE_SIZE,
-    };
-    const auto [null_view_result, null_view] = instance.GetDevice().createBufferView(null_view_ci);
-    ASSERT_MSG(null_view_result == vk::Result::eSuccess, "Failed to create null buffer view.");
-    null_buffer_view = null_view;
-    Vulkan::SetObjectName(instance.GetDevice(), null_buffer_view, "Null Buffer View");
 }
 
 BufferCache::~BufferCache() = default;
@@ -479,43 +468,36 @@ void BufferCache::JoinOverlap(BufferId new_buffer_id, BufferId overlap_id,
     };
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    const std::array pre_barriers = {
-        vk::BufferMemoryBarrier2{
-            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-            .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
-            .buffer = overlap.Handle(),
-            .offset = 0,
-            .size = overlap.SizeBytes(),
-        },
-    };
-    const std::array post_barriers = {
-        vk::BufferMemoryBarrier2{
-            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-            .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .dstAccessMask = vk::AccessFlagBits2::eMemoryWrite,
-            .buffer = overlap.Handle(),
-            .offset = 0,
-            .size = overlap.SizeBytes(),
-        },
-        vk::BufferMemoryBarrier2{
-            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-            .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-            .buffer = new_buffer.Handle(),
-            .offset = dst_base_offset,
-            .size = overlap.SizeBytes(),
-        },
-    };
+
+    boost::container::static_vector<vk::BufferMemoryBarrier2, 2> pre_barriers{};
+    if (auto src_barrier = overlap.GetBarrier(vk::AccessFlagBits2::eTransferRead,
+                                              vk::PipelineStageFlagBits2::eTransfer)) {
+        pre_barriers.push_back(*src_barrier);
+    }
+    if (auto dst_barrier =
+            new_buffer.GetBarrier(vk::AccessFlagBits2::eTransferWrite,
+                                  vk::PipelineStageFlagBits2::eTransfer, dst_base_offset)) {
+        pre_barriers.push_back(*dst_barrier);
+    }
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
+        .bufferMemoryBarrierCount = static_cast<u32>(pre_barriers.size()),
         .pBufferMemoryBarriers = pre_barriers.data(),
     });
+
     cmdbuf.copyBuffer(overlap.Handle(), new_buffer.Handle(), copy);
+
+    boost::container::static_vector<vk::BufferMemoryBarrier2, 2> post_barriers{};
+    if (auto src_barrier =
+            overlap.GetBarrier(vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+                               vk::PipelineStageFlagBits2::eAllCommands)) {
+        post_barriers.push_back(*src_barrier);
+    }
+    if (auto dst_barrier = new_buffer.GetBarrier(
+            vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+            vk::PipelineStageFlagBits2::eAllCommands, dst_base_offset)) {
+        post_barriers.push_back(*dst_barrier);
+    }
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = static_cast<u32>(post_barriers.size()),
@@ -626,7 +608,8 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     const auto cmdbuf = scheduler.CommandBuffer();
     const vk::BufferMemoryBarrier2 pre_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+                         vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
         .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
         .buffer = buffer.Handle(),

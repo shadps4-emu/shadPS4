@@ -71,10 +71,6 @@ public:
         return slot_buffers[id];
     }
 
-    [[nodiscard]] vk::BufferView& NullBufferView() {
-        return null_buffer_view;
-    }
-
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
@@ -160,7 +156,6 @@ private:
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
-    vk::BufferView null_buffer_view;
     MemoryTracker memory_tracker;
     PageTable page_table;
 };
