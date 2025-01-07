@@ -263,7 +263,15 @@ struct Image {
     u64 min_lod_warn : 12;
     u64 counter_bank_id : 8;
     u64 lod_hw_cnt_en : 1;
-    u64 : 43;
+    /// Neo-mode only
+    u64 compression_en : 1;
+    /// Neo-mode only
+    u64 alpha_is_on_msb : 1;
+    /// Neo-mode only
+    u64 color_transform : 1;
+    /// Neo-mode only
+    u64 alt_tile_mode : 1;
+    u64 : 39;
 
     static constexpr Image Null() {
         Image image{};

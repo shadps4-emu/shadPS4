@@ -814,7 +814,9 @@ struct Liverpool {
             BitField<26, 1, u32> fmask_compression_disable_ci;
             BitField<27, 1, u32> fmask_compress_1frag_only;
             BitField<28, 1, u32> dcc_enable;
-            BitField<29, 1, u32> cmask_addr_type;
+            BitField<29, 2, u32> cmask_addr_type;
+            /// Neo-mode only
+            BitField<31, 1, u32> alt_tile_mode;
 
             u32 u32all;
         } info;
@@ -1477,10 +1479,11 @@ private:
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
-        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    VAddr indirect_args_addr{};
 
     struct ConstantEngine {
         void Reset() {

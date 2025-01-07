@@ -80,7 +80,7 @@ struct Image {
     [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
         const VAddr overlap_end = overlap_cpu_addr + overlap_size;
         const auto image_addr = info.guest_address;
-        const auto image_end = info.guest_address + info.guest_size_bytes;
+        const auto image_end = info.guest_address + info.guest_size;
         return image_addr < overlap_end && overlap_cpu_addr < image_end;
     }
 

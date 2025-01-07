@@ -427,7 +427,7 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
                 VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
             info.pitch = splash->GetImageInfo().width;
             info.guest_address = VAddr(splash->GetImageData().data());
-            info.guest_size_bytes = splash->GetImageData().size();
+            info.guest_size = splash->GetImageData().size();
             info.mips_layout.emplace_back(splash->GetImageData().size(),
                                           splash->GetImageInfo().width,
                                           splash->GetImageInfo().height, 0);

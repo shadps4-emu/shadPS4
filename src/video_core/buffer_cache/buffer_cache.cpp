@@ -660,7 +660,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
     TextureCache::BaseDesc desc{};
     desc.info.guest_address = device_addr;
-    desc.info.guest_size_bytes = size;
+    desc.info.guest_size = size;
     const ImageId image_id = texture_cache.FindImage(desc, find_flags);
     if (!image_id) {
         return false;
