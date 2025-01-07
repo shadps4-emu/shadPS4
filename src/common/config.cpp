@@ -33,6 +33,7 @@ namespace Config {
 
 static bool isNeo = false;
 static bool isFullscreen = false;
+static std::string fullscreenMode = "borderless";
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -105,8 +106,12 @@ bool isNeoModeConsole() {
     return isNeo;
 }
 
-bool isFullscreenMode() {
+bool getIsFullscreen() {
     return isFullscreen;
+}
+
+std::string getFullscreenMode() {
+    return fullscreenMode;
 }
 
 bool getisTrophyPopupDisabled() {
@@ -309,8 +314,12 @@ void setVblankDiv(u32 value) {
     vblankDivider = value;
 }
 
-void setFullscreenMode(bool enable) {
+void setIsFullscreen(bool enable) {
     isFullscreen = enable;
+}
+
+void setFullscreenMode(std::string mode) {
+    fullscreenMode = mode;
 }
 
 void setisTrophyPopupDisabled(bool disable) {
@@ -575,6 +584,7 @@ void load(const std::filesystem::path& path) {
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
+        fullscreenMode = toml::find_or<std::string>(general, "FullscreenMode", "borderless");
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
@@ -701,6 +711,7 @@ void save(const std::filesystem::path& path) {
 
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
+    data["General"]["FullscreenMode"] = fullscreenMode;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
     data["General"]["BGMvolume"] = BGMvolume;

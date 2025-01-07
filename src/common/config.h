@@ -17,9 +17,9 @@ void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
-
+bool getIsFullscreen();
+std::string getFullscreenMode();
 bool isNeoModeConsole();
-bool isFullscreenMode();
 bool getPlayBGM();
 int getBGMvolume();
 bool getisTrophyPopupDisabled();
@@ -66,7 +66,8 @@ void setVblankDiv(u32 value);
 void setGpuId(s32 selectedGpuId);
 void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
-void setFullscreenMode(bool enable);
+void setIsFullscreen(bool enable);
+void setFullscreenMode(std::string mode);
 void setisTrophyPopupDisabled(bool disable);
 void setPlayBGM(bool enable);
 void setBGMvolume(int volume);
