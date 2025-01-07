@@ -48,6 +48,7 @@ static std::string updateChannel;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
+static bool isMotionControlsEnabled = true;
 static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isShowSplash = false;
@@ -101,7 +102,7 @@ void setTrophyKey(std::string key) {
     trophyKey = key;
 }
 
-bool isNeoMode() {
+bool isNeoModeConsole() {
     return isNeo;
 }
 
@@ -175,6 +176,10 @@ bool getUseSpecialPad() {
 
 int getSpecialPadClass() {
     return specialPadClass;
+}
+
+bool getIsMotionControlsEnabled() {
+    return isMotionControlsEnabled;
 }
 
 bool debugDump() {
@@ -375,6 +380,10 @@ void setUseSpecialPad(bool use) {
 
 void setSpecialPadClass(int type) {
     specialPadClass = type;
+}
+
+void setIsMotionControlsEnabled(bool use) {
+    isMotionControlsEnabled = use;
 }
 
 void setSeparateUpdateEnabled(bool use) {
@@ -604,6 +613,7 @@ void load(const std::filesystem::path& path) {
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
+        isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
     }
 
     if (data.contains("GPU")) {
@@ -720,6 +730,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
+    data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;

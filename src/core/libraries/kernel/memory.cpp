@@ -505,13 +505,13 @@ int PS4_SYSV_ABI posix_munmap(void* addr, size_t len) {
     return result;
 }
 
-static constexpr int MAX_PTR_APERTURES = 3;
+static constexpr int MAX_PRT_APERTURES = 3;
 static constexpr VAddr PRT_AREA_START_ADDR = 0x1000000000;
 static constexpr size_t PRT_AREA_SIZE = 0xec00000000;
-static std::array<std::pair<VAddr, size_t>, MAX_PTR_APERTURES> PrtApertures{};
+static std::array<std::pair<VAddr, size_t>, MAX_PRT_APERTURES> PrtApertures{};
 
 int PS4_SYSV_ABI sceKernelSetPrtAperture(int id, VAddr address, size_t size) {
-    if (id < 0 || id >= MAX_PTR_APERTURES) {
+    if (id < 0 || id >= MAX_PRT_APERTURES) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -531,12 +531,12 @@ int PS4_SYSV_ABI sceKernelSetPrtAperture(int id, VAddr address, size_t size) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetPrtAperture(int id, VAddr* addres, size_t* size) {
-    if (id < 0 || id >= MAX_PTR_APERTURES) {
+int PS4_SYSV_ABI sceKernelGetPrtAperture(int id, VAddr* address, size_t* size) {
+    if (id < 0 || id >= MAX_PRT_APERTURES) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    std::tie(*addres, *size) = PrtApertures[id];
+    std::tie(*address, *size) = PrtApertures[id];
     return ORBIS_OK;
 }
 

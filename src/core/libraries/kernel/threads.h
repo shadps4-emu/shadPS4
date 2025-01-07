@@ -55,6 +55,9 @@ public:
             stop.request_stop();
             Join();
         }
+        thread = nullptr;
+        func = nullptr;
+        stop = std::stop_source{};
     }
 
     static void* PS4_SYSV_ABI RunWrapper(void* arg) {

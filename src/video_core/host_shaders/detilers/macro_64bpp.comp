@@ -87,7 +87,7 @@ void main() {
     uint offs = slice_offs + tile_offs + (idx * BPP / 8);
 
     uint p0 = in_data[(offs >> 2) + 0];
-    uint p1 = in_data[(offs >> 2) + 1];    
+    uint p1 = in_data[(offs >> 2) + 1];
     out_data[2 * gl_GlobalInvocationID.x + 0] = p0;
-    out_data[2 * gl_GlobalInvocationID.x + 1] = p1;    
+    out_data[2 * gl_GlobalInvocationID.x + 1] = p1;
 }

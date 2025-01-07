@@ -5,6 +5,7 @@
 
 #include <string_view>
 #include <fmt/format.h>
+#include "common/assert.h"
 #include "common/types.h"
 
 namespace AmdGpu {
@@ -177,10 +178,129 @@ enum class NumberFormat : u32 {
     Float = 7,
     Srgb = 9,
     Ubnorm = 10,
-    UbnromNz = 11,
+    UbnormNz = 11,
     Ubint = 12,
     Ubscaled = 13,
 };
+
+enum class CompSwizzle : u32 {
+    Zero = 0,
+    One = 1,
+    Red = 4,
+    Green = 5,
+    Blue = 6,
+    Alpha = 7,
+};
+
+enum class NumberConversion : u32 {
+    None,
+    UintToUscaled,
+    SintToSscaled,
+    UnormToUbnorm,
+};
+
+struct CompMapping {
+    CompSwizzle r : 3;
+    CompSwizzle g : 3;
+    CompSwizzle b : 3;
+    CompSwizzle a : 3;
+
+    auto operator<=>(const CompMapping& other) const = default;
+
+    template <typename T>
+    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
+        return {
+            ApplySingle(data, r),
+            ApplySingle(data, g),
+            ApplySingle(data, b),
+            ApplySingle(data, a),
+        };
+    }
+
+private:
+    template <typename T>
+    T ApplySingle(const std::array<T, 4>& data, const CompSwizzle swizzle) const {
+        switch (swizzle) {
+        case CompSwizzle::Zero:
+            return T(0);
+        case CompSwizzle::One:
+            return T(1);
+        case CompSwizzle::Red:
+            return data[0];
+        case CompSwizzle::Green:
+            return data[1];
+        case CompSwizzle::Blue:
+            return data[2];
+        case CompSwizzle::Alpha:
+            return data[3];
+        default:
+            UNREACHABLE();
+        }
+    }
+};
+
+inline DataFormat RemapDataFormat(const DataFormat format) {
+    switch (format) {
+    case DataFormat::Format11_11_10:
+        return DataFormat::Format10_11_11;
+    case DataFormat::Format10_10_10_2:
+        return DataFormat::Format2_10_10_10;
+    case DataFormat::Format5_5_5_1:
+        return DataFormat::Format1_5_5_5;
+    default:
+        return format;
+    }
+}
+
+inline NumberFormat RemapNumberFormat(const NumberFormat format) {
+    switch (format) {
+    case NumberFormat::Uscaled:
+        return NumberFormat::Uint;
+    case NumberFormat::Sscaled:
+        return NumberFormat::Sint;
+    case NumberFormat::Ubnorm:
+        return NumberFormat::Unorm;
+    default:
+        return format;
+    }
+}
+
+inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizzle) {
+    switch (format) {
+    case DataFormat::Format11_11_10: {
+        CompMapping result;
+        result.r = swizzle.b;
+        result.g = swizzle.g;
+        result.b = swizzle.r;
+        result.a = swizzle.a;
+        return result;
+    }
+    case DataFormat::Format10_10_10_2:
+    case DataFormat::Format5_5_5_1: {
+        CompMapping result;
+        result.r = swizzle.a;
+        result.g = swizzle.b;
+        result.b = swizzle.g;
+        result.a = swizzle.r;
+        return result;
+    }
+    default:
+        return swizzle;
+    }
+}
+
+inline NumberConversion MapNumberConversion(const NumberFormat format) {
+    switch (format) {
+    case NumberFormat::Uscaled:
+        return NumberConversion::UintToUscaled;
+    case NumberFormat::Sscaled:
+        return NumberConversion::SintToSscaled;
+    case NumberFormat::Ubnorm:
+        return NumberConversion::UnormToUbnorm;
+    default:
+        return NumberConversion::None;
+    }
+}
 
 } // namespace AmdGpu
 

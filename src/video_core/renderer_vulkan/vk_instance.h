@@ -81,7 +81,7 @@ public:
 
     /// Returns true when a known debugging tool is attached.
     bool HasDebuggingToolAttached() const {
-        return has_renderdoc || has_nsight_graphics;
+        return crash_diagnostic || has_renderdoc || has_nsight_graphics;
     }
 
     /// Returns true if anisotropic filtering is supported
@@ -338,6 +338,7 @@ private:
     u32 subgroup_size{};
     bool tooling_info{};
     bool debug_utils_supported{};
+    bool crash_diagnostic{};
     bool has_nsight_graphics{};
     bool has_renderdoc{};
 };

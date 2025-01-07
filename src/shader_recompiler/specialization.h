@@ -32,6 +32,7 @@ struct BufferSpecialization {
 struct TextureBufferSpecialization {
     bool is_integer = false;
     AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
@@ -41,6 +42,7 @@ struct ImageSpecialization {
     bool is_integer = false;
     bool is_storage = false;
     AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     auto operator<=>(const ImageSpecialization&) const = default;
 };
@@ -107,6 +109,7 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.dst_select = sharp.DstSelect();
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
@@ -116,6 +119,7 @@ struct StageSpecialization {
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {

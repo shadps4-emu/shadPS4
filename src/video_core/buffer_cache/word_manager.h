@@ -3,10 +3,12 @@
 
 #pragma once
 
-#include <algorithm>
+#include <array>
+#include <mutex>
 #include <span>
 #include <utility>
-#include "common/div_ceil.h"
+
+#include "common/spin_lock.h"
 #include "common/types.h"
 #include "video_core/page_manager.h"
 
@@ -16,135 +18,32 @@ constexpr u64 PAGES_PER_WORD = 64;
 constexpr u64 BYTES_PER_PAGE = 4_KB;
 constexpr u64 BYTES_PER_WORD = PAGES_PER_WORD * BYTES_PER_PAGE;
 
+constexpr u64 HIGHER_PAGE_BITS = 22;
+constexpr u64 HIGHER_PAGE_SIZE = 1ULL << HIGHER_PAGE_BITS;
+constexpr u64 HIGHER_PAGE_MASK = HIGHER_PAGE_SIZE - 1ULL;
+constexpr u64 NUM_REGION_WORDS = HIGHER_PAGE_SIZE / BYTES_PER_WORD;
+
 enum class Type {
     CPU,
     GPU,
     Untracked,
 };
 
-/// Vector tracking modified pages tightly packed with small vector optimization
-template <size_t stack_words = 1>
-struct WordsArray {
-    /// Returns the pointer to the words state
-    [[nodiscard]] const u64* Pointer(bool is_short) const noexcept {
-        return is_short ? stack.data() : heap;
-    }
+using WordsArray = std::array<u64, NUM_REGION_WORDS>;
 
-    /// Returns the pointer to the words state
-    [[nodiscard]] u64* Pointer(bool is_short) noexcept {
-        return is_short ? stack.data() : heap;
-    }
-
-    std::array<u64, stack_words> stack{}; ///< Small buffers storage
-    u64* heap;                            ///< Not-small buffers pointer to the storage
-};
-
-template <size_t stack_words = 1>
-struct Words {
-    explicit Words() = default;
-    explicit Words(u64 size_bytes_) : size_bytes{size_bytes_} {
-        num_words = Common::DivCeil(size_bytes, BYTES_PER_WORD);
-        if (IsShort()) {
-            cpu.stack.fill(~u64{0});
-            gpu.stack.fill(0);
-            untracked.stack.fill(~u64{0});
-        } else {
-            // Share allocation between CPU and GPU pages and set their default values
-            u64* const alloc = new u64[num_words * 3];
-            cpu.heap = alloc;
-            gpu.heap = alloc + num_words;
-            untracked.heap = alloc + num_words * 2;
-            std::fill_n(cpu.heap, num_words, ~u64{0});
-            std::fill_n(gpu.heap, num_words, 0);
-            std::fill_n(untracked.heap, num_words, ~u64{0});
-        }
-        // Clean up tailing bits
-        const u64 last_word_size = size_bytes % BYTES_PER_WORD;
-        const u64 last_local_page = Common::DivCeil(last_word_size, BYTES_PER_PAGE);
-        const u64 shift = (PAGES_PER_WORD - last_local_page) % PAGES_PER_WORD;
-        const u64 last_word = (~u64{0} << shift) >> shift;
-        cpu.Pointer(IsShort())[NumWords() - 1] = last_word;
-        untracked.Pointer(IsShort())[NumWords() - 1] = last_word;
-    }
-
-    ~Words() {
-        Release();
-    }
-
-    Words& operator=(Words&& rhs) noexcept {
-        Release();
-        size_bytes = rhs.size_bytes;
-        num_words = rhs.num_words;
-        cpu = rhs.cpu;
-        gpu = rhs.gpu;
-        untracked = rhs.untracked;
-        rhs.cpu.heap = nullptr;
-        return *this;
-    }
-
-    Words(Words&& rhs) noexcept
-        : size_bytes{rhs.size_bytes}, num_words{rhs.num_words}, cpu{rhs.cpu}, gpu{rhs.gpu},
-          untracked{rhs.untracked} {
-        rhs.cpu.heap = nullptr;
-    }
-
-    Words& operator=(const Words&) = delete;
-    Words(const Words&) = delete;
-
-    /// Returns true when the buffer fits in the small vector optimization
-    [[nodiscard]] bool IsShort() const noexcept {
-        return num_words <= stack_words;
-    }
-
-    /// Returns the number of words of the buffer
-    [[nodiscard]] size_t NumWords() const noexcept {
-        return num_words;
-    }
-
-    /// Release buffer resources
-    void Release() {
-        if (!IsShort()) {
-            // CPU written words is the base for the heap allocation
-            delete[] cpu.heap;
-        }
-    }
-
-    template <Type type>
-    std::span<u64> Span() noexcept {
-        if constexpr (type == Type::CPU) {
-            return std::span<u64>(cpu.Pointer(IsShort()), num_words);
-        } else if constexpr (type == Type::GPU) {
-            return std::span<u64>(gpu.Pointer(IsShort()), num_words);
-        } else if constexpr (type == Type::Untracked) {
-            return std::span<u64>(untracked.Pointer(IsShort()), num_words);
-        }
-    }
-
-    template <Type type>
-    std::span<const u64> Span() const noexcept {
-        if constexpr (type == Type::CPU) {
-            return std::span<const u64>(cpu.Pointer(IsShort()), num_words);
-        } else if constexpr (type == Type::GPU) {
-            return std::span<const u64>(gpu.Pointer(IsShort()), num_words);
-        } else if constexpr (type == Type::Untracked) {
-            return std::span<const u64>(untracked.Pointer(IsShort()), num_words);
-        }
-    }
-
-    u64 size_bytes = 0;
-    size_t num_words = 0;
-    WordsArray<stack_words> cpu;
-    WordsArray<stack_words> gpu;
-    WordsArray<stack_words> untracked;
-};
-
-template <size_t stack_words = 1>
-class WordManager {
+/**
+ * Allows tracking CPU and GPU modification of pages in a contigious 4MB virtual address region.
+ * Information is stored in bitsets for spacial locality and fast update of single pages.
+ */
+class RegionManager {
 public:
-    explicit WordManager(PageManager* tracker_, VAddr cpu_addr_, u64 size_bytes)
-        : tracker{tracker_}, cpu_addr{cpu_addr_}, words{size_bytes} {}
-
-    explicit WordManager() = default;
+    explicit RegionManager(PageManager* tracker_, VAddr cpu_addr_)
+        : tracker{tracker_}, cpu_addr{cpu_addr_} {
+        cpu.fill(~u64{0});
+        gpu.fill(0);
+        untracked.fill(~u64{0});
+    }
+    explicit RegionManager() = default;
 
     void SetCpuAddress(VAddr new_cpu_addr) {
         cpu_addr = new_cpu_addr;
@@ -175,12 +74,12 @@ public:
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         const size_t start = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset), 0LL));
         const size_t end = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset + size), 0LL));
-        if (start >= SizeBytes() || end <= start) {
+        if (start >= HIGHER_PAGE_SIZE || end <= start) {
             return;
         }
         auto [start_word, start_page] = GetWordPage(start);
         auto [end_word, end_page] = GetWordPage(end + BYTES_PER_PAGE - 1ULL);
-        const size_t num_words = NumWords();
+        constexpr size_t num_words = NUM_REGION_WORDS;
         start_word = std::min(start_word, num_words);
         end_word = std::min(end_word, num_words);
         const size_t diff = end_word - start_word;
@@ -225,21 +124,21 @@ public:
      */
     template <Type type, bool enable>
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
-        std::span<u64> state_words = words.template Span<type>();
-        [[maybe_unused]] std::span<u64> untracked_words = words.template Span<Type::Untracked>();
+        std::scoped_lock lk{lock};
+        std::span<u64> state_words = Span<type>();
         IterateWords(dirty_addr - cpu_addr, size, [&](size_t index, u64 mask) {
             if constexpr (type == Type::CPU) {
-                NotifyPageTracker<!enable>(index, untracked_words[index], mask);
+                UpdateProtection<!enable>(index, untracked[index], mask);
             }
             if constexpr (enable) {
                 state_words[index] |= mask;
                 if constexpr (type == Type::CPU) {
-                    untracked_words[index] |= mask;
+                    untracked[index] |= mask;
                 }
             } else {
                 state_words[index] &= ~mask;
                 if constexpr (type == Type::CPU) {
-                    untracked_words[index] &= ~mask;
+                    untracked[index] &= ~mask;
                 }
             }
         });
@@ -255,10 +154,10 @@ public:
      */
     template <Type type, bool clear, typename Func>
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, Func&& func) {
+        std::scoped_lock lk{lock};
         static_assert(type != Type::Untracked);
 
-        std::span<u64> state_words = words.template Span<type>();
-        [[maybe_unused]] std::span<u64> untracked_words = words.template Span<Type::Untracked>();
+        std::span<u64> state_words = Span<type>();
         const size_t offset = query_cpu_range - cpu_addr;
         bool pending = false;
         size_t pending_offset{};
@@ -269,16 +168,16 @@ public:
         };
         IterateWords(offset, size, [&](size_t index, u64 mask) {
             if constexpr (type == Type::GPU) {
-                mask &= ~untracked_words[index];
+                mask &= ~untracked[index];
             }
             const u64 word = state_words[index] & mask;
             if constexpr (clear) {
                 if constexpr (type == Type::CPU) {
-                    NotifyPageTracker<true>(index, untracked_words[index], mask);
+                    UpdateProtection<true>(index, untracked[index], mask);
                 }
                 state_words[index] &= ~mask;
                 if constexpr (type == Type::CPU) {
-                    untracked_words[index] &= ~mask;
+                    untracked[index] &= ~mask;
                 }
             }
             const size_t base_offset = index * PAGES_PER_WORD;
@@ -315,13 +214,11 @@ public:
     [[nodiscard]] bool IsRegionModified(u64 offset, u64 size) const noexcept {
         static_assert(type != Type::Untracked);
 
-        const std::span<const u64> state_words = words.template Span<type>();
-        [[maybe_unused]] const std::span<const u64> untracked_words =
-            words.template Span<Type::Untracked>();
+        const std::span<const u64> state_words = Span<type>();
         bool result = false;
         IterateWords(offset, size, [&](size_t index, u64 mask) {
             if constexpr (type == Type::GPU) {
-                mask &= ~untracked_words[index];
+                mask &= ~untracked[index];
             }
             const u64 word = state_words[index] & mask;
             if (word != 0) {
@@ -333,44 +230,7 @@ public:
         return result;
     }
 
-    /// Returns the number of words of the manager
-    [[nodiscard]] size_t NumWords() const noexcept {
-        return words.NumWords();
-    }
-
-    /// Returns the size in bytes of the manager
-    [[nodiscard]] u64 SizeBytes() const noexcept {
-        return words.size_bytes;
-    }
-
-    /// Returns true when the buffer fits in the small vector optimization
-    [[nodiscard]] bool IsShort() const noexcept {
-        return words.IsShort();
-    }
-
 private:
-    template <Type type>
-    u64* Array() noexcept {
-        if constexpr (type == Type::CPU) {
-            return words.cpu.Pointer(IsShort());
-        } else if constexpr (type == Type::GPU) {
-            return words.gpu.Pointer(IsShort());
-        } else if constexpr (type == Type::Untracked) {
-            return words.untracked.Pointer(IsShort());
-        }
-    }
-
-    template <Type type>
-    const u64* Array() const noexcept {
-        if constexpr (type == Type::CPU) {
-            return words.cpu.Pointer(IsShort());
-        } else if constexpr (type == Type::GPU) {
-            return words.gpu.Pointer(IsShort());
-        } else if constexpr (type == Type::Untracked) {
-            return words.untracked.Pointer(IsShort());
-        }
-    }
-
     /**
      * Notify tracker about changes in the CPU tracking state of a word in the buffer
      *
@@ -381,7 +241,7 @@ private:
      * @tparam add_to_tracker True when the tracker should start tracking the new pages
      */
     template <bool add_to_tracker>
-    void NotifyPageTracker(u64 word_index, u64 current_bits, u64 new_bits) const {
+    void UpdateProtection(u64 word_index, u64 current_bits, u64 new_bits) const {
         u64 changed_bits = (add_to_tracker ? current_bits : ~current_bits) & new_bits;
         VAddr addr = cpu_addr + word_index * BYTES_PER_WORD;
         IteratePages(changed_bits, [&](size_t offset, size_t size) {
@@ -390,9 +250,34 @@ private:
         });
     }
 
+    template <Type type>
+    std::span<u64> Span() noexcept {
+        if constexpr (type == Type::CPU) {
+            return cpu;
+        } else if constexpr (type == Type::GPU) {
+            return gpu;
+        } else if constexpr (type == Type::Untracked) {
+            return untracked;
+        }
+    }
+
+    template <Type type>
+    std::span<const u64> Span() const noexcept {
+        if constexpr (type == Type::CPU) {
+            return cpu;
+        } else if constexpr (type == Type::GPU) {
+            return gpu;
+        } else if constexpr (type == Type::Untracked) {
+            return untracked;
+        }
+    }
+
+    Common::SpinLock lock;
     PageManager* tracker;
     VAddr cpu_addr = 0;
-    Words<stack_words> words;
+    WordsArray cpu;
+    WordsArray gpu;
+    WordsArray untracked;
 };
 
 } // namespace VideoCore

@@ -11,94 +11,6 @@
 
 namespace AmdGpu {
 
-enum class CompSwizzle : u32 {
-    Zero = 0,
-    One = 1,
-    Red = 4,
-    Green = 5,
-    Blue = 6,
-    Alpha = 7,
-};
-
-struct CompMapping {
-    CompSwizzle r : 3;
-    CompSwizzle g : 3;
-    CompSwizzle b : 3;
-    CompSwizzle a : 3;
-
-    auto operator<=>(const CompMapping& other) const = default;
-
-    template <typename T>
-    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
-        return {
-            ApplySingle(data, r),
-            ApplySingle(data, g),
-            ApplySingle(data, b),
-            ApplySingle(data, a),
-        };
-    }
-
-private:
-    template <typename T>
-    T ApplySingle(const std::array<T, 4>& data, const CompSwizzle swizzle) const {
-        switch (swizzle) {
-        case CompSwizzle::Zero:
-            return T(0);
-        case CompSwizzle::One:
-            return T(1);
-        case CompSwizzle::Red:
-            return data[0];
-        case CompSwizzle::Green:
-            return data[1];
-        case CompSwizzle::Blue:
-            return data[2];
-        case CompSwizzle::Alpha:
-            return data[3];
-        default:
-            UNREACHABLE();
-        }
-    }
-};
-
-inline DataFormat RemapDataFormat(const DataFormat format) {
-    switch (format) {
-    case DataFormat::Format11_11_10:
-        return DataFormat::Format10_11_11;
-    case DataFormat::Format10_10_10_2:
-        return DataFormat::Format2_10_10_10;
-    case DataFormat::Format5_5_5_1:
-        return DataFormat::Format1_5_5_5;
-    default:
-        return format;
-    }
-}
-
-inline NumberFormat RemapNumberFormat(const NumberFormat format) {
-    return format;
-}
-
-inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
-    switch (format) {
-    case DataFormat::Format11_11_10:
-        return {
-            .r = components.b,
-            .g = components.g,
-            .b = components.r,
-            .a = components.a,
-        };
-    case DataFormat::Format10_10_10_2:
-    case DataFormat::Format5_5_5_1:
-        return {
-            .r = components.a,
-            .g = components.b,
-            .b = components.g,
-            .a = components.r,
-        };
-    default:
-        return components;
-    }
-}
-
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
@@ -138,7 +50,7 @@ struct Buffer {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
@@ -147,6 +59,10 @@ struct Buffer {
 
     DataFormat GetDataFmt() const noexcept {
         return RemapDataFormat(DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     u32 GetStride() const noexcept {
@@ -261,7 +177,15 @@ struct Image {
     u64 min_lod_warn : 12;
     u64 counter_bank_id : 8;
     u64 lod_hw_cnt_en : 1;
-    u64 : 43;
+    /// Neo-mode only
+    u64 compression_en : 1;
+    /// Neo-mode only
+    u64 alpha_is_on_msb : 1;
+    /// Neo-mode only
+    u64 color_transform : 1;
+    /// Neo-mode only
+    u64 alt_tile_mode : 1;
+    u64 : 39;
 
     static constexpr Image Null() {
         Image image{};
@@ -295,7 +219,7 @@ struct Image {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     u32 Pitch() const {
@@ -342,6 +266,10 @@ struct Image {
 
     NumberFormat GetNumberFmt() const noexcept {
         return RemapNumberFormat(NumberFormat(num_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {

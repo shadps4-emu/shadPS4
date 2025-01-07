@@ -341,6 +341,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+    ui->motionControlsCheckBox->setChecked(
+        toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
@@ -536,6 +538,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
     Config::setIsFullscreen(ui->fullscreenCheckBox->isChecked());
     Config::setFullscreenMode(ui->fullscreenModeComboBox->currentText().toStdString());
+    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setLogType(ui->logTypeComboBox->currentText().toStdString());
