@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Përputhshmëria...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Përditëso bazën e të dhënave</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Shiko raportin</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Paraqit një raport</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -285,15 +285,15 @@
 		</message>
 		<message>
 			<source>List View</source>
-			<translation>Pamja e Listës</translation>
+			<translation>Pamja me List</translation>
 		</message>
 		<message>
 			<source>Grid View</source>
-			<translation>Pamja e Rrjetës</translation>
+			<translation>Pamja me Rrjetë</translation>
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Shikuesi i Elf</translation>
+			<translation>Shikuesi i ELF</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -381,15 +381,15 @@
 		</message>
 		<message>
 			<source>Download Cheats For All Installed Games</source>
-			<translation>Shkarko Mashtrime Për Të Gjitha Lojërat e Instaluara</translation>
+			<translation>Shkarko mashtrime për të gjitha lojërat e instaluara</translation>
 		</message>
 		<message>
 			<source>Download Patches For All Games</source>
-			<translation>Shkarko Arna Për Të Gjitha Lojërat e Instaluara</translation>
+			<translation>Shkarko arna për të gjitha lojërat e instaluara</translation>
 		</message>
 		<message>
 			<source>Download Complete</source>
-			<translation>Shkarkimi Përfundoi</translation>
+			<translation>Shkarkimi përfundoi</translation>
 		</message>
 		<message>
 			<source>You have downloaded cheats for all the games you have installed.</source>
@@ -558,11 +558,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Çelësi i Trofeve</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofeu</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -690,7 +690,7 @@
 		</message>
 		<message>
 			<source>GUI Settings</source>
-			<translation>Cilësimet e GUI</translation>
+			<translation>Cilësimet e GUI-së</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -778,7 +778,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Çelësi i Trofeve:\nÇelësi përdoret për të deshifruar trofetë. Duhet të merret nga konsola jote me jailbreak.\nDuhet të përmbajë vetëm karaktere hex.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -802,7 +802,7 @@
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nInaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
+			<translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nJoaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
@@ -1172,7 +1172,7 @@
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>o</translation>
 		</message>
 		<message>
 			<source>m</source>
