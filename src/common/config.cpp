@@ -33,6 +33,7 @@ namespace Config {
 
 static bool isNeo = false;
 static bool isFullscreen = false;
+static std::string fullscreenMode = "borderless";
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -47,6 +48,7 @@ static std::string updateChannel;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
+static bool isMotionControlsEnabled = true;
 static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isShowSplash = false;
@@ -104,8 +106,12 @@ bool isNeoModeConsole() {
     return isNeo;
 }
 
-bool isFullscreenMode() {
+bool getIsFullscreen() {
     return isFullscreen;
+}
+
+std::string getFullscreenMode() {
+    return fullscreenMode;
 }
 
 bool getisTrophyPopupDisabled() {
@@ -170,6 +176,10 @@ bool getUseSpecialPad() {
 
 int getSpecialPadClass() {
     return specialPadClass;
+}
+
+bool getIsMotionControlsEnabled() {
+    return isMotionControlsEnabled;
 }
 
 bool debugDump() {
@@ -304,8 +314,12 @@ void setVblankDiv(u32 value) {
     vblankDivider = value;
 }
 
-void setFullscreenMode(bool enable) {
+void setIsFullscreen(bool enable) {
     isFullscreen = enable;
+}
+
+void setFullscreenMode(std::string mode) {
+    fullscreenMode = mode;
 }
 
 void setisTrophyPopupDisabled(bool disable) {
@@ -366,6 +380,10 @@ void setUseSpecialPad(bool use) {
 
 void setSpecialPadClass(int type) {
     specialPadClass = type;
+}
+
+void setIsMotionControlsEnabled(bool use) {
+    isMotionControlsEnabled = use;
 }
 
 void setSeparateUpdateEnabled(bool use) {
@@ -566,6 +584,7 @@ void load(const std::filesystem::path& path) {
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
+        fullscreenMode = toml::find_or<std::string>(general, "FullscreenMode", "borderless");
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
@@ -594,6 +613,7 @@ void load(const std::filesystem::path& path) {
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
+        isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
     }
 
     if (data.contains("GPU")) {
@@ -691,6 +711,7 @@ void save(const std::filesystem::path& path) {
 
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
+    data["General"]["FullscreenMode"] = fullscreenMode;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
     data["General"]["BGMvolume"] = BGMvolume;
@@ -709,6 +730,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
+    data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;

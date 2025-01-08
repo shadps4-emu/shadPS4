@@ -300,6 +300,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
+    ui->fullscreenModeComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "FullscreenMode", "Borderless")));
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
@@ -339,6 +341,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+    ui->motionControlsCheckBox->setChecked(
+        toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
@@ -532,7 +536,9 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setFullscreenMode(ui->fullscreenCheckBox->isChecked());
+    Config::setIsFullscreen(ui->fullscreenCheckBox->isChecked());
+    Config::setFullscreenMode(ui->fullscreenModeComboBox->currentText().toStdString());
+    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setLogType(ui->logTypeComboBox->currentText().toStdString());

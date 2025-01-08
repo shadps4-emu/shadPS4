@@ -20,9 +20,9 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
-#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -902,6 +902,10 @@ struct Liverpool {
                                          : info.number_type.Value());
         }
 
+        [[nodiscard]] NumberConversion GetNumberConversion() const {
+            return MapNumberConversion(info.number_type);
+        }
+
         [[nodiscard]] CompMapping Swizzle() const {
             // clang-format off
             static constexpr std::array<std::array<CompMapping, 4>, 4> mrt_swizzles{{
@@ -938,7 +942,7 @@ struct Liverpool {
             const auto swap_idx = static_cast<u32>(info.comp_swap.Value());
             const auto components_idx = NumComponents(info.format) - 1;
             const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
-            return RemapComponents(info.format, mrt_swizzle);
+            return RemapSwizzle(info.format, mrt_swizzle);
         }
     };
 

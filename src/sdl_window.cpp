@@ -93,7 +93,23 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
 
     SDL_SetWindowMinimumSize(window, 640, 360);
-    SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
+
+    bool error = false;
+    const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
+    if (displayIndex < 0) {
+        LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
+        error = true;
+    }
+    const SDL_DisplayMode* displayMode;
+    if ((displayMode = SDL_GetCurrentDisplayMode(displayIndex)) == 0) {
+        LOG_ERROR(Frontend, "Error getting display mode: {}", SDL_GetError());
+        error = true;
+    }
+    if (!error) {
+        SDL_SetWindowFullscreenMode(window,
+                                    Config::getFullscreenMode() == "True" ? displayMode : NULL);
+    }
+    SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
     controller->TryOpenSDLController();

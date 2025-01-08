@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
@@ -189,11 +190,6 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
     gz += Kp * ez + Ki * eInt[2];
 
     //// Integrate rate of change of quaternion
-    // float pa = q2, pb = q3, pc = q4;
-    // q1 += (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltaTime);
-    // q2 += (pa * gx + pb * gz - pc * gy) * (0.5f * deltaTime);
-    // q3 += (pb * gy - pa * gz + pc * gx) * (0.5f * deltaTime);
-    // q4 += (pc * gz + pa * gy - pb * gx) * (0.5f * deltaTime);
     q1 += (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltaTime);
     q2 += (q1 * gx + q3 * gz - q4 * gy) * (0.5f * deltaTime);
     q3 += (q1 * gy - q2 * gz + q4 * gx) * (0.5f * deltaTime);
@@ -247,18 +243,21 @@ void GameController::TryOpenSDLController() {
         int gamepad_count;
         SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
         m_sdl_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
-        if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
-            gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_GYRO);
-            LOG_INFO(Input, "Gyro initialized, poll rate: {}", gyro_poll_rate);
-        } else {
-            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
+        if (Config::getIsMotionControlsEnabled()) {
+            if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_GYRO);
+                LOG_INFO(Input, "Gyro initialized, poll rate: {}", gyro_poll_rate);
+            } else {
+                LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
+            }
+            if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                accel_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                LOG_INFO(Input, "Accel initialized, poll rate: {}", accel_poll_rate);
+            } else {
+                LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
+            }
         }
-        if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
-            accel_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_ACCEL);
-            LOG_INFO(Input, "Accel initialized, poll rate: {}", accel_poll_rate);
-        } else {
-            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
-        }
+
         SDL_free(gamepads);
 
         SetLightBarRGB(0, 0, 255);
