@@ -51,7 +51,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -641,7 +641,7 @@
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="inputTabHLayoutTop" stretch="1,1,1">
+         <layout class="QHBoxLayout" name="inputTabHLayoutTop" stretch="1,1">
           <item>
            <layout class="QVBoxLayout" name="cursorTabLayoutLeft">
             <property name="spacing">
@@ -655,17 +655,14 @@
               <property name="title">
                <string>Cursor</string>
               </property>
-              <layout class="QVBoxLayout" name="inputCursorLayout">
-               <property name="spacing">
-                <number>0</number>
-               </property>
+              <layout class="QGridLayout" name="gridLayout_2">
                <property name="topMargin">
                 <number>11</number>
                </property>
                <property name="bottomMargin">
                 <number>11</number>
                </property>
-               <item>
+               <item row="0" column="0">
                 <widget class="QGroupBox" name="hideCursorGroupBox">
                  <property name="enabled">
                   <bool>true</bool>
@@ -692,7 +689,7 @@
                  </layout>
                 </widget>
                </item>
-               <item>
+               <item row="1" column="0">
                 <widget class="QGroupBox" name="idleTimeoutGroupBox">
                  <property name="enabled">
                   <bool>true</bool>
@@ -827,7 +824,7 @@
                   <bool>true</bool>
                  </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -863,6 +860,12 @@
                  <property name="enabled">
                   <bool>true</bool>
                  </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
@@ -873,23 +876,6 @@
                </item>
               </layout>
              </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="emptyTabLayoutRight">
-            <item>
-             <spacer name="emptyhorizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
             </item>
            </layout>
           </item>
@@ -1115,11 +1101,14 @@
             </property>
             <item>
              <widget class="QGroupBox" name="additionalSettingsGroupBox">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
               <property name="title">
                <string>Advanced</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
               </property>
               <layout class="QVBoxLayout" name="additionalSettingsLayout">
                <item>
