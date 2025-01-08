@@ -232,10 +232,6 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
         }
     }
 
-    if (*out == 0) {
-        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
-    }
-
     return ORBIS_OK;
 }
 
