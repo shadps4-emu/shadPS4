@@ -54,7 +54,7 @@ struct Buffer {
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -265,7 +265,7 @@ struct Image {
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     NumberConversion GetNumberConversion() const noexcept {
