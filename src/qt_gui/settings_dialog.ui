@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>750</height>
+    <height>820</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -67,8 +67,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>932</width>
-         <height>593</height>
+         <width>946</width>
+         <height>605</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -638,7 +638,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>585</height>
+         <height>595</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -922,7 +922,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>585</height>
+         <height>595</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1176,7 +1176,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>585</height>
+         <height>595</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
@@ -1233,7 +1233,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>585</height>
+         <height>595</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
@@ -1404,10 +1404,16 @@
    </item>
    <item>
     <widget class="QTextEdit" name="descriptionText">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>70</height>
+       <height>120</height>
       </size>
      </property>
      <property name="readOnly">
