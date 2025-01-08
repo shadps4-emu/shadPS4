@@ -189,9 +189,7 @@ void CheatsPatches::setupUI() {
     });
 
     QPushButton* closeButton = new QPushButton(tr("Close"));
-    connect(closeButton, &QPushButton::clicked, [this]() {
-        QWidget::close();
-    });
+    connect(closeButton, &QPushButton::clicked, [this]() { QWidget::close(); });
 
     controlLayout->addWidget(downloadButton);
     controlLayout->addWidget(deleteCheatButton);
