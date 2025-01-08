@@ -40,7 +40,8 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only) {
+std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
+                                             bool force_base_path) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
     std::string corrected_path(path);
     size_t pos = corrected_path.find("//");
@@ -72,7 +73,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     patch_path /= rel_path;
 
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        std::filesystem::exists(patch_path)) {
+        !force_base_path && std::filesystem::exists(patch_path)) {
         return patch_path;
     }
 
@@ -132,8 +133,10 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (const auto path = search(patch_path)) {
-        return *path;
+    if (!force_base_path) {
+        if (const auto path = search(patch_path)) {
+            return *path;
+        }
     }
     if (const auto path = search(host_path)) {
         return *path;
@@ -142,6 +145,39 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     // Opening the guest path will surely fail but at least gives
     // a better error message than the empty path.
     return host_path;
+}
+
+// TODO: Does not handle mount points inside mount points.
+void MntPoints::IterateDirectory(std::string_view guest_directory,
+                                 const IterateDirectoryCallback& callback) {
+    const auto base_path = GetHostPath(guest_directory, nullptr, true);
+    const auto patch_path = GetHostPath(guest_directory, nullptr, false);
+    // Only need to consider patch path if it exists and does not resolve to the same as base.
+    const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
+
+    // Pass 1: Any files that existed in the base directory, using patch directory if needed.
+    if (std::filesystem::exists(base_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
+            if (apply_patch) {
+                const auto patch_entry_path = patch_path / entry.path().filename();
+                if (std::filesystem::exists(patch_entry_path)) {
+                    callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
+                    continue;
+                }
+            }
+            callback(entry.path(), !entry.is_directory());
+        }
+    }
+
+    // Pass 2: Any files that exist only in the patch directory.
+    if (apply_patch) {
+        for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
+            const auto base_entry_path = base_path / entry.path().filename();
+            if (!std::filesystem::exists(base_entry_path)) {
+                callback(entry.path(), !entry.is_directory());
+            }
+        }
+    }
 }
 
 int HandleTable::CreateHandle() {
