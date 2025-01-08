@@ -1394,6 +1394,13 @@
                  </item>
                 </layout>
                </item>
+               <item>
+                <widget class="QPushButton" name="OpenLogLocationButton">
+                 <property name="text">
+                  <string>Open Log Location</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

@@ -577,6 +577,10 @@
 			<translation>Фильтр логов</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Открыть местоположение журнала</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Ввод</translation>
 		</message>

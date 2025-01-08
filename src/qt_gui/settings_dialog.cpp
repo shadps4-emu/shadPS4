@@ -17,6 +17,7 @@
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
 #endif
+#include <QDesktopServices>
 #include <toml.hpp>
 #include "background_music_player.h"
 #include "common/logging/backend.h"
@@ -200,6 +201,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                 Config::removeGameInstallDir(file_path);
                 delete selected_item;
             }
+        });
+    }
+
+    // DEBUG TAB
+    {
+        connect(ui->OpenLogLocationButton, &QPushButton::clicked, this, []() {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
         });
     }
 
