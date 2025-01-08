@@ -171,10 +171,11 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        const auto& vma = FindVMA(mapped_addr)->second;
+        auto& vma = FindVMA(mapped_addr)->second;
         // If the VMA is mapped, unmap the region first.
         if (vma.IsMapped()) {
             UnmapMemoryImpl(mapped_addr, size);
+            vma = FindVMA(mapped_addr)->second;
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
         ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
@@ -208,10 +209,11 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        const auto& vma = FindVMA(mapped_addr)->second;
+        auto& vma = FindVMA(mapped_addr)->second;
         // If the VMA is mapped, unmap the region first.
         if (vma.IsMapped()) {
             UnmapMemoryImpl(mapped_addr, size);
+            vma = FindVMA(mapped_addr)->second;
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
         ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
@@ -393,14 +395,18 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(vma_base.Contains(virtual_addr, size),
                "Existing mapping does not contain requested unmap range");
 
+    const auto type = vma_base.type;
+    if (type == VMAType::Free) {
+        return ORBIS_OK;
+    }
+
     const auto vma_base_addr = vma_base.base;
     const auto vma_base_size = vma_base.size;
     const auto phys_base = vma_base.phys_base;
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
-    const auto type = vma_base.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
-    if (type == VMAType::Direct) {
+    if (type == VMAType::Direct || type == VMAType::Pooled) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
     if (type == VMAType::Flexible) {
@@ -418,10 +424,12 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     MergeAdjacent(vma_map, new_it);
     bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
 
-    // Unmap the memory region.
-    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-               has_backing, readonly_file);
-    TRACK_FREE(virtual_addr, "VMEM");
+    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
+        // Unmap the memory region.
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
+                   is_exec, has_backing, readonly_file);
+        TRACK_FREE(virtual_addr, "VMEM");
+    }
 
     return ORBIS_OK;
 }
