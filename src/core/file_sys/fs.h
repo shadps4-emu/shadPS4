@@ -36,7 +36,11 @@ public:
     void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
-                                      bool* is_read_only = nullptr);
+                                      bool* is_read_only = nullptr, bool force_base_path = false);
+    using IterateDirectoryCallback =
+        std::function<void(const std::filesystem::path& host_path, bool is_file)>;
+    void IterateDirectory(std::string_view guest_directory,
+                          const IterateDirectoryCallback& callback);
 
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
