@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <boost/container/static_vector.hpp>
 #include <xxhash.h>
 
 #include "common/types.h"
@@ -26,6 +27,9 @@ class Scheduler;
 class DescriptorHeap;
 
 using Liverpool = AmdGpu::Liverpool;
+
+template <typename T>
+using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
 
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
@@ -99,6 +103,11 @@ public:
                key.prim_type == AmdGpu::PrimitiveType::RectList ||
                key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
+
+    /// Gets the attributes and bindings for vertex inputs.
+    template <typename Attribute, typename Binding>
+    void GetVertexInputs(VertexInputs<Attribute>& attributes, VertexInputs<Binding>& bindings,
+                         VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
 
 private:
     void BuildDescSetLayout();
