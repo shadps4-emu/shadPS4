@@ -9,17 +9,17 @@
 
 namespace Libraries::NpCommon {
 
-int PS4_SYSV_ABI sceNpCmpNpId() {
+int PS4_SYSV_ABI sceNpCmpNpId(const char* np_id1, const char* np_id2) {
 	LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpCmpNpIdInOrder() {
+int PS4_SYSV_ABI sceNpCmpNpIdInOrder(const char* np_id1, const char* np_id2, u32* out_result) {
 	LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpCmpOnlineId() {
+int PS4_SYSV_ABI sceNpCmpOnlineId(const char* online_id1, const char* online_id2) {
 	LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
 	return ORBIS_OK;
 }
