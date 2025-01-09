@@ -248,11 +248,10 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->shadFolderAct, &QAction::triggered, this, [this]() {
-            QString userPath;
-            Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
-        });
+        QString userPath;
+        Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+    });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,

@@ -339,7 +339,8 @@ public:
             "MainWindow", "Install application from a .pkg file", nullptr));
 #endif // QT_CONFIG(tooltip)
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
-        shadFolderAct->setText(QCoreApplication::translate("MainWindow", "Open shadPS4 Folder", nullptr));
+        shadFolderAct->setText(
+            QCoreApplication::translate("MainWindow", "Open shadPS4 Folder", nullptr));
         exitAct->setText(QCoreApplication::translate("MainWindow", "Exit", nullptr));
 #if QT_CONFIG(tooltip)
         exitAct->setToolTip(QCoreApplication::translate("MainWindow", "Exit shadPS4", nullptr));
