@@ -577,6 +577,10 @@
 			<translation>Lokisuodatin</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Avaa lokin sijainti</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Syöttö</translation>
 		</message>

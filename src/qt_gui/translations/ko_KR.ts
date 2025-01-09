@@ -577,6 +577,10 @@
 			<translation>Log Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>로그 위치 열기</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Input</translation>
 		</message>

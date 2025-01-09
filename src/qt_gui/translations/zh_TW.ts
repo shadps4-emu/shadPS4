@@ -577,6 +577,10 @@
 			<translation>Log Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>開啟日誌位置</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>輸入</translation>
 		</message>

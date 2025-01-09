@@ -577,6 +577,10 @@
 			<translation>Naplózási Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Napló helyének megnyitása</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Bemenet</translation>
 		</message>

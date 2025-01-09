@@ -577,6 +577,10 @@
 			<translation>Log Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Mở vị trí nhật ký</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Đầu vào</translation>
 		</message>
