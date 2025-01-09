@@ -48,6 +48,12 @@ struct EpollSocket {
     net_socket sock;
 };
 
+enum SceNetEpollControlFlag : u32 {
+    ORBIS_NET_EPOLL_CTL_ADD = 1,
+    ORBIS_NET_EPOLL_CTL_MOD,
+    ORBIS_NET_EPOLL_CTL_DEL
+};
+
 struct NetEpoll {
     std::map<int, EpollSocket> eventEntries;
 
@@ -63,13 +69,17 @@ class NetEpollInternal {
 public:
     explicit NetEpollInternal() = default;
     ~NetEpollInternal() = default;
-    EpollPtr FindSocket(int sockid) {
+    EpollPtr FindEpoll(int sockid) {
         std::scoped_lock lock{m_mutex};
         const auto it = epolls.find(sockid);
         if (it != epolls.end()) {
             return it->second;
         }
         return 0;
+    }
+    int EraseEpoll(int eid) {
+        std::scoped_lock lock{m_mutex};
+        return epolls.erase(eid);
     }
 
 public:
