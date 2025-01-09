@@ -95,26 +95,13 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
     Vulkan::VertexInputs<AmdGpu::Buffer> guest_buffers;
     pipeline.GetVertexInputs(attributes, bindings, guest_buffers);
 
-    const auto dynamic_input = instance.IsVertexInputDynamicState();
-    if (dynamic_input) {
+    if (instance.IsVertexInputDynamicState()) {
         // Update current vertex inputs.
         const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.setVertexInputEXT(bindings, attributes);
     }
 
-    const auto null_buffer =
-        instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : GetBuffer(NULL_BUFFER_ID).Handle();
     if (bindings.empty()) {
-        if (!dynamic_input) {
-            // Required to call bindVertexBuffers2EXT at least once in the current command buffer
-            // with non-null strides without a non-dynamic stride pipeline in between. Thus even
-            // when nothing is bound we still need to make a dummy call. Non-null strides in turn
-            // requires a count greater than 0.
-            const auto cmdbuf = scheduler.CommandBuffer();
-            const std::array null_buffers = {null_buffer};
-            constexpr std::array null_offsets = {static_cast<vk::DeviceSize>(0)};
-            cmdbuf.bindVertexBuffers2EXT(0, null_buffers, null_offsets, null_offsets, null_offsets);
-        }
         // If there are no bindings, there is nothing further to do.
         return;
     }
@@ -167,6 +154,8 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
     Vulkan::VertexInputs<vk::DeviceSize> host_offsets;
     Vulkan::VertexInputs<vk::DeviceSize> host_sizes;
     Vulkan::VertexInputs<vk::DeviceSize> host_strides;
+    const auto null_buffer =
+        instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : GetBuffer(NULL_BUFFER_ID).Handle();
     for (const auto& buffer : guest_buffers) {
         if (buffer.GetSize() > 0) {
             const auto host_buffer_info =

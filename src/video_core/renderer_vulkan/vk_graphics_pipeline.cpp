@@ -137,7 +137,7 @@ GraphicsPipeline::GraphicsPipeline(
     }
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
-    } else {
+    } else if (!vertex_bindings.empty()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
     }
 
