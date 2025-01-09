@@ -67,8 +67,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>605</height>
+         <width>932</width>
+         <height>611</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -434,7 +434,7 @@
                 <number>11</number>
                </property>
                <property name="bottomMargin">
-                <number>11</number>
+                <number>190</number>
                </property>
                <item>
                 <widget class="QGroupBox" name="updaterComboBox">
@@ -638,7 +638,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>595</height>
+         <height>605</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -922,7 +922,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>595</height>
+         <height>605</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1176,7 +1176,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>595</height>
+         <height>605</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
@@ -1232,8 +1232,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>595</height>
+         <width>493</width>
+         <height>236</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
