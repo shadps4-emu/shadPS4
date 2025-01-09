@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "epoll.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -198,7 +199,8 @@ int PS4_SYSV_ABI sceNetDumpRead();
 int PS4_SYSV_ABI sceNetDuplicateIpStart();
 int PS4_SYSV_ABI sceNetDuplicateIpStop();
 int PS4_SYSV_ABI sceNetEpollAbort();
-int PS4_SYSV_ABI sceNetEpollControl();
+int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId eid, int op, OrbisNetId id,
+                                    OrbisNetEpollEvent* event);
 int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags);
 int PS4_SYSV_ABI sceNetEpollDestroy(int eid);
 int PS4_SYSV_ABI sceNetEpollWait();
