@@ -248,6 +248,10 @@
 			<translation>最近のゲーム</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>終了</translation>
 		</message>
