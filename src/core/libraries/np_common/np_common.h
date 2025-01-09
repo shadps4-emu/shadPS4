@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "common/types.h" 
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,9 +11,26 @@ class SymbolsResolver;
 
 namespace Libraries::NpCommon {
 
-int PS4_SYSV_ABI sceNpCmpNpId(const char* np_id1, const char* np_id2);
-int PS4_SYSV_ABI sceNpCmpNpIdInOrder(const char* np_id1, const char* np_id2, u32* out_result);
-int PS4_SYSV_ABI sceNpCmpOnlineId(const char* online_id1, const char* online_id2);
+constexpr int ORBIS_NP_ERROR_INVALID_ARGUMENT = 0x80550003;
+constexpr int ORBIS_NP_UTIL_ERROR_NOT_MATCH = 0x80550609;
+
+constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
+
+struct OrbisNpOnlineId {
+    char data[ORBIS_NP_ONLINEID_MAX_LENGTH];
+    char term;
+    char dummy[3];
+};
+
+struct OrbisNpId {
+    OrbisNpOnlineId handle;
+    u8 opt[8];
+    u8 reserved[8];
+};
+
+int PS4_SYSV_ABI sceNpCmpNpId(OrbisNpId* np_id1, OrbisNpId* np_id2);
+int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* out_result);
+int PS4_SYSV_ABI sceNpCmpOnlineId(OrbisNpOnlineId* online_id1, OrbisNpOnlineId* online_id2);
 int PS4_SYSV_ABI _sceNpAllocatorExConvertAllocator();
 int PS4_SYSV_ABI _sceNpAllocatorExFree();
 int PS4_SYSV_ABI _sceNpAllocatorExMalloc();
