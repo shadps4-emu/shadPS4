@@ -100,7 +100,7 @@ struct StageSpecialization {
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
-                         spec.is_storage = desc.is_written;
+                         spec.is_storage = desc.IsStorage(sharp);
                          if (!spec.is_storage) {
                              spec.size = sharp.GetSize();
                          }
