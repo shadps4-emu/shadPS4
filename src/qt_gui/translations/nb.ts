@@ -577,6 +577,10 @@
 			<translation>Logg filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Åpne loggplassering</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Inndata</translation>
 		</message>

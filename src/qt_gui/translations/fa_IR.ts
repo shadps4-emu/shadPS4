@@ -577,6 +577,10 @@
 			<translation>Log فیلتر</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>باز کردن مکان گزارش</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>ورودی</translation>
 		</message>

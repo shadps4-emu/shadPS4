@@ -577,6 +577,10 @@
 			<translation>Filtro de registro</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Abrir ubicación del registro</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Entrada</translation>
 		</message>

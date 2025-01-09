@@ -1065,6 +1065,10 @@
         <translation>Loggfilter</translation>
     </message>
     <message>
+        <source>Open Log Location</source>
+        <translation>Öppna loggplats</translation>
+    </message>
+    <message>
         <source>Input</source>
         <translation>Inmatning</translation>
     </message>
