@@ -333,7 +333,7 @@ void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
                              ? vk::VertexInputRate::eVertex
                              : vk::VertexInputRate::eInstance,
         });
-        if constexpr (std::is_same_v<Attribute, vk::VertexInputBindingDescription2EXT>) {
+        if constexpr (std::is_same_v<Binding, vk::VertexInputBindingDescription2EXT>) {
             bindings.back().divisor = 1;
         }
         guest_buffers.emplace_back(buffer);
