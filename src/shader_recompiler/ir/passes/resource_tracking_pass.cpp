@@ -161,10 +161,9 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
-        image.is_read |= desc.is_read;
         image.is_written |= desc.is_written;
         return index;
     }
@@ -361,7 +360,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
-    const bool is_read = inst.GetOpcode() == IR::Opcode::ImageRead;
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
 
     // Patch image instruction if image is FMask.
@@ -402,7 +400,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
-        .is_read = is_read,
         .is_written = is_written,
     });
 
@@ -560,32 +557,6 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_written, bool is_array) {
-    // When cubemap is written with imageStore it is treated like 2DArray.
-    if (is_written) {
-        return ir.CompositeConstruct(s, t, z);
-    }
-
-    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
-
-    // We need to fix x and y coordinate,
-    // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
-    // We already force the scale value to be 1.0 when handling v_cubema_f32,
-    // here we subtract 1.5 to recover the original value.
-    const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
-    const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    if (is_array) {
-        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
-        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
-        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
-        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
-                                     ir.ConvertIToF(32, 32, false, slice_id));
-    } else {
-        return ir.CompositeConstruct(x, y, z);
-    }
-}
-
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
                           const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
@@ -649,7 +620,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color2DMsaa:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             return ir.CompositeConstruct(read(0), read(8), read(16));
         default:
             UNREACHABLE();
@@ -675,7 +645,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
                     ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1))};
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             // (du/dx, dv/dx, dw/dx), (du/dy, dv/dy, dw/dy)
             addr_reg = addr_reg + 6;
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 6), get_addr_reg(addr_reg - 5),
@@ -691,7 +660,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     // Query dimensions of image if needed for normalization.
     // We can't use the image sharp because it could be bound to a different image later.
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false)) : IR::Value{};
+        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
+                     : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
         if (unnormalized) {
@@ -724,10 +694,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_coord(addr_reg - 1, 2));
-        case AmdGpu::ImageType::Cube: // x, y, face
-            addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
-                                  get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
         }
@@ -805,10 +771,6 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube: // x, y, face, [lod]
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2),
-                                   inst.GetOpcode() == IR::Opcode::ImageWrite, inst_info.is_array),
-                    body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
@@ -820,7 +782,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
-    const auto is_storage = image_res.IsStorage(image);
+    const auto is_storage = image_res.is_written;
     if (inst.GetOpcode() == IR::Opcode::ImageRead) {
         auto texel = ir.ImageRead(handle, coords, lod, ms, inst_info);
         if (is_storage) {

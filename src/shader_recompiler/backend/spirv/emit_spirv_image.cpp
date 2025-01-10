@@ -172,20 +172,19 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const auto sharp = ctx.info.images[handle & 0xFFFF].GetSharp(ctx.info);
-    const auto type = sharp.GetBoundType();
     const Id zero = ctx.u32_zero_value;
     const auto mips{[&] { return has_mips ? ctx.OpImageQueryLevels(ctx.U32[1], image) : zero; }};
-    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa && !texture.is_storage};
+    const bool uses_lod{texture.bound_type != AmdGpu::ImageType::Color2DMsaa &&
+                        !texture.is_storage};
     const auto query{[&](Id type) {
         return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
                         : ctx.OpImageQuerySize(type, image);
     }};
-    switch (type) {
+    switch (texture.bound_type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[1]), zero, zero, mips());
     case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Color2D:
-    case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color2DMsaa:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     case AmdGpu::ImageType::Color2DArray:
@@ -255,6 +254,22 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     }
     const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
     ctx.OpImageWrite(image, coords, texel, operands.mask, operands.operands);
+}
+
+Id EmitCubeFaceCoord(EmitContext& ctx, IR::Inst* inst, Id cube_coords) {
+    if (ctx.profile.supports_native_cube_calc) {
+        return ctx.OpCubeFaceCoordAMD(ctx.F32[2], cube_coords);
+    } else {
+        UNREACHABLE_MSG("SPIR-V Instruction");
+    }
+}
+
+Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords) {
+    if (ctx.profile.supports_native_cube_calc) {
+        return ctx.OpCubeFaceIndexAMD(ctx.F32[1], cube_coords);
+    } else {
+        UNREACHABLE_MSG("SPIR-V Instruction");
+    }
 }
 
 } // namespace Shader::Backend::SPIRV

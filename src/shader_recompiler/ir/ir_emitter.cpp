@@ -1733,11 +1733,6 @@ Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const
 }
 
 Value IREmitter::ImageQueryDimension(const Value& handle, const IR::U32& lod,
-                                     const IR::U1& skip_mips) {
-    return Inst(Opcode::ImageQueryDimensions, handle, lod, skip_mips);
-}
-
-Value IREmitter::ImageQueryDimension(const Value& handle, const IR::U32& lod,
                                      const IR::U1& skip_mips, TextureInstInfo info) {
     return Inst(Opcode::ImageQueryDimensions, Flags{info}, handle, lod, skip_mips);
 }
@@ -1761,6 +1756,14 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, const U32& 
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& lod,
                            const U32& multisampling, const Value& color, TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, multisampling, color);
+}
+
+[[nodiscard]] Value IREmitter::CubeFaceCoord(const Value& cube_coords) {
+    return Inst(Opcode::CubeFaceCoord, cube_coords);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
+    return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

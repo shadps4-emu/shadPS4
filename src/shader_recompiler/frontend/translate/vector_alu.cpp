@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
 
@@ -1042,20 +1043,92 @@ void Translator::V_MAD_U32_U24(const GcnInst& inst) {
     V_MAD_I32_I24(inst, false);
 }
 
+IR::F32 Translator::SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
+                                     const IR::F32& x_res, const IR::F32& y_res,
+                                     const IR::F32& z_res) {
+    const auto abs_x = ir.FPAbs(x);
+    const auto abs_y = ir.FPAbs(y);
+    const auto abs_z = ir.FPAbs(z);
+
+    const auto z_face_cond{
+        ir.LogicalAnd(ir.FPGreaterThanEqual(abs_z, abs_x), ir.FPGreaterThanEqual(abs_z, abs_y))};
+    const auto y_face_cond{ir.FPGreaterThanEqual(abs_y, abs_x)};
+
+    return IR::F32{ir.Select(z_face_cond, z_res, ir.Select(y_face_cond, y_res, x_res))};
+}
+
 void Translator::V_CUBEID_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[2]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        result = ir.CubeFaceIndex(ir.CompositeConstruct(x, y, z));
+    } else {
+        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+        const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
+        const IR::F32 y_face{ir.Select(y_neg_cond, ir.Imm32(3.f), ir.Imm32(2.f))};
+        const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
+
+        result = SelectCubeResult(x, y, z, x_face, y_face, z_face);
+    }
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBESC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
+        result = IR::F32{ir.CompositeExtract(coords, 0)};
+    } else {
+        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+        const IR::F32 x_sc{ir.Select(x_neg_cond, ir.FPNeg(x), x)};
+        const IR::F32 z_sc{ir.Select(z_neg_cond, z, ir.FPNeg(z))};
+
+        result = SelectCubeResult(x, y, z, x_sc, x, z_sc);
+    }
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBETC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[1]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
+        result = IR::F32{ir.CompositeExtract(coords, 1)};
+    } else {
+        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+        const IR::F32 x_z_sc{ir.FPNeg(y)};
+        const IR::F32 y_sc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
+
+        result = SelectCubeResult(x, y, z, x_z_sc, y_sc, x_z_sc);
+    }
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBEMA_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.Imm32(1.f));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    const auto two{ir.Imm32(4.f)};
+    const IR::F32 x_major_axis{ir.FPMul(x, two)};
+    const IR::F32 y_major_axis{ir.FPMul(y, two)};
+    const IR::F32 z_major_axis{ir.FPMul(z, two)};
+
+    const auto result{SelectCubeResult(x, y, z, x_major_axis, y_major_axis, z_major_axis)};
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
