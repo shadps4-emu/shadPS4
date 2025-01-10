@@ -45,7 +45,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     range.base.layer = image.base_array;
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
-    type = ConvertImageViewType(image.GetBoundType(desc.is_array));
+    type = ConvertImageViewType(image.GetViewType(desc.is_array));
 
     if (!is_storage) {
         mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());

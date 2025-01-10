@@ -254,9 +254,12 @@ struct Image {
         return 1;
     }
 
+    bool IsCube() const noexcept {
+        return static_cast<ImageType>(type) == ImageType::Cube;
+    }
+
     ImageType GetType() const noexcept {
-        const auto img_type = static_cast<ImageType>(type);
-        return img_type == ImageType::Cube ? ImageType::Color2DArray : img_type;
+        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -288,8 +291,12 @@ struct Image {
                GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
 
-    [[nodiscard]] ImageType GetBoundType(const bool is_array) const noexcept {
+    [[nodiscard]] ImageType GetViewType(const bool is_array) const noexcept {
         const auto base_type = GetType();
+        if (IsCube()) {
+            // Cube needs to remain array type regardless of instruction array specifier.
+            return base_type;
+        }
         if (base_type == ImageType::Color1DArray && !is_array) {
             return ImageType::Color1D;
         }
@@ -303,7 +310,7 @@ struct Image {
     }
 
     [[nodiscard]] u32 NumViewLevels(const bool is_array) const noexcept {
-        switch (GetBoundType(is_array)) {
+        switch (GetViewType(is_array)) {
         case ImageType::Color2DMsaa:
         case ImageType::Color2DMsaaArray:
             return 1;
@@ -313,7 +320,7 @@ struct Image {
     }
 
     [[nodiscard]] u32 NumViewLayers(const bool is_array) const noexcept {
-        switch (GetBoundType(is_array)) {
+        switch (GetViewType(is_array)) {
         case ImageType::Color1D:
         case ImageType::Color2D:
         case ImageType::Color2DMsaa:
