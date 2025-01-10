@@ -52,6 +52,13 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         case ORBIS_NET_SO_SNDTIMEO:
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, SO_SNDTIMEO, (const char*)optval, optlen));
+        case ORBIS_NET_SO_ONESBCAST: {
+            if (optlen != sizeof(sockopt_so_onesbcast)) {
+                return ORBIS_NET_ERROR_EFAULT;
+            }
+            memcpy(&sockopt_so_onesbcast, optval, optlen);
+            return 0;
+        }
         case ORBIS_NET_SO_NBIO: {
             if (optlen != sizeof(sockopt_so_nbio)) {
                 return ORBIS_NET_ERROR_EFAULT;
