@@ -41,7 +41,8 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
     }
 
     // Compare data
-    u32 compare = std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+    u32 compare = 
+		std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     if (compare < 0) {
         *out_result = -1;
         return ORBIS_OK;
@@ -6130,11 +6131,11 @@ int PS4_SYSV_ABI Func_FFF4A3E279FB44A7() {
 void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("i8UmXTSq7N4", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpNpId);
     LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
-				 sceNpCmpNpIdInOrder);
+                 sceNpCmpNpIdInOrder);
     LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
-				 sceNpCmpOnlineId);
+                 sceNpCmpOnlineId);
     LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
-				 _sceNpAllocatorExConvertAllocator);
+                 _sceNpAllocatorExConvertAllocator);
     LIB_FUNCTION("Zh23aSLeeZo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExFree);
 	LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _sceNpAllocatorExMalloc);
@@ -6147,10 +6148,10 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BztTl7QeYqE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorFree);
     LIB_FUNCTION("mzlILsFx0cU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorMalloc);
     LIB_FUNCTION("VWcTu8wKwlQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
-				 _sceNpAllocatorRealloc);
+                 _sceNpAllocatorRealloc);
     LIB_FUNCTION("c8-4aC9opYE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorStrdup);
     LIB_FUNCTION("vqA9bl6WsF0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
-				 _sceNpAllocatorStrndup);
+                 _sceNpAllocatorStrndup);
     LIB_FUNCTION("z5kwfM5InpI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpFree);
     LIB_FUNCTION("p1vvpKGRXe4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapFree);
     LIB_FUNCTION("kwW5qddf+Lo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapMalloc);
@@ -6677,7 +6678,7 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZOHgNNSZq4Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD0Ev);
     LIB_FUNCTION("YWt5S4-cg9c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD1Ev);
     LIB_FUNCTION("dt0A2cWjwLs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD2Ev);
-     LIB_FUNCTION("1x0jThSUr4w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+    LIB_FUNCTION("1x0jThSUr4w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _ZN3sce2np6ObjectdaEPv);
     LIB_FUNCTION("4il4PZAZOnQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _ZN3sce2np6ObjectdaEPvR14SceNpAllocator);
