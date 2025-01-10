@@ -13,19 +13,19 @@ int PS4_SYSV_ABI sceNpCmpNpId(OrbisNpId* np_id1, OrbisNpId* np_id2) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    //Compare data
+    // Compare data
     if (std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH) != 0) {
         return ORBIS_NP_UTIL_ERROR_NOT_MATCH;
     }
 
-    //Compare opt
+    // Compare opt
     for (u32 i = 0; i < 8; i++) {
         if (np_id1->opt[i] != np_id2->opt[i]) {
             return ORBIS_NP_UTIL_ERROR_NOT_MATCH;
         }
     }
 
-    //Compare reserved
+    // Compare reserved
     for (u32 i = 0; i < 8; i++) {
         if (np_id1->reserved[i] != np_id2->reserved[i]) {
             return ORBIS_NP_UTIL_ERROR_NOT_MATCH;
@@ -40,7 +40,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    //Compare data
+    // Compare data
     u32 compare = std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     if (compare < 0) {
         *out_result = -1;
@@ -50,7 +50,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
         return ORBIS_OK;
     }
 
-    //Compare opt
+    // Compare opt
     for (u32 i = 0; i < 8; i++) {
         if (np_id1->opt[i] < np_id2->opt[i]) {
             *out_result = -1;
@@ -61,7 +61,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
         }
     }
 
-    //Compare reserved
+    // Compare reserved
     for (u32 i = 0; i < 8; i++) {
         if (np_id1->reserved[i] < np_id2->reserved[i]) {
             *out_result = -1;
@@ -472,7 +472,8 @@ int PS4_SYSV_ABI _ZN3sce2np10MemoryFileD2Ev() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI _ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_() {
+int PS4_SYSV_ABI 
+_ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1077,12 +1078,14 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientD2Ev() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI _ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
+int PS4_SYSV_ABI 
+_ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI _ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
+int PS4_SYSV_ABI 
+_ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1197,7 +1200,8 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient20AbortRequestForAsyncEii() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE() {
+int PS4_SYSV_ABI 
+_ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -2147,7 +2151,8 @@ int PS4_SYSV_ABI _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConne
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m() {
+int PS4_SYSV_ABI 
+_ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
