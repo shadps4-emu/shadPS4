@@ -72,6 +72,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
 		}
 	}
 
+	*out_result = 0;
 	return ORBIS_OK;
 }
 
