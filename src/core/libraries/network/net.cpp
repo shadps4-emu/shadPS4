@@ -1010,9 +1010,16 @@ int PS4_SYSV_ABI sceNetSendmsg() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSendto() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u32 len, int flags,
+                              const OrbisNetSockaddr* addr, u32 addrlen) {
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return sock->SendPacket(buf, len, flags, addr, addrlen);
 }
 
 int PS4_SYSV_ABI sceNetSetDns6Info() {
@@ -1145,7 +1152,7 @@ OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int
         break;
     case ORBIS_NET_SOCK_DGRAM_P2P:
     case ORBIS_NET_SOCK_STREAM_P2P:
-        UNREACHABLE_MSG("we don't support P2P");
+        sock = std::make_shared<P2PSocket>(family, type, protocol);
         break;
     default:
         UNREACHABLE_MSG("Unknown type {}", type);

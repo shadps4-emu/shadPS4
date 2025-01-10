@@ -38,6 +38,8 @@ struct Socket {
                                  unsigned int optlen) = 0;
     virtual int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) = 0;
     virtual int Listen(int backlog) = 0;
+    virtual int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                           u32 tolen) = 0;
 };
 
 struct PosixSocket : public Socket {
@@ -48,6 +50,17 @@ struct PosixSocket : public Socket {
     int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
     int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) override;
     int Listen(int backlog) override;
+    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                   u32 tolen) override;
+};
+
+struct P2PSocket : public Socket {
+    explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
+    int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
+    int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) override;
+    int Listen(int backlog) override;
+    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                   u32 tolen) override;
 };
 
 class NetInternal {

@@ -78,4 +78,16 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
+int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                            u32 tolen) {
+    if (to != nullptr) {
+        sockaddr addr;
+        convertOrbisNetSockaddrToPosix(to, &addr);
+        return ConvertReturnErrorCode(
+            sendto(sock, (const char*)msg, len, flags, &addr, sizeof(sockaddr_in)));
+    } else {
+        return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
+    }
+}
+
 } // namespace Libraries::Net

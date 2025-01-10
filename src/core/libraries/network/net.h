@@ -276,7 +276,8 @@ int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords();
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
 int PS4_SYSV_ABI sceNetSend();
 int PS4_SYSV_ABI sceNetSendmsg();
-int PS4_SYSV_ABI sceNetSendto();
+int PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u32 len, int flags,
+                              const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetSetDns6Info();
 int PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
 int PS4_SYSV_ABI sceNetSetDnsInfo();
