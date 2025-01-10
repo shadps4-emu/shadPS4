@@ -42,7 +42,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
 
     // Compare data
     u32 compare = 
-		std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+        std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     if (compare < 0) {
         *out_result = -1;
         return ORBIS_OK;
@@ -6137,9 +6137,9 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _sceNpAllocatorExConvertAllocator);
     LIB_FUNCTION("Zh23aSLeeZo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExFree);
-	LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+    LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _sceNpAllocatorExMalloc);
-	LIB_FUNCTION("kKF3w-XkCWA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+    LIB_FUNCTION("kKF3w-XkCWA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _sceNpAllocatorExRealloc);
     LIB_FUNCTION("Cmd4+m7V00c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
                  _sceNpAllocatorExStrdup);
