@@ -283,7 +283,7 @@ public:
 #ifdef Q_OS_WIN
                     if (createShortcutWin(linkPath, ebootPath, icoPath, exePath)) {
 #else
-                    if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
+                    if (createShortcutLinux(linkPath, m_games[itemID].name, ebootPath, iconPath)) {
 #endif
                         QMessageBox::information(
                             nullptr, tr("Shortcut creation"),
@@ -301,7 +301,7 @@ public:
 #ifdef Q_OS_WIN
                 if (createShortcutWin(linkPath, ebootPath, iconPath, exePath)) {
 #else
-                if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
+                if (createShortcutLinux(linkPath, m_games[itemID].name, ebootPath, iconPath)) {
 #endif
                     QMessageBox::information(
                         nullptr, tr("Shortcut creation"),
@@ -510,8 +510,8 @@ private:
         return SUCCEEDED(hres);
     }
 #else
-    bool createShortcutLinux(const QString& linkPath, const QString& targetPath,
-                             const QString& iconPath) {
+    bool createShortcutLinux(const QString& linkPath, const std::string& name,
+                             const QString& targetPath, const QString& iconPath) {
         QFile shortcutFile(linkPath);
         if (!shortcutFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QMessageBox::critical(nullptr, "Error",
@@ -522,7 +522,7 @@ private:
         QTextStream out(&shortcutFile);
         out << "[Desktop Entry]\n";
         out << "Version=1.0\n";
-        out << "Name=" << QFileInfo(linkPath).baseName() << "\n";
+        out << "Name=" << QString::fromStdString(name) << "\n";
         out << "Exec=" << QCoreApplication::applicationFilePath() << " \"" << targetPath << "\"\n";
         out << "Icon=" << iconPath << "\n";
         out << "Terminal=false\n";
