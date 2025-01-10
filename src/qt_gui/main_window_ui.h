@@ -278,11 +278,11 @@ public:
         menuBar->addAction(menuHelp->menuAction());
         menuFile->addAction(bootInstallPkgAct);
         menuFile->addAction(bootGameAct);
+        menuFile->addSeparator();
         menuFile->addAction(addElfFolderAct);
+        menuFile->addAction(shadFolderAct);
         menuFile->addSeparator();
         menuFile->addAction(menuRecent->menuAction());
-        menuFile->addSeparator();
-        menuFile->addAction(shadFolderAct);
         menuFile->addSeparator();
         menuFile->addAction(exitAct);
         menuView->addAction(showGameListAct);
