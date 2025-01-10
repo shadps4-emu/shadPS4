@@ -6129,19 +6129,28 @@ int PS4_SYSV_ABI Func_FFF4A3E279FB44A7() {
 
 void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("i8UmXTSq7N4", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpNpId);
-    LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpNpIdInOrder);
-    LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpOnlineId);
-    LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExConvertAllocator);
+    LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, 
+				 sceNpCmpNpIdInOrder);
+    LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, 
+				 sceNpCmpOnlineId);
+    LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+				 _sceNpAllocatorExConvertAllocator);
     LIB_FUNCTION("Zh23aSLeeZo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExFree);
-    LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExMalloc);
-    LIB_FUNCTION("kKF3w-XkCWA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExRealloc);
-    LIB_FUNCTION("Cmd4+m7V00c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExStrdup);
-    LIB_FUNCTION("EziLjfyTnKI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExStrndup);
+	LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _sceNpAllocatorExMalloc);
+	LIB_FUNCTION("kKF3w-XkCWA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _sceNpAllocatorExRealloc);
+    LIB_FUNCTION("Cmd4+m7V00c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _sceNpAllocatorExStrdup);
+    LIB_FUNCTION("EziLjfyTnKI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _sceNpAllocatorExStrndup);
     LIB_FUNCTION("BztTl7QeYqE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorFree);
     LIB_FUNCTION("mzlILsFx0cU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorMalloc);
-    LIB_FUNCTION("VWcTu8wKwlQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorRealloc);
+    LIB_FUNCTION("VWcTu8wKwlQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+				 _sceNpAllocatorRealloc);
     LIB_FUNCTION("c8-4aC9opYE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorStrdup);
-    LIB_FUNCTION("vqA9bl6WsF0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorStrndup);
+    LIB_FUNCTION("vqA9bl6WsF0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+				 _sceNpAllocatorStrndup);
     LIB_FUNCTION("z5kwfM5InpI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpFree);
     LIB_FUNCTION("p1vvpKGRXe4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapFree);
     LIB_FUNCTION("kwW5qddf+Lo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapMalloc);
@@ -6150,586 +6159,1099 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("RzLv+HR5E2A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapStrndup);
     LIB_FUNCTION("w2+qV1RJgcI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpMalloc);
     LIB_FUNCTION("UmzxltBpiiY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpRealloc);
-    LIB_FUNCTION("LJvHO3uCNm4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable10IsCanceledEv);
-    LIB_FUNCTION("fd+grYAEph0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable10LockCancelEPKciS3_);
-    LIB_FUNCTION("IwDQAbQxvD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable11CheckCancelEPKciS3_);
-    LIB_FUNCTION("-zbpF68OGDs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable12UnlockCancelEPKciS3_);
-    LIB_FUNCTION("bBLapYYwyr0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable13SetCancelableEb);
-    LIB_FUNCTION("j4gLOIpHgNk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable14SetupSubCancelEPS1_PKciS4_);
-    LIB_FUNCTION("vmt3ZOlQu3o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable16CleanupSubCancelEPS1_);
-    LIB_FUNCTION("Y7f+qBjKxdo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable4InitEv);
-    LIB_FUNCTION("Jhbrpz0YhHU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable6CancelEij);
-    LIB_FUNCTION("v2yJZLY0w1U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10Cancelable7DestroyEv);
-    LIB_FUNCTION("vqekW3s-eFg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelableC2Ev);
-    LIB_FUNCTION("kdOC-2AE06w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelableD0Ev);
-    LIB_FUNCTION("upzdrzOYkS0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelableD1Ev);
-    LIB_FUNCTION("vZXDqs2x7t0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelableD2Ev);
-    LIB_FUNCTION("nleHqndSeQ0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLock3EndEPKciS3_);
-    LIB_FUNCTION("lJ2Efd9PUKI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLock5BeginEPNS0_6HandleEPKciS5_);
-    LIB_FUNCTION("Vq9LKkPXkIQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLockC1Ev);
-    LIB_FUNCTION("MecB8wAHCfE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLockC2Ev);
-    LIB_FUNCTION("K7FjXiy2z+A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLockD1Ev);
-    LIB_FUNCTION("1iHBAKrdE90", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10CancelLockD2Ev);
-    LIB_FUNCTION("aoas3bJANfY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue10ClearAbortEt);
-    LIB_FUNCTION("QlP4t2SGZ4I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue10TryDequeueEPvm);
-    LIB_FUNCTION("xu9qWN0YYC4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue4ctorEv);
-    LIB_FUNCTION("N1gnYosdK7Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue4dtorEv);
-    LIB_FUNCTION("b20e017Ei94", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue4InitEPKcmm);
-    LIB_FUNCTION("slmKkuIoC28", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue5AbortEt);
-    LIB_FUNCTION("suxln7PooIo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue7DequeueEPvmj);
-    LIB_FUNCTION("qvpEuKumIGM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue7DestroyEv);
-    LIB_FUNCTION("AV5jHo8O3+E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueue7EnqueueEPKvmj);
-    LIB_FUNCTION("esiO4He2WTU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueueC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("E4uoqSdo8ek", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueueD0Ev);
-    LIB_FUNCTION("lQXgvDXBGtA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueueD1Ev);
-    LIB_FUNCTION("8kUkQPQP7bA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10EventQueueD2Ev);
-    LIB_FUNCTION("YHNEgBCSL2o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber5ClearEv);
-    LIB_FUNCTION("UgmqDr1BCLw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber6SetNumEi);
-    LIB_FUNCTION("PccynQ5NdVQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber6SetNumEj);
-    LIB_FUNCTION("MY0CSk24EcY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber6SetNumEl);
-    LIB_FUNCTION("qbW7qOvVafI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber6SetNumEm);
-    LIB_FUNCTION("VyCn9EVJGlU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonNumber6SetNumEPKc);
-    LIB_FUNCTION("-WgnISXjJ7A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonObject16DeleteFieldValueEPKc);
-    LIB_FUNCTION("DiHxx2k5zfM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonObject5ClearEv);
-    LIB_FUNCTION("AGadQiCfKDY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParser4InitEPK7JsonDefPNS1_12EventHandlerE);
-    LIB_FUNCTION("CDzSgHA6hWg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParser5ParseEPKcm);
-    LIB_FUNCTION("ZJbPQt+FTnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParserC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("u+A16O-TAHk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParserD0Ev);
-    LIB_FUNCTION("qJb7IXDg9xk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParserD1Ev);
-    LIB_FUNCTION("AvvE5A5A6ZA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonParserD2Ev);
-    LIB_FUNCTION("kXE1imLw7yo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonString5ClearEv);
-    LIB_FUNCTION("SN4IgvT26To", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10JsonString6SetStrEPKc);
-    LIB_FUNCTION("EyhtbPFMWNA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFile4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("AZTMWob-mog", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFile4SyncEv);
-    LIB_FUNCTION("dl6+SFHLke0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFile5CloseEv);
-    LIB_FUNCTION("r2O0f9X-mqs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFile5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("1DtavqenQjg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFile8TruncateEl);
-    LIB_FUNCTION("ev77AviWYu8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFileC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("6Vst7HqJMXU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFileD0Ev);
-    LIB_FUNCTION("ZUf92uPkRuA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFileD1Ev);
-    LIB_FUNCTION("lGjyfcI++PY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np10MemoryFileD2Ev);
-    LIB_FUNCTION("ezJnmv7hkAg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_);
-    LIB_FUNCTION("iOTsJTR6Y9U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplate4InitEiPKcib);
-    LIB_FUNCTION("73qbxKjBH0o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplate7DestroyEv);
-    LIB_FUNCTION("Vj7HiXK-tTg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplateC1Ev);
-    LIB_FUNCTION("hw-UPUK9T+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplateC2Ev);
-    LIB_FUNCTION("cXYOwTVAuMs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplateD0Ev);
-    LIB_FUNCTION("Bm74HLvoNY4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplateD1Ev);
-    LIB_FUNCTION("h6XPsGpHAtc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12HttpTemplateD2Ev);
-    LIB_FUNCTION("jr0OcEeQJ8o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamBufferixEi);
-    LIB_FUNCTION("rCRh3V03bPs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader4ReadEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
-    LIB_FUNCTION("2SKuIvr9sYU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader7ReadAllEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
-    LIB_FUNCTION("f1ncwa-JXlA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader7ReadAllEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("z8qO7hql4Fs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader8ReadDataEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
-    LIB_FUNCTION("oNqSobbGC80", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader8ReadDataEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("MSMPXUL5AuM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader8SkipDataEPNS0_6HandleElPl);
-    LIB_FUNCTION("fJB07vDf7no", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamReader8SkipDataEPNS0_6HandleEPNS0_9StreamCtxElPl);
-    LIB_FUNCTION("etMUeqIhN+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamWriter15WriteFilledDataEPNS0_6HandleEcl);
-    LIB_FUNCTION("SP2010+gtqw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamWriter15WriteFilledDataEPNS0_6HandleEPNS0_9StreamCtxEcl);
-    LIB_FUNCTION("Z1MRG-L+V0o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamWriter5WriteEPNS0_6HandleEPNS0_9StreamCtxEPKvmPm);
-    LIB_FUNCTION("vHaV+tsSVu4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamWriter9WriteDataEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("u9s1aUWSZB0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12StreamWriter9WriteDataEPNS0_6HandleEPNS0_9StreamCtxEPKvmPm);
-    LIB_FUNCTION("gimH2zdBANg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThread10ThreadMainEv);
-    LIB_FUNCTION("YKz2oBW3ZkM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThreadC1EPNS0_9WorkQueueE);
-    LIB_FUNCTION("L9Ty-fG1IM4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThreadC2EPNS0_9WorkQueueE);
-    LIB_FUNCTION("f5L6ax7EWHk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThreadD0Ev);
-    LIB_FUNCTION("PvGTq9AGFfk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThreadD1Ev);
-    LIB_FUNCTION("+qB+WcQlMio", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np12WorkerThreadD2Ev);
-    LIB_FUNCTION("4nCyBD9jBus", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParser5ParseEPKcm);
-    LIB_FUNCTION("sgh9D+MBBKA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParser9GetResultEPPNS0_10JsonObjectE);
-    LIB_FUNCTION("lZWmdDoBDmI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParser9GetResultEPPNS0_9JsonValueE);
-    LIB_FUNCTION("yPmQcnrgR2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParserC2EP16SceNpAllocatorExPK7JsonDef);
-    LIB_FUNCTION("p5hRe1k4Wlg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParserD0Ev);
-    LIB_FUNCTION("iFOXfoXRHFQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParserD1Ev);
-    LIB_FUNCTION("xS-Hjw1psYs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13JsonDocParserD2Ev);
-    LIB_FUNCTION("X0vEo7cZamA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecret5ClearEv);
-    LIB_FUNCTION("IjOpzNzl57o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC1EPKvm);
-    LIB_FUNCTION("bC4+qi0mqJE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC1ERK16SceNpTitleSecret);
-    LIB_FUNCTION("fYr7Ahl-vNA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC1ERKS1_);
-    LIB_FUNCTION("08AQ2wYpzpk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC1Ev);
-    LIB_FUNCTION("Ft-VezxSErk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC2EPKvm);
-    LIB_FUNCTION("9QN7g5mQgCU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC2ERK16SceNpTitleSecret);
-    LIB_FUNCTION("JHG9CTmkdQw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC2ERKS1_);
-    LIB_FUNCTION("K1+uzxxReX0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretC2Ev);
-    LIB_FUNCTION("dJRIc7d5iqU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretD0Ev);
-    LIB_FUNCTION("XBzzdzT3qyg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretD1Ev);
-    LIB_FUNCTION("QDlnJL6stA0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13NpTitleSecretD2Ev);
-    LIB_FUNCTION("RPv5L-o5qRQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory4ctorEv);
-    LIB_FUNCTION("NfhXX6LFmj8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory4dtorEv);
-    LIB_FUNCTION("BkuxOAPlMMw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory4InitEm);
-    LIB_FUNCTION("do0t--lEKMM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory6ExpandEm);
-    LIB_FUNCTION("zdRXyt-65kA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory6IsInitEv);
-    LIB_FUNCTION("Za00SEoNA2A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemory7DestroyEv);
-    LIB_FUNCTION("lGIw3qfqI60", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemoryC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("70qFzq4z3UI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemoryD0Ev);
-    LIB_FUNCTION("C1TJsMv9wb8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemoryD1Ev);
-    LIB_FUNCTION("EaxLv8TfsrM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np13RingBufMemoryD2Ev);
-    LIB_FUNCTION("j6CorpmdjRk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContext4InitEPKcimm);
-    LIB_FUNCTION("oLpLfV2Ov9A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContext4InitEPKNS1_5ParamE);
-    LIB_FUNCTION("C282U0P6Nwg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContext7DestroyEv);
-    LIB_FUNCTION("dV+zK-Ce-2E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContextC1Ev);
-    LIB_FUNCTION("j4IAvbKKTzw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContextC2Ev);
-    LIB_FUNCTION("WR4mjQeqz6s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContextD0Ev);
-    LIB_FUNCTION("S+a+rgnGX8A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContextD1Ev);
-    LIB_FUNCTION("wY9g+hVxLTM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14CalloutContextD2Ev);
-    LIB_FUNCTION("PYBehFWVd60", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilder12BuildBufSizeEv);
-    LIB_FUNCTION("cLdoHqi5Ezg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilder16EscapeJsonStringEPKcPcmPm);
-    LIB_FUNCTION("V5xX2eroaWY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilder23EscapeJsonStringBufSizeEPKc);
-    LIB_FUNCTION("irex3q-O6po", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilder5BuildEPcmPm);
-    LIB_FUNCTION("ikFI73f3hP4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilderC1ERKNS0_9JsonValueE);
-    LIB_FUNCTION("dhJGQPKLmn0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilderC2ERKNS0_9JsonValueE);
-    LIB_FUNCTION("wDLaq7IgfIc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilderD0Ev);
-    LIB_FUNCTION("Kfv9jPxf7qA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilderD1Ev);
-    LIB_FUNCTION("MH0LyghLJEE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np14JsonDocBuilderD2Ev);
-    LIB_FUNCTION("pCIB7QX5e1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScope3EndEiPKciS3_);
-    LIB_FUNCTION("Etvu03IpTEc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScope5BeginEPNS0_6HandleEPKciS5_);
-    LIB_FUNCTION("pp88xnRgJrM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScopeC2Ev);
-    LIB_FUNCTION("E8yuDNYbzl0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScopeD0Ev);
-    LIB_FUNCTION("km5-rjNjSFk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScopeD1Ev);
-    LIB_FUNCTION("xpLjHhJBhpo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np15CancelableScopeD2Ev);
-    LIB_FUNCTION("LCk8T5b1h+4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np16StreamReadBufferC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("ZufKqNXItD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np16StreamReadBufferD1Ev);
-    LIB_FUNCTION("bH7ljyLOsBw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np16StreamReadBufferD2Ev);
-    LIB_FUNCTION("et05S+nkWG8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPool13InvalidateAllEv);
-    LIB_FUNCTION("Vzob5RCgfnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPool4InitEi);
-    LIB_FUNCTION("iBdEFRdfpgg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPool7DestroyEv);
-    LIB_FUNCTION("PznfSvchYJ8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPoolC1EP16SceNpAllocatorEx);
-    LIB_FUNCTION("-2TYwZ4ERbM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPoolC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("5HWP63cOH+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPoolD0Ev);
-    LIB_FUNCTION("kTfkKhcdW5Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPoolD1Ev);
-    LIB_FUNCTION("3MVW8+eWnjs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18HttpConnectionPoolD2Ev);
-    LIB_FUNCTION("ELa6nMcCO9w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReader4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("UHj0GDTA2CU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReaderC1EPKvm);
-    LIB_FUNCTION("WXRruhGp9dI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReaderC2EPKvm);
-    LIB_FUNCTION("gA0CaCjJpg0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReaderD0Ev);
-    LIB_FUNCTION("oULMh4JVC4o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReaderD1Ev);
-    LIB_FUNCTION("rNJ1+3KoZP4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamReaderD2Ev);
-    LIB_FUNCTION("VxKQGrudnzk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriter5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("Lkdm2yqZN1c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriterC1EPvm);
-    LIB_FUNCTION("abQ7xd3yVXM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriterC2EPvm);
-    LIB_FUNCTION("TXJnPiKuTf8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriterD0Ev);
-    LIB_FUNCTION("3VdCUl+DkNw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriterD1Ev);
-    LIB_FUNCTION("YmOVGwSJmzk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np18MemoryStreamWriterD2Ev);
-    LIB_FUNCTION("INZSjlRcuyQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReader4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("3Ku9r8b6gCg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReader5CloseEv);
-    LIB_FUNCTION("l6s7aomzWGA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReaderC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("i28bR54-QFQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReaderD0Ev);
-    LIB_FUNCTION("Tgr66MThOxA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReaderD1Ev);
-    LIB_FUNCTION("PHWvRXbOnYs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np20BufferedStreamReaderD2Ev);
-    LIB_FUNCTION("7dyKpPHU+Yk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient10DisconnectEv);
-    LIB_FUNCTION("prj9aMR74bA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient11IsConnectedEv);
-    LIB_FUNCTION("r7UpNm1Po9s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient16invokeSyncMethodEjPKvmPvPmm);
-    LIB_FUNCTION("+EQNga+wsPc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient4ctorEv);
-    LIB_FUNCTION("2h59YqPcrdM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient4dtorEv);
-    LIB_FUNCTION("iRH-NE2evR4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient4InitEPKNS2_6ConfigE);
-    LIB_FUNCTION("CGKtxL26XqI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient7ConnectEPKvm);
-    LIB_FUNCTION("+xvhXA8Ci4E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClient7DestroyEv);
-    LIB_FUNCTION("6aKYLBS8Di8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClientC1Ev);
-    LIB_FUNCTION("dqjlsaUX0sc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClientC2Ev);
-    LIB_FUNCTION("3LuoWoXJ1WI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClientD0Ev);
-    LIB_FUNCTION("DRbjyNom-BE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClientD1Ev);
-    LIB_FUNCTION("J1lpiTKAEuk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc10IpmiClientD2Ev);
-    LIB_FUNCTION("aQzxfON3l2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE);
-    LIB_FUNCTION("Mx6wrcdGC2w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE);
-    LIB_FUNCTION("uvYTUK5xYG8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient10DisconnectEv);
-    LIB_FUNCTION("fFGPlE0oNhw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient10EndRequestEii);
-    LIB_FUNCTION("F2xYmg5DiR4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient11findServiceEi);
-    LIB_FUNCTION("G4FYQtsjOX0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient11InitServiceEi);
-    LIB_FUNCTION("0rqwC4+sgzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient11TermServiceEi);
-    LIB_FUNCTION("oCx3mVNvqzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient11WaitRequestEiij);
-    LIB_FUNCTION("tQOrMf4KtIo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient12AbortRequestEii);
-    LIB_FUNCTION("9aiQo-uRPJY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient12BeginRequestEii);
-    LIB_FUNCTION("H35UsHYlhB4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient13CreateRequestEPiiPKvm);
-    LIB_FUNCTION("cMj7li0eXgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient13DeleteRequestEii);
-    LIB_FUNCTION("+ZC8QYB-BA8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient13PollEventFlagEijmjPm);
-    LIB_FUNCTION("4GZ9O-OrfzE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient13WaitEventFlagEijmjPmj);
-    LIB_FUNCTION("q+uCQLffwQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient14PollEventQueueEiPvm);
-    LIB_FUNCTION("bH08FzR5rFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient15CancelEventFlagEijm);
-    LIB_FUNCTION("stUzNgtFmtY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient15RegisterServiceEPKNS1_17ServiceClientInfoE);
-    LIB_FUNCTION("fqAS9GQTmOU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient16RegisterServicesEPKNS1_17ServiceClientInfoE);
-    LIB_FUNCTION("BJCXJJCi0Zc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient17invokeInitServiceEi);
-    LIB_FUNCTION("GuruEy9Q-Zk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient17invokeTermServiceEi);
-    LIB_FUNCTION("k9jCtANC+QM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient17UnregisterServiceEi);
-    LIB_FUNCTION("8TpAxZoLLRw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient18EndRequestForAsyncEii);
-    LIB_FUNCTION("1ONFW86TETY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient19WaitRequestForAsyncEiij);
-    LIB_FUNCTION("nQm4o5iOye0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient20AbortRequestForAsyncEii);
-    LIB_FUNCTION("ktb6iOBLnd4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE);
-    LIB_FUNCTION("v5Z2LAKua28", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient21CreateRequestForAsyncEPiiPKvm);
-    LIB_FUNCTION("7oJpAd+vJQA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient21DeleteRequestForAsyncEii);
-    LIB_FUNCTION("KxlKRHLf9AY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient4ctorEv);
-    LIB_FUNCTION("s+dG6iqG7j0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient4dtorEv);
-    LIB_FUNCTION("qFdG8Ucfeqg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient4InitEPNS2_6ConfigE);
-    LIB_FUNCTION("NTPZ5GZIA6U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient7ConnectEPKvm);
-    LIB_FUNCTION("IGngArGbzHo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClient7DestroyEv);
-    LIB_FUNCTION("FubuBXanVWk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClientC1Ev);
-    LIB_FUNCTION("zARyDXgocuk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClientC2Ev);
-    LIB_FUNCTION("PmsH4f3z8Yk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClientD0Ev);
-    LIB_FUNCTION("90XdvAqFFn8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClientD1Ev);
-    LIB_FUNCTION("agYDXAyL-K8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np3ipc17ServiceIpmiClientD2Ev);
-    LIB_FUNCTION("n9pzAHeCCVU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond4ctorEv);
-    LIB_FUNCTION("BtXPJQEg41Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond4dtorEv);
-    LIB_FUNCTION("wWTqVcTnep8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond4InitEPKcPNS0_5MutexE);
-    LIB_FUNCTION("SLPuaDLbeD4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond4WaitEj);
-    LIB_FUNCTION("OQiPXR6gfj0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond6SignalEv);
-    LIB_FUNCTION("I5uzTXxbziU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond7DestroyEv);
-    LIB_FUNCTION("-hchsElmzXY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Cond9SignalAllEv);
+    LIB_FUNCTION("LJvHO3uCNm4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable10IsCanceledEv);
+    LIB_FUNCTION("fd+grYAEph0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable10LockCancelEPKciS3_);
+    LIB_FUNCTION("IwDQAbQxvD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable11CheckCancelEPKciS3_);
+    LIB_FUNCTION("-zbpF68OGDs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable12UnlockCancelEPKciS3_);
+    LIB_FUNCTION("bBLapYYwyr0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable13SetCancelableEb);
+    LIB_FUNCTION("j4gLOIpHgNk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable14SetupSubCancelEPS1_PKciS4_);
+    LIB_FUNCTION("vmt3ZOlQu3o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable16CleanupSubCancelEPS1_);
+    LIB_FUNCTION("Y7f+qBjKxdo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable4InitEv);
+    LIB_FUNCTION("Jhbrpz0YhHU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable6CancelEij);
+    LIB_FUNCTION("v2yJZLY0w1U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10Cancelable7DestroyEv);
+    LIB_FUNCTION("vqekW3s-eFg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelableC2Ev);
+    LIB_FUNCTION("kdOC-2AE06w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelableD0Ev);
+    LIB_FUNCTION("upzdrzOYkS0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelableD1Ev);
+    LIB_FUNCTION("vZXDqs2x7t0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelableD2Ev);
+    LIB_FUNCTION("nleHqndSeQ0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLock3EndEPKciS3_);
+    LIB_FUNCTION("lJ2Efd9PUKI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLock5BeginEPNS0_6HandleEPKciS5_);
+    LIB_FUNCTION("Vq9LKkPXkIQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLockC1Ev);
+    LIB_FUNCTION("MecB8wAHCfE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLockC2Ev);
+    LIB_FUNCTION("K7FjXiy2z+A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLockD1Ev);
+    LIB_FUNCTION("1iHBAKrdE90", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10CancelLockD2Ev);
+    LIB_FUNCTION("aoas3bJANfY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue10ClearAbortEt);
+    LIB_FUNCTION("QlP4t2SGZ4I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue10TryDequeueEPvm);
+    LIB_FUNCTION("xu9qWN0YYC4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue4ctorEv);
+    LIB_FUNCTION("N1gnYosdK7Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue4dtorEv);
+    LIB_FUNCTION("b20e017Ei94", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue4InitEPKcmm);
+    LIB_FUNCTION("slmKkuIoC28", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue5AbortEt);
+    LIB_FUNCTION("suxln7PooIo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue7DequeueEPvmj);
+    LIB_FUNCTION("qvpEuKumIGM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue7DestroyEv);
+    LIB_FUNCTION("AV5jHo8O3+E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueue7EnqueueEPKvmj);
+    LIB_FUNCTION("esiO4He2WTU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueueC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("E4uoqSdo8ek", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueueD0Ev);
+    LIB_FUNCTION("lQXgvDXBGtA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueueD1Ev);
+    LIB_FUNCTION("8kUkQPQP7bA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10EventQueueD2Ev);
+    LIB_FUNCTION("YHNEgBCSL2o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber5ClearEv);
+    LIB_FUNCTION("UgmqDr1BCLw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber6SetNumEi);
+    LIB_FUNCTION("PccynQ5NdVQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber6SetNumEj);
+    LIB_FUNCTION("MY0CSk24EcY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber6SetNumEl);
+    LIB_FUNCTION("qbW7qOvVafI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber6SetNumEm);
+    LIB_FUNCTION("VyCn9EVJGlU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonNumber6SetNumEPKc);
+    LIB_FUNCTION("-WgnISXjJ7A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonObject16DeleteFieldValueEPKc);
+    LIB_FUNCTION("DiHxx2k5zfM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonObject5ClearEv);
+    LIB_FUNCTION("AGadQiCfKDY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParser4InitEPK7JsonDefPNS1_12EventHandlerE);
+    LIB_FUNCTION("CDzSgHA6hWg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParser5ParseEPKcm);
+    LIB_FUNCTION("ZJbPQt+FTnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParserC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("u+A16O-TAHk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParserD0Ev);
+    LIB_FUNCTION("qJb7IXDg9xk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParserD1Ev);
+    LIB_FUNCTION("AvvE5A5A6ZA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonParserD2Ev);
+    LIB_FUNCTION("kXE1imLw7yo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonString5ClearEv);
+    LIB_FUNCTION("SN4IgvT26To", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10JsonString6SetStrEPKc);
+    LIB_FUNCTION("EyhtbPFMWNA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFile4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("AZTMWob-mog", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFile4SyncEv);
+    LIB_FUNCTION("dl6+SFHLke0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFile5CloseEv);
+    LIB_FUNCTION("r2O0f9X-mqs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFile5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("1DtavqenQjg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFile8TruncateEl);
+    LIB_FUNCTION("ev77AviWYu8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFileC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("6Vst7HqJMXU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFileD0Ev);
+    LIB_FUNCTION("ZUf92uPkRuA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFileD1Ev);
+    LIB_FUNCTION("lGjyfcI++PY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np10MemoryFileD2Ev);
+    LIB_FUNCTION(
+        "ezJnmv7hkAg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+        _ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_);
+    LIB_FUNCTION("iOTsJTR6Y9U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplate4InitEiPKcib);
+    LIB_FUNCTION("73qbxKjBH0o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplate7DestroyEv);
+    LIB_FUNCTION("Vj7HiXK-tTg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplateC1Ev);
+    LIB_FUNCTION("hw-UPUK9T+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplateC2Ev);
+    LIB_FUNCTION("cXYOwTVAuMs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplateD0Ev);
+    LIB_FUNCTION("Bm74HLvoNY4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplateD1Ev);
+    LIB_FUNCTION("h6XPsGpHAtc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12HttpTemplateD2Ev);
+    LIB_FUNCTION("jr0OcEeQJ8o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamBufferixEi);
+    LIB_FUNCTION("rCRh3V03bPs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader4ReadEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
+    LIB_FUNCTION("2SKuIvr9sYU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader7ReadAllEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
+    LIB_FUNCTION("f1ncwa-JXlA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader7ReadAllEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("z8qO7hql4Fs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader8ReadDataEPNS0_6HandleEPNS0_9StreamCtxEPvmPm);
+    LIB_FUNCTION("oNqSobbGC80", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader8ReadDataEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("MSMPXUL5AuM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader8SkipDataEPNS0_6HandleElPl);
+    LIB_FUNCTION("fJB07vDf7no", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamReader8SkipDataEPNS0_6HandleEPNS0_9StreamCtxElPl);
+    LIB_FUNCTION("etMUeqIhN+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamWriter15WriteFilledDataEPNS0_6HandleEcl);
+    LIB_FUNCTION("SP2010+gtqw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamWriter15WriteFilledDataEPNS0_6HandleEPNS0_9StreamCtxEcl);
+    LIB_FUNCTION("Z1MRG-L+V0o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamWriter5WriteEPNS0_6HandleEPNS0_9StreamCtxEPKvmPm);
+    LIB_FUNCTION("vHaV+tsSVu4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamWriter9WriteDataEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("u9s1aUWSZB0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12StreamWriter9WriteDataEPNS0_6HandleEPNS0_9StreamCtxEPKvmPm);
+    LIB_FUNCTION("gimH2zdBANg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThread10ThreadMainEv);
+    LIB_FUNCTION("YKz2oBW3ZkM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThreadC1EPNS0_9WorkQueueE);
+    LIB_FUNCTION("L9Ty-fG1IM4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThreadC2EPNS0_9WorkQueueE);
+    LIB_FUNCTION("f5L6ax7EWHk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThreadD0Ev);
+    LIB_FUNCTION("PvGTq9AGFfk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThreadD1Ev);
+    LIB_FUNCTION("+qB+WcQlMio", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np12WorkerThreadD2Ev);
+    LIB_FUNCTION("4nCyBD9jBus", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParser5ParseEPKcm);
+    LIB_FUNCTION("sgh9D+MBBKA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParser9GetResultEPPNS0_10JsonObjectE);
+    LIB_FUNCTION("lZWmdDoBDmI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParser9GetResultEPPNS0_9JsonValueE);
+    LIB_FUNCTION("yPmQcnrgR2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParserC2EP16SceNpAllocatorExPK7JsonDef);
+    LIB_FUNCTION("p5hRe1k4Wlg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParserD0Ev);
+    LIB_FUNCTION("iFOXfoXRHFQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParserD1Ev);
+    LIB_FUNCTION("xS-Hjw1psYs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13JsonDocParserD2Ev);
+    LIB_FUNCTION("X0vEo7cZamA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecret5ClearEv);
+    LIB_FUNCTION("IjOpzNzl57o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC1EPKvm);
+    LIB_FUNCTION("bC4+qi0mqJE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC1ERK16SceNpTitleSecret);
+    LIB_FUNCTION("fYr7Ahl-vNA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC1ERKS1_);
+    LIB_FUNCTION("08AQ2wYpzpk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC1Ev);
+    LIB_FUNCTION("Ft-VezxSErk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC2EPKvm);
+    LIB_FUNCTION("9QN7g5mQgCU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC2ERK16SceNpTitleSecret);
+    LIB_FUNCTION("JHG9CTmkdQw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC2ERKS1_);
+    LIB_FUNCTION("K1+uzxxReX0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretC2Ev);
+    LIB_FUNCTION("dJRIc7d5iqU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretD0Ev);
+    LIB_FUNCTION("XBzzdzT3qyg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretD1Ev);
+    LIB_FUNCTION("QDlnJL6stA0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13NpTitleSecretD2Ev);
+    LIB_FUNCTION("RPv5L-o5qRQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory4ctorEv);
+    LIB_FUNCTION("NfhXX6LFmj8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory4dtorEv);
+    LIB_FUNCTION("BkuxOAPlMMw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory4InitEm);
+    LIB_FUNCTION("do0t--lEKMM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory6ExpandEm);
+    LIB_FUNCTION("zdRXyt-65kA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory6IsInitEv);
+    LIB_FUNCTION("Za00SEoNA2A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemory7DestroyEv);
+    LIB_FUNCTION("lGIw3qfqI60", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemoryC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("70qFzq4z3UI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemoryD0Ev);
+    LIB_FUNCTION("C1TJsMv9wb8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemoryD1Ev);
+    LIB_FUNCTION("EaxLv8TfsrM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np13RingBufMemoryD2Ev);
+    LIB_FUNCTION("j6CorpmdjRk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContext4InitEPKcimm);
+    LIB_FUNCTION("oLpLfV2Ov9A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContext4InitEPKNS1_5ParamE);
+    LIB_FUNCTION("C282U0P6Nwg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContext7DestroyEv);
+    LIB_FUNCTION("dV+zK-Ce-2E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContextC1Ev);
+    LIB_FUNCTION("j4IAvbKKTzw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContextC2Ev);
+    LIB_FUNCTION("WR4mjQeqz6s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContextD0Ev);
+    LIB_FUNCTION("S+a+rgnGX8A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContextD1Ev);
+    LIB_FUNCTION("wY9g+hVxLTM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14CalloutContextD2Ev);
+    LIB_FUNCTION("PYBehFWVd60", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilder12BuildBufSizeEv);
+    LIB_FUNCTION("cLdoHqi5Ezg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilder16EscapeJsonStringEPKcPcmPm);
+    LIB_FUNCTION("V5xX2eroaWY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilder23EscapeJsonStringBufSizeEPKc);
+    LIB_FUNCTION("irex3q-O6po", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilder5BuildEPcmPm);
+    LIB_FUNCTION("ikFI73f3hP4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilderC1ERKNS0_9JsonValueE);
+    LIB_FUNCTION("dhJGQPKLmn0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilderC2ERKNS0_9JsonValueE);
+    LIB_FUNCTION("wDLaq7IgfIc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilderD0Ev);
+    LIB_FUNCTION("Kfv9jPxf7qA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilderD1Ev);
+    LIB_FUNCTION("MH0LyghLJEE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np14JsonDocBuilderD2Ev);
+    LIB_FUNCTION("pCIB7QX5e1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScope3EndEiPKciS3_);
+    LIB_FUNCTION("Etvu03IpTEc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScope5BeginEPNS0_6HandleEPKciS5_);
+    LIB_FUNCTION("pp88xnRgJrM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScopeC2Ev);
+    LIB_FUNCTION("E8yuDNYbzl0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScopeD0Ev);
+    LIB_FUNCTION("km5-rjNjSFk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScopeD1Ev);
+    LIB_FUNCTION("xpLjHhJBhpo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np15CancelableScopeD2Ev);
+    LIB_FUNCTION("LCk8T5b1h+4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np16StreamReadBufferC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("ZufKqNXItD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np16StreamReadBufferD1Ev);
+    LIB_FUNCTION("bH7ljyLOsBw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np16StreamReadBufferD2Ev);
+    LIB_FUNCTION("et05S+nkWG8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPool13InvalidateAllEv);
+    LIB_FUNCTION("Vzob5RCgfnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPool4InitEi);
+    LIB_FUNCTION("iBdEFRdfpgg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPool7DestroyEv);
+    LIB_FUNCTION("PznfSvchYJ8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPoolC1EP16SceNpAllocatorEx);
+    LIB_FUNCTION("-2TYwZ4ERbM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPoolC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("5HWP63cOH+w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPoolD0Ev);
+    LIB_FUNCTION("kTfkKhcdW5Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPoolD1Ev);
+    LIB_FUNCTION("3MVW8+eWnjs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18HttpConnectionPoolD2Ev);
+    LIB_FUNCTION("ELa6nMcCO9w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReader4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("UHj0GDTA2CU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReaderC1EPKvm);
+    LIB_FUNCTION("WXRruhGp9dI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReaderC2EPKvm);
+    LIB_FUNCTION("gA0CaCjJpg0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReaderD0Ev);
+    LIB_FUNCTION("oULMh4JVC4o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReaderD1Ev);
+    LIB_FUNCTION("rNJ1+3KoZP4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamReaderD2Ev);
+    LIB_FUNCTION("VxKQGrudnzk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriter5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("Lkdm2yqZN1c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriterC1EPvm);
+    LIB_FUNCTION("abQ7xd3yVXM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriterC2EPvm);
+    LIB_FUNCTION("TXJnPiKuTf8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriterD0Ev);
+    LIB_FUNCTION("3VdCUl+DkNw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriterD1Ev);
+    LIB_FUNCTION("YmOVGwSJmzk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np18MemoryStreamWriterD2Ev);
+    LIB_FUNCTION("INZSjlRcuyQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReader4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("3Ku9r8b6gCg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReader5CloseEv);
+    LIB_FUNCTION("l6s7aomzWGA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReaderC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("i28bR54-QFQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReaderD0Ev);
+    LIB_FUNCTION("Tgr66MThOxA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReaderD1Ev);
+    LIB_FUNCTION("PHWvRXbOnYs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np20BufferedStreamReaderD2Ev);
+    LIB_FUNCTION("7dyKpPHU+Yk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient10DisconnectEv);
+    LIB_FUNCTION("prj9aMR74bA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient11IsConnectedEv);
+    LIB_FUNCTION("r7UpNm1Po9s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient16invokeSyncMethodEjPKvmPvPmm);
+    LIB_FUNCTION("+EQNga+wsPc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient4ctorEv);
+    LIB_FUNCTION("2h59YqPcrdM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient4dtorEv);
+    LIB_FUNCTION("iRH-NE2evR4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient4InitEPKNS2_6ConfigE);
+    LIB_FUNCTION("CGKtxL26XqI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient7ConnectEPKvm);
+    LIB_FUNCTION("+xvhXA8Ci4E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClient7DestroyEv);
+    LIB_FUNCTION("6aKYLBS8Di8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClientC1Ev);
+    LIB_FUNCTION("dqjlsaUX0sc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClientC2Ev);
+    LIB_FUNCTION("3LuoWoXJ1WI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClientD0Ev);
+    LIB_FUNCTION("DRbjyNom-BE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClientD1Ev);
+    LIB_FUNCTION("J1lpiTKAEuk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc10IpmiClientD2Ev);
+    LIB_FUNCTION(
+        "aQzxfON3l2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+        _ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE);
+    LIB_FUNCTION(
+        "Mx6wrcdGC2w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+        _ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE);
+    LIB_FUNCTION("uvYTUK5xYG8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient10DisconnectEv);
+    LIB_FUNCTION("fFGPlE0oNhw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient10EndRequestEii);
+    LIB_FUNCTION("F2xYmg5DiR4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient11findServiceEi);
+    LIB_FUNCTION("G4FYQtsjOX0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient11InitServiceEi);
+    LIB_FUNCTION("0rqwC4+sgzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient11TermServiceEi);
+    LIB_FUNCTION("oCx3mVNvqzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient11WaitRequestEiij);
+    LIB_FUNCTION("tQOrMf4KtIo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient12AbortRequestEii);
+    LIB_FUNCTION("9aiQo-uRPJY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient12BeginRequestEii);
+    LIB_FUNCTION("H35UsHYlhB4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient13CreateRequestEPiiPKvm);
+    LIB_FUNCTION("cMj7li0eXgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient13DeleteRequestEii);
+    LIB_FUNCTION("+ZC8QYB-BA8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient13PollEventFlagEijmjPm);
+    LIB_FUNCTION("4GZ9O-OrfzE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient13WaitEventFlagEijmjPmj);
+    LIB_FUNCTION("q+uCQLffwQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient14PollEventQueueEiPvm);
+    LIB_FUNCTION("bH08FzR5rFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient15CancelEventFlagEijm);
+    LIB_FUNCTION("stUzNgtFmtY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient15RegisterServiceEPKNS1_17ServiceClientInfoE);
+    LIB_FUNCTION("fqAS9GQTmOU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient16RegisterServicesEPKNS1_17ServiceClientInfoE);
+    LIB_FUNCTION("BJCXJJCi0Zc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient17invokeInitServiceEi);
+    LIB_FUNCTION("GuruEy9Q-Zk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient17invokeTermServiceEi);
+    LIB_FUNCTION("k9jCtANC+QM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient17UnregisterServiceEi);
+    LIB_FUNCTION("8TpAxZoLLRw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient18EndRequestForAsyncEii);
+    LIB_FUNCTION("1ONFW86TETY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient19WaitRequestForAsyncEiij);
+    LIB_FUNCTION("nQm4o5iOye0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient20AbortRequestForAsyncEii);
+    LIB_FUNCTION(
+        "ktb6iOBLnd4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+        _ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE);
+    LIB_FUNCTION("v5Z2LAKua28", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient21CreateRequestForAsyncEPiiPKvm);
+    LIB_FUNCTION("7oJpAd+vJQA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient21DeleteRequestForAsyncEii);
+    LIB_FUNCTION("KxlKRHLf9AY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient4ctorEv);
+    LIB_FUNCTION("s+dG6iqG7j0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient4dtorEv);
+    LIB_FUNCTION("qFdG8Ucfeqg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient4InitEPNS2_6ConfigE);
+    LIB_FUNCTION("NTPZ5GZIA6U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient7ConnectEPKvm);
+    LIB_FUNCTION("IGngArGbzHo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClient7DestroyEv);
+    LIB_FUNCTION("FubuBXanVWk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClientC1Ev);
+    LIB_FUNCTION("zARyDXgocuk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClientC2Ev);
+    LIB_FUNCTION("PmsH4f3z8Yk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClientD0Ev);
+    LIB_FUNCTION("90XdvAqFFn8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClientD1Ev);
+    LIB_FUNCTION("agYDXAyL-K8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np3ipc17ServiceIpmiClientD2Ev);
+    LIB_FUNCTION("n9pzAHeCCVU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond4ctorEv);
+    LIB_FUNCTION("BtXPJQEg41Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond4dtorEv);
+    LIB_FUNCTION("wWTqVcTnep8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond4InitEPKcPNS0_5MutexE);
+    LIB_FUNCTION("SLPuaDLbeD4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond4WaitEj);
+    LIB_FUNCTION("OQiPXR6gfj0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond6SignalEv);
+    LIB_FUNCTION("I5uzTXxbziU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond7DestroyEv);
+    LIB_FUNCTION("-hchsElmzXY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Cond9SignalAllEv);
     LIB_FUNCTION("3z5EPY-ph14", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4CondC1Ev);
     LIB_FUNCTION("6nW8WXQYRgM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4CondC2Ev);
     LIB_FUNCTION("AKiHGWhC2KU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4CondD0Ev);
     LIB_FUNCTION("yX9ISVXv+0M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4CondD1Ev);
     LIB_FUNCTION("6RQRpTn+-cc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4CondD2Ev);
-    LIB_FUNCTION("6r6ssbPbKc4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Path11BuildAppendEPcmcPKcm);
-    LIB_FUNCTION("vfBKsg+lKWc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Path12AddDelimiterEPcmc);
-    LIB_FUNCTION("BqFx1VLEMPk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Path5ClearEv);
-    LIB_FUNCTION("AcG6blobOQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Path6SetStrEPKcm);
+    LIB_FUNCTION("6r6ssbPbKc4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Path11BuildAppendEPcmcPKcm);
+    LIB_FUNCTION("vfBKsg+lKWc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Path12AddDelimiterEPcmc);
+    LIB_FUNCTION("BqFx1VLEMPk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Path5ClearEv);
+    LIB_FUNCTION("AcG6blobOQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Path6SetStrEPKcm);
     LIB_FUNCTION("0fwoTW7gqfM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4PathD0Ev);
     LIB_FUNCTION("-3UvpBs-26g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4PathD1Ev);
     LIB_FUNCTION("1nF0eXrBZYM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4PathD2Ev);
-    LIB_FUNCTION("KhoD7EapiYI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time10AddMinutesEl);
-    LIB_FUNCTION("PgiCaoqRKKc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time10AddSecondsEl);
-    LIB_FUNCTION("vINvzJOaqws", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time12GetUserClockEPS1_);
-    LIB_FUNCTION("dLNhHwYyt4c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time15AddMicroSecondsEl);
-    LIB_FUNCTION("WZqwoPoMzFA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time15GetNetworkClockEPS1_);
-    LIB_FUNCTION("fimORKx4RDg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time20GetDebugNetworkClockEPS1_);
-    LIB_FUNCTION("++qSDotsHuE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time7AddDaysEl);
-    LIB_FUNCTION("Zc+a6k6i7gY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4Time8AddHoursEl);
-    LIB_FUNCTION("Fgm7cz6AX4k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4TimeplERK10SceRtcTick);
-    LIB_FUNCTION("F9khEfgTmsE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np4TimeplERKS1_);
-    LIB_FUNCTION("I1kBZV6keO4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex4ctorEv);
-    LIB_FUNCTION("mo+gaebiE+M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex4dtorEv);
-    LIB_FUNCTION("aTNOl9EB4V4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex4InitEPKcj);
-    LIB_FUNCTION("VM+CXTW4F-s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex4LockEv);
-    LIB_FUNCTION("eYgHIWx0Hco", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex6UnlockEv);
-    LIB_FUNCTION("RgGW4f0ox1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex7DestroyEv);
-    LIB_FUNCTION("TJNrs69haak", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5Mutex7TryLockEv);
+    LIB_FUNCTION("KhoD7EapiYI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time10AddMinutesEl);
+    LIB_FUNCTION("PgiCaoqRKKc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time10AddSecondsEl);
+    LIB_FUNCTION("vINvzJOaqws", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time12GetUserClockEPS1_);
+    LIB_FUNCTION("dLNhHwYyt4c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time15AddMicroSecondsEl);
+    LIB_FUNCTION("WZqwoPoMzFA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time15GetNetworkClockEPS1_);
+    LIB_FUNCTION("fimORKx4RDg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time20GetDebugNetworkClockEPS1_);
+    LIB_FUNCTION("++qSDotsHuE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time7AddDaysEl);
+    LIB_FUNCTION("Zc+a6k6i7gY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4Time8AddHoursEl);
+    LIB_FUNCTION("Fgm7cz6AX4k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4TimeplERK10SceRtcTick);
+    LIB_FUNCTION("F9khEfgTmsE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np4TimeplERKS1_);
+    LIB_FUNCTION("I1kBZV6keO4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex4ctorEv);
+    LIB_FUNCTION("mo+gaebiE+M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex4dtorEv);
+    LIB_FUNCTION("aTNOl9EB4V4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex4InitEPKcj);
+    LIB_FUNCTION("VM+CXTW4F-s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex4LockEv);
+    LIB_FUNCTION("eYgHIWx0Hco", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex6UnlockEv);
+    LIB_FUNCTION("RgGW4f0ox1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex7DestroyEv);
+    LIB_FUNCTION("TJNrs69haak", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5Mutex7TryLockEv);
     LIB_FUNCTION("O1AvlQU33pI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5MutexC1Ev);
     LIB_FUNCTION("2beu2bHw6qo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5MutexC2Ev);
     LIB_FUNCTION("omf1GoUEJCA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5MutexD0Ev);
     LIB_FUNCTION("9zi9FTPol74", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5MutexD1Ev);
     LIB_FUNCTION("CI7ciM21NXs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5MutexD2Ev);
-    LIB_FUNCTION("uuyEiBHghY4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np5NpEnv8GetNpEnvEPS1_);
-    LIB_FUNCTION("-c9QK+CpQLg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Handle10CancelImplEi);
-    LIB_FUNCTION("ifqJb-V1QZw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Handle4InitEv);
-    LIB_FUNCTION("1atFu71dFAU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Handle7DestroyEv);
+    LIB_FUNCTION("uuyEiBHghY4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np5NpEnv8GetNpEnvEPS1_);
+    LIB_FUNCTION("-c9QK+CpQLg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Handle10CancelImplEi);
+    LIB_FUNCTION("ifqJb-V1QZw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Handle4InitEv);
+    LIB_FUNCTION("1atFu71dFAU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Handle7DestroyEv);
     LIB_FUNCTION("KUJtztDMJYY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleC1Ev);
     LIB_FUNCTION("OhpofCxYOJc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleC2Ev);
     LIB_FUNCTION("ZOHgNNSZq4Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD0Ev);
     LIB_FUNCTION("YWt5S4-cg9c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD1Ev);
     LIB_FUNCTION("dt0A2cWjwLs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6HandleD2Ev);
-    LIB_FUNCTION("1x0jThSUr4w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdaEPv);
-    LIB_FUNCTION("4il4PZAZOnQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdaEPvR14SceNpAllocator);
-    LIB_FUNCTION("q2USyzLF4kI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdaEPvR16SceNpAllocatorEx);
-    LIB_FUNCTION("CnDHI7sU+l0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdlEPv);
-    LIB_FUNCTION("05KEwpDf4Ls", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdlEPvR14SceNpAllocator);
-    LIB_FUNCTION("iwDNdnEGyhI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectdlEPvR16SceNpAllocatorEx);
-    LIB_FUNCTION("V75N47uYdQc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectnaEmR14SceNpAllocator);
-    LIB_FUNCTION("bKMVqRcCQ1U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectnaEmR16SceNpAllocatorEx);
-    LIB_FUNCTION("0syNkhJANVw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectnwEmR14SceNpAllocator);
-    LIB_FUNCTION("orRb69nSo64", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ObjectnwEmR16SceNpAllocatorEx);
-    LIB_FUNCTION("Ehkz-BkTPwI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread12DoThreadMainEv);
-    LIB_FUNCTION("3CJl5ewd7-0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread4ctorEv);
-    LIB_FUNCTION("-3gV5N2u-sc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread4dtorEv);
-    LIB_FUNCTION("EqX45DhWUpo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread4InitEPKcimm);
-    LIB_FUNCTION("OoK0Ah0l1ko", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread4InitEPKNS1_5ParamE);
-    LIB_FUNCTION("ne77q1GOlF8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread4JoinEPi);
-    LIB_FUNCTION("VNKdE2Dgp0Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread5StartEv);
-    LIB_FUNCTION("sPti0OkVM8c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread7DestroyEv);
-    LIB_FUNCTION("uphWwLZAuXA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread9EntryFuncEPv);
-    LIB_FUNCTION("gnwCmkY-V70", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread9GetResultEv);
-    LIB_FUNCTION("qy4V8O+snLU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6Thread9IsRunningEv);
+     LIB_FUNCTION("1x0jThSUr4w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdaEPv);
+    LIB_FUNCTION("4il4PZAZOnQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdaEPvR14SceNpAllocator);
+    LIB_FUNCTION("q2USyzLF4kI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdaEPvR16SceNpAllocatorEx);
+    LIB_FUNCTION("CnDHI7sU+l0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdlEPv);
+    LIB_FUNCTION("05KEwpDf4Ls", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdlEPvR14SceNpAllocator);
+    LIB_FUNCTION("iwDNdnEGyhI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectdlEPvR16SceNpAllocatorEx);
+    LIB_FUNCTION("V75N47uYdQc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectnaEmR14SceNpAllocator);
+    LIB_FUNCTION("bKMVqRcCQ1U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectnaEmR16SceNpAllocatorEx);
+    LIB_FUNCTION("0syNkhJANVw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectnwEmR14SceNpAllocator);
+    LIB_FUNCTION("orRb69nSo64", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6ObjectnwEmR16SceNpAllocatorEx);
+    LIB_FUNCTION("Ehkz-BkTPwI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread12DoThreadMainEv);
+    LIB_FUNCTION("3CJl5ewd7-0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread4ctorEv);
+    LIB_FUNCTION("-3gV5N2u-sc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread4dtorEv);
+    LIB_FUNCTION("EqX45DhWUpo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread4InitEPKcimm);
+    LIB_FUNCTION("OoK0Ah0l1ko", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread4InitEPKNS1_5ParamE);
+    LIB_FUNCTION("ne77q1GOlF8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread4JoinEPi);
+    LIB_FUNCTION("VNKdE2Dgp0Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread5StartEv);
+    LIB_FUNCTION("sPti0OkVM8c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread7DestroyEv);
+    LIB_FUNCTION("uphWwLZAuXA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread9EntryFuncEPv);
+    LIB_FUNCTION("gnwCmkY-V70", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread9GetResultEv);
+    LIB_FUNCTION("qy4V8O+snLU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np6Thread9IsRunningEv);
     LIB_FUNCTION("0f3ylOQJwqE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ThreadC2Ev);
     LIB_FUNCTION("MEYMyfJxWXg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ThreadD0Ev);
     LIB_FUNCTION("0Q5aKjYErBA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ThreadD1Ev);
     LIB_FUNCTION("6750DaF5Pas", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np6ThreadD2Ev);
-    LIB_FUNCTION("xxOTJpEyoj4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout10IsTimedoutEv);
-    LIB_FUNCTION("Zw3QlKu49eM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout11CalloutFuncEPv);
-    LIB_FUNCTION("14PDhhMEBKY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout4StopEv);
-    LIB_FUNCTION("TDuC6To9HJ8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout5StartEjPNS1_7HandlerE);
-    LIB_FUNCTION("r0PYNWZLZS8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout5StartEmPNS1_7HandlerE);
-    LIB_FUNCTION("3ErXia+y89M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7Callout9IsStartedEv);
-    LIB_FUNCTION("XEXFdmQj5oI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7CalloutC1EPNS0_14CalloutContextE);
-    LIB_FUNCTION("Bpay3NjseSU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7CalloutC2EPNS0_14CalloutContextE);
-    LIB_FUNCTION("Fx2UwoQVVmo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7CalloutD0Ev);
-    LIB_FUNCTION("kUitiIVR43g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7CalloutD1Ev);
-    LIB_FUNCTION("ebomQLbpptw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7CalloutD2Ev);
-    LIB_FUNCTION("YtzL-Rso9bk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUri5BuildEPKS1_PcmPmj);
-    LIB_FUNCTION("Xp92SsA5atA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUri5ParseEPS1_PKc);
-    LIB_FUNCTION("LL9z5QvmwaA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUriC1EP16SceNpAllocatorEx);
-    LIB_FUNCTION("q4G7qxTJWps", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUriC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("w+C8QXqZKSw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUriD0Ev);
-    LIB_FUNCTION("wSCKvDDBPy4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUriD1Ev);
-    LIB_FUNCTION("D-dT+vERWmU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7HttpUriD2Ev);
-    LIB_FUNCTION("oaSKGgwTWG0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf14CheckinForReadEm);
-    LIB_FUNCTION("78yvwepeL7U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf15CheckinForWriteEm);
-    LIB_FUNCTION("d8NGGmSEFfU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf15CheckoutForReadEPm);
-    LIB_FUNCTION("E2QFpAcDPq4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf16CheckoutForWriteEPm);
-    LIB_FUNCTION("1P-MUvbtyTM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf4ctorEv);
-    LIB_FUNCTION("rvz8xYxhMW0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf4dtorEv);
-    LIB_FUNCTION("IL3Wk7QuRhA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf4InitEPvm);
-    LIB_FUNCTION("kDaQLJv89bs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf4PeekEmPvm);
-    LIB_FUNCTION("Mg-IhL6SWfg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf4ReadEPvm);
-    LIB_FUNCTION("IZOGdJ+LFFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf5ClearEv);
-    LIB_FUNCTION("8Y5OOBb0B5Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf5WriteEPKvm);
-    LIB_FUNCTION("u-TlLaJUJEA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBuf7DestroyEv);
-    LIB_FUNCTION("L5BnZpuQImk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBufC1Ev);
-    LIB_FUNCTION("e2a1ZA+lJC4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBufC2Ev);
-    LIB_FUNCTION("hfJ1gGLgvq8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBufD0Ev);
-    LIB_FUNCTION("7w+LeZ5ymys", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBufD1Ev);
-    LIB_FUNCTION("9+NmoosRoBA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np7RingBufD2Ev);
-    LIB_FUNCTION("d+xJZ63-wrc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFile4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("jcPO4bt5i3o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFile5CloseEv);
-    LIB_FUNCTION("RXdPqxVnrvo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFileC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("T2w3ndcG-+Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFileD0Ev);
-    LIB_FUNCTION("6fomUWNk6Xc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFileD1Ev);
-    LIB_FUNCTION("WAat5MtCKpc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8HttpFileD2Ev);
-    LIB_FUNCTION("uDyILPgHF9Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonBool5ClearEv);
-    LIB_FUNCTION("FdpYFbq5C3Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonBool7SetBoolEb);
-    LIB_FUNCTION("mFZezLIogNI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonFile5CloseEv);
-    LIB_FUNCTION("hqPavTyQlNg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonFileD0Ev);
-    LIB_FUNCTION("wzqAM7IYGzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonFileD1Ev);
-    LIB_FUNCTION("QFYVZvAJNC8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonFileD2Ev);
-    LIB_FUNCTION("88GKkivBFhI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8JsonNull5ClearEv);
-    LIB_FUNCTION("WcLP8wPB9X4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommId5BuildERKS1_Pcm);
-    LIB_FUNCTION("LnjjzlJ+L5c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommId5ClearEv);
-    LIB_FUNCTION("1TjLUwirok0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommId5ParseEPS1_PKc);
-    LIB_FUNCTION("UrJocI5M8GY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommId5ParseEPS1_PKcm);
-    LIB_FUNCTION("To1XvNOzjo0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC1ERK20SceNpCommunicationId);
-    LIB_FUNCTION("N6SkkX1GkFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC1ERKS1_);
-    LIB_FUNCTION("AQyiYChNI0c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC1Ev);
-    LIB_FUNCTION("WywlusFissg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC2ERK20SceNpCommunicationId);
-    LIB_FUNCTION("rB0oqLSjH6g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC2ERKS1_);
-    LIB_FUNCTION("BBtBjx9-bMI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdC2Ev);
-    LIB_FUNCTION("XeCZTzqIk2k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdD0Ev);
-    LIB_FUNCTION("EPJbX73AVeU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdD1Ev);
-    LIB_FUNCTION("hP18CDS6eBU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8NpCommIdD2Ev);
-    LIB_FUNCTION("5WuiSZkU3mg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8Selector4InitEPKc);
-    LIB_FUNCTION("2HkOOhiWK3M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8SelectorD0Ev);
-    LIB_FUNCTION("asZdig1mPlA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8SelectorD1Ev);
-    LIB_FUNCTION("PA9VYFAVKIE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8SelectorD2Ev);
-    LIB_FUNCTION("2YbS+GhInZQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem10SetPendingEv);
-    LIB_FUNCTION("XUCjhejJvPc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem10SetRunningEv);
-    LIB_FUNCTION("-91vFSqiuKw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem11SetFinishedEi);
-    LIB_FUNCTION("zepqHjfGe0M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem14FinishCallbackEv);
-    LIB_FUNCTION("3rGzxcMK-Mg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem15RemoveFromQueueEv);
-    LIB_FUNCTION("Oq5aepLkEWg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem6CancelEi);
-    LIB_FUNCTION("gnh2cpEgSS8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItem9BindQueueEPNS0_9WorkQueueEi);
-    LIB_FUNCTION("HldN461O2Dw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItemC2EPKc);
-    LIB_FUNCTION("Y-I66cSNp+A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItemD0Ev);
-    LIB_FUNCTION("dnwItoXLoy4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItemD1Ev);
-    LIB_FUNCTION("ga4OW9MGahU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np8WorkItemD2Ev);
-    LIB_FUNCTION("8i-vOVRVt5w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag3SetEm);
-    LIB_FUNCTION("vhbvgH7wWiE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag4ctorEv);
-    LIB_FUNCTION("5nM4Yy92Qwg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag4dtorEv);
-    LIB_FUNCTION("5Wy+JxpCBxg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag4OpenEPKc);
-    LIB_FUNCTION("37Rd2JS+FCM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag4PollEmjPm);
-    LIB_FUNCTION("1s+c3SG0WYc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag4WaitEmjPmj);
-    LIB_FUNCTION("03UlDLFsTfw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag5ClearEm);
-    LIB_FUNCTION("wJ-k9+UShJg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag6CancelEm);
-    LIB_FUNCTION("amFi-Av19hU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag6CreateEPKcj);
-    LIB_FUNCTION("QlaBcxSFPZI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlag7DestroyEv);
-    LIB_FUNCTION("cMOgkE2M2e8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlagC1Ev);
-    LIB_FUNCTION("Uv1IQpTWecw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlagC2Ev);
-    LIB_FUNCTION("uHOOEbuzjEQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlagD0Ev);
-    LIB_FUNCTION("WWW4bvT-rSw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlagD1Ev);
-    LIB_FUNCTION("RpWWfCEs9xA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9EventFlagD2Ev);
-    LIB_FUNCTION("jDDvll2aQpQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans10SetTimeoutEPKNS1_12TimeoutParamE);
-    LIB_FUNCTION("+hKyaJJCE+0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans11SendRequestEPNS0_6HandleEPKvm);
-    LIB_FUNCTION("EhLaOnhdcXo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans12RecvResponseEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("fV+Q5a6p+zQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans12SkipResponseEPNS0_6HandleE);
-    LIB_FUNCTION("Qfsmqs-bHeY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans16AddRequestHeaderEPKcS3_);
-    LIB_FUNCTION("6bYsRATI3tQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans16SetRequestHeaderEPKcS3_);
-    LIB_FUNCTION("WoFp77mNyw0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans21GetResponseStatusCodeEPNS0_6HandleEPi);
-    LIB_FUNCTION("RJOlguLEy-E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans21SetRequestContentTypeEPKc);
-    LIB_FUNCTION("ws3x3yjUyeE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans23SetRequestContentLengthEm);
-    LIB_FUNCTION("YW09CP0Vrtw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans24GetResponseContentLengthEPNS0_6HandleEPbPm);
-    LIB_FUNCTION("JEYp0T1VC58", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcm);
-    LIB_FUNCTION("O+FeLkOM7w0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m);
-    LIB_FUNCTION("aWo+7jvpllY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("cocNRQpq+NA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("2e9GLlHTKA4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTrans7DestroyEv);
-    LIB_FUNCTION("sqNxD6H5ZOQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTransC1EP16SceNpAllocatorEx);
-    LIB_FUNCTION("HEeXBdgvJI4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTransC2EP16SceNpAllocatorEx);
-    LIB_FUNCTION("Pe9fHKX7krE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTransD0Ev);
-    LIB_FUNCTION("ls8yIODZmzc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTransD1Ev);
-    LIB_FUNCTION("GSVe-aaTiEg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9HttpTransD2Ev);
-    LIB_FUNCTION("4cIJxNKQK5g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonArray12AddItemArrayEPPS1_);
-    LIB_FUNCTION("cWsZswBMjqg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonArray5ClearEv);
-    LIB_FUNCTION("aCZjveAsynw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValue12GetItemValueEi);
-    LIB_FUNCTION("aIV+HI6llz4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValue13GetFieldValueEiPPKc);
-    LIB_FUNCTION("BDie4qEtKuA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValue13GetFieldValueEPKc);
-    LIB_FUNCTION("LotC9rVP3Lo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValueD0Ev);
-    LIB_FUNCTION("hBuLbn3mGBw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValueD1Ev);
-    LIB_FUNCTION("FfSNfBmn+K8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9JsonValueD2Ev);
-    LIB_FUNCTION("PsP6LYRZ7Dc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("Flyyg6hzUOM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile4SeekEliPl);
-    LIB_FUNCTION("YtvLEI7uZRI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile4SyncEv);
-    LIB_FUNCTION("9q+h2q5YprU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile5CloseEv);
-    LIB_FUNCTION("0xL7AwgxphE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("haDbtVOmaao", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile6RemoveEPKc);
-    LIB_FUNCTION("Sgo7wy9okFI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFile8TruncateEl);
-    LIB_FUNCTION("QWlZu1JZOww", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFileC1Ev);
-    LIB_FUNCTION("HP4jsVYqBKg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFileC2Ev);
-    LIB_FUNCTION("-n0CR0QxhnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFileD0Ev);
-    LIB_FUNCTION("3eoh4hjcYag", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFileD1Ev);
-    LIB_FUNCTION("s-C88O6Y8iU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9LocalFileD2Ev);
-    LIB_FUNCTION("euE6Yo5hkrY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleId5BuildERKS1_Pcm);
-    LIB_FUNCTION("a76a3D9Adts", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleId5ClearEv);
-    LIB_FUNCTION("4O8lYvForpk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleId5ParseEPS1_PKc);
-    LIB_FUNCTION("-swgMjedLUQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleId5ParseEPS1_PKcm);
-    LIB_FUNCTION("Fcvdbqpwpnw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC1ERK12SceNpTitleId);
-    LIB_FUNCTION("wd+YWDKMTQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC1ERKS1_);
-    LIB_FUNCTION("-Ja2aT6A3fg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC1Ev);
-    LIB_FUNCTION("9n60S+t4Cxs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC2ERK12SceNpTitleId);
-    LIB_FUNCTION("IefAhNUAivM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC2ERKS1_);
-    LIB_FUNCTION("OL7DU1kkm+4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdC2Ev);
-    LIB_FUNCTION("rFcQRK+GMcQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdD0Ev);
-    LIB_FUNCTION("TGJ5bE+Fb1s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdD1Ev);
-    LIB_FUNCTION("XKVRBLdw+7I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9NpTitleIdD2Ev);
-    LIB_FUNCTION("zurkNUps5o8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObject6AddRefEv);
-    LIB_FUNCTION("5tYi1l9CXD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObject7ReleaseEv);
-    LIB_FUNCTION("brUrttJp6MM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObjectC1Ev);
-    LIB_FUNCTION("JRtw5pROOiM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObjectC2Ev);
-    LIB_FUNCTION("8DrClRz7Z2U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObjectD0Ev);
-    LIB_FUNCTION("lPQzOhwPjuw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObjectD1Ev);
-    LIB_FUNCTION("417JucZaE3g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9RefObjectD2Ev);
-    LIB_FUNCTION("EFffsPLsOio", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9Semaphore4OpenEPKc);
-    LIB_FUNCTION("hQLw6eE4O44", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9Semaphore4WaitEj);
-    LIB_FUNCTION("wcOCedFKan4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9Semaphore6CreateEiiPKc);
-    LIB_FUNCTION("b7qnGORh+H4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9Semaphore6SignalEv);
-    LIB_FUNCTION("Es-CwSVnalY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9Semaphore7DestroyEv);
-    LIB_FUNCTION("Tuth2BRl4x0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9SemaphoreC1Ev);
-    LIB_FUNCTION("8k1rNqvczTc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9SemaphoreC2Ev);
-    LIB_FUNCTION("S6luQz76AQ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9SemaphoreD0Ev);
-    LIB_FUNCTION("nW9XeX3eokI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9SemaphoreD1Ev);
-    LIB_FUNCTION("OukNoRur97E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9SemaphoreD2Ev);
-    LIB_FUNCTION("F2umEBpQFHc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue11GetItemByIdEi);
-    LIB_FUNCTION("wM4q1JMisvA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue15GetFinishedItemENS0_14WorkItemStatusE);
-    LIB_FUNCTION("UYAD7sUQcYU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue16WorkItemFinishedEPNS0_8WorkItemEi);
-    LIB_FUNCTION("-9cU3y6rXVM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue17ProcFinishedItemsENS0_14WorkItemStatusE);
-    LIB_FUNCTION("ovc4ZvD0YjY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue18RemoveFinishedItemEPNS0_8WorkItemE);
-    LIB_FUNCTION("vPju3W13byw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue18WaitForPendingItemEPPNS0_8WorkItemEPb);
-    LIB_FUNCTION("XMIv42L5bEA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue4ctorEv);
-    LIB_FUNCTION("wESN-qrVhOU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue4dtorEv);
-    LIB_FUNCTION("+dGO+GS2ZXQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue4InitEPKcimm);
-    LIB_FUNCTION("U0YoWwgg8aI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue4InitEPKNS0_6Thread5ParamE);
-    LIB_FUNCTION("4DE+nnCVRPA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue4StopEv);
-    LIB_FUNCTION("VnQolo6vTr4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue5StartEv);
-    LIB_FUNCTION("laqZEULcfgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue6CancelEii);
-    LIB_FUNCTION("CznMfhTIvVY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue6IsInitEv);
-    LIB_FUNCTION("NeopmYshD0U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue7DestroyEv);
-    LIB_FUNCTION("KQSxXJBepQ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue7EnqueueEiPNS0_8WorkItemE);
-    LIB_FUNCTION("zmOmSLnqlBQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue9CancelAllEi);
-    LIB_FUNCTION("eTy3L1azX4E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueue9IsRunningEv);
-    LIB_FUNCTION("X6NVkdpRnog", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueueC1Ev);
-    LIB_FUNCTION("p+bd65J177I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueueC2Ev);
-    LIB_FUNCTION("uyNO0GnFhPw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueueD0Ev);
-    LIB_FUNCTION("1QFKnDJxk3A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueueD1Ev);
-    LIB_FUNCTION("AIDhc3KCK7w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2np9WorkQueueD2Ev);
-    LIB_FUNCTION("XLpPRMl5jro", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("6jHOZ6fItFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERK12SceNpTitleIdRKNS0_9NpTitleIdE);
-    LIB_FUNCTION("i+xzwYeeEtk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERK16SceNpTitleSecretRKNS0_13NpTitleSecretE);
-    LIB_FUNCTION("ZWZ9KqoIvQY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERK20SceNpCommunicationIdRKNS0_8NpCommIdE);
-    LIB_FUNCTION("Vsj50ZwNUFM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_13NpTitleSecretERK16SceNpTitleSecret);
-    LIB_FUNCTION("WM5DPO-LryU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_13NpTitleSecretES3_);
-    LIB_FUNCTION("ps246w9eXI8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("UVLmT9lzRYA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_4TimeES3_);
-    LIB_FUNCTION("WaNQzws1ATU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_8NpCommIdERK20SceNpCommunicationId);
-    LIB_FUNCTION("E-mYAG-aa1A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_8NpCommIdES3_);
-    LIB_FUNCTION("FmDmhB16wwE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_9NpTitleIdERK12SceNpTitleId);
-    LIB_FUNCTION("niXN2N4o3yY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npeqERKNS0_9NpTitleIdES3_);
-    LIB_FUNCTION("gKruhA35EXQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgeERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("1mnghWFX0wQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgeERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("svAQxJ3yow4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgeERKNS0_4TimeES3_);
-    LIB_FUNCTION("oVZ6spoeeN0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgtERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("snloJp6qQCc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgtERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("EFES6UR65oU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npgtERKNS0_4TimeES3_);
-    LIB_FUNCTION("UIrMxV07mL0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npleERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("cAeFZE72SXU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npleERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("ttA9TcO06uA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npleERKNS0_4TimeES3_);
-    LIB_FUNCTION("rVtImV4rxSA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npltERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("nVB1Nsjwpj0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npltERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("d0zSLZMER34", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npltERKNS0_4TimeES3_);
-    LIB_FUNCTION("MVY+jtY-WiQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERK10SceRtcTickRKNS0_4TimeE);
-    LIB_FUNCTION("tDs31ASQGV8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERK12SceNpTitleIdRKNS0_9NpTitleIdE);
-    LIB_FUNCTION("OwsjgCQyZUI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERK16SceNpTitleSecretRKNS0_13NpTitleSecretE);
-    LIB_FUNCTION("O5QkjyiPM4c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERK20SceNpCommunicationIdRKNS0_8NpCommIdE);
-    LIB_FUNCTION("7b5y1XSa+KQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_13NpTitleSecretERK16SceNpTitleSecret);
-    LIB_FUNCTION("zbliTwZKRyU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_13NpTitleSecretES3_);
-    LIB_FUNCTION("yXMjXN--3rY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_4TimeERK10SceRtcTick);
-    LIB_FUNCTION("cnoM7EjlLe4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_4TimeES3_);
-    LIB_FUNCTION("SM7OEf11LCA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_8NpCommIdERK20SceNpCommunicationId);
-    LIB_FUNCTION("QQCqBHk79sI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_8NpCommIdES3_);
-    LIB_FUNCTION("ONgEITYl9mA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_9NpTitleIdERK12SceNpTitleId);
-    LIB_FUNCTION("9pp9-dwqIHM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZN3sce2npneERKNS0_9NpTitleIdES3_);
-    LIB_FUNCTION("KyDWNwpREH4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10Cancelable6IsInitEv);
-    LIB_FUNCTION("VI8AHrfLdqY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10EventQueue6IsInitEv);
-    LIB_FUNCTION("jxPY-0x8e-M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10EventQueue7IsEmptyEv);
-    LIB_FUNCTION("COxqqhvLSyM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("m+dAaZ5pyO4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber6GetNumEPcm);
-    LIB_FUNCTION("Sk8AdNQUDm8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber6GetNumEPi);
-    LIB_FUNCTION("nHgo2VpnCB8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber6GetNumEPj);
-    LIB_FUNCTION("Agsyrf4L8uA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber6GetNumEPl);
-    LIB_FUNCTION("P2cGbJ5nD1w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber6GetNumEPm);
-    LIB_FUNCTION("GAGrrgl7GAU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonNumber9GetNumStrEv);
-    LIB_FUNCTION("k1VlSDg9azo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonObject5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("2dAzrh4J0WY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonString5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("ZquDaA7NrQ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonString6GetStrEPcm);
-    LIB_FUNCTION("RIPYdMx8wZw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonString6GetStrEv);
-    LIB_FUNCTION("Wixm7ST0Syw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np10JsonString9GetLengthEv);
-    LIB_FUNCTION("2mrb4euDuGY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np12HttpTemplate6IsInitEv);
-    LIB_FUNCTION("9cJ2S8f4Mj4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np18HttpConnectionPool6IsInitEv);
-    LIB_FUNCTION("GI-kJrlbsDQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np3ipc10IpmiClient6IsInitEv);
-    LIB_FUNCTION("C8SMKrvRkl8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np3ipc17ServiceIpmiClient6IsInitEv);
-    LIB_FUNCTION("1YezZ6DJXgY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np4Cond6IsInitEv);
-    LIB_FUNCTION("qmtHTmA-CcQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np4Time18ConvertToPosixTimeEPl);
-    LIB_FUNCTION("Yc+qj4TIEY0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np5Mutex6IsInitEv);
-    LIB_FUNCTION("Z68UCklzmHs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np6Handle6IsInitEv);
-    LIB_FUNCTION("fK5e+K6kSBg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np6Thread6IsInitEv);
-    LIB_FUNCTION("bublINOKkpY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np7RingBuf11GetDataSizeEv);
-    LIB_FUNCTION("3AXAGsodfmg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np7RingBuf11GetFreeSizeEv);
-    LIB_FUNCTION("bvJ207-8qBQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np7RingBuf6IsFullEv);
-    LIB_FUNCTION("3g7tdl9Ppds", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np7RingBuf7IsEmptyEv);
-    LIB_FUNCTION("nxWdtBJF070", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np8JsonBool5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("Bd7bMuLrAqE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np8JsonBool7GetBoolEv);
-    LIB_FUNCTION("hYQzNpYaClY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np8JsonNull5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("3I2FbiV6fhw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np8NpCommId7IsEmptyEv);
-    LIB_FUNCTION("st-oQvV7HVI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9EventFlag6IsInitEv);
-    LIB_FUNCTION("dGuEML7cY1k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9HttpTrans6IsInitEv);
-    LIB_FUNCTION("EcboqmwkrMY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9JsonArray5CloneEP16SceNpAllocatorEx);
-    LIB_FUNCTION("JcAsZlyr3Mo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9JsonValue12GetItemValueEi);
-    LIB_FUNCTION("XZTZqqSVGlY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9NpTitleId7IsEmptyEv);
-    LIB_FUNCTION("sreH33xjV0A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZNK3sce2np9Semaphore6IsInitEv);
-    LIB_FUNCTION("QwO4sr6XzSY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np10MemoryFile5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("ojBk-UJxzWw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np10MemoryFileD0Ev);
-    LIB_FUNCTION("8S1mWU-N9kM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np10MemoryFileD1Ev);
-    LIB_FUNCTION("eRlqlofFKYg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9HttpTrans5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("zWIFe+d77PU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9HttpTransD0Ev);
-    LIB_FUNCTION("GG1Y+vBUkdU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9HttpTransD1Ev);
-    LIB_FUNCTION("+3ySpB1buMs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9LocalFile5WriteEPNS0_6HandleEPKvmPm);
-    LIB_FUNCTION("hSnLhjGefsU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9LocalFileD0Ev);
-    LIB_FUNCTION("q3s6++iIzjE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn16_N3sce2np9LocalFileD1Ev);
-    LIB_FUNCTION("E6GYo9uzjds", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np10MemoryFile4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("7bzUdBtIQhE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np10MemoryFileD0Ev);
-    LIB_FUNCTION("lNs-oTKpG9s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np10MemoryFileD1Ev);
-    LIB_FUNCTION("xDrWJARfCbk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np6Handle10CancelImplEi);
-    LIB_FUNCTION("YqMS-iAjFY8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np6HandleD0Ev);
-    LIB_FUNCTION("lUsG1QfgVN4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np6HandleD1Ev);
-    LIB_FUNCTION("G+v692ul7MA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9HttpTrans4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("sGhCzaJf+jQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9HttpTransD0Ev);
-    LIB_FUNCTION("PUqCtFwnNvA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9HttpTransD1Ev);
-    LIB_FUNCTION("NtsHoOq2ao4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9LocalFile4ReadEPNS0_6HandleEPvmPm);
-    LIB_FUNCTION("Gh35wbyg4U8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9LocalFileD0Ev);
-    LIB_FUNCTION("kD3l0P19Wzg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZThn8_N3sce2np9LocalFileD1Ev);
-    LIB_FUNCTION("IvTsS4VJq1w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np10JsonNumberE);
-    LIB_FUNCTION("aLGD1kOLQXE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np10JsonObjectE);
-    LIB_FUNCTION("1At86OClqtY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np10JsonStringE);
-    LIB_FUNCTION("jsHe99x6l0w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np8JsonBoolE);
-    LIB_FUNCTION("A742Lh-FnVE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np8JsonNullE);
-    LIB_FUNCTION("FfXZGW1TMvo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np8SelectorE);
-    LIB_FUNCTION("0qrLVqNUn2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np9JsonArrayE);
-    LIB_FUNCTION("S8TLtKfZCfc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _ZTVN3sce2np9JsonValueE);
-    LIB_FUNCTION("MWPOkqzYss0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpAllocateKernelMemoryNoAlignment);
-    LIB_FUNCTION("gMlY6eewr-c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpAllocateKernelMemoryWithAlignment);
+    LIB_FUNCTION("xxOTJpEyoj4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout10IsTimedoutEv);
+    LIB_FUNCTION("Zw3QlKu49eM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout11CalloutFuncEPv);
+    LIB_FUNCTION("14PDhhMEBKY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout4StopEv);
+    LIB_FUNCTION("TDuC6To9HJ8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout5StartEjPNS1_7HandlerE);
+    LIB_FUNCTION("r0PYNWZLZS8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout5StartEmPNS1_7HandlerE);
+    LIB_FUNCTION("3ErXia+y89M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7Callout9IsStartedEv);
+    LIB_FUNCTION("XEXFdmQj5oI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7CalloutC1EPNS0_14CalloutContextE);
+    LIB_FUNCTION("Bpay3NjseSU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7CalloutC2EPNS0_14CalloutContextE);
+    LIB_FUNCTION("Fx2UwoQVVmo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7CalloutD0Ev);
+    LIB_FUNCTION("kUitiIVR43g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7CalloutD1Ev);
+    LIB_FUNCTION("ebomQLbpptw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7CalloutD2Ev);
+    LIB_FUNCTION("YtzL-Rso9bk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUri5BuildEPKS1_PcmPmj);
+    LIB_FUNCTION("Xp92SsA5atA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUri5ParseEPS1_PKc);
+    LIB_FUNCTION("LL9z5QvmwaA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUriC1EP16SceNpAllocatorEx);
+    LIB_FUNCTION("q4G7qxTJWps", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUriC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("w+C8QXqZKSw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUriD0Ev);
+    LIB_FUNCTION("wSCKvDDBPy4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUriD1Ev);
+    LIB_FUNCTION("D-dT+vERWmU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7HttpUriD2Ev);
+    LIB_FUNCTION("oaSKGgwTWG0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf14CheckinForReadEm);
+    LIB_FUNCTION("78yvwepeL7U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf15CheckinForWriteEm);
+    LIB_FUNCTION("d8NGGmSEFfU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf15CheckoutForReadEPm);
+    LIB_FUNCTION("E2QFpAcDPq4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf16CheckoutForWriteEPm);
+    LIB_FUNCTION("1P-MUvbtyTM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf4ctorEv);
+    LIB_FUNCTION("rvz8xYxhMW0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf4dtorEv);
+    LIB_FUNCTION("IL3Wk7QuRhA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf4InitEPvm);
+    LIB_FUNCTION("kDaQLJv89bs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf4PeekEmPvm);
+    LIB_FUNCTION("Mg-IhL6SWfg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf4ReadEPvm);
+    LIB_FUNCTION("IZOGdJ+LFFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf5ClearEv);
+    LIB_FUNCTION("8Y5OOBb0B5Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf5WriteEPKvm);
+    LIB_FUNCTION("u-TlLaJUJEA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBuf7DestroyEv);
+    LIB_FUNCTION("L5BnZpuQImk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBufC1Ev);
+    LIB_FUNCTION("e2a1ZA+lJC4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBufC2Ev);
+    LIB_FUNCTION("hfJ1gGLgvq8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBufD0Ev);
+    LIB_FUNCTION("7w+LeZ5ymys", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBufD1Ev);
+    LIB_FUNCTION("9+NmoosRoBA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np7RingBufD2Ev);
+    LIB_FUNCTION("d+xJZ63-wrc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFile4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("jcPO4bt5i3o", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFile5CloseEv);
+    LIB_FUNCTION("RXdPqxVnrvo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFileC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("T2w3ndcG-+Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFileD0Ev);
+    LIB_FUNCTION("6fomUWNk6Xc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFileD1Ev);
+    LIB_FUNCTION("WAat5MtCKpc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8HttpFileD2Ev);
+    LIB_FUNCTION("uDyILPgHF9Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonBool5ClearEv);
+    LIB_FUNCTION("FdpYFbq5C3Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonBool7SetBoolEb);
+    LIB_FUNCTION("mFZezLIogNI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonFile5CloseEv);
+    LIB_FUNCTION("hqPavTyQlNg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonFileD0Ev);
+    LIB_FUNCTION("wzqAM7IYGzU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonFileD1Ev);
+    LIB_FUNCTION("QFYVZvAJNC8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonFileD2Ev);
+    LIB_FUNCTION("88GKkivBFhI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8JsonNull5ClearEv);
+    LIB_FUNCTION("WcLP8wPB9X4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommId5BuildERKS1_Pcm);
+    LIB_FUNCTION("LnjjzlJ+L5c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommId5ClearEv);
+    LIB_FUNCTION("1TjLUwirok0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommId5ParseEPS1_PKc);
+    LIB_FUNCTION("UrJocI5M8GY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommId5ParseEPS1_PKcm);
+    LIB_FUNCTION("To1XvNOzjo0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC1ERK20SceNpCommunicationId);
+    LIB_FUNCTION("N6SkkX1GkFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC1ERKS1_);
+    LIB_FUNCTION("AQyiYChNI0c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC1Ev);
+    LIB_FUNCTION("WywlusFissg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC2ERK20SceNpCommunicationId);
+    LIB_FUNCTION("rB0oqLSjH6g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC2ERKS1_);
+    LIB_FUNCTION("BBtBjx9-bMI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdC2Ev);
+    LIB_FUNCTION("XeCZTzqIk2k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdD0Ev);
+    LIB_FUNCTION("EPJbX73AVeU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdD1Ev);
+    LIB_FUNCTION("hP18CDS6eBU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8NpCommIdD2Ev);
+    LIB_FUNCTION("5WuiSZkU3mg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8Selector4InitEPKc);
+    LIB_FUNCTION("2HkOOhiWK3M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8SelectorD0Ev);
+    LIB_FUNCTION("asZdig1mPlA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8SelectorD1Ev);
+    LIB_FUNCTION("PA9VYFAVKIE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8SelectorD2Ev);
+    LIB_FUNCTION("2YbS+GhInZQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem10SetPendingEv);
+    LIB_FUNCTION("XUCjhejJvPc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem10SetRunningEv);
+    LIB_FUNCTION("-91vFSqiuKw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem11SetFinishedEi);
+    LIB_FUNCTION("zepqHjfGe0M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem14FinishCallbackEv);
+    LIB_FUNCTION("3rGzxcMK-Mg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem15RemoveFromQueueEv);
+    LIB_FUNCTION("Oq5aepLkEWg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem6CancelEi);
+    LIB_FUNCTION("gnh2cpEgSS8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItem9BindQueueEPNS0_9WorkQueueEi);
+    LIB_FUNCTION("HldN461O2Dw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItemC2EPKc);
+    LIB_FUNCTION("Y-I66cSNp+A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItemD0Ev);
+    LIB_FUNCTION("dnwItoXLoy4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItemD1Ev);
+    LIB_FUNCTION("ga4OW9MGahU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np8WorkItemD2Ev);
+    LIB_FUNCTION("8i-vOVRVt5w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag3SetEm);
+    LIB_FUNCTION("vhbvgH7wWiE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag4ctorEv);
+    LIB_FUNCTION("5nM4Yy92Qwg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag4dtorEv);
+    LIB_FUNCTION("5Wy+JxpCBxg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag4OpenEPKc);
+    LIB_FUNCTION("37Rd2JS+FCM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag4PollEmjPm);
+    LIB_FUNCTION("1s+c3SG0WYc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag4WaitEmjPmj);
+    LIB_FUNCTION("03UlDLFsTfw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag5ClearEm);
+    LIB_FUNCTION("wJ-k9+UShJg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag6CancelEm);
+    LIB_FUNCTION("amFi-Av19hU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag6CreateEPKcj);
+    LIB_FUNCTION("QlaBcxSFPZI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlag7DestroyEv);
+    LIB_FUNCTION("cMOgkE2M2e8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlagC1Ev);
+    LIB_FUNCTION("Uv1IQpTWecw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlagC2Ev);
+    LIB_FUNCTION("uHOOEbuzjEQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlagD0Ev);
+    LIB_FUNCTION("WWW4bvT-rSw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlagD1Ev);
+    LIB_FUNCTION("RpWWfCEs9xA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9EventFlagD2Ev);
+    LIB_FUNCTION("jDDvll2aQpQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans10SetTimeoutEPKNS1_12TimeoutParamE);
+    LIB_FUNCTION("+hKyaJJCE+0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans11SendRequestEPNS0_6HandleEPKvm);
+    LIB_FUNCTION("EhLaOnhdcXo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans12RecvResponseEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("fV+Q5a6p+zQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans12SkipResponseEPNS0_6HandleE);
+    LIB_FUNCTION("Qfsmqs-bHeY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans16AddRequestHeaderEPKcS3_);
+    LIB_FUNCTION("6bYsRATI3tQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans16SetRequestHeaderEPKcS3_);
+    LIB_FUNCTION("WoFp77mNyw0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans21GetResponseStatusCodeEPNS0_6HandleEPi);
+    LIB_FUNCTION("RJOlguLEy-E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans21SetRequestContentTypeEPKc);
+    LIB_FUNCTION("ws3x3yjUyeE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans23SetRequestContentLengthEm);
+    LIB_FUNCTION("YW09CP0Vrtw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans24GetResponseContentLengthEPNS0_6HandleEPbPm);
+    LIB_FUNCTION("JEYp0T1VC58", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcm);
+    LIB_FUNCTION(
+        "O+FeLkOM7w0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+        _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m);
+    LIB_FUNCTION("aWo+7jvpllY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("cocNRQpq+NA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("2e9GLlHTKA4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTrans7DestroyEv);
+    LIB_FUNCTION("sqNxD6H5ZOQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTransC1EP16SceNpAllocatorEx);
+    LIB_FUNCTION("HEeXBdgvJI4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTransC2EP16SceNpAllocatorEx);
+    LIB_FUNCTION("Pe9fHKX7krE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTransD0Ev);
+    LIB_FUNCTION("ls8yIODZmzc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTransD1Ev);
+    LIB_FUNCTION("GSVe-aaTiEg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9HttpTransD2Ev);
+    LIB_FUNCTION("4cIJxNKQK5g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonArray12AddItemArrayEPPS1_);
+    LIB_FUNCTION("cWsZswBMjqg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonArray5ClearEv);
+    LIB_FUNCTION("aCZjveAsynw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValue12GetItemValueEi);
+    LIB_FUNCTION("aIV+HI6llz4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValue13GetFieldValueEiPPKc);
+    LIB_FUNCTION("BDie4qEtKuA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValue13GetFieldValueEPKc);
+    LIB_FUNCTION("LotC9rVP3Lo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValueD0Ev);
+    LIB_FUNCTION("hBuLbn3mGBw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValueD1Ev);
+    LIB_FUNCTION("FfSNfBmn+K8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9JsonValueD2Ev);
+    LIB_FUNCTION("PsP6LYRZ7Dc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("Flyyg6hzUOM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile4SeekEliPl);
+    LIB_FUNCTION("YtvLEI7uZRI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile4SyncEv);
+    LIB_FUNCTION("9q+h2q5YprU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile5CloseEv);
+    LIB_FUNCTION("0xL7AwgxphE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("haDbtVOmaao", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile6RemoveEPKc);
+    LIB_FUNCTION("Sgo7wy9okFI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFile8TruncateEl);
+    LIB_FUNCTION("QWlZu1JZOww", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFileC1Ev);
+    LIB_FUNCTION("HP4jsVYqBKg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFileC2Ev);
+    LIB_FUNCTION("-n0CR0QxhnY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFileD0Ev);
+    LIB_FUNCTION("3eoh4hjcYag", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFileD1Ev);
+    LIB_FUNCTION("s-C88O6Y8iU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9LocalFileD2Ev);
+    LIB_FUNCTION("euE6Yo5hkrY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleId5BuildERKS1_Pcm);
+    LIB_FUNCTION("a76a3D9Adts", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleId5ClearEv);
+    LIB_FUNCTION("4O8lYvForpk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleId5ParseEPS1_PKc);
+    LIB_FUNCTION("-swgMjedLUQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleId5ParseEPS1_PKcm);
+    LIB_FUNCTION("Fcvdbqpwpnw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC1ERK12SceNpTitleId);
+    LIB_FUNCTION("wd+YWDKMTQE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC1ERKS1_);
+    LIB_FUNCTION("-Ja2aT6A3fg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC1Ev);
+    LIB_FUNCTION("9n60S+t4Cxs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC2ERK12SceNpTitleId);
+    LIB_FUNCTION("IefAhNUAivM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC2ERKS1_);
+    LIB_FUNCTION("OL7DU1kkm+4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdC2Ev);
+    LIB_FUNCTION("rFcQRK+GMcQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdD0Ev);
+    LIB_FUNCTION("TGJ5bE+Fb1s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdD1Ev);
+    LIB_FUNCTION("XKVRBLdw+7I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9NpTitleIdD2Ev);
+    LIB_FUNCTION("zurkNUps5o8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObject6AddRefEv);
+    LIB_FUNCTION("5tYi1l9CXD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObject7ReleaseEv);
+    LIB_FUNCTION("brUrttJp6MM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObjectC1Ev);
+    LIB_FUNCTION("JRtw5pROOiM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObjectC2Ev);
+    LIB_FUNCTION("8DrClRz7Z2U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObjectD0Ev);
+    LIB_FUNCTION("lPQzOhwPjuw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObjectD1Ev);
+    LIB_FUNCTION("417JucZaE3g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9RefObjectD2Ev);
+    LIB_FUNCTION("EFffsPLsOio", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9Semaphore4OpenEPKc);
+    LIB_FUNCTION("hQLw6eE4O44", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9Semaphore4WaitEj);
+    LIB_FUNCTION("wcOCedFKan4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9Semaphore6CreateEiiPKc);
+    LIB_FUNCTION("b7qnGORh+H4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9Semaphore6SignalEv);
+    LIB_FUNCTION("Es-CwSVnalY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9Semaphore7DestroyEv);
+    LIB_FUNCTION("Tuth2BRl4x0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9SemaphoreC1Ev);
+    LIB_FUNCTION("8k1rNqvczTc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9SemaphoreC2Ev);
+    LIB_FUNCTION("S6luQz76AQ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9SemaphoreD0Ev);
+    LIB_FUNCTION("nW9XeX3eokI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9SemaphoreD1Ev);
+    LIB_FUNCTION("OukNoRur97E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9SemaphoreD2Ev);
+    LIB_FUNCTION("F2umEBpQFHc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue11GetItemByIdEi);
+    LIB_FUNCTION("wM4q1JMisvA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue15GetFinishedItemENS0_14WorkItemStatusE);
+    LIB_FUNCTION("UYAD7sUQcYU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue16WorkItemFinishedEPNS0_8WorkItemEi);
+    LIB_FUNCTION("-9cU3y6rXVM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue17ProcFinishedItemsENS0_14WorkItemStatusE);
+    LIB_FUNCTION("ovc4ZvD0YjY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue18RemoveFinishedItemEPNS0_8WorkItemE);
+    LIB_FUNCTION("vPju3W13byw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue18WaitForPendingItemEPPNS0_8WorkItemEPb);
+    LIB_FUNCTION("XMIv42L5bEA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue4ctorEv);
+    LIB_FUNCTION("wESN-qrVhOU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue4dtorEv);
+    LIB_FUNCTION("+dGO+GS2ZXQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue4InitEPKcimm);
+    LIB_FUNCTION("U0YoWwgg8aI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue4InitEPKNS0_6Thread5ParamE);
+    LIB_FUNCTION("4DE+nnCVRPA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue4StopEv);
+    LIB_FUNCTION("VnQolo6vTr4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue5StartEv);
+    LIB_FUNCTION("laqZEULcfgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue6CancelEii);
+    LIB_FUNCTION("CznMfhTIvVY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue6IsInitEv);
+    LIB_FUNCTION("NeopmYshD0U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue7DestroyEv);
+    LIB_FUNCTION("KQSxXJBepQ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue7EnqueueEiPNS0_8WorkItemE);
+    LIB_FUNCTION("zmOmSLnqlBQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue9CancelAllEi);
+    LIB_FUNCTION("eTy3L1azX4E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueue9IsRunningEv);
+    LIB_FUNCTION("X6NVkdpRnog", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueueC1Ev);
+    LIB_FUNCTION("p+bd65J177I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueueC2Ev);
+    LIB_FUNCTION("uyNO0GnFhPw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueueD0Ev);
+    LIB_FUNCTION("1QFKnDJxk3A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueueD1Ev);
+    LIB_FUNCTION("AIDhc3KCK7w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2np9WorkQueueD2Ev);
+    LIB_FUNCTION("XLpPRMl5jro", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("6jHOZ6fItFU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERK12SceNpTitleIdRKNS0_9NpTitleIdE);
+    LIB_FUNCTION("i+xzwYeeEtk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERK16SceNpTitleSecretRKNS0_13NpTitleSecretE);
+    LIB_FUNCTION("ZWZ9KqoIvQY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERK20SceNpCommunicationIdRKNS0_8NpCommIdE);
+    LIB_FUNCTION("Vsj50ZwNUFM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_13NpTitleSecretERK16SceNpTitleSecret);
+    LIB_FUNCTION("WM5DPO-LryU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_13NpTitleSecretES3_);
+    LIB_FUNCTION("ps246w9eXI8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("UVLmT9lzRYA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_4TimeES3_);
+    LIB_FUNCTION("WaNQzws1ATU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_8NpCommIdERK20SceNpCommunicationId);
+    LIB_FUNCTION("E-mYAG-aa1A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_8NpCommIdES3_);
+    LIB_FUNCTION("FmDmhB16wwE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_9NpTitleIdERK12SceNpTitleId);
+    LIB_FUNCTION("niXN2N4o3yY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npeqERKNS0_9NpTitleIdES3_);
+    LIB_FUNCTION("gKruhA35EXQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgeERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("1mnghWFX0wQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgeERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("svAQxJ3yow4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgeERKNS0_4TimeES3_);
+    LIB_FUNCTION("oVZ6spoeeN0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgtERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("snloJp6qQCc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgtERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("EFES6UR65oU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npgtERKNS0_4TimeES3_);
+    LIB_FUNCTION("UIrMxV07mL0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npleERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("cAeFZE72SXU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npleERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("ttA9TcO06uA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npleERKNS0_4TimeES3_);
+    LIB_FUNCTION("rVtImV4rxSA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npltERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("nVB1Nsjwpj0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npltERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("d0zSLZMER34", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npltERKNS0_4TimeES3_);
+    LIB_FUNCTION("MVY+jtY-WiQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERK10SceRtcTickRKNS0_4TimeE);
+    LIB_FUNCTION("tDs31ASQGV8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERK12SceNpTitleIdRKNS0_9NpTitleIdE);
+    LIB_FUNCTION("OwsjgCQyZUI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERK16SceNpTitleSecretRKNS0_13NpTitleSecretE);
+    LIB_FUNCTION("O5QkjyiPM4c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERK20SceNpCommunicationIdRKNS0_8NpCommIdE);
+    LIB_FUNCTION("7b5y1XSa+KQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_13NpTitleSecretERK16SceNpTitleSecret);
+    LIB_FUNCTION("zbliTwZKRyU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_13NpTitleSecretES3_);
+    LIB_FUNCTION("yXMjXN--3rY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_4TimeERK10SceRtcTick);
+    LIB_FUNCTION("cnoM7EjlLe4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_4TimeES3_);
+    LIB_FUNCTION("SM7OEf11LCA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_8NpCommIdERK20SceNpCommunicationId);
+    LIB_FUNCTION("QQCqBHk79sI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_8NpCommIdES3_);
+    LIB_FUNCTION("ONgEITYl9mA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_9NpTitleIdERK12SceNpTitleId);
+    LIB_FUNCTION("9pp9-dwqIHM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZN3sce2npneERKNS0_9NpTitleIdES3_);
+    LIB_FUNCTION("KyDWNwpREH4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10Cancelable6IsInitEv);
+    LIB_FUNCTION("VI8AHrfLdqY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10EventQueue6IsInitEv);
+    LIB_FUNCTION("jxPY-0x8e-M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10EventQueue7IsEmptyEv);
+    LIB_FUNCTION("COxqqhvLSyM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber5CloneEP16SceNpAllocatorEx);
+    LIB_FUNCTION("m+dAaZ5pyO4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber6GetNumEPcm);
+    LIB_FUNCTION("Sk8AdNQUDm8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber6GetNumEPi);
+    LIB_FUNCTION("nHgo2VpnCB8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber6GetNumEPj);
+    LIB_FUNCTION("Agsyrf4L8uA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber6GetNumEPl);
+    LIB_FUNCTION("P2cGbJ5nD1w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np10JsonNumber6GetNumEPm);
+    LIB_FUNCTION("EcboqmwkrMY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np9JsonArray5CloneEP16SceNpAllocatorEx);
+    LIB_FUNCTION("JcAsZlyr3Mo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np9JsonValue12GetItemValueEi);
+    LIB_FUNCTION("XZTZqqSVGlY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np9NpTitleId7IsEmptyEv);
+    LIB_FUNCTION("sreH33xjV0A", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZNK3sce2np9Semaphore6IsInitEv);
+    LIB_FUNCTION("QwO4sr6XzSY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np10MemoryFile5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("ojBk-UJxzWw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np10MemoryFileD0Ev);
+    LIB_FUNCTION("8S1mWU-N9kM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np10MemoryFileD1Ev);
+    LIB_FUNCTION("eRlqlofFKYg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9HttpTrans5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("zWIFe+d77PU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9HttpTransD0Ev);
+    LIB_FUNCTION("GG1Y+vBUkdU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9HttpTransD1Ev);
+    LIB_FUNCTION("+3ySpB1buMs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9LocalFile5WriteEPNS0_6HandleEPKvmPm);
+    LIB_FUNCTION("hSnLhjGefsU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9LocalFileD0Ev);
+    LIB_FUNCTION("q3s6++iIzjE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn16_N3sce2np9LocalFileD1Ev);
+    LIB_FUNCTION("E6GYo9uzjds", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np10MemoryFile4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("7bzUdBtIQhE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np10MemoryFileD0Ev);
+    LIB_FUNCTION("lNs-oTKpG9s", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np10MemoryFileD1Ev);
+    LIB_FUNCTION("xDrWJARfCbk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np6Handle10CancelImplEi);
+    LIB_FUNCTION("YqMS-iAjFY8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np6HandleD0Ev);
+    LIB_FUNCTION("lUsG1QfgVN4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np6HandleD1Ev);
+    LIB_FUNCTION("G+v692ul7MA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9HttpTrans4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("sGhCzaJf+jQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9HttpTransD0Ev);
+    LIB_FUNCTION("PUqCtFwnNvA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9HttpTransD1Ev);
+    LIB_FUNCTION("NtsHoOq2ao4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9LocalFile4ReadEPNS0_6HandleEPvmPm);
+    LIB_FUNCTION("Gh35wbyg4U8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9LocalFileD0Ev);
+    LIB_FUNCTION("kD3l0P19Wzg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZThn8_N3sce2np9LocalFileD1Ev);
+    LIB_FUNCTION("IvTsS4VJq1w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np10JsonNumberE);
+    LIB_FUNCTION("aLGD1kOLQXE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np10JsonObjectE);
+    LIB_FUNCTION("1At86OClqtY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np10JsonStringE);
+    LIB_FUNCTION("jsHe99x6l0w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np8JsonBoolE);
+    LIB_FUNCTION("A742Lh-FnVE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np8JsonNullE);
+    LIB_FUNCTION("FfXZGW1TMvo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np8SelectorE);
+    LIB_FUNCTION("0qrLVqNUn2Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np9JsonArrayE);
+    LIB_FUNCTION("S8TLtKfZCfc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 _ZTVN3sce2np9JsonValueE);
+    LIB_FUNCTION("MWPOkqzYss0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpAllocateKernelMemoryNoAlignment);
+    LIB_FUNCTION("gMlY6eewr-c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpAllocateKernelMemoryWithAlignment);
     LIB_FUNCTION("jGF+MaB4b-M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpArchInit);
     LIB_FUNCTION("UskWpVWxSvg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpArchTerm);
     LIB_FUNCTION("+9+kKMY9YIw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpAtomicCas32);
@@ -6737,13 +7259,17 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pfJgSA4jO3M", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpAtomicInc32);
     LIB_FUNCTION("l67qBmMmKP4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64Decoder);
     LIB_FUNCTION("pu39pU8UgCo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64Encoder);
-    LIB_FUNCTION("a5IfPlpchXI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64GetDecodeSize);
+    LIB_FUNCTION("a5IfPlpchXI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpBase64GetDecodeSize);
     LIB_FUNCTION("moGcgMNTHvQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64UrlDecoder);
     LIB_FUNCTION("IeNj+OcWgU8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64UrlEncoder);
-    LIB_FUNCTION("7BjZKcN+oZ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpBase64UrlGetDecodeSize);
+    LIB_FUNCTION("7BjZKcN+oZ4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpBase64UrlGetDecodeSize);
     LIB_FUNCTION("9+m5nRdJ-wQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCalloutInitCtx);
-    LIB_FUNCTION("fClnlkZmA6k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCalloutStartOnCtx);
-    LIB_FUNCTION("lpr66Gby8dQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCalloutStartOnCtx64);
+    LIB_FUNCTION("fClnlkZmA6k", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpCalloutStartOnCtx);
+    LIB_FUNCTION("lpr66Gby8dQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpCalloutStartOnCtx64);
     LIB_FUNCTION("in19gH7G040", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCalloutStopOnCtx);
     LIB_FUNCTION("AqJ4xkWsV+I", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCalloutTermCtx);
     LIB_FUNCTION("kb2thTuS8t8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCancelEventFlag);
@@ -6768,19 +7294,26 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZaKa5x61hGA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpDbgDumpText);
     LIB_FUNCTION("sjnIeFCuTD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpDeleteEventFlag);
     LIB_FUNCTION("xPrF2nGPBXQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpDeleteSema);
-    LIB_FUNCTION("OQTweRLgFr8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpEventGetCurrentNetworkTick);
+    LIB_FUNCTION("OQTweRLgFr8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpEventGetCurrentNetworkTick);
     LIB_FUNCTION("vjwlDmsGtME", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpFreeKernelMemory);
     LIB_FUNCTION("QmDEFikd3VA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetNavSdkVersion);
     LIB_FUNCTION("sXVQUIGmk2U", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetPlatformType);
     LIB_FUNCTION("Z3mnqcGmf8E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetProcessId);
     LIB_FUNCTION("pJlGhXEt5CU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetRandom);
     LIB_FUNCTION("Pglk7zFj0DI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetSdkVersion);
-    LIB_FUNCTION("ljqnF0hmLjo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetSdkVersionUInt);
-    LIB_FUNCTION("PVVsRmMkO1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGetSystemClockUsec);
-    LIB_FUNCTION("-gN6uE+zWng", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGlobalHeapGetAllocator);
-    LIB_FUNCTION("VUHUasztbUY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGlobalHeapGetAllocatorEx);
-    LIB_FUNCTION("P4YpPziLBd4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGlobalHeapGetAllocatorExPtr);
-    LIB_FUNCTION("DI5n4aOdxmk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpGlobalHeapGetAllocatorPtr);
+    LIB_FUNCTION("ljqnF0hmLjo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGetSdkVersionUInt);
+    LIB_FUNCTION("PVVsRmMkO1g", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGetSystemClockUsec);
+    LIB_FUNCTION("-gN6uE+zWng", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGlobalHeapGetAllocator);
+    LIB_FUNCTION("VUHUasztbUY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGlobalHeapGetAllocatorEx);
+    LIB_FUNCTION("P4YpPziLBd4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGlobalHeapGetAllocatorExPtr);
+    LIB_FUNCTION("DI5n4aOdxmk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpGlobalHeapGetAllocatorPtr);
     LIB_FUNCTION("wVdn78HKc30", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpHeapDestroy);
     LIB_FUNCTION("lvek8w7yqyE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpHeapGetAllocator);
     LIB_FUNCTION("2jdHoPpS+W0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpHeapGetStat);
@@ -6789,10 +7322,14 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Hvpr+otU4bo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpHexToInt);
     LIB_FUNCTION("5y0wMPQkaeU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpInt32ToStr);
     LIB_FUNCTION("HoPC33siDD4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpInt64ToStr);
-    LIB_FUNCTION("G6qytFoBJ-w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIntGetPlatformType);
-    LIB_FUNCTION("fY4XQoA20i8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIntIsOnlineIdString);
-    LIB_FUNCTION("hkeX9iuCwlI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIntIsValidOnlineId);
-    LIB_FUNCTION("X6emt+LbSEI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIntSetPlatformType);
+    LIB_FUNCTION("G6qytFoBJ-w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpIntGetPlatformType);
+    LIB_FUNCTION("fY4XQoA20i8", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpIntIsOnlineIdString);
+    LIB_FUNCTION("hkeX9iuCwlI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpIntIsValidOnlineId);
+    LIB_FUNCTION("X6emt+LbSEI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpIntSetPlatformType);
     LIB_FUNCTION("TWPY1x1Atys", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIntToHex);
     LIB_FUNCTION("kgDwlmy78k0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIpc2ClientInit);
     LIB_FUNCTION("CI2p6Viee9w", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpIpc2ClientTerm);
@@ -6814,9 +7351,12 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("18j+qk6dRwk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpLwMutexLock);
     LIB_FUNCTION("hp0kVgu5Fxw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpLwMutexTryLock);
     LIB_FUNCTION("CQG2oyx1-nM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpLwMutexUnlock);
-    LIB_FUNCTION("dfXSH2Tsjkw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMemoryHeapDestroy);
-    LIB_FUNCTION("FaMNvjMA6to", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMemoryHeapGetAllocator);
-    LIB_FUNCTION("xHAiSVEEjSI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMemoryHeapGetAllocatorEx);
+    LIB_FUNCTION("dfXSH2Tsjkw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpMemoryHeapDestroy);
+    LIB_FUNCTION("FaMNvjMA6to", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpMemoryHeapGetAllocator);
+    LIB_FUNCTION("xHAiSVEEjSI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpMemoryHeapGetAllocatorEx);
     LIB_FUNCTION("kZizwrFvWZY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMemoryHeapInit);
     LIB_FUNCTION("lQ11BpMM4LU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMutexDestroy);
     LIB_FUNCTION("uEwag-0YZPc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpMutexInit);
@@ -6828,14 +7368,20 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZoXUrTiwKNw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpPanic);
     LIB_FUNCTION("9YmBJ8KF9eI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpPollEventFlag);
     LIB_FUNCTION("xmF0yIF4iXc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpPollSema);
-    LIB_FUNCTION("VMjIo2Z-aW0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpRtcConvertToPosixTime);
+    LIB_FUNCTION("VMjIo2Z-aW0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpRtcConvertToPosixTime);
     LIB_FUNCTION("W0YWLVDndx0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpRtcFormatRFC3339);
     LIB_FUNCTION("LtkeQwMIEWY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpRtcParseRFC3339);
-    LIB_FUNCTION("0lZHbA-HRD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpServerErrorJsonGetErrorCode);
-    LIB_FUNCTION("cRabutqUG7c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpServerErrorJsonMultiGetErrorCode);
-    LIB_FUNCTION("WSQxnAVLKgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpServerErrorJsonParse);
-    LIB_FUNCTION("UbStlMKTBeU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpServerErrorJsonParseInit);
-    LIB_FUNCTION("hbe+DdooIi4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpServerErrorJsonParseMultiInit);
+    LIB_FUNCTION("0lZHbA-HRD0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpServerErrorJsonGetErrorCode);
+    LIB_FUNCTION("cRabutqUG7c", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpServerErrorJsonMultiGetErrorCode);
+    LIB_FUNCTION("WSQxnAVLKgw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpServerErrorJsonParse);
+    LIB_FUNCTION("UbStlMKTBeU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpServerErrorJsonParseInit);
+    LIB_FUNCTION("hbe+DdooIi4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpServerErrorJsonParseMultiInit);
     LIB_FUNCTION("29ftOGIrUCo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpSetEventFlag);
     LIB_FUNCTION("m9JzZSoDVFY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpSetPlatformType);
     LIB_FUNCTION("-W28+9p1CKI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpSignalSema);
@@ -6851,34 +7397,54 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yvaNTRiKXmo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpThreadGetId);
     LIB_FUNCTION("rRN89jBArEM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUInt32ToStr);
     LIB_FUNCTION("QjNUYQbGoHA", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUInt64ToStr);
-    LIB_FUNCTION("Gh74vNl06sg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUserGetUserIdList);
+    LIB_FUNCTION("Gh74vNl06sg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUserGetUserIdList);
     LIB_FUNCTION("N3tAHlBnowE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilBuildTitleId);
-    LIB_FUNCTION("4mEAk-UKVNw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilCanonicalizeNpIdForPs4);
-    LIB_FUNCTION("N3FB4r8JoRE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilCanonicalizeNpIdForPsp2);
+    LIB_FUNCTION("4mEAk-UKVNw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilCanonicalizeNpIdForPs4);
+    LIB_FUNCTION("N3FB4r8JoRE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilCanonicalizeNpIdForPsp2);
     LIB_FUNCTION("xPRHNaD3kTc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilCmpAccountId);
-    LIB_FUNCTION("owm52JoZ8uc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetDateSetAuto);
-    LIB_FUNCTION("1Gfhi+tZ9IE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetDbgCommerce);
+    LIB_FUNCTION("owm52JoZ8uc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetDateSetAuto);
+    LIB_FUNCTION("1Gfhi+tZ9IE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetDbgCommerce);
     LIB_FUNCTION("kBON3bAtfGs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetEnv);
-    LIB_FUNCTION("MUj0IV6XFGs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetFakeDisplayNameMode);
-    LIB_FUNCTION("O86rgZ2azfg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetFakeRateLimit);
-    LIB_FUNCTION("FrxliFYAO8Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetIgnoreNpTitleId);
+    LIB_FUNCTION("MUj0IV6XFGs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetFakeDisplayNameMode);
+    LIB_FUNCTION("O86rgZ2azfg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetFakeRateLimit);
+    LIB_FUNCTION("FrxliFYAO8Y", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetIgnoreNpTitleId);
     LIB_FUNCTION("GRvK1ZE+FEQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpDebug);
-    LIB_FUNCTION("OFiFmfsADas", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpLanguageCode);
-    LIB_FUNCTION("X9CqyP164Hc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpLanguageCode2);
-    LIB_FUNCTION("Fxux7Ob+Ynk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpLanguageCode2Str);
-    LIB_FUNCTION("RfiA17kV+xs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpLanguageCodeStr);
-    LIB_FUNCTION("OA8f3KF9JsM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNpTestPatch);
+    LIB_FUNCTION("OFiFmfsADas", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetNpLanguageCode);
+    LIB_FUNCTION("X9CqyP164Hc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetNpLanguageCode2);
+    LIB_FUNCTION("Fxux7Ob+Ynk", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetNpLanguageCode2Str);
+    LIB_FUNCTION("RfiA17kV+xs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetNpLanguageCodeStr);
+    LIB_FUNCTION("OA8f3KF9JsM", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetNpTestPatch);
     LIB_FUNCTION("KCk4OGu8+sc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetNthChar);
-    LIB_FUNCTION("fB5hE65pzbU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetShareTitleCheck);
-    LIB_FUNCTION("SXUNKr9Zkv0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetSystemLanguage);
+    LIB_FUNCTION("fB5hE65pzbU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetShareTitleCheck);
+    LIB_FUNCTION("SXUNKr9Zkv0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetSystemLanguage);
     LIB_FUNCTION("AjzLvR0g5Zs", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetTrcNotify);
-    LIB_FUNCTION("pmHBFJyju9E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetWebApi2FakeRateLimit);
-    LIB_FUNCTION("ZRxKp9vjcNc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetWebApi2FakeRateLimitTarget);
-    LIB_FUNCTION("4CqfNm3pisU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilGetWebTraceSetting);
-    LIB_FUNCTION("ajoqGz0D9Dw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilHttpUrlEncode);
+    LIB_FUNCTION("pmHBFJyju9E", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetWebApi2FakeRateLimit);
+    LIB_FUNCTION("ZRxKp9vjcNc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetWebApi2FakeRateLimitTarget);
+    LIB_FUNCTION("4CqfNm3pisU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilGetWebTraceSetting);
+    LIB_FUNCTION("ajoqGz0D9Dw", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilHttpUrlEncode);
     LIB_FUNCTION("458yjI+OECI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilJidToNpId);
     LIB_FUNCTION("EftEB4kmkSg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilJsonEscape);
-    LIB_FUNCTION("vj04qzp7uKY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilJsonGetOneChar);
+    LIB_FUNCTION("vj04qzp7uKY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilJsonGetOneChar);
     LIB_FUNCTION("4YJ5gYtRAAE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilJsonUnescape);
     LIB_FUNCTION("KyB1IAY2BiU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilNpIdToJid);
     LIB_FUNCTION("c+ssxRf1Si0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilNumChars);
@@ -6886,7 +7452,8 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EfnfZtjjyR0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilParseTitleId);
     LIB_FUNCTION("okX7IjW0QsI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilSerializeJid);
     LIB_FUNCTION("5bBPLZV49kY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilXmlEscape);
-    LIB_FUNCTION("Ls4eWDrbNmg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilXmlGetOneChar);
+    LIB_FUNCTION("Ls4eWDrbNmg", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
+                 sceNpUtilXmlGetOneChar);
     LIB_FUNCTION("+0rj9KhmYb0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpUtilXmlUnescape);
     LIB_FUNCTION("ZbdPHUm7jOY", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpWaitEventFlag);
     LIB_FUNCTION("6adrFGe2cpU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpWaitSema);
