@@ -108,7 +108,7 @@ int PS4_SYSV_ABI _ZN3sce2np10MemoryFileC2EP16SceNpAllocatorEx();
 int PS4_SYSV_ABI _ZN3sce2np10MemoryFileD0Ev();
 int PS4_SYSV_ABI _ZN3sce2np10MemoryFileD1Ev();
 int PS4_SYSV_ABI _ZN3sce2np10MemoryFileD2Ev();
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_();
 int PS4_SYSV_ABI _ZN3sce2np12HttpTemplate4InitEiPKcib();
 int PS4_SYSV_ABI _ZN3sce2np12HttpTemplate7DestroyEv();
@@ -230,9 +230,9 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientC2Ev();
 int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientD0Ev();
 int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientD1Ev();
 int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientD2Ev();
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE();
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient10DisconnectEv();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient10EndRequestEii();
@@ -256,7 +256,7 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient17UnregisterServiceEi();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient18EndRequestForAsyncEii();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient19WaitRequestForAsyncEiij();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient20AbortRequestForAsyncEii();
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient21CreateRequestForAsyncEPiiPKvm();
 int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient21DeleteRequestForAsyncEii();
@@ -447,7 +447,7 @@ int PS4_SYSV_ABI _ZN3sce2np9HttpTrans21SetRequestContentTypeEPKc();
 int PS4_SYSV_ABI _ZN3sce2np9HttpTrans23SetRequestContentLengthEm();
 int PS4_SYSV_ABI _ZN3sce2np9HttpTrans24GetResponseContentLengthEPNS0_6HandleEPbPm();
 int PS4_SYSV_ABI _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcm();
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m();
 int PS4_SYSV_ABI _ZN3sce2np9HttpTrans4ReadEPNS0_6HandleEPvmPm();
 int PS4_SYSV_ABI _ZN3sce2np9HttpTrans5WriteEPNS0_6HandleEPKvmPm();

@@ -472,7 +472,7 @@ int PS4_SYSV_ABI _ZN3sce2np10MemoryFileD2Ev() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np12HttpTemplate19SetAuthInfoCallbackEPFii15SceHttpAuthTypePKcPcS5_iPPhPmPiPvESA_() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
@@ -1078,13 +1078,13 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc10IpmiClientD2Ev() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc13ServiceClientC1EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc13ServiceClientC2EPNS1_17ServiceIpmiClientEPKNS1_17ServiceClientInfoE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
@@ -1200,7 +1200,7 @@ int PS4_SYSV_ABI _ZN3sce2np3ipc17ServiceIpmiClient20AbortRequestForAsyncEii() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np3ipc17ServiceIpmiClient20BeginRequestForAsyncEiiPN4IPMI6Client12EventNotifeeE() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
@@ -2151,7 +2151,7 @@ int PS4_SYSV_ABI _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConne
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI 
+int PS4_SYSV_ABI
 _ZN3sce2np9HttpTrans4InitERKNS0_12HttpTemplateEPNS0_18HttpConnectionPoolEiPKcS8_tS8_m() {
     LOG_ERROR(Lib_NpCommon, "(STUBBED) called");
     return ORBIS_OK;
@@ -6129,11 +6129,11 @@ int PS4_SYSV_ABI Func_FFF4A3E279FB44A7() {
 
 void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("i8UmXTSq7N4", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpNpId);
-    LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, 
+    LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
 				 sceNpCmpNpIdInOrder);
-    LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, 
+    LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
 				 sceNpCmpOnlineId);
-    LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+    LIB_FUNCTION("0gdlCVNNHCI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
 				 _sceNpAllocatorExConvertAllocator);
     LIB_FUNCTION("Zh23aSLeeZo", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorExFree);
 	LIB_FUNCTION("a2qdVU8RWb4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
@@ -6146,10 +6146,10 @@ void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
                  _sceNpAllocatorExStrndup);
     LIB_FUNCTION("BztTl7QeYqE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorFree);
     LIB_FUNCTION("mzlILsFx0cU", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorMalloc);
-    LIB_FUNCTION("VWcTu8wKwlQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+    LIB_FUNCTION("VWcTu8wKwlQ", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
 				 _sceNpAllocatorRealloc);
     LIB_FUNCTION("c8-4aC9opYE", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpAllocatorStrdup);
-    LIB_FUNCTION("vqA9bl6WsF0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, 
+    LIB_FUNCTION("vqA9bl6WsF0", "libSceNpCommon", 1, "libSceNpCommon", 1, 1,
 				 _sceNpAllocatorStrndup);
     LIB_FUNCTION("z5kwfM5InpI", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpFree);
     LIB_FUNCTION("p1vvpKGRXe4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, _sceNpHeapFree);
