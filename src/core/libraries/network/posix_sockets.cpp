@@ -65,6 +65,13 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         }
         }
     }
+    if (level == IPPROTO_TCP) {
+        switch (optname) {
+        case ORBIS_NET_TCP_NODELAY:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, TCP_NODELAY, (const char*)optval, optlen));
+        }
+    }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }

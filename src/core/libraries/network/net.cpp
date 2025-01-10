@@ -971,7 +971,11 @@ int PS4_SYSV_ABI sceNetResolverStartAton(int rid, const u32* addr, char* hostnam
     LOG_ERROR(Lib_Net, "rid = {} , hostname_len ={} timeout={} retry={} flags={}", rid,
               hostname_len, timeout, retry, flags);
     struct hostent* resolved = gethostbyaddr((const char*)addr, hostname_len, AF_INET);
-    strcpy(hostname, resolved->h_name);
+    if (resolved != nullptr) {
+        strcpy(hostname, resolved->h_name);
+    } else {
+        strcpy(hostname, "localhost"); // dummy
+    }
     return ORBIS_OK;
 }
 
