@@ -3,6 +3,7 @@
 
 #include <common/assert.h>
 #include "net.h"
+#include "net_error.h"
 #include "sockets.h"
 
 namespace Libraries::Net {
@@ -51,6 +52,17 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         case ORBIS_NET_SO_SNDTIMEO:
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, SO_SNDTIMEO, (const char*)optval, optlen));
+        case ORBIS_NET_SO_NBIO: {
+            if (optlen != sizeof(sockopt_so_nbio)) {
+                return ORBIS_NET_ERROR_EFAULT;
+            }
+            memcpy(&sockopt_so_nbio, optval, optlen);
+#ifdef _WIN32
+            return ConvertReturnErrorCode(ioctlsocket(sock, FIONBIO, (u_long*)&sockopt_so_nbio));
+#else
+            return ConvertReturnErrorCode(ioctl(sock, FIONBIO, &sockopt_so_nbio));
+#endif
+        }
         }
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);

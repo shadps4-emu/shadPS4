@@ -42,6 +42,7 @@ struct Socket {
 
 struct PosixSocket : public Socket {
     net_socket sock;
+    int sockopt_so_nbio = 0;
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {}
     int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
