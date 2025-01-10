@@ -558,13 +558,14 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 }
 
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
-                          const AmdGpu::Image& image) {
+                          const ImageResource& image_res, const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
     const auto sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
     auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const auto view_type = image.GetViewType(image_res.is_array);
 
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
@@ -611,7 +612,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(off), ir.Imm32(6), true);
         };
 
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             return read(0);
@@ -631,7 +632,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         if (!inst_info.has_derivatives) {
             return {};
         }
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             // du/dx, du/dy
@@ -675,7 +676,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     const IR::Value coords = [&] -> IR::Value {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x
             addr_reg = addr_reg + 1;
             return get_coord(addr_reg - 1, 0);
@@ -745,17 +746,18 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     // Sample instructions must be handled separately using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        PatchImageSampleArgs(block, inst, info, image);
+        PatchImageSampleArgs(block, inst, info, image_res, image);
         return;
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const auto view_type = image.GetViewType(image_res.is_array);
 
     // Now that we know the image type, adjust texture coordinate vector.
     IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
@@ -772,12 +774,12 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
-            UNREACHABLE_MSG("Unknown image type {}", image.GetType());
+            UNREACHABLE_MSG("Unknown image type {}", view_type);
         }
     }();
 
-    const auto has_ms = image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-                        image.GetType() == AmdGpu::ImageType::Color2DMsaaArray;
+    const auto has_ms = view_type == AmdGpu::ImageType::Color2DMsaa ||
+                        view_type == AmdGpu::ImageType::Color2DMsaaArray;
     ASSERT(!inst_info.has_lod || !has_ms);
     const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
