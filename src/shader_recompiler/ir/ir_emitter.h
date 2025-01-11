@@ -325,8 +325,6 @@ public:
                                                    const Value& offset, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
-                                            const U1& skip_mips);
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
                                             const U1& skip_mips, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryLod(const Value& handle, const Value& coords,
@@ -343,6 +341,9 @@ public:
                                   const U32& multisampling, TextureInstInfo info);
     void ImageWrite(const Value& handle, const Value& coords, const U32& lod,
                     const U32& multisampling, const Value& color, TextureInstInfo info);
+
+    [[nodiscard]] Value CubeFaceCoord(const Value& cube_coords);
+    [[nodiscard]] F32 CubeFaceIndex(const Value& cube_coords);
 
     void EmitVertex();
     void EmitPrimitive();

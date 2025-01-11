@@ -11,96 +11,6 @@
 
 namespace AmdGpu {
 
-enum class CompSwizzle : u32 {
-    Zero = 0,
-    One = 1,
-    Red = 4,
-    Green = 5,
-    Blue = 6,
-    Alpha = 7,
-};
-
-struct CompMapping {
-    CompSwizzle r : 3;
-    CompSwizzle g : 3;
-    CompSwizzle b : 3;
-    CompSwizzle a : 3;
-
-    auto operator<=>(const CompMapping& other) const = default;
-
-    template <typename T>
-    [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
-        return {
-            ApplySingle(data, r),
-            ApplySingle(data, g),
-            ApplySingle(data, b),
-            ApplySingle(data, a),
-        };
-    }
-
-private:
-    template <typename T>
-    T ApplySingle(const std::array<T, 4>& data, const CompSwizzle swizzle) const {
-        switch (swizzle) {
-        case CompSwizzle::Zero:
-            return T(0);
-        case CompSwizzle::One:
-            return T(1);
-        case CompSwizzle::Red:
-            return data[0];
-        case CompSwizzle::Green:
-            return data[1];
-        case CompSwizzle::Blue:
-            return data[2];
-        case CompSwizzle::Alpha:
-            return data[3];
-        default:
-            UNREACHABLE();
-        }
-    }
-};
-
-inline DataFormat RemapDataFormat(const DataFormat format) {
-    switch (format) {
-    case DataFormat::Format11_11_10:
-        return DataFormat::Format10_11_11;
-    case DataFormat::Format10_10_10_2:
-        return DataFormat::Format2_10_10_10;
-    case DataFormat::Format5_5_5_1:
-        return DataFormat::Format1_5_5_5;
-    default:
-        return format;
-    }
-}
-
-inline NumberFormat RemapNumberFormat(const NumberFormat format) {
-    return format;
-}
-
-inline CompMapping RemapComponents(const DataFormat format, const CompMapping components) {
-    switch (format) {
-    case DataFormat::Format11_11_10: {
-        CompMapping result;
-        result.r = components.b;
-        result.g = components.g;
-        result.b = components.r;
-        result.a = components.a;
-        return result;
-    }
-    case DataFormat::Format10_10_10_2:
-    case DataFormat::Format5_5_5_1: {
-        CompMapping result;
-        result.r = components.a;
-        result.g = components.b;
-        result.b = components.g;
-        result.a = components.r;
-        return result;
-    }
-    default:
-        return components;
-    }
-}
-
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
@@ -140,15 +50,19 @@ struct Buffer {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     DataFormat GetDataFmt() const noexcept {
         return RemapDataFormat(DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     u32 GetStride() const noexcept {
@@ -305,22 +219,22 @@ struct Image {
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapComponents(DataFormat(data_format), dst_sel);
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     u32 Pitch() const {
         return pitch + 1;
     }
 
-    u32 NumLayers(bool is_array) const {
-        u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
-        if (GetType() == ImageType::Cube) {
-            if (is_array) {
-                slices = last_array + 1;
-                ASSERT(slices % 6 == 0);
-            } else {
-                slices = 6;
-            }
+    [[nodiscard]] u32 NumLayers() const noexcept {
+        // Depth is the number of layers for Array images.
+        u32 slices = depth + 1;
+        if (GetType() == ImageType::Color3D) {
+            // Depth is the actual texture depth for 3D images.
+            slices = 1;
+        } else if (IsCube()) {
+            // Depth is the number of full cubes for Cube images.
+            slices *= 6;
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -342,8 +256,12 @@ struct Image {
         return 1;
     }
 
+    bool IsCube() const noexcept {
+        return static_cast<ImageType>(type) == ImageType::Cube;
+    }
+
     ImageType GetType() const noexcept {
-        return static_cast<ImageType>(type);
+        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -351,7 +269,11 @@ struct Image {
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {
@@ -371,13 +293,48 @@ struct Image {
                GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
 
-    bool IsPartialCubemap() const {
-        const auto viewed_slice = last_array - base_array + 1;
-        return GetType() == ImageType::Cube && viewed_slice < 6;
+    [[nodiscard]] ImageType GetViewType(const bool is_array) const noexcept {
+        const auto base_type = GetType();
+        if (IsCube()) {
+            // Cube needs to remain array type regardless of instruction array specifier.
+            return base_type;
+        }
+        if (base_type == ImageType::Color1DArray && !is_array) {
+            return ImageType::Color1D;
+        }
+        if (base_type == ImageType::Color2DArray && !is_array) {
+            return ImageType::Color2D;
+        }
+        if (base_type == ImageType::Color2DMsaaArray && !is_array) {
+            return ImageType::Color2DMsaa;
+        }
+        return base_type;
     }
 
-    ImageType GetBoundType() const noexcept {
-        return IsPartialCubemap() ? ImageType::Color2DArray : GetType();
+    [[nodiscard]] u32 NumViewLevels(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color2DMsaa:
+        case ImageType::Color2DMsaaArray:
+            return 1;
+        default:
+            // Constrain to actual number of available levels.
+            const auto max_level = std::min<u32>(last_level + 1, NumLevels());
+            return max_level > base_level ? max_level - base_level : 1;
+        }
+    }
+
+    [[nodiscard]] u32 NumViewLayers(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color1D:
+        case ImageType::Color2D:
+        case ImageType::Color2DMsaa:
+        case ImageType::Color3D:
+            return 1;
+        default:
+            // Constrain to actual number of available layers.
+            const auto max_array = std::min<u32>(last_array + 1, NumLayers());
+            return max_array > base_array ? max_array - base_array : 1;
+        }
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits

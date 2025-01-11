@@ -161,10 +161,9 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
-        image.is_read |= desc.is_read;
         image.is_written |= desc.is_written;
         return index;
     }
@@ -301,8 +300,7 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
     });
 }
 
-void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                            Descriptors& descriptors) {
+void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     s32 binding{};
     AmdGpu::Buffer buffer;
     if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
@@ -317,18 +315,188 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         });
     }
 
-    // Update buffer descriptor format.
-    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-
     // Replace handle with binding index in buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
+}
+
+void PatchTextureBufferSharp(IR::Block& block, IR::Inst& inst, Info& info,
+                             Descriptors& descriptors) {
+    const IR::Inst* handle = inst.Arg(0).InstRecursive();
+    const IR::Inst* producer = handle->Arg(0).InstRecursive();
+    const auto sharp = TrackSharp(producer, info);
+    const s32 binding = descriptors.Add(TextureBufferResource{
+        .sharp_idx = sharp,
+        .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
+    });
+
+    // Replace handle with binding index in texture buffer resource list.
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    inst.SetArg(0, ir.Imm32(binding));
+}
+
+void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        const auto opcode = inst->GetOpcode();
+        if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+            opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+            opcode == IR::Opcode::GetUserData) {
+            return inst;
+        }
+        return std::nullopt;
+    };
+    const auto result = IR::BreadthFirstSearch(&inst, pred);
+    ASSERT_MSG(result, "Unable to find image sharp source");
+    const IR::Inst* producer = result.value();
+    const bool has_sampler = producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2;
+    const auto tsharp_handle = has_sampler ? producer->Arg(0).InstRecursive() : producer;
+
+    // Read image sharp.
+    const auto tsharp = TrackSharp(tsharp_handle, info);
+    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
+    if (!image.Valid()) {
+        LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
+        image = AmdGpu::Image::Null();
+    }
+    ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
+    const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
+
+    // Patch image instruction if image is FMask.
+    if (image.IsFmask()) {
+        ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
+
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        switch (inst.GetOpcode()) {
+        case IR::Opcode::ImageRead:
+        case IR::Opcode::ImageSampleRaw: {
+            IR::F32 fmaskx = ir.BitCast<IR::F32>(ir.Imm32(0x76543210));
+            IR::F32 fmasky = ir.BitCast<IR::F32>(ir.Imm32(0xfedcba98));
+            inst.ReplaceUsesWith(ir.CompositeConstruct(fmaskx, fmasky));
+            return;
+        }
+        case IR::Opcode::ImageQueryLod:
+            inst.ReplaceUsesWith(ir.Imm32(1));
+            return;
+        case IR::Opcode::ImageQueryDimensions: {
+            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)), // x
+                                                   ir.Imm32(static_cast<u32>(image.width)), // y
+                                                   ir.Imm32(1), ir.Imm32(1)); // depth, mip
+            inst.ReplaceUsesWith(dims);
+
+            // Track FMask resource to do specialization.
+            descriptors.Add(FMaskResource{
+                .sharp_idx = tsharp,
+            });
+            return;
+        }
+        default:
+            UNREACHABLE_MSG("Can't patch fmask instruction {}", inst.GetOpcode());
+        }
+    }
+
+    u32 image_binding = descriptors.Add(ImageResource{
+        .sharp_idx = tsharp,
+        .is_depth = bool(inst_info.is_depth),
+        .is_atomic = IsImageAtomicInstruction(inst),
+        .is_array = bool(inst_info.is_array),
+        .is_written = is_written,
+    });
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+
+    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
+        // Read sampler sharp.
+        const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
+            ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
+            const IR::Value& handle = producer->Arg(1);
+            // Inline sampler resource.
+            if (handle.IsImmediate()) {
+                LOG_WARNING(Render_Vulkan, "Inline sampler detected");
+                const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
+                const auto binding = descriptors.Add(SamplerResource{
+                    .sharp_idx = std::numeric_limits<u32>::max(),
+                    .inline_sampler = inline_sampler,
+                });
+                return {binding, inline_sampler};
+            }
+            // Normal sampler resource.
+            const auto ssharp_handle = handle.InstRecursive();
+            const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+            const auto ssharp = TrackSharp(ssharp_ud, info);
+            const auto binding = descriptors.Add(SamplerResource{
+                .sharp_idx = ssharp,
+                .associated_image = image_binding,
+                .disable_aniso = disable_aniso,
+            });
+            return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
+        }();
+        // Patch image and sampler handle.
+        inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
+    } else {
+        // Patch image handle.
+        inst.SetArg(0, ir.Imm32(image_binding));
+    }
+}
+
+void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+    // Insert gds binding in the shader if it doesn't exist already.
+    // The buffer is used for append/consume counters.
+    constexpr static AmdGpu::Buffer GdsSharp{.base_address = 1};
+    const u32 binding = descriptors.Add(BufferResource{
+        .used_types = IR::Type::U32,
+        .inline_cbuf = GdsSharp,
+        .is_gds_buffer = true,
+        .is_written = true,
+    });
+
+    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+            return inst;
+        }
+        return std::nullopt;
+    };
+
+    // Attempt to deduce the GDS address of counter at compile time.
+    const u32 gds_addr = [&] {
+        const IR::Value& gds_offset = inst.Arg(0);
+        if (gds_offset.IsImmediate()) {
+            // Nothing to do, offset is known.
+            return gds_offset.U32() & 0xFFFF;
+        }
+        const auto result = IR::BreadthFirstSearch(&inst, pred);
+        ASSERT_MSG(result, "Unable to track M0 source");
+
+        // M0 must be set by some user data register.
+        const IR::Inst* prod = gds_offset.InstRecursive();
+        const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
+        u32 m0_val = info.user_data[ud_reg] >> 16;
+        if (prod->GetOpcode() == IR::Opcode::IAdd32) {
+            m0_val += prod->Arg(1).U32();
+        }
+        return m0_val & 0xFFFF;
+    }();
+
+    // Patch instruction.
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    inst.SetArg(0, ir.Imm32(gds_addr >> 2));
+    inst.SetArg(1, ir.Imm32(binding));
+}
+
+void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+    const auto handle = inst.Arg(0);
+    const auto buffer_res = info.buffers[handle.U32()];
+    const auto buffer = buffer_res.GetSharp(info);
+
     ASSERT(!buffer.add_tid_enable);
 
-    // Address of constant buffer reads can be calculated at IR emittion time.
+    // Address of constant buffer reads can be calculated at IR emission time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
         return;
     }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
 
     const IR::U32 index_stride = ir.Imm32(buffer.index_stride);
     const IR::U32 element_size = ir.Imm32(buffer.element_size);
@@ -366,82 +534,38 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     inst.SetArg(1, address);
 }
 
-void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                                   Descriptors& descriptors) {
-    const IR::Inst* handle = inst.Arg(0).InstRecursive();
-    const IR::Inst* producer = handle->Arg(0).InstRecursive();
-    const auto sharp = TrackSharp(producer, info);
-    const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp);
-    const s32 binding = descriptors.Add(TextureBufferResource{
-        .sharp_idx = sharp,
-        .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
-    });
+void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+    const auto handle = inst.Arg(0);
+    const auto buffer_res = info.texture_buffers[handle.U32()];
+    const auto buffer = buffer_res.GetSharp(info);
 
-    // Replace handle with binding index in texture buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(binding));
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
-}
-
-IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_written, bool is_array) {
-    // When cubemap is written with imageStore it is treated like 2DArray.
-    if (is_written) {
-        return ir.CompositeConstruct(s, t, z);
-    }
-
-    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
-
-    // We need to fix x and y coordinate,
-    // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
-    // We already force the scale value to be 1.0 when handling v_cubema_f32,
-    // here we subtract 1.5 to recover the original value.
-    const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
-    const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    if (is_array) {
-        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
-        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
-        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
-        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
-                                     ir.ConvertIToF(32, 32, false, slice_id));
-    } else {
-        return ir.CompositeConstruct(x, y, z);
-    }
-}
-
-void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                                 Descriptors& descriptors, const IR::Inst* producer,
-                                 const u32 image_binding, const AmdGpu::Image& image) {
-    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
-        ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
-        const IR::Value& handle = producer->Arg(1);
-        // Inline sampler resource.
-        if (handle.IsImmediate()) {
-            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-            const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
-            const auto binding = descriptors.Add(SamplerResource{
-                .sharp_idx = std::numeric_limits<u32>::max(),
-                .inline_sampler = inline_sampler,
-            });
-            return {binding, inline_sampler};
-        }
-        // Normal sampler resource.
-        const auto ssharp_handle = handle.InstRecursive();
-        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-        const auto ssharp = TrackSharp(ssharp_ud, info);
-        const auto binding = descriptors.Add(SamplerResource{
-            .sharp_idx = ssharp,
-            .associated_image = image_binding,
-            .disable_aniso = disable_aniso,
-        });
-        return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
-    }();
-
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
+    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
+        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
+        const auto converted =
+            ApplyWriteNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
+        inst.SetArg(2, converted);
+    } else if (inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32) {
+        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
+        const auto swizzled = ApplySwizzle(ir, texel, buffer.DstSelect());
+        const auto converted =
+            ApplyReadNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
+        inst.ReplaceUsesWith(converted);
+    }
+}
+
+void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
+                          const ImageResource& image_res, const AmdGpu::Image& image) {
+    const auto handle = inst.Arg(0);
+    const auto sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
+    auto sampler = sampler_res.GetSharp(info);
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const IR::U32 handle = ir.Imm32(image_binding | sampler_binding << 16);
+    const auto view_type = image.GetViewType(image_res.is_array);
 
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
@@ -488,7 +612,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(off), ir.Imm32(6), true);
         };
 
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             return read(0);
@@ -497,7 +621,6 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color2DMsaa:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             return ir.CompositeConstruct(read(0), read(8), read(16));
         default:
             UNREACHABLE();
@@ -509,7 +632,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         if (!inst_info.has_derivatives) {
             return {};
         }
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             // du/dx, du/dy
@@ -523,7 +646,6 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
                     ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1))};
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             // (du/dx, dv/dx, dw/dx), (du/dy, dv/dy, dw/dy)
             addr_reg = addr_reg + 6;
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 6), get_addr_reg(addr_reg - 5),
@@ -539,7 +661,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     // Query dimensions of image if needed for normalization.
     // We can't use the image sharp because it could be bound to a different image later.
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(ir.Imm32(image_binding), ir.Imm32(0u), ir.Imm1(false))
+        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
                      : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
@@ -554,7 +676,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     const IR::Value coords = [&] -> IR::Value {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x
             addr_reg = addr_reg + 1;
             return get_coord(addr_reg - 1, 0);
@@ -573,10 +695,6 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_coord(addr_reg - 1, 2));
-        case AmdGpu::ImageType::Cube: // x, y, face
-            addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
-                                  get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
         }
@@ -589,7 +707,7 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                                                  : IR::F32{};
     const IR::F32 lod_clamp = inst_info.has_lod_clamp ? get_addr_reg(addr_reg++) : IR::F32{};
 
-    auto new_inst = [&] -> IR::Value {
+    auto texel = [&] -> IR::Value {
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {
                 return ir.ImageGatherDref(handle, coords, offset, dref, inst_info);
@@ -611,98 +729,35 @@ void PatchImageSampleInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         }
         return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
     }();
-    inst.ReplaceUsesWithAndRemove(new_inst);
+
+    const auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+    inst.ReplaceUsesWith(converted);
 }
 
-void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-        const auto opcode = inst->GetOpcode();
-        if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
-            opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
-            opcode == IR::Opcode::GetUserData) {
-            return inst;
-        }
-        return std::nullopt;
-    };
-    const auto result = IR::BreadthFirstSearch(&inst, pred);
-    ASSERT_MSG(result, "Unable to find image sharp source");
-    const IR::Inst* producer = result.value();
-    const bool has_sampler = producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2;
-    const auto tsharp_handle = has_sampler ? producer->Arg(0).InstRecursive() : producer;
-
-    // Read image sharp.
-    const auto tsharp = TrackSharp(tsharp_handle, info);
-    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
-    if (!image.Valid()) {
-        LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
-        image = AmdGpu::Image::Null();
-    }
-    ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
-    const bool is_read = inst.GetOpcode() == IR::Opcode::ImageRead;
-    const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
-
-    // Patch image instruction if image is FMask.
-    if (image.IsFmask()) {
-        ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
-
-        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::ImageRead:
-        case IR::Opcode::ImageSampleRaw: {
-            IR::F32 fmaskx = ir.BitCast<IR::F32>(ir.Imm32(0x76543210));
-            IR::F32 fmasky = ir.BitCast<IR::F32>(ir.Imm32(0xfedcba98));
-            inst.ReplaceUsesWith(ir.CompositeConstruct(fmaskx, fmasky));
-            return;
-        }
-        case IR::Opcode::ImageQueryLod:
-            inst.ReplaceUsesWith(ir.Imm32(1));
-            return;
-        case IR::Opcode::ImageQueryDimensions: {
-            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)), // x
-                                                   ir.Imm32(static_cast<u32>(image.width)), // y
-                                                   ir.Imm32(1), ir.Imm32(1)); // depth, mip
-            inst.ReplaceUsesWith(dims);
-
-            // Track FMask resource to do specialization.
-            descriptors.Add(FMaskResource{
-                .sharp_idx = tsharp,
-            });
-            return;
-        }
-        default:
-            UNREACHABLE_MSG("Can't patch fmask instruction {}", inst.GetOpcode());
-        }
-    }
-
-    u32 image_binding = descriptors.Add(ImageResource{
-        .sharp_idx = tsharp,
-        .is_depth = bool(inst_info.is_depth),
-        .is_atomic = IsImageAtomicInstruction(inst),
-        .is_array = bool(inst_info.is_array),
-        .is_read = is_read,
-        .is_written = is_written,
-    });
-
-    // Sample instructions must be resolved into a new instruction using address register data.
-    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        PatchImageSampleInstruction(block, inst, info, descriptors, producer, image_binding, image);
-        return;
-    }
-
-    // Patch image handle
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(image_binding));
-
-    // No need to patch coordinates if we are just querying.
+void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+    // Nothing to patch for dimension query.
     if (inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
         return;
     }
 
+    const auto handle = inst.Arg(0);
+    const auto image_res = info.images[handle.U32() & 0xFFFF];
+    auto image = image_res.GetSharp(info);
+
+    // Sample instructions must be handled separately using address register data.
+    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
+        PatchImageSampleArgs(block, inst, info, image_res, image);
+        return;
+    }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const auto view_type = image.GetViewType(image_res.is_array);
+
     // Now that we know the image type, adjust texture coordinate vector.
     IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
@@ -718,153 +773,74 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube: // x, y, face, [lod]
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_written,
-                                   inst_info.is_array),
-                    body->Arg(3)};
         default:
-            UNREACHABLE_MSG("Unknown image type {}", image.GetType());
+            UNREACHABLE_MSG("Unknown image type {}", view_type);
         }
     }();
-    inst.SetArg(1, coords);
 
-    if (inst_info.has_lod) {
-        ASSERT(inst.GetOpcode() == IR::Opcode::ImageRead ||
-               inst.GetOpcode() == IR::Opcode::ImageWrite);
-        ASSERT(image.GetType() != AmdGpu::ImageType::Color2DMsaa &&
-               image.GetType() != AmdGpu::ImageType::Color2DMsaaArray);
-        inst.SetArg(2, arg);
-    } else if ((image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) &&
-               (inst.GetOpcode() == IR::Opcode::ImageRead ||
-                inst.GetOpcode() == IR::Opcode::ImageWrite)) {
-        inst.SetArg(3, arg);
-    }
-}
+    const auto has_ms = view_type == AmdGpu::ImageType::Color2DMsaa ||
+                        view_type == AmdGpu::ImageType::Color2DMsaaArray;
+    ASSERT(!inst_info.has_lod || !has_ms);
+    const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
+    const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
-void PatchTextureBufferInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
-    const auto binding = inst.Arg(0).U32();
-    const auto buffer_res = info.texture_buffers[binding];
-    const auto buffer = buffer_res.GetSharp(info);
-    if (!buffer.Valid()) {
-        // Don't need to swizzle invalid buffer.
-        return;
-    }
-
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        inst.SetArg(2, ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect()));
-    } else if (inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32) {
-        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
-        const auto swizzled = ApplySwizzle(ir, texel, buffer.DstSelect());
-        inst.ReplaceUsesWith(swizzled);
-    }
-}
-
-void PatchImageInterpretation(IR::Block& block, IR::Inst& inst, Info& info) {
-    const auto binding = inst.Arg(0).U32();
-    const auto image_res = info.images[binding & 0xFFFF];
-    const auto image = image_res.GetSharp(info);
-    if (!image.Valid() || !image_res.IsStorage(image)) {
-        // Don't need to swizzle invalid or non-storage image.
-        return;
-    }
-
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
-        inst.SetArg(4, ApplySwizzle(ir, inst.Arg(4), image.DstSelect()));
-    } else if (inst.GetOpcode() == IR::Opcode::ImageRead) {
-        const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-        const auto lod = inst.Arg(2);
-        const auto ms = inst.Arg(3);
-        const auto texel =
-            ir.ImageRead(inst.Arg(0), inst.Arg(1), lod.IsEmpty() ? IR::U32{} : IR::U32{lod},
-                         ms.IsEmpty() ? IR::U32{} : IR::U32{ms}, inst_info);
-        const auto swizzled = ApplySwizzle(ir, texel, image.DstSelect());
-        inst.ReplaceUsesWith(swizzled);
-    }
-}
-
-void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                              Descriptors& descriptors) {
-    // Insert gds binding in the shader if it doesn't exist already.
-    // The buffer is used for append/consume counters.
-    constexpr static AmdGpu::Buffer GdsSharp{.base_address = 1};
-    const u32 binding = descriptors.Add(BufferResource{
-        .used_types = IR::Type::U32,
-        .inline_cbuf = GdsSharp,
-        .is_gds_buffer = true,
-        .is_written = true,
-    });
-
-    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-        if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-            return inst;
+    const auto is_storage = image_res.is_written;
+    if (inst.GetOpcode() == IR::Opcode::ImageRead) {
+        auto texel = ir.ImageRead(handle, coords, lod, ms, inst_info);
+        if (is_storage) {
+            // Storage image requires shader swizzle.
+            texel = ApplySwizzle(ir, texel, image.DstSelect());
         }
-        return std::nullopt;
-    };
+        const auto converted =
+            ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+        inst.ReplaceUsesWith(converted);
+    } else {
+        inst.SetArg(1, coords);
+        if (inst.GetOpcode() == IR::Opcode::ImageWrite) {
+            inst.SetArg(2, lod);
+            inst.SetArg(3, ms);
 
-    // Attempt to deduce the GDS address of counter at compile time.
-    const u32 gds_addr = [&] {
-        const IR::Value& gds_offset = inst.Arg(0);
-        if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            return gds_offset.U32() & 0xFFFF;
+            auto texel = inst.Arg(4);
+            if (is_storage) {
+                // Storage image requires shader swizzle.
+                texel = ApplySwizzle(ir, texel, image.DstSelect());
+            }
+            const auto converted =
+                ApplyWriteNumberConversionVec4(ir, texel, image.GetNumberConversion());
+            inst.SetArg(4, converted);
         }
-        const auto result = IR::BreadthFirstSearch(&inst, pred);
-        ASSERT_MSG(result, "Unable to track M0 source");
-
-        // M0 must be set by some user data register.
-        const IR::Inst* prod = gds_offset.InstRecursive();
-        const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-        u32 m0_val = info.user_data[ud_reg] >> 16;
-        if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-            m0_val += prod->Arg(1).U32();
-        }
-        return m0_val & 0xFFFF;
-    }();
-
-    // Patch instruction.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(gds_addr >> 2));
-    inst.SetArg(1, ir.Imm32(binding));
+    }
 }
 
 void ResourceTrackingPass(IR::Program& program) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
 
+    // Pass 1: Track resource sharps
     Descriptors descriptors{info};
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
-                PatchBufferInstruction(*block, inst, info, descriptors);
-                continue;
-            }
-            if (IsTextureBufferInstruction(inst)) {
-                PatchTextureBufferInstruction(*block, inst, info, descriptors);
-                continue;
-            }
-            if (IsImageInstruction(inst)) {
-                PatchImageInstruction(*block, inst, info, descriptors);
-                continue;
-            }
-            if (IsDataRingInstruction(inst)) {
-                PatchDataRingInstruction(*block, inst, info, descriptors);
+                PatchBufferSharp(*block, inst, info, descriptors);
+            } else if (IsTextureBufferInstruction(inst)) {
+                PatchTextureBufferSharp(*block, inst, info, descriptors);
+            } else if (IsImageInstruction(inst)) {
+                PatchImageSharp(*block, inst, info, descriptors);
+            } else if (IsDataRingInstruction(inst)) {
+                PatchDataRingAccess(*block, inst, info, descriptors);
             }
         }
     }
-    // Second pass to reinterpret format read/write where needed, since we now know
-    // the bindings and their properties.
+
+    // Pass 2: Patch instruction args
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            if (IsTextureBufferInstruction(inst)) {
-                PatchTextureBufferInterpretation(*block, inst, info);
-                continue;
-            }
-            if (IsImageInstruction(inst)) {
-                PatchImageInterpretation(*block, inst, info);
+            if (IsBufferInstruction(inst)) {
+                PatchBufferArgs(*block, inst, info);
+            } else if (IsTextureBufferInstruction(inst)) {
+                PatchTextureBufferArgs(*block, inst, info);
+            } else if (IsImageInstruction(inst)) {
+                PatchImageArgs(*block, inst, info);
             }
         }
     }

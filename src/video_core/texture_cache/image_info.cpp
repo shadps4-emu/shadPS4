@@ -37,7 +37,6 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
         return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
-    case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
@@ -130,7 +129,6 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
-    props.is_cube = image.GetType() == AmdGpu::ImageType::Cube;
     props.is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
     props.is_pow2 = image.pow2pad;
     props.is_block = IsBlockCoded();
@@ -139,7 +137,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     size.depth = props.is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
-    resources.layers = image.NumLayers(desc.is_array);
+    resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
     num_bits = NumBits(image.GetDataFmt());
 

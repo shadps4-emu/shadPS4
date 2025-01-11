@@ -11,7 +11,6 @@ path = [
     "dist/net.shadps4.shadPS4.desktop",
     "dist/net.shadps4.shadPS4_metadata.pot",
     "dist/net.shadps4.shadPS4.metainfo.xml",
-    "dist/net.shadps4.shadPS4.releases.xml",
     "documents/changelog.md",
     "documents/Quickstart/2.png",
     "documents/Screenshots/*",

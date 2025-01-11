@@ -336,6 +336,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/share_play/shareplay.h
                 src/core/libraries/razor_cpu/razor_cpu.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
+                src/core/libraries/mouse/mouse.cpp
+                src/core/libraries/mouse/mouse.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -413,7 +415,9 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec_impl.h
 )
 
-set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
+set(NP_LIBS src/core/libraries/np_common/np_common.cpp
+            src/core/libraries/np_common/np_common.h
+            src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
             src/core/libraries/np_score/np_score.h
@@ -1040,7 +1044,6 @@ install(TARGETS shadps4 BUNDLE DESTINATION .)
 
 if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES "dist/net.shadps4.shadPS4.desktop" DESTINATION "share/applications")
-    install(FILES "dist/net.shadps4.shadPS4.releases.xml" DESTINATION "share/metainfo/releases")
     install(FILES "dist/net.shadps4.shadPS4.metainfo.xml" DESTINATION "share/metainfo")
     install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "net.shadps4.shadPS4.png")
     install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")

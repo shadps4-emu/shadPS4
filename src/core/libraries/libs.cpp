@@ -18,11 +18,13 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
+#include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
@@ -71,6 +73,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
+    Libraries::NpCommon::RegisterlibSceNpCommon(sym);
     Libraries::NpManager::RegisterlibSceNpManager(sym);
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
@@ -97,6 +100,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Move::RegisterlibSceMove(sym);
     Libraries::Fiber::RegisterlibSceFiber(sym);
     Libraries::JpegEnc::RegisterlibSceJpegEnc(sym);
+    Libraries::Mouse::RegisterlibSceMouse(sym);
 }
 
 } // namespace Libraries

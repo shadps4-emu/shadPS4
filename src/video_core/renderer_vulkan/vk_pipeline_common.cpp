@@ -6,6 +6,7 @@
 #include "shader_recompiler/info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -53,6 +54,21 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers&
     }
     instance.GetDevice().updateDescriptorSets(set_writes, {});
     cmdbuf.bindDescriptorSets(bind_point, *pipeline_layout, 0, desc_set, {});
+}
+
+std::string Pipeline::GetDebugString() const {
+    std::string stage_desc;
+    for (const auto& stage : stages) {
+        if (stage) {
+            const auto shader_name = PipelineCache::GetShaderName(stage->stage, stage->pgm_hash);
+            if (stage_desc.empty()) {
+                stage_desc = shader_name;
+            } else {
+                stage_desc = fmt::format("{},{}", stage_desc, shader_name);
+            }
+        }
+    }
+    return stage_desc;
 }
 
 } // namespace Vulkan
