@@ -227,11 +227,13 @@ struct Image {
     }
 
     [[nodiscard]] u32 NumLayers() const noexcept {
+        // Depth is the number of layers for Array images.
         u32 slices = depth + 1;
-        const auto img_type = static_cast<ImageType>(type);
-        if (img_type == ImageType::Color3D) {
+        if (GetType() == ImageType::Color3D) {
+            // Depth is the actual texture depth for 3D images.
             slices = 1;
-        } else if (img_type == ImageType::Cube) {
+        } else if (IsCube()) {
+            // Depth is the number of full cubes for Cube images.
             slices *= 6;
         }
         if (pow2pad) {
@@ -315,7 +317,9 @@ struct Image {
         case ImageType::Color2DMsaaArray:
             return 1;
         default:
-            return last_level - base_level + 1;
+            // Constrain to actual number of available levels.
+            const auto max_level = std::min<u32>(last_level + 1, NumLevels());
+            return max_level > base_level ? max_level - base_level : 1;
         }
     }
 
@@ -327,7 +331,9 @@ struct Image {
         case ImageType::Color3D:
             return 1;
         default:
-            return last_array - base_array + 1;
+            // Constrain to actual number of available layers.
+            const auto max_array = std::min<u32>(last_array + 1, NumLayers());
+            return max_array > base_array ? max_array - base_array : 1;
         }
     }
 };
