@@ -558,11 +558,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>奖杯密钥</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>奖杯</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -782,7 +782,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>奖杯密钥：\n用于解密奖杯的密钥。必须从您的越狱主机中获得。\n仅包含十六进制字符。</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
