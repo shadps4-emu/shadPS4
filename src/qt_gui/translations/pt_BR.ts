@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Abrir pasta shadPS4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
