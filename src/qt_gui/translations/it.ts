@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Abilita Cartella Aggiornamenti Separata</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Mostra la dimensione del gioco nell'elenco</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Mostra Schermata Iniziale</translation>
