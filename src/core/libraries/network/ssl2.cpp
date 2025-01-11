@@ -9,284 +9,284 @@
 namespace Libraries::Ssl2 {
 
 int PS4_SYSV_ABI CA_MGMT_extractKeyBlobEx() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI CA_MGMT_extractPublicKeyInfo() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI CA_MGMT_freeKeyBlob() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI CRYPTO_initAsymmetricKey() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI CRYPTO_uninitAsymmetricKey() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI RSA_verifySignature() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslCheckRecvPending() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslClose() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslConnect() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslCreateConnection() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslCreateSslConnection() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDeleteConnection() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDeleteSslConnection() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDisableOption() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDisableOptionInternal() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDisableOptionInternalInsecure() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslDisableVerifyOption() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslEnableOption() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslEnableOptionInternal() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslEnableVerifyOption() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslFreeCaCerts() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslFreeCaList() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslFreeSslCertName() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetAlpnSelected() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetCaCerts() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetCaList() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetFingerprint() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetIssuerName() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetMemoryPoolStats() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetNameEntryCount() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetNameEntryInfo() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetNanoSSLModuleId() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetNotAfter() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetNotBefore() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetPeerCert() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetPem() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetSerialNumber() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetSslError() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslGetSubjectName() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslInit(std::size_t poolSize) {
-    LOG_ERROR(Lib_Ssl, "(DUMMY) called poolSize = {}", poolSize);
+    LOG_ERROR(Lib_Ssl2, "(DUMMY) called poolSize = {}", poolSize);
     // return a value >1
     static int id = 0;
     return ++id;
 }
 
 int PS4_SYSV_ABI sceSslLoadCert() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslLoadRootCACert() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslRead() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslRecv() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslReuseConnection() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslSend() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslSetAlpn() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslSetMinSslVersion() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslSetSslVersion() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslSetVerifyCallback() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslTerm() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslUnloadCert() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSslWrite() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI VLONG_freeVlongQueue() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI Func_22E76E60BC0587D7() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI Func_28F8791A771D39C7() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
