@@ -15,9 +15,7 @@ int PS4_SYSV_ABI sceNpCmpNpId(OrbisNpId* np_id1, OrbisNpId* np_id2) {
     }
 
     // Compare data
-    if (std::strncmp(reinterpret_cast<char*>(np_id1->handle.data),
-                     reinterpret_cast<char*>(np_id2->handle.data),
-                     ORBIS_NP_ONLINEID_MAX_LENGTH) != 0) {
+    if (std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH) != 0) {
         return ORBIS_NP_UTIL_ERROR_NOT_MATCH;
     }
 
@@ -45,8 +43,7 @@ int PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
 
     // Compare data
     u32 compare =
-        std::strncmp(reinterpret_cast<char*>(np_id1->handle.data),
-                     reinterpret_cast<char*>(np_id2->handle.data), ORBIS_NP_ONLINEID_MAX_LENGTH);
+        std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     if (compare < 0) {
         *out_result = -1;
         return ORBIS_OK;
@@ -86,9 +83,7 @@ int PS4_SYSV_ABI sceNpCmpOnlineId(OrbisNpOnlineId* online_id1, OrbisNpOnlineId* 
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    if (std::strncmp(reinterpret_cast<char*>(online_id1->data),
-                     reinterpret_cast<char*>(online_id2->data),
-                     ORBIS_NP_ONLINEID_MAX_LENGTH) != 0) {
+    if (std::strncmp(online_id1->data, online_id2->data, ORBIS_NP_ONLINEID_MAX_LENGTH) != 0) {
         return ORBIS_NP_UTIL_ERROR_NOT_MATCH;
     }
     return ORBIS_OK;

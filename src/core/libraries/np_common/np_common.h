@@ -14,7 +14,7 @@ namespace Libraries::NpCommon {
 constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {
-    s8 data[ORBIS_NP_ONLINEID_MAX_LENGTH];
+    char data[ORBIS_NP_ONLINEID_MAX_LENGTH];
     s8 term;
     s8 dummy[3];
 };
