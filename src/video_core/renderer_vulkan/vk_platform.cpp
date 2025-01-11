@@ -137,6 +137,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     // Add the windowing system specific extension
     std::vector<const char*> extensions;
     extensions.reserve(7);
+    extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
 
     switch (window_type) {
     case Frontend::WindowSystemType::Headless:
@@ -282,6 +283,9 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
     const char* log_path = crash_diagnostic_path.c_str();
     vk::Bool32 enable_force_barriers = vk::True;
+#ifdef __APPLE__
+    const vk::Bool32 mvk_debug_mode = enable_crash_diagnostic ? vk::True : vk::False;
+#endif
 
     const std::array layer_setings = {
         vk::LayerSettingEXT{
@@ -347,6 +351,17 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
             .valueCount = 1,
             .pValues = &enable_force_barriers,
         },
+#ifdef __APPLE__
+        // MoltenVK debug mode turns on additional device loss error details, so
+        // use the crash diagnostic setting as an indicator of whether to turn it on.
+        vk::LayerSettingEXT{
+            .pLayerName = "MoltenVK",
+            .pSettingName = "MVK_CONFIG_DEBUG",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &mvk_debug_mode,
+        }
+#endif
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <boost/container/static_vector.hpp>
 #include <xxhash.h>
 
 #include "common/types.h"
@@ -27,12 +28,16 @@ class DescriptorHeap;
 
 using Liverpool = AmdGpu::Liverpool;
 
+template <typename T>
+using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
+
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     u32 num_color_attachments;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
     std::array<AmdGpu::NumberFormat, Liverpool::NumColorBuffers> color_num_formats;
-    std::array<Liverpool::ColorBuffer::SwapMode, Liverpool::NumColorBuffers> mrt_swizzles;
+    std::array<AmdGpu::NumberConversion, Liverpool::NumColorBuffers> color_num_conversions;
+    std::array<AmdGpu::CompMapping, Liverpool::NumColorBuffers> color_swizzles;
     vk::Format depth_format;
     vk::Format stencil_format;
 
@@ -98,6 +103,11 @@ public:
                key.prim_type == AmdGpu::PrimitiveType::RectList ||
                key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
+
+    /// Gets the attributes and bindings for vertex inputs.
+    template <typename Attribute, typename Binding>
+    void GetVertexInputs(VertexInputs<Attribute>& attributes, VertexInputs<Binding>& bindings,
+                         VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
 
 private:
     void BuildDescSetLayout();

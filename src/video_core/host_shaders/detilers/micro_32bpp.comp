@@ -20,7 +20,7 @@ layout(push_constant) uniform image_info {
 } info;
 
 // Inverse morton LUT, small enough to fit into K$
-uint rmort[16] = {
+const uint rmort[16] = {
     0x11011000, 0x31213020,
     0x13031202, 0x33233222,
     0x51415040, 0x71617060,
@@ -33,14 +33,11 @@ uint rmort[16] = {
 };
 
 #define MICRO_TILE_DIM      (8)
+#define TEXELS_PER_ELEMENT  (1)
 
 void main() {
-    uint block_ofs = 4 * gl_GlobalInvocationID.x;
-    uint p0 = in_data[block_ofs + 0];
-    uint p1 = in_data[block_ofs + 1];
-    uint p2 = in_data[block_ofs + 2];
-    uint p3 = in_data[block_ofs + 3];
-
+    uint tile_base = gl_GlobalInvocationID.x - gl_LocalInvocationID.x; // WG*16
+    uint p0 = in_data[gl_GlobalInvocationID.x];
     uint bit_ofs = 8 * (gl_LocalInvocationID.x % 4);
     uint packed_pos = rmort[gl_LocalInvocationID.x >> 2] >> bit_ofs;
     uint col = bitfieldExtract(packed_pos, 4, 4);
@@ -48,16 +45,13 @@ void main() {
 
     uint mip = 0;
     for (int m = 0; m < info.num_levels; ++m) {
-        mip += (gl_GlobalInvocationID.x * 16) >= info.sizes[m] ? 1 : 0;
+        mip += (gl_GlobalInvocationID.x * 4) >= info.sizes[m] ? 1 : 0;
     }
 
-    uint tiles_per_pitch = max(((info.pitch >> mip) / MICRO_TILE_DIM), 1u) * 4;
-    uint target_tile_x = 4 * gl_WorkGroupID.x % tiles_per_pitch;
-    uint target_tile_y = 4 * gl_WorkGroupID.x / tiles_per_pitch;
-    uint dw_ofs_x = (target_tile_x * MICRO_TILE_DIM) + 4 * col;
-    uint dw_ofs_y = ((target_tile_y * tiles_per_pitch) * 64u) + ((row * tiles_per_pitch) * MICRO_TILE_DIM);
+    uint tiles_per_pitch = max((info.pitch >> mip) / MICRO_TILE_DIM, 1);
+    uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
+    uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
+    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + col;
+    uint dw_ofs_y = (target_tile_y * tiles_per_pitch * 64) + row * tiles_per_pitch * MICRO_TILE_DIM;
     out_data[dw_ofs_x + dw_ofs_y] = p0;
-    out_data[dw_ofs_x + dw_ofs_y + 1] = p1; 
-    out_data[dw_ofs_x + dw_ofs_y + 2] = p2; 
-    out_data[dw_ofs_x + dw_ofs_y + 3] = p3; 
 }

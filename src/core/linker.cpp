@@ -5,6 +5,7 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
@@ -65,20 +66,40 @@ void Linker::Execute() {
         Relocate(m.get());
     }
 
-    // Configure used flexible memory size.
-    if (const auto* proc_param = GetProcParam()) {
-        if (proc_param->size >=
-            offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
-            if (const auto* mem_param = proc_param->mem_param) {
-                if (mem_param->size >=
-                    offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
-                    if (const auto* flexible_size = mem_param->flexible_memory_size) {
-                        memory->SetupMemoryRegions(*flexible_size);
-                    }
+    // Configure the direct and flexible memory regions.
+    u64 fmem_size = SCE_FLEXIBLE_MEMORY_SIZE;
+    bool use_extended_mem1 = true, use_extended_mem2 = true;
+
+    const auto* proc_param = GetProcParam();
+    ASSERT(proc_param);
+
+    Core::OrbisKernelMemParam mem_param{};
+    if (proc_param->size >= offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
+        if (proc_param->mem_param) {
+            mem_param = *proc_param->mem_param;
+            if (mem_param.size >=
+                offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
+                if (const auto* flexible_size = mem_param.flexible_memory_size) {
+                    fmem_size = *flexible_size + SCE_FLEXIBLE_MEMORY_BASE;
                 }
             }
         }
     }
+
+    if (mem_param.size < offsetof(OrbisKernelMemParam, extended_memory_1) + sizeof(u64*)) {
+        mem_param.extended_memory_1 = nullptr;
+    }
+    if (mem_param.size < offsetof(OrbisKernelMemParam, extended_memory_2) + sizeof(u64*)) {
+        mem_param.extended_memory_2 = nullptr;
+    }
+
+    const u64 sdk_ver = proc_param->sdk_version;
+    if (sdk_ver < Common::ElfInfo::FW_50) {
+        use_extended_mem1 = mem_param.extended_memory_1 ? *mem_param.extended_memory_1 : false;
+        use_extended_mem2 = mem_param.extended_memory_2 ? *mem_param.extended_memory_2 : false;
+    }
+
+    memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
     main_thread.Run([this, module](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");

@@ -84,6 +84,7 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
 }
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
+    LOG_DEBUG(Render_Vulkan, "Recreate the swapchain: width={} height={}", width_, height_);
     Create(width_, height_, surface);
 }
 

@@ -168,7 +168,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = {
                 .num_format = graphics_key.color_num_formats[i],
-                .mrt_swizzle = static_cast<Shader::MrtSwizzle>(graphics_key.mrt_swizzles[i]),
+                .num_conversion = graphics_key.color_num_conversions[i],
+                .swizzle = graphics_key.color_swizzles[i],
             };
         }
         break;
@@ -203,6 +204,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_explicit_workgroup_layout = true,
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
+        .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
@@ -302,9 +304,10 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
     key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
+    key.color_num_conversions.fill(AmdGpu::NumberConversion::None);
     key.blend_controls.fill({});
     key.write_masks.fill({});
-    key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
+    key.color_swizzles.fill({});
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     key.patch_control_points = 0;
@@ -327,14 +330,11 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
 
-        const auto base_format =
-            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         key.color_formats[remapped_cb] =
-            LiverpoolToVK::AdjustColorBufferFormat(base_format, col_buf.info.comp_swap.Value());
-        key.color_num_formats[remapped_cb] = col_buf.NumFormat();
-        if (base_format == key.color_formats[remapped_cb]) {
-            key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
-        }
+            LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
+        key.color_num_formats[remapped_cb] = col_buf.GetNumberFmt();
+        key.color_num_conversions[remapped_cb] = col_buf.GetNumberConversion();
+        key.color_swizzles[remapped_cb] = col_buf.Swizzle();
     }
 
     fetch_shader = std::nullopt;
@@ -420,17 +420,17 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     }
 
-    const auto vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
+    const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
     if (vs_info && fetch_shader && !instance.IsVertexInputDynamicState()) {
+        // Without vertex input dynamic state, the pipeline needs to specialize on format.
+        // Stride will still be handled outside the pipeline using dynamic state.
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
             if (attrib.UsesStepRates()) {
+                // Skip attribute binding as the data will be pulled by shader.
                 continue;
             }
             const auto& buffer = attrib.GetSharp(*vs_info);
-            if (buffer.GetSize() == 0) {
-                continue;
-            }
             ASSERT(vertex_binding < MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
@@ -450,7 +450,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
             key.color_formats[remapped_cb] = vk::Format::eUndefined;
-            key.mrt_swizzles[remapped_cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+            key.color_swizzles[remapped_cb] = {};
             ++remapped_cb;
             continue;
         }
@@ -497,7 +497,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         module = CompileSPV(spv, instance.GetDevice());
     }
 
-    const auto name = fmt::format("{}_{:#018x}_{}", info.stage, info.pgm_hash, perm_idx);
+    const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
@@ -572,6 +572,14 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
     return new_module;
 }
 
+std::string PipelineCache::GetShaderName(Shader::Stage stage, u64 hash,
+                                         std::optional<size_t> perm) {
+    if (perm) {
+        return fmt::format("{}_{:#018x}_{}", stage, hash, *perm);
+    }
+    return fmt::format("{}_{:#018x}", stage, hash);
+}
+
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
                                size_t perm_idx, std::string_view ext) {
     if (!Config::dumpShaders()) {
@@ -583,7 +591,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
 }
@@ -597,7 +605,7 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     if (!std::filesystem::exists(patch_dir)) {
         std::filesystem::create_directories(patch_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto filepath = patch_dir / filename;
     if (!std::filesystem::exists(filepath)) {
         return {};

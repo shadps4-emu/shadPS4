@@ -31,7 +31,8 @@ struct BufferSpecialization {
 
 struct TextureBufferSpecialization {
     bool is_integer = false;
-    u32 dst_select = 0;
+    AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
@@ -40,13 +41,10 @@ struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
     bool is_storage = false;
-    u32 dst_select = 0;
+    AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
-    bool operator==(const ImageSpecialization& other) const {
-        return type == other.type && is_integer == other.is_integer &&
-               is_storage == other.is_storage &&
-               (dst_select != 0 ? dst_select == other.dst_select : true);
-    }
+    auto operator<=>(const ImageSpecialization&) const = default;
 };
 
 struct FMaskSpecialization {
@@ -111,15 +109,17 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.dst_select = sharp.DstSelect();
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
-                         spec.type = sharp.GetBoundType();
+                         spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         spec.is_storage = desc.IsStorage(sharp);
+                         spec.is_storage = desc.is_written;
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {

@@ -47,13 +47,26 @@ static IR::Condition MakeCondition(const GcnInst& inst) {
     }
 }
 
-static bool IgnoresExecMask(Opcode opcode) {
-    switch (opcode) {
-    case Opcode::V_WRITELANE_B32:
+static bool IgnoresExecMask(const GcnInst& inst) {
+    // EXEC mask does not affect scalar instructions or branches.
+    switch (inst.category) {
+    case InstCategory::ScalarALU:
+    case InstCategory::ScalarMemory:
+    case InstCategory::FlowControl:
         return true;
     default:
-        return false;
+        break;
     }
+    // Read/Write Lane instructions are not affected either.
+    switch (inst.opcode) {
+    case Opcode::V_READLANE_B32:
+    case Opcode::V_WRITELANE_B32:
+    case Opcode::V_READFIRSTLANE_B32:
+        return true;
+    default:
+        break;
+    }
+    return false;
 }
 
 static constexpr size_t LabelReserveSize = 32;
@@ -147,8 +160,7 @@ void CFG::EmitDivergenceLabels() {
                 // If all instructions in the scope ignore exec masking, we shouldn't insert a
                 // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
-                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask,
-                                         &GcnInst::opcode)) {
+                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
                     // Add a label to the instruction right after the open scope call.
                     // It is the start of a new basic block.
                     const auto& save_inst = inst_list[curr_begin];

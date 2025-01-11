@@ -89,6 +89,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
 Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index);
 void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index);
+Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
+                                    Id comp_index);
 Id EmitGetPatch(EmitContext& ctx, IR::Patch patch);
 void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value);
 void EmitSetFragColor(EmitContext& ctx, u32 index, u32 component, Id value);
@@ -118,33 +120,48 @@ Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicXor32(EmitContext& ctx, Id offset, Id value);
-Id EmitCompositeConstructU32x2(EmitContext& ctx, Id e1, Id e2);
-Id EmitCompositeConstructU32x3(EmitContext& ctx, Id e1, Id e2, Id e3);
-Id EmitCompositeConstructU32x4(EmitContext& ctx, Id e1, Id e2, Id e3, Id e4);
+Id EmitCompositeConstructU32x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2);
+Id EmitCompositeConstructU32x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3);
+Id EmitCompositeConstructU32x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3, Id e4);
 Id EmitCompositeExtractU32x2(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractU32x3(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractU32x4(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeInsertU32x2(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertU32x3(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertU32x4(EmitContext& ctx, Id composite, Id object, u32 index);
-Id EmitCompositeConstructF16x2(EmitContext& ctx, Id e1, Id e2);
-Id EmitCompositeConstructF16x3(EmitContext& ctx, Id e1, Id e2, Id e3);
-Id EmitCompositeConstructF16x4(EmitContext& ctx, Id e1, Id e2, Id e3, Id e4);
+Id EmitCompositeShuffleU32x2(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1);
+Id EmitCompositeShuffleU32x3(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2);
+Id EmitCompositeShuffleU32x4(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2, u32 comp3);
+Id EmitCompositeConstructF16x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2);
+Id EmitCompositeConstructF16x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3);
+Id EmitCompositeConstructF16x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3, Id e4);
 Id EmitCompositeExtractF16x2(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractF16x3(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractF16x4(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeInsertF16x2(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF16x3(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF16x4(EmitContext& ctx, Id composite, Id object, u32 index);
-Id EmitCompositeConstructF32x2(EmitContext& ctx, Id e1, Id e2);
-Id EmitCompositeConstructF32x3(EmitContext& ctx, Id e1, Id e2, Id e3);
-Id EmitCompositeConstructF32x4(EmitContext& ctx, Id e1, Id e2, Id e3, Id e4);
+Id EmitCompositeShuffleF16x2(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1);
+Id EmitCompositeShuffleF16x3(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2);
+Id EmitCompositeShuffleF16x4(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2, u32 comp3);
+Id EmitCompositeConstructF32x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2);
+Id EmitCompositeConstructF32x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3);
+Id EmitCompositeConstructF32x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3, Id e4);
 Id EmitCompositeExtractF32x2(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractF32x3(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeExtractF32x4(EmitContext& ctx, Id composite, u32 index);
 Id EmitCompositeInsertF32x2(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF32x3(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF32x4(EmitContext& ctx, Id composite, Id object, u32 index);
+Id EmitCompositeShuffleF32x2(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1);
+Id EmitCompositeShuffleF32x3(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2);
+Id EmitCompositeShuffleF32x4(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2, u32 comp3);
 void EmitCompositeConstructF64x2(EmitContext& ctx);
 void EmitCompositeConstructF64x3(EmitContext& ctx);
 void EmitCompositeConstructF64x4(EmitContext& ctx);
@@ -154,6 +171,11 @@ void EmitCompositeExtractF64x4(EmitContext& ctx);
 Id EmitCompositeInsertF64x2(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF64x3(EmitContext& ctx, Id composite, Id object, u32 index);
 Id EmitCompositeInsertF64x4(EmitContext& ctx, Id composite, Id object, u32 index);
+Id EmitCompositeShuffleF64x2(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1);
+Id EmitCompositeShuffleF64x3(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2);
+Id EmitCompositeShuffleF64x4(EmitContext& ctx, Id composite1, Id composite2, u32 comp0, u32 comp1,
+                             u32 comp2, u32 comp3);
 Id EmitSelectU1(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 Id EmitSelectU8(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 Id EmitSelectU16(EmitContext& ctx, Id cond, Id true_value, Id false_value);
@@ -304,10 +326,12 @@ Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id
 Id EmitBitFieldUExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count);
 Id EmitBitReverse32(EmitContext& ctx, Id value);
 Id EmitBitCount32(EmitContext& ctx, Id value);
+Id EmitBitCount64(EmitContext& ctx, Id value);
 Id EmitBitwiseNot32(EmitContext& ctx, Id value);
 Id EmitFindSMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb32(EmitContext& ctx, Id value);
 Id EmitFindILsb32(EmitContext& ctx, Id value);
+Id EmitFindILsb64(EmitContext& ctx, Id value);
 Id EmitSMin32(EmitContext& ctx, Id a, Id b);
 Id EmitUMin32(EmitContext& ctx, Id a, Id b);
 Id EmitSMax32(EmitContext& ctx, Id a, Id b);
@@ -318,7 +342,8 @@ Id EmitSLessThan32(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSLessThan64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThan32(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThan64(EmitContext& ctx, Id lhs, Id rhs);
-Id EmitIEqual(EmitContext& ctx, Id lhs, Id rhs);
+Id EmitIEqual32(EmitContext& ctx, Id lhs, Id rhs);
+Id EmitIEqual64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSLessThanEqual(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitULessThanEqual(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitSGreaterThan(EmitContext& ctx, Id lhs, Id rhs);
@@ -414,6 +439,8 @@ Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitCubeFaceCoord(EmitContext& ctx, IR::Inst* inst, Id cube_coords);
+Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords);
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);

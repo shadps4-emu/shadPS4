@@ -54,6 +54,8 @@ public:
         : m_p_begin(begin), m_p_current(m_p_begin), m_size(size) {}
     AjmBatchBuffer(std::span<u8> data)
         : m_p_begin(data.data()), m_p_current(m_p_begin), m_size(data.size()) {}
+    AjmBatchBuffer(AjmChunkBuffer& buffer)
+        : AjmBatchBuffer(reinterpret_cast<u8*>(buffer.p_address), buffer.size) {}
 
     AjmBatchBuffer SubBuffer(size_t size = s_dynamic_extent) {
         auto current = m_p_current;
@@ -113,6 +115,88 @@ private:
     size_t m_size{};
 };
 
+AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
+    std::optional<AjmJobFlags> job_flags = {};
+    std::optional<AjmChunkBuffer> input_control_buffer = {};
+    std::optional<AjmChunkBuffer> output_control_buffer = {};
+
+    AjmJob job;
+    job.instance_id = instance_id;
+
+    while (!batch_buffer.IsEmpty()) {
+        auto& header = batch_buffer.Peek<AjmChunkHeader>();
+        switch (header.ident) {
+        case Identifier::AjmIdentInputControlBuf: {
+            ASSERT_MSG(!input_control_buffer.has_value(),
+                       "Only one instance of input control buffer is allowed per job");
+            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            if (buffer.p_address != nullptr && buffer.size != 0) {
+                input_control_buffer = buffer;
+            }
+            break;
+        }
+        case Identifier::AjmIdentControlFlags: {
+            ASSERT_MSG(!job_flags.has_value(), "Only one instance of job flags is allowed per job");
+            auto& chunk = batch_buffer.Consume<AjmChunkFlags>();
+            job_flags = AjmJobFlags{
+                .raw = (u64(chunk.header.payload) << 32) + chunk.flags_low,
+            };
+            break;
+        }
+        case Identifier::AjmIdentReturnAddressBuf: {
+            // Ignore return address buffers.
+            batch_buffer.Skip<AjmChunkBuffer>();
+            break;
+        }
+        case Identifier::AjmIdentOutputControlBuf: {
+            ASSERT_MSG(!output_control_buffer.has_value(),
+                       "Only one instance of output control buffer is allowed per job");
+            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
+            if (buffer.p_address != nullptr && buffer.size != 0) {
+                output_control_buffer = buffer;
+            }
+            break;
+        }
+        default:
+            UNREACHABLE_MSG("Unknown chunk: {}", header.ident);
+        }
+    }
+
+    ASSERT(job_flags.has_value());
+    job.flags = job_flags.value();
+
+    AjmStatisticsJobFlags flags(job.flags);
+    if (input_control_buffer.has_value()) {
+        AjmBatchBuffer input_batch(input_control_buffer.value());
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Engine)) {
+            job.input.statistics_engine_parameters =
+                input_batch.Consume<AjmSidebandStatisticsEngineParameters>();
+        }
+    }
+
+    if (output_control_buffer.has_value()) {
+        AjmBatchBuffer output_batch(output_control_buffer.value());
+        job.output.p_result = &output_batch.Consume<AjmSidebandResult>();
+        *job.output.p_result = AjmSidebandResult{};
+
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Engine)) {
+            job.output.p_engine = &output_batch.Consume<AjmSidebandStatisticsEngine>();
+            *job.output.p_engine = AjmSidebandStatisticsEngine{};
+        }
+        if (True(flags.statistics_flags & AjmStatisticsFlags::EnginePerCodec)) {
+            job.output.p_engine_per_codec =
+                &output_batch.Consume<AjmSidebandStatisticsEnginePerCodec>();
+            *job.output.p_engine_per_codec = AjmSidebandStatisticsEnginePerCodec{};
+        }
+        if (True(flags.statistics_flags & AjmStatisticsFlags::Memory)) {
+            job.output.p_memory = &output_batch.Consume<AjmSidebandStatisticsMemory>();
+            *job.output.p_memory = AjmSidebandStatisticsMemory{};
+        }
+    }
+
+    return job;
+}
+
 AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
     std::optional<AjmJobFlags> job_flags = {};
     std::optional<AjmChunkBuffer> input_control_buffer = {};
@@ -155,15 +239,6 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
             batch_buffer.Skip<AjmChunkBuffer>();
             break;
         }
-        case Identifier::AjmIdentInlineBuf: {
-            ASSERT_MSG(!output_control_buffer.has_value(),
-                       "Only one instance of inline buffer is allowed per job");
-            const auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
-            if (buffer.p_address != nullptr && buffer.size != 0) {
-                inline_buffer = buffer;
-            }
-            break;
-        }
         case Identifier::AjmIdentOutputRunBuf: {
             auto& buffer = batch_buffer.Consume<AjmChunkBuffer>();
             u8* p_begin = reinterpret_cast<u8*>(buffer.p_address);
@@ -186,13 +261,12 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         }
     }
 
+    ASSERT(job_flags.has_value());
     job.flags = job_flags.value();
 
     // Initialize sideband input parameters
     if (input_control_buffer.has_value()) {
-        AjmBatchBuffer input_batch(reinterpret_cast<u8*>(input_control_buffer->p_address),
-                                   input_control_buffer->size);
-
+        AjmBatchBuffer input_batch(input_control_buffer.value());
         const auto sideband_flags = job_flags->sideband_flags;
         if (True(sideband_flags & AjmJobSidebandFlags::Format) && !input_batch.IsEmpty()) {
             job.input.format = input_batch.Consume<AjmSidebandFormat>();
@@ -202,6 +276,9 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         }
 
         const auto control_flags = job_flags.value().control_flags;
+        if (True(control_flags & AjmJobControlFlags::Resample)) {
+            job.input.resample_parameters = input_batch.Consume<AjmSidebandResampleParameters>();
+        }
         if (True(control_flags & AjmJobControlFlags::Initialize)) {
             job.input.init_params = AjmDecAt9InitializeParameters{};
             std::memcpy(&job.input.init_params.value(), input_batch.GetCurrent(),
@@ -209,21 +286,9 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
         }
     }
 
-    if (inline_buffer.has_value()) {
-        AjmBatchBuffer inline_batch(reinterpret_cast<u8*>(inline_buffer->p_address),
-                                    inline_buffer->size);
-
-        const auto control_flags = job_flags.value().control_flags;
-        if (True(control_flags & AjmJobControlFlags::Resample)) {
-            job.input.resample_parameters = inline_batch.Consume<AjmSidebandResampleParameters>();
-        }
-    }
-
     // Initialize sideband output parameters
     if (output_control_buffer.has_value()) {
-        AjmBatchBuffer output_batch(reinterpret_cast<u8*>(output_control_buffer->p_address),
-                                    output_control_buffer->size);
-
+        AjmBatchBuffer output_batch(output_control_buffer.value());
         job.output.p_result = &output_batch.Consume<AjmSidebandResult>();
         *job.output.p_result = AjmSidebandResult{};
 
@@ -260,9 +325,21 @@ std::shared_ptr<AjmBatch> AjmBatch::FromBatchBuffer(std::span<u8> data) {
     AjmBatchBuffer buffer(data);
     while (!buffer.IsEmpty()) {
         auto& job_chunk = buffer.Consume<AjmChunkJob>();
+        if (job_chunk.header.ident == AjmIdentInlineBuf) {
+            // Inline buffers are used to store sideband input data.
+            // We should just skip them as they do not require any special handling.
+            buffer.Advance(job_chunk.size);
+            continue;
+        }
         ASSERT(job_chunk.header.ident == AjmIdentJob);
         auto instance_id = job_chunk.header.payload;
-        batch->jobs.push_back(AjmJobFromBatchBuffer(instance_id, buffer.SubBuffer(job_chunk.size)));
+        if (instance_id == AJM_INSTANCE_STATISTICS) {
+            batch->jobs.push_back(
+                AjmStatisticsJobFromBatchBuffer(instance_id, buffer.SubBuffer(job_chunk.size)));
+        } else {
+            batch->jobs.push_back(
+                AjmJobFromBatchBuffer(instance_id, buffer.SubBuffer(job_chunk.size)));
+        }
     }
 
     return batch;

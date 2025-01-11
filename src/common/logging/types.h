@@ -57,8 +57,9 @@ enum class Class : u8 {
     Lib_MsgDlg,            ///< The LibSceMsgDialog implementation.
     Lib_AudioOut,          ///< The LibSceAudioOut implementation.
     Lib_AudioIn,           ///< The LibSceAudioIn implementation.
+    Lib_Move,              ///< The LibSceMove implementation.
     Lib_Net,               ///< The LibSceNet implementation.
-    Lib_NetCtl,            ///< The LibSecNetCtl implementation.
+    Lib_NetCtl,            ///< The LibSceNetCtl implementation.
     Lib_SaveData,          ///< The LibSceSaveData implementation.
     Lib_SaveDataDialog,    ///< The LibSceSaveDataDialog implementation.
     Lib_Ssl,               ///< The LibSceSsl implementation.
@@ -92,6 +93,7 @@ enum class Class : u8 {
     Lib_Vdec2,             ///< The LibSceVideodec2 implementation.
     Lib_Videodec,          ///< The LibSceVideodec implementation.
     Lib_RazorCpu,          ///< The LibRazorCpu implementation.
+    Lib_Mouse,             ///< The LibSceMouse implementation
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

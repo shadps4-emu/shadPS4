@@ -92,13 +92,15 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)} {}
+      physical_devices{EnumeratePhysicalDevices(instance)},
+      crash_diagnostic{enable_crash_diagnostic} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)} {
+      physical_devices{EnumeratePhysicalDevices(instance)},
+      crash_diagnostic{enable_crash_diagnostic} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -269,6 +271,7 @@ bool Instance::CreateDevice() {
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
+    amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.

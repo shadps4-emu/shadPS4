@@ -20,9 +20,9 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
-#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -814,7 +814,9 @@ struct Liverpool {
             BitField<26, 1, u32> fmask_compression_disable_ci;
             BitField<27, 1, u32> fmask_compress_1frag_only;
             BitField<28, 1, u32> dcc_enable;
-            BitField<29, 1, u32> cmask_addr_type;
+            BitField<29, 2, u32> cmask_addr_type;
+            /// Neo-mode only
+            BitField<31, 1, u32> alt_tile_mode;
 
             u32 u32all;
         } info;
@@ -889,10 +891,59 @@ struct Liverpool {
             return !info.linear_general;
         }
 
-        NumberFormat NumFormat() const {
+        [[nodiscard]] DataFormat GetDataFmt() const {
+            return RemapDataFormat(info.format);
+        }
+
+        [[nodiscard]] NumberFormat GetNumberFmt() const {
             // There is a small difference between T# and CB number types, account for it.
-            return info.number_type == AmdGpu::NumberFormat::SnormNz ? AmdGpu::NumberFormat::Srgb
-                                                                     : info.number_type.Value();
+            return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
+                                         ? NumberFormat::Srgb
+                                         : info.number_type.Value(),
+                                     info.format);
+        }
+
+        [[nodiscard]] NumberConversion GetNumberConversion() const {
+            return MapNumberConversion(info.number_type);
+        }
+
+        [[nodiscard]] CompMapping Swizzle() const {
+            // clang-format off
+            static constexpr std::array<std::array<CompMapping, 4>, 4> mrt_swizzles{{
+                // Standard
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Blue, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Blue, .a = CompSwizzle::Alpha},
+                }},
+                // Alternate
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Alpha, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Red, .g = CompSwizzle::Green, .b = CompSwizzle::Alpha, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Alpha},
+                }},
+                // StandardReverse
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Green, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Blue, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Blue, .b = CompSwizzle::Green, .a = CompSwizzle::Red},
+                }},
+                // AlternateReverse
+                std::array<CompMapping, 4>{{
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Zero, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Zero, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Green, .b = CompSwizzle::Red, .a = CompSwizzle::Zero},
+                    {.r = CompSwizzle::Alpha, .g = CompSwizzle::Red, .b = CompSwizzle::Green, .a = CompSwizzle::Blue},
+                }},
+            }};
+            // clang-format on
+            const auto swap_idx = static_cast<u32>(info.comp_swap.Value());
+            const auto components_idx = NumComponents(info.format) - 1;
+            const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
+            return RemapSwizzle(info.format, mrt_swizzle);
         }
     };
 
@@ -1433,10 +1484,11 @@ private:
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
-        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    VAddr indirect_args_addr{};
 
     struct ConstantEngine {
         void Reset() {

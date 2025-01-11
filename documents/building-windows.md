@@ -64,7 +64,7 @@ Go through the Git for Windows installation as normal
 Your shadps4.exe will be in `C:\path\to\source\Build\x64-Clang-Release\`
 
 To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
-`C:\Qt\6.7.3\msvc2022_64\bin\windeployqt.exe "C:\path\to\shadps4.exe"`  
+`C:\Qt\6.7.3\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
 (Change Qt path if you've installed it to non-default path)
 
 ## Option 2: MSYS2/MinGW

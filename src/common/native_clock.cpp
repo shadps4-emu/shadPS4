@@ -4,11 +4,6 @@
 #include "common/native_clock.h"
 #include "common/rdtsc.h"
 #include "common/uint128.h"
-#ifdef _WIN64
-#include <pthread_time.h>
-#else
-#include <time.h>
-#endif
 
 namespace Common {
 
@@ -32,12 +27,6 @@ u64 NativeClock::GetTimeMS(u64 base_ptc /*= 0*/) const {
 
 u64 NativeClock::GetUptime() const {
     return FencedRDTSC();
-}
-
-u64 NativeClock::GetProcessTimeUS() const {
-    timespec ret;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ret);
-    return ret.tv_nsec / 1000 + ret.tv_sec * 1000000;
 }
 
 } // namespace Common

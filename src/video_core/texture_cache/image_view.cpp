@@ -20,8 +20,6 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
         return vk::ImageViewType::e2D;
-    case AmdGpu::ImageType::Cube:
-        return vk::ImageViewType::eCube;
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageViewType::e2DArray;
     case AmdGpu::ImageType::Color3D:
@@ -31,27 +29,8 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     }
 }
 
-vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
-    switch (dst_sel) {
-    case 0:
-        return vk::ComponentSwizzle::eZero;
-    case 1:
-        return vk::ComponentSwizzle::eOne;
-    case 4:
-        return vk::ComponentSwizzle::eR;
-    case 5:
-        return vk::ComponentSwizzle::eG;
-    case 6:
-        return vk::ComponentSwizzle::eB;
-    case 7:
-        return vk::ComponentSwizzle::eA;
-    default:
-        UNREACHABLE();
-    }
-}
-
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
-    : is_storage{desc.IsStorage(image)} {
+    : is_storage{desc.is_written} {
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
@@ -61,47 +40,24 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     if (desc.is_depth) {
         format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
     }
+
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
-    if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-        image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
-        range.extent.levels = 1;
-    } else {
-        range.extent.levels = image.last_level - image.base_level + 1;
-    }
-    range.extent.layers = image.last_array - image.base_array + 1;
-    type = ConvertImageViewType(image.GetBoundType());
-
-    // Adjust view type for arrays
-    if (type == vk::ImageViewType::eCube) {
-        if (desc.is_array) {
-            type = vk::ImageViewType::eCubeArray;
-        } else {
-            // Some games try to bind an array of cubemaps while shader reads only single one.
-            range.extent.layers = std::min(range.extent.layers, 6u);
-        }
-    }
-    if (type == vk::ImageViewType::e3D && range.extent.layers > 1) {
-        // Some games pass incorrect layer count for 3D textures so we need to fixup it.
-        range.extent.layers = 1;
-    }
+    range.extent.levels = image.NumViewLevels(desc.is_array);
+    range.extent.layers = image.NumViewLayers(desc.is_array);
+    type = ConvertImageViewType(image.GetViewType(desc.is_array));
 
     if (!is_storage) {
-        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
     }
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept {
-    const auto base_format =
-        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
     range.base.layer = col_buffer.view.slice_start;
     range.extent.layers = col_buffer.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
-    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(base_format,
-                                                            col_buffer.info.comp_swap.Value());
+    format =
+        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.GetDataFmt(), col_buffer.GetNumberFmt());
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,

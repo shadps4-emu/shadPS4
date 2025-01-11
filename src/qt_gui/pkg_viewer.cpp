@@ -47,6 +47,9 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* pare
 
     connect(treeWidget, &QTreeWidget::customContextMenuRequested, this,
             [=, this](const QPoint& pos) {
+                if (treeWidget->selectedItems().isEmpty()) {
+                    return;
+                }
                 m_gui_context_menus.RequestGameMenuPKGViewer(pos, m_full_pkg_list, treeWidget,
                                                              InstallDragDropPkg);
             });

@@ -61,7 +61,6 @@ struct ImageInfo {
     } meta_info{};
 
     struct {
-        u32 is_cube : 1;
         u32 is_volume : 1;
         u32 is_tiled : 1;
         u32 is_pow2 : 1;
@@ -84,8 +83,9 @@ struct ImageInfo {
     };
     boost::container::small_vector<MipInfo, 14> mips_layout;
     VAddr guest_address{0};
-    u32 guest_size_bytes{0};
+    u32 guest_size{0};
     u32 tiling_idx{0}; // TODO: merge with existing!
+    bool alt_tile{false};
 
     VAddr stencil_addr{0};
     u32 stencil_size{0};

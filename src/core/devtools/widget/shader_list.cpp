@@ -112,6 +112,10 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             ReloadShader(value);
         }
     }
+    SameLine();
+    if (Button("Copy name")) {
+        SetClipboardText(value.name.c_str());
+    }
 
     if (value.is_patched) {
         if (BeginCombo("Shader type", showing_bin ? "SPIRV" : "GLSL",
@@ -229,9 +233,16 @@ void ShaderList::Draw() {
         return;
     }
 
+    InputTextEx("##search_shader", "Search by name", search_box, sizeof(search_box), {},
+                ImGuiInputTextFlags_None);
+
     auto width = GetContentRegionAvail().x;
     int i = 0;
     for (const auto& shader : DebugState.shader_dump_list) {
+        if (search_box[0] != '\0' && !shader.name.contains(search_box)) {
+            i++;
+            continue;
+        }
         char name[128];
         if (shader.is_patched) {
             snprintf(name, sizeof(name), "%s (PATCH ON)", shader.name.c_str());

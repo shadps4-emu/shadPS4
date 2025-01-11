@@ -5,15 +5,30 @@
 
 namespace Libraries::AudioOut {
 
+struct PortOut;
+
+class PortBackend {
+public:
+    virtual ~PortBackend() = default;
+
+    /// Guaranteed to be called in intervals of at least port buffer time,
+    /// with size equal to port buffer size.
+    virtual void Output(void* ptr) = 0;
+
+    virtual void SetVolume(const std::array<int, 8>& ch_volumes) = 0;
+};
+
 class AudioOutBackend {
 public:
     AudioOutBackend() = default;
     virtual ~AudioOutBackend() = default;
 
-    virtual void* Open(bool is_float, int num_channels, u32 sample_rate) = 0;
-    virtual void Close(void* impl) = 0;
-    virtual void Output(void* impl, const void* ptr, size_t size) = 0;
-    virtual void SetVolume(void* impl, std::array<int, 8> ch_volumes) = 0;
+    virtual std::unique_ptr<PortBackend> Open(PortOut& port) = 0;
+};
+
+class SDLAudioOut final : public AudioOutBackend {
+public:
+    std::unique_ptr<PortBackend> Open(PortOut& port) override;
 };
 
 } // namespace Libraries::AudioOut

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "trp.h"
@@ -33,12 +34,29 @@ static void removePadding(std::vector<u8>& vec) {
     }
 }
 
+static void hexToBytes(const char* hex, unsigned char* dst) {
+    for (size_t i = 0; hex[i] != 0; i++) {
+        const unsigned char value = (hex[i] < 0x3A) ? (hex[i] - 0x30) : (hex[i] - 0x37);
+        dst[i / 2] |= ((i % 2) == 0) ? (value << 4) : (value);
+    }
+}
+
 bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
     if (!std::filesystem::exists(gameSysDir)) {
         LOG_CRITICAL(Common_Filesystem, "Game sce_sys directory doesn't exist");
         return false;
     }
+
+    const auto user_key_str = Config::getTrophyKey();
+    if (user_key_str.size() != 32) {
+        LOG_CRITICAL(Common_Filesystem, "Trophy decryption key is not specified");
+        return false;
+    }
+
+    std::array<CryptoPP::byte, 16> user_key{};
+    hexToBytes(user_key_str.c_str(), user_key.data());
+
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
         if (it.is_regular_file()) {
             GetNPcommID(trophyPath, index);
@@ -97,7 +115,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                         return false;
                     }
                     file.Read(ESFM);
-                    crypto.decryptEFSM(np_comm_id, esfmIv, ESFM, XML); // decrypt
+                    crypto.decryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
                     removePadding(XML);
                     std::string xml_name = entry.entry_name;
                     size_t pos = xml_name.find("ESFM");
