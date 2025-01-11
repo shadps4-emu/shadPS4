@@ -11,15 +11,12 @@ class SymbolsResolver;
 
 namespace Libraries::NpCommon {
 
-constexpr int ORBIS_NP_ERROR_INVALID_ARGUMENT = 0x80550003;
-constexpr int ORBIS_NP_UTIL_ERROR_NOT_MATCH = 0x80550609;
-
 constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {
-    char data[ORBIS_NP_ONLINEID_MAX_LENGTH];
-    char term;
-    char dummy[3];
+    s8 data[ORBIS_NP_ONLINEID_MAX_LENGTH];
+    s8 term;
+    s8 dummy[3];
 };
 
 struct OrbisNpId {
