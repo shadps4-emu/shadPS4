@@ -62,6 +62,10 @@ public:
         QDir dir(dirPath);
         QDirIterator it(dir.absolutePath(), QDirIterator::Subdirectories);
         qint64 total = 0;
+        if (!Config::GetLoadGameSizeEnabled()) {
+            game.size = FormatSize(0).toStdString();
+            return;
+        }
         while (it.hasNext()) {
             it.next();
             total += it.fileInfo().size();

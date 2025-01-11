@@ -171,6 +171,13 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QCheckBox" name="gameSizeCheckBox">
+                   <property name="text">
+                    <string>Show Game Size In List</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QCheckBox" name="showSplashCheckBox">
                    <property name="text">
                     <string>Show Splash</string>
