@@ -254,6 +254,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
+                 src/core/libraries/network/http2.cpp
+                 src/core/libraries/network/http2.h
                  src/core/libraries/network/net.cpp
                  src/core/libraries/network/netctl.cpp
                  src/core/libraries/network/netctl.h

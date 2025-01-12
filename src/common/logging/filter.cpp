@@ -95,6 +95,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, SaveData)                                                                             \
     SUB(Lib, SaveDataDialog)                                                                       \
     SUB(Lib, Http)                                                                                 \
+    SUB(Lib, Http2)                                                                                \
     SUB(Lib, Ssl)                                                                                  \
     SUB(Lib, Ssl2)                                                                                 \
     SUB(Lib, SysModule)                                                                            \
