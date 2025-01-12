@@ -429,11 +429,19 @@ struct Liverpool {
         } depth_slice;
 
         bool DepthValid() const {
-            return Address() != 0 && z_info.format != ZFormat::Invalid;
+            return DepthAddress() != 0 && z_info.format != ZFormat::Invalid;
         }
 
         bool StencilValid() const {
-            return Address() != 0 && stencil_info.format != StencilFormat::Invalid;
+            return StencilAddress() != 0 && stencil_info.format != StencilFormat::Invalid;
+        }
+
+        bool DepthWriteValid() const {
+            return DepthWriteAddress() != 0 && z_info.format != ZFormat::Invalid;
+        }
+
+        bool StencilWriteValid() const {
+            return StencilWriteAddress() != 0 && stencil_info.format != StencilFormat::Invalid;
         }
 
         u32 Pitch() const {
@@ -444,12 +452,20 @@ struct Liverpool {
             return (depth_size.height_tile_max + 1) << 3;
         }
 
-        u64 Address() const {
+        u64 DepthAddress() const {
             return u64(z_read_base) << 8;
         }
 
         u64 StencilAddress() const {
             return u64(stencil_read_base) << 8;
+        }
+
+        u64 DepthWriteAddress() const {
+            return u64(z_write_base) << 8;
+        }
+
+        u64 StencilWriteAddress() const {
+            return u64(stencil_write_base) << 8;
         }
 
         u32 NumSamples() const {
@@ -1008,6 +1024,46 @@ struct Liverpool {
         }
     };
 
+    enum class ForceEnable : u32 {
+        Off = 0,
+        Enable = 1,
+        Disable = 2,
+    };
+
+    enum class ForceSumm : u32 {
+        Off = 0,
+        MinZ = 1,
+        MaxZ = 2,
+        Both = 3,
+    };
+
+    union DepthRenderOverride {
+        u32 raw;
+        BitField<0, 2, ForceEnable> force_hiz_enable;
+        BitField<2, 2, ForceEnable> force_his_enable0;
+        BitField<4, 2, ForceEnable> force_his_enable1;
+        BitField<6, 1, u32> force_shader_z_order;
+        BitField<7, 1, u32> fast_z_disable;
+        BitField<8, 1, u32> fast_stencil_disable;
+        BitField<9, 1, u32> noop_cull_disable;
+        BitField<10, 1, u32> force_color_kill;
+        BitField<11, 1, u32> force_z_read;
+        BitField<12, 1, u32> force_stencil_read;
+        BitField<13, 2, ForceEnable> force_full_z_range;
+        BitField<15, 1, u32> force_qc_smask_conflict;
+        BitField<16, 1, u32> disable_viewport_clamp;
+        BitField<17, 1, u32> ignore_sc_zrange;
+        BitField<18, 1, u32> disable_fully_covered;
+        BitField<19, 2, ForceSumm> force_z_limit_summ;
+        BitField<21, 5, u32> max_tiles_in_dtt;
+        BitField<26, 1, u32> disable_tile_rate_tiles;
+        BitField<27, 1, u32> force_z_dirty;
+        BitField<28, 1, u32> force_stencil_dirty;
+        BitField<29, 1, u32> force_z_valid;
+        BitField<30, 1, u32> force_stencil_valid;
+        BitField<31, 1, u32> preserve_compression;
+    };
+
     union AaConfig {
         BitField<0, 3, u32> msaa_num_samples;
         BitField<4, 1, u32> aa_mask_centroid_dtmn;
@@ -1209,7 +1265,8 @@ struct Liverpool {
             DepthRenderControl depth_render_control;
             INSERT_PADDING_WORDS(1);
             DepthView depth_view;
-            INSERT_PADDING_WORDS(2);
+            DepthRenderOverride depth_render_override;
+            INSERT_PADDING_WORDS(1);
             Address depth_htile_data_base;
             INSERT_PADDING_WORDS(2);
             float depth_bounds_min;

@@ -71,6 +71,7 @@ private:
     RenderState PrepareRenderState(u32 mrt_mask);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
+    void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
