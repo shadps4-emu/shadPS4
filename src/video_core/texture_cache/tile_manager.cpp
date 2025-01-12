@@ -8,6 +8,7 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
 
+#include "video_core/host_shaders/detilers/display_micro_64bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_32bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_64bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_8bpp_comp.h"
@@ -53,6 +54,14 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
             return nullptr;
         }
         break;
+    case AmdGpu::TilingMode::Display_MicroTiled:
+        switch (bpp) {
+        case 64:
+            return &detilers[DetilerType::Display_Micro64];
+        default:
+            return nullptr;
+        }
+        break;
     default:
         return nullptr;
     }
@@ -68,10 +77,11 @@ struct DetilerParams {
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler} {
     static const std::array detiler_shaders{
-        HostShaders::MICRO_8BPP_COMP,   HostShaders::MICRO_16BPP_COMP,
-        HostShaders::MICRO_32BPP_COMP,  HostShaders::MICRO_64BPP_COMP,
-        HostShaders::MICRO_128BPP_COMP, HostShaders::MACRO_8BPP_COMP,
-        HostShaders::MACRO_32BPP_COMP,  HostShaders::MACRO_64BPP_COMP,
+        HostShaders::MICRO_8BPP_COMP,          HostShaders::MICRO_16BPP_COMP,
+        HostShaders::MICRO_32BPP_COMP,         HostShaders::MICRO_64BPP_COMP,
+        HostShaders::MICRO_128BPP_COMP,        HostShaders::MACRO_8BPP_COMP,
+        HostShaders::MACRO_32BPP_COMP,         HostShaders::MACRO_64BPP_COMP,
+        HostShaders::DISPLAY_MICRO_64BPP_COMP,
     };
 
     boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
@@ -258,7 +268,8 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     params.num_levels = info.resources.levels;
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
-    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume) {
+    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
+        info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
         ASSERT(info.resources.levels == 1);
         const auto tiles_per_row = info.pitch / 8u;
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);

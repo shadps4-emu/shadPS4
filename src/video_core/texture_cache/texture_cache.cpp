@@ -469,9 +469,6 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
-    RENDERER_TRACE;
-    TRACE_HINT(fmt::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
-
     if (False(image.flags & ImageFlagBits::Dirty)) {
         return;
     }
@@ -479,6 +476,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     if (image.info.num_samples > 1) {
         return;
     }
+
+    RENDERER_TRACE;
+    TRACE_HINT(fmt::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
 
     if (True(image.flags & ImageFlagBits::MaybeCpuDirty) &&
         False(image.flags & ImageFlagBits::CpuDirty)) {
