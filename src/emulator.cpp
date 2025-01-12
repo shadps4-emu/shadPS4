@@ -98,7 +98,7 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(const std::filesystem::path& file, const std::string arg) {
+void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto game_folder = file.parent_path();
@@ -150,6 +150,15 @@ void Emulator::Run(const std::filesystem::path& file, const std::string arg) {
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
         if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
             psf_attributes.raw = *raw_attributes;
+        }
+        if (!args.empty()) {
+            int argc = args.size() > 32 ? 32 : args.size();
+            for (int i = 0; i < argc; i++) {
+                LOG_INFO(Loader, "Game argument {}: {}", i, args[i]);
+            }
+            if (args.size() > 32) {
+                LOG_ERROR(Loader, "Too many game arguments, only passing the first 32");
+            }
         }
     }
 
@@ -238,7 +247,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::string arg) {
     }
 #endif
 
-    linker->Execute(arg);
+    linker->Execute(args);
 
     window->InitTimers();
     while (window->IsOpen()) {

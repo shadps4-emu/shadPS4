@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
     bool has_game_argument = false;
     std::string game_path;
-    std::string game_arg;
+    std::vector<std::string> game_args{};
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -39,8 +39,9 @@ int main(int argc, char* argv[]) {
                           "Options:\n"
                           "  -g, --game <path|ID>          Specify game path to launch\n"
                           "  -ga, --game-with-arg <path|ID> <arg>\n"
-                          "                                Run a game executable with one argument "
-                          "passed to it.\n"
+                          " -- ...                         Parameters passed to the game ELF. "
+                          "Needs to be at the end of the line, and everything after \"--\" is a "
+                          "game argument.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
@@ -61,19 +62,6 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--game", [&](int& i) { arg_map["-g"](i); }},
-
-        {"-ga",
-         [&](int& i) {
-             if (i + 2 < argc) {
-                 game_path = argv[++i];
-                 game_arg = argv[++i];
-                 has_game_argument = true;
-             } else {
-                 std::cerr << "Error: Missing argument for -ga/--game-with-arg\n";
-                 exit(1);
-             }
-         }},
-        {"--game-with-arg", [&](int& i) { arg_map["-ga"](i); }},
 
         {"-p",
          [&](int& i) {
@@ -139,6 +127,15 @@ int main(int argc, char* argv[]) {
         auto it = arg_map.find(cur_arg);
         if (it != arg_map.end()) {
             it->second(i); // Call the associated lambda function
+        } else if (std::string(argv[i + 1]) == "--") {
+            if (!has_game_argument) {
+                game_path = argv[i];
+                has_game_argument = true;
+            }
+            for (int j = i + 2; j < argc; j++) {
+                game_args.push_back(argv[j]);
+            }
+            break;
         } else if (i == argc - 1 && !has_game_argument) {
             // Assume the last argument is the game file if not specified via -g/--game
             game_path = argv[i];
@@ -183,7 +180,7 @@ int main(int argc, char* argv[]) {
 
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-    emulator.Run(eboot_path, game_arg);
+    emulator.Run(eboot_path, game_args);
 
     return 0;
 }

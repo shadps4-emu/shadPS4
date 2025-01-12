@@ -49,7 +49,7 @@ class Linker;
 struct EntryParams {
     int argc;
     u32 padding;
-    const char* argv[3];
+    const char* argv[32];
     VAddr entry_addr;
 };
 
@@ -143,7 +143,7 @@ public:
     void Relocate(Module* module);
     bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
-    void Execute(const std::string arg = "");
+    void Execute(const std::vector<std::string> args = std::vector<std::string>());
     void DebugDump();
 
 private:
