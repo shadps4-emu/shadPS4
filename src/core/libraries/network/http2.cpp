@@ -320,13 +320,11 @@ void RegisterlibSceHttp2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("QygCNNmbGss", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2ReadData);
     LIB_FUNCTION("bGN-6zbo7ms", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2ReadDataAsync);
     LIB_FUNCTION("klwUy2Wg+q8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2RedirectCacheFlush);
-    LIB_FUNCTION("jHdP0CS4ZlA", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2RemoveRequestHeader);
+    LIB_FUNCTION("jHdP0CS4ZlA", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2RemoveRequestHeader);
     LIB_FUNCTION("rbqZig38AT8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SendRequest);
     LIB_FUNCTION("A+NVAFu4eCg", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SendRequestAsync);
     LIB_FUNCTION("jjFahkBPCYs", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAuthEnabled);
-    LIB_FUNCTION("Wwj6HbB2mOo", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetAuthInfoCallback);
+    LIB_FUNCTION("Wwj6HbB2mOo", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAuthInfoCallback);
     LIB_FUNCTION("b9AvoIaOuHI", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAutoRedirect);
     LIB_FUNCTION("n8hMLe31OPA", "libSceHttp2", 1, "libSceHttp2", 1, 1,
                  sceHttp2SetConnectionWaitTimeOut);
@@ -345,8 +343,7 @@ void RegisterlibSceHttp2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("09tk+kIA1Ns", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetMinSslVersion);
     LIB_FUNCTION("UL4Fviw+IAM", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetPreSendCallback);
     LIB_FUNCTION("izvHhqgDt44", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetRecvTimeOut);
-    LIB_FUNCTION("BJgi0CH7al4", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetRedirectCallback);
+    LIB_FUNCTION("BJgi0CH7al4", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetRedirectCallback);
     LIB_FUNCTION("FSAFOzi0FpM", "libSceHttp2", 1, "libSceHttp2", 1, 1,
                  sceHttp2SetRequestContentLength);
     LIB_FUNCTION("Gcjh+CisAZM", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetResolveRetry);
