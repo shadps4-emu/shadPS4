@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Ota Käyttöön Erillinen Päivityshakemisto</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Näytä pelin koko luettelossa</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Näytä Aloitusnäyttö</translation>

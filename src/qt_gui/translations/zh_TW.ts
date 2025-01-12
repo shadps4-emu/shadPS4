@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>顯示遊戲大小在列表中</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Show Splash</translation>

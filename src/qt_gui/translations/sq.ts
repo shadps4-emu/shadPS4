@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Aktivizo dosjen e ndarë të përditësimit</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Shfaq madhësinë e lojës në listë</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Shfaq Pamjen e nisjes</translation>
