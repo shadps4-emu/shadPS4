@@ -49,7 +49,7 @@ class Linker;
 struct EntryParams {
     int argc;
     u32 padding;
-    const char* argv[32];
+    const char* argv[33];
     VAddr entry_addr;
 };
 
