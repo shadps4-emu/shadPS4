@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Külön Frissítési Mappa Engedélyezése</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Játékméret megjelenítése a listában</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Indítóképernyő Mutatása</translation>

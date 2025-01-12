@@ -68,7 +68,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>586</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -134,7 +134,7 @@
                    </property>
                   </widget>
                  </item>
-				 <item>
+                 <item>
                   <widget class="QGroupBox" name="fullscreenModeGroupBox">
                    <property name="title">
                     <string>Fullscreen Mode</string>
@@ -167,13 +167,6 @@
                   <widget class="QCheckBox" name="separateUpdatesCheckBox">
                    <property name="text">
                     <string>Enable Separate Update Folder</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="gameSizeCheckBox">
-                   <property name="text">
-                    <string>Show Game Size In List</string>
                    </property>
                   </widget>
                  </item>
@@ -491,6 +484,13 @@
                 <number>11</number>
                </property>
                <item>
+                <widget class="QCheckBox" name="gameSizeCheckBox">
+                 <property name="text">
+                  <string>Show Game Size In List</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QCheckBox" name="playBGMCheckBox">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -564,59 +564,59 @@
                    </property>
                   </widget>
                  </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="vLayoutTrophy">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>50</number>
+                 </property>
                  <item>
-                  <layout class="QVBoxLayout" name="vLayoutTrophy">
-                   <property name="spacing">
-                    <number>6</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>80</number>
-                   </property>
+                  <layout class="QHBoxLayout" name="hLayoutTrophy">
                    <item>
-                    <layout class="QHBoxLayout" name="hLayoutTrophy">
-                     <item>
-                      <widget class="QGroupBox" name="trophyGroupBox">
-                       <property name="title">
-                        <string>Trophy</string>
-                       </property>
-                       <layout class="QVBoxLayout" name="userNameLayout">
-                        <item>
-                         <widget class="QCheckBox" name="disableTrophycheckBox">
-                          <property name="text">
-                           <string>Disable Trophy Pop-ups</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_Trophy">
-                          <property name="text">
-                           <string>Trophy Key</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLineEdit" name="trophyKeyLineEdit">
-                          <property name="minimumSize">
-                           <size>
-                            <width>0</width>
-                            <height>0</height>
-                           </size>
-                          </property>
-                          <property name="font">
-                           <font>
-                            <pointsize>10</pointsize>
-                            <bold>false</bold>
-                           </font>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QGroupBox" name="trophyGroupBox">
+                     <property name="title">
+                      <string>Trophy</string>
+                     </property>
+                     <layout class="QVBoxLayout" name="userNameLayout">
+                      <item>
+                       <widget class="QCheckBox" name="disableTrophycheckBox">
+                        <property name="text">
+                         <string>Disable Trophy Pop-ups</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="label_Trophy">
+                        <property name="text">
+                         <string>Trophy Key</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLineEdit" name="trophyKeyLineEdit">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <pointsize>10</pointsize>
+                          <bold>false</bold>
+                         </font>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
                    </item>
                   </layout>
                  </item>
@@ -644,8 +644,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>926</width>
-         <height>536</height>
+         <width>946</width>
+         <height>586</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -860,13 +860,13 @@
                  </layout>
                 </widget>
                </item>
-				  <item>
-					  <widget class="QCheckBox" name="motionControlsCheckBox"> 
-						  <property name="text">
-							  <string>Enable Motion Controls</string>
-						  </property>
-					  </widget>
-				  </item>
+               <item>
+                <widget class="QCheckBox" name="motionControlsCheckBox">
+                 <property name="text">
+                  <string>Enable Motion Controls</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QWidget" name="controllerWidgetSpacer" native="true">
                  <property name="enabled">
@@ -942,8 +942,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>926</width>
-         <height>536</height>
+         <width>946</width>
+         <height>586</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1193,8 +1193,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>926</width>
-         <height>536</height>
+         <width>946</width>
+         <height>586</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
@@ -1266,8 +1266,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>926</width>
-         <height>536</height>
+         <width>946</width>
+         <height>586</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
