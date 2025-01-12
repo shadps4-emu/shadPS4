@@ -7,311 +7,437 @@
 #include "core/libraries/libs.h"
 #include "usbd.h"
 
+#include <libusb.h>
+
 namespace Libraries::Usbd {
 
-int PS4_SYSV_ABI sceUsbdAllocTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
+namespace {
+
+s32 libusb_to_orbis_error(int err) {
+    if (err == LIBUSB_ERROR_OTHER)
+        return 0x802400FF;
+    if (err < 0)
+        return 0x80240000 - err;
+
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUsbdAttachKernelDriver() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+libusb_context* g_libusb_context;
+
+} // namespace
+
+s32 PS4_SYSV_ABI sceUsbdInit() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_init_context(&g_libusb_context, nullptr, 0));
 }
 
-int PS4_SYSV_ABI sceUsbdBulkTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdExit() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_exit(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdCancelTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s64 PS4_SYSV_ABI sceUsbdGetDeviceList(SceUsbdDevice*** list) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    s64 cnt = libusb_get_device_list(g_libusb_context, list);
+    if (cnt >= 0)
+        return cnt;
+
+    return libusb_to_orbis_error(cnt);
 }
 
-int PS4_SYSV_ABI sceUsbdCheckConnected() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFreeDeviceList(SceUsbdDevice** list, s32 unref_devices) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_free_device_list(list, unref_devices);
 }
 
-int PS4_SYSV_ABI sceUsbdClaimInterface() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdDevice* PS4_SYSV_ABI sceUsbdRefDevice(SceUsbdDevice* device) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_ref_device(device);
 }
 
-int PS4_SYSV_ABI sceUsbdClearHalt() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdUnrefDevice(SceUsbdDevice* device) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_unref_device(device);
 }
 
-int PS4_SYSV_ABI sceUsbdClose() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetConfiguration(SceUsbdDeviceHandle* dev_handle, s32* config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_configuration(dev_handle, config));
 }
 
-int PS4_SYSV_ABI sceUsbdControlTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetDeviceDescriptor(SceUsbdDevice* device, SceUsbdDeviceDescriptor* desc) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_device_descriptor(device, desc));
 }
 
-int PS4_SYSV_ABI sceUsbdControlTransferGetData() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetActiveConfigDescriptor(SceUsbdDevice* device,
+                                                  SceUsbdConfigDescriptor** config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_active_config_descriptor(device, config));
 }
 
-int PS4_SYSV_ABI sceUsbdControlTransferGetSetup() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetConfigDescriptor(SceUsbdDevice* device, u8 config_index,
+                                            SceUsbdConfigDescriptor** config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_config_descriptor(device, config_index, config));
 }
 
-int PS4_SYSV_ABI sceUsbdDetachKernelDriver() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetConfigDescriptorByValue(SceUsbdDevice* device, u8 bConfigurationValue,
+                                                   SceUsbdConfigDescriptor** config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_get_config_descriptor_by_value(device, bConfigurationValue, config));
 }
 
-int PS4_SYSV_ABI sceUsbdEventHandlerActive() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFreeConfigDescriptor(SceUsbdConfigDescriptor* config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_free_config_descriptor(config);
 }
 
-int PS4_SYSV_ABI sceUsbdEventHandlingOk() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+u8 PS4_SYSV_ABI sceUsbdGetBusNumber(SceUsbdDevice* device) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_get_bus_number(device);
 }
 
-int PS4_SYSV_ABI sceUsbdExit() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+u8 PS4_SYSV_ABI sceUsbdGetDeviceAddress(SceUsbdDevice* device) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_get_device_address(device);
 }
 
-int PS4_SYSV_ABI sceUsbdFillBulkTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdSpeed PS4_SYSV_ABI sceUsbdGetDeviceSpeed(SceUsbdDevice* device) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return static_cast<SceUsbdSpeed>(libusb_get_device_speed(device));
 }
 
-int PS4_SYSV_ABI sceUsbdFillControlSetup() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetMaxPacketSize(SceUsbdDevice* device, u8 endpoint) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_max_packet_size(device, endpoint));
 }
 
-int PS4_SYSV_ABI sceUsbdFillControlTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetMaxIsoPacketSize(SceUsbdDevice* device, u8 endpoint) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_get_max_iso_packet_size(device, endpoint));
 }
 
-int PS4_SYSV_ABI sceUsbdFillInterruptTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdOpen(SceUsbdDevice* device, SceUsbdDeviceHandle** dev_handle) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_open(device, dev_handle));
 }
 
-int PS4_SYSV_ABI sceUsbdFillIsoTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdClose(SceUsbdDeviceHandle* dev_handle) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_close(dev_handle);
 }
 
-int PS4_SYSV_ABI sceUsbdFreeConfigDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdDevice* PS4_SYSV_ABI sceUsbdGetDevice(SceUsbdDeviceHandle* dev_handle) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_get_device(dev_handle);
 }
 
-int PS4_SYSV_ABI sceUsbdFreeDeviceList() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdSetConfiguration(SceUsbdDeviceHandle* dev_handle, s32 config) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_set_configuration(dev_handle, config));
 }
 
-int PS4_SYSV_ABI sceUsbdFreeTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdClaimInterface(SceUsbdDeviceHandle* dev_handle, s32 interface_number) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_claim_interface(dev_handle, interface_number));
 }
 
-int PS4_SYSV_ABI sceUsbdGetActiveConfigDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdReleaseInterface(SceUsbdDeviceHandle* dev_handle, s32 interface_number) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_release_interface(dev_handle, interface_number));
 }
 
-int PS4_SYSV_ABI sceUsbdGetBusNumber() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdDeviceHandle* PS4_SYSV_ABI sceUsbdOpenDeviceWithVidPid(u16 vendor_id, u16 product_id) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_open_device_with_vid_pid(g_libusb_context, vendor_id, product_id);
 }
 
-int PS4_SYSV_ABI sceUsbdGetConfigDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdSetInterfaceAltSetting(SceUsbdDeviceHandle* dev_handle,
+                                               int interface_number, int alternate_setting) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_set_interface_alt_setting(dev_handle, interface_number, alternate_setting));
 }
 
-int PS4_SYSV_ABI sceUsbdGetConfigDescriptorByValue() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdClearHalt(SceUsbdDeviceHandle* dev_handle, uint8_t endpoint) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_clear_halt(dev_handle, endpoint));
 }
 
-int PS4_SYSV_ABI sceUsbdGetConfiguration() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdResetDevice(SceUsbdDeviceHandle* dev_handle) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_reset_device(dev_handle));
 }
 
-int PS4_SYSV_ABI sceUsbdGetDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdKernelDriverActive(SceUsbdDeviceHandle* dev_handle, int interface_number) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_kernel_driver_active(dev_handle, interface_number));
 }
 
-int PS4_SYSV_ABI sceUsbdGetDevice() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdDetachKernelDriver(SceUsbdDeviceHandle* dev_handle, int interface_number) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_detach_kernel_driver(dev_handle, interface_number));
 }
 
-int PS4_SYSV_ABI sceUsbdGetDeviceAddress() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdAttachKernelDriver(SceUsbdDeviceHandle* dev_handle, int interface_number) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_attach_kernel_driver(dev_handle, interface_number));
 }
 
-int PS4_SYSV_ABI sceUsbdGetDeviceDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+u8* PS4_SYSV_ABI sceUsbdControlTransferGetData(SceUsbdTransfer* transfer) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_control_transfer_get_data(transfer);
 }
 
-int PS4_SYSV_ABI sceUsbdGetDeviceList() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdControlSetup* PS4_SYSV_ABI sceUsbdControlTransferGetSetup(SceUsbdTransfer* transfer) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_control_transfer_get_setup(transfer);
 }
 
-int PS4_SYSV_ABI sceUsbdGetDeviceSpeed() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFillControlSetup(u8* buf, u8 bmRequestType, u8 bRequest, u16 wValue,
+                                          u16 wIndex, u16 wLength) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_fill_control_setup(buf, bmRequestType, bRequest, wValue, wIndex, wLength);
 }
 
-int PS4_SYSV_ABI sceUsbdGetIsoPacketBuffer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+SceUsbdTransfer* PS4_SYSV_ABI sceUsbdAllocTransfer(int iso_packets) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_alloc_transfer(iso_packets);
 }
 
-int PS4_SYSV_ABI sceUsbdGetMaxIsoPacketSize() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdSubmitTransfer(SceUsbdTransfer* transfer) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_submit_transfer(transfer));
 }
 
-int PS4_SYSV_ABI sceUsbdGetMaxPacketSize() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdCancelTransfer(SceUsbdTransfer* transfer) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_cancel_transfer(transfer));
 }
 
-int PS4_SYSV_ABI sceUsbdGetStringDescriptor() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFreeTransfer(SceUsbdTransfer* transfer) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_free_transfer(transfer);
 }
 
-int PS4_SYSV_ABI sceUsbdGetStringDescriptorAscii() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFillControlTransfer(SceUsbdTransfer* transfer,
+                                             SceUsbdDeviceHandle* dev_handle, u8* buffer,
+                                             SceUsbdTransferCallback callback, void* user_data,
+                                             u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_fill_control_transfer(transfer, dev_handle, buffer, callback, user_data, timeout);
 }
 
-int PS4_SYSV_ABI sceUsbdHandleEvents() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFillBulkTransfer(SceUsbdTransfer* transfer,
+                                          SceUsbdDeviceHandle* dev_handle, uint8_t endpoint,
+                                          u8* buffer, s32 length, SceUsbdTransferCallback callback,
+                                          void* user_data, u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length, callback, user_data,
+                              timeout);
 }
 
-int PS4_SYSV_ABI sceUsbdHandleEventsLocked() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFillInterruptTransfer(SceUsbdTransfer* transfer,
+                                               SceUsbdDeviceHandle* dev_handle, uint8_t endpoint,
+                                               u8* buffer, s32 length,
+                                               SceUsbdTransferCallback callback, void* user_data,
+                                               u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_fill_interrupt_transfer(transfer, dev_handle, endpoint, buffer, length, callback,
+                                   user_data, timeout);
 }
 
-int PS4_SYSV_ABI sceUsbdHandleEventsTimeout() {
-    LOG_DEBUG(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdFillIsoTransfer(SceUsbdTransfer* transfer, SceUsbdDeviceHandle* dev_handle,
+                                         uint8_t endpoint, u8* buffer, s32 length,
+                                         s32 num_iso_packets, SceUsbdTransferCallback callback,
+                                         void* user_data, u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_fill_iso_transfer(transfer, dev_handle, endpoint, buffer, length, num_iso_packets,
+                             callback, user_data, timeout);
 }
 
-int PS4_SYSV_ABI sceUsbdInit() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return 0x80240005; // Skip
+void PS4_SYSV_ABI sceUsbdSetIsoPacketLengths(SceUsbdTransfer* transfer, u32 length) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_set_iso_packet_lengths(transfer, length);
 }
 
-int PS4_SYSV_ABI sceUsbdInterruptTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+u8* PS4_SYSV_ABI sceUsbdGetIsoPacketBuffer(SceUsbdTransfer* transfer, u32 packet) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_get_iso_packet_buffer(transfer, packet);
 }
 
-int PS4_SYSV_ABI sceUsbdKernelDriverActive() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdControlTransfer(SceUsbdDeviceHandle* dev_handle, u8 request_type,
+                                        u8 bRequest, u16 wValue, u16 wIndex, u8* data, s32 wLength,
+                                        u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_control_transfer(dev_handle, request_type, bRequest, wValue,
+                                                         wIndex, data, wLength, timeout));
 }
 
-int PS4_SYSV_ABI sceUsbdLockEvents() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdBulkTransfer(SceUsbdDeviceHandle* dev_handle, u8 endpoint, u8* data,
+                                     s32 length, s32* actual_length, u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_bulk_transfer(dev_handle, endpoint, data, length, actual_length, timeout));
 }
 
-int PS4_SYSV_ABI sceUsbdLockEventWaiters() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdInterruptTransfer(SceUsbdDeviceHandle* dev_handle, u8 endpoint, u8* data,
+                                          s32 length, s32* actual_length, u32 timeout) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_interrupt_transfer(dev_handle, endpoint, data, length, actual_length, timeout));
 }
 
-int PS4_SYSV_ABI sceUsbdOpen() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetDescriptor(SceUsbdDeviceHandle* dev_handle, u8 descType, u8 descIndex,
+                                      u8* data, s32 length) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_get_descriptor(dev_handle, descType, descIndex, data, length));
 }
 
-int PS4_SYSV_ABI sceUsbdOpenDeviceWithVidPid() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetStringDescriptor(SceUsbdDeviceHandle* dev_handle, u8 desc_index,
+                                            u16 langid, u8* data, s32 length) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_get_string_descriptor(dev_handle, desc_index, langid, data, length));
 }
 
-int PS4_SYSV_ABI sceUsbdRefDevice() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdGetStringDescriptorAscii(SceUsbdDeviceHandle* dev_handle, u8 desc_index,
+                                                 u8* data, s32 length) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(
+        libusb_get_string_descriptor_ascii(dev_handle, desc_index, data, length));
 }
 
-int PS4_SYSV_ABI sceUsbdReleaseInterface() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdTryLockEvents() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_try_lock_events(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdResetDevice() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdLockEvents() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_lock_events(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdSetConfiguration() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdUnlockEvents() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_unlock_events(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdSetInterfaceAltSetting() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdEventHandlingOk() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_event_handling_ok(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdSetIsoPacketLengths() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdEventHandlerActive() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_event_handler_active(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdSubmitTransfer() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdLockEventWaiters() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_lock_event_waiters(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdTryLockEvents() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceUsbdUnlockEventWaiters() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    libusb_unlock_event_waiters(g_libusb_context);
 }
 
-int PS4_SYSV_ABI sceUsbdUnlockEvents() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdWaitForEvent(timeval* tv) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_wait_for_event(g_libusb_context, tv));
 }
 
-int PS4_SYSV_ABI sceUsbdUnlockEventWaiters() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdHandleEventsTimeout(timeval* tv) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_handle_events_timeout(g_libusb_context, tv));
 }
 
-int PS4_SYSV_ABI sceUsbdUnrefDevice() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUsbdHandleEvents() {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_handle_events(g_libusb_context));
 }
 
-int PS4_SYSV_ABI sceUsbdWaitForEvent() {
-    LOG_ERROR(Lib_Usbd, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceUsbdHandleEventsLocked(timeval* tv) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    return libusb_to_orbis_error(libusb_handle_events_locked(g_libusb_context, tv));
+}
+
+s32 PS4_SYSV_ABI sceUsbdCheckConnected(SceUsbdDeviceHandle* dev_handle) {
+    LOG_TRACE(Lib_Usbd, "called");
+
+    // There's no libusb version of this function.
+    // Simulate by querying data.
+
+    libusb_device_descriptor desc;
+    int r = libusb_get_device_descriptor(libusb_get_device(dev_handle), &desc);
+    if (r >= 0)
+        return 0;
+
+    return libusb_to_orbis_error(r);
 }
 
 int PS4_SYSV_ABI Func_65F6EF33E38FFF50() {
