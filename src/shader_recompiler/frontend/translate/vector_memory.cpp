@@ -418,6 +418,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
 
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
+    info.is_array.Assign(mimg.da);
     const IR::Value texel = ir.ImageRead(handle, body, {}, {}, info);
 
     for (u32 i = 0; i < 4; i++) {
@@ -442,6 +443,7 @@ void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
 
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
+    info.is_array.Assign(mimg.da);
 
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
@@ -456,13 +458,18 @@ void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
 }
 
 void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
+    const auto& mimg = inst.control.mimg;
     IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
     const auto flags = ImageResFlags(inst.control.mimg.dmask);
     const bool has_mips = flags.test(ImageResComponent::MipCount);
     const IR::U32 lod = ir.GetVectorReg(IR::VectorReg(inst.src[0].code));
     const IR::Value tsharp = ir.GetScalarReg(tsharp_reg);
-    const IR::Value size = ir.ImageQueryDimension(tsharp, lod, ir.Imm1(has_mips));
+
+    IR::TextureInstInfo info{};
+    info.is_array.Assign(mimg.da);
+
+    const IR::Value size = ir.ImageQueryDimension(tsharp, lod, ir.Imm1(has_mips), info);
 
     if (flags.test(ImageResComponent::Width)) {
         ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(size, 0)});
@@ -484,6 +491,9 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
     IR::VectorReg addr_reg{inst.src[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
 
+    IR::TextureInstInfo info{};
+    info.is_array.Assign(mimg.da);
+
     const IR::Value value = ir.GetVectorReg(val_reg);
     const IR::Value handle = ir.GetScalarReg(tsharp_reg);
     const IR::Value body =
@@ -494,25 +504,25 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::Swap:
             return ir.ImageAtomicExchange(handle, body, value, {});
         case AtomicOp::Add:
-            return ir.ImageAtomicIAdd(handle, body, value, {});
+            return ir.ImageAtomicIAdd(handle, body, value, info);
         case AtomicOp::Smin:
-            return ir.ImageAtomicIMin(handle, body, value, true, {});
+            return ir.ImageAtomicIMin(handle, body, value, true, info);
         case AtomicOp::Umin:
-            return ir.ImageAtomicUMin(handle, body, value, {});
+            return ir.ImageAtomicUMin(handle, body, value, info);
         case AtomicOp::Smax:
-            return ir.ImageAtomicIMax(handle, body, value, true, {});
+            return ir.ImageAtomicIMax(handle, body, value, true, info);
         case AtomicOp::Umax:
-            return ir.ImageAtomicUMax(handle, body, value, {});
+            return ir.ImageAtomicUMax(handle, body, value, info);
         case AtomicOp::And:
-            return ir.ImageAtomicAnd(handle, body, value, {});
+            return ir.ImageAtomicAnd(handle, body, value, info);
         case AtomicOp::Or:
-            return ir.ImageAtomicOr(handle, body, value, {});
+            return ir.ImageAtomicOr(handle, body, value, info);
         case AtomicOp::Xor:
-            return ir.ImageAtomicXor(handle, body, value, {});
+            return ir.ImageAtomicXor(handle, body, value, info);
         case AtomicOp::Inc:
-            return ir.ImageAtomicInc(handle, body, value, {});
+            return ir.ImageAtomicInc(handle, body, value, info);
         case AtomicOp::Dec:
-            return ir.ImageAtomicDec(handle, body, value, {});
+            return ir.ImageAtomicDec(handle, body, value, info);
         default:
             UNREACHABLE();
         }
@@ -643,11 +653,14 @@ void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
     IR::VectorReg addr_reg{inst.src[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
 
+    IR::TextureInstInfo info{};
+    info.is_array.Assign(mimg.da);
+
     const IR::Value handle = ir.GetScalarReg(tsharp_reg);
     const IR::Value body = ir.CompositeConstruct(
         ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
         ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
-    const IR::Value lod = ir.ImageQueryLod(handle, body, {});
+    const IR::Value lod = ir.ImageQueryLod(handle, body, info);
     ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
     ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 1)});
 }

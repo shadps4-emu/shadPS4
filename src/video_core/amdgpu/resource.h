@@ -54,7 +54,7 @@ struct Buffer {
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -119,6 +119,7 @@ constexpr std::string_view NameOf(ImageType type) {
 enum class TilingMode : u32 {
     Depth_MacroTiled = 0u,
     Display_Linear = 0x8u,
+    Display_MicroTiled = 0x9u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
     Texture_MacroTiled = 0xEu,
@@ -131,6 +132,8 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
         return "Display_Linear";
+    case TilingMode::Display_MicroTiled:
+        return "Display_MicroTiled";
     case TilingMode::Display_MacroTiled:
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:
@@ -226,15 +229,15 @@ struct Image {
         return pitch + 1;
     }
 
-    u32 NumLayers(bool is_array) const {
-        u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
-        if (GetType() == ImageType::Cube) {
-            if (is_array) {
-                slices = last_array + 1;
-                ASSERT(slices % 6 == 0);
-            } else {
-                slices = 6;
-            }
+    [[nodiscard]] u32 NumLayers() const noexcept {
+        // Depth is the number of layers for Array images.
+        u32 slices = depth + 1;
+        if (GetType() == ImageType::Color3D) {
+            // Depth is the actual texture depth for 3D images.
+            slices = 1;
+        } else if (IsCube()) {
+            // Depth is the number of full cubes for Cube images.
+            slices *= 6;
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -256,8 +259,12 @@ struct Image {
         return 1;
     }
 
+    bool IsCube() const noexcept {
+        return static_cast<ImageType>(type) == ImageType::Cube;
+    }
+
     ImageType GetType() const noexcept {
-        return static_cast<ImageType>(type);
+        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -265,7 +272,7 @@ struct Image {
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return RemapNumberFormat(NumberFormat(num_format));
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     NumberConversion GetNumberConversion() const noexcept {
@@ -289,13 +296,48 @@ struct Image {
                GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
 
-    bool IsPartialCubemap() const {
-        const auto viewed_slice = last_array - base_array + 1;
-        return GetType() == ImageType::Cube && viewed_slice < 6;
+    [[nodiscard]] ImageType GetViewType(const bool is_array) const noexcept {
+        const auto base_type = GetType();
+        if (IsCube()) {
+            // Cube needs to remain array type regardless of instruction array specifier.
+            return base_type;
+        }
+        if (base_type == ImageType::Color1DArray && !is_array) {
+            return ImageType::Color1D;
+        }
+        if (base_type == ImageType::Color2DArray && !is_array) {
+            return ImageType::Color2D;
+        }
+        if (base_type == ImageType::Color2DMsaaArray && !is_array) {
+            return ImageType::Color2DMsaa;
+        }
+        return base_type;
     }
 
-    ImageType GetBoundType() const noexcept {
-        return IsPartialCubemap() ? ImageType::Color2DArray : GetType();
+    [[nodiscard]] u32 NumViewLevels(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color2DMsaa:
+        case ImageType::Color2DMsaaArray:
+            return 1;
+        default:
+            // Constrain to actual number of available levels.
+            const auto max_level = std::min<u32>(last_level + 1, NumLevels());
+            return max_level > base_level ? max_level - base_level : 1;
+        }
+    }
+
+    [[nodiscard]] u32 NumViewLayers(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color1D:
+        case ImageType::Color2D:
+        case ImageType::Color2DMsaa:
+        case ImageType::Color3D:
+            return 1;
+        default:
+            // Constrain to actual number of available layers.
+            const auto max_array = std::min<u32>(last_array + 1, NumLayers());
+            return max_array > base_array ? max_array - base_array : 1;
+        }
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits

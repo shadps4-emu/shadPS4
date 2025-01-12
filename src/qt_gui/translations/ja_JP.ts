@@ -577,6 +577,10 @@
 			<translation>ログフィルター</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>ログの場所を開く</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>入力</translation>
 		</message>

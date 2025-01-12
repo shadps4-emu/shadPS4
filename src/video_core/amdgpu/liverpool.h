@@ -899,7 +899,8 @@ struct Liverpool {
             // There is a small difference between T# and CB number types, account for it.
             return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
                                          ? NumberFormat::Srgb
-                                         : info.number_type.Value());
+                                         : info.number_type.Value(),
+                                     info.format);
         }
 
         [[nodiscard]] NumberConversion GetNumberConversion() const {

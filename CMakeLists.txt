@@ -263,6 +263,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
+                 src/core/libraries/network/ssl2.cpp
+                 src/core/libraries/network/ssl2.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
@@ -415,7 +417,9 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec_impl.h
 )
 
-set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
+set(NP_LIBS src/core/libraries/np_common/np_common.cpp
+            src/core/libraries/np_common/np_common.h
+            src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
             src/core/libraries/np_score/np_score.h

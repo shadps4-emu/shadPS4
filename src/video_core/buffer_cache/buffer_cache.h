@@ -5,8 +5,6 @@
 
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include <boost/icl/interval_map.hpp>
-#include <tsl/robin_map.h>
 #include "common/div_ceil.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -25,6 +23,10 @@ struct FetchShaderData;
 }
 struct Info;
 } // namespace Shader
+
+namespace Vulkan {
+class GraphicsPipeline;
+}
 
 namespace VideoCore {
 
@@ -75,8 +77,7 @@ public:
     void InvalidateMemory(VAddr device_addr, u64 size);
 
     /// Binds host vertex buffers for the current draw.
-    bool BindVertexBuffers(const Shader::Info& vs_info,
-                           const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader);
+    void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
 
     /// Bind host index buffer for the current draw.
     void BindIndexBuffer(u32 index_offset);

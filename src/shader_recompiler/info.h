@@ -70,13 +70,7 @@ struct ImageResource {
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
-    bool is_read{};
     bool is_written{};
-
-    [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
-        // Need cube as storage when used with ImageRead.
-        return is_written || (is_read && image.GetBoundType() == AmdGpu::ImageType::Cube);
-    }
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };

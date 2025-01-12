@@ -204,6 +204,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_explicit_workgroup_layout = true,
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
+        .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
@@ -419,17 +420,17 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     }
 
-    const auto vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
+    const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
     if (vs_info && fetch_shader && !instance.IsVertexInputDynamicState()) {
+        // Without vertex input dynamic state, the pipeline needs to specialize on format.
+        // Stride will still be handled outside the pipeline using dynamic state.
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
             if (attrib.UsesStepRates()) {
+                // Skip attribute binding as the data will be pulled by shader.
                 continue;
             }
             const auto& buffer = attrib.GetSharp(*vs_info);
-            if (buffer.GetSize() == 0) {
-                continue;
-            }
             ASSERT(vertex_binding < MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());

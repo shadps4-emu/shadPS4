@@ -577,6 +577,10 @@
 			<translation>Log-Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Protokollspeicherort öffnen</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Eingabe</translation>
 		</message>

@@ -577,6 +577,10 @@
 			<translation>Log Filter</translation>
 		</message>
 		<message>
+			<source>Open Log Location</source>
+			<translation>Buka Lokasi Log</translation>
+		</message>
+		<message>
 			<source>Input</source>
 			<translation>Masukan</translation>
 		</message>
