@@ -39,7 +39,8 @@ int main(int argc, char* argv[]) {
                           "Options:\n"
                           "  -g, --game <path|ID>          Specify game path to launch\n"
                           "  -ga, --game-with-arg <path|ID> <arg>\n"
-                          "                                Run a game executable with one argument passed to it.\n"
+                          "                                Run a game executable with one argument "
+                          "passed to it.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
@@ -182,7 +183,7 @@ int main(int argc, char* argv[]) {
 
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-        emulator.Run(eboot_path, game_arg);
+    emulator.Run(eboot_path, game_arg);
 
     return 0;
 }
