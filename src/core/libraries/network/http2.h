@@ -34,7 +34,7 @@ int PS4_SYSV_ABI sceHttp2GetCookieStats();
 int PS4_SYSV_ABI sceHttp2GetMemoryPoolStats();
 int PS4_SYSV_ABI sceHttp2GetResponseContentLength();
 int PS4_SYSV_ABI sceHttp2GetStatusCode();
-int PS4_SYSV_ABI sceHttp2Init();
+int PS4_SYSV_ABI sceHttp2Init(int net_id, int ssl_id, size_t pool_size, int max_requests);
 int PS4_SYSV_ABI sceHttp2ReadData();
 int PS4_SYSV_ABI sceHttp2ReadDataAsync();
 int PS4_SYSV_ABI sceHttp2RedirectCacheFlush();

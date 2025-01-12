@@ -123,9 +123,10 @@ int PS4_SYSV_ABI sceHttp2GetStatusCode() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2Init() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceHttp2Init(int net_id, int ssl_id, size_t pool_size, int max_requests) {
+    LOG_ERROR(Lib_Http2, "(DUMMY) called");
+    static int id = 0;
+    return ++id;
 }
 
 int PS4_SYSV_ABI sceHttp2ReadData() {
