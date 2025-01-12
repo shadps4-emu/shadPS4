@@ -98,7 +98,7 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(const std::filesystem::path& file) {
+void Emulator::Run(const std::filesystem::path& file, const std::string arg) {
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto game_folder = file.parent_path();
@@ -238,7 +238,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 #endif
 
-    linker->Execute();
+    linker->Execute(arg);
 
     window->InitTimers();
     while (window->IsOpen()) {

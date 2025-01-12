@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
     std::string game_path;
+    std::string game_arg = "";
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -43,6 +44,8 @@ int main(int argc, char* argv[]) {
                           "  No arguments: Opens the GUI.\n"
                           "  -g, --game <path|ID>          Specify <eboot.bin or elf path> or "
                           "<game ID (CUSAXXXXX)> to launch\n"
+                          "  -ga, --game-with-arg <path|ID> <arg>\n"
+                          "                                Run a game executable with one argument passed to it.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -s, --show-gui                Show the GUI\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
@@ -67,6 +70,19 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--game", [&](int& i) { arg_map["-g"](i); }},
+
+        {"-ga",
+         [&](int& i) {
+             if (i + 2 < argc) {
+                 game_path = argv[++i];
+                 game_arg = argv[++i];
+                 has_game_argument = true;
+             } else {
+                 std::cerr << "Error: Missing argument for -ga/--game-with-arg\n";
+                 exit(1);
+             }
+         }},
+        {"--game-with-arg", [&](int& i) { arg_map["-ga"](i); }},
 
         {"-p",
          [&](int& i) {
@@ -181,7 +197,7 @@ int main(int argc, char* argv[]) {
 
         // Run the emulator with the resolved game path
         Core::Emulator emulator;
-        emulator.Run(game_file_path.string());
+        emulator.Run(game_file_path.string(), game_arg);
         if (!show_gui) {
             return 0; // Exit after running the emulator without showing the GUI
         }

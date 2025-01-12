@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 
     bool has_game_argument = false;
     std::string game_path;
+    std::string game_arg;
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -37,6 +38,8 @@ int main(int argc, char* argv[]) {
              std::cout << "Usage: shadps4 [options] <elf or eboot.bin path>\n"
                           "Options:\n"
                           "  -g, --game <path|ID>          Specify game path to launch\n"
+                          "  -ga, --game-with-arg <path|ID> <arg>\n"
+                          "                                Run a game executable with one argument passed to it.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
@@ -57,6 +60,19 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--game", [&](int& i) { arg_map["-g"](i); }},
+
+        {"-ga",
+         [&](int& i) {
+             if (i + 2 < argc) {
+                 game_path = argv[++i];
+                 game_arg = argv[++i];
+                 has_game_argument = true;
+             } else {
+                 std::cerr << "Error: Missing argument for -ga/--game-with-arg\n";
+                 exit(1);
+             }
+         }},
+        {"--game-with-arg", [&](int& i) { arg_map["-ga"](i); }},
 
         {"-p",
          [&](int& i) {
@@ -166,7 +182,7 @@ int main(int argc, char* argv[]) {
 
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-    emulator.Run(eboot_path);
+        emulator.Run(eboot_path, game_arg);
 
     return 0;
 }
