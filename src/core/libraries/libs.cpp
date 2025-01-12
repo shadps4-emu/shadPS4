@@ -24,6 +24,7 @@
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
+#include "core/libraries/network/ssl2.h"
 #include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_score/np_score.h"
@@ -70,6 +71,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SaveData::RegisterlibSceSaveData(sym);
     Libraries::SaveData::Dialog::RegisterlibSceSaveDataDialog(sym);
     Libraries::Ssl::RegisterlibSceSsl(sym);
+    Libraries::Ssl2::RegisterlibSceSsl2(sym);
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
