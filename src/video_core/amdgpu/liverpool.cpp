@@ -260,7 +260,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const std::string_view label{reinterpret_cast<const char*>(&nop->data_block[1]),
                                                  marker_sz};
                     if (rasterizer) {
-                        rasterizer->ScopeMarkerBegin(label);
+                        rasterizer->ScopeMarkerBegin(label, true);
                     }
                     break;
                 }
@@ -271,13 +271,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const u32 color = *reinterpret_cast<const u32*>(
                         reinterpret_cast<const u8*>(&nop->data_block[1]) + marker_sz);
                     if (rasterizer) {
-                        rasterizer->ScopedMarkerInsertColor(label, color);
+                        rasterizer->ScopedMarkerInsertColor(label, color, true);
                     }
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPop: {
                     if (rasterizer) {
-                        rasterizer->ScopeMarkerEnd();
+                        rasterizer->ScopeMarkerEnd(true);
                     }
                     break;
                 }

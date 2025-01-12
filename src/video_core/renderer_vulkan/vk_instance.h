@@ -79,11 +79,6 @@ public:
         return profiler_context;
     }
 
-    /// Returns true when a known debugging tool is attached.
-    bool HasDebuggingToolAttached() const {
-        return crash_diagnostic || has_renderdoc || has_nsight_graphics;
-    }
-
     /// Returns true if anisotropic filtering is supported
     bool IsAnisotropicFilteringSupported() const {
         return features.samplerAnisotropy;
@@ -340,13 +335,9 @@ private:
     bool legacy_vertex_attributes{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
+    bool tooling_info{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
-    bool tooling_info{};
-    bool debug_utils_supported{};
-    bool crash_diagnostic{};
-    bool has_nsight_graphics{};
-    bool has_renderdoc{};
 };
 
 } // namespace Vulkan

@@ -92,15 +92,13 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {}
+      physical_devices{EnumeratePhysicalDevices(instance)} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {
+      physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -562,10 +560,7 @@ void Instance::CollectToolingInfo() {
         return;
     }
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
-        const std::string_view name = tool.name;
-        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
-        has_renderdoc = has_renderdoc || name == "RenderDoc";
-        has_nsight_graphics = has_nsight_graphics || name == "NVIDIA Nsight Graphics";
+        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", tool.name);
     }
 }
 

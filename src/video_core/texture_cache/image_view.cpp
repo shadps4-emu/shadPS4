@@ -110,6 +110,13 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(view_result));
     image_view = std::move(view);
+
+    const auto view_aspect = aspect & vk::ImageAspectFlagBits::eDepth     ? "Depth"
+                             : aspect & vk::ImageAspectFlagBits::eStencil ? "Stencil"
+                                                                          : "Color";
+    Vulkan::SetObjectName(instance.GetDevice(), *image_view, "ImageView {}x{}x{} {:#x}:{:#x} ({})",
+                          image.info.size.width, image.info.size.height, image.info.size.depth,
+                          image.info.guest_address, image.info.guest_size, view_aspect);
 }
 
 ImageView::~ImageView() = default;

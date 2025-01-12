@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -235,11 +236,9 @@ void Swapchain::RefreshSemaphores() {
         semaphore = sem;
     }
 
-    if (instance.HasDebuggingToolAttached()) {
-        for (u32 i = 0; i < image_count; ++i) {
-            SetObjectName(device, image_acquired[i], "Swapchain Semaphore: image_acquired {}", i);
-            SetObjectName(device, present_ready[i], "Swapchain Semaphore: present_ready {}", i);
-        }
+    for (u32 i = 0; i < image_count; ++i) {
+        SetObjectName(device, image_acquired[i], "Swapchain Semaphore: image_acquired {}", i);
+        SetObjectName(device, present_ready[i], "Swapchain Semaphore: present_ready {}", i);
     }
 }
 
@@ -251,10 +250,8 @@ void Swapchain::SetupImages() {
     images = std::move(imgs);
     image_count = static_cast<u32>(images.size());
 
-    if (instance.HasDebuggingToolAttached()) {
-        for (u32 i = 0; i < image_count; ++i) {
-            SetObjectName(device, images[i], "Swapchain Image {}", i);
-        }
+    for (u32 i = 0; i < image_count; ++i) {
+        SetObjectName(device, images[i], "Swapchain Image {}", i);
     }
 }
 
