@@ -44,6 +44,7 @@ bool getIsMotionControlsEnabled();
 
 u32 getScreenWidth();
 u32 getScreenHeight();
+std::string getPostProcessingFilter();
 s32 getGpuId();
 
 bool debugDump();

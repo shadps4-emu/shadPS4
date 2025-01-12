@@ -71,6 +71,7 @@ static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
+static std::string ppFilter;
 
 // Gui
 static bool load_game_size = true;
@@ -230,6 +231,10 @@ bool isRdocEnabled() {
 
 u32 vblankDiv() {
     return vblankDivider;
+}
+
+std::string getPostProcessingFilter() {
+    return ppFilter;
 }
 
 bool vkValidationEnabled() {
@@ -633,6 +638,7 @@ void load(const std::filesystem::path& path) {
 
         screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
         screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
+        ppFilter = toml::find_or<std::string>(gpu, "ppFilter", "linear");
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
@@ -747,6 +753,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
+    data["GPU"]["ppFilter"] = ppFilter;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;

@@ -278,9 +278,19 @@ void Presenter::CreatePostProcessPipeline() {
     instance.GetDevice().destroyShaderModule(fs_module);
 
     // Create sampler resource
+    const auto filters = std::unordered_map<std::string, vk::Filter>{
+        {"linear", vk::Filter::eLinear},
+        {"nearest", vk::Filter::eNearest},
+    };
+    auto pp_filter = vk::Filter::eLinear;
+    if (const auto filter = Config::getPostProcessingFilter(); filters.contains(filter)) {
+        pp_filter = filters.at(filter);
+    } else {
+        LOG_WARNING(Render_Vulkan, "Unknown post processing filter: {}", filter);
+    }
     const vk::SamplerCreateInfo sampler_ci = {
-        .magFilter = vk::Filter::eLinear,
-        .minFilter = vk::Filter::eLinear,
+        .magFilter = pp_filter,
+        .minFilter = pp_filter,
         .mipmapMode = vk::SamplerMipmapMode::eNearest,
         .addressModeU = vk::SamplerAddressMode::eClampToEdge,
         .addressModeV = vk::SamplerAddressMode::eClampToEdge,
