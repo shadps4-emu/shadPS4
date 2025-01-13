@@ -41,6 +41,42 @@ struct AxisMapping {
     int value; // Value to set for key press (+127 or -127 for movement)
 };
 
+enum class InputType { KeyboardMouse, Controller, Axis, Count };
+
+class InputID {
+public:
+    InputType type;
+    u32 sdl_id;
+    InputID(InputType d = InputType::Count, u32 i = (u32)-1) : type(d), sdl_id(i) {}
+    bool operator==(const InputID& o) const {
+        return type == o.type && sdl_id == o.sdl_id;
+    }
+    bool operator!=(const InputID& o) const {
+        return type != o.type || sdl_id != o.sdl_id;
+    }
+    bool operator<=(const InputID& o) const {
+        return type <= o.type && sdl_id <= o.sdl_id;
+    }
+    bool IsValid() const {
+        return *this != InputID();
+    }
+    std::string ToString() {
+        return fmt::format("({}: {:x})", (u8)type, sdl_id);
+    }
+};
+
+class InputEvent {
+public:
+    InputID input;
+    bool active;
+    s8 axis_value;
+
+    InputEvent(InputID i = InputID(), bool a = false, s8 v = 0)
+        : input(i), active(a), axis_value(v) {}
+    InputEvent(InputType d, u32 i, bool a = false, s8 v = 0)
+        : input(d, i), active(a), axis_value(v) {}
+};
+
 // i strongly suggest you collapse these maps
 const std::map<std::string, OrbisPadButtonDataOffset> string_to_cbutton_map = {
     {"triangle", OrbisPadButtonDataOffset::Triangle},
@@ -192,79 +228,84 @@ void ParseInputConfig(const std::string game_id);
 
 class InputBinding {
 public:
-    u32 key1, key2, key3;
-    InputBinding(u32 k1 = SDLK_UNKNOWN, u32 k2 = SDLK_UNKNOWN, u32 k3 = SDLK_UNKNOWN) {
+    InputID keys[3];
+    InputBinding(InputID k1 = InputID(), InputID k2 = InputID(), InputID k3 = InputID()) {
         // we format the keys so comparing them will be very fast, because we will only have to
         // compare 3 sorted elements, where the only possible duplicate item is 0
 
         // duplicate entries get changed to one original, one null
-        if (k1 == k2 && k1 != SDLK_UNKNOWN) {
-            k2 = 0;
+        if (k1 == k2 && k1 != InputID()) {
+            k2 = InputID();
         }
-        if (k1 == k3 && k1 != SDLK_UNKNOWN) {
-            k3 = 0;
+        if (k1 == k3 && k1 != InputID()) {
+            k3 = InputID();
         }
-        if (k3 == k2 && k2 != SDLK_UNKNOWN) {
-            k2 = 0;
+        if (k3 == k2 && k2 != InputID()) {
+            k2 = InputID();
         }
         // this sorts them
         if (k1 <= k2 && k1 <= k3) {
-            key1 = k1;
+            keys[0] = k1;
             if (k2 <= k3) {
-                key2 = k2;
-                key3 = k3;
+                keys[1] = k2;
+                keys[2] = k3;
             } else {
-                key2 = k3;
-                key3 = k2;
+                keys[1] = k3;
+                keys[2] = k2;
             }
         } else if (k2 <= k1 && k2 <= k3) {
-            key1 = k2;
+            keys[0] = k2;
             if (k1 <= k3) {
-                key2 = k1;
-                key3 = k3;
+                keys[1] = k1;
+                keys[2] = k3;
             } else {
-                key2 = k3;
-                key3 = k1;
+                keys[1] = k3;
+                keys[2] = k1;
             }
         } else {
-            key1 = k3;
+            keys[0] = k3;
             if (k1 <= k2) {
-                key2 = k1;
-                key3 = k2;
+                keys[1] = k1;
+                keys[2] = k2;
             } else {
-                key2 = k2;
-                key3 = k1;
+                keys[1] = k2;
+                keys[3] = k1;
             }
         }
     }
     // copy ctor
-    InputBinding(const InputBinding& o) : key1(o.key1), key2(o.key2), key3(o.key3) {}
+    InputBinding(const InputBinding& o) {
+        keys[0] = o.keys[0];
+        keys[1] = o.keys[1];
+        keys[2] = o.keys[2];
+    }
 
     inline bool operator==(const InputBinding& o) {
-        // 0 = SDLK_UNKNOWN aka unused slot
-        return (key3 == o.key3 || key3 == 0 || o.key3 == 0) &&
-               (key2 == o.key2 || key2 == 0 || o.key2 == 0) &&
-               (key1 == o.key1 || key1 == 0 || o.key1 == 0);
+        // InputID() signifies an unused slot
+        return (keys[2] == o.keys[2] || keys[2] == InputID() || o.keys[2] == InputID()) &&
+               (keys[1] == o.keys[1] || keys[1] == InputID() || o.keys[1] == InputID()) &&
+               (keys[0] == o.keys[0] || keys[0] == InputID() || o.keys[0] == InputID());
         // it is already very fast,
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
     }
     inline int KeyCount() const {
-        return (key1 ? 1 : 0) + (key2 ? 1 : 0) + (key3 ? 1 : 0);
+        return (keys[0].IsValid() ? 1 : 0) + (keys[1].IsValid() ? 1 : 0) +
+               (keys[2].IsValid() ? 1 : 0);
     }
     // Sorts by the amount of non zero keys - left side is 'bigger' here
     bool operator<(const InputBinding& other) const {
         return KeyCount() > other.KeyCount();
     }
     inline bool IsEmpty() {
-        return key1 == 0 && key2 == 0 && key3 == 0;
+        return !(keys[0].IsValid() || keys[1].IsValid() || keys[2].IsValid());
     }
-    std::string ToString() {
-        return fmt::format("({:X}, {:X}, {:X})", key1, key2, key3);
+    std::string ToString() { // todo add device type
+        return fmt::format("({:X}, {:X}, {:X})", keys[0].sdl_id, keys[1].sdl_id, keys[2].sdl_id);
     }
 
-    // returns a u32 based on the event type (keyboard, mouse buttons, or wheel)
-    static u32 GetInputIDFromEvent(const SDL_Event& e);
+    // returns an InputEvent based on the event type (keyboard, mouse buttons/wheel, or controller)
+    static InputEvent GetInputEventFromSDLEvent(const SDL_Event& e);
 };
 class ControllerOutput {
     static GameController* controller;
@@ -300,19 +341,21 @@ public:
     }
 
     void ResetUpdate();
-    void AddUpdate(bool pressed, bool analog, u32 param = 0);
+    void AddUpdate(InputEvent event);
     void FinalizeUpdate();
 };
 class BindingConnection {
 public:
     InputBinding binding;
     ControllerOutput* output;
-    u32 parameter;
-    BindingConnection(InputBinding b, ControllerOutput* out, u32 param = 0) {
-        binding = b;
-        parameter = param;
+    u32 axis_param;
+    InputID toggle;
 
+    BindingConnection(InputBinding b, ControllerOutput* out, u32 param = 0, InputID t = InputID()) {
+        binding = b;
+        axis_param = param;
         output = out;
+        toggle = t;
     }
     bool operator<(const BindingConnection& other) const {
         // a button is a higher priority than an axis, as buttons can influence axes
@@ -327,11 +370,12 @@ public:
         }
         return false;
     }
+    InputEvent ProcessBinding();
 };
 
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
-bool UpdatePressedKeys(u32 button, bool is_pressed);
+bool UpdatePressedKeys(InputEvent event);
 
 void ActivateOutputsFromInputs();
 
