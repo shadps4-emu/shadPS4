@@ -374,6 +374,9 @@ OPCODE(ImageAtomicOr32,                                     U32,            Opaq
 OPCODE(ImageAtomicXor32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicExchange32,                               U32,            Opaque,         Opaque,         U32,                                            )
 
+// Cube operations - optional, usable if profile.supports_native_cube_calc
+OPCODE(CubeFaceIndex,                                       F32,            F32x3,                                                                          )
+
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(WarpId,                                              U32,                                                                                            )

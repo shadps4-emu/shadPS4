@@ -17,6 +17,8 @@ void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
+bool GetLoadGameSizeEnabled();
+void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
 std::string getFullscreenMode();
 bool isNeoModeConsole();

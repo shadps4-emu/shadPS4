@@ -10,13 +10,13 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace VideoCore {
 
-static constexpr size_t NumVertexBuffers = 32;
 static constexpr size_t GdsBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 1_GB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
@@ -89,35 +89,22 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     }
 }
 
-bool BufferCache::BindVertexBuffers(
-    const Shader::Info& vs_info, const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader) {
-    boost::container::small_vector<vk::VertexInputAttributeDescription2EXT, 16> attributes;
-    boost::container::small_vector<vk::VertexInputBindingDescription2EXT, 16> bindings;
-    SCOPE_EXIT {
-        if (instance.IsVertexInputDynamicState()) {
-            const auto cmdbuf = scheduler.CommandBuffer();
-            cmdbuf.setVertexInputEXT(bindings, attributes);
-        } else if (bindings.empty()) {
-            // Required to call bindVertexBuffers2EXT at least once in the current command buffer
-            // with non-null strides without a non-dynamic stride pipeline in between. Thus even
-            // when nothing is bound we still need to make a dummy call. Non-null strides in turn
-            // requires a count greater than 0.
-            const auto cmdbuf = scheduler.CommandBuffer();
-            const std::array null_buffers = {GetBuffer(NULL_BUFFER_ID).buffer.buffer};
-            constexpr std::array null_offsets = {static_cast<vk::DeviceSize>(0)};
-            cmdbuf.bindVertexBuffers2EXT(0, null_buffers, null_offsets, null_offsets, null_offsets);
-        }
-    };
+void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
+    Vulkan::VertexInputs<vk::VertexInputAttributeDescription2EXT> attributes;
+    Vulkan::VertexInputs<vk::VertexInputBindingDescription2EXT> bindings;
+    Vulkan::VertexInputs<AmdGpu::Buffer> guest_buffers;
+    pipeline.GetVertexInputs(attributes, bindings, guest_buffers);
 
-    if (!fetch_shader || fetch_shader->attributes.empty()) {
-        return false;
+    if (instance.IsVertexInputDynamicState()) {
+        // Update current vertex inputs.
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.setVertexInputEXT(bindings, attributes);
     }
 
-    std::array<vk::Buffer, NumVertexBuffers> host_buffers;
-    std::array<vk::DeviceSize, NumVertexBuffers> host_offsets;
-    std::array<vk::DeviceSize, NumVertexBuffers> host_sizes;
-    std::array<vk::DeviceSize, NumVertexBuffers> host_strides;
-    boost::container::static_vector<AmdGpu::Buffer, NumVertexBuffers> guest_buffers;
+    if (bindings.empty()) {
+        // If there are no bindings, there is nothing further to do.
+        return;
+    }
 
     struct BufferRange {
         VAddr base_address;
@@ -125,61 +112,37 @@ bool BufferCache::BindVertexBuffers(
         vk::Buffer vk_buffer;
         u64 offset;
 
-        size_t GetSize() const {
+        [[nodiscard]] size_t GetSize() const {
             return end_address - base_address;
         }
     };
 
-    // Calculate buffers memory overlaps
-    bool has_step_rate = false;
-    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges{};
-    for (const auto& attrib : fetch_shader->attributes) {
-        if (attrib.UsesStepRates()) {
-            has_step_rate = true;
-            continue;
+    // Build list of ranges covering the requested buffers
+    Vulkan::VertexInputs<BufferRange> ranges{};
+    for (const auto& buffer : guest_buffers) {
+        if (buffer.GetSize() > 0) {
+            ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
         }
+    }
 
-        const auto& buffer = attrib.GetSharp(vs_info);
-        if (buffer.GetSize() == 0) {
-            continue;
-        }
-        guest_buffers.emplace_back(buffer);
-        ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
-        attributes.push_back({
-            .location = attrib.semantic,
-            .binding = attrib.semantic,
-            .format =
-                Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
-            .offset = 0,
+    // Merge connecting ranges together
+    Vulkan::VertexInputs<BufferRange> ranges_merged{};
+    if (!ranges.empty()) {
+        std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
+            return lhv.base_address < rhv.base_address;
         });
-        bindings.push_back({
-            .binding = attrib.semantic,
-            .stride = buffer.GetStride(),
-            .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
-                             ? vk::VertexInputRate::eVertex
-                             : vk::VertexInputRate::eInstance,
-            .divisor = 1,
-        });
-    }
-    if (ranges.empty()) {
-        return false;
-    }
-
-    std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
-        return lhv.base_address < rhv.base_address;
-    });
-
-    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges_merged{ranges[0]};
-    for (auto range : ranges) {
-        auto& prev_range = ranges_merged.back();
-        if (prev_range.end_address < range.base_address) {
-            ranges_merged.emplace_back(range);
-        } else {
-            prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+        ranges_merged.emplace_back(ranges[0]);
+        for (auto range : ranges) {
+            auto& prev_range = ranges_merged.back();
+            if (prev_range.end_address < range.base_address) {
+                ranges_merged.emplace_back(range);
+            } else {
+                prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+            }
         }
     }
 
-    // Map buffers
+    // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
         const auto [buffer, offset] = ObtainBuffer(range.base_address, range.GetSize(), false);
         range.vk_buffer = buffer->buffer;
@@ -187,32 +150,39 @@ bool BufferCache::BindVertexBuffers(
     }
 
     // Bind vertex buffers
-    const size_t num_buffers = guest_buffers.size();
-    for (u32 i = 0; i < num_buffers; ++i) {
-        const auto& buffer = guest_buffers[i];
-        const auto host_buffer = std::ranges::find_if(ranges_merged, [&](const BufferRange& range) {
-            return (buffer.base_address >= range.base_address &&
-                    buffer.base_address < range.end_address);
-        });
-        ASSERT(host_buffer != ranges_merged.cend());
-
-        host_buffers[i] = host_buffer->vk_buffer;
-        host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
-        host_sizes[i] = buffer.GetSize();
-        host_strides[i] = buffer.GetStride();
-    }
-
-    if (num_buffers > 0) {
-        const auto cmdbuf = scheduler.CommandBuffer();
-        if (instance.IsVertexInputDynamicState()) {
-            cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+    Vulkan::VertexInputs<vk::Buffer> host_buffers;
+    Vulkan::VertexInputs<vk::DeviceSize> host_offsets;
+    Vulkan::VertexInputs<vk::DeviceSize> host_sizes;
+    Vulkan::VertexInputs<vk::DeviceSize> host_strides;
+    const auto null_buffer =
+        instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : GetBuffer(NULL_BUFFER_ID).Handle();
+    for (const auto& buffer : guest_buffers) {
+        if (buffer.GetSize() > 0) {
+            const auto host_buffer_info =
+                std::ranges::find_if(ranges_merged, [&](const BufferRange& range) {
+                    return buffer.base_address >= range.base_address &&
+                           buffer.base_address < range.end_address;
+                });
+            ASSERT(host_buffer_info != ranges_merged.cend());
+            host_buffers.emplace_back(host_buffer_info->vk_buffer);
+            host_offsets.push_back(host_buffer_info->offset + buffer.base_address -
+                                   host_buffer_info->base_address);
         } else {
-            cmdbuf.bindVertexBuffers2EXT(0, num_buffers, host_buffers.data(), host_offsets.data(),
-                                         host_sizes.data(), host_strides.data());
+            host_buffers.emplace_back(null_buffer);
+            host_offsets.push_back(0);
         }
+        host_sizes.push_back(buffer.GetSize());
+        host_strides.push_back(buffer.GetStride());
     }
 
-    return has_step_rate;
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto num_buffers = guest_buffers.size();
+    if (instance.IsVertexInputDynamicState()) {
+        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+    } else {
+        cmdbuf.bindVertexBuffers2EXT(0, num_buffers, host_buffers.data(), host_offsets.data(),
+                                     host_sizes.data(), host_strides.data());
+    }
 }
 
 void BufferCache::BindIndexBuffer(u32 index_offset) {
