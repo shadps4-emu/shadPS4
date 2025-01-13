@@ -114,6 +114,7 @@ public:
     void S_BCNT1_I32_B64(const GcnInst& inst);
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B64(const GcnInst& inst);
+    void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
@@ -300,6 +301,9 @@ private:
     IR::U32 VMovRelSHelper(u32 src_vgprno, const IR::U32 m0);
     void VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0);
 
+    IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
+                             const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
+
     void LogMissingOpcode(const GcnInst& inst);
 
 private:
@@ -308,7 +312,6 @@ private:
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     bool opcode_missing = false;
-    bool emit_ds_read_barrier = false;
 };
 
 void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,

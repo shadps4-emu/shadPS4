@@ -97,7 +97,23 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
 
     SDL_SetWindowMinimumSize(window, 640, 360);
-    SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
+
+    bool error = false;
+    const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
+    if (displayIndex < 0) {
+        LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
+        error = true;
+    }
+    const SDL_DisplayMode* displayMode;
+    if ((displayMode = SDL_GetCurrentDisplayMode(displayIndex)) == 0) {
+        LOG_ERROR(Frontend, "Error getting display mode: {}", SDL_GetError());
+        error = true;
+    }
+    if (!error) {
+        SDL_SetWindowFullscreenMode(window,
+                                    Config::getFullscreenMode() == "True" ? displayMode : NULL);
+    }
+    SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
     controller->TryOpenSDLController();
@@ -201,7 +217,9 @@ void WindowSDL::InitTimers() {
 
 void WindowSDL::RequestKeyboard() {
     if (keyboard_grab == 0) {
-        SDL_StartTextInput(window);
+        SDL_RunOnMainThread(
+            [](void* userdata) { SDL_StartTextInput(static_cast<SDL_Window*>(userdata)); }, window,
+            true);
     }
     keyboard_grab++;
 }
@@ -210,7 +228,9 @@ void WindowSDL::ReleaseKeyboard() {
     ASSERT(keyboard_grab > 0);
     keyboard_grab--;
     if (keyboard_grab == 0) {
-        SDL_StopTextInput(window);
+        SDL_RunOnMainThread(
+            [](void* userdata) { SDL_StopTextInput(static_cast<SDL_Window*>(userdata)); }, window,
+            true);
     }
 }
 

@@ -119,11 +119,14 @@ public:
         return buffer;
     }
 
-    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlagBits2 dst_acess_mask,
-                                                       vk::PipelineStageFlagBits2 dst_stage) {
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(
+        vk::Flags<vk::AccessFlagBits2> dst_acess_mask, vk::PipelineStageFlagBits2 dst_stage,
+        u32 offset = 0) {
         if (dst_acess_mask == access_mask && stage == dst_stage) {
             return {};
         }
+
+        DEBUG_ASSERT(offset < size_bytes);
 
         auto barrier = vk::BufferMemoryBarrier2{
             .srcStageMask = stage,
@@ -131,7 +134,8 @@ public:
             .dstStageMask = dst_stage,
             .dstAccessMask = dst_acess_mask,
             .buffer = buffer.buffer,
-            .size = size_bytes,
+            .offset = offset,
+            .size = size_bytes - offset,
         };
         access_mask = dst_acess_mask;
         stage = dst_stage;
@@ -150,8 +154,10 @@ public:
     Vulkan::Scheduler* scheduler;
     MemoryUsage usage;
     UniqueBuffer buffer;
-    vk::AccessFlagBits2 access_mask{vk::AccessFlagBits2::eNone};
-    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eNone};
+    vk::Flags<vk::AccessFlagBits2> access_mask{
+        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+        vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite};
+    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eAllCommands};
 };
 
 class StreamBuffer : public Buffer {

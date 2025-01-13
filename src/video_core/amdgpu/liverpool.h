@@ -20,9 +20,9 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
-#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -814,7 +814,9 @@ struct Liverpool {
             BitField<26, 1, u32> fmask_compression_disable_ci;
             BitField<27, 1, u32> fmask_compress_1frag_only;
             BitField<28, 1, u32> dcc_enable;
-            BitField<29, 1, u32> cmask_addr_type;
+            BitField<29, 2, u32> cmask_addr_type;
+            /// Neo-mode only
+            BitField<31, 1, u32> alt_tile_mode;
 
             u32 u32all;
         } info;
@@ -889,15 +891,20 @@ struct Liverpool {
             return !info.linear_general;
         }
 
-        [[nodiscard]] DataFormat DataFormat() const {
+        [[nodiscard]] DataFormat GetDataFmt() const {
             return RemapDataFormat(info.format);
         }
 
-        [[nodiscard]] NumberFormat NumFormat() const {
+        [[nodiscard]] NumberFormat GetNumberFmt() const {
             // There is a small difference between T# and CB number types, account for it.
             return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
                                          ? NumberFormat::Srgb
-                                         : info.number_type.Value());
+                                         : info.number_type.Value(),
+                                     info.format);
+        }
+
+        [[nodiscard]] NumberConversion GetNumberConversion() const {
+            return MapNumberConversion(info.number_type);
         }
 
         [[nodiscard]] CompMapping Swizzle() const {
@@ -936,7 +943,7 @@ struct Liverpool {
             const auto swap_idx = static_cast<u32>(info.comp_swap.Value());
             const auto components_idx = NumComponents(info.format) - 1;
             const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
-            return RemapComponents(info.format, mrt_swizzle);
+            return RemapSwizzle(info.format, mrt_swizzle);
         }
     };
 
@@ -1477,10 +1484,11 @@ private:
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
-        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    VAddr indirect_args_addr{};
 
     struct ConstantEngine {
         void Reset() {

@@ -204,6 +204,11 @@ struct PM4CmdSetData {
     static constexpr u32* SetShReg(u32* cmdbuf, Args... data) {
         return WritePacket<PM4ItOpcode::SetShReg>(cmdbuf, type, data...);
     }
+
+    template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
+    static constexpr u32* SetUconfigReg(u32* cmdbuf, Args... data) {
+        return WritePacket<PM4ItOpcode::SetUconfigReg>(cmdbuf, type, data...);
+    }
 };
 
 struct PM4CmdNop {
@@ -789,6 +794,18 @@ struct PM4CmdDispatchIndirect {
     PM4Type3Header header;
     u32 data_offset;        ///< Byte aligned offset where the required data structure starts
     u32 dispatch_initiator; ///< Dispatch Initiator Register
+};
+
+struct PM4CmdDispatchIndirectMec {
+    PM4Type3Header header;
+    u32 address0;
+    u32 address1;
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+
+    template <typename T>
+    T Address() const {
+        return std::bit_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+    }
 };
 
 struct DrawIndirectArgs {

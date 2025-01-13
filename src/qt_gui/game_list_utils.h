@@ -62,11 +62,46 @@ public:
         QDir dir(dirPath);
         QDirIterator it(dir.absolutePath(), QDirIterator::Subdirectories);
         qint64 total = 0;
+
+        if (!Config::GetLoadGameSizeEnabled()) {
+            game.size = FormatSize(0).toStdString();
+            return;
+        }
+
+        // Cache path
+        QFile size_cache_file(Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                              game.serial / "size_cache.txt");
+        QFileInfo cacheInfo(size_cache_file);
+        QFileInfo dirInfo(dirPath);
+
+        // Check if cache file exists and is valid
+        if (size_cache_file.exists() && cacheInfo.lastModified() >= dirInfo.lastModified()) {
+            if (size_cache_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                QTextStream in(&size_cache_file);
+                QString cachedSize = in.readLine();
+                size_cache_file.close();
+
+                if (!cachedSize.isEmpty()) {
+                    game.size = cachedSize.toStdString();
+                    return;
+                }
+            }
+        }
+
+        // Cache is invalid or does not exist; calculate size
         while (it.hasNext()) {
             it.next();
             total += it.fileInfo().size();
         }
+
         game.size = FormatSize(total).toStdString();
+
+        // Save new cache
+        if (size_cache_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&size_cache_file);
+            out << QString::fromStdString(game.size) << "\n";
+            size_cache_file.close();
+        }
     }
 
     static QString GetRegion(char region) {

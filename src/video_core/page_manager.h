@@ -4,8 +4,8 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
 #include <boost/icl/interval_map.hpp>
+#include "common/spin_lock.h"
 #include "common/types.h"
 
 namespace Vulkan {
@@ -35,8 +35,8 @@ private:
     struct Impl;
     std::unique_ptr<Impl> impl;
     Vulkan::Rasterizer* rasterizer;
-    std::mutex mutex;
     boost::icl::interval_map<VAddr, s32> cached_pages;
+    Common::SpinLock lock;
 };
 
 } // namespace VideoCore

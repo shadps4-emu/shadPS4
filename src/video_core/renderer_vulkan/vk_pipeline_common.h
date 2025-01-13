@@ -61,6 +61,8 @@ public:
                        const Shader::PushData& push_data) const;
 
 protected:
+    [[nodiscard]] std::string GetDebugString() const;
+
     const Instance& instance;
     Scheduler& scheduler;
     DescriptorHeap& desc_heap;

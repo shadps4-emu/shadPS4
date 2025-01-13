@@ -8,7 +8,6 @@
 
 #include "common/assert.h"
 #include "common/io_file.h"
-#include "common/scope_exit.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
@@ -16,6 +15,7 @@
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -36,6 +36,7 @@ GraphicsPipeline::GraphicsPipeline(
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
+    const auto debug_str = GetDebugString();
 
     const vk::PushConstantRange push_constants = {
         .stageFlags = gp_stage_flags,
@@ -54,36 +55,13 @@ GraphicsPipeline::GraphicsPipeline(
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create graphics pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
+    SetObjectName(device, *pipeline_layout, "Graphics PipelineLayout {}", debug_str);
 
-    boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
-    boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
-    if (fetch_shader && !instance.IsVertexInputDynamicState()) {
-        const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
-        for (const auto& attrib : fetch_shader->attributes) {
-            if (attrib.UsesStepRates()) {
-                // Skip attribute binding as the data will be pulled by shader
-                continue;
-            }
-
-            const auto buffer = attrib.GetSharp(vs_info);
-            if (buffer.GetSize() == 0) {
-                continue;
-            }
-            vertex_attributes.push_back({
-                .location = attrib.semantic,
-                .binding = attrib.semantic,
-                .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
-                .offset = 0,
-            });
-            vertex_bindings.push_back({
-                .binding = attrib.semantic,
-                .stride = buffer.GetStride(),
-                .inputRate =
-                    attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
-                        ? vk::VertexInputRate::eVertex
-                        : vk::VertexInputRate::eInstance,
-            });
-        }
+    VertexInputs<vk::VertexInputAttributeDescription> vertex_attributes;
+    VertexInputs<vk::VertexInputBindingDescription> vertex_bindings;
+    VertexInputs<AmdGpu::Buffer> guest_buffers;
+    if (!instance.IsVertexInputDynamicState()) {
+        GetVertexInputs(vertex_attributes, vertex_bindings, guest_buffers);
     }
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
@@ -159,7 +137,7 @@ GraphicsPipeline::GraphicsPipeline(
     }
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
-    } else {
+    } else if (!vertex_bindings.empty()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
     }
 
@@ -322,9 +300,55 @@ GraphicsPipeline::GraphicsPipeline(
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    SetObjectName(device, *pipeline, "Graphics Pipeline {}", debug_str);
 }
 
 GraphicsPipeline::~GraphicsPipeline() = default;
+
+template <typename Attribute, typename Binding>
+void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
+                                       VertexInputs<Binding>& bindings,
+                                       VertexInputs<AmdGpu::Buffer>& guest_buffers) const {
+    if (!fetch_shader || fetch_shader->attributes.empty()) {
+        return;
+    }
+    const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
+    for (const auto& attrib : fetch_shader->attributes) {
+        if (attrib.UsesStepRates()) {
+            // Skip attribute binding as the data will be pulled by shader.
+            continue;
+        }
+
+        const auto& buffer = attrib.GetSharp(vs_info);
+        attributes.push_back(Attribute{
+            .location = attrib.semantic,
+            .binding = attrib.semantic,
+            .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+            .offset = 0,
+        });
+        bindings.push_back(Binding{
+            .binding = attrib.semantic,
+            .stride = buffer.GetStride(),
+            .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
+                             ? vk::VertexInputRate::eVertex
+                             : vk::VertexInputRate::eInstance,
+        });
+        if constexpr (std::is_same_v<Binding, vk::VertexInputBindingDescription2EXT>) {
+            bindings.back().divisor = 1;
+        }
+        guest_buffers.emplace_back(buffer);
+    }
+}
+
+// Declare templated GetVertexInputs for necessary types.
+template void GraphicsPipeline::GetVertexInputs(
+    VertexInputs<vk::VertexInputAttributeDescription>& attributes,
+    VertexInputs<vk::VertexInputBindingDescription>& bindings,
+    VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
+template void GraphicsPipeline::GetVertexInputs(
+    VertexInputs<vk::VertexInputAttributeDescription2EXT>& attributes,
+    VertexInputs<vk::VertexInputBindingDescription2EXT>& bindings,
+    VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
 
 void GraphicsPipeline::BuildDescSetLayout() {
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
@@ -364,9 +388,8 @@ void GraphicsPipeline::BuildDescSetLayout() {
         for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = image.IsStorage(image.GetSharp(*stage))
-                                      ? vk::DescriptorType::eStorageImage
-                                      : vk::DescriptorType::eSampledImage,
+                .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
+                                                   : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
                 .stageFlags = gp_stage_flags,
             });

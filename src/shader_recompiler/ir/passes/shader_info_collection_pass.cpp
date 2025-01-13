@@ -5,7 +5,7 @@
 
 namespace Shader::Optimization {
 
-void Visit(Info& info, IR::Inst& inst) {
+void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU32:

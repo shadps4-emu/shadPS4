@@ -213,9 +213,7 @@ endif()
 
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
-    set(BUILD_EXAMPLES OFF)
     add_subdirectory(discord-rpc)
-    target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 endif()
 
 # GCN Headers

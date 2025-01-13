@@ -5,21 +5,24 @@
 
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
-#include "video_core/texture_cache/image.h"
 
 namespace VideoCore {
 
 class TextureCache;
+struct ImageInfo;
 
 enum DetilerType : u32 {
-    Micro8x1,
-    Micro8x2,
-    Micro32x1,
-    Micro32x2,
-    Micro32x4,
+    Micro8,
+    Micro16,
+    Micro32,
+    Micro64,
+    Micro128,
 
-    Macro32x1,
-    Macro32x2,
+    Macro8,
+    Macro32,
+    Macro64,
+
+    Display_Micro64,
 
     Max
 };
@@ -36,14 +39,15 @@ public:
     TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~TileManager();
 
-    std::pair<vk::Buffer, u32> TryDetile(vk::Buffer in_buffer, u32 in_offset, Image& image);
+    std::pair<vk::Buffer, u32> TryDetile(vk::Buffer in_buffer, u32 in_offset,
+                                         const ImageInfo& info);
 
     ScratchBuffer AllocBuffer(u32 size, bool is_storage = false);
     void Upload(ScratchBuffer buffer, const void* data, size_t size);
     void FreeBuffer(ScratchBuffer buffer);
 
 private:
-    const DetilerContext* GetDetiler(const Image& image) const;
+    const DetilerContext* GetDetiler(const ImageInfo& info) const;
 
 private:
     const Vulkan::Instance& instance;

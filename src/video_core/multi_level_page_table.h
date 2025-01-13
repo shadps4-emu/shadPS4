@@ -39,6 +39,15 @@ public:
         return &(*first_level_map[l1_page])[l2_page];
     }
 
+    [[nodiscard]] const Entry* find(size_t page) const {
+        const size_t l1_page = page >> SecondLevelBits;
+        const size_t l2_page = page & (NumEntriesPerL1Page - 1);
+        if (!first_level_map[l1_page]) {
+            return nullptr;
+        }
+        return &(*first_level_map[l1_page])[l2_page];
+    }
+
     [[nodiscard]] const Entry& operator[](size_t page) const {
         const size_t l1_page = page >> SecondLevelBits;
         const size_t l2_page = page & (NumEntriesPerL1Page - 1);
