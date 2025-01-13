@@ -38,7 +38,6 @@ int main(int argc, char* argv[]) {
              std::cout << "Usage: shadps4 [options] <elf or eboot.bin path>\n"
                           "Options:\n"
                           "  -g, --game <path|ID>          Specify game path to launch\n"
-                          "  -ga, --game-with-arg <path|ID> <arg>\n"
                           " -- ...                         Parameters passed to the game ELF. "
                           "Needs to be at the end of the line, and everything after \"--\" is a "
                           "game argument.\n"
