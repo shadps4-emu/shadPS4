@@ -127,19 +127,32 @@ int main(int argc, char* argv[]) {
         auto it = arg_map.find(cur_arg);
         if (it != arg_map.end()) {
             it->second(i); // Call the associated lambda function
+        } else if (i == argc - 1 && !has_game_argument) {
+            // Assume the last argument is the game file if not specified via -g/--game
+            game_path = argv[i];
+            has_game_argument = true;
+        } else if (std::string(argv[i]) == "--") {
+            if (i + 1 == argc) {
+                std::cerr << "Warning: -- is set, but no game arguments are added!\n";
+                break;
+            }
+            for (int j = i + 1; j < argc; j++) {
+                game_args.push_back(argv[j]);
+            }
+            break;
         } else if (std::string(argv[i + 1]) == "--") {
             if (!has_game_argument) {
                 game_path = argv[i];
                 has_game_argument = true;
             }
+            if (i + 2 == argc) {
+                std::cerr << "Warning: -- is set, but no game arguments are added!\n";
+                break;
+            }
             for (int j = i + 2; j < argc; j++) {
                 game_args.push_back(argv[j]);
             }
             break;
-        } else if (i == argc - 1 && !has_game_argument) {
-            // Assume the last argument is the game file if not specified via -g/--game
-            game_path = argv[i];
-            has_game_argument = true;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
