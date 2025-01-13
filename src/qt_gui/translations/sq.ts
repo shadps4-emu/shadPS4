@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Aktivizo dosjen e ndarë të përditësimit</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Shfaq madhësinë e lojës në listë</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Shfaq Pamjen e nisjes</translation>
@@ -575,6 +579,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Filtri i Ditarit</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Hap vendndodhjen e regjistrit</translation>
 		</message>
 		<message>
 			<source>Input</source>

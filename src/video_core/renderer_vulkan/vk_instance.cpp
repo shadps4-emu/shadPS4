@@ -271,6 +271,7 @@ bool Instance::CreateDevice() {
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
+    amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.

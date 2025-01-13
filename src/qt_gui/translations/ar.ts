@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>عرض حجم اللعبة في القائمة</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>إظهار شاشة البداية</translation>
@@ -575,6 +579,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>مرشح السجل</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>افتح موقع السجل</translation>
 		</message>
 		<message>
 			<source>Input</source>

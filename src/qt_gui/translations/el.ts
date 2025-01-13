@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Εμφάνιση Μεγέθους Παιχνιδιού στη Λίστα</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Show Splash</translation>
@@ -575,6 +579,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Log Filter</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Άνοιγμα τοποθεσίας αρχείου καταγραφής</translation>
 		</message>
 		<message>
 			<source>Input</source>

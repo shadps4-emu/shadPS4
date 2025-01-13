@@ -21,9 +21,12 @@
 #include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/network/http2.h"
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
+#include "core/libraries/network/ssl2.h"
+#include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
@@ -64,14 +67,17 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::MsgDialog::RegisterlibSceMsgDialog(sym);
     Libraries::AudioOut::RegisterlibSceAudioOut(sym);
     Libraries::Http::RegisterlibSceHttp(sym);
+    Libraries::Http2::RegisterlibSceHttp2(sym);
     Libraries::Net::RegisterlibSceNet(sym);
     Libraries::NetCtl::RegisterlibSceNetCtl(sym);
     Libraries::SaveData::RegisterlibSceSaveData(sym);
     Libraries::SaveData::Dialog::RegisterlibSceSaveDataDialog(sym);
     Libraries::Ssl::RegisterlibSceSsl(sym);
+    Libraries::Ssl2::RegisterlibSceSsl2(sym);
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
+    Libraries::NpCommon::RegisterlibSceNpCommon(sym);
     Libraries::NpManager::RegisterlibSceNpManager(sym);
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);

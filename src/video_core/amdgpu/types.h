@@ -252,7 +252,7 @@ inline DataFormat RemapDataFormat(const DataFormat format) {
     }
 }
 
-inline NumberFormat RemapNumberFormat(const NumberFormat format) {
+inline NumberFormat RemapNumberFormat(const NumberFormat format, const DataFormat data_format) {
     switch (format) {
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
@@ -260,6 +260,14 @@ inline NumberFormat RemapNumberFormat(const NumberFormat format) {
         return NumberFormat::Sint;
     case NumberFormat::Ubnorm:
         return NumberFormat::Unorm;
+    case NumberFormat::Float:
+        if (data_format == DataFormat::Format8) {
+            // Games may ask for 8-bit float when they want to access the stencil component
+            // of a depth-stencil image. Change to unsigned int to match the stencil format.
+            // This is also the closest approximation to pass the bits through unconverted.
+            return NumberFormat::Uint;
+        }
+        [[fallthrough]];
     default:
         return format;
     }

@@ -61,7 +61,6 @@ struct ImageInfo {
     } meta_info{};
 
     struct {
-        u32 is_cube : 1;
         u32 is_volume : 1;
         u32 is_tiled : 1;
         u32 is_pow2 : 1;

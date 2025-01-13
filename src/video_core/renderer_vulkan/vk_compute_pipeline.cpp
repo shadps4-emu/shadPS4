@@ -59,9 +59,8 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     for (const auto& image : info->images) {
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = image.IsStorage(image.GetSharp(*info))
-                                  ? vk::DescriptorType::eStorageImage
-                                  : vk::DescriptorType::eSampledImage,
+            .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
+                                               : vk::DescriptorType::eSampledImage,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });

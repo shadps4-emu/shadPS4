@@ -205,7 +205,9 @@ void WindowSDL::InitTimers() {
 
 void WindowSDL::RequestKeyboard() {
     if (keyboard_grab == 0) {
-        SDL_StartTextInput(window);
+        SDL_RunOnMainThread(
+            [](void* userdata) { SDL_StartTextInput(static_cast<SDL_Window*>(userdata)); }, window,
+            true);
     }
     keyboard_grab++;
 }
@@ -214,7 +216,9 @@ void WindowSDL::ReleaseKeyboard() {
     ASSERT(keyboard_grab > 0);
     keyboard_grab--;
     if (keyboard_grab == 0) {
-        SDL_StopTextInput(window);
+        SDL_RunOnMainThread(
+            [](void* userdata) { SDL_StopTextInput(static_cast<SDL_Window*>(userdata)); }, window,
+            true);
     }
 }
 

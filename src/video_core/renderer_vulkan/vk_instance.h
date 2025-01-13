@@ -159,6 +159,11 @@ public:
         return image_load_store_lod;
     }
 
+    /// Returns true when VK_AMD_gcn_shader is supported.
+    bool IsAmdGcnShaderSupported() const {
+        return amd_gcn_shader;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -334,6 +339,7 @@ private:
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool image_load_store_lod{};
+    bool amd_gcn_shader{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};

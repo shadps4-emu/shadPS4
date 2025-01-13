@@ -1032,6 +1032,10 @@
         <source>Enable Separate Update Folder</source>
         <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
+    <message> 
+        <source>Show Game Size In List</source>
+        <translation>Visa spelstorlek i listan</translation>
+    </message>
     <message>
         <source>Show Splash</source>
         <translation>Visa startskärm</translation>
@@ -1063,6 +1067,10 @@
     <message>
         <source>Log Filter</source>
         <translation>Loggfilter</translation>
+    </message>
+    <message>
+        <source>Open Log Location</source>
+        <translation>Öppna loggplats</translation>
     </message>
     <message>
         <source>Input</source>

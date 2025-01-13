@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Ota Käyttöön Erillinen Päivityshakemisto</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Näytä pelin koko luettelossa</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Näytä Aloitusnäyttö</translation>
@@ -575,6 +579,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Lokisuodatin</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Avaa lokin sijainti</translation>
 		</message>
 		<message>
 			<source>Input</source>
