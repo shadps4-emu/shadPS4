@@ -24,4 +24,8 @@ int P2PSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSoc
     return -1; // fake value makes peggle2 work
 }
 
+SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
+    return nullptr;
+}
+
 } // namespace Libraries::Net

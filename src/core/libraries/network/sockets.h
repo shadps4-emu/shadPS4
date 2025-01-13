@@ -40,6 +40,7 @@ struct Socket {
     virtual int Listen(int backlog) = 0;
     virtual int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                            u32 tolen) = 0;
+    virtual SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) = 0;
 };
 
 struct PosixSocket : public Socket {
@@ -48,11 +49,13 @@ struct PosixSocket : public Socket {
     int sockopt_so_onesbcast = 0;
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {}
+    explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
     int SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) override;
     int Bind(const OrbisNetSockaddr* addr, unsigned int addrlen) override;
     int Listen(int backlog) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
 };
 
 struct P2PSocket : public Socket {
@@ -62,6 +65,7 @@ struct P2PSocket : public Socket {
     int Listen(int backlog) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
 };
 
 class NetInternal {

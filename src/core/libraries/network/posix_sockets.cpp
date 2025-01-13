@@ -39,6 +39,17 @@ static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
+static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
+    if (src == nullptr || dst == nullptr)
+        return;
+    memset(dst, 0, sizeof(OrbisNetSockaddr));
+    OrbisNetSockaddrIn* dst_in = (OrbisNetSockaddrIn*)dst;
+    sockaddr_in* src_in = (sockaddr_in*)src;
+    dst_in->sin_family = static_cast<unsigned char>(src_in->sin_family);
+    dst_in->sin_port = src_in->sin_port;
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+}
+
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, unsigned int optlen) {
     level = ConvertLevels(level);
     if (level == SOL_SOCKET) {
@@ -102,6 +113,21 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     } else {
         return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
     }
+}
+
+SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
+    sockaddr addr2;
+    net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
+#ifdef _WIN32
+    if (new_socket != INVALID_SOCKET) {
+#else
+    if (new_socket >= 0) {
+#endif
+        convertPosixSockaddrToOrbis(&addr2, addr);
+        *addrlen = sizeof(OrbisNetSockaddrIn);
+        return std::make_shared<PosixSocket>(new_socket);
+    }
+    return nullptr;
 }
 
 } // namespace Libraries::Net

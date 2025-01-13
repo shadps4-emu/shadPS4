@@ -65,8 +65,21 @@ int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    auto new_sock = sock->Accept(addr, paddrlen);
+    if (!new_sock) {
+        LOG_ERROR(Lib_Net, "error creating new socket for accepting");
+        return -1;
+    }
+    auto id = ++netcall->next_sock_id;
+    netcall->socks.emplace(id, new_sock);
+    return id;
 }
 
 int PS4_SYSV_ABI sceNetAddrConfig6GetInfo() {
@@ -1048,7 +1061,7 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
 
 int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                   u32 optlen) {
-    LOG_ERROR(Lib_Net, "s = {} level = {} optname = {} optlen = {}", s, level, optname, optlen);
+    LOG_INFO(Lib_Net, "s = {} level = {} optname = {} optlen = {}", s, level, optname, optlen);
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -1145,8 +1158,8 @@ int PS4_SYSV_ABI sceNetShutdown() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_ERROR(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name), family,
-              type, protocol);
+    LOG_INFO(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name), family,
+             type, protocol);
     SocketPtr sock;
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
