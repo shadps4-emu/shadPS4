@@ -91,6 +91,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
     ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
 
+    ui->ppFilterComboBox->addItem(tr("linear"));
+    ui->ppFilterComboBox->addItem(tr("nearest"));
+
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
@@ -302,6 +305,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->widthSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenWidth", 1280));
     ui->heightSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenHeight", 720));
     ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
+    ui->ppFilterComboBox->setCurrentText(QString::fromStdString(toml::find_or<std::string>(data, "GPU", "ppFilter", "linear")));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
@@ -550,6 +554,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setScreenWidth(ui->widthSpinBox->value());
     Config::setScreenHeight(ui->heightSpinBox->value());
     Config::setVblankDiv(ui->vblankSpinBox->value());
+    Config::setPostProcessingFilter(ui->ppFilterComboBox->currentText().toStdString());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
     Config::setSeparateUpdateEnabled(ui->separateUpdatesCheckBox->isChecked());

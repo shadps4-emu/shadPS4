@@ -331,6 +331,10 @@ void setVblankDiv(u32 value) {
     vblankDivider = value;
 }
 
+void setPostProcessingFilter(const std::string& type) {
+    ppFilter = type;
+}
+
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
