@@ -182,6 +182,7 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Texture_Volume:
             mip_d += (-mip_d) & 3u;
             [[fallthrough]];
+        case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);

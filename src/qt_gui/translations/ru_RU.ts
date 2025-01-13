@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Отдельная папка обновлений</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Показать размер игры в списке</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Показывать заставку</translation>

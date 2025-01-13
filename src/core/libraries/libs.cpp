@@ -21,6 +21,7 @@
 #include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/network/http2.h"
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
@@ -66,6 +67,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::MsgDialog::RegisterlibSceMsgDialog(sym);
     Libraries::AudioOut::RegisterlibSceAudioOut(sym);
     Libraries::Http::RegisterlibSceHttp(sym);
+    Libraries::Http2::RegisterlibSceHttp2(sym);
     Libraries::Net::RegisterlibSceNet(sym);
     Libraries::NetCtl::RegisterlibSceNetCtl(sym);
     Libraries::SaveData::RegisterlibSceSaveData(sym);

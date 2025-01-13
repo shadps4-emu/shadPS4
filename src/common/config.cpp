@@ -72,6 +72,7 @@ static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
 
 // Gui
+static bool load_game_size = true;
 std::vector<std::filesystem::path> settings_install_dirs = {};
 std::filesystem::path settings_addon_install_dir = {};
 u32 main_window_geometry_x = 400;
@@ -100,6 +101,14 @@ std::string getTrophyKey() {
 
 void setTrophyKey(std::string key) {
     trophyKey = key;
+}
+
+bool GetLoadGameSizeEnabled() {
+    return load_game_size;
+}
+
+void setLoadGameSizeEnabled(bool enable) {
+    load_game_size = enable;
 }
 
 bool isNeoModeConsole() {
@@ -650,6 +659,7 @@ void load(const std::filesystem::path& path) {
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
 
+        load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
         m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
         m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
         m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
@@ -755,6 +765,7 @@ void save(const std::filesystem::path& path) {
         install_dirs.emplace_back(std::string{fmt::UTF(dirString.u8string()).data});
     }
     data["GUI"]["installDirs"] = install_dirs;
+    data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
