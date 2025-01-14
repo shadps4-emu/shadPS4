@@ -67,7 +67,8 @@ constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
 s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes);
-
+s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset);
+s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset);
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
