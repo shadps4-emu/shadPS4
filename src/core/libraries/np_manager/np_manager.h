@@ -11,8 +11,6 @@ class SymbolsResolver;
 
 namespace Libraries::NpManager {
 
-constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
-
 enum class OrbisNpState : u32 { Unknown = 0, SignedOut, SignedIn };
 
 using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,

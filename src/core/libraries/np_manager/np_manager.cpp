@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np_manager/np_manager.h"
+#include "core/libraries/np_manager/np_manager_error.h"
 #include "core/tls.h"
 
 namespace Libraries::NpManager {
