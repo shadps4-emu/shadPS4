@@ -71,8 +71,35 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
 vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags);
 
+static inline bool IsFormatDepthCompatible(vk::Format fmt) {
+    switch (fmt) {
+    // 32-bit float compatible
+    case vk::Format::eD32Sfloat:
+    case vk::Format::eR32Sfloat:
+    case vk::Format::eR32Uint:
+    // 16-bit unorm compatible
+    case vk::Format::eD16Unorm:
+    case vk::Format::eR16Unorm:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static inline bool IsFormatStencilCompatible(vk::Format fmt) {
+    switch (fmt) {
+    // 8-bit uint compatible
+    case vk::Format::eS8Uint:
+    case vk::Format::eR8Uint:
+    case vk::Format::eR8Unorm:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
-    if (fmt == vk::Format::eR32Sfloat) {
+    if (fmt == vk::Format::eR32Sfloat || fmt == vk::Format::eR32Uint) {
         return vk::Format::eD32Sfloat;
     } else if (fmt == vk::Format::eR16Unorm) {
         return vk::Format::eD16Unorm;
