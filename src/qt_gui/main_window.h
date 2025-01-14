@@ -123,4 +123,7 @@ protected:
     }
 
     void resizeEvent(QResizeEvent* event) override;
+
+    std::filesystem::path last_install_dir = "";
+    bool use_for_all_queued = false;
 };

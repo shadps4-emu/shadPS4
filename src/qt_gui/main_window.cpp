@@ -725,9 +725,19 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             return;
         }
         auto category = psf.GetString("CATEGORY");
-        InstallDirSelect ids;
-        ids.exec();
-        auto game_install_dir = ids.getSelectedDirectory();
+
+        std::filesystem::path game_install_dir = last_install_dir;
+        if (!use_for_all_queued) {
+            InstallDirSelect ids;
+            const auto selected = ids.exec();
+            if (selected == QDialog::Rejected) {
+                return;
+            }
+
+            last_install_dir = ids.getSelectedDirectory();
+            use_for_all_queued = ids.useForAllQueued();
+        }
+
         auto game_folder_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         bool use_game_update = pkgType.contains("PATCH") && Config::getSeparateUpdateEnabled();

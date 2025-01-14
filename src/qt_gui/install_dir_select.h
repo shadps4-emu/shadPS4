@@ -22,9 +22,15 @@ public:
         return selected_dir;
     }
 
+    bool useForAllQueued() {
+        return use_for_all_queued;
+    }
+
 private:
     QWidget* SetupInstallDirList();
     QWidget* SetupDialogActions();
     void setSelectedDirectory(QListWidgetItem* item);
+    void setUseForAllQueued(bool enabled);
     std::filesystem::path selected_dir;
+    bool use_for_all_queued = false;
 };
