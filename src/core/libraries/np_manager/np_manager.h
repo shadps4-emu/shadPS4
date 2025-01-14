@@ -218,7 +218,7 @@ int PS4_SYSV_ABI sceNpGetAccountCountry();
 int PS4_SYSV_ABI sceNpGetAccountCountryA();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirth();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA();
-int PS4_SYSV_ABI sceNpGetAccountId();
+int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id);
 int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id);
 int PS4_SYSV_ABI sceNpGetAccountLanguage();
 int PS4_SYSV_ABI sceNpGetAccountLanguage2();

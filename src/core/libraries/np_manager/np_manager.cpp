@@ -936,9 +936,12 @@ int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountId() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (online_id == nullptr || account_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
