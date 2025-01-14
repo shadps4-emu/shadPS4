@@ -221,7 +221,7 @@ int PS4_SYSV_ABI sceNpGetAccountCountryA();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirth();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA();
 int PS4_SYSV_ABI sceNpGetAccountId();
-int PS4_SYSV_ABI sceNpGetAccountIdA();
+int PS4_SYSV_ABI sceNpGetAccountIdA(s32 user_id, u64* account_id);
 int PS4_SYSV_ABI sceNpGetAccountLanguage();
 int PS4_SYSV_ABI sceNpGetAccountLanguage2();
 int PS4_SYSV_ABI sceNpGetAccountLanguageA();
