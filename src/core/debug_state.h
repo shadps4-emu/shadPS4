@@ -131,6 +131,8 @@ class DebugStateImpl {
     friend class Core::Devtools::Widget::FrameGraph;
     friend class Core::Devtools::Widget::ShaderList;
 
+    static bool showing_debug_menu_bar;
+
     std::queue<std::string> debug_message_popup;
 
     std::mutex guest_threads_mutex{};
@@ -158,6 +160,10 @@ public:
             return;
         }
         debug_message_popup.push(std::move(message));
+    }
+
+    bool& ShowingDebugMenuBar() {
+        return showing_debug_menu_bar;
     }
 
     void AddCurrentThreadToGuestList();

@@ -24,11 +24,12 @@ using namespace ImGui;
 using namespace Core::Devtools;
 using L = Core::Devtools::Layer;
 
+bool DebugStateType::DebugStateImpl::showing_debug_menu_bar = false;
+
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 
 static float fps_scale = 1.0f;
-static bool show_advanced_debug = false;
 static int dump_frame_count = 1;
 
 static Widget::FrameGraph frame_graph;
@@ -265,7 +266,7 @@ static void LoadSettings(const char* line) {
         return;
     }
     if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
-        show_advanced_debug = i != 0;
+        DebugState.ShowingDebugMenuBar() = i != 0;
         return;
     }
     if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
@@ -310,7 +311,7 @@ void L::SetupSettings() {
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
         buf->appendf("fps_scale=%f\n", fps_scale);
-        buf->appendf("show_advanced_debug=%d\n", show_advanced_debug);
+        buf->appendf("show_advanced_debug=%d\n", DebugState.ShowingDebugMenuBar());
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
@@ -341,7 +342,7 @@ void L::Draw() {
 
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
-            show_advanced_debug = !show_advanced_debug;
+            DebugState.ShowingDebugMenuBar() ^= true;
         } else {
             show_simple_fps = !show_simple_fps;
         }
@@ -376,7 +377,7 @@ void L::Draw() {
         End();
     }
 
-    if (show_advanced_debug) {
+    if (DebugState.ShowingDebugMenuBar()) {
         PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();

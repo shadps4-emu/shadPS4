@@ -384,6 +384,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
             .extendedDynamicState3ColorWriteMask = true,
+            .extendedDynamicState3ColorBlendEnable = true,
         },
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,

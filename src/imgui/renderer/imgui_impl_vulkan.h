@@ -10,6 +10,13 @@
 
 struct ImDrawData;
 
+namespace ImGui {
+struct Texture {
+    vk::DescriptorSet descriptor_set{nullptr};
+    bool disable_blend{false};
+};
+} // namespace ImGui
+
 namespace ImGui::Vulkan {
 
 struct InitInfo {
@@ -34,29 +41,32 @@ struct InitInfo {
 struct UploadTextureData {
     vk::Image image;
     vk::ImageView image_view;
-    vk::DescriptorSet descriptor_set;
     vk::DeviceMemory image_memory;
 
     vk::CommandBuffer command_buffer; // Submit to the queue
     vk::Buffer upload_buffer;
     vk::DeviceMemory upload_buffer_memory;
 
+    ImTextureID im_texture;
+
     void Upload();
 
     void Destroy();
 };
 
-vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_layout,
-                             vk::Sampler sampler = VK_NULL_HANDLE);
+ImTextureID AddTexture(vk::ImageView image_view, vk::ImageLayout image_layout,
+                       vk::Sampler sampler = VK_NULL_HANDLE);
 
 UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, u32 height,
                                 size_t size);
 
-void RemoveTexture(vk::DescriptorSet descriptor_set);
+void RemoveTexture(ImTextureID descriptor_set);
 
 bool Init(InitInfo info);
 void Shutdown();
 void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                     vk::Pipeline pipeline = VK_NULL_HANDLE);
+
+void SetBlendEnabled(bool enabled);
 
 } // namespace ImGui::Vulkan

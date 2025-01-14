@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 
+#include "imgui/imgui_config.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -30,6 +31,8 @@ struct Frame {
     vk::Fence present_done;
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
+
+    ImTextureID imgui_texture;
 };
 
 enum SchedulerType {
