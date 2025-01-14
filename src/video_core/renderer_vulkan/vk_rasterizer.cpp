@@ -1151,6 +1151,11 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
             ? 1.0f
             : 0.0f;
 
+    if (regs.polygon_control.enable_window_offset) {
+        LOG_ERROR(Render_Vulkan,
+                  "PA_SU_SC_MODE_CNTL.VTX_WINDOW_OFFSET_ENABLE support is not yet implemented.");
+    }
+
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];
@@ -1158,29 +1163,13 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
             continue;
         }
 
-        auto vp_scsr = scsr;
-        if (regs.mode_control.vport_scissor_enable) {
-            vp_scsr.top_left_x =
-                std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[i].top_left_x.Value()));
-            vp_scsr.top_left_y =
-                std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[i].top_left_y.Value()));
-            vp_scsr.bottom_right_x =
-                std::min(vp_scsr.bottom_right_x, regs.viewport_scissors[i].bottom_right_x);
-            vp_scsr.bottom_right_y =
-                std::min(vp_scsr.bottom_right_y, regs.viewport_scissors[i].bottom_right_y);
-        }
-        scissors.push_back({
-            .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
-            .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
-        });
-
         if (pipeline.IsClipDisabled()) {
             // In case if clipping is disabled we patch the shader to convert vertex position
             // from screen space coordinates to NDC by defining a render space as full hardware
             // window range [0..16383, 0..16383] and setting the viewport to its size.
             viewports.push_back({
-                .x = enable_offset ? float(regs.window_offset.window_x_offset) : 0.f,
-                .y = enable_offset ? float(regs.window_offset.window_y_offset) : 0.f,
+                .x = 0.f,
+                .y = 0.f,
                 .width = float(16_KB),
                 .height = float(16_KB),
                 .minDepth = 0.0,
@@ -1202,6 +1191,22 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
                 .maxDepth = zscale + zoffset,
             });
         }
+
+        auto vp_scsr = scsr;
+        if (regs.mode_control.vport_scissor_enable) {
+            vp_scsr.top_left_x =
+                std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[i].top_left_x.Value()));
+            vp_scsr.top_left_y =
+                std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[i].top_left_y.Value()));
+            vp_scsr.bottom_right_x =
+                std::min(vp_scsr.bottom_right_x, regs.viewport_scissors[i].bottom_right_x);
+            vp_scsr.bottom_right_y =
+                std::min(vp_scsr.bottom_right_y, regs.viewport_scissors[i].bottom_right_y);
+        }
+        scissors.push_back({
+            .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
+            .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
+        });
     }
 
     if (viewports.empty()) {
