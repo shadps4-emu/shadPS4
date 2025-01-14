@@ -940,9 +940,9 @@ int PS4_SYSV_ABI sceNpGetAccountId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountIdA() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetAccountIdA(s32 user_id, u64* account_id) {
+    LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountLanguage() {
