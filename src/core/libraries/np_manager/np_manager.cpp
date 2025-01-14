@@ -941,7 +941,7 @@ int PS4_SYSV_ABI sceNpGetAccountId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountIdA(s32 user_id, u64* account_id) {
+int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     return ORBIS_NP_ERROR_SIGNED_OUT;
 }
@@ -981,7 +981,7 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetOnlineId(s32 user_id, OrbisNpOnlineId* online_id) {
+int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     return ORBIS_NP_ERROR_SIGNED_OUT;
 }
@@ -996,7 +996,7 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state) {
+int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state) {
     *state = OrbisNpState::SignedOut;
     LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
