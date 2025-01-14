@@ -943,6 +943,9 @@ int PS4_SYSV_ABI sceNpGetAccountId() {
 
 int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (account_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
@@ -973,6 +976,9 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
 
 int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (np_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
@@ -983,6 +989,9 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
 
 int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (online_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
