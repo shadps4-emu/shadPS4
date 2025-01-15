@@ -83,9 +83,6 @@ void FrameGraph::Draw() {
 
         auto isSystemPaused = DebugState.IsGuestThreadsPaused();
 
-        static float deltaTime;
-        static float frameRate;
-
         if (!isSystemPaused) {
             deltaTime = io.DeltaTime * 1000.0f;
             frameRate = 1000.0f / deltaTime;

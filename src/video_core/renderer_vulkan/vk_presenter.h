@@ -89,8 +89,9 @@ public:
     }
 
     bool ShowSplash(Frame* frame = nullptr);
-    void Present(Frame* frame);
+    void Present(Frame* frame, bool is_reusing_frame = false);
     void RecreateFrame(Frame* frame, u32 width, u32 height);
+    Frame* PrepareLastFrame();
 
     void FlushDraw() {
         SubmitInfo info{};
@@ -124,6 +125,7 @@ private:
     vk::UniqueCommandPool command_pool;
     std::vector<Frame> present_frames;
     std::queue<Frame*> free_queue;
+    Frame* last_submit_frame;
     std::mutex free_mutex;
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;

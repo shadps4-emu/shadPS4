@@ -168,7 +168,7 @@ bool ProcessEvent(SDL_Event* event) {
     }
 }
 
-ImGuiID NewFrame() {
+ImGuiID NewFrame(bool is_reusing_frame) {
     {
         std::scoped_lock lock{change_layers_mutex};
         while (!change_layers.empty()) {
@@ -183,7 +183,7 @@ ImGuiID NewFrame() {
         }
     }
 
-    Sdl::NewFrame();
+    Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
 
     ImGuiWindowFlags flags = ImGuiDockNodeFlags_PassthruCentralNode;

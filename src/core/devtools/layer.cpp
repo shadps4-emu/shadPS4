@@ -24,8 +24,6 @@ using namespace ImGui;
 using namespace Core::Devtools;
 using L = Core::Devtools::Layer;
 
-bool DebugStateType::DebugStateImpl::showing_debug_menu_bar = false;
-
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 
@@ -254,8 +252,8 @@ void L::DrawAdvanced() {
 }
 
 void L::DrawSimple() {
-    const auto io = GetIO();
-    Text("%.1f FPS (%.2f ms)", io.Framerate, 1000.0f / io.Framerate);
+    const float frameRate = DebugState.Framerate;
+    Text("%d FPS (%.1f ms)", static_cast<int>(std::round(1.0f / frameRate)), frameRate * 1000.0f);
 }
 
 static void LoadSettings(const char* line) {
@@ -337,7 +335,7 @@ void L::Draw() {
 
     if (!DebugState.IsGuestThreadsPaused()) {
         const auto fn = DebugState.flip_frame_count.load();
-        frame_graph.AddFrame(fn, io.DeltaTime);
+        frame_graph.AddFrame(fn, DebugState.FrameDeltaTime);
     }
 
     if (IsKeyPressed(ImGuiKey_F10, false)) {

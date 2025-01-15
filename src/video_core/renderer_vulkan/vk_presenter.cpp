@@ -411,6 +411,61 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     frame->imgui_texture->disable_blend = true;
 }
 
+Frame* Presenter::PrepareLastFrame() {
+    if (last_submit_frame == nullptr) {
+        return nullptr;
+    }
+
+    Frame* frame = last_submit_frame;
+
+    while (true) {
+        vk::Result result = instance.GetDevice().waitForFences(frame->present_done, false,
+                                                               std::numeric_limits<u64>::max());
+        if (result == vk::Result::eSuccess) {
+            break;
+        }
+        if (result == vk::Result::eTimeout) {
+            continue;
+        }
+        ASSERT_MSG(result != vk::Result::eErrorDeviceLost,
+                   "Device lost during waiting for a frame");
+    }
+
+    auto& scheduler = flip_scheduler;
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+
+    const auto frame_subresources = vk::ImageSubresourceRange{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+
+    const auto pre_barrier =
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                                .newLayout = vk::ImageLayout::eGeneral,
+                                .image = frame->image,
+                                .subresourceRange{frame_subresources}};
+
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &pre_barrier,
+    });
+
+    // Flush frame creation commands.
+    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_tick = scheduler.CurrentTick();
+    SubmitInfo info{};
+    scheduler.Flush(info);
+    return frame;
+}
+
 bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
     const auto* splash = Common::Singleton<Splash>::Instance();
     if (splash->GetImageData().empty()) {
@@ -529,8 +584,8 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     };
 
     const auto pre_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead,
                                 .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
                                 .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
                                 .oldLayout = vk::ImageLayout::eUndefined,
@@ -641,12 +696,15 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     return frame;
 }
 
-void Presenter::Present(Frame* frame) {
+void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     // Free the frame for reuse
     const auto free_frame = [&] {
-        std::scoped_lock fl{free_mutex};
-        free_queue.push(frame);
-        free_cv.notify_one();
+        if (!is_reusing_frame) {
+            last_submit_frame = frame;
+            std::scoped_lock fl{free_mutex};
+            free_queue.push(frame);
+            free_cv.notify_one();
+        }
     };
 
     // Recreate the swapchain if the window was resized.
@@ -669,7 +727,7 @@ void Presenter::Present(Frame* frame) {
     // the frame's present fence and future GetRenderFrame() call will hang waiting for this frame.
     instance.GetDevice().resetFences(frame->present_done);
 
-    ImGuiID dockId = ImGui::Core::NewFrame();
+    ImGuiID dockId = ImGui::Core::NewFrame(is_reusing_frame);
 
     const vk::Image swapchain_image = swapchain.Image();
     const vk::ImageView swapchain_image_view = swapchain.ImageView();
@@ -744,13 +802,13 @@ void Presenter::Present(Frame* frame) {
             ImGui::SetNextWindowDockID(dockId, ImGuiCond_Once);
             ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav);
 
-            ImVec2 contentArea = ImGui::GetContentRegionMax();
+            ImVec2 contentArea = ImGui::GetContentRegionAvail();
             const vk::Rect2D imgRect =
                 FitImage(frame->width, frame->height, (s32)contentArea.x, (s32)contentArea.y);
-            ImGui::SetCursorPos({
-                (float)imgRect.offset.x,
-                (float)imgRect.offset.y,
-            });
+            ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2{
+                                                                 (float)imgRect.offset.x,
+                                                                 (float)imgRect.offset.y,
+                                                             });
             ImGui::Image(frame->imgui_texture, {
                                                    static_cast<float>(imgRect.extent.width),
                                                    static_cast<float>(imgRect.extent.height),
@@ -784,7 +842,9 @@ void Presenter::Present(Frame* frame) {
     }
 
     free_frame();
-    DebugState.IncFlipFrameNum();
+    if (!is_reusing_frame) {
+        DebugState.IncFlipFrameNum();
+    }
 }
 
 Frame* Presenter::GetRenderFrame() {

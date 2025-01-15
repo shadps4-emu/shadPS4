@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 #include "common/config.h"
+#include "core/debug_state.h"
 #include "imgui_impl_sdl3.h"
 
 // SDL
@@ -26,6 +27,7 @@ struct SdlData {
     SDL_Window* window{};
     SDL_WindowID window_id{};
     Uint64 time{};
+    Uint64 nonReusedtime{};
     const char* clipboard_text_data{};
 
     // IME handling
@@ -785,7 +787,7 @@ static void UpdateGamepads() {
                         +thumb_dead_zone, +32767);
 }
 
-void NewFrame() {
+void NewFrame(bool is_reusing_frame) {
     SdlData* bd = GetBackendData();
     IM_ASSERT(bd != nullptr && "No platform backend to shutdown, or already shutdown?");
     ImGuiIO& io = ImGui::GetIO();
@@ -798,8 +800,25 @@ void NewFrame() {
     if (current_time <= bd->time)
         current_time = bd->time + 1;
     io.DeltaTime = bd->time > 0 ? (float)((double)(current_time - bd->time) / (double)frequency)
-                                : (float)(1.0f / 60.0f);
+                                : 1.0f / 60.0f;
     bd->time = current_time;
+
+    if (!is_reusing_frame) {
+        if (current_time <= bd->nonReusedtime)
+            current_time = bd->nonReusedtime + 1;
+        float deltaTime =
+            bd->nonReusedtime > 0
+                ? (float)((double)(current_time - bd->nonReusedtime) / (double)frequency)
+                : 1.0f / 60.0f;
+        bd->nonReusedtime = current_time;
+        DebugState.FrameDeltaTime = deltaTime;
+        float distribution = 0.016f / deltaTime / 10.0f;
+        if (distribution > 1.0f) {
+            distribution = 1.0f;
+        }
+        DebugState.Framerate =
+            deltaTime * distribution + DebugState.Framerate * (1.0f - distribution);
+    }
 
     if (bd->mouse_pending_leave_frame && bd->mouse_pending_leave_frame >= ImGui::GetFrameCount() &&
         bd->mouse_buttons_down == 0) {
