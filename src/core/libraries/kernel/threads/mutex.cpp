@@ -438,8 +438,11 @@ void RegisterMutex(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("K-jXhbt2gn4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_trylock);
 
     // Posix-Kernel
+    LIB_FUNCTION("ttHNfU+qDBU", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
+    LIB_FUNCTION("dQHWEsJtoE4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
+    LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutexattr_settype);
 
     // Orbis
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadMutexInit));
