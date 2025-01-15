@@ -1024,8 +1024,9 @@ int PS4_SYSV_ABI sceNpGetUserIdByOnlineId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpHasSignedUp() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    *has_signed_up = false;
     return ORBIS_OK;
 }
 

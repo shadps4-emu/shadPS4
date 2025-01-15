@@ -233,7 +233,7 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA();
 int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state);
 int PS4_SYSV_ABI sceNpGetUserIdByAccountId();
 int PS4_SYSV_ABI sceNpGetUserIdByOnlineId();
-int PS4_SYSV_ABI sceNpHasSignedUp();
+int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up);
 int PS4_SYSV_ABI sceNpIdMapperAbortRequest();
 int PS4_SYSV_ABI sceNpIdMapperAccountIdToNpId();
 int PS4_SYSV_ABI sceNpIdMapperAccountIdToOnlineId();
