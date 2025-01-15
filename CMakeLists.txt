@@ -430,6 +430,8 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_trophy/trophy_ui.cpp
             src/core/libraries/np_trophy/trophy_ui.h
             src/core/libraries/np_trophy/np_trophy_error.h
+            src/core/libraries/np_web_api/np_web_api.cpp
+            src/core/libraries/np_web_api/np_web_api.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
