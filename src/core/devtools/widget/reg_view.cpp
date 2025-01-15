@@ -155,7 +155,7 @@ void RegView::DrawGraphicsRegs() {
         TableNextColumn();
         TextUnformatted("Depth buffer");
         TableNextColumn();
-        if (regs.depth_buffer.Address() == 0 || !regs.depth_control.depth_enable) {
+        if (regs.depth_buffer.DepthAddress() == 0 || !regs.depth_control.depth_enable) {
             TextUnformatted("N/A");
         } else {
             const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
@@ -241,7 +241,7 @@ void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_tit
             default_reg_popup.open = false;
             if (last_selected_cb == depth_id) {
                 const auto& has_depth =
-                    regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
+                    regs.depth_buffer.DepthAddress() != 0 && regs.depth_control.depth_enable;
                 if (has_depth) {
                     default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
                     default_reg_popup.open = true;

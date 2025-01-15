@@ -22,6 +22,8 @@ enum DetilerType : u32 {
     Macro32,
     Macro64,
 
+    Display_Micro64,
+
     Max
 };
 

@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>启用单独的更新目录</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>显示游戏大小在列表中</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>显示启动画面</translation>

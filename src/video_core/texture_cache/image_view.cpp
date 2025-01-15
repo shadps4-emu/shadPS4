@@ -82,13 +82,12 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
     if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
-        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat ||
-         format == vk::Format::eR16Unorm || format == vk::Format::eD16Unorm)) {
+        Vulkan::LiverpoolToVK::IsFormatDepthCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }
     if (image.aspect_mask & vk::ImageAspectFlagBits::eStencil &&
-        (format == vk::Format::eR8Uint || format == vk::Format::eR8Unorm)) {
+        Vulkan::LiverpoolToVK::IsFormatStencilCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
