@@ -1011,6 +1011,9 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
 }
 
 int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state) {
+    if (state == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     *state = OrbisNpState::SignedOut;
     LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
@@ -1028,6 +1031,9 @@ int PS4_SYSV_ABI sceNpGetUserIdByOnlineId() {
 
 int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up) {
     LOG_DEBUG(Lib_NpManager, "called");
+    if (has_signed_up == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     *has_signed_up = false;
     return ORBIS_OK;
 }
