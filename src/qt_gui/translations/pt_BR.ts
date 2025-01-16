@@ -541,6 +541,10 @@
 			<translation>Habilitar pasta de atualização separada</translation>
 		</message>
 		<message>
+			<source>Show Game Size In List</source>
+			<translation>Mostrar Tamanho do Jogo na Lista</translation>
+		</message>
+		<message>
 			<source>Show Splash</source>
 			<translation>Mostrar Splash Inicial</translation>
 		</message>

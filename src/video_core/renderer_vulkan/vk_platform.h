@@ -7,6 +7,7 @@
 #include <variant>
 #include <fmt/format.h>
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -32,6 +33,9 @@ concept VulkanHandleType = vk::isVulkanHandleType<T>::value;
 
 template <VulkanHandleType HandleType>
 void SetObjectName(vk::Device device, const HandleType& handle, std::string_view debug_name) {
+    if (!Config::vkHostMarkersEnabled()) {
+        return;
+    }
     const vk::DebugUtilsObjectNameInfoEXT name_info = {
         .objectType = HandleType::objectType,
         .objectHandle = reinterpret_cast<u64>(static_cast<typename HandleType::NativeType>(handle)),
@@ -46,6 +50,9 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
 template <VulkanHandleType HandleType, typename... Args>
 void SetObjectName(vk::Device device, const HandleType& handle, const char* format,
                    const Args&... args) {
+    if (!Config::vkHostMarkersEnabled()) {
+        return;
+    }
     const std::string debug_name = fmt::vformat(format, fmt::make_format_args(args...));
     SetObjectName(device, handle, debug_name);
 }

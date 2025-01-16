@@ -250,10 +250,14 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/time.h
                src/core/libraries/kernel/orbis_error.h
                src/core/libraries/kernel/posix_error.h
+               src/core/libraries/kernel/aio.cpp
+               src/core/libraries/kernel/aio.h
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
+                 src/core/libraries/network/http2.cpp
+                 src/core/libraries/network/http2.h
                  src/core/libraries/network/net.cpp
                  src/core/libraries/network/netctl.cpp
                  src/core/libraries/network/netctl.h
@@ -263,6 +267,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
+                 src/core/libraries/network/ssl2.cpp
+                 src/core/libraries/network/ssl2.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
@@ -426,6 +432,8 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_trophy/trophy_ui.cpp
             src/core/libraries/np_trophy/trophy_ui.h
             src/core/libraries/np_trophy/np_trophy_error.h
+            src/core/libraries/np_web_api/np_web_api.cpp
+            src/core/libraries/np_web_api/np_web_api.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp

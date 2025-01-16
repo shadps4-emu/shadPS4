@@ -2509,7 +2509,7 @@ struct NpStateCallbackForNpToolkit {
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    Core::ExecuteGuest(NpStateCbForNp.func, 1, OrbisNpState::SignedOut, NpStateCbForNp.userdata);
+    LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
     return ORBIS_OK;
 }
 

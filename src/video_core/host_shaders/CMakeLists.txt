@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(SHADER_FILES
+    detilers/display_micro_64bpp.comp
     detilers/macro_32bpp.comp
     detilers/macro_64bpp.comp
     detilers/macro_8bpp.comp

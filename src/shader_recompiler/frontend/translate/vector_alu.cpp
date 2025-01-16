@@ -844,7 +844,7 @@ void Translator::V_FREXP_MANT_F64(const GcnInst& inst) {
 }
 
 void Translator::V_FRACT_F64(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
     SetDst64(inst.dst[0], ir.FPFract(src0));
 }
 
@@ -1069,9 +1069,9 @@ void Translator::V_CUBEID_F32(const GcnInst& inst) {
         const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
         const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
         const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
-        const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
+        const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
         const IR::F32 y_face{ir.Select(y_neg_cond, ir.Imm32(3.f), ir.Imm32(2.f))};
-        const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
+        const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
 
         result = SelectCubeResult(x, y, z, x_face, y_face, z_face);
     }
@@ -1083,18 +1083,13 @@ void Translator::V_CUBESC_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    IR::F32 result;
-    if (profile.supports_native_cube_calc) {
-        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
-        result = IR::F32{ir.CompositeExtract(coords, 0)};
-    } else {
-        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
-        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
-        const IR::F32 x_sc{ir.Select(x_neg_cond, ir.FPNeg(x), x)};
-        const IR::F32 z_sc{ir.Select(z_neg_cond, z, ir.FPNeg(z))};
+    const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+    const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+    const IR::F32 x_sc{ir.Select(x_neg_cond, z, ir.FPNeg(z))};
+    const IR::F32 y_sc{x};
+    const IR::F32 z_sc{ir.Select(z_neg_cond, ir.FPNeg(x), x)};
 
-        result = SelectCubeResult(x, y, z, x_sc, x, z_sc);
-    }
+    const auto result{SelectCubeResult(x, y, z, x_sc, y_sc, z_sc)};
     SetDst(inst.dst[0], result);
 }
 
@@ -1103,17 +1098,11 @@ void Translator::V_CUBETC_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    IR::F32 result;
-    if (profile.supports_native_cube_calc) {
-        const auto coords{ir.CubeFaceCoord(ir.CompositeConstruct(x, y, z))};
-        result = IR::F32{ir.CompositeExtract(coords, 1)};
-    } else {
-        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
-        const IR::F32 x_z_sc{ir.FPNeg(y)};
-        const IR::F32 y_sc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
+    const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+    const IR::F32 x_z_tc{ir.FPNeg(y)};
+    const IR::F32 y_tc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
 
-        result = SelectCubeResult(x, y, z, x_z_sc, y_sc, x_z_sc);
-    }
+    const auto result{SelectCubeResult(x, y, z, x_z_tc, y_tc, x_z_tc)};
     SetDst(inst.dst[0], result);
 }
 
@@ -1122,7 +1111,7 @@ void Translator::V_CUBEMA_F32(const GcnInst& inst) {
     const auto y = GetSrc<IR::F32>(inst.src[1]);
     const auto z = GetSrc<IR::F32>(inst.src[2]);
 
-    const auto two{ir.Imm32(4.f)};
+    const auto two{ir.Imm32(2.f)};
     const IR::F32 x_major_axis{ir.FPMul(x, two)};
     const IR::F32 y_major_axis{ir.FPMul(y, two)};
     const IR::F32 z_major_axis{ir.FPMul(z, two)};
