@@ -290,7 +290,12 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
         const auto& vma = FindVMA(mapped_addr)->second;
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
+        if (vma.IsMapped()) {
+            return ORBIS_KERNEL_ERROR_EBUSY;
+        }
+        if (remaining_size < size) {
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Find the first free area starting with provided virtual address.
@@ -392,8 +397,9 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
 s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
-    ASSERT_MSG(vma_base.Contains(virtual_addr, size),
-               "Existing mapping does not contain requested unmap range");
+    if (!vma_base.Contains(virtual_addr, size)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
 
     const auto type = vma_base.type;
     if (type == VMAType::Free) {
