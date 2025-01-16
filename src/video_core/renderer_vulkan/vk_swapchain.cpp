@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <limits>
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/logging/log.h"
+#include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -15,7 +15,9 @@ namespace Vulkan {
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window)
     : instance{instance_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
-    Create(window.GetWidth(), window.GetHeight(), surface);
+
+    Create(window.GetWidth(), window.GetHeight());
+    ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
 }
 
 Swapchain::~Swapchain() {
@@ -23,10 +25,9 @@ Swapchain::~Swapchain() {
     instance.GetInstance().destroySurfaceKHR(surface);
 }
 
-void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
+void Swapchain::Create(u32 width_, u32 height_) {
     width = width_;
     height = height_;
-    surface = surface_;
     needs_recreation = false;
 
     Destroy();
@@ -86,7 +87,7 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
     LOG_DEBUG(Render_Vulkan, "Recreate the swapchain: width={} height={}", width_, height_);
-    Create(width_, height_, surface);
+    Create(width_, height_);
 }
 
 bool Swapchain::AcquireNextImage() {
@@ -209,10 +210,14 @@ void Swapchain::Destroy() {
     if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }
-    for (u32 i = 0; i < image_count; i++) {
-        device.destroySemaphore(image_acquired[i]);
-        device.destroySemaphore(present_ready[i]);
+
+    for (const auto& sem : image_acquired) {
+        device.destroySemaphore(sem);
     }
+    for (const auto& sem : present_ready) {
+        device.destroySemaphore(sem);
+    }
+
     image_acquired.clear();
     present_ready.clear();
 }
@@ -249,9 +254,30 @@ void Swapchain::SetupImages() {
                vk::to_string(images_result));
     images = std::move(imgs);
     image_count = static_cast<u32>(images.size());
+    images_view.resize(image_count);
+    for (u32 i = 0; i < image_count; ++i) {
+        if (images_view[i]) {
+            device.destroyImageView(images_view[i]);
+        }
+        auto [im_view_result, im_view] = device.createImageView(vk::ImageViewCreateInfo{
+            .image = images[i],
+            .viewType = vk::ImageViewType::e2D,
+            .format = FormatToUnorm(surface_format.format),
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+        });
+        ASSERT_MSG(im_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
+                   vk::to_string(im_view_result));
+        images_view[i] = im_view;
+    }
 
     for (u32 i = 0; i < image_count; ++i) {
         SetObjectName(device, images[i], "Swapchain Image {}", i);
+        SetObjectName(device, images_view[i], "Swapchain ImageView {}", i);
     }
 }
 

@@ -1,8 +1,6 @@
 ﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <imgui.h>
-
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
@@ -207,6 +205,13 @@ void VideoOutDriver::DrawBlankFrame() {
     presenter->Present(empty_frame);
 }
 
+void VideoOutDriver::DrawLastFrame() {
+    const auto frame = presenter->PrepareLastFrame();
+    if (frame != nullptr) {
+        presenter->Present(frame, true);
+    }
+}
+
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
@@ -278,17 +283,24 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return {};
     };
 
-    auto delay = std::chrono::microseconds{0};
     while (!token.stop_requested()) {
         timer.Start();
+
+        if (DebugState.IsGuestThreadsPaused()) {
+            DrawLastFrame();
+            timer.End();
+            continue;
+        }
 
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (!request) {
-                if (!main_port.is_open || DebugState.IsGuestThreadsPaused()) {
+                if (!main_port.is_open) {
                     DrawBlankFrame();
+                } else {
+                    DrawLastFrame();
                 }
             } else {
                 Flip(request);

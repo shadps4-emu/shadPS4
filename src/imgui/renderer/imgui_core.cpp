@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
@@ -167,7 +168,7 @@ bool ProcessEvent(SDL_Event* event) {
     }
 }
 
-void NewFrame() {
+ImGuiID NewFrame(bool is_reusing_frame) {
     {
         std::scoped_lock lock{change_layers_mutex};
         while (!change_layers.empty()) {
@@ -182,17 +183,24 @@ void NewFrame() {
         }
     }
 
-    Sdl::NewFrame();
+    Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
 
-    DockSpaceOverViewport(0, GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGuiWindowFlags flags = ImGuiDockNodeFlags_PassthruCentralNode;
+    if (!DebugState.ShowingDebugMenuBar()) {
+        flags |= ImGuiDockNodeFlags_NoTabBar;
+    }
+    ImGuiID dockId = DockSpaceOverViewport(0, GetMainViewport(), flags);
 
     for (auto* layer : layers) {
         layer->Draw();
     }
+
+    return dockId;
 }
 
-void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
+void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
+            const vk::Extent2D& extent) {
     ImGui::Render();
     ImDrawData* draw_data = GetDrawData();
     if (draw_data->CmdListsCount == 0) {
@@ -207,16 +215,16 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
 
     vk::RenderingAttachmentInfo color_attachments[1]{
         {
-            .imageView = frame->image_view,
+            .imageView = image_view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .loadOp = vk::AttachmentLoadOp::eClear,
             .storeOp = vk::AttachmentStoreOp::eStore,
         },
     };
     vk::RenderingInfo render_info{};
     render_info.renderArea = vk::Rect2D{
         .offset = {0, 0},
-        .extent = {frame->width, frame->height},
+        .extent = extent,
     };
     render_info.layerCount = 1;
     render_info.colorAttachmentCount = 1;

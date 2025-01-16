@@ -57,11 +57,12 @@ struct VkData {
     vk::DeviceMemory font_memory{};
     vk::Image font_image{};
     vk::ImageView font_view{};
-    vk::DescriptorSet font_descriptor_set{};
+    ImTextureID font_texture{};
     vk::CommandBuffer font_command_buffer{};
 
     // Render buffers
     WindowRenderBuffers render_buffers{};
+    bool enabled_blending{true};
 
     VkData(const InitInfo init_info) : init_info(init_info) {
         render_buffers.count = init_info.image_count;
@@ -252,8 +253,8 @@ void UploadTextureData::Destroy() {
     const InitInfo& v = bd->init_info;
 
     CheckVkErr(v.device.waitIdle());
-    RemoveTexture(descriptor_set);
-    descriptor_set = VK_NULL_HANDLE;
+    RemoveTexture(im_texture);
+    im_texture = nullptr;
 
     v.device.destroyImageView(image_view, v.allocator);
     image_view = VK_NULL_HANDLE;
@@ -264,8 +265,8 @@ void UploadTextureData::Destroy() {
 }
 
 // Register a texture
-vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_layout,
-                             vk::Sampler sampler) {
+ImTextureID AddTexture(vk::ImageView image_view, vk::ImageLayout image_layout,
+                       vk::Sampler sampler) {
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
 
@@ -303,7 +304,9 @@ vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_lay
         };
         v.device.updateDescriptorSets({write_desc}, {});
     }
-    return descriptor_set;
+    return new Texture{
+        .descriptor_set = descriptor_set,
+    };
 }
 UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, u32 height,
                                 size_t size) {
@@ -370,7 +373,7 @@ UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, 
     }
 
     // Create descriptor set (ImTextureID)
-    info.descriptor_set = AddTexture(info.image_view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    info.im_texture = AddTexture(info.image_view, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     // Create Upload Buffer
     {
@@ -464,10 +467,12 @@ UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, 
     return info;
 }
 
-void RemoveTexture(vk::DescriptorSet descriptor_set) {
+void RemoveTexture(ImTextureID texture) {
+    IM_ASSERT(texture != nullptr);
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
-    v.device.freeDescriptorSets(bd->descriptor_pool, {descriptor_set});
+    v.device.freeDescriptorSets(bd->descriptor_pool, {texture->descriptor_set});
+    delete texture;
 }
 
 static void CreateOrResizeBuffer(RenderBuffer& rb, size_t new_size, vk::BufferUsageFlagBits usage) {
@@ -679,15 +684,11 @@ void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                 command_buffer.setScissor(0, 1, &scissor);
 
                 // Bind DescriptorSet with font or user texture
-                vk::DescriptorSet desc_set[1]{(VkDescriptorSet)pcmd->TextureId};
-                if (sizeof(ImTextureID) < sizeof(ImU64)) {
-                    // We don't support texture switches if ImTextureID hasn't been redefined to be
-                    // 64-bit. Do a flaky check that other textures haven't been used.
-                    IM_ASSERT(pcmd->TextureId == (ImTextureID)bd->font_descriptor_set);
-                    desc_set[0] = bd->font_descriptor_set;
-                }
+                vk::DescriptorSet desc_set[1]{pcmd->TextureId->descriptor_set};
                 command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                   bd->pipeline_layout, 0, {desc_set}, {});
+                command_buffer.setColorBlendEnableEXT(
+                    0, {pcmd->TextureId->disable_blend ? vk::False : vk::True});
 
                 // Draw
                 command_buffer.drawIndexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset,
@@ -709,7 +710,7 @@ static bool CreateFontsTexture() {
     const InitInfo& v = bd->init_info;
 
     // Destroy existing texture (if any)
-    if (bd->font_view || bd->font_image || bd->font_memory || bd->font_descriptor_set) {
+    if (bd->font_view || bd->font_image || bd->font_memory || bd->font_texture) {
         CheckVkErr(v.queue.waitIdle());
         DestroyFontsTexture();
     }
@@ -782,7 +783,7 @@ static bool CreateFontsTexture() {
     }
 
     // Create the Descriptor Set:
-    bd->font_descriptor_set = AddTexture(bd->font_view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    bd->font_texture = AddTexture(bd->font_view, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     // Create the Upload Buffer:
     vk::DeviceMemory upload_buffer_memory{};
@@ -874,7 +875,7 @@ static bool CreateFontsTexture() {
     }
 
     // Store our identifier
-    io.Fonts->SetTexID(bd->font_descriptor_set);
+    io.Fonts->SetTexID(bd->font_texture);
 
     // End command buffer
     vk::SubmitInfo end_info = {};
@@ -898,9 +899,9 @@ static void DestroyFontsTexture() {
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
 
-    if (bd->font_descriptor_set) {
-        RemoveTexture(bd->font_descriptor_set);
-        bd->font_descriptor_set = VK_NULL_HANDLE;
+    if (bd->font_texture) {
+        RemoveTexture(bd->font_texture);
+        bd->font_texture = nullptr;
         io.Fonts->SetTexID(nullptr);
     }
 
@@ -1057,9 +1058,10 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
         .pAttachments = color_attachment,
     };
 
-    vk::DynamicState dynamic_states[2]{
+    vk::DynamicState dynamic_states[3]{
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
+        vk::DynamicState::eColorBlendEnableEXT,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_state{
         .dynamicStateCount = (uint32_t)IM_ARRAYSIZE(dynamic_states),
