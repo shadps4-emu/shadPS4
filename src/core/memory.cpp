@@ -287,13 +287,14 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
         const auto& vma = FindVMA(mapped_addr)->second;
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
         if (vma.IsMapped()) {
+            LOG_ERROR(Kernel_Vmm, "Attempted to map already mapped memory at {:#x}", virtual_addr);
             return ORBIS_KERNEL_ERROR_EBUSY;
         }
         if (remaining_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Could not map memory with size {:#x}", size);
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
     }
@@ -398,6 +399,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
     if (!vma_base.Contains(virtual_addr, size)) {
+        LOG_ERROR(Kernel_Vmm, "Attempted to unmap not mapped memory at {:#x}", virtual_addr);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
