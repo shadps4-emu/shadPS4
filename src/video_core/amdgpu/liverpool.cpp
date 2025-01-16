@@ -225,7 +225,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     }
 
     if (rasterizer) {
-        rasterizer->ScopeMarkerBegin("dcb");
+        rasterizer->ScopeMarkerBegin("gfx");
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
@@ -416,7 +416,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndex2", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DrawIndex2", cmd_address));
                     rasterizer->Draw(true);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -433,8 +433,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(
-                        fmt::format("dcb:{}:DrawIndexOffset2", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DrawIndexOffset2", cmd_address));
                     rasterizer->Draw(true, draw_index_off->index_offset);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -449,7 +448,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexAuto", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DrawIndexAuto", cmd_address));
                     rasterizer->Draw(false);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -464,7 +463,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndirect", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DrawIndirect", cmd_address));
                     rasterizer->DrawIndirect(false, indirect_args_addr, offset, size, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -480,8 +479,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(
-                        fmt::format("dcb:{}:DrawIndexIndirect", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DrawIndexIndirect", cmd_address));
                     rasterizer->DrawIndirect(true, indirect_args_addr, offset, size, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -497,7 +495,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
-                        fmt::format("dcb:{}:DrawIndexIndirectCountMulti", cmd_address));
+                        fmt::format("{}:DrawIndexIndirectCountMulti", cmd_address));
                     rasterizer->DrawIndirect(
                         true, indirect_args_addr, offset, draw_index_indirect->stride,
                         draw_index_indirect->count, draw_index_indirect->countAddr);
@@ -518,7 +516,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:Dispatch", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DispatchDirect", cmd_address));
                     rasterizer->DispatchDirect();
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -536,8 +534,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
-                    rasterizer->ScopeMarkerBegin(
-                        fmt::format("dcb:{}:DispatchIndirect", cmd_address));
+                    rasterizer->ScopeMarkerBegin(fmt::format("{}:DispatchIndirect", cmd_address));
                     rasterizer->DispatchIndirect(indirect_args_addr, offset, size);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -723,7 +720,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     const auto& queue = asc_queues[{vqid}];
 
     if (rasterizer) {
-        rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]", vqid));
+        rasterizer->ScopeMarkerBegin(fmt::format("asc[{}]", vqid));
     }
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
@@ -823,8 +820,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("acb[{}]:{}:DispatchIndirect", vqid, cmd_address));
+                rasterizer->ScopeMarkerBegin(fmt::format("{}:DispatchDirect", cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }
@@ -842,7 +838,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
-                rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
+                rasterizer->ScopeMarkerBegin(fmt::format("{}:DispatchIndirect", cmd_address));
                 rasterizer->DispatchIndirect(ib_address, 0, size);
                 rasterizer->ScopeMarkerEnd();
             }
