@@ -224,6 +224,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         RESUME_GFX(ce_task);
     }
 
+    if (rasterizer) {
+        rasterizer->ScopeMarkerBegin("dcb");
+    }
+
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
     while (!dcb.empty()) {
         const auto* header = reinterpret_cast<const PM4Header*>(dcb.data());
@@ -701,6 +705,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
     }
 
+    if (rasterizer) {
+        rasterizer->ScopeMarkerEnd();
+    }
+
     if (ce_task.handle) {
         ASSERT_MSG(ce_task.handle.done(), "Partially processed CCB");
         ce_task.handle.destroy();
@@ -713,6 +721,10 @@ template <bool is_indirect>
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
     const auto& queue = asc_queues[{vqid}];
+
+    if (rasterizer) {
+        rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]", vqid));
+    }
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
     while (!acb.empty()) {
@@ -876,6 +888,10 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             *queue.read_addr += packet_size_dw;
             *queue.read_addr %= queue.ring_size_dw;
         }
+    }
+
+    if (rasterizer) {
+        rasterizer->ScopeMarkerEnd();
     }
 
     FIBER_EXIT;
