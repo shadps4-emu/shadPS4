@@ -17,6 +17,17 @@ namespace Vulkan {
 class Instance;
 class Scheduler;
 
+inline vk::Format FormatToUnorm(vk::Format fmt) {
+    switch (fmt) {
+    case vk::Format::eR8G8B8A8Srgb:
+        return vk::Format::eR8G8B8A8Unorm;
+    case vk::Format::eB8G8R8A8Srgb:
+        return vk::Format::eB8G8R8A8Unorm;
+    default:
+        UNREACHABLE();
+    }
+}
+
 class Swapchain {
 public:
     explicit Swapchain(const Instance& instance, const Frontend::WindowSDL& window);

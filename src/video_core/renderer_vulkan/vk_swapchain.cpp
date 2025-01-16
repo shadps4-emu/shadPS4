@@ -262,7 +262,7 @@ void Swapchain::SetupImages() {
         auto [im_view_result, im_view] = device.createImageView(vk::ImageViewCreateInfo{
             .image = images[i],
             .viewType = vk::ImageViewType::e2D,
-            .format = surface_format.format,
+            .format = FormatToUnorm(surface_format.format),
             .subresourceRange =
                 {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,

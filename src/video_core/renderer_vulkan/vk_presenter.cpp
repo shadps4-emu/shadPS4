@@ -106,17 +106,6 @@ static vk::Rect2D FitImage(s32 frame_width, s32 frame_height, s32 swapchain_widt
                          dst_rect.offset.x, dst_rect.offset.y);
 }
 
-static vk::Format FormatToUnorm(vk::Format fmt) {
-    switch (fmt) {
-    case vk::Format::eR8G8B8A8Srgb:
-        return vk::Format::eR8G8B8A8Unorm;
-    case vk::Format::eB8G8R8A8Srgb:
-        return vk::Format::eB8G8R8A8Unorm;
-    default:
-        UNREACHABLE();
-    }
-}
-
 void Presenter::CreatePostProcessPipeline() {
     static const std::array pp_shaders{
         HostShaders::FS_TRI_VERT,
