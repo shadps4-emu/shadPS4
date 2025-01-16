@@ -28,6 +28,7 @@
 #include <Rpc.h>
 #endif
 #include <common/singleton.h>
+#include "aio.h"
 
 namespace Libraries::Kernel {
 
@@ -207,265 +208,8 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 16_KB;
 }
 
-#define MAX_QUEUE 512
-#define SCE_KERNEL_AIO_STATE_SUBMITTED (1)
-#define SCE_KERNEL_AIO_STATE_PROCESSING (2)
-#define SCE_KERNEL_AIO_STATE_COMPLETED (3)
-#define SCE_KERNEL_AIO_STATE_ABORTED (4)
-
-typedef struct SceKernelAioResult {
-    s64 returnValue;
-    u32 state;
-} SceKernelAioResult;
-
-typedef s32 SceKernelAioSubmitId;
-
-typedef struct SceKernelAioRWRequest {
-    s64 offset;
-    s64 nbyte;
-    void* buf;
-    struct SceKernelAioResult* result;
-    s32 fd;
-} SceKernelAioRWRequest;
-
-static s32* id_state;
-static s32 id_index;
-
-s32 PS4_SYSV_ABI sceKernelAioDeleteRequest(SceKernelAioSubmitId id, s32* ret) {
-    id_state[id] = SCE_KERNEL_AIO_STATE_ABORTED;
-    *ret = 0;
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioDeleteRequests(SceKernelAioSubmitId id[], s32 num, s32 ret[]) {
-    for (s32 i = 0; i < num; i++) {
-        id_state[id[i]] = SCE_KERNEL_AIO_STATE_ABORTED;
-        ret[i] = 0;
-    }
-
-    return 0;
-}
-s32 PS4_SYSV_ABI sceKernelAioPollRequest(SceKernelAioSubmitId id, s32* state) {
-    *state = id_state[id];
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioPollRequests(SceKernelAioSubmitId id[], s32 num, s32 state[]) {
-    for (s32 i = 0; i < num; i++) {
-        state[i] = id_state[id[i]];
-    }
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioCancelRequest(SceKernelAioSubmitId id, s32* state) {
-    if (id) {
-        id_state[id] = SCE_KERNEL_AIO_STATE_ABORTED;
-        *state = SCE_KERNEL_AIO_STATE_ABORTED;
-    } else {
-        *state = SCE_KERNEL_AIO_STATE_PROCESSING;
-    }
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioCancelRequests(SceKernelAioSubmitId id[], s32 num, s32 state[]) {
-    for (s32 i = 0; i < num; i++) {
-        if (id[i]) {
-            id_state[id[i]] = SCE_KERNEL_AIO_STATE_ABORTED;
-            state[i] = SCE_KERNEL_AIO_STATE_ABORTED;
-        } else {
-            state[i] = SCE_KERNEL_AIO_STATE_PROCESSING;
-        }
-    }
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioWaitRequest(SceKernelAioSubmitId id, s32* state, u32* usec) {
-    u32 timer = 0;
-
-    s32 timeout = 0;
-
-    while (id_state[id] == SCE_KERNEL_AIO_STATE_PROCESSING) {
-        sceKernelUsleep(10);
-
-        timer += 10;
-        if (*usec) {
-            if (timer > *usec) {
-                timeout = 1;
-                break;
-            }
-        }
-    }
-
-    *state = id_state[id];
-
-    if (timeout)
-        return 0x8002003c;
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioWaitRequests(SceKernelAioSubmitId id[], s32 num, s32 state[], u32 mode,
-                                          u32* usec) {
-    u32 timer = 0;
-    s32 timeout = 0;
-    s32 completion = 0;
-
-    for (s32 i = 0; i < num; i++) {
-        if (!completion && !timeout) {
-            while (id_state[id[i]] == SCE_KERNEL_AIO_STATE_PROCESSING) {
-                sceKernelUsleep(10);
-                timer += 10;
-
-                if (*usec) {
-                    if (timer > *usec) {
-                        timeout = 1;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (mode == 0x02) {
-            if (id_state[id[i]] == SCE_KERNEL_AIO_STATE_COMPLETED)
-                completion = 1;
-        }
-
-        state[i] = id_state[id[i]];
-    }
-
-    if (timeout)
-        return 0x8002003c;
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommands(SceKernelAioRWRequest req[], s32 size, s32 prio,
-                                                SceKernelAioSubmitId* id) {
-
-    id_state[id_index] = SCE_KERNEL_AIO_STATE_PROCESSING;
-
-    for (s32 i = 0; i < size; i++) {
-
-        s64 ret = sceKernelPread(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
-
-        if (ret < 0) {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_ABORTED;
-            req[i].result->returnValue = ret;
-
-        } else {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_COMPLETED;
-            req[i].result->returnValue = ret;
-        }
-    }
-
-    id_state[id_index] = SCE_KERNEL_AIO_STATE_COMPLETED;
-
-    *id = id_index;
-
-    id_index = (id_index + 1) % MAX_QUEUE;
-
-    if (!id_index)
-        id_index++;
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommandsMultiple(SceKernelAioRWRequest req[], s32 size,
-                                                        s32 prio, SceKernelAioSubmitId id[]) {
-    for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = SCE_KERNEL_AIO_STATE_PROCESSING;
-
-        s64 ret = sceKernelPread(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
-
-        if (ret < 0) {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_ABORTED;
-            req[i].result->returnValue = ret;
-
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_ABORTED;
-
-        } else {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_COMPLETED;
-            req[i].result->returnValue = ret;
-
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_COMPLETED;
-        }
-
-        id[i] = id_index;
-
-        id_index = (id_index + 1) % MAX_QUEUE;
-
-        if (!id_index)
-            id_index++;
-    }
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommands(SceKernelAioRWRequest req[], s32 size, s32 prio,
-                                                 SceKernelAioSubmitId* id) {
-    for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = SCE_KERNEL_AIO_STATE_PROCESSING;
-
-        s64 ret = sceKernelPwrite(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
-
-        if (ret < 0) {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_ABORTED;
-            req[i].result->returnValue = ret;
-
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_ABORTED;
-
-        } else {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_COMPLETED;
-            req[i].result->returnValue = ret;
-
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_COMPLETED;
-        }
-    }
-
-    *id = id_index;
-
-    id_index = (id_index + 1) % MAX_QUEUE;
-
-    // skip id_index equals 0 , because sceKernelAioCancelRequest will submit id
-    // equal to 0
-    if (!id_index)
-        id_index++;
-
-    return 0;
-}
-
-s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommandsMultiple(SceKernelAioRWRequest req[], s32 size,
-                                                         s32 prio, SceKernelAioSubmitId id[]) {
-    for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = SCE_KERNEL_AIO_STATE_PROCESSING;
-        s64 ret = sceKernelPwrite(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
-
-        if (ret < 0) {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_ABORTED;
-            req[i].result->returnValue = ret;
-
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_ABORTED;
-
-        } else {
-            req[i].result->state = SCE_KERNEL_AIO_STATE_COMPLETED;
-            req[i].result->returnValue = ret;
-            id_state[id_index] = SCE_KERNEL_AIO_STATE_COMPLETED;
-        }
-
-        id[i] = id_index;
-        id_index = (id_index + 1) % MAX_QUEUE;
-
-        if (!id_index)
-            id_index++;
-    }
-    return 0;
-}
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
-    id_index = 1;
-    id_state = (int*)malloc(sizeof(int) * MAX_QUEUE);
-    memset(id_state, 0, sizeof(sizeof(int) * MAX_QUEUE));
 
     Libraries::Kernel::RegisterFileSystem(sym);
     Libraries::Kernel::RegisterTime(sym);
@@ -475,6 +219,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
+    Libraries::Kernel::RegisterAio(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
@@ -491,10 +236,6 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
     LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, ps4__write);
-
-    LIB_FUNCTION("HgX7+AORI58", "libkernel", 1, "libkernel", 1, 1, sceKernelAioSubmitReadCommands);
-    LIB_FUNCTION("2pOuoWoCxdk", "libkernel", 1, "libkernel", 1, 1, sceKernelAioPollRequest);
-    LIB_FUNCTION("5TgME6AYty4", "libkernel", 1, "libkernel", 1, 1, sceKernelAioDeleteRequest);
 }
 
 } // namespace Libraries::Kernel
