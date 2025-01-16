@@ -399,7 +399,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
     const auto it = FindVMA(virtual_addr);
     const auto& vma_base = it->second;
     if (!vma_base.Contains(virtual_addr, size)) {
-        LOG_ERROR(Kernel_Vmm, "Attempted to unmap not mapped memory at {:#x}", virtual_addr);
+        LOG_ERROR(Kernel_Vmm, "Existing mapping does not contain requested unmap range");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
