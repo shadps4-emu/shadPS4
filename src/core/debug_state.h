@@ -165,7 +165,7 @@ public:
         debug_message_popup.push(std::move(message));
     }
 
-    bool& ShowingDebugMenuBar() {
+    bool& IsShowingDebugMenuBar() {
         return showing_debug_menu_bar;
     }
 
