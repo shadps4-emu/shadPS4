@@ -164,6 +164,7 @@ public:
             return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
+        image.is_atomic |= desc.is_atomic;
         image.is_written |= desc.is_written;
         return index;
     }
