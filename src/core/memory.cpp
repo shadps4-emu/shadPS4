@@ -291,7 +291,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
         if (vma.IsMapped()) {
             LOG_ERROR(Kernel_Vmm, "Attempted to map already mapped memory at {:#x}", virtual_addr);
-            return ORBIS_KERNEL_ERROR_EBUSY;
+            return ORBIS_KERNEL_ERROR_ENOMEM;
         }
         if (remaining_size < size) {
             LOG_ERROR(Kernel_Vmm, "Could not map memory with size {:#x}", size);
