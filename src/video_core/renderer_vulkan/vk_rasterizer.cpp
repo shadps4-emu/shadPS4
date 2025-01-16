@@ -58,6 +58,7 @@ bool Rasterizer::FilterDraw() {
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
         // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
+        ScopedMarkerInsert("FmaskDecompress");
         return false;
     }
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::Resolve) {
@@ -67,6 +68,7 @@ bool Rasterizer::FilterDraw() {
     }
     if (regs.primitive_type == AmdGpu::PrimitiveType::None) {
         LOG_TRACE(Render_Vulkan, "Primitive type 'None' skipped");
+        ScopedMarkerInsert("PrimitiveTypeNone");
         return false;
     }
 
@@ -244,10 +246,13 @@ void Rasterizer::EliminateFastClear() {
         .layerCount = col_buf.view.slice_max - col_buf.view.slice_start + 1,
     };
     scheduler.EndRendering();
+    ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
+                                 col_buf.CmaskAddress()));
     image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
     scheduler.CommandBuffer().clearColorImage(image.image, image.last_state.layout,
                                               LiverpoolToVK::ColorBufferClearValue(col_buf).color,
                                               range);
+    ScopeMarkerEnd();
 }
 
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
@@ -842,8 +847,6 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
 }
 
 void Rasterizer::Resolve() {
-    const auto cmdbuf = scheduler.CommandBuffer();
-
     // Read from MRT0, average all samples, and write to MRT1, which is one-sample
     const auto& mrt0_hint = liverpool->last_cb_extent[0];
     const auto& mrt1_hint = liverpool->last_cb_extent[1];
@@ -863,9 +866,12 @@ void Rasterizer::Resolve() {
     mrt1_range.base.layer = liverpool->regs.color_buffers[1].view.slice_start;
     mrt1_range.extent.layers = liverpool->regs.color_buffers[1].NumSlices() - mrt1_range.base.layer;
 
+    ScopeMarkerBegin(fmt::format("Resolve:MRT0={:#x}:MRT1={:#x}",
+                                 liverpool->regs.color_buffers[0].Address(),
+                                 liverpool->regs.color_buffers[1].Address()));
+
     mrt0_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
                        mrt0_range);
-
     mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
                        mrt1_range);
 
@@ -892,8 +898,9 @@ void Rasterizer::Resolve() {
             .dstOffset = {0, 0, 0},
             .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
         };
-        cmdbuf.copyImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal, mrt1_image.image,
-                         vk::ImageLayout::eTransferDstOptimal, region);
+        scheduler.CommandBuffer().copyImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal,
+                                            mrt1_image.image, vk::ImageLayout::eTransferDstOptimal,
+                                            region);
     } else {
         vk::ImageResolve region = {
             .srcSubresource =
@@ -914,9 +921,12 @@ void Rasterizer::Resolve() {
             .dstOffset = {0, 0, 0},
             .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
         };
-        cmdbuf.resolveImage(mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal,
-                            mrt1_image.image, vk::ImageLayout::eTransferDstOptimal, region);
+        scheduler.CommandBuffer().resolveImage(
+            mrt0_image.image, vk::ImageLayout::eTransferSrcOptimal, mrt1_image.image,
+            vk::ImageLayout::eTransferDstOptimal, region);
     }
+
+    ScopeMarkerEnd();
 }
 
 void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
@@ -935,6 +945,11 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     VideoCore::SubresourceRange sub_range;
     sub_range.base.layer = liverpool->regs.depth_view.slice_start;
     sub_range.extent.layers = liverpool->regs.depth_view.NumSlices() - sub_range.base.layer;
+
+    ScopeMarkerBegin(fmt::format(
+        "DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}", regs.depth_buffer.DepthAddress(),
+        regs.depth_buffer.StencilAddress(), regs.depth_buffer.DepthWriteAddress(),
+        regs.depth_buffer.StencilWriteAddress()));
 
     read_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
                        sub_range);
@@ -967,9 +982,11 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
         .dstOffset = {0, 0, 0},
         .extent = {write_image.info.size.width, write_image.info.size.height, 1},
     };
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImage(read_image.image, vk::ImageLayout::eTransferSrcOptimal, write_image.image,
-                     vk::ImageLayout::eTransferDstOptimal, region);
+    scheduler.CommandBuffer().copyImage(read_image.image, vk::ImageLayout::eTransferSrcOptimal,
+                                        write_image.image, vk::ImageLayout::eTransferDstOptimal,
+                                        region);
+
+    ScopeMarkerEnd();
 }
 
 void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
@@ -1195,42 +1212,43 @@ void Rasterizer::UpdateViewportScissorState() {
     cmdbuf.setScissorWithCountEXT(scissors);
 }
 
-void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
+    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::vkHostMarkersEnabled())) {
         return;
     }
-
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
         .pLabelName = str.data(),
     });
 }
 
-void Rasterizer::ScopeMarkerEnd() {
-    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+void Rasterizer::ScopeMarkerEnd(bool from_guest) {
+    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::vkHostMarkersEnabled())) {
         return;
     }
-
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.endDebugUtilsLabelEXT();
 }
 
-void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
+    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::vkHostMarkersEnabled())) {
         return;
     }
-
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
         .pLabelName = str.data(),
     });
 }
 
-void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color) {
-    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
+void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
+                                         bool from_guest) {
+    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::vkHostMarkersEnabled())) {
         return;
     }
-
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
         .pLabelName = str.data(),

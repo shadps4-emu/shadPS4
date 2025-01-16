@@ -199,7 +199,7 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
         return;
     }
 
-    if (Config::vkMarkersEnabled()) {
+    if (Config::vkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",
         });
@@ -224,7 +224,7 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
     cmdbuf.beginRendering(render_info);
     Vulkan::RenderDrawData(*draw_data, cmdbuf);
     cmdbuf.endRendering();
-    if (Config::vkMarkersEnabled()) {
+    if (Config::vkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 }
