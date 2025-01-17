@@ -468,6 +468,12 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
     draw_scheduler.EndRendering();
     const auto cmdbuf = draw_scheduler.CommandBuffer();
 
+    if (Config::vkHostMarkersEnabled()) {
+        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+            .pLabelName = "ShowSplash",
+        });
+    }
+
     if (!frame) {
         if (!splash_img.has_value()) {
             VideoCore::ImageInfo info{};
@@ -535,6 +541,10 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
         .pImageMemoryBarriers = &post_barrier,
     });
 
+    if (Config::vkHostMarkersEnabled()) {
+        cmdbuf.endDebugUtilsLabelEXT();
+    }
+
     // Flush frame creation commands.
     frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
     frame->ready_tick = draw_scheduler.CurrentTick();
@@ -563,6 +573,12 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
+    if (Config::vkHostMarkersEnabled()) {
+        const auto label = fmt::format("PrepareFrameInternal:{}", image_id.index);
+        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+            .pLabelName = label.c_str(),
+        });
+    }
 
     const auto frame_subresources = vk::ImageSubresourceRange{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -677,6 +693,10 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &post_barrier,
     });
 
+    if (Config::vkHostMarkersEnabled()) {
+        cmdbuf.endDebugUtilsLabelEXT();
+    }
+
     // Flush frame creation commands.
     frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
     frame->ready_tick = scheduler.CurrentTick();
@@ -723,6 +743,12 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
 
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    if (Config::vkHostMarkersEnabled()) {
+        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+            .pLabelName = "Present",
+        });
+    }
 
     {
         auto* profiler_ctx = instance.GetProfilerContext();
@@ -814,6 +840,10 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         if (profiler_ctx) {
             TracyVkCollect(profiler_ctx, cmdbuf);
         }
+    }
+
+    if (Config::vkHostMarkersEnabled()) {
+        cmdbuf.endDebugUtilsLabelEXT();
     }
 
     // Flush vulkan commands.
