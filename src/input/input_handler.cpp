@@ -257,11 +257,11 @@ void ParseInputConfig(const std::string game_id = "") {
                                 line);
                     continue;
                 }
-                ControllerOutput* toggle_out = &*std::ranges::find(
-                    output_array, ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE));
-                BindingConnection toggle_connection = BindingConnection(
-                    InputBinding(toggle_keys.keys[0]), toggle_out, 0, toggle_keys.keys[1]);
-                connections.insert(connections.end(), toggle_connection);
+                connections.emplace_back(BindingConnection(
+                    InputBinding(toggle_keys.keys[0]),
+                    &*std::ranges::find(output_array,
+                                        ControllerOutput((OrbisPadButtonDataOffset)KEY_TOGGLE)),
+                    0, toggle_keys.keys[1]));
                 continue;
             }
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
@@ -282,7 +282,6 @@ void ParseInputConfig(const std::string game_id = "") {
 
         // normal cases
         InputBinding binding = GetBindingFromString(input_string);
-        BindingConnection connection(InputID(), nullptr);
         auto button_it = string_to_cbutton_map.find(output_string);
         auto axis_it = string_to_axis_map.find(output_string);
 
@@ -292,9 +291,8 @@ void ParseInputConfig(const std::string game_id = "") {
             continue;
         }
         if (button_it != string_to_cbutton_map.end()) {
-            connection = BindingConnection(
-                binding, &*std::ranges::find(output_array, ControllerOutput(button_it->second)));
-            connections.insert(connections.end(), connection);
+            connections.emplace_back(BindingConnection(
+                binding, &*std::ranges::find(output_array, ControllerOutput(button_it->second))));
 
         } else if (axis_it != string_to_axis_map.end()) {
             int value_to_set = binding.keys[2].type == InputType::Axis ? 0
@@ -302,12 +300,11 @@ void ParseInputConfig(const std::string game_id = "") {
                                   axis_it->second.axis == Axis::TriggerRight)
                                    ? 127
                                    : axis_it->second.value;
-            connection = BindingConnection(
+            connections.emplace_back(BindingConnection(
                 binding,
                 &*std::ranges::find(output_array, ControllerOutput(OrbisPadButtonDataOffset::None,
                                                                    axis_it->second.axis)),
-                value_to_set);
-            connections.insert(connections.end(), connection);
+                value_to_set));
         } else {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
