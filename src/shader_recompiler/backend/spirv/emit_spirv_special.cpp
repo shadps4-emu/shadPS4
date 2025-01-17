@@ -31,10 +31,30 @@ void ConvertPositionToClipSpace(EmitContext& ctx) {
     const Id y{ctx.OpCompositeExtract(type, position, 1u)};
     const Id z{ctx.OpCompositeExtract(type, position, 2u)};
     const Id w{ctx.OpCompositeExtract(type, position, 3u)};
-    const Id ndc_x{ctx.OpFSub(type, ctx.OpFDiv(type, x, ctx.Constant(type, float(8_KB))),
-                              ctx.Constant(type, 1.f))};
-    const Id ndc_y{ctx.OpFSub(type, ctx.OpFDiv(type, y, ctx.Constant(type, float(8_KB))),
-                              ctx.Constant(type, 1.f))};
+    const Id xoffset_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                           ctx.push_data_block,
+                                           ctx.ConstU32(PushData::XOffsetIndex))};
+    const Id xoffset{ctx.OpLoad(type, xoffset_ptr)};
+    const Id yoffset_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                           ctx.push_data_block,
+                                           ctx.ConstU32(PushData::YOffsetIndex))};
+    const Id yoffset{ctx.OpLoad(type, yoffset_ptr)};
+    const Id xscale_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                          ctx.push_data_block,
+                                          ctx.ConstU32(PushData::XScaleIndex))};
+    const Id xscale{ctx.OpLoad(type, xscale_ptr)};
+    const Id yscale_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                          ctx.push_data_block,
+                                          ctx.ConstU32(PushData::YScaleIndex))};
+    const Id yscale{ctx.OpLoad(type, yscale_ptr)};
+    Id ndc_x = ctx.OpFMul(type, x, xscale);
+    ndc_x = ctx.OpFAdd(type, ndc_x, xoffset);
+    ndc_x = ctx.OpFDiv(type, ndc_x, ctx.Constant(type, float(8_KB)));
+    ndc_x = ctx.OpFSub(type, ndc_x, ctx.Constant(type, 1.f));
+    Id ndc_y = ctx.OpFMul(type, y, yscale);
+    ndc_y = ctx.OpFAdd(type, ndc_y, yoffset);
+    ndc_y = ctx.OpFDiv(type, ndc_y, ctx.Constant(type, float(8_KB)));
+    ndc_y = ctx.OpFSub(type, ndc_y, ctx.Constant(type, 1.f));
     const Id vector{ctx.OpCompositeConstruct(ctx.F32[4], std::array<Id, 4>({ndc_x, ndc_y, z, w}))};
     ctx.OpStore(ctx.output_position, vector);
 }

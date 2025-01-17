@@ -262,15 +262,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    const auto& vp_ctl = regs.viewport_control;
-
-    // TODO(roamic): the statement below needs verification with a sample on the real HW.
-    // If there is no defined transform to convert from clip space to screen space we assume that
-    // clipping is also disabled.
-    const bool viewport_disabled = !vp_ctl.xoffset_enable && !vp_ctl.xscale_enable &&
-                                   !vp_ctl.yoffset_enable && !vp_ctl.yscale_enable &&
-                                   !vp_ctl.zoffset_enable && !vp_ctl.zscale_enable;
-    key.clip_disable = regs.clipper_control.clip_disable || viewport_disabled;
+    key.clip_disable =
+        regs.clipper_control.clip_disable || regs.primitive_type == AmdGpu::PrimitiveType::RectList;
     key.depth_test_enable = regs.depth_control.depth_enable;
     key.depth_write_enable =
         regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;

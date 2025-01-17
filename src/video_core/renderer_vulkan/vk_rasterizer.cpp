@@ -504,6 +504,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         push_data.step0 = regs.vgt_instance_step_rate_0;
         push_data.step1 = regs.vgt_instance_step_rate_1;
+        push_data.xoffset = regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
+        push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
+        push_data.yoffset = regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
+        push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
         stage->PushUd(binding, push_data);
 
         BindBuffers(*stage, binding, push_data, set_writes, buffer_barriers);

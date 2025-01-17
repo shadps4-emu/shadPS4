@@ -568,25 +568,34 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(
-        TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4], U32[4], U32[4]), "AuxData")};
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4], U32[4],
+                                         U32[4], F32[1], F32[1], F32[1], F32[1]),
+                              "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, 0, "sr0");
     MemberName(struct_type, 1, "sr1");
-    MemberName(struct_type, 2, "buf_offsets0");
-    MemberName(struct_type, 3, "buf_offsets1");
-    MemberName(struct_type, 4, "ud_regs0");
-    MemberName(struct_type, 5, "ud_regs1");
-    MemberName(struct_type, 6, "ud_regs2");
-    MemberName(struct_type, 7, "ud_regs3");
+    MemberName(struct_type, Shader::PushData::BufOffsetIndex + 0, "buf_offsets0");
+    MemberName(struct_type, Shader::PushData::BufOffsetIndex + 1, "buf_offsets1");
+    MemberName(struct_type, Shader::PushData::UdRegsIndex + 0, "ud_regs0");
+    MemberName(struct_type, Shader::PushData::UdRegsIndex + 1, "ud_regs1");
+    MemberName(struct_type, Shader::PushData::UdRegsIndex + 2, "ud_regs2");
+    MemberName(struct_type, Shader::PushData::UdRegsIndex + 3, "ud_regs3");
+    MemberName(struct_type, Shader::PushData::XOffsetIndex, "xoffset");
+    MemberName(struct_type, Shader::PushData::YOffsetIndex, "yoffset");
+    MemberName(struct_type, Shader::PushData::XScaleIndex, "xscale");
+    MemberName(struct_type, Shader::PushData::YScaleIndex, "yscale");
     MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
     MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
-    MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
-    MemberDecorate(struct_type, 3, spv::Decoration::Offset, 24U);
-    MemberDecorate(struct_type, 4, spv::Decoration::Offset, 40U);
-    MemberDecorate(struct_type, 5, spv::Decoration::Offset, 56U);
-    MemberDecorate(struct_type, 6, spv::Decoration::Offset, 72U);
-    MemberDecorate(struct_type, 7, spv::Decoration::Offset, 88U);
+    MemberDecorate(struct_type, Shader::PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, Shader::PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 24U);
+    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 0, spv::Decoration::Offset, 40U);
+    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 1, spv::Decoration::Offset, 56U);
+    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 2, spv::Decoration::Offset, 72U);
+    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 3, spv::Decoration::Offset, 88U);
+    MemberDecorate(struct_type, Shader::PushData::XOffsetIndex, spv::Decoration::Offset, 104U);
+    MemberDecorate(struct_type, Shader::PushData::YOffsetIndex, spv::Decoration::Offset, 108U);
+    MemberDecorate(struct_type, Shader::PushData::XScaleIndex, spv::Decoration::Offset, 112U);
+    MemberDecorate(struct_type, Shader::PushData::YScaleIndex, spv::Decoration::Offset, 116U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
