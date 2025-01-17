@@ -33,6 +33,7 @@ static std::deque<std::pair<bool, ImGui::Layer*>> change_layers{};
 static std::mutex change_layers_mutex{};
 
 static ImGuiID dock_id;
+static ImGuiID game_window_id = 1054440878;
 
 namespace ImGui {
 
@@ -141,9 +142,6 @@ void Shutdown(const vk::Device& device) {
 
 bool ProcessEvent(SDL_Event* event) {
     Sdl::ProcessEvent(event);
-    if (!DebugState.IsShowingDebugMenuBar()) {
-        return false; // temp workaround, only works if the debug menu is inactive
-    }
     switch (event->type) {
     // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
@@ -151,7 +149,7 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
         const auto& io = GetIO();
         return io.WantCaptureMouse && io.Ctx->NavWindow != nullptr &&
-               io.Ctx->NavWindow->ID != dock_id;
+                (io.Ctx->NavWindow->Flags & ImGuiWindowFlags_NoNav) == 0;
     }
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN: {
