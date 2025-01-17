@@ -15,6 +15,7 @@
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
+#include "input/input_mouse.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
 
@@ -218,13 +219,14 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
     // get the event's id, if it's keyup or keydown
-    bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
-                      event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-                      event->type == SDL_EVENT_MOUSE_WHEEL;
-    u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
+    const bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
+                            event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+                            event->type == SDL_EVENT_MOUSE_WHEEL;
+    Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
 
     // Handle window controls outside of the input maps
     if (event->type == SDL_EVENT_KEY_DOWN) {
+        u32 input_id = input_event.input.sdl_id;
         // Reparse kbm inputs
         if (input_id == SDLK_F8) {
             Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
@@ -258,7 +260,7 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     }
 
     // add/remove it from the list
-    bool inputs_changed = Input::UpdatePressedKeys(input_id, input_down);
+    bool inputs_changed = Input::UpdatePressedKeys(input_event);
 
     // update bindings
     if (inputs_changed) {
@@ -270,7 +272,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
 
     bool input_down = event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION ||
                       event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
-    u32 input_id = Input::InputBinding::GetInputIDFromEvent(*event);
+    Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
 
     // the touchpad button shouldn't be rebound to anything else,
     // as it would break the entire touchpad handling
@@ -280,8 +282,10 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         return;
     }
 
-    bool inputs_changed = Input::UpdatePressedKeys(input_id, input_down);
+    // add/remove it from the list
+    bool inputs_changed = Input::UpdatePressedKeys(input_event);
 
+    // update bindings
     if (inputs_changed) {
         Input::ActivateOutputsFromInputs();
     }
