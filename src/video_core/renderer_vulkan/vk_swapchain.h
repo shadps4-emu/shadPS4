@@ -61,6 +61,10 @@ public:
         return surface_format;
     }
 
+    vk::Format GetViewFormat() const {
+        return view_format;
+    }
+
     vk::SwapchainKHR GetHandle() const {
         return swapchain;
     }
@@ -114,6 +118,7 @@ private:
     vk::SwapchainKHR swapchain{};
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
+    vk::Format view_format;
     vk::Extent2D extent;
     vk::SurfaceTransformFlagBitsKHR transform;
     vk::CompositeAlphaFlagBitsKHR composite_alpha;

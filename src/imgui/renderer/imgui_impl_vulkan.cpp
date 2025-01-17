@@ -687,8 +687,6 @@ void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                 vk::DescriptorSet desc_set[1]{pcmd->TextureId->descriptor_set};
                 command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                   bd->pipeline_layout, 0, {desc_set}, {});
-                command_buffer.setColorBlendEnableEXT(
-                    0, {pcmd->TextureId->disable_blend ? vk::False : vk::True});
 
                 // Draw
                 command_buffer.drawIndexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset,
@@ -1058,10 +1056,9 @@ static void CreatePipeline(vk::Device device, const vk::AllocationCallbacks* all
         .pAttachments = color_attachment,
     };
 
-    vk::DynamicState dynamic_states[3]{
+    vk::DynamicState dynamic_states[2]{
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
-        vk::DynamicState::eColorBlendEnableEXT,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_state{
         .dynamicStateCount = (uint32_t)IM_ARRAYSIZE(dynamic_states),
