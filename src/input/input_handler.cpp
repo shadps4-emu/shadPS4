@@ -176,7 +176,8 @@ InputBinding GetBindingFromString(std::string& line) {
             }
         }
     }
-    LOG_DEBUG(Input, "Parsed line: {} {} {}", keys[0].ToString(), keys[1].ToString(), keys[2].ToString()); 
+    LOG_DEBUG(Input, "Parsed line: {} {} {}", keys[0].ToString(), keys[1].ToString(),
+              keys[2].ToString());
     return InputBinding(keys[0], keys[1], keys[2]);
 }
 
