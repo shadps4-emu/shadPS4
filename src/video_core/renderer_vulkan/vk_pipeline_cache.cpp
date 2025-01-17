@@ -183,6 +183,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.cs_info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
                                     cs_pgm.IsTgidEnabled(2)};
         info.cs_info.shared_memory_size = cs_pgm.SharedMemSize();
+        info.cs_info.max_shared_memory_size = instance.MaxComputeSharedMemorySize();
         break;
     }
     default:

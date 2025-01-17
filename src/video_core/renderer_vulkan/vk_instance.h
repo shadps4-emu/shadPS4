@@ -239,6 +239,11 @@ public:
         return subgroup_size;
     }
 
+    /// Returns the maximum size of compute shared memory.
+    u32 MaxComputeSharedMemorySize() const {
+        return properties.limits.maxComputeSharedMemorySize;
+    }
+
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;

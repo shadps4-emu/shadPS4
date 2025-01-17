@@ -847,6 +847,10 @@ void EmitContext::DefineSharedMemory() {
     if (shared_memory_size == 0) {
         shared_memory_size = DefaultSharedMemSize;
     }
+
+    const u32 max_shared_memory_size = runtime_info.cs_info.max_shared_memory_size;
+    ASSERT(shared_memory_size <= max_shared_memory_size);
+
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
