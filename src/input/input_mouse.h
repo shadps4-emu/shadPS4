@@ -9,8 +9,8 @@
 namespace Input {
 
 void ToggleMouseEnabled();
-void SetMouseToJoystick(int joystick);
-void SetMouseParams(float mouse_deadzone_offset, float mouse_speed, float mouse_speed_offset);
+void SetMouseToJoystick(const int joystick);
+void SetMouseParams(const float mouse_deadzone_offset, const float mouse_speed, const float mouse_speed_offset);
 
 // Polls the mouse for changes, and simulates joystick movement from it.
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval);

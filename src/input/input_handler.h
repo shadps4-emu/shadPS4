@@ -60,7 +60,7 @@ public:
     bool IsValid() const {
         return *this != InputID();
     }
-    std::string ToString() {
+    std::string ToString() const {
         return fmt::format("({}: {:x})", (u8)type, sdl_id);
     }
 };
@@ -297,10 +297,10 @@ public:
     bool operator<(const InputBinding& other) const {
         return KeyCount() > other.KeyCount();
     }
-    inline bool IsEmpty() {
+    inline bool IsEmpty() const {
         return !(keys[0].IsValid() || keys[1].IsValid() || keys[2].IsValid());
     }
-    std::string ToString() { // todo add device type
+    std::string ToString() const { // todo add device type
         return fmt::format("({:X}, {:X}, {:X})", keys[0].sdl_id, keys[1].sdl_id, keys[2].sdl_id);
     }
 

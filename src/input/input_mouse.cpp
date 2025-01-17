@@ -21,11 +21,11 @@ void ToggleMouseEnabled() {
     mouse_enabled = !mouse_enabled;
 }
 
-void SetMouseToJoystick(int joystick) {
+void SetMouseToJoystick(const int joystick) {
     mouse_joystick_binding = joystick;
 }
 
-void SetMouseParams(float mdo, float ms, float mso) {
+void SetMouseParams(const float mdo, const float ms, const float mso) {
     mouse_deadzone_offset = mdo;
     mouse_speed = ms;
     mouse_speed_offset = mso;

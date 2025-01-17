@@ -94,7 +94,7 @@ auto output_array = std::array{
 };
 
 // parsing related functions
-u32 GetAxisInputId(AxisMapping a) {
+u32 GetAxisInputId(const AxisMapping a) {
     // LOG_INFO(Input, "Parsing an axis...");
     if (a.axis == Axis::AxisMax || a.value != 0) {
         LOG_ERROR(Input, "Invalid axis given!");
@@ -104,7 +104,7 @@ u32 GetAxisInputId(AxisMapping a) {
     return value;
 }
 
-u32 GetOrbisToSdlButtonKeycode(OrbisPadButtonDataOffset cbutton) {
+u32 GetOrbisToSdlButtonKeycode(const OrbisPadButtonDataOffset cbutton) {
     switch (cbutton) {
     case OrbisPadButtonDataOffset::Circle:
         return SDL_GAMEPAD_BUTTON_EAST;
@@ -139,7 +139,7 @@ u32 GetOrbisToSdlButtonKeycode(OrbisPadButtonDataOffset cbutton) {
         return ((u32)-1) - 0x10000000;
     }
 }
-u32 GetControllerButtonInputId(u32 cbutton) {
+u32 GetControllerButtonInputId(const u32 cbutton) {
     if ((cbutton & ((u32)OrbisPadButtonDataOffset::TouchPad | LEFTJOYSTICK_HALFMODE |
                     RIGHTJOYSTICK_HALFMODE)) != 0) {
         return (u32)-1;
@@ -148,7 +148,7 @@ u32 GetControllerButtonInputId(u32 cbutton) {
 }
 
 // syntax: 'name, name,name' or 'name,name' or 'name'
-InputBinding GetBindingFromString(std::string& line) {
+InputBinding GetBindingFromString(const std::string& line) {
     std::array<InputID, 3> keys = {InputID(), InputID(), InputID()};
 
     // Check and process tokens
@@ -367,7 +367,7 @@ void ControllerOutput::SetControllerOutputController(GameController* c) {
     ControllerOutput::controller = c;
 }
 
-void ToggleKeyInList(InputID input) {
+void ToggleKeyInList(const InputID input) {
     if (input.type == InputType::Axis) {
         LOG_ERROR(Input, "Toggling analog inputs is not supported!");
         return;
@@ -387,7 +387,7 @@ void ControllerOutput::ResetUpdate() {
     new_button_state = false;
     new_param = 0;
 }
-void ControllerOutput::AddUpdate(InputEvent event) {
+void ControllerOutput::AddUpdate(const InputEvent event) {
     state_changed = true;
     if ((u32)button == KEY_TOGGLE) {
         if (event.active) {
@@ -475,7 +475,7 @@ void ControllerOutput::FinalizeUpdate() {
 
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
-bool UpdatePressedKeys(InputEvent event) {
+bool UpdatePressedKeys(const InputEvent event) {
     // Skip invalid inputs
     InputID input = event.input;
     if (input.sdl_id == (u32)-1) {
