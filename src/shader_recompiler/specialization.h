@@ -21,10 +21,16 @@ struct VsAttribSpecialization {
 struct BufferSpecialization {
     u16 stride : 14;
     u16 is_storage : 1;
+    u16 swizzle_enable : 1;
+    u8 index_stride : 2 = 0;
+    u8 element_size : 2 = 0;
     u32 size = 0;
 
     bool operator==(const BufferSpecialization& other) const {
         return stride == other.stride && is_storage == other.is_storage &&
+               swizzle_enable == other.swizzle_enable &&
+               (!swizzle_enable ||
+                (index_stride == other.index_stride && element_size == other.element_size)) &&
                (size >= other.is_storage || is_storage);
     }
 };
@@ -101,6 +107,11 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
                          spec.is_storage = desc.IsStorage(sharp);
+                         spec.swizzle_enable = sharp.swizzle_enable;
+                         if (spec.swizzle_enable) {
+                             spec.index_stride = sharp.index_stride;
+                             spec.element_size = sharp.element_size;
+                         }
                          if (!spec.is_storage) {
                              spec.size = sharp.GetSize();
                          }

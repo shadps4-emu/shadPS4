@@ -82,13 +82,12 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
     if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
-        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat ||
-         format == vk::Format::eR16Unorm || format == vk::Format::eD16Unorm)) {
+        Vulkan::LiverpoolToVK::IsFormatDepthCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }
     if (image.aspect_mask & vk::ImageAspectFlagBits::eStencil &&
-        (format == vk::Format::eR8Uint || format == vk::Format::eR8Unorm)) {
+        Vulkan::LiverpoolToVK::IsFormatStencilCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
@@ -111,6 +110,13 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(view_result));
     image_view = std::move(view);
+
+    const auto view_aspect = aspect & vk::ImageAspectFlagBits::eDepth     ? "Depth"
+                             : aspect & vk::ImageAspectFlagBits::eStencil ? "Stencil"
+                                                                          : "Color";
+    Vulkan::SetObjectName(instance.GetDevice(), *image_view, "ImageView {}x{}x{} {:#x}:{:#x} ({})",
+                          image.info.size.width, image.info.size.height, image.info.size.depth,
+                          image.info.guest_address, image.info.guest_size, view_aspect);
 }
 
 ImageView::~ImageView() = default;

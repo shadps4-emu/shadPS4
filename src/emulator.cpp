@@ -66,9 +66,10 @@ Emulator::Emulator() {
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
-    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
-    LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::vkMarkersEnabled());
     LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::vkCrashDiagnosticEnabled());
+    LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::vkHostMarkersEnabled());
+    LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::vkGuestMarkersEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
 
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();

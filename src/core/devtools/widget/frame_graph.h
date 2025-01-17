@@ -16,6 +16,9 @@ class FrameGraph {
 
     std::array<FrameInfo, FRAME_BUFFER_SIZE> frame_list{};
 
+    float deltaTime{};
+    float frameRate{};
+
     void DrawFrameGraph();
 
 public:

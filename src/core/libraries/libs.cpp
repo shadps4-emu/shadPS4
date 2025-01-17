@@ -30,6 +30,7 @@
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
+#include "core/libraries/np_web_api/np_web_api.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
@@ -81,6 +82,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpManager::RegisterlibSceNpManager(sym);
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
+    Libraries::NpWebApi::RegisterlibSceNpWebApi(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
