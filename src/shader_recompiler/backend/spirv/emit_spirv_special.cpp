@@ -47,14 +47,14 @@ void ConvertPositionToClipSpace(EmitContext& ctx) {
                                           ctx.push_data_block,
                                           ctx.ConstU32(PushData::YScaleIndex))};
     const Id yscale{ctx.OpLoad(type, yscale_ptr)};
-    Id ndc_x = ctx.OpFMul(type, x, xscale);
-    ndc_x = ctx.OpFAdd(type, ndc_x, xoffset);
-    ndc_x = ctx.OpFDiv(type, ndc_x, ctx.Constant(type, float(8_KB)));
-    ndc_x = ctx.OpFSub(type, ndc_x, ctx.Constant(type, 1.f));
-    Id ndc_y = ctx.OpFMul(type, y, yscale);
-    ndc_y = ctx.OpFAdd(type, ndc_y, yoffset);
-    ndc_y = ctx.OpFDiv(type, ndc_y, ctx.Constant(type, float(8_KB)));
-    ndc_y = ctx.OpFSub(type, ndc_y, ctx.Constant(type, 1.f));
+    const Id vport_w =
+        ctx.Constant(type, float(std::min<u32>(ctx.profile.max_viewport_width / 2, 8_KB)));
+    const Id wnd_x = ctx.OpFAdd(type, ctx.OpFMul(type, x, xscale), xoffset);
+    const Id ndc_x = ctx.OpFSub(type, ctx.OpFDiv(type, wnd_x, vport_w), ctx.Constant(type, 1.f));
+    const Id vport_h =
+        ctx.Constant(type, float(std::min<u32>(ctx.profile.max_viewport_height / 2, 8_KB)));
+    const Id wnd_y = ctx.OpFAdd(type, ctx.OpFMul(type, y, yscale), yoffset);
+    const Id ndc_y = ctx.OpFSub(type, ctx.OpFDiv(type, wnd_y, vport_h), ctx.Constant(type, 1.f));
     const Id vector{ctx.OpCompositeConstruct(ctx.F32[4], std::array<Id, 4>({ndc_x, ndc_y, z, w}))};
     ctx.OpStore(ctx.output_position, vector);
 }

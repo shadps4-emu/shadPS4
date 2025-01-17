@@ -504,10 +504,17 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         push_data.step0 = regs.vgt_instance_step_rate_0;
         push_data.step1 = regs.vgt_instance_step_rate_1;
-        push_data.xoffset = regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
-        push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
-        push_data.yoffset = regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
-        push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
+
+        // TODO(roamic): add support for multiple viewports and geometry shaders when ViewportIndex
+        // is encountered and implemented in the recompiler.
+        if (stage->stage == Shader::Stage::Vertex) {
+            push_data.xoffset =
+                regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
+            push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
+            push_data.yoffset =
+                regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
+            push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
+        }
         stage->PushUd(binding, push_data);
 
         BindBuffers(*stage, binding, push_data, set_writes, buffer_barriers);
@@ -1174,8 +1181,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
             viewports.push_back({
                 .x = 0.f,
                 .y = 0.f,
-                .width = float(16_KB),
-                .height = float(16_KB),
+                .width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB)),
+                .height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB)),
                 .minDepth = 0.0,
                 .maxDepth = 1.0,
             });

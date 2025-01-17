@@ -30,6 +30,8 @@ struct Profile {
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
     u64 min_ssbo_alignment{};
+    u32 max_viewport_width{};
+    u32 max_viewport_height{};
 };
 
 } // namespace Shader
