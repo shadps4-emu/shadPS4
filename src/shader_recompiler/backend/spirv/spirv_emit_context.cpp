@@ -395,7 +395,7 @@ void EmitContext::DefineInputs() {
             DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = runtime_info.hs_info.ls_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -409,7 +409,7 @@ void EmitContext::DefineInputs() {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -418,7 +418,7 @@ void EmitContext::DefineInputs() {
             Name(input_attr_array, "in_attrs");
         }
 
-        u32 patch_base_location = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        const u32 patch_base_location = num_attrs;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
@@ -453,7 +453,7 @@ void EmitContext::DefineOutputs() {
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
         if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
-            const u32 num_attrs = runtime_info.ls_info.ls_stride >> 4;
+            const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
                 output_attr_array = DefineOutput(type, 0);
@@ -488,7 +488,7 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
-        const u32 num_attrs = runtime_info.hs_info.hs_output_cp_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -498,7 +498,7 @@ void EmitContext::DefineOutputs() {
             Name(output_attr_array, "out_attrs");
         }
 
-        u32 patch_base_location = runtime_info.hs_info.hs_output_cp_stride >> 4;
+        const u32 patch_base_location = num_attrs;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
