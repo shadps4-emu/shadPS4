@@ -141,6 +141,9 @@ void Shutdown(const vk::Device& device) {
 
 bool ProcessEvent(SDL_Event* event) {
     Sdl::ProcessEvent(event);
+    if (!DebugState.IsShowingDebugMenuBar()) {
+        return false; // temp workaround, only works if the debug menu is inactive
+    }
     switch (event->type) {
     // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
