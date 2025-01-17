@@ -540,6 +540,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Toon grootte van het spel in de lijst</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Show Splash</translation>

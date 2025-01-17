@@ -76,6 +76,16 @@ struct Buffer {
     u32 GetSize() const noexcept {
         return stride == 0 ? num_records : (stride * num_records);
     }
+
+    u32 GetIndexStride() const noexcept {
+        // Index stride is 2 bits, meaning 8, 16, 32, or 64.
+        return 8 << index_stride;
+    }
+
+    u32 GetElementSize() const noexcept {
+        // Element size is 2 bits, meaning 2, 4, 8, or 16.
+        return 2 << element_size;
+    }
 };
 static_assert(sizeof(Buffer) == 16); // 128bits
 
@@ -119,6 +129,7 @@ constexpr std::string_view NameOf(ImageType type) {
 enum class TilingMode : u32 {
     Depth_MacroTiled = 0u,
     Display_Linear = 0x8u,
+    Display_MicroTiled = 0x9u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
     Texture_MacroTiled = 0xEu,
@@ -131,6 +142,8 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
         return "Display_Linear";
+    case TilingMode::Display_MicroTiled:
+        return "Display_MicroTiled";
     case TilingMode::Display_MacroTiled:
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:

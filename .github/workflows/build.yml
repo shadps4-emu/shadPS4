@@ -390,7 +390,7 @@ jobs:
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
+          cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -401,7 +401,7 @@ jobs:
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+          cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
@@ -426,7 +426,7 @@ jobs:
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
+          cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -437,7 +437,7 @@ jobs:
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-qt-cache-cmake-build
+          cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}

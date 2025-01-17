@@ -28,6 +28,7 @@
 #include <Rpc.h>
 #endif
 #include <common/singleton.h>
+#include "aio.h"
 
 namespace Libraries::Kernel {
 
@@ -218,6 +219,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
+    Libraries::Kernel::RegisterAio(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);

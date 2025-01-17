@@ -255,14 +255,6 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     ctx.OpImageWrite(image, coords, texel, operands.mask, operands.operands);
 }
 
-Id EmitCubeFaceCoord(EmitContext& ctx, IR::Inst* inst, Id cube_coords) {
-    if (ctx.profile.supports_native_cube_calc) {
-        return ctx.OpCubeFaceCoordAMD(ctx.F32[2], cube_coords);
-    } else {
-        UNREACHABLE_MSG("SPIR-V Instruction");
-    }
-}
-
 Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords) {
     if (ctx.profile.supports_native_cube_calc) {
         return ctx.OpCubeFaceIndexAMD(ctx.F32[1], cube_coords);

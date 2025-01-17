@@ -1,0 +1,60 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf {
+    uint in_data[];
+};
+layout(std430, binding = 1) buffer output_buf {
+    uint out_data[];
+};
+
+layout(push_constant) uniform image_info {
+    uint num_levels;
+    uint pitch;
+    uint height;
+    uint c0;
+    uint c1;
+} info;
+
+const uint lut_64bpp[16] = {
+    0x05040100, 0x0d0c0908,
+    0x07060302, 0x0f0e0b0a,
+    0x15141110, 0x1d1c1918,
+    0x17161312, 0x1f1e1b1a,
+    0x25242120, 0x2d2c2928,
+    0x27262322, 0x2f2e2b2a,
+    0x35343130, 0x3d3c3938,
+    0x37363332, 0x3f3e3b3a,
+};
+
+#define MICRO_TILE_DIM      (8)
+#define MICRO_TILE_SZ       (512)
+#define TEXELS_PER_ELEMENT  (1)
+#define BPP                 (64)
+
+void main() {
+    uint x =  gl_GlobalInvocationID.x % info.pitch;
+    uint y = (gl_GlobalInvocationID.x / info.pitch) % info.height;
+    uint z =  gl_GlobalInvocationID.x / (info.pitch * info.height);
+
+    uint col = bitfieldExtract(x, 0, 3);
+    uint row = bitfieldExtract(y, 0, 3);
+    uint idx_dw = lut_64bpp[(col + row * MICRO_TILE_DIM) >> 2u];
+    uint byte_ofs = gl_LocalInvocationID.x & 3u;
+    uint idx = bitfieldExtract(idx_dw >> (8 * byte_ofs), 0, 8);
+
+    uint slice_offs = z * info.c1 * MICRO_TILE_SZ;
+    uint tile_row = y / MICRO_TILE_DIM;
+    uint tile_column = x / MICRO_TILE_DIM;
+    uint tile_offs = ((tile_row * info.c0) + tile_column) * MICRO_TILE_SZ;
+    uint offs = slice_offs + tile_offs + ((idx * BPP) / 8u);
+
+    uint p0 = in_data[(offs >> 2) + 0];
+    uint p1 = in_data[(offs >> 2) + 1];
+    out_data[2 * gl_GlobalInvocationID.x + 0] = p0;
+    out_data[2 * gl_GlobalInvocationID.x + 1] = p1;
+}

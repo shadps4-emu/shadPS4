@@ -92,15 +92,13 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {}
+      physical_devices{EnumeratePhysicalDevices(instance)} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {
+      physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -272,6 +270,7 @@ bool Instance::CreateDevice() {
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
+    add_extension(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -562,10 +561,7 @@ void Instance::CollectToolingInfo() {
         return;
     }
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
-        const std::string_view name = tool.name;
-        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
-        has_renderdoc = has_renderdoc || name == "RenderDoc";
-        has_nsight_graphics = has_nsight_graphics || name == "NVIDIA Nsight Graphics";
+        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", tool.name);
     }
 }
 

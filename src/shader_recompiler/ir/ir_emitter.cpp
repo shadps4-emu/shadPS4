@@ -1758,10 +1758,6 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& 
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, multisampling, color);
 }
 
-[[nodiscard]] Value IREmitter::CubeFaceCoord(const Value& cube_coords) {
-    return Inst(Opcode::CubeFaceCoord, cube_coords);
-}
-
 [[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
     return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
 }
