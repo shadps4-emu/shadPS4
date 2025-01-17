@@ -46,6 +46,11 @@ struct SdlData {
     ImVector<SDL_Gamepad*> gamepads{};
     GamepadMode gamepad_mode{};
     bool want_update_gamepads_list{};
+
+    // Framerate counting (based on ImGui impl)
+    std::array<float, 60> framerateSecPerFrame;
+    int framerateSecPerFrameIdx{};
+    float framerateSecPerFrameAcc{};
 };
 
 // Backend data stored in io.BackendPlatformUserData to allow support for multiple Dear ImGui
@@ -812,12 +817,15 @@ void NewFrame(bool is_reusing_frame) {
                 : 1.0f / 60.0f;
         bd->nonReusedtime = current_time;
         DebugState.FrameDeltaTime = deltaTime;
-        float distribution = 0.016f / deltaTime / 10.0f;
-        if (distribution > 1.0f) {
-            distribution = 1.0f;
-        }
-        DebugState.Framerate =
-            deltaTime * distribution + DebugState.Framerate * (1.0f - distribution);
+
+        int& frameIdx = bd->framerateSecPerFrameIdx;
+        float& framerateSec = bd->framerateSecPerFrame[frameIdx];
+        float& acc = bd->framerateSecPerFrameAcc;
+        int count = bd->framerateSecPerFrame.size();
+        acc += deltaTime - framerateSec;
+        framerateSec = deltaTime;
+        frameIdx = (frameIdx + 1) % count;
+        DebugState.Framerate = acc > 0.0f ? 1.0f / (acc / (float)count) : FLT_MAX;
     }
 
     if (bd->mouse_pending_leave_frame && bd->mouse_pending_leave_frame >= ImGui::GetFrameCount() &&

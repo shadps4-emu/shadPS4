@@ -253,7 +253,7 @@ void L::DrawAdvanced() {
 
 void L::DrawSimple() {
     const float frameRate = DebugState.Framerate;
-    Text("%d FPS (%.1f ms)", static_cast<int>(std::round(1.0f / frameRate)), frameRate * 1000.0f);
+    Text("%d FPS (%.1f ms)", static_cast<int>(std::round(frameRate)), 1000.0f / frameRate);
 }
 
 static void LoadSettings(const char* line) {
@@ -264,7 +264,7 @@ static void LoadSettings(const char* line) {
         return;
     }
     if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
-        DebugState.ShowingDebugMenuBar() = i != 0;
+        DebugState.IsShowingDebugMenuBar() = i != 0;
         return;
     }
     if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
@@ -309,7 +309,7 @@ void L::SetupSettings() {
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
         buf->appendf("fps_scale=%f\n", fps_scale);
-        buf->appendf("show_advanced_debug=%d\n", DebugState.ShowingDebugMenuBar());
+        buf->appendf("show_advanced_debug=%d\n", DebugState.IsShowingDebugMenuBar());
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
@@ -340,7 +340,7 @@ void L::Draw() {
 
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
-            DebugState.ShowingDebugMenuBar() ^= true;
+            DebugState.IsShowingDebugMenuBar() ^= true;
         } else {
             show_simple_fps = !show_simple_fps;
         }
@@ -375,7 +375,7 @@ void L::Draw() {
         End();
     }
 
-    if (DebugState.ShowingDebugMenuBar()) {
+    if (DebugState.IsShowingDebugMenuBar()) {
         PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();

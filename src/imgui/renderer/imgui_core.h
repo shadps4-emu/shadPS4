@@ -31,4 +31,6 @@ ImGuiID NewFrame(bool is_reusing_frame = false);
 void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
             const vk::Extent2D& extent);
 
+bool MustKeepDrawing(); // Force the emulator redraw
+
 } // namespace ImGui::Core
