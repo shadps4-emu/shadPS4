@@ -484,12 +484,65 @@ void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descripto
     inst.SetArg(1, ir.Imm32(binding));
 }
 
+IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const Info& info,
+                               const AmdGpu::Buffer& buffer, u32 stride) {
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+
+    // index = (inst_idxen ? vgpr_index : 0) + (const_add_tid_enable ? thread_id[5:0] : 0)
+    IR::U32 index = ir.Imm32(0U);
+    if (inst_info.index_enable) {
+        const IR::U32 vgpr_index{inst_info.offset_enable
+                                     ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
+                                     : IR::U32{inst.Arg(1)}};
+        index = ir.IAdd(index, vgpr_index);
+    }
+    if (buffer.add_tid_enable) {
+        ASSERT_MSG(info.l_stage == LogicalStage::Compute,
+                   "Thread ID buffer addressing is not supported outside of compute.");
+        const IR::U32 thread_id{ir.LaneId()};
+        index = ir.IAdd(index, thread_id);
+    }
+    // offset = (inst_offen ? vgpr_offset : 0) + inst_offset
+    IR::U32 offset = ir.Imm32(inst_info.inst_offset.Value());
+    if (inst_info.offset_enable) {
+        const IR::U32 vgpr_offset = inst_info.index_enable
+                                        ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
+                                        : IR::U32{inst.Arg(1)};
+        offset = ir.IAdd(offset, vgpr_offset);
+    }
+    const IR::U32 const_stride = ir.Imm32(stride);
+    IR::U32 buffer_offset;
+    if (buffer.swizzle_enable) {
+        const IR::U32 const_index_stride = ir.Imm32(buffer.GetIndexStride());
+        const IR::U32 const_element_size = ir.Imm32(buffer.GetElementSize());
+        // index_msb = index / const_index_stride
+        const IR::U32 index_msb{ir.IDiv(index, const_index_stride)};
+        // index_lsb = index % const_index_stride
+        const IR::U32 index_lsb{ir.IMod(index, const_index_stride)};
+        // offset_msb = offset / const_element_size
+        const IR::U32 offset_msb{ir.IDiv(offset, const_element_size)};
+        // offset_lsb = offset % const_element_size
+        const IR::U32 offset_lsb{ir.IMod(offset, const_element_size)};
+        // buffer_offset =
+        //     (index_msb * const_stride + offset_msb * const_element_size) * const_index_stride
+        //     + index_lsb * const_element_size + offset_lsb
+        const IR::U32 buffer_offset_msb = ir.IMul(
+            ir.IAdd(ir.IMul(index_msb, const_stride), ir.IMul(offset_msb, const_element_size)),
+            const_index_stride);
+        const IR::U32 buffer_offset_lsb =
+            ir.IAdd(ir.IMul(index_lsb, const_element_size), offset_lsb);
+        buffer_offset = ir.IAdd(buffer_offset_msb, buffer_offset_lsb);
+    } else {
+        // buffer_offset = index * const_stride + offset
+        buffer_offset = ir.IAdd(ir.IMul(index, const_stride), offset);
+    }
+    return buffer_offset;
+}
+
 void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto handle = inst.Arg(0);
     const auto buffer_res = info.buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
-
-    ASSERT(!buffer.add_tid_enable);
 
     // Address of constant buffer reads can be calculated at IR emission time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
@@ -497,42 +550,7 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-
-    const IR::U32 index_stride = ir.Imm32(buffer.index_stride);
-    const IR::U32 element_size = ir.Imm32(buffer.element_size);
-
-    // Compute address of the buffer using the stride.
-    IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
-    if (inst_info.index_enable) {
-        const IR::U32 index = inst_info.offset_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
-                                                      : IR::U32{inst.Arg(1)};
-        if (buffer.swizzle_enable) {
-            const IR::U32 stride_index_stride =
-                ir.Imm32(static_cast<u32>(buffer.stride * buffer.index_stride));
-            const IR::U32 index_msb = ir.IDiv(index, index_stride);
-            const IR::U32 index_lsb = ir.IMod(index, index_stride);
-            address = ir.IAdd(address, ir.IAdd(ir.IMul(index_msb, stride_index_stride),
-                                               ir.IMul(index_lsb, element_size)));
-        } else {
-            address = ir.IAdd(address, ir.IMul(index, ir.Imm32(buffer.GetStride())));
-        }
-    }
-    if (inst_info.offset_enable) {
-        const IR::U32 offset = inst_info.index_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
-                                                      : IR::U32{inst.Arg(1)};
-        if (buffer.swizzle_enable) {
-            const IR::U32 element_size_index_stride =
-                ir.Imm32(buffer.element_size * buffer.index_stride);
-            const IR::U32 offset_msb = ir.IDiv(offset, element_size);
-            const IR::U32 offset_lsb = ir.IMod(offset, element_size);
-            address = ir.IAdd(address,
-                              ir.IAdd(ir.IMul(offset_msb, element_size_index_stride), offset_lsb));
-        } else {
-            address = ir.IAdd(address, offset);
-        }
-    }
-    inst.SetArg(1, address);
+    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
 
 void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
@@ -540,8 +558,15 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto buffer_res = info.texture_buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
 
-    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+    // Only linear addressing with index is supported currently, since we cannot yet
+    // address with sub-texel granularity.
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+    ASSERT_MSG(!buffer.swizzle_enable && !inst_info.offset_enable && inst_info.inst_offset == 0,
+               "Unsupported texture buffer address mode.");
+
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    // Stride of 1 to get an index into formatted data. See above addressing limitations.
+    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, 1U));
 
     if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
         const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
