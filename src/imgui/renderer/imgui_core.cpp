@@ -33,7 +33,6 @@ static std::deque<std::pair<bool, ImGui::Layer*>> change_layers{};
 static std::mutex change_layers_mutex{};
 
 static ImGuiID dock_id;
-static ImGuiID game_window_id = 1054440878;
 
 namespace ImGui {
 
