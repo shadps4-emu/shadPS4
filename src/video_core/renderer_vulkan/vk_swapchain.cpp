@@ -17,7 +17,7 @@ Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& windo
     FindPresentFormat();
 
     Create(window.GetWidth(), window.GetHeight());
-    ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
+    ImGui::Core::Initialize(instance, window, image_count, view_format);
 }
 
 Swapchain::~Swapchain() {
@@ -57,7 +57,17 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const u32 queue_family_indices_count = exclusive ? 1u : 2u;
     const vk::SharingMode sharing_mode =
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
+    const vk::Format view_formats[2] = {
+        surface_format.format,
+        view_format,
+    };
+    const vk::ImageFormatListCreateInfo format_list = {
+        .viewFormatCount = 2,
+        .pViewFormats = view_formats,
+    };
     const vk::SwapchainCreateInfoKHR swapchain_info = {
+        .pNext = &format_list,
+        .flags = vk::SwapchainCreateFlagBitsKHR::eMutableFormat,
         .surface = surface,
         .minImageCount = image_count,
         .imageFormat = surface_format.format,
@@ -149,6 +159,7 @@ void Swapchain::FindPresentFormat() {
     if (formats[0].format == vk::Format::eUndefined) {
         surface_format.format = vk::Format::eR8G8B8A8Srgb;
         surface_format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+        view_format = FormatToUnorm(surface_format.format);
         return;
     }
 
@@ -161,6 +172,7 @@ void Swapchain::FindPresentFormat() {
 
         surface_format.format = format;
         surface_format.colorSpace = sformat.colorSpace;
+        view_format = FormatToUnorm(surface_format.format);
         return;
     }
 

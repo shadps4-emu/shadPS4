@@ -13,7 +13,6 @@ struct ImDrawData;
 namespace ImGui {
 struct Texture {
     vk::DescriptorSet descriptor_set{nullptr};
-    bool disable_blend{false};
 };
 } // namespace ImGui
 

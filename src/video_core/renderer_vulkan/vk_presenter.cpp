@@ -380,7 +380,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
         .viewType = vk::ImageViewType::e2D,
-        .format = FormatToUnorm(format),
+        .format = swapchain.GetViewFormat(),
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,
@@ -397,7 +397,6 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     frame->height = height;
 
     frame->imgui_texture = ImGui::Vulkan::AddTexture(view, vk::ImageLayout::eShaderReadOnlyOptimal);
-    frame->imgui_texture->disable_blend = true;
 }
 
 Frame* Presenter::PrepareLastFrame() {
@@ -615,6 +614,13 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 
         VideoCore::ImageViewInfo info{};
         info.format = image.info.pixel_format;
+        // Exclude alpha from output frame to avoid blending with UI.
+        info.mapping = vk::ComponentMapping{
+            .r = vk::ComponentSwizzle::eIdentity,
+            .g = vk::ComponentSwizzle::eIdentity,
+            .b = vk::ComponentSwizzle::eIdentity,
+            .a = vk::ComponentSwizzle::eOne,
+        };
         if (auto view = image.FindView(info)) {
             image_info.imageView = *texture_cache.GetImageView(view).image_view;
         } else {
