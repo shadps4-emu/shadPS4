@@ -35,6 +35,8 @@ std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
 
+u16 leftDeadZone();
+u16 rightDeadZone();
 s16 getCursorState();
 int getCursorHideTimeout();
 std::string getBackButtonBehavior();
