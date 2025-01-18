@@ -219,7 +219,7 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    if (IsTilingCompatible(info.tiling_idx, tiling_idx)) {
+    if (!IsTilingCompatible(info.tiling_idx, tiling_idx)) {
         return -1;
     }
 
