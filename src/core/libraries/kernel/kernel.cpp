@@ -60,7 +60,7 @@ static void KernelServiceThread(std::stop_token stoken) {
         }
 
         io_context.run();
-        io_context.reset();
+        io_context.restart();
 
         asio_requests = 0;
     }
