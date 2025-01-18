@@ -26,7 +26,7 @@ public:
     ~Emulator();
 
     void Run(const std::filesystem::path& file,
-             const std::vector<std::string> args = std::vector<std::string>());
+             const std::vector<std::string> args = {});
     void UpdatePlayTime(const std::string& serial);
 
 private:

@@ -152,7 +152,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             psf_attributes.raw = *raw_attributes;
         }
         if (!args.empty()) {
-            int argc = args.size() > 32 ? 32 : args.size();
+            int argc = std::min<int>(args.size(), 32);
             for (int i = 0; i < argc; i++) {
                 LOG_INFO(Loader, "Game argument {}: {}", i, args[i]);
             }

@@ -143,7 +143,7 @@ public:
     void Relocate(Module* module);
     bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
-    void Execute(const std::vector<std::string> args = std::vector<std::string>());
+    void Execute(const std::vector<std::string> args = {});
     void DebugDump();
 
 private:

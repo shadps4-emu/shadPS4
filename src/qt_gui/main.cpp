@@ -144,19 +144,11 @@ int main(int argc, char* argv[]) {
                 game_args.push_back(argv[j]);
             }
             break;
-        } else if (std::string(argv[i + 1]) == "--") {
+        } else if (i + 1 < argc && std::string(argv[i + 1]) == "--") {
             if (!has_game_argument) {
                 game_path = argv[i];
                 has_game_argument = true;
             }
-            if (i + 2 == argc) {
-                std::cerr << "Warning: -- is set, but no game arguments are added!\n";
-                break;
-            }
-            for (int j = i + 2; j < argc; j++) {
-                game_args.push_back(argv[j]);
-            }
-            break;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
