@@ -17,7 +17,7 @@ Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& windo
     FindPresentFormat();
 
     Create(window.GetWidth(), window.GetHeight());
-    ImGui::Core::Initialize(instance, window, image_count, view_format);
+    ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
 }
 
 Swapchain::~Swapchain() {
@@ -57,17 +57,7 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const u32 queue_family_indices_count = exclusive ? 1u : 2u;
     const vk::SharingMode sharing_mode =
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
-    const vk::Format view_formats[2] = {
-        surface_format.format,
-        view_format,
-    };
-    const vk::ImageFormatListCreateInfo format_list = {
-        .viewFormatCount = 2,
-        .pViewFormats = view_formats,
-    };
     const vk::SwapchainCreateInfoKHR swapchain_info = {
-        .pNext = &format_list,
-        .flags = vk::SwapchainCreateFlagBitsKHR::eMutableFormat,
         .surface = surface,
         .minImageCount = image_count,
         .imageFormat = surface_format.format,
@@ -157,22 +147,20 @@ void Swapchain::FindPresentFormat() {
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
     if (formats[0].format == vk::Format::eUndefined) {
-        surface_format.format = vk::Format::eR8G8B8A8Srgb;
+        surface_format.format = vk::Format::eR8G8B8A8Unorm;
         surface_format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-        view_format = FormatToUnorm(surface_format.format);
         return;
     }
 
     // Try to find a suitable format.
     for (const vk::SurfaceFormatKHR& sformat : formats) {
         vk::Format format = sformat.format;
-        if (format != vk::Format::eR8G8B8A8Srgb && format != vk::Format::eB8G8R8A8Srgb) {
+        if (format != vk::Format::eR8G8B8A8Unorm && format != vk::Format::eB8G8R8A8Unorm) {
             continue;
         }
 
         surface_format.format = format;
         surface_format.colorSpace = sformat.colorSpace;
-        view_format = FormatToUnorm(surface_format.format);
         return;
     }
 
@@ -274,7 +262,7 @@ void Swapchain::SetupImages() {
         auto [im_view_result, im_view] = device.createImageView(vk::ImageViewCreateInfo{
             .image = images[i],
             .viewType = vk::ImageViewType::e2D,
-            .format = FormatToUnorm(surface_format.format),
+            .format = surface_format.format,
             .subresourceRange =
                 {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
