@@ -21,10 +21,16 @@ struct VsAttribSpecialization {
 struct BufferSpecialization {
     u16 stride : 14;
     u16 is_storage : 1;
+    u16 swizzle_enable : 1;
+    u8 index_stride : 2 = 0;
+    u8 element_size : 2 = 0;
     u32 size = 0;
 
     bool operator==(const BufferSpecialization& other) const {
         return stride == other.stride && is_storage == other.is_storage &&
+               swizzle_enable == other.swizzle_enable &&
+               (!swizzle_enable ||
+                (index_stride == other.index_stride && element_size == other.element_size)) &&
                (size >= other.is_storage || is_storage);
     }
 };
@@ -32,6 +38,7 @@ struct BufferSpecialization {
 struct TextureBufferSpecialization {
     bool is_integer = false;
     AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
@@ -41,6 +48,7 @@ struct ImageSpecialization {
     bool is_integer = false;
     bool is_storage = false;
     AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     auto operator<=>(const ImageSpecialization&) const = default;
 };
@@ -99,6 +107,11 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
                          spec.is_storage = desc.IsStorage(sharp);
+                         spec.swizzle_enable = sharp.swizzle_enable;
+                         if (spec.swizzle_enable) {
+                             spec.index_stride = sharp.index_stride;
+                             spec.element_size = sharp.element_size;
+                         }
                          if (!spec.is_storage) {
                              spec.size = sharp.GetSize();
                          }
@@ -107,15 +120,17 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.dst_select = sharp.DstSelect();
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
-                         spec.type = sharp.GetBoundType();
+                         spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         spec.is_storage = desc.IsStorage(sharp);
+                         spec.is_storage = desc.is_written;
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
+                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {

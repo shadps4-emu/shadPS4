@@ -73,9 +73,7 @@ CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semap
     ASSERT_MSG(pool_result == vk::Result::eSuccess, "Failed to create command pool: {}",
                vk::to_string(pool_result));
     cmd_pool = std::move(pool);
-    if (instance.HasDebuggingToolAttached()) {
-        SetObjectName(device, *cmd_pool, "CommandPool");
-    }
+    SetObjectName(device, *cmd_pool, "CommandPool");
 }
 
 CommandPool::~CommandPool() = default;
@@ -94,10 +92,8 @@ void CommandPool::Allocate(std::size_t begin, std::size_t end) {
         device.allocateCommandBuffers(&buffer_alloc_info, cmd_buffers.data() + begin);
     ASSERT(result == vk::Result::eSuccess);
 
-    if (instance.HasDebuggingToolAttached()) {
-        for (std::size_t i = begin; i < end; ++i) {
-            SetObjectName(device, cmd_buffers[i], "CommandPool: Command Buffer {}", i);
-        }
+    for (std::size_t i = begin; i < end; ++i) {
+        SetObjectName(device, cmd_buffers[i], "CommandPool: Command Buffer {}", i);
     }
 }
 
@@ -153,7 +149,8 @@ vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
     }
 
     // The pool has run out. Record current tick and place it in pending list.
-    ASSERT_MSG(result == vk::Result::eErrorOutOfPoolMemory,
+    ASSERT_MSG(result == vk::Result::eErrorOutOfPoolMemory ||
+                   result == vk::Result::eErrorFragmentedPool,
                "Unexpected error during descriptor set allocation {}", vk::to_string(result));
     pending_pools.emplace_back(curr_pool, master_semaphore->CurrentTick());
     if (const auto [pool, tick] = pending_pools.front(); master_semaphore->IsFree(tick)) {

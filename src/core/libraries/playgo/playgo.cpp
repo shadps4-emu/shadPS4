@@ -157,7 +157,7 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
     }
 
     for (int i = 0; i < numberOfEntries; i++) {
-        if (chunkIds[i] <= playgo->chunks.size()) {
+        if (chunkIds[i] < playgo->chunks.size()) {
             outLoci[i] = OrbisPlayGoLocus::LocalFast;
         } else {
             outLoci[i] = OrbisPlayGoLocus::NotDownloaded;

@@ -17,6 +17,7 @@
 #ifdef ENABLE_UPDATER
 #include "check_update.h"
 #endif
+#include <QDesktopServices>
 #include <toml.hpp>
 #include "background_music_player.h"
 #include "common/logging/backend.h"
@@ -203,6 +204,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         });
     }
 
+    // DEBUG TAB
+    {
+        connect(ui->OpenLogLocationButton, &QPushButton::clicked, this, []() {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+        });
+    }
+
     // Descriptions
     {
         // General
@@ -300,8 +311,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
+    ui->fullscreenModeComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "FullscreenMode", "Borderless")));
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
+    ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
     ui->logTypeComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logType", "async")));
@@ -339,6 +353,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
     int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
     ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
+    ui->motionControlsCheckBox->setChecked(
+        toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
@@ -506,22 +522,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             } else {
                 ui->descriptionText->setText(defaultTextEdit);
             }
-
-            // if the text exceeds the size of the box, it will increase the size
-            QRect currentGeometry = this->geometry();
-            int newWidth = currentGeometry.width();
-
-            int documentHeight = ui->descriptionText->document()->size().height();
-            int visibleHeight = ui->descriptionText->viewport()->height();
-            if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMaximumSize(16777215, 110);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  currentGeometry.height() + 40);
-            } else {
-                ui->descriptionText->setMaximumSize(16777215, 70);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  initialHeight);
-            }
             return true;
         }
     }
@@ -532,7 +532,9 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setFullscreenMode(ui->fullscreenCheckBox->isChecked());
+    Config::setIsFullscreen(ui->fullscreenCheckBox->isChecked());
+    Config::setFullscreenMode(ui->fullscreenModeComboBox->currentText().toStdString());
+    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setLogType(ui->logTypeComboBox->currentText().toStdString());
@@ -551,6 +553,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
     Config::setSeparateUpdateEnabled(ui->separateUpdatesCheckBox->isChecked());
+    Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
     Config::setVkValidation(ui->vkValidationCheckBox->isChecked());

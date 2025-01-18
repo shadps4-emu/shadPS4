@@ -131,6 +131,8 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
                vk::to_string(view_result));
     scheduler->DeferOperation(
         [view, device = instance->GetDevice()] { device.destroyBufferView(view); });
+    Vulkan::SetObjectName(instance->GetDevice(), view, "BufferView {:#x}:{:#x}", cpu_addr + offset,
+                          size);
     return view;
 }
 

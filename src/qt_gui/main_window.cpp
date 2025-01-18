@@ -247,6 +247,12 @@ void MainWindow::CreateConnects() {
         }
     });
 
+    connect(ui->shadFolderAct, &QAction::triggered, this, [this]() {
+        QString userPath;
+        Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+    });
+
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
@@ -982,6 +988,7 @@ QIcon MainWindow::RecolorIcon(const QIcon& icon, bool isWhite) {
 void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
+    ui->shadFolderAct->setIcon(RecolorIcon(ui->shadFolderAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
 #ifdef ENABLE_UPDATER
     ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));

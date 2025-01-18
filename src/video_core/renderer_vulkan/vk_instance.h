@@ -79,11 +79,6 @@ public:
         return profiler_context;
     }
 
-    /// Returns true when a known debugging tool is attached.
-    bool HasDebuggingToolAttached() const {
-        return has_renderdoc || has_nsight_graphics;
-    }
-
     /// Returns true if anisotropic filtering is supported
     bool IsAnisotropicFilteringSupported() const {
         return features.samplerAnisotropy;
@@ -157,6 +152,11 @@ public:
     /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
     bool IsImageLoadStoreLodSupported() const {
         return image_load_store_lod;
+    }
+
+    /// Returns true when VK_AMD_gcn_shader is supported.
+    bool IsAmdGcnShaderSupported() const {
+        return amd_gcn_shader;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -239,6 +239,11 @@ public:
         return subgroup_size;
     }
 
+    /// Returns the maximum size of compute shared memory.
+    u32 MaxComputeSharedMemorySize() const {
+        return properties.limits.maxComputeSharedMemorySize;
+    }
+
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;
@@ -272,6 +277,14 @@ public:
     /// Returns the minimum imported host pointer alignment
     u64 GetMinImportedHostPointerAlignment() const {
         return min_imported_host_pointer_alignment;
+    }
+
+    u32 GetMaxViewportWidth() const {
+        return properties.limits.maxViewportDimensions[0];
+    }
+
+    u32 GetMaxViewportHeight() const {
+        return properties.limits.maxViewportDimensions[1];
     }
 
     /// Returns the sample count flags supported by framebuffers.
@@ -334,12 +347,10 @@ private:
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool image_load_store_lod{};
+    bool amd_gcn_shader{};
+    bool tooling_info{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
-    bool tooling_info{};
-    bool debug_utils_supported{};
-    bool has_nsight_graphics{};
-    bool has_renderdoc{};
 };
 
 } // namespace Vulkan
