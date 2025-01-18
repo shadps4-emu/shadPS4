@@ -602,6 +602,23 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &pre_barrier,
     });
 
+    const std::array attachments = {vk::RenderingAttachmentInfo{
+        .imageView = frame->image_view,
+        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+    }};
+    const vk::RenderingInfo rendering_info{
+        .renderArea =
+            vk::Rect2D{
+                .offset = {0, 0},
+                .extent = {frame->width, frame->height},
+            },
+        .layerCount = 1,
+        .colorAttachmentCount = attachments.size(),
+        .pColorAttachments = attachments.data(),
+    };
+
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
@@ -662,25 +679,12 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         cmdbuf.pushConstants(*pp_pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0,
                              sizeof(PostProcessSettings), &pp_settings);
 
-        const std::array attachments = {vk::RenderingAttachmentInfo{
-            .imageView = frame->image_view,
-            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eClear,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-        }};
-
-        vk::RenderingInfo rendering_info{
-            .renderArea =
-                vk::Rect2D{
-                    .offset = {0, 0},
-                    .extent = {frame->width, frame->height},
-                },
-            .layerCount = 1,
-            .colorAttachmentCount = attachments.size(),
-            .pColorAttachments = attachments.data(),
-        };
         cmdbuf.beginRendering(rendering_info);
         cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+    } else {
+        // Fix display of garbage images on startup on some drivers
+        cmdbuf.beginRendering(rendering_info);
         cmdbuf.endRendering();
     }
 
