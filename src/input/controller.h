@@ -4,6 +4,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include <mutex>
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
@@ -77,7 +78,7 @@ public:
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     void SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
-    void SetEngine(Engine*);
+    void SetEngine(std::unique_ptr<Engine>);
     Engine* GetEngine();
     u32 Poll();
 
@@ -100,7 +101,7 @@ private:
     std::array<State, MAX_STATES> m_states;
     std::array<StateInternal, MAX_STATES> m_private;
 
-    Engine* m_engine = nullptr;
+    std::unique_ptr<Engine> m_engine = nullptr;
 };
 
 } // namespace Input

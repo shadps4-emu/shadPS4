@@ -260,17 +260,16 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
     }
 }
 
-void GameController::SetEngine(Engine* engine) {
+void GameController::SetEngine(std::unique_ptr<Engine> engine) {
     std::scoped_lock _{m_mutex};
-    delete m_engine;
-    m_engine = engine;
+    m_engine = std::move(engine);
     if (m_engine) {
         m_engine->Init();
     }
 }
 
 Engine* GameController::GetEngine() {
-    return m_engine;
+    return m_engine.get();
 }
 
 u32 GameController::Poll() {

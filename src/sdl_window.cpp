@@ -263,7 +263,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-    controller->SetEngine(new Input::SDLInputEngine());
+    controller->SetEngine(std::make_unique<Input::SDLInputEngine>());
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
@@ -573,7 +573,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     switch (event->type) {
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
-        controller->SetEngine(new Input::SDLInputEngine());
+        controller->SetEngine(std::make_unique<Input::SDLInputEngine>());
         break;
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
