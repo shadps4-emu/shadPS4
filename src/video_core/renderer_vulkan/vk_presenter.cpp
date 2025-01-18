@@ -380,7 +380,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
         .viewType = vk::ImageViewType::e2D,
-        .format = swapchain.GetViewFormat(),
+        .format = format,
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,
