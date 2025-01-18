@@ -69,7 +69,7 @@ void GameController::ReadState(State* state, bool* isConnected, int* connectedCo
 
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
-    *state = m_engine && m_connected ? m_engine->ReadState() : GetLastState();
+    *state = GetLastState();
 }
 
 int GameController::ReadStates(State* states, int states_num, bool* isConnected,
