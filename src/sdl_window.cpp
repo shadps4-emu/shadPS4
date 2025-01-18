@@ -102,11 +102,14 @@ void SDLInputEngine::Init() {
     }
     if (gamepad_count == 0) {
         LOG_INFO(Input, "No gamepad found!");
+        SDL_free(gamepads);
         return;
     }
     LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
     if (!(m_gamepad = SDL_OpenGamepad(gamepads[0]))) {
         LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
+        SDL_free(gamepads);
+        return;
     }
     if (Config::getIsMotionControlsEnabled()) {
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, true)) {
