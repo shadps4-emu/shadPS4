@@ -566,7 +566,8 @@ void Instance::CollectToolingInfo() {
         return;
     }
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
-        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", tool.name);
+        const std::string_view name = tool.name;
+        LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
     }
 }
 
