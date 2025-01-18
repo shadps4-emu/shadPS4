@@ -208,6 +208,7 @@ std::string Instance::GetDriverVersionName() {
 bool Instance::CreateDevice() {
     const vk::StructureChain feature_chain = physical_device.getFeatures2<
         vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
@@ -317,6 +318,9 @@ bool Instance::CreateDevice() {
         .pQueuePriorities = queue_priorities.data(),
     };
 
+    const auto topology_list_restart_features =
+        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
@@ -406,6 +410,8 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
+            .primitiveTopologyPatchListRestart =
+                topology_list_restart_features.primitiveTopologyPatchListRestart,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,

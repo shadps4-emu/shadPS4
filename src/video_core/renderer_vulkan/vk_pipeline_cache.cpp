@@ -125,6 +125,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+        info.vs_info.clip_disable = graphics_key.clip_disable;
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
             info.vs_info.tess_topology = regs.tess_config.topology;
@@ -210,6 +211,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        .max_viewport_width = instance.GetMaxViewportWidth(),
+        .max_viewport_height = instance.GetMaxViewportHeight(),
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -262,6 +265,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
+    key.clip_disable =
+        regs.clipper_control.clip_disable || regs.primitive_type == AmdGpu::PrimitiveType::RectList;
     key.depth_test_enable = regs.depth_control.depth_enable;
     key.depth_write_enable =
         regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;

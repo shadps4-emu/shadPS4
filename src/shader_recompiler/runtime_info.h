@@ -84,6 +84,7 @@ struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
+    bool clip_disable{};
     // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
@@ -92,7 +93,8 @@ struct VertexRuntimeInfo {
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
         return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
-               tess_type == other.tess_type && tess_topology == other.tess_topology &&
+               clip_disable == other.clip_disable && tess_type == other.tess_type &&
+               tess_topology == other.tess_topology &&
                tess_partitioning == other.tess_partitioning &&
                hs_output_cp_stride == other.hs_output_cp_stride;
     }

@@ -279,6 +279,14 @@ public:
         return min_imported_host_pointer_alignment;
     }
 
+    u32 GetMaxViewportWidth() const {
+        return properties.limits.maxViewportDimensions[0];
+    }
+
+    u32 GetMaxViewportHeight() const {
+        return properties.limits.maxViewportDimensions[1];
+    }
+
     /// Returns the sample count flags supported by framebuffers.
     vk::SampleCountFlags GetFramebufferSampleCounts() const {
         return properties.limits.framebufferColorSampleCounts &
