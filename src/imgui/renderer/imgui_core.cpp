@@ -186,7 +186,8 @@ ImGuiID NewFrame(bool is_reusing_frame) {
     Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
 
-    ImGuiWindowFlags flags = ImGuiDockNodeFlags_PassthruCentralNode;
+    ImGuiWindowFlags flags =
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
     if (!DebugState.IsShowingDebugMenuBar()) {
         flags |= ImGuiDockNodeFlags_NoTabBar;
     }

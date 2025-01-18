@@ -248,6 +248,10 @@
 			<translation>Jeux récents</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Ouvrir le dossier de shadPS4</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Fermer</translation>
 		</message>

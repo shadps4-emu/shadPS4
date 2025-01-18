@@ -208,6 +208,7 @@ std::string Instance::GetDriverVersionName() {
 bool Instance::CreateDevice() {
     const vk::StructureChain feature_chain = physical_device.getFeatures2<
         vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
@@ -270,7 +271,6 @@ bool Instance::CreateDevice() {
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
-    add_extension(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -316,6 +316,9 @@ bool Instance::CreateDevice() {
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
     };
+
+    const auto topology_list_restart_features =
+        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
 
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk::StructureChain device_chain = {
@@ -406,6 +409,8 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
+            .primitiveTopologyPatchListRestart =
+                topology_list_restart_features.primitiveTopologyPatchListRestart,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,

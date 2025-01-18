@@ -248,6 +248,10 @@
 			<translation>最近启动的游戏</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>退出</translation>
 		</message>
