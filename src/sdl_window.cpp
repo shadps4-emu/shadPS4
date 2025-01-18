@@ -90,12 +90,24 @@ SDLInputEngine::~SDLInputEngine() {
 }
 
 void SDLInputEngine::Init() {
-    int gamepad_count;
-    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
     if (m_gamepad) {
         SDL_CloseGamepad(m_gamepad);
+        m_gamepad = nullptr;
     }
-    m_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
+    int gamepad_count;
+    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
+    if (!gamepads) {
+        LOG_ERROR(Input, "Cannot get gamepad list: {}", std::string_view(SDL_GetError()));
+        return;
+    }
+    if (gamepad_count == 0) {
+        LOG_INFO(Input, "No gamepad found!");
+        return;
+    }
+    LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
+    if (!(m_gamepad = SDL_OpenGamepad(gamepads[0]))) {
+        LOG_ERROR(Input, "Failed to open gamepad 0: {}", std::string_view(SDL_GetError()));
+    }
     if (Config::getIsMotionControlsEnabled()) {
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, true)) {
             m_gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_GYRO);
