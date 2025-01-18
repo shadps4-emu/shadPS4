@@ -248,6 +248,10 @@
 			<translation>الألعاب الأخيرة</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>خروج</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>عرض حجم اللعبة في القائمة</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>إظهار شاشة البداية</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>مرشح السجل</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>افتح موقع السجل</translation>
 		</message>
 		<message>
 			<source>Input</source>

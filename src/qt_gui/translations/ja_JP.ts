@@ -248,6 +248,10 @@
 			<translation>最近のゲーム</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>終了</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>ゲームサイズをリストに表示</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>スプラッシュを表示する</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>ログフィルター</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>ログの場所を開く</translation>
 		</message>
 		<message>
 			<source>Input</source>

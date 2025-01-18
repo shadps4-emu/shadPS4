@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 
     bool has_game_argument = false;
     std::string game_path;
+    std::vector<std::string> game_args{};
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -37,6 +38,9 @@ int main(int argc, char* argv[]) {
              std::cout << "Usage: shadps4 [options] <elf or eboot.bin path>\n"
                           "Options:\n"
                           "  -g, --game <path|ID>          Specify game path to launch\n"
+                          " -- ...                         Parameters passed to the game ELF. "
+                          "Needs to be at the end of the line, and everything after \"--\" is a "
+                          "game argument.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
@@ -126,6 +130,21 @@ int main(int argc, char* argv[]) {
             // Assume the last argument is the game file if not specified via -g/--game
             game_path = argv[i];
             has_game_argument = true;
+        } else if (std::string(argv[i]) == "--") {
+            if (i + 1 == argc) {
+                std::cerr << "Warning: -- is set, but no game arguments are added!\n";
+                break;
+            }
+            for (int j = i + 1; j < argc; j++) {
+                game_args.push_back(argv[j]);
+            }
+            break;
+        } else if (i + 1 < argc && std::string(argv[i + 1]) == "--") {
+            if (!has_game_argument) {
+                game_path = argv[i];
+                has_game_argument = true;
+            }
+            break;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
             return 1;
@@ -166,7 +185,7 @@ int main(int argc, char* argv[]) {
 
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-    emulator.Run(eboot_path);
+    emulator.Run(eboot_path, game_args);
 
     return 0;
 }

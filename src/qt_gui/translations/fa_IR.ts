@@ -248,6 +248,10 @@
 			<translation>بازی های اخیر</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>خروج</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>فعال‌سازی پوشه جداگانه برای به‌روزرسانی</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>نمایش اندازه بازی در لیست</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Splash نمایش</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Log فیلتر</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>باز کردن مکان گزارش</translation>
 		</message>
 		<message>
 			<source>Input</source>

@@ -248,6 +248,10 @@
 			<translation>最近启动的游戏</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>退出</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>启用单独的更新目录</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>显示游戏大小在列表中</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>显示启动画面</translation>
@@ -558,11 +566,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>奖杯密钥</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>奖杯</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>日志过滤</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>打开日志位置</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -778,7 +790,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>奖杯密钥：\n用于解密奖杯的密钥。必须从您的越狱主机中获得。\n仅包含十六进制字符。</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>

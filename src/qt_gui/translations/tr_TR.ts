@@ -248,6 +248,10 @@
 			<translation>Son Oyunlar</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Çıkış</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Göster oyun boyutunu listede</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Başlangıç Ekranını Göster</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Kayıt Filtresi</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Günlük Konumunu Aç</translation>
 		</message>
 		<message>
 			<source>Input</source>

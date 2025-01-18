@@ -161,10 +161,10 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
         })};
         auto& image = image_resources[index];
-        image.is_read |= desc.is_read;
+        image.is_atomic |= desc.is_atomic;
         image.is_written |= desc.is_written;
         return index;
     }
@@ -361,7 +361,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
-    const bool is_read = inst.GetOpcode() == IR::Opcode::ImageRead;
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
 
     // Patch image instruction if image is FMask.
@@ -402,7 +401,6 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
-        .is_read = is_read,
         .is_written = is_written,
     });
 
@@ -486,12 +484,65 @@ void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descripto
     inst.SetArg(1, ir.Imm32(binding));
 }
 
+IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const Info& info,
+                               const AmdGpu::Buffer& buffer, u32 stride) {
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+
+    // index = (inst_idxen ? vgpr_index : 0) + (const_add_tid_enable ? thread_id[5:0] : 0)
+    IR::U32 index = ir.Imm32(0U);
+    if (inst_info.index_enable) {
+        const IR::U32 vgpr_index{inst_info.offset_enable
+                                     ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
+                                     : IR::U32{inst.Arg(1)}};
+        index = ir.IAdd(index, vgpr_index);
+    }
+    if (buffer.add_tid_enable) {
+        ASSERT_MSG(info.l_stage == LogicalStage::Compute,
+                   "Thread ID buffer addressing is not supported outside of compute.");
+        const IR::U32 thread_id{ir.LaneId()};
+        index = ir.IAdd(index, thread_id);
+    }
+    // offset = (inst_offen ? vgpr_offset : 0) + inst_offset
+    IR::U32 offset = ir.Imm32(inst_info.inst_offset.Value());
+    if (inst_info.offset_enable) {
+        const IR::U32 vgpr_offset = inst_info.index_enable
+                                        ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
+                                        : IR::U32{inst.Arg(1)};
+        offset = ir.IAdd(offset, vgpr_offset);
+    }
+    const IR::U32 const_stride = ir.Imm32(stride);
+    IR::U32 buffer_offset;
+    if (buffer.swizzle_enable) {
+        const IR::U32 const_index_stride = ir.Imm32(buffer.GetIndexStride());
+        const IR::U32 const_element_size = ir.Imm32(buffer.GetElementSize());
+        // index_msb = index / const_index_stride
+        const IR::U32 index_msb{ir.IDiv(index, const_index_stride)};
+        // index_lsb = index % const_index_stride
+        const IR::U32 index_lsb{ir.IMod(index, const_index_stride)};
+        // offset_msb = offset / const_element_size
+        const IR::U32 offset_msb{ir.IDiv(offset, const_element_size)};
+        // offset_lsb = offset % const_element_size
+        const IR::U32 offset_lsb{ir.IMod(offset, const_element_size)};
+        // buffer_offset =
+        //     (index_msb * const_stride + offset_msb * const_element_size) * const_index_stride
+        //     + index_lsb * const_element_size + offset_lsb
+        const IR::U32 buffer_offset_msb = ir.IMul(
+            ir.IAdd(ir.IMul(index_msb, const_stride), ir.IMul(offset_msb, const_element_size)),
+            const_index_stride);
+        const IR::U32 buffer_offset_lsb =
+            ir.IAdd(ir.IMul(index_lsb, const_element_size), offset_lsb);
+        buffer_offset = ir.IAdd(buffer_offset_msb, buffer_offset_lsb);
+    } else {
+        // buffer_offset = index * const_stride + offset
+        buffer_offset = ir.IAdd(ir.IMul(index, const_stride), offset);
+    }
+    return buffer_offset;
+}
+
 void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto handle = inst.Arg(0);
     const auto buffer_res = info.buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
-
-    ASSERT(!buffer.add_tid_enable);
 
     // Address of constant buffer reads can be calculated at IR emission time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
@@ -499,42 +550,7 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-
-    const IR::U32 index_stride = ir.Imm32(buffer.index_stride);
-    const IR::U32 element_size = ir.Imm32(buffer.element_size);
-
-    // Compute address of the buffer using the stride.
-    IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
-    if (inst_info.index_enable) {
-        const IR::U32 index = inst_info.offset_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
-                                                      : IR::U32{inst.Arg(1)};
-        if (buffer.swizzle_enable) {
-            const IR::U32 stride_index_stride =
-                ir.Imm32(static_cast<u32>(buffer.stride * buffer.index_stride));
-            const IR::U32 index_msb = ir.IDiv(index, index_stride);
-            const IR::U32 index_lsb = ir.IMod(index, index_stride);
-            address = ir.IAdd(address, ir.IAdd(ir.IMul(index_msb, stride_index_stride),
-                                               ir.IMul(index_lsb, element_size)));
-        } else {
-            address = ir.IAdd(address, ir.IMul(index, ir.Imm32(buffer.GetStride())));
-        }
-    }
-    if (inst_info.offset_enable) {
-        const IR::U32 offset = inst_info.index_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
-                                                      : IR::U32{inst.Arg(1)};
-        if (buffer.swizzle_enable) {
-            const IR::U32 element_size_index_stride =
-                ir.Imm32(buffer.element_size * buffer.index_stride);
-            const IR::U32 offset_msb = ir.IDiv(offset, element_size);
-            const IR::U32 offset_lsb = ir.IMod(offset, element_size);
-            address = ir.IAdd(address,
-                              ir.IAdd(ir.IMul(offset_msb, element_size_index_stride), offset_lsb));
-        } else {
-            address = ir.IAdd(address, offset);
-        }
-    }
-    inst.SetArg(1, address);
+    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
 
 void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
@@ -542,8 +558,15 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto buffer_res = info.texture_buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
 
-    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+    // Only linear addressing with index is supported currently, since we cannot yet
+    // address with sub-texel granularity.
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+    ASSERT_MSG(!buffer.swizzle_enable && !inst_info.offset_enable && inst_info.inst_offset == 0,
+               "Unsupported texture buffer address mode.");
+
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    // Stride of 1 to get an index into formatted data. See above addressing limitations.
+    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, 1U));
 
     if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
         const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
@@ -560,40 +583,15 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_written, bool is_array) {
-    // When cubemap is written with imageStore it is treated like 2DArray.
-    if (is_written) {
-        return ir.CompositeConstruct(s, t, z);
-    }
-
-    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
-
-    // We need to fix x and y coordinate,
-    // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
-    // We already force the scale value to be 1.0 when handling v_cubema_f32,
-    // here we subtract 1.5 to recover the original value.
-    const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
-    const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    if (is_array) {
-        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
-        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
-        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
-        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
-                                     ir.ConvertIToF(32, 32, false, slice_id));
-    } else {
-        return ir.CompositeConstruct(x, y, z);
-    }
-}
-
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
-                          const AmdGpu::Image& image) {
+                          const ImageResource& image_res, const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
     const auto sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
     auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const auto view_type = image.GetViewType(image_res.is_array);
 
     IR::Inst* body1 = inst.Arg(1).InstRecursive();
     IR::Inst* body2 = inst.Arg(2).InstRecursive();
@@ -640,7 +638,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(off), ir.Imm32(6), true);
         };
 
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             return read(0);
@@ -649,7 +647,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color2DMsaa:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             return ir.CompositeConstruct(read(0), read(8), read(16));
         default:
             UNREACHABLE();
@@ -661,7 +658,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         if (!inst_info.has_derivatives) {
             return {};
         }
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D:
         case AmdGpu::ImageType::Color1DArray:
             // du/dx, du/dy
@@ -675,7 +672,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
                     ir.CompositeConstruct(get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1))};
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             // (du/dx, dv/dx, dw/dx), (du/dy, dv/dy, dw/dy)
             addr_reg = addr_reg + 6;
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 6), get_addr_reg(addr_reg - 5),
@@ -691,7 +687,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     // Query dimensions of image if needed for normalization.
     // We can't use the image sharp because it could be bound to a different image later.
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false)) : IR::Value{};
+        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
+                     : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
         if (unnormalized) {
@@ -705,7 +702,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     const IR::Value coords = [&] -> IR::Value {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x
             addr_reg = addr_reg + 1;
             return get_coord(addr_reg - 1, 0);
@@ -724,10 +721,6 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_coord(addr_reg - 1, 2));
-        case AmdGpu::ImageType::Cube: // x, y, face
-            addr_reg = addr_reg + 3;
-            return PatchCubeCoord(ir, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
-                                  get_addr_reg(addr_reg - 1), false, inst_info.is_array);
         default:
             UNREACHABLE();
         }
@@ -779,17 +772,18 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     // Sample instructions must be handled separately using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        PatchImageSampleArgs(block, inst, info, image);
+        PatchImageSampleArgs(block, inst, info, image_res, image);
         return;
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const auto view_type = image.GetViewType(image_res.is_array);
 
     // Now that we know the image type, adjust texture coordinate vector.
     IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
-        switch (image.GetType()) {
+        switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
@@ -805,22 +799,18 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             [[fallthrough]];
         case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube: // x, y, face, [lod]
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2),
-                                   inst.GetOpcode() == IR::Opcode::ImageWrite, inst_info.is_array),
-                    body->Arg(3)};
         default:
-            UNREACHABLE_MSG("Unknown image type {}", image.GetType());
+            UNREACHABLE_MSG("Unknown image type {}", view_type);
         }
     }();
 
-    const auto has_ms = image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-                        image.GetType() == AmdGpu::ImageType::Color2DMsaaArray;
+    const auto has_ms = view_type == AmdGpu::ImageType::Color2DMsaa ||
+                        view_type == AmdGpu::ImageType::Color2DMsaaArray;
     ASSERT(!inst_info.has_lod || !has_ms);
     const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
-    const auto is_storage = image_res.IsStorage(image);
+    const auto is_storage = image_res.is_written;
     if (inst.GetOpcode() == IR::Opcode::ImageRead) {
         auto texel = ir.ImageRead(handle, coords, lod, ms, inst_info);
         if (is_storage) {

@@ -301,6 +301,9 @@ private:
     IR::U32 VMovRelSHelper(u32 src_vgprno, const IR::U32 m0);
     void VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0);
 
+    IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
+                             const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
+
     void LogMissingOpcode(const GcnInst& inst);
 
 private:

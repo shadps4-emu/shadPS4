@@ -70,13 +70,7 @@ struct ImageResource {
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
-    bool is_read{};
     bool is_written{};
-
-    [[nodiscard]] bool IsStorage(const AmdGpu::Image& image) const noexcept {
-        // Need cube as storage when used with ImageRead.
-        return is_written || (is_read && image.GetBoundType() == AmdGpu::ImageType::Cube);
-    }
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
@@ -102,11 +96,19 @@ using FMaskResourceList = boost::container::small_vector<FMaskResource, 16>;
 struct PushData {
     static constexpr u32 BufOffsetIndex = 2;
     static constexpr u32 UdRegsIndex = 4;
+    static constexpr u32 XOffsetIndex = 8;
+    static constexpr u32 YOffsetIndex = 9;
+    static constexpr u32 XScaleIndex = 10;
+    static constexpr u32 YScaleIndex = 11;
 
     u32 step0;
     u32 step1;
     std::array<u8, 32> buf_offsets;
     std::array<u32, NumUserDataRegs> ud_regs;
+    float xoffset;
+    float yoffset;
+    float xscale;
+    float yscale;
 
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());

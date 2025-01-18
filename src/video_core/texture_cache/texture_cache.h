@@ -65,7 +65,7 @@ public:
     struct TextureDesc : public BaseDesc {
         TextureDesc() = default;
         TextureDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
-            : BaseDesc{desc.IsStorage(image) ? BindingType::Storage : BindingType::Texture,
+            : BaseDesc{desc.is_written ? BindingType::Storage : BindingType::Texture,
                        ImageInfo{image, desc}, ImageViewInfo{image, desc}} {}
     };
 
@@ -79,9 +79,9 @@ public:
         DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
                         const AmdGpu::Liverpool::DepthView& view,
                         const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
-                        const AmdGpu::Liverpool::CbDbExtent& hint = {})
+                        const AmdGpu::Liverpool::CbDbExtent& hint = {}, bool write_buffer = false)
             : BaseDesc{BindingType::DepthTarget,
-                       ImageInfo{buffer, view.NumSlices(), htile_address, hint},
+                       ImageInfo{buffer, view.NumSlices(), htile_address, hint, write_buffer},
                        ImageViewInfo{buffer, view, ctl}} {}
     };
 

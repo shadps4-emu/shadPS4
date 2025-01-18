@@ -24,11 +24,14 @@ struct Profile {
     bool support_explicit_workgroup_layout{};
     bool support_legacy_vertex_attributes{};
     bool supports_image_load_store_lod{};
+    bool supports_native_cube_calc{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
     u64 min_ssbo_alignment{};
+    u32 max_viewport_width{};
+    u32 max_viewport_height{};
 };
 
 } // namespace Shader

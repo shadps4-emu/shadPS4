@@ -37,7 +37,6 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
         return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
-    case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
@@ -99,7 +98,8 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
-                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
+                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
+                     bool write_buffer) noexcept {
     props.is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
@@ -112,10 +112,10 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     resources.layers = num_slices;
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
 
-    stencil_addr = buffer.StencilAddress();
+    stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
     stencil_size = pitch * size.height * sizeof(u8);
 
-    guest_address = buffer.Address();
+    guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
     guest_size = depth_slice_sz * num_slices;
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
@@ -130,7 +130,6 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
-    props.is_cube = image.GetType() == AmdGpu::ImageType::Cube;
     props.is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
     props.is_pow2 = image.pow2pad;
     props.is_block = IsBlockCoded();
@@ -139,7 +138,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     size.depth = props.is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
-    resources.layers = image.NumLayers(desc.is_array);
+    resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
     num_bits = NumBits(image.GetDataFmt());
 
@@ -184,6 +183,7 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Texture_Volume:
             mip_d += (-mip_d) & 3u;
             [[fallthrough]];
+        case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
@@ -219,7 +219,7 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    if (IsTilingCompatible(info.tiling_idx, tiling_idx)) {
+    if (!IsTilingCompatible(info.tiling_idx, tiling_idx)) {
         return -1;
     }
 

@@ -45,6 +45,8 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static u16 deadZoneLeft = 2.0;
+static u16 deadZoneRight = 2.0;
 static std::string backButtonBehavior = "left";
 static std::string widgetStyle = "Fusion";
 static bool useSpecialPad = false;
@@ -62,9 +64,10 @@ static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
-static bool rdocEnable = false;
-static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
+static bool vkHostMarkers = false;
+static bool vkGuestMarkers = false;
+static bool rdocEnable = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
@@ -73,6 +76,7 @@ static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
 
 // Gui
+static bool load_game_size = true;
 std::vector<std::filesystem::path> settings_install_dirs = {};
 std::filesystem::path settings_addon_install_dir = {};
 u32 main_window_geometry_x = 400;
@@ -103,6 +107,14 @@ void setTrophyKey(std::string key) {
     trophyKey = key;
 }
 
+bool GetLoadGameSizeEnabled() {
+    return load_game_size;
+}
+
+void setLoadGameSizeEnabled(bool enable) {
+    load_game_size = enable;
+}
+
 bool isNeoModeConsole() {
     return isNeo;
 }
@@ -129,6 +141,14 @@ int getBGMvolume() {
 
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
+}
+
+u16 leftDeadZone() {
+    return deadZoneLeft;
+}
+
+u16 rightDeadZone() {
+    return deadZoneRight;
 }
 
 s16 getCursorState() {
@@ -223,10 +243,6 @@ bool isRdocEnabled() {
     return rdocEnable;
 }
 
-bool isMarkersEnabled() {
-    return vkMarkers;
-}
-
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -243,12 +259,18 @@ bool vkValidationGpuEnabled() {
     return vkValidationGpu;
 }
 
-bool vkMarkersEnabled() {
-    return vkMarkers || vkCrashDiagnostic; // Crash diagnostic forces markers on
-}
-
 bool vkCrashDiagnosticEnabled() {
     return vkCrashDiagnostic;
+}
+
+bool vkHostMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkHostMarkers || vkCrashDiagnostic;
+}
+
+bool vkGuestMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkGuestMarkers || vkCrashDiagnostic;
 }
 
 bool getSeparateUpdateEnabled() {
@@ -617,6 +639,8 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
+        deadZoneLeft = toml::find_or<float>(input, "deadZoneLeft", 2.0);
+        deadZoneRight = toml::find_or<float>(input, "deadZoneRight", 2.0);
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
@@ -644,9 +668,10 @@ void load(const std::filesystem::path& path) {
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
         vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
-        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
-        vkMarkers = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
         vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
+        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", false);
+        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", false);
+        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
     }
 
     if (data.contains("Debug")) {
@@ -659,6 +684,7 @@ void load(const std::filesystem::path& path) {
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
 
+        load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
         m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
         m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
         m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
@@ -735,6 +761,8 @@ void save(const std::filesystem::path& path) {
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["Input"]["deadZoneLeft"] = deadZoneLeft;
+    data["Input"]["deadZoneRight"] = deadZoneRight;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -752,9 +780,10 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Vulkan"]["validation_gpu"] = vkValidationGpu;
-    data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
+    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
+    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
+    data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
 
@@ -765,6 +794,7 @@ void save(const std::filesystem::path& path) {
         install_dirs.emplace_back(std::string{fmt::UTF(dirString.u8string()).data});
     }
     data["GUI"]["installDirs"] = install_dirs;
+    data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
@@ -853,9 +883,10 @@ void setDefaultValues() {
     vkValidation = false;
     vkValidationSync = false;
     vkValidationGpu = false;
-    rdocEnable = false;
-    vkMarkers = false;
     vkCrashDiagnostic = false;
+    vkHostMarkers = false;
+    vkGuestMarkers = false;
+    rdocEnable = false;
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;

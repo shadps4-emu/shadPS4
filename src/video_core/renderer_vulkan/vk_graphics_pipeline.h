@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <boost/container/static_vector.hpp>
 #include <xxhash.h>
 
 #include "common/types.h"
@@ -27,6 +28,9 @@ class DescriptorHeap;
 
 using Liverpool = AmdGpu::Liverpool;
 
+template <typename T>
+using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
+
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     u32 num_color_attachments;
@@ -38,13 +42,14 @@ struct GraphicsPipelineKey {
     vk::Format stencil_format;
 
     struct {
+        bool clip_disable : 1;
         bool depth_test_enable : 1;
         bool depth_write_enable : 1;
         bool depth_bounds_test_enable : 1;
         bool depth_bias_enable : 1;
         bool stencil_test_enable : 1;
         // Must be named to be zero-initialized.
-        u8 _unused : 3;
+        u8 _unused : 2;
     };
     vk::CompareOp depth_compare_op;
 
@@ -90,6 +95,10 @@ public:
         return key.mrt_mask;
     }
 
+    auto IsClipDisabled() const {
+        return key.clip_disable;
+    }
+
     [[nodiscard]] bool IsPrimitiveListTopology() const {
         return key.prim_type == AmdGpu::PrimitiveType::PointList ||
                key.prim_type == AmdGpu::PrimitiveType::LineList ||
@@ -99,6 +108,11 @@ public:
                key.prim_type == AmdGpu::PrimitiveType::RectList ||
                key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
+
+    /// Gets the attributes and bindings for vertex inputs.
+    template <typename Attribute, typename Binding>
+    void GetVertexInputs(VertexInputs<Attribute>& attributes, VertexInputs<Binding>& bindings,
+                         VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
 
 private:
     void BuildDescSetLayout();

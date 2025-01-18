@@ -248,6 +248,10 @@
 			<translation>Jogos Recentes</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Abrir pasta shadPS4</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Sair</translation>
 		</message>
@@ -541,6 +545,10 @@
 			<translation>Habilitar pasta de atualização separada</translation>
 		</message>
 		<message>
+			<source>Show Game Size In List</source>
+			<translation>Mostrar Tamanho do Jogo na Lista</translation>
+		</message>
+		<message>
 			<source>Show Splash</source>
 			<translation>Mostrar Splash Inicial</translation>
 		</message>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Filtro do Registro</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Abrir local do log</translation>
 		</message>
 		<message>
 			<source>Input</source>

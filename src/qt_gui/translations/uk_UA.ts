@@ -248,6 +248,10 @@
 			<translation>Нещодавні ігри</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Вихід</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Увімкнути окрему папку оновлень</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Показати розмір гри в списку</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Показувати заставку</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Фільтр логів</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Відкрити місце розташування журналу</translation>
 		</message>
 		<message>
 			<source>Input</source>

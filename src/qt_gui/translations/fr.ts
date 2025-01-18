@@ -248,6 +248,10 @@
 			<translation>Jeux récents</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Ouvrir le dossier de shadPS4</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Fermer</translation>
 		</message>
@@ -540,6 +544,10 @@
 			<source>Enable Separate Update Folder</source>
 			<translation>Dossier séparé pour les mises à jours</translation>
 		</message>
+		<message> 
+			<source>Show Game Size In List</source>
+			<translation>Afficher la taille du jeu dans la liste</translation>
+		</message>
 		<message>
 			<source>Show Splash</source>
 			<translation>Afficher l'image du jeu</translation>
@@ -575,6 +583,10 @@
 		<message>
 			<source>Log Filter</source>
 			<translation>Filtre</translation>
+		</message>
+		<message>
+			<source>Open Log Location</source>
+			<translation>Ouvrir l'emplacement du journal</translation>
 		</message>
 		<message>
 			<source>Input</source>

@@ -723,6 +723,10 @@
         <translation>Senaste spel</translation>
     </message>
     <message>
+        <source>Open shadPS4 Folder</source>
+        <translation>Open shadPS4 Folder</translation>
+    </message>
+    <message>
         <source>Exit</source>
         <translation>Avsluta</translation>
     </message>
@@ -1032,6 +1036,10 @@
         <source>Enable Separate Update Folder</source>
         <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
+    <message> 
+        <source>Show Game Size In List</source>
+        <translation>Visa spelstorlek i listan</translation>
+    </message>
     <message>
         <source>Show Splash</source>
         <translation>Visa startskärm</translation>
@@ -1063,6 +1071,10 @@
     <message>
         <source>Log Filter</source>
         <translation>Loggfilter</translation>
+    </message>
+    <message>
+        <source>Open Log Location</source>
+        <translation>Öppna loggplats</translation>
     </message>
     <message>
         <source>Input</source>

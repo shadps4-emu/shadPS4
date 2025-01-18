@@ -17,6 +17,8 @@ void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
+bool GetLoadGameSizeEnabled();
+void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
 std::string getFullscreenMode();
 bool isNeoModeConsole();
@@ -34,6 +36,8 @@ std::string getWidgetStyle();
 std::string getUserName();
 std::string getUpdateChannel();
 
+u16 leftDeadZone();
+u16 rightDeadZone();
 s16 getCursorState();
 int getCursorHideTimeout();
 std::string getBackButtonBehavior();
@@ -100,8 +104,9 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
-bool vkMarkersEnabled();
 bool vkCrashDiagnosticEnabled();
+bool vkHostMarkersEnabled();
+bool vkGuestMarkersEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
