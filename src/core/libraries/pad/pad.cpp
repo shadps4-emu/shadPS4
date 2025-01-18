@@ -11,8 +11,6 @@
 
 namespace Libraries::Pad {
 
-using Input::GameController;
-
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     return ORBIS_OK;
@@ -292,8 +290,7 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
-    auto* controller = Common::Singleton<GameController>::Instance();
-    const auto* engine = controller->GetEngine();
+    auto* controller = Common::Singleton<Input::GameController>::Instance();
     int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
 
     if (!connected) {
@@ -314,14 +311,9 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.x = states[i].angularVelocity.x;
         pData[i].angularVelocity.y = states[i].angularVelocity.y;
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
-        if (engine) {
-            const auto accel_poll_rate = engine->GetAccelPollRate();
-            if (accel_poll_rate != 0.0f) {
-                GameController::CalculateOrientation(pData[i].acceleration,
-                                                     pData[i].angularVelocity,
-                                                     1.0f / accel_poll_rate, pData[i].orientation);
-            }
-        }
+        Input::GameController::CalculateOrientation(pData[i].acceleration, pData[i].angularVelocity,
+                                                    1.0f / controller->accel_poll_rate,
+                                                    pData[i].orientation);
         pData[i].touchData.touchNum =
             (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
         pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
@@ -364,8 +356,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
-    auto* controller = Common::Singleton<GameController>::Instance();
-    const auto* engine = controller->GetEngine();
+    auto* controller = Common::Singleton<Input::GameController>::Instance();
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;
@@ -383,13 +374,9 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->angularVelocity.x = state.angularVelocity.x;
     pData->angularVelocity.y = state.angularVelocity.y;
     pData->angularVelocity.z = state.angularVelocity.z;
-    if (engine) {
-        const auto accel_poll_rate = engine->GetAccelPollRate();
-        if (accel_poll_rate != 0.0f) {
-            GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
-                                                 1.0f / accel_poll_rate, pData->orientation);
-        }
-    }
+    Input::GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
+                                                1.0f / controller->accel_poll_rate,
+                                                pData->orientation);
     pData->touchData.touchNum =
         (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
     pData->touchData.touch[0].x = state.touchpad[0].x;
@@ -481,7 +468,7 @@ int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pPar
             return ORBIS_PAD_ERROR_INVALID_LIGHTBAR_SETTING;
         }
 
-        auto* controller = Common::Singleton<GameController>::Instance();
+        auto* controller = Common::Singleton<Input::GameController>::Instance();
         controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
         return ORBIS_OK;
     }
@@ -549,7 +536,7 @@ int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pP
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
                   pParam->smallMotor, pParam->largeMotor);
-        auto* controller = Common::Singleton<GameController>::Instance();
+        auto* controller = Common::Singleton<Input::GameController>::Instance();
         controller->SetVibration(pParam->smallMotor, pParam->largeMotor);
         return ORBIS_OK;
     }
