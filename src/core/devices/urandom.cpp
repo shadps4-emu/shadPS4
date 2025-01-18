@@ -7,6 +7,12 @@
 #include "urandom.h"
 
 namespace Core::Devices {
+
+std::shared_ptr<BaseDevice> URandomDevice::Create(u32 handle, const char*, int, u16) {
+    return std::shared_ptr<BaseDevice>(
+        reinterpret_cast<Devices::BaseDevice*>(new URandomDevice(handle)));
+}
+
 int URandomDevice::ioctl(u64 cmd, Common::VaCtx* args) {
     return 0;
 }

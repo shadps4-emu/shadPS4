@@ -10,6 +10,7 @@
 #include "common/singleton.h"
 #include "core/devices/logger.h"
 #include "core/devices/nop_device.h"
+#include "core/devices/urandom.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -41,6 +42,8 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/deci_stderr", GET_DEVICE_FD(2)},
 
     {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
+
+    {"/dev/urandom", &D::URandomDevice::Create }
     // clang-format on
 };
 

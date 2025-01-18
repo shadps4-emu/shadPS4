@@ -10,6 +10,7 @@ class URandomDevice final : BaseDevice {
     u32 handle;
 
 public:
+    static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, int, u16);
     explicit URandomDevice(u32 handle) : handle(handle) {}
 
     ~URandomDevice() override = default;
