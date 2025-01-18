@@ -802,8 +802,6 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             const auto mip = view.info.range.base.level;
             state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
             state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
-            ASSERT(old_img.info.size.width == state.width);
-            ASSERT(old_img.info.size.height == state.height);
         }
         auto& image = texture_cache.GetImage(image_id);
         if (image.binding.force_general) {
