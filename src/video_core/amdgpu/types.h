@@ -292,6 +292,14 @@ inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizz
         result.a = swizzle.r;
         return result;
     }
+    case DataFormat::Format1_5_5_5: {
+        CompMapping result;
+        result.r = swizzle.b;
+        result.g = swizzle.g;
+        result.b = swizzle.r;
+        result.a = swizzle.a;
+        return result;
+    }
     default:
         return swizzle;
     }
