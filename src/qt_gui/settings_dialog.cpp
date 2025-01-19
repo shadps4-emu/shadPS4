@@ -522,22 +522,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
             } else {
                 ui->descriptionText->setText(defaultTextEdit);
             }
-
-            // if the text exceeds the size of the box, it will increase the size
-            QRect currentGeometry = this->geometry();
-            int newWidth = currentGeometry.width();
-
-            int documentHeight = ui->descriptionText->document()->size().height();
-            int visibleHeight = ui->descriptionText->viewport()->height();
-            if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMaximumSize(16777215, 110);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  currentGeometry.height() + 40);
-            } else {
-                ui->descriptionText->setMaximumSize(16777215, 70);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  initialHeight);
-            }
             return true;
         }
     }

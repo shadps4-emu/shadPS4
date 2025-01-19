@@ -35,6 +35,8 @@ std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
 
+u16 leftDeadZone();
+u16 rightDeadZone();
 s16 getCursorState();
 int getCursorHideTimeout();
 std::string getBackButtonBehavior();
@@ -100,8 +102,9 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
-bool vkMarkersEnabled();
 bool vkCrashDiagnosticEnabled();
+bool vkHostMarkersEnabled();
+bool vkGuestMarkersEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);

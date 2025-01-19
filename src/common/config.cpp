@@ -45,6 +45,8 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static u16 deadZoneLeft = 2.0;
+static u16 deadZoneRight = 2.0;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
@@ -61,9 +63,10 @@ static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
-static bool rdocEnable = false;
-static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
+static bool vkHostMarkers = false;
+static bool vkGuestMarkers = false;
+static bool rdocEnable = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
@@ -137,6 +140,14 @@ int getBGMvolume() {
 
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
+}
+
+u16 leftDeadZone() {
+    return deadZoneLeft;
+}
+
+u16 rightDeadZone() {
+    return deadZoneRight;
 }
 
 s16 getCursorState() {
@@ -227,10 +238,6 @@ bool isRdocEnabled() {
     return rdocEnable;
 }
 
-bool isMarkersEnabled() {
-    return vkMarkers;
-}
-
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -247,12 +254,18 @@ bool vkValidationGpuEnabled() {
     return vkValidationGpu;
 }
 
-bool vkMarkersEnabled() {
-    return vkMarkers || vkCrashDiagnostic; // Crash diagnostic forces markers on
-}
-
 bool vkCrashDiagnosticEnabled() {
     return vkCrashDiagnostic;
+}
+
+bool vkHostMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkHostMarkers || vkCrashDiagnostic;
+}
+
+bool vkGuestMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkGuestMarkers || vkCrashDiagnostic;
 }
 
 bool getSeparateUpdateEnabled() {
@@ -617,6 +630,8 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
+        deadZoneLeft = toml::find_or<float>(input, "deadZoneLeft", 2.0);
+        deadZoneRight = toml::find_or<float>(input, "deadZoneRight", 2.0);
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
@@ -644,9 +659,10 @@ void load(const std::filesystem::path& path) {
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
         vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
-        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
-        vkMarkers = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
         vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
+        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", false);
+        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", false);
+        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
     }
 
     if (data.contains("Debug")) {
@@ -735,6 +751,8 @@ void save(const std::filesystem::path& path) {
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["Input"]["deadZoneLeft"] = deadZoneLeft;
+    data["Input"]["deadZoneRight"] = deadZoneRight;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -752,9 +770,10 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Vulkan"]["validation_gpu"] = vkValidationGpu;
-    data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
+    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
+    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
+    data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
 
@@ -852,9 +871,10 @@ void setDefaultValues() {
     vkValidation = false;
     vkValidationSync = false;
     vkValidationGpu = false;
-    rdocEnable = false;
-    vkMarkers = false;
     vkCrashDiagnostic = false;
+    vkHostMarkers = false;
+    vkGuestMarkers = false;
+    rdocEnable = false;
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;

@@ -844,7 +844,7 @@ void Translator::V_FREXP_MANT_F64(const GcnInst& inst) {
 }
 
 void Translator::V_FRACT_F64(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
     SetDst64(inst.dst[0], ir.FPFract(src0));
 }
 

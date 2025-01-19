@@ -83,15 +83,13 @@ void FrameGraph::Draw() {
 
         auto isSystemPaused = DebugState.IsGuestThreadsPaused();
 
-        static float deltaTime;
-        static float frameRate;
-
         if (!isSystemPaused) {
-            deltaTime = io.DeltaTime * 1000.0f;
+            deltaTime = DebugState.FrameDeltaTime * 1000.0f;
             frameRate = 1000.0f / deltaTime;
         }
 
         Text("Frame time: %.3f ms (%.1f FPS)", deltaTime, frameRate);
+        Text("Presenter time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, 1.0f / io.DeltaTime);
         Text("Flip frame: %d Gnm submit frame: %d", DebugState.flip_frame_count.load(),
              DebugState.gnm_frame_count.load());
 

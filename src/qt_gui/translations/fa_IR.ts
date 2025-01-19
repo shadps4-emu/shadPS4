@@ -248,6 +248,10 @@
 			<translation>بازی های اخیر</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>خروج</translation>
 		</message>

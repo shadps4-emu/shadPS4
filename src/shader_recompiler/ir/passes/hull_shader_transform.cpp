@@ -349,11 +349,11 @@ static IR::F32 ReadTessControlPointAttribute(IR::U32 addr, const u32 stride, IR:
         addr = ir.IAdd(addr, ir.Imm32(off_dw));
     }
     const IR::U32 control_point_index = ir.IDiv(addr, ir.Imm32(stride));
-    const IR::U32 addr_for_attrs = TryOptimizeAddressModulo(addr, stride, ir);
-    const IR::U32 attr_index =
-        ir.ShiftRightLogical(ir.IMod(addr_for_attrs, ir.Imm32(stride)), ir.Imm32(4u));
+    const IR::U32 opt_addr = TryOptimizeAddressModulo(addr, stride, ir);
+    const IR::U32 offset = ir.IMod(opt_addr, ir.Imm32(stride));
+    const IR::U32 attr_index = ir.ShiftRightLogical(offset, ir.Imm32(4u));
     const IR::U32 comp_index =
-        ir.ShiftRightLogical(ir.BitwiseAnd(addr_for_attrs, ir.Imm32(0xFU)), ir.Imm32(2u));
+        ir.ShiftRightLogical(ir.BitwiseAnd(offset, ir.Imm32(0xFU)), ir.Imm32(2u));
     if (is_output_read_in_tcs) {
         return ir.ReadTcsGenericOuputAttribute(control_point_index, attr_index, comp_index);
     } else {
@@ -452,13 +452,13 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         if (off_dw > 0) {
                             addr = ir.IAdd(addr, ir.Imm32(off_dw));
                         }
-                        u32 stride = runtime_info.hs_info.hs_output_cp_stride;
+                        const u32 stride = runtime_info.hs_info.hs_output_cp_stride;
                         // Invocation ID array index is implicit, handled by SPIRV backend
-                        const IR::U32 addr_for_attrs = TryOptimizeAddressModulo(addr, stride, ir);
-                        const IR::U32 attr_index = ir.ShiftRightLogical(
-                            ir.IMod(addr_for_attrs, ir.Imm32(stride)), ir.Imm32(4u));
+                        const IR::U32 opt_addr = TryOptimizeAddressModulo(addr, stride, ir);
+                        const IR::U32 offset = ir.IMod(opt_addr, ir.Imm32(stride));
+                        const IR::U32 attr_index = ir.ShiftRightLogical(offset, ir.Imm32(4u));
                         const IR::U32 comp_index = ir.ShiftRightLogical(
-                            ir.BitwiseAnd(addr_for_attrs, ir.Imm32(0xFU)), ir.Imm32(2u));
+                            ir.BitwiseAnd(offset, ir.Imm32(0xFU)), ir.Imm32(2u));
                         ir.SetTcsGenericAttribute(data_component, attr_index, comp_index);
                     } else {
                         ASSERT(output_kind == AttributeRegion::PatchConst);
@@ -535,8 +535,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
         // ...
         IR::IREmitter ir{*entry_block, it};
 
-        ASSERT(runtime_info.hs_info.ls_stride % 16 == 0);
-        u32 num_attributes = runtime_info.hs_info.ls_stride / 16;
+        u32 num_attributes = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
         const auto invocation_id = ir.GetAttributeU32(IR::Attribute::InvocationId);
         for (u32 attr_no = 0; attr_no < num_attributes; attr_no++) {
             for (u32 comp = 0; comp < 4; comp++) {
