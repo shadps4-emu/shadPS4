@@ -295,6 +295,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 #endif
     // input handler init-s
     Input::ControllerOutput::SetControllerOutputController(controller);
+    Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
 }
 
@@ -333,7 +334,7 @@ void WindowSDL::WaitEvent() {
         break;
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
-        controller->TryOpenSDLController();
+        controller->SetEngine(std::make_unique<Input::SDLInputEngine>());
         break;
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:

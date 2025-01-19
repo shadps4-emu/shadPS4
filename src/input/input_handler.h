@@ -41,7 +41,8 @@ struct AxisMapping {
     int value; // Value to set for key press (+127 or -127 for movement)
 };
 
-enum class InputType { KeyboardMouse, Controller, Axis, Count };
+enum class InputType { Axis, KeyboardMouse, Controller, Count };
+const std::array<std::string, 4> input_type_names = { "Axis", "KBM", "Controller", "Unknown"};
 
 class InputID {
 public:
@@ -61,7 +62,7 @@ public:
         return *this != InputID();
     }
     std::string ToString() {
-        return fmt::format("({}: {:x})", (u8)type, sdl_id);
+        return fmt::format("({}: {:x})", input_type_names[(u8)type], sdl_id);
     }
 };
 
@@ -78,29 +79,30 @@ public:
 };
 
 // i strongly suggest you collapse these maps
-const std::map<std::string, OrbisPadButtonDataOffset> string_to_cbutton_map = {
-    {"triangle", OrbisPadButtonDataOffset::Triangle},
-    {"circle", OrbisPadButtonDataOffset::Circle},
-    {"cross", OrbisPadButtonDataOffset::Cross},
-    {"square", OrbisPadButtonDataOffset::Square},
-    {"l1", OrbisPadButtonDataOffset::L1},
-    {"r1", OrbisPadButtonDataOffset::R1},
-    {"l3", OrbisPadButtonDataOffset::L3},
-    {"r3", OrbisPadButtonDataOffset::R3},
-    {"pad_up", OrbisPadButtonDataOffset::Up},
-    {"pad_down", OrbisPadButtonDataOffset::Down},
-    {"pad_left", OrbisPadButtonDataOffset::Left},
-    {"pad_right", OrbisPadButtonDataOffset::Right},
-    {"options", OrbisPadButtonDataOffset::Options},
+const std::map<std::string, u32> string_to_cbutton_map = {
+    {"triangle", SDL_GAMEPAD_BUTTON_NORTH},
+    {"circle", SDL_GAMEPAD_BUTTON_EAST},
+    {"cross", SDL_GAMEPAD_BUTTON_SOUTH},
+    {"square", SDL_GAMEPAD_BUTTON_WEST},
+    {"l1", SDL_GAMEPAD_BUTTON_LEFT_SHOULDER},
+    {"r1", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER},
+    {"l3", SDL_GAMEPAD_BUTTON_LEFT_STICK},
+    {"r3", SDL_GAMEPAD_BUTTON_RIGHT_STICK},
+    {"pad_up", SDL_GAMEPAD_BUTTON_DPAD_UP},
+    {"pad_down", SDL_GAMEPAD_BUTTON_DPAD_DOWN},
+    {"pad_left", SDL_GAMEPAD_BUTTON_DPAD_LEFT},
+    {"pad_right", SDL_GAMEPAD_BUTTON_DPAD_RIGHT},
+    {"options", SDL_GAMEPAD_BUTTON_START},
 
     // these are outputs only (touchpad can only be bound to itself)
-    {"touchpad", OrbisPadButtonDataOffset::TouchPad},
-    {"leftjoystick_halfmode", (OrbisPadButtonDataOffset)LEFTJOYSTICK_HALFMODE},
-    {"rightjoystick_halfmode", (OrbisPadButtonDataOffset)RIGHTJOYSTICK_HALFMODE},
+    {"touchpad", SDL_GAMEPAD_BUTTON_TOUCHPAD},
+    {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
+    {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 
     // this is only for input
-    {"back", (OrbisPadButtonDataOffset)BACK_BUTTON},
+    {"back", SDL_GAMEPAD_BUTTON_BACK},
 };
+
 const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
     {"axis_left_x_minus", {Input::Axis::LeftX, -127}},
@@ -115,10 +117,10 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"r2", {Axis::TriggerRight, 0}},
 
     // should only use these to bind analog inputs to analog outputs
-    {"axis_left_x", {Input::Axis::LeftX, 0}},
-    {"axis_left_y", {Input::Axis::LeftY, 0}},
-    {"axis_right_x", {Input::Axis::RightX, 0}},
-    {"axis_right_y", {Input::Axis::RightY, 0}},
+    // {"axis_left_x", {Input::Axis::LeftX, 0}},
+    // {"axis_left_y", {Input::Axis::LeftY, 0}},
+    // {"axis_right_x", {Input::Axis::RightX, 0}},
+    // {"axis_right_y", {Input::Axis::RightY, 0}},
 };
 const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"a", SDLK_A},
@@ -282,9 +284,9 @@ public:
 
     inline bool operator==(const InputBinding& o) {
         // InputID() signifies an unused slot
-        return (keys[2] == o.keys[2] || keys[2] == InputID() || o.keys[2] == InputID()) &&
+        return (keys[0] == o.keys[0] || keys[0] == InputID() || o.keys[0] == InputID()) &&
                (keys[1] == o.keys[1] || keys[1] == InputID() || o.keys[1] == InputID()) &&
-               (keys[0] == o.keys[0] || keys[0] == InputID() || o.keys[0] == InputID());
+               (keys[2] == o.keys[2] || keys[2] == InputID() || o.keys[2] == InputID());
         // it is already very fast,
         // but reverse order makes it check the actual keys first instead of possible 0-s,
         // potenially skipping the later expressions of the three-way AND
@@ -301,7 +303,16 @@ public:
         return !(keys[0].IsValid() || keys[1].IsValid() || keys[2].IsValid());
     }
     std::string ToString() { // todo add device type
-        return fmt::format("({:X}, {:X}, {:X})", keys[0].sdl_id, keys[1].sdl_id, keys[2].sdl_id);
+        switch (KeyCount()) {
+        case 1:
+            return fmt::format("({})", keys[0].ToString());
+        case 2:
+            return fmt::format("({}, {})", keys[0].ToString(), keys[1].ToString());
+        case 3:
+            return fmt::format("({}, {}, {})", keys[0].ToString(), keys[1].ToString(), keys[2].ToString());
+        default:
+            return "Empty";
+        }
     }
 
     // returns an InputEvent based on the event type (keyboard, mouse buttons/wheel, or controller)
@@ -312,18 +323,30 @@ class ControllerOutput {
 
 public:
     static void SetControllerOutputController(GameController* c);
+    static void LinkJoystickAxes();
 
-    OrbisPadButtonDataOffset button;
+    u32 button;
     Axis axis;
-    s32 old_param, new_param;
-    bool old_button_state, new_button_state, state_changed;
+    // these are only used as s8,
+    // but I added some padding to avoid overflow if it's activated by multiple inputs
+    // axis_plus and axis_minus pairs share a common new_param, the other outputs have their own
+    s16 old_param; 
+    s16* new_param;
+    bool old_button_state, new_button_state, state_changed, positive_axis;
 
-    ControllerOutput(const OrbisPadButtonDataOffset b, Axis a = Axis::AxisMax) {
+    ControllerOutput(const u32 b, Axis a = Axis::AxisMax, bool p = true) {
         button = b;
         axis = a;
+        new_param = new s16(0);
         old_param = 0;
+        positive_axis = p;
     }
-    ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {}
+    ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {
+        new_param = new s16(*o.new_param);
+    }
+    ~ControllerOutput() {
+        delete new_param;
+    }
     inline bool operator==(const ControllerOutput& o) const { // fucking consts everywhere
         return button == o.button && axis == o.axis;
     }
@@ -331,13 +354,13 @@ public:
         return button != o.button || axis != o.axis;
     }
     std::string ToString() const {
-        return fmt::format("({}, {}, {})", (u32)button, (int)axis, old_param);
+        return fmt::format("({}, {}, {})", (s32)button, (int)axis, old_param);
     }
     inline bool IsButton() const {
-        return axis == Axis::AxisMax && button != OrbisPadButtonDataOffset::None;
+        return axis == Axis::AxisMax && button != SDL_GAMEPAD_BUTTON_INVALID;
     }
     inline bool IsAxis() const {
-        return axis != Axis::AxisMax && button == OrbisPadButtonDataOffset::None;
+        return axis != Axis::AxisMax && button == SDL_GAMEPAD_BUTTON_INVALID;
     }
 
     void ResetUpdate();
