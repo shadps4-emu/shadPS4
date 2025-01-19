@@ -2,6 +2,7 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include <memory>
 #include "base_device.h"
 
 namespace Core::Devices {

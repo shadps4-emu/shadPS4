@@ -557,8 +557,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/logger.cpp
          src/core/devices/logger.h
          src/core/devices/nop_device.h
-         src/core/devices/console.cpp
-         src/core/devices/console.h
+         src/core/devices/dev_console.cpp
+         src/core/devices/dev_console.h
          src/core/devices/deci_tty6.cpp
          src/core/devices/deci_tty6.h
          src/core/devices/random.cpp

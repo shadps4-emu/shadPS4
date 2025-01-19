@@ -2,6 +2,7 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include <memory>
 #include "base_device.h"
 
 namespace Core::Devices {
@@ -10,6 +11,7 @@ class DeciTty6Device final : BaseDevice {
     u32 handle;
 
 public:
+    static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, int, u16);
     explicit DeciTty6Device(u32 handle) : handle(handle) {}
 
     ~DeciTty6Device() override = default;
