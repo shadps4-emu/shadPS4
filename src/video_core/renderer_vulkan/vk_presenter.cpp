@@ -825,6 +825,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
 
         { // Draw the game
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             ImGui::SetNextWindowDockID(dockId, ImGuiCond_Once);
             ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav);
 
@@ -840,7 +843,8 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                                                    static_cast<float>(imgRect.extent.height),
                                                });
             ImGui::End();
-            ImGui::PopStyleVar();
+            ImGui::PopStyleVar(3);
+            ImGui::PopStyleColor();
         }
         ImGui::Core::Render(cmdbuf, swapchain_image_view, swapchain.GetExtent());
 
