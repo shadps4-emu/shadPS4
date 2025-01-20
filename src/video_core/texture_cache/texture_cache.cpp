@@ -545,12 +545,12 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
     sched_ptr->EndRendering();
 
-    const auto cmdbuf = sched_ptr->CommandBuffer();
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size;
     const auto [vk_buffer, buf_offset] =
         buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
 
+    const auto cmdbuf = sched_ptr->CommandBuffer();
     // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
