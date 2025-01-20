@@ -3420,8 +3420,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgUt, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Uint32},
     // 15 = IMAGE_ATOMIC_SWAP
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 16 = IMAGE_ATOMIC_CMPSWAP
     {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
