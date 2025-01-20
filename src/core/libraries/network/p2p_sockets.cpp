@@ -24,6 +24,10 @@ int P2PSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSoc
     return -1; // fake value makes peggle2 work
 }
 
+int P2PSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) {
+    return -1; // fake it
+}
+
 SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
     return nullptr;
 }

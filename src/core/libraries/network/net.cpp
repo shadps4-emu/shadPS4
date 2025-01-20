@@ -946,8 +946,14 @@ int PS4_SYSV_ABI sceNetRecv() {
 
 int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
                                 OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        net_errno = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    return sock->ReceivePacket(buf, len, flags, addr, paddrlen);
 }
 
 int PS4_SYSV_ABI sceNetRecvmsg() {

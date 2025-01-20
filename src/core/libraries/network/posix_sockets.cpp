@@ -148,6 +148,19 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     }
 }
 
+int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
+                               u32* fromlen) {
+    if (from != nullptr) {
+        sockaddr addr;
+        int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
+        convertPosixSockaddrToOrbis(&addr, from);
+        *fromlen = sizeof(OrbisNetSockaddrIn);
+        return ConvertReturnErrorCode(res);
+    } else {
+        return ConvertReturnErrorCode(recv(sock, (char*)buf, len, flags));
+    }
+}
+
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
     sockaddr addr2;
     net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
