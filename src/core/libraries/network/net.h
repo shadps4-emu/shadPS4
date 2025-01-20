@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 #include "epoll.h"
+#include "netctl.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -219,7 +220,7 @@ int PS4_SYSV_ABI sceNetGetIfList();
 int PS4_SYSV_ABI sceNetGetIfListOnce();
 int PS4_SYSV_ABI sceNetGetIfName();
 int PS4_SYSV_ABI sceNetGetIfnameNumList();
-int PS4_SYSV_ABI sceNetGetMacAddress();
+int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr, int flags);
 int PS4_SYSV_ABI sceNetGetMemoryPoolStats();
 int PS4_SYSV_ABI sceNetGetNameToIndex();
 int PS4_SYSV_ABI sceNetGetpeername();

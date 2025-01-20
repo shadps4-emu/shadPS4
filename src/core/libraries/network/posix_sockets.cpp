@@ -22,6 +22,23 @@ static int ConvertLevels(int level) {
 
 static int ConvertReturnErrorCode(int retval) {
     if (retval < 0) {
+#ifdef _WIN32
+        int err = WSAGetLastError();
+        LOG_ERROR(Lib_Net, "Error occured {}", err);
+        switch (err) {
+        case WSAENOPROTOOPT:
+            return ORBIS_NET_ERROR_ENOPROTOOPT;
+        case WSAEINVAL:
+            return ORBIS_NET_ERROR_EINVAL;
+#else
+        LOG_ERROR(Lib_Net, "Error occured {}", errno);
+        switch (errno) {
+        case ENOPROTOOPT:
+            return ORBIS_NET_ERROR_ENOPROTOOPT;
+        case EINVAL:
+            return ORBIS_NET_ERROR_EINVAL;
+#endif
+        }
         UNREACHABLE_MSG("Function returned an errorCode = {}", retval);
     }
     // if it is 0 or positive return it as it is
@@ -63,6 +80,15 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         case ORBIS_NET_SO_SNDTIMEO:
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, SO_SNDTIMEO, (const char*)optval, optlen));
+        case ORBIS_NET_SO_SNDBUF:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_SNDBUF, (const char*)optval, optlen));
+        case ORBIS_NET_SO_RCVBUF:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_RCVBUF, (const char*)optval, optlen));
+        case ORBIS_NET_SO_LINGER:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_LINGER, (const char*)optval, optlen));
         case ORBIS_NET_SO_ONESBCAST: {
             if (optlen != sizeof(sockopt_so_onesbcast)) {
                 return ORBIS_NET_ERROR_EFAULT;
@@ -88,6 +114,13 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, un
         case ORBIS_NET_TCP_NODELAY:
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, TCP_NODELAY, (const char*)optval, optlen));
+        }
+    }
+    if (level == IPPROTO_IP) {
+        switch (optname) {
+        case ORBIS_NET_IP_HDRINCL:
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, IP_HDRINCL, (const char*)optval, optlen));
         }
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);

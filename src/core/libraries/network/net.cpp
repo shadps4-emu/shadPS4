@@ -18,6 +18,7 @@
 #include "core/libraries/network/net.h"
 
 #include "net_error.h"
+#include "netctl.h"
 #include "sockets.h"
 
 namespace Libraries::Net {
@@ -728,8 +729,23 @@ int PS4_SYSV_ABI sceNetGetIfnameNumList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetMacAddress() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr, int flags) {
+    if (addr == nullptr) {
+        LOG_ERROR(Lib_Net, "addr is null!");
+        return ORBIS_NET_EINVAL;
+    }
+#ifdef _WIN32
+    IP_ADAPTER_INFO AdapterInfo[16];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
+        LOG_ERROR(Lib_Net, "Can't retrieve adapter info");
+        return ORBIS_NET_EINVAL;
+    } else {
+        memcpy(addr->data, AdapterInfo[0].Address, 6);
+    }
+#else
+    LOG_ERROR(Lib_Net, "FixMe no support for MacOS,linux");
+#endif
     return ORBIS_OK;
 }
 
