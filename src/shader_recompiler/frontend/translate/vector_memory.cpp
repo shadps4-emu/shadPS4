@@ -107,6 +107,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return IMAGE_GET_RESINFO(inst);
 
         // Image atomic operations
+    case Opcode::IMAGE_ATOMIC_SWAP:
+        return IMAGE_ATOMIC(AtomicOp::Swap, inst);
     case Opcode::IMAGE_ATOMIC_ADD:
         return IMAGE_ATOMIC(AtomicOp::Add, inst);
     case Opcode::IMAGE_ATOMIC_SMIN:
