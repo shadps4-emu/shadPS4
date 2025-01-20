@@ -643,6 +643,9 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 
 void TextureCache::TrackImage(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_begin = image.info.guest_address;
     const auto image_end = image.info.guest_address + image.info.guest_size;
     if (image_begin == image.track_addr && image_end == image.track_addr_end) {
@@ -666,6 +669,9 @@ void TextureCache::TrackImage(ImageId image_id) {
 
 void TextureCache::TrackImageHead(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_begin = image.info.guest_address;
     if (image_begin == image.track_addr) {
         return;
@@ -678,6 +684,9 @@ void TextureCache::TrackImageHead(ImageId image_id) {
 
 void TextureCache::TrackImageTail(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_end = image.info.guest_address + image.info.guest_size;
     if (image_end == image.track_addr_end) {
         return;
