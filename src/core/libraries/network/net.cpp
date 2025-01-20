@@ -631,7 +631,11 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId eid, int op, OrbisNetId id,
 }
 
 int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
-    LOG_DEBUG(Lib_Net, "name = {} flags= {}", std::string(name), flags);
+    if (name == nullptr) {
+        LOG_DEBUG(Lib_Net, "name = no-name flags= {}", flags);
+    } else {
+        LOG_DEBUG(Lib_Net, "name = {} flags= {}", std::string(name), flags);
+    }
     auto* net_epoll = Common::Singleton<NetEpollInternal>::Instance();
     auto epoll = std::make_shared<NetEpoll>();
     auto id = ++net_epoll->next_epool_sock_id;
@@ -1180,8 +1184,13 @@ int PS4_SYSV_ABI sceNetShutdown() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
-    LOG_INFO(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name), family,
-             type, protocol);
+    if (name == nullptr) {
+        LOG_INFO(Lib_Net, "name = no-named family = {} type = {} protocol = {}", family, type,
+                 protocol);
+    } else {
+        LOG_INFO(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name),
+                 family, type, protocol);
+    }
     SocketPtr sock;
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
