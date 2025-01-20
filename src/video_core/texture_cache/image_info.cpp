@@ -98,7 +98,8 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
-                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
+                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
+                     bool write_buffer) noexcept {
     props.is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
@@ -111,10 +112,10 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     resources.layers = num_slices;
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
 
-    stencil_addr = buffer.StencilAddress();
+    stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
     stencil_size = pitch * size.height * sizeof(u8);
 
-    guest_address = buffer.Address();
+    guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
     guest_size = depth_slice_sz * num_slices;
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
@@ -165,6 +166,7 @@ void ImageInfo::UpdateSize() {
         mip_w = std::max(mip_w, 1u);
         mip_h = std::max(mip_h, 1u);
         auto mip_d = std::max(size.depth >> mip, 1u);
+        auto thickness = 1;
 
         if (props.is_pow2) {
             mip_w = std::bit_ceil(mip_w);
@@ -180,12 +182,13 @@ void ImageInfo::UpdateSize() {
             break;
         }
         case AmdGpu::TilingMode::Texture_Volume:
-            mip_d += (-mip_d) & 3u;
+            thickness = 4;
+            mip_d += (-mip_d) & (thickness - 1);
             [[fallthrough]];
         case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
+                ImageSizeMicroTiled(mip_w, mip_h, bpp, thickness, num_samples);
             mip_info.height = std::max(mip_h, 8u);
             if (props.is_block) {
                 mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
@@ -197,8 +200,8 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Texture_MacroTiled:
         case AmdGpu::TilingMode::Depth_MacroTiled: {
             ASSERT(!props.is_block);
-            std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, tiling_idx, mip, alt_tile);
+            std::tie(mip_info.pitch, mip_info.size) = ImageSizeMacroTiled(
+                mip_w, mip_h, thickness, bpp, num_samples, tiling_idx, mip, alt_tile);
             break;
         }
         default: {
@@ -218,7 +221,7 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    if (IsTilingCompatible(info.tiling_idx, tiling_idx)) {
+    if (!IsTilingCompatible(info.tiling_idx, tiling_idx)) {
         return -1;
     }
 

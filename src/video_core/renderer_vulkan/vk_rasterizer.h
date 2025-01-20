@@ -47,10 +47,11 @@ public:
     void DispatchDirect();
     void DispatchIndirect(VAddr address, u32 offset, u32 size);
 
-    void ScopeMarkerBegin(const std::string_view& str);
-    void ScopeMarkerEnd();
-    void ScopedMarkerInsert(const std::string_view& str);
-    void ScopedMarkerInsertColor(const std::string_view& str, const u32 color);
+    void ScopeMarkerBegin(const std::string_view& str, bool from_guest = false);
+    void ScopeMarkerEnd(bool from_guest = false);
+    void ScopedMarkerInsert(const std::string_view& str, bool from_guest = false);
+    void ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
+                                 bool from_guest = false);
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
@@ -71,10 +72,11 @@ private:
     RenderState PrepareRenderState(u32 mrt_mask);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
+    void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
-    void UpdateViewportScissorState();
+    void UpdateViewportScissorState(const GraphicsPipeline& pipeline);
 
     bool FilterDraw();
 

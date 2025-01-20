@@ -8,6 +8,9 @@
 #include <span>
 #include <utility>
 
+#ifdef __linux__
+#include "common/adaptive_mutex.h"
+#endif
 #include "common/spin_lock.h"
 #include "common/types.h"
 #include "video_core/page_manager.h"
@@ -272,7 +275,11 @@ private:
         }
     }
 
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+    Common::AdaptiveMutex lock;
+#else
     Common::SpinLock lock;
+#endif
     PageManager* tracker;
     VAddr cpu_addr = 0;
     WordsArray cpu;

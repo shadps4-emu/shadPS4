@@ -8,8 +8,13 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
+#include "core/devices/deci_tty6.h"
+#include "core/devices/dev_console.h"
 #include "core/devices/logger.h"
 #include "core/devices/nop_device.h"
+#include "core/devices/random.h"
+#include "core/devices/srandom.h"
+#include "core/devices/urandom.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -41,6 +46,12 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/deci_stderr", GET_DEVICE_FD(2)},
 
     {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
+
+    {"/dev/urandom",  &D::URandomDevice::Create },
+    {"/dev/random",   &D::RandomDevice::Create },
+    {"/dev/srandom",  &D::SRandomDevice::Create },
+    {"/dev/console",  &D::ConsoleDevice::Create },
+    {"/dev/deci_tty6",&D::DeciTty6Device::Create }
     // clang-format on
 };
 
@@ -67,17 +78,6 @@ int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
     std::string_view path{raw_path};
-
-    if (path == "/dev/console") {
-        return 2000;
-    }
-    if (path == "/dev/deci_tty6") {
-        return 2001;
-    }
-    if (path == "/dev/urandom") {
-        return 2003;
-    }
-
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
 
@@ -166,9 +166,6 @@ int PS4_SYSV_ABI open(const char* filename, const char* mode) {
 int PS4_SYSV_ABI sceKernelClose(int d) {
     if (d < 3) { // d probably hold an error code
         return ORBIS_KERNEL_ERROR_EPERM;
-    }
-    if (d == 2003) { // dev/urandom case
-        return ORBIS_OK;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -337,13 +334,6 @@ s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
 }
 
 s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
-    if (d == 2003) // dev urandom case
-    {
-        auto rbuf = static_cast<char*>(buf);
-        for (size_t i = 0; i < nbytes; i++)
-            rbuf[i] = std::rand() & 0xFF;
-        return nbytes;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -757,7 +747,6 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
 }
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
-    std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", 1, 1, open);

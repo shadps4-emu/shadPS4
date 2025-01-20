@@ -14,7 +14,7 @@ namespace ImGui::Sdl {
 
 bool Init(SDL_Window* window);
 void Shutdown();
-void NewFrame();
+void NewFrame(bool is_reusing);
 bool ProcessEvent(const SDL_Event* event);
 void OnResize();
 

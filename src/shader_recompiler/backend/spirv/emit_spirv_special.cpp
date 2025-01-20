@@ -24,9 +24,47 @@ void ConvertDepthMode(EmitContext& ctx) {
     ctx.OpStore(ctx.output_position, vector);
 }
 
+void ConvertPositionToClipSpace(EmitContext& ctx) {
+    const Id type{ctx.F32[1]};
+    Id position{ctx.OpLoad(ctx.F32[4], ctx.output_position)};
+    const Id x{ctx.OpCompositeExtract(type, position, 0u)};
+    const Id y{ctx.OpCompositeExtract(type, position, 1u)};
+    const Id z{ctx.OpCompositeExtract(type, position, 2u)};
+    const Id w{ctx.OpCompositeExtract(type, position, 3u)};
+    const Id xoffset_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                           ctx.push_data_block,
+                                           ctx.ConstU32(PushData::XOffsetIndex))};
+    const Id xoffset{ctx.OpLoad(type, xoffset_ptr)};
+    const Id yoffset_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                           ctx.push_data_block,
+                                           ctx.ConstU32(PushData::YOffsetIndex))};
+    const Id yoffset{ctx.OpLoad(type, yoffset_ptr)};
+    const Id xscale_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                          ctx.push_data_block,
+                                          ctx.ConstU32(PushData::XScaleIndex))};
+    const Id xscale{ctx.OpLoad(type, xscale_ptr)};
+    const Id yscale_ptr{ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, type),
+                                          ctx.push_data_block,
+                                          ctx.ConstU32(PushData::YScaleIndex))};
+    const Id yscale{ctx.OpLoad(type, yscale_ptr)};
+    const Id vport_w =
+        ctx.Constant(type, float(std::min<u32>(ctx.profile.max_viewport_width / 2, 8_KB)));
+    const Id wnd_x = ctx.OpFAdd(type, ctx.OpFMul(type, x, xscale), xoffset);
+    const Id ndc_x = ctx.OpFSub(type, ctx.OpFDiv(type, wnd_x, vport_w), ctx.Constant(type, 1.f));
+    const Id vport_h =
+        ctx.Constant(type, float(std::min<u32>(ctx.profile.max_viewport_height / 2, 8_KB)));
+    const Id wnd_y = ctx.OpFAdd(type, ctx.OpFMul(type, y, yscale), yoffset);
+    const Id ndc_y = ctx.OpFSub(type, ctx.OpFDiv(type, wnd_y, vport_h), ctx.Constant(type, 1.f));
+    const Id vector{ctx.OpCompositeConstruct(ctx.F32[4], std::array<Id, 4>({ndc_x, ndc_y, z, w}))};
+    ctx.OpStore(ctx.output_position, vector);
+}
+
 void EmitEpilogue(EmitContext& ctx) {
     if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.emulate_depth_negative_one_to_one) {
         ConvertDepthMode(ctx);
+    }
+    if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.clip_disable) {
+        ConvertPositionToClipSpace(ctx);
     }
 }
 

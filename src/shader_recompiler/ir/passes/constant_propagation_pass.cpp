@@ -222,9 +222,15 @@ void FoldMul(IR::Block& block, IR::Inst& inst) {
         return;
     }
     const IR::Value rhs{inst.Arg(1)};
-    if (rhs.IsImmediate() && Arg<T>(rhs) == 0) {
-        inst.ReplaceUsesWithAndRemove(IR::Value(0u));
-        return;
+    if (rhs.IsImmediate()) {
+        if (Arg<T>(rhs) == 0) {
+            inst.ReplaceUsesWithAndRemove(IR::Value(0u));
+            return;
+        }
+        if (Arg<T>(rhs) == 1) {
+            inst.ReplaceUsesWithAndRemove(inst.Arg(0));
+            return;
+        }
     }
 }
 

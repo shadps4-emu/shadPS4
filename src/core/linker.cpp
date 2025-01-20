@@ -52,7 +52,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
-void Linker::Execute() {
+void Linker::Execute(const std::vector<std::string> args) {
     if (Config::debugDump()) {
         DebugDump();
     }
@@ -101,7 +101,7 @@ void Linker::Execute() {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    main_thread.Run([this, module](std::stop_token) {
+    main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         LoadSharedLibraries();
 
@@ -109,6 +109,12 @@ void Linker::Execute() {
         EntryParams params{};
         params.argc = 1;
         params.argv[0] = "eboot.bin";
+        if (!args.empty()) {
+            params.argc = args.size() + 1;
+            for (int i = 0; i < args.size() && i < 32; i++) {
+                params.argv[i + 1] = args[i].c_str();
+            }
+        }
         params.entry_addr = module->GetEntryAddress();
         RunMainEntry(&params);
     });
