@@ -11,6 +11,7 @@ constexpr int ORBIS_NET_EEXIST = 17;
 constexpr int ORBIS_NET_EINVAL = 22;
 
 // error codes
+constexpr int ORBIS_NET_ERROR_EPERM = 0x80410101;
 constexpr int ORBIS_NET_ERROR_ENOENT = 0x80410102;
 constexpr int ORBIS_NET_ERROR_EBADF = 0x80410109;
 constexpr int ORBIS_NET_ERROR_EFAULT = 0x8041010e;

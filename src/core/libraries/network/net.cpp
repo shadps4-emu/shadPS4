@@ -25,6 +25,12 @@ namespace Libraries::Net {
 
 static thread_local int32_t net_errno = 0;
 
+int setErrnoFromOrbis(int code) {
+    if (code != 0) {
+        net_errno = code + ORBIS_NET_ERROR_EPERM + 1;
+    }
+    return code;
+}
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -146,7 +152,7 @@ int PS4_SYSV_ABI sceNetBind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addr
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return ORBIS_NET_ERROR_EBADF;
     }
-    return sock->Bind(addr, addrlen);
+    return setErrnoFromOrbis(sock->Bind(addr, addrlen));
 }
 
 int PS4_SYSV_ABI sceNetClearDnsCache() {
@@ -897,7 +903,7 @@ int PS4_SYSV_ABI sceNetListen(OrbisNetId s, int backlog) {
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return ORBIS_NET_ERROR_EBADF;
     }
-    return sock->Listen(backlog);
+    return setErrnoFromOrbis(sock->Listen(backlog));
 }
 
 int PS4_SYSV_ABI sceNetMemoryAllocate() {
@@ -957,7 +963,7 @@ int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return ORBIS_NET_ERROR_EBADF;
     }
-    return sock->ReceivePacket(buf, len, flags, addr, paddrlen);
+    return setErrnoFromOrbis(sock->ReceivePacket(buf, len, flags, addr, paddrlen));
 }
 
 int PS4_SYSV_ABI sceNetRecvmsg() {
@@ -1062,7 +1068,7 @@ int PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u32 len, int flags,
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return ORBIS_NET_ERROR_EBADF;
     }
-    return sock->SendPacket(buf, len, flags, addr, addrlen);
+    return setErrnoFromOrbis(sock->SendPacket(buf, len, flags, addr, addrlen));
 }
 
 int PS4_SYSV_ABI sceNetSetDns6Info() {
@@ -1095,7 +1101,7 @@ int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const vo
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return ORBIS_NET_ERROR_EBADF;
     }
-    return sock->SetSocketOptions(level, optname, optval, optlen);
+    return setErrnoFromOrbis(sock->SetSocketOptions(level, optname, optval, optlen));
 }
 
 int PS4_SYSV_ABI sceNetShowIfconfig() {
