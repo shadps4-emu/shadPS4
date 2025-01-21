@@ -912,6 +912,14 @@
 			<source>rdocCheckBox</source>
 			<translation>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
 		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Save Data Path:\nThe folder where game save data will be saved.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Browse:\nBrowse for a folder to set as the save data path.</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheatsPatches</name>

@@ -47,15 +47,13 @@ namespace Libraries::SaveData {
 
 std::filesystem::path SaveInstance::MakeTitleSavePath(OrbisUserServiceUserId user_id,
                                                       std::string_view game_serial) {
-    return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / std::to_string(user_id) /
-           game_serial;
+    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial;
 }
 
 std::filesystem::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_id,
                                                     std::string_view game_serial,
                                                     std::string_view dir_name) {
-    return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / std::to_string(user_id) /
-           game_serial / dir_name;
+    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial / dir_name;
 }
 
 uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {
