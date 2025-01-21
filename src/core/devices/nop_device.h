@@ -27,7 +27,7 @@ public:
     }
 
     size_t writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) override {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        return 0;
     }
 
     s64 preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) override {
