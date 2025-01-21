@@ -557,16 +557,16 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/logger.cpp
          src/core/devices/logger.h
          src/core/devices/nop_device.h
-         src/core/devices/dev_console.cpp
-         src/core/devices/dev_console.h
-         src/core/devices/deci_tty6.cpp
-         src/core/devices/deci_tty6.h
-         src/core/devices/random.cpp
-         src/core/devices/random.h
-         src/core/devices/urandom.cpp
-         src/core/devices/urandom.h
-         src/core/devices/srandom.cpp
-         src/core/devices/srandom.h
+         src/core/devices/console_device.cpp
+         src/core/devices/console_device.h
+         src/core/devices/deci_tty6_device.cpp
+         src/core/devices/deci_tty6_device.h
+         src/core/devices/random_device.cpp
+         src/core/devices/random_device.h
+         src/core/devices/urandom_device.cpp
+         src/core/devices/urandom_device.h
+         src/core/devices/srandom_device.cpp
+         src/core/devices/srandom_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h

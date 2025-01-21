@@ -1,34 +1,41 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-//  SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "dev_console.h"
+#include "console_device.h"
 
 namespace Core::Devices {
+
 std::shared_ptr<BaseDevice> ConsoleDevice::Create(u32 handle, const char*, int, u16) {
     return std::shared_ptr<BaseDevice>(
         reinterpret_cast<Devices::BaseDevice*>(new ConsoleDevice(handle)));
 }
+
 int ConsoleDevice::ioctl(u64 cmd, Common::VaCtx* args) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 ConsoleDevice::write(const void* buf, size_t nbytes) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 size_t ConsoleDevice::writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 size_t ConsoleDevice::readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 ConsoleDevice::preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 ConsoleDevice::lseek(s64 offset, int whence) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;

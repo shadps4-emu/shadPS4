@@ -1,8 +1,9 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-//  SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <cstdlib>
 #include "common/logging/log.h"
-#include "urandom.h"
+#include "urandom_device.h"
 
 namespace Core::Devices {
 
@@ -16,22 +17,27 @@ int URandomDevice::ioctl(u64 cmd, Common::VaCtx* args) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 URandomDevice::write(const void* buf, size_t nbytes) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 size_t URandomDevice::writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 size_t URandomDevice::readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 URandomDevice::preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 s64 URandomDevice::lseek(s64 offset, int whence) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
@@ -39,8 +45,9 @@ s64 URandomDevice::lseek(s64 offset, int whence) {
 
 s64 URandomDevice::read(void* buf, size_t nbytes) {
     auto rbuf = static_cast<char*>(buf);
-    for (size_t i = 0; i < nbytes; i++)
+    for (size_t i = 0; i < nbytes; i++) {
         rbuf[i] = std::rand() & 0xFF;
+    }
     return nbytes;
 }
 
@@ -68,4 +75,5 @@ s64 URandomDevice::pwrite(const void* buf, size_t nbytes, u64 offset) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
+
 } // namespace Core::Devices
