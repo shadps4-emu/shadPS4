@@ -123,7 +123,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         auto height = u32(p_stream->codecpar->height);
         if (!m_use_vdec2) {
             width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 16);
+            height = Common::AlignUp(height, 8);
         }
         info.details.video.width = width;
         info.details.video.height = height;
@@ -190,7 +190,7 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
         auto height = u32(m_video_codec_context->height);
         if (!m_use_vdec2) {
             width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 16);
+            height = Common::AlignUp(height, 8);
         }
         const auto size = (width * height * 3) / 2;
         for (u64 index = 0; index < m_num_output_video_framebuffers; ++index) {
@@ -529,7 +529,7 @@ static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
     auto height = u32(src.height);
     if (!use_vdec2) {
         width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 16);
+        height = Common::AlignUp(height, 8);
     }
 
     if (src.width == width) {
@@ -565,7 +565,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     auto height = u32(frame.height);
     if (!m_use_vdec2) {
         width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 16);
+        height = Common::AlignUp(height, 8);
     }
 
     return Frame{
