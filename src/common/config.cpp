@@ -113,7 +113,7 @@ bool GetLoadGameSizeEnabled() {
 
 std::filesystem::path GetSaveDataPath() {
     if (save_data_path.empty()) {
-        return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata";
+        return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
     }
     return save_data_path;
 }
