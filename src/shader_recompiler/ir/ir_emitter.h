@@ -175,6 +175,7 @@ public:
 
     [[nodiscard]] U32 PackHalf2x16(const Value& vector);
     [[nodiscard]] Value UnpackHalf2x16(const U32& value);
+    [[nodiscard]] Value QuantizeHalf2x16(const Value& value);
 
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);

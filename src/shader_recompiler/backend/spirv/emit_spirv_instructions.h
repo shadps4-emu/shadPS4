@@ -197,6 +197,7 @@ Id EmitPackFloat2x16(EmitContext& ctx, Id value);
 Id EmitUnpackFloat2x16(EmitContext& ctx, Id value);
 Id EmitPackHalf2x16(EmitContext& ctx, Id value);
 Id EmitUnpackHalf2x16(EmitContext& ctx, Id value);
+Id EmitQuantizeHalf2x16(EmitContext& ctx, Id value);
 Id EmitFPAbs16(EmitContext& ctx, Id value);
 Id EmitFPAbs32(EmitContext& ctx, Id value);
 Id EmitFPAbs64(EmitContext& ctx, Id value);

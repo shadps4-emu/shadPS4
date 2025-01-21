@@ -58,4 +58,8 @@ Id EmitUnpackHalf2x16(EmitContext& ctx, Id value) {
     return ctx.OpUnpackHalf2x16(ctx.F32[2], value);
 }
 
+Id EmitQuantizeHalf2x16(EmitContext& ctx, Id value) {
+    return ctx.OpQuantizeToF16(ctx.F32[2], value);
+}
+
 } // namespace Shader::Backend::SPIRV

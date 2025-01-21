@@ -795,6 +795,10 @@ Value IREmitter::UnpackHalf2x16(const U32& value) {
     return Inst(Opcode::UnpackHalf2x16, value);
 }
 
+Value IREmitter::QuantizeHalf2x16(const Value& value) {
+    return Inst(Opcode::QuantizeHalf2x16, value);
+}
+
 F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());

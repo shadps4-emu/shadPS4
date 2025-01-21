@@ -204,6 +204,19 @@ void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     }
 }
 
+void FoldUnpackHalf2x16(IR::Block& block, IR::Inst& inst) {
+    const IR::Value value{inst.Arg(0)};
+    if (value.IsImmediate()) {
+        return;
+    }
+    IR::Inst* const arg_inst{value.InstRecursive()};
+    if (arg_inst->GetOpcode() == IR::Opcode::PackHalf2x16) {
+        // When reversing pack half instruction, keep the loss of precision using quantization.
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        inst.ReplaceUsesWithAndRemove(ir.QuantizeHalf2x16(arg_inst->Arg(0)));
+    }
+}
+
 template <typename T>
 void FoldAdd(IR::Block& block, IR::Inst& inst) {
     if (!FoldCommutative<T>(inst, [](T a, T b) { return a + b; })) {
@@ -343,7 +356,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::PackHalf2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackHalf2x16);
     case IR::Opcode::UnpackHalf2x16:
-        return FoldInverseFunc(inst, IR::Opcode::PackHalf2x16);
+        return FoldUnpackHalf2x16(block, inst);
     case IR::Opcode::PackFloat2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackFloat2x16);
     case IR::Opcode::UnpackFloat2x16:

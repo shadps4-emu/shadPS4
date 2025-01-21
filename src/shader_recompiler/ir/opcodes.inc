@@ -187,6 +187,7 @@ OPCODE(PackFloat2x16,                                       U32,            F16x
 OPCODE(UnpackFloat2x16,                                     F16x2,          U32,                                                                            )
 OPCODE(PackHalf2x16,                                        U32,            F32x2,                                                                          )
 OPCODE(UnpackHalf2x16,                                      F32x2,          U32,                                                                            )
+OPCODE(QuantizeHalf2x16,                                    F32x2,          F32x2,                                                                          )
 
 // Floating-point operations
 OPCODE(FPAbs32,                                             F32,            F32,                                                                            )
