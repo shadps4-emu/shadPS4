@@ -541,8 +541,16 @@
 			<translation>フルスクリーンを有効にする</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>全画面モード</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>アップデートフォルダの分離を有効化</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>設定を開くときのデフォルトタブ</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>グラフィックス</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>インターフェース</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>ユーザー</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>更新:\nRelease: 最新の機能を利用できない可能性がありますが、より信頼性が高くテストされた公式バージョンが毎月リリースされます。\nNightly: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>タイトルミュージックを再生:\nゲームでサポートされている場合に、GUIでゲームを選択したときに特別な音楽を再生する機能を有効にします。</translation>
 		</message>
 		<message>

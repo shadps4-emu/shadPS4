@@ -541,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Mode Layar Penuh</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Tab default saat membuka pengaturan</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Antarmuka</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Pengguna</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Pembaruan:\nRelease: Versi resmi yang dirilis setiap bulan yang mungkin sangat ketinggalan zaman, tetapi lebih dapat diandalkan dan teruji.\nNightly: Versi pengembangan yang memiliki semua fitur dan perbaikan terbaru, tetapi mungkin mengandung bug dan kurang stabil.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Putar Musik Judul Permainan:\nJika permainan mendukungnya, aktifkan pemutaran musik khusus saat memilih permainan di GUI.</translation>
 		</message>
 		<message>

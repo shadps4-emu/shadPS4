@@ -541,8 +541,16 @@
 			<translation>Ota Käyttöön Koko Ruudun Tila</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Koko näytön tila</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Ota Käyttöön Erillinen Päivityshakemisto</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Oletusvälilehti avattaessa asetuksia</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafiikka</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Rajapinta</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Käyttäjä</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Päivitys:\nRelease: Viralliset versiot, jotka julkaistaan kuukausittain ja saattavat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nNightly: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne saattavat sisältää virheitä ja ovat vähemmän vakaita.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Soita Otsikkomusiikkia:\nJos peli tukee sitä, ota käyttöön erityisen musiikin soittaminen pelin valinnan yhteydessä käyttöliittymässä.</translation>
 		</message>
 		<message>

@@ -541,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Fuldskærmstilstand</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standardfaneblad ved åbning af indstillinger</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Interface</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Bruger</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Opdatering:\nRelease: Officielle builds, der frigives månedligt, som kan være meget ældre, men mere stabile og testet.\nNightly: Udviklerbuilds med de nyeste funktioner og rettelser, men som kan indeholde fejl og være mindre stabile.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Titelsmusikafspilning:\nHvis spillet understøtter det, aktiver speciel musik, når spillet vælges i brugergrænsefladen.</translation>
 		</message>
 		<message>

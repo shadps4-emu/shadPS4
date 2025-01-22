@@ -541,8 +541,16 @@
 			<translation>Vollbild aktivieren</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Vollbildmodus</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standardregisterkarte beim Öffnen der Einstellungen</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafik</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Benutzeroberfläche</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Benutzer</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Update:\nRelease: Offizielle Builds, die monatlich veröffentlicht werden, können viel älter sein, aber stabiler und getestet.\nNightly: Entwickler-Builds, die die neuesten Funktionen und Fehlerbehebungen enthalten, aber Fehler enthalten und weniger stabil sein können.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Wiedergabe der Titelmusik:\nWenn das Spiel dies unterstützt, wird beim Auswählen des Spiels in der Benutzeroberfläche spezielle Musik abgespielt.</translation>
 		</message>
 		<message>
