@@ -123,7 +123,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         auto height = u32(p_stream->codecpar->height);
         if (!m_use_vdec2) {
             width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 8);
+            height = Common::AlignUp(height, 16);
         }
         info.details.video.width = width;
         info.details.video.height = height;
@@ -174,6 +174,8 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
     }
     switch (stream->codecpar->codec_type) {
     case AVMediaType::AVMEDIA_TYPE_VIDEO: {
+        m_use_vdec2 = (stream_index == 0);
+
         m_video_stream_index = stream_index;
         m_video_codec_context =
             AVCodecContextPtr(avcodec_alloc_context3(decoder), &ReleaseAVCodecContext);
@@ -190,7 +192,7 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
         auto height = u32(m_video_codec_context->height);
         if (!m_use_vdec2) {
             width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 8);
+            height = Common::AlignUp(height, 16);
         }
         const auto size = (width * height * 3) / 2;
         for (u64 index = 0; index < m_num_output_video_framebuffers; ++index) {
@@ -529,7 +531,7 @@ static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
     auto height = u32(src.height);
     if (!use_vdec2) {
         width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 8);
+        height = Common::AlignUp(height, 16);
     }
 
     if (src.width == width) {
@@ -561,11 +563,15 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     const auto num = time_base.num;
     const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
 
-    auto width = u32(frame.width);
-    auto height = u32(frame.height);
+    auto original_width = u32(frame.width);
+    auto original_height = u32(frame.height);
+
+    auto width = original_width;
+    auto height = original_height;
+
     if (!m_use_vdec2) {
         width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 8);
+        height = Common::AlignUp(height, 16);
     }
 
     return Frame{
@@ -578,14 +584,15 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                     {
                         .video =
                             {
-                                .width = width,
-                                .height = height,
+                                .width = original_width,
+                                .height = original_height,
                                 .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
-                                .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
+                                .crop_right_offset =
+                                    u32(frame.crop_right + (width - original_width)),
                                 .crop_top_offset = u32(frame.crop_top),
                                 .crop_bottom_offset =
-                                    u32(frame.crop_bottom + (height - frame.height)),
+                                    u32(frame.crop_bottom + (height - original_height)),
                                 .pitch = u32(frame.linesize[0]),
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
