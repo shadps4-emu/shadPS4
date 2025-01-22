@@ -250,7 +250,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->updaterGroupBox->installEventFilter(this);
 #endif
         ui->GUIgroupBox->installEventFilter(this);
+#if defined(__linux__) || defined(__APPLE__)
         ui->widgetComboBox->installEventFilter(this);
+#endif
         ui->disableTrophycheckBox->installEventFilter(this);
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
@@ -336,8 +338,10 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
+#if defined(__linux__) || defined(__APPLE__)
     ui->currentwidgetComboBox->setCurrentText(
         QString::fromStdString(toml::find_or<std::string>(data, "GUI", "widgetStyle", "fusion")));
+#endif
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
     ui->discordRPCCheckbox->setChecked(
@@ -486,8 +490,10 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
 #endif
     } else if (elementName == "GUIgroupBox") {
         text = tr("GUIgroupBox");
+#if defined(__linux__) || defined(__APPLE__)
     } else if (elementName == "widgetComboBox") {
         text = tr("widgetComboBox");
+#endif
     } else if (elementName == "disableTrophycheckBox") {
         text = tr("disableTrophycheckBox");
     } else if (elementName == "enableCompatibilityCheckBox") {
@@ -586,7 +592,9 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
     Config::setBGMvolume(ui->BGMVolumeSlider->value());
+#if defined(__linux__) || defined(__APPLE__)
     Config::setWidgetStyle(ui->currentwidgetComboBox->currentText().toStdString());
+#endif
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setScreenWidth(ui->widthSpinBox->value());
