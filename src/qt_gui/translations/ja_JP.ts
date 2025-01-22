@@ -210,7 +210,7 @@
 		</message>
 		<message>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>%1 内の %2 ディレクトリを本当に削除しますか?</translation>
+			<translation>%1 の %2 ディレクトリを本当に削除しますか?</translation>
 		</message>
 	</context>
 	<context>
@@ -790,7 +790,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>トロフィーキー:\nトロフィーの暗号化を解除するためのキーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
+			<translation>トロフィーキー:\nトロフィーの認証キーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
