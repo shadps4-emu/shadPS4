@@ -3,16 +3,7 @@
 
 name: Build and Release
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - ready_for_review
-      - synchronize
+on: [push, pull_request]
 
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
