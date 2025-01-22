@@ -67,28 +67,25 @@ struct AddressSpace::Impl {
         static constexpr size_t ReductionOnFail = 1_GB;
         static constexpr size_t MaxReductions = 10;
 
-        size_t reduction = 0;
         size_t virtual_size = SystemManagedSize + SystemReservedSize + UserSize;
         for (u32 i = 0; i < MaxReductions; i++) {
-            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size - reduction,
+            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size,
                                                           MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                           PAGE_NOACCESS, &param, 1));
             if (virtual_base) {
                 break;
             }
-            reduction += ReductionOnFail;
+            virtual_size -= ReductionOnFail;
         }
         ASSERT_MSG(virtual_base, "Unable to reserve virtual address space: {}",
                    Common::GetLastErrorMsg());
 
-        // Take the reduction off of the system managed area, and leave the others unchanged.
-        reduction = size_t(virtual_base - SYSTEM_MANAGED_MIN);
-        system_managed_base = virtual_base;
-        system_managed_size = SystemManagedSize - reduction;
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
+        system_managed_base = virtual_base;
+        system_managed_size = system_reserved_base - virtual_base;
         user_base = reinterpret_cast<u8*>(USER_MIN);
-        user_size = UserSize;
+        user_size = virtual_base + virtual_size - user_base;
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
                  fmt::ptr(system_managed_base),
@@ -101,10 +98,8 @@ struct AddressSpace::Impl {
 
         // Initializer placeholder tracker
         const uintptr_t system_managed_addr = reinterpret_cast<uintptr_t>(system_managed_base);
-        const uintptr_t system_reserved_addr = reinterpret_cast<uintptr_t>(system_reserved_base);
-        const uintptr_t user_addr = reinterpret_cast<uintptr_t>(user_base);
         regions.emplace(system_managed_addr,
-                        MemoryRegion{system_managed_addr, virtual_size - reduction, false});
+                        MemoryRegion{system_managed_addr, virtual_size, false});
 
         // Allocate backing file that represents the total physical memory.
         backing_handle =
