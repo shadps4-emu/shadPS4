@@ -283,6 +283,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+    add_extension(VK_EXT_4444_FORMATS_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.

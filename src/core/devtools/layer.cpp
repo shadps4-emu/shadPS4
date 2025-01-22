@@ -93,6 +93,12 @@ void L::DrawMenuBar() {
             }
             ImGui::EndMenu();
         }
+
+        SameLine(ImGui::GetWindowWidth() - 30.0f);
+        if (Button("X", ImVec2(25, 25))) {
+            DebugState.IsShowingDebugMenuBar() = false;
+        }
+
         EndMainMenuBar();
     }
 

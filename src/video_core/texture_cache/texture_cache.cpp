@@ -60,15 +60,13 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
 
 void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
-    const auto end = addr + size;
     const auto pages_start = PageManager::GetPageAddr(addr);
     const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
     ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
         const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size;
-        if (image_begin < end && addr < image_end) {
-            // Start or end of the modified region is in the image, or the image is entirely within
-            // the modified region, so the image was definitely accessed by this page fault.
+        if (image.Overlaps(addr, size)) {
+            // Modified region overlaps image, so the image was definitely accessed by this fault.
             // Untrack the image, so that the range is unprotected and the guest can write freely.
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
@@ -545,12 +543,12 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
     sched_ptr->EndRendering();
 
-    const auto cmdbuf = sched_ptr->CommandBuffer();
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size;
     const auto [vk_buffer, buf_offset] =
         buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
 
+    const auto cmdbuf = sched_ptr->CommandBuffer();
     // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
@@ -643,6 +641,9 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 
 void TextureCache::TrackImage(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_begin = image.info.guest_address;
     const auto image_end = image.info.guest_address + image.info.guest_size;
     if (image_begin == image.track_addr && image_end == image.track_addr_end) {
@@ -666,6 +667,9 @@ void TextureCache::TrackImage(ImageId image_id) {
 
 void TextureCache::TrackImageHead(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_begin = image.info.guest_address;
     if (image_begin == image.track_addr) {
         return;
@@ -678,6 +682,9 @@ void TextureCache::TrackImageHead(ImageId image_id) {
 
 void TextureCache::TrackImageTail(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if (!(image.flags & ImageFlagBits::Registered)) {
+        return;
+    }
     const auto image_end = image.info.guest_address + image.info.guest_size;
     if (image_end == image.track_addr_end) {
         return;

@@ -166,6 +166,7 @@ void ImageInfo::UpdateSize() {
         mip_w = std::max(mip_w, 1u);
         mip_h = std::max(mip_h, 1u);
         auto mip_d = std::max(size.depth >> mip, 1u);
+        auto thickness = 1;
 
         if (props.is_pow2) {
             mip_w = std::bit_ceil(mip_w);
@@ -177,34 +178,34 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Display_Linear: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
-            mip_info.height = mip_h;
             break;
         }
         case AmdGpu::TilingMode::Texture_Volume:
-            mip_d += (-mip_d) & 3u;
+            thickness = 4;
+            mip_d += (-mip_d) & (thickness - 1);
             [[fallthrough]];
         case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
-            mip_info.height = std::max(mip_h, 8u);
-            if (props.is_block) {
-                mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
-                mip_info.height = std::max(mip_info.height * 4, 32u);
-            }
+                ImageSizeMicroTiled(mip_w, mip_h, thickness, bpp, num_samples);
             break;
         }
         case AmdGpu::TilingMode::Display_MacroTiled:
         case AmdGpu::TilingMode::Texture_MacroTiled:
         case AmdGpu::TilingMode::Depth_MacroTiled: {
             ASSERT(!props.is_block);
-            std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, tiling_idx, mip, alt_tile);
+            std::tie(mip_info.pitch, mip_info.size) = ImageSizeMacroTiled(
+                mip_w, mip_h, thickness, bpp, num_samples, tiling_idx, mip, alt_tile);
             break;
         }
         default: {
             UNREACHABLE();
         }
+        }
+        mip_info.height = mip_h;
+        if (props.is_block) {
+            mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
+            mip_info.height = std::max(mip_info.height * 4, 32u);
         }
         mip_info.size *= mip_d;
         mip_info.offset = guest_size;

@@ -210,7 +210,6 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
         return;
     }
     scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
     const Buffer* buffer = [&] {
         if (is_gds) {
             return &gds_buffer;
@@ -218,6 +217,7 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
         const BufferId buffer_id = FindBuffer(address, num_bytes);
         return &slot_buffers[buffer_id];
     }();
+    const auto cmdbuf = scheduler.CommandBuffer();
     const vk::BufferMemoryBarrier2 pre_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
