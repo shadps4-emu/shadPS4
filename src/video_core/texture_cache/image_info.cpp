@@ -178,7 +178,6 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Display_Linear: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
-            mip_info.height = mip_h;
             break;
         }
         case AmdGpu::TilingMode::Texture_Volume:
@@ -188,12 +187,7 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMicroTiled(mip_w, mip_h, bpp, thickness, num_samples);
-            mip_info.height = std::max(mip_h, 8u);
-            if (props.is_block) {
-                mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
-                mip_info.height = std::max(mip_info.height * 4, 32u);
-            }
+                ImageSizeMicroTiled(mip_w, mip_h, thickness, bpp, num_samples);
             break;
         }
         case AmdGpu::TilingMode::Display_MacroTiled:
@@ -207,6 +201,11 @@ void ImageInfo::UpdateSize() {
         default: {
             UNREACHABLE();
         }
+        }
+        mip_info.height = mip_h;
+        if (props.is_block) {
+            mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
+            mip_info.height = std::max(mip_info.height * 4, 32u);
         }
         mip_info.size *= mip_d;
         mip_info.offset = guest_size;
