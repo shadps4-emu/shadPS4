@@ -541,8 +541,16 @@
 			<translation>تمام صفحه</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>حالت تمام صفحه</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>فعال‌سازی پوشه جداگانه برای به‌روزرسانی</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>زبان پیش‌فرض هنگام باز کردن تنظیمات</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>گرافیک</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>رابط کاربری</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>کاربر</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>به‌روزرسانی:\nانتشار: نسخه‌های رسمی که هر ماه منتشر می‌شوند و ممکن است بسیار قدیمی باشند، اما پایدارتر و تست‌ شده‌تر هستند.\nشبانه: نسخه‌های توسعه‌ای که شامل جدیدترین ویژگی‌ها و اصلاحات هستند، اما ممکن است دارای اشکال باشند و کمتر پایدار باشند.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>پخش موسیقی عنوان:\nIدر صورتی که بازی از آن پشتیبانی کند، پخش موسیقی ویژه هنگام انتخاب بازی در رابط کاربری را فعال می‌کند.</translation>
 		</message>
 		<message>

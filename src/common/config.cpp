@@ -45,6 +45,7 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static std::string chooseHomeTab;
 static u16 deadZoneLeft = 2.0;
 static u16 deadZoneRight = 2.0;
 static std::string backButtonBehavior = "left";
@@ -192,6 +193,10 @@ std::string getUserName() {
 
 std::string getUpdateChannel() {
     return updateChannel;
+}
+
+std::string getChooseHomeTab() {
+    return chooseHomeTab;
 }
 
 std::string getBackButtonBehavior() {
@@ -398,6 +403,9 @@ void setUserName(const std::string& type) {
 
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
+}
+void setChooseHomeTab(const std::string& type) {
+    chooseHomeTab = type;
 }
 
 void setBackButtonBehavior(const std::string& type) {
@@ -637,6 +645,7 @@ void load(const std::filesystem::path& path) {
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
+        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
     }
 
     if (data.contains("Input")) {
@@ -760,6 +769,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
     data["General"]["updateChannel"] = updateChannel;
+    data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
@@ -871,6 +881,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    chooseHomeTab = "General";
     cursorState = HideCursorState::Idle;
     cursorHideTimeout = 5;
     backButtonBehavior = "left";

@@ -35,6 +35,7 @@ std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
+std::string getChooseHomeTab();
 
 u16 leftDeadZone();
 u16 rightDeadZone();
@@ -81,6 +82,7 @@ void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
+void setChooseHomeTab(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);

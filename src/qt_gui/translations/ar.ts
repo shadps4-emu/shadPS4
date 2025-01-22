@@ -541,8 +541,16 @@
 			<translation>تمكين ملء الشاشة</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>وضع ملء الشاشة</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>علامة التبويب الافتراضية عند فتح الإعدادات</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>الرسومات</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>واجهة</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>مستخدم</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>تحديث: Release: إصدارات رسمية تصدر شهريًا، قد تكون قديمة بعض الشيء، لكنها أكثر استقرارًا واختبارًا. Nightly: إصدارات تطوير تحتوي على أحدث الميزات والإصلاحات، لكنها قد تحتوي على أخطاء وأقل استقرارًا.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>تشغيل موسيقى العنوان:\nإذا كانت اللعبة تدعم ذلك، قم بتمكين تشغيل موسيقى خاصة عند اختيار اللعبة في واجهة المستخدم.</translation>
 		</message>
 		<message>

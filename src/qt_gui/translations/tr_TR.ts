@@ -541,8 +541,16 @@
 			<translation>Tam Ekranı Etkinleştir</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Tam Ekran Modu</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Ayarlar açıldığında varsayılan sekme</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafikler</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Arayüz</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Kullanıcı</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Güncelleme:\nRelease: Her ay yayınlanan resmi sürümler; çok eski olabilirler, ancak daha güvenilirdir ve test edilmiştir.\nNightly: Tüm en son özellikler ve düzeltmeler ile birlikte geliştirme sürümleri; hatalar içerebilir ve daha az kararlıdırlar.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI'de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
 		</message>
 		<message>
