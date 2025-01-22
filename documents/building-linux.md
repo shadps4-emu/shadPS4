@@ -114,21 +114,21 @@ This option is pretty convoluted and should only be used if you have VSCode as y
 
 Once set up, go to Extensions and install "CMake Tools":
 
-<img src="https://github.com/tomboylover93/shadPS4/blob/linux-build-documentation/documents/Screenshots/Linux/3.png" width="800">
+![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/3.png)
 
 You can also install other CMake and Clang related extensions if you'd like, but this one is what enables you to configure and build CMake projects directly within VSCode.
 
 Go to Settings, filter by `@ext:ms-vscode.cmake-tools configure` and disable this option:
 
-<img src="https://github.com/tomboylover93/shadPS4/blob/linux-build-documentation/documents/Screenshots/Linux/1.png" width="800">
+![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/1.png)
 
 If you wish to build with the Qt GUI, add `-DENABLE_QT_GUI=ON` to the configure arguments:
 
-<img src="https://github.com/tomboylover93/shadPS4/blob/linux-build-documentation/documents/Screenshots/Linux/2.png" width="800">
+![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/2.png)
 
 On the CMake tab, change the options as you wish, but make sure that it looks similar to or exactly like this:
 
-<img src="https://github.com/tomboylover93/shadPS4/blob/linux-build-documentation/documents/Screenshots/Linux/4.png" width="800">
+![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/4.png)
 
 When hovering over Project Status > Configure, there should be an icon titled "Configure". Click on it and let it configure the project, then do the same for Project Status > Build.
 
@@ -136,4 +136,4 @@ If you want to debug it, change the build type under Project Status > Configure 
 
 Don't forget to change the launch target for both options to the shadPS4 executable inside shadPS4/build:
 
-<img src="https://github.com/tomboylover93/shadPS4/blob/linux-build-documentation/documents/Screenshots/Linux/5.png" width="800">
+![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/5.png)
