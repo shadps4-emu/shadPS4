@@ -53,7 +53,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -67,8 +67,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>611</height>
+         <width>771</width>
+         <height>606</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -644,8 +644,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>605</height>
+         <width>455</width>
+         <height>252</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -928,8 +928,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>605</height>
+         <width>579</width>
+         <height>194</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1178,51 +1178,76 @@
        <string>Paths</string>
       </attribute>
       <widget class="QWidget" name="pathsTabContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>946</width>
-         <height>605</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
+       <layout class="QVBoxLayout" name="pathsTabLayout">
         <item>
-         <layout class="QHBoxLayout" name="pathsTabVLayout">
-          <item>
-           <widget class="QGroupBox" name="gameFoldersGroupBox">
-            <property name="title">
-             <string>Game Folders</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout">
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <item>
+         <widget class="QGroupBox" name="gameFoldersGroupBox">
+          <property name="title">
+           <string>Game Folders</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
                 <widget class="QPushButton" name="addFolderButton">
-                 <property name="text">
-                  <string>Add...</string>
-                 </property>
+                  <property name="text">
+                    <string>Add...</string>
+                  </property>
                 </widget>
-               </item>
-               <item>
+              </item>
+              <item>
                 <widget class="QPushButton" name="removeFolderButton">
-                 <property name="text">
-                  <string>Remove</string>
-                 </property>
+                  <property name="text">
+                    <string>Remove</string>
+                  </property>
                 </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <widget class="QListWidget" name="gameFoldersListWidget"/>
-             </item>
+              </item>
+              <item>
+                <spacer name="horizontalSpacer">
+                  <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                    <size>
+                      <width>40</width>
+                      <height>20</height>
+                    </size>
+                  </property>
+                </spacer>
+              </item>
             </layout>
-           </widget>
-          </item>
-         </layout>
+           </item>
+           <item>
+            <widget class="QListWidget" name="gameFoldersListWidget"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="saveDataGroupBox">
+          <property name="title">
+            <string>Save Data Path</string>
+          </property>
+          <layout class="QVBoxLayout" name="saveDataLayout">
+            <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+                <item>
+                  <widget class="QLineEdit" name="currentSaveDataPath">
+                    <property name="readOnly">
+                      <bool>true</bool>
+                    </property>
+                  </widget>
+                </item>
+                <item>
+                  <widget class="QPushButton" name="browseButton">
+                    <property name="text">
+                      <string>Browse</string>
+                    </property>
+                  </widget>
+                </item>
+              </layout>
+            </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -1239,8 +1264,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>586</height>
+         <width>510</width>
+         <height>269</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">

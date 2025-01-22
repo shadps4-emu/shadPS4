@@ -202,6 +202,21 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                 delete selected_item;
             }
         });
+
+        connect(ui->browseButton, &QPushButton::clicked, this, [this]() {
+            const auto save_data_path = Config::GetSaveDataPath();
+            QString initial_path;
+            Common::FS::PathToQString(initial_path, save_data_path);
+
+            QString save_data_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Directory to save data"), initial_path);
+
+            auto file_path = Common::FS::PathFromQString(save_data_path_string);
+            if (!file_path.empty()) {
+                Config::setSaveDataPath(file_path);
+                ui->currentSaveDataPath->setText(save_data_path_string);
+            }
+        });
     }
 
     // DEBUG TAB
@@ -256,6 +271,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->addFolderButton->installEventFilter(this);
         ui->removeFolderButton->installEventFilter(this);
 
+        ui->saveDataGroupBox->installEventFilter(this);
+        ui->currentSaveDataPath->installEventFilter(this);
+        ui->browseButton->installEventFilter(this);
+
         // Debug
         ui->debugDump->installEventFilter(this);
         ui->vkValidationCheckBox->installEventFilter(this);
@@ -285,6 +304,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     const toml::value data = toml::parse(userdir / "config.toml");
     const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                           15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
+
+    const auto save_data_path = Config::GetSaveDataPath();
+    QString save_data_path_string;
+    Common::FS::PathToQString(save_data_path_string, save_data_path);
+    ui->currentSaveDataPath->setText(save_data_path_string);
 
     ui->consoleLanguageComboBox->setCurrentIndex(
         std::distance(languageIndexes.begin(),
@@ -495,6 +519,13 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("addFolderButton");
     } else if (elementName == "removeFolderButton") {
         text = tr("removeFolderButton");
+    }
+
+    // Save Data
+    if (elementName == "saveDataGroupBox" || elementName == "currentSaveDataPath") {
+        text = tr("saveDataBox");
+    } else if (elementName == "browseButton") {
+        text = tr("browseButton");
     }
 
     // Debug

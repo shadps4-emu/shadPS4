@@ -78,6 +78,7 @@ static std::string trophyKey;
 static bool load_game_size = true;
 std::vector<std::filesystem::path> settings_install_dirs = {};
 std::filesystem::path settings_addon_install_dir = {};
+std::filesystem::path save_data_path = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -108,6 +109,13 @@ void setTrophyKey(std::string key) {
 
 bool GetLoadGameSizeEnabled() {
     return load_game_size;
+}
+
+std::filesystem::path GetSaveDataPath() {
+    if (save_data_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
+    }
+    return save_data_path;
 }
 
 void setLoadGameSizeEnabled(bool enable) {
@@ -502,6 +510,10 @@ void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_insta
     settings_install_dirs = settings_install_dirs_config;
 }
 
+void setSaveDataPath(const std::filesystem::path& path) {
+    save_data_path = path;
+}
+
 u32 getMainWindowGeometryX() {
     return main_window_geometry_x;
 }
@@ -690,6 +702,8 @@ void load(const std::filesystem::path& path) {
             addGameInstallDir(std::filesystem::path{dir});
         }
 
+        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
+
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
@@ -784,6 +798,7 @@ void save(const std::filesystem::path& path) {
         install_dirs.emplace_back(std::string{fmt::UTF(dirString.u8string()).data});
     }
     data["GUI"]["installDirs"] = install_dirs;
+    data["GUI"]["saveDataPath"] = std::string{fmt::UTF(save_data_path.u8string()).data};
     data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
     data["GUI"]["addonInstallDir"] =

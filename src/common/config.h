@@ -18,6 +18,7 @@ void saveMainWindow(const std::filesystem::path& path);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
 bool GetLoadGameSizeEnabled();
+std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
 std::string getFullscreenMode();
@@ -82,6 +83,7 @@ void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
 
