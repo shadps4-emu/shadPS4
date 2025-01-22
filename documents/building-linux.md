@@ -70,16 +70,10 @@ cmake -S . -B build/ -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COM
 
 To disable the Qt GUI, remove the `-DENABLE_QT_GUI=ON` flag. To change the build type (for debugging), add `-DCMAKE_BUILD_TYPE=Debug`.
 
-2. Enter the directory:
+2. Use CMake to build the project:
 
 ```
-cd build/
-```
-
-3. Use CMake to build the project:
-
-```
-cmake --build . --parallel$(nproc)
+cmake --build ./build --parallel$(nproc)
 ```
 
 If your computer freezes during this step, this could be caused by excessive system resource usage. In that case, remove `--parallel$(nproc)`.
@@ -87,15 +81,16 @@ If your computer freezes during this step, this could be caused by excessive sys
 Now run the emulator. If Qt was enabled at configure time:
 
 ```
-./shadps4
+./build/shadps4
 ```
 
 Otherwise, specify the path to your PKG's boot file:
 
 ```
-./shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
+./build/shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
 ```
 
+You can also specify the Game ID as an argument for which game to boot, as long as the folder containing the games is specified in config.toml (example: Bloodborne (US) is CUSA00900).
 #### Option 2: Configuring with cmake-gui
 
 `cmake-gui` should be installed by default alongside `cmake`, if not search for the package in your package manager and install it.
