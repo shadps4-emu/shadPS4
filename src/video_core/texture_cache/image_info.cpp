@@ -188,7 +188,7 @@ void ImageInfo::UpdateSize() {
         case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMicroTiled(mip_w, mip_h, bpp, thickness, num_samples);
+                ImageSizeMicroTiled(mip_w, mip_h, thickness, bpp, num_samples);
             mip_info.height = std::max(mip_h, 8u);
             if (props.is_block) {
                 mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
