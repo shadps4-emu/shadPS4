@@ -790,7 +790,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>トロフィーキー:\nトロフィーの認証キーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
+			<translation>トロフィーキー:\nトロフィーの復号に使用されるキーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
