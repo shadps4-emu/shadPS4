@@ -19,7 +19,7 @@
 		</message>
 		<message>
 			<source>This software should not be used to play games you have not legally obtained.</source>
-			<translation>このソフトウェアは、合法的に入手していないゲームをプレイするために使用するものではありません。</translation>
+			<translation>非正規、非合法のゲームをプレイするためにこのソフトウェアを使用しないでください。</translation>
 		</message>
 	</context>
 	<context>
@@ -33,7 +33,7 @@
 		<name>GameInfoClass</name>
 		<message>
 			<source>Loading game list, please wait :3</source>
-			<translation>ゲームリストを読み込み中です。お待ちください :3</translation>
+			<translation>ゲームリストを読み込み中です。しばらくお待ちください :3</translation>
 		</message>
 		<message>
 			<source>Cancel</source>
@@ -52,7 +52,7 @@
 		</message>
 		<message>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>インストール先のディレクトリを選択してください。</translation>
 		</message>
 	</context>
 	<context>
@@ -75,7 +75,7 @@
 		</message>
 		<message>
 			<source>The value for location to install games is not valid.</source>
-			<translation>ゲームをインストールする場所が無効です。</translation>
+			<translation>ゲームのインストール場所が無効です。</translation>
 		</message>
 	</context>
 	<context>
@@ -130,35 +130,35 @@
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>削除...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>ゲームを削除</translation>
 		</message>
 		<message>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>アップデートを削除</translation>
 		</message>
 		<message>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>DLCを削除</translation>
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>互換性...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>データベースを更新</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>レポートを表示</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>レポートを送信</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -182,23 +182,23 @@
 		</message>
 		<message>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>ゲーム</translation>
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>この機能を利用するには、 'アップデートフォルダの分離を有効化' を有効化する必要があります。</translation>
 		</message>
 		<message>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>このゲームにはアップデートがないため削除することができません!</translation>
 		</message>
 		<message>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>アップデート</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>このゲームにはDLCがないため削除することができません!</translation>
 		</message>
 		<message>
 			<source>DLC</source>
@@ -206,11 +206,11 @@
 		</message>
 		<message>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>%1 を削除</translation>
 		</message>
 		<message>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>%1 の %2 ディレクトリを本当に削除しますか?</translation>
 		</message>
 	</context>
 	<context>
@@ -241,15 +241,15 @@
 		</message>
 		<message>
 			<source>Install application from a .pkg file</source>
-			<translation>.pkgファイルからアプリケーションをインストールする</translation>
+			<translation>.pkgファイルからアプリケーションをインストール</translation>
 		</message>
 		<message>
 			<source>Recent Games</source>
-			<translation>最近のゲーム</translation>
+			<translation>最近プレイしたゲーム</translation>
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>shadPS4フォルダを開く</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -273,7 +273,7 @@
 		</message>
 		<message>
 			<source>Tiny</source>
-			<translation>極小</translation>
+			<translation>最小</translation>
 		</message>
 		<message>
 			<source>Small</source>
@@ -297,7 +297,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Elfビュワー</translation>
+			<translation>Elfビューアー</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -397,11 +397,11 @@
 		</message>
 		<message>
 			<source>You have downloaded cheats for all the games you have installed.</source>
-			<translation>インストールしたすべてのゲームのチートをダウンロードしました。</translation>
+			<translation>インストールされているすべてのゲームのチートをダウンロードしました。</translation>
 		</message>
 		<message>
 			<source>Patches Downloaded Successfully!</source>
-			<translation>パッチが正常にダウンロードされました！</translation>
+			<translation>パッチが正常にダウンロードされました!</translation>
 		</message>
 		<message>
 			<source>All Patches available for all games have been downloaded.</source>
@@ -425,11 +425,11 @@
 		</message>
 		<message>
 			<source>Only one file can be selected!</source>
-			<translation>1つのファイルしか選択できません！</translation>
+			<translation>1つのファイルしか選択できません!</translation>
 		</message>
 		<message>
 			<source>PKG Extraction</source>
-			<translation>PKG抽出</translation>
+			<translation>PKGの抽出</translation>
 		</message>
 		<message>
 			<source>Patch detected!</source>
@@ -473,7 +473,7 @@
 		</message>
 		<message>
 			<source>PKG is a patch, please install the game first!</source>
-			<translation>PKGはパッチです。ゲームを先にインストールしてください！</translation>
+			<translation>PKGはパッチです。ゲームを先にインストールしてください!</translation>
 		</message>
 		<message>
 			<source>PKG ERROR</source>
@@ -526,11 +526,11 @@
 		</message>
 		<message>
 			<source>Console Language</source>
-			<translation>コンソール言語</translation>
+			<translation>コンソールの言語</translation>
 		</message>
 		<message>
 			<source>Emulator Language</source>
-			<translation>エミュレーター言語</translation>
+			<translation>エミュレーターの言語</translation>
 		</message>
 		<message>
 			<source>Emulator</source>
@@ -542,7 +542,7 @@
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>アップデートフォルダの分離を有効化</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -550,7 +550,7 @@
 		</message>
 		<message>
 			<source>Show Splash</source>
-			<translation>スプラッシュを表示する</translation>
+			<translation>スプラッシュ画面を表示する</translation>
 		</message>
 		<message>
 			<source>Is PS4 Pro</source>
@@ -566,11 +566,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>トロフィーキー</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>トロフィー</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -602,7 +602,7 @@
 		</message>
 		<message>
 			<source>Hide Cursor Idle Timeout</source>
-			<translation>カーソル非アクティブタイムアウト</translation>
+			<translation>カーソルを隠すまでの非アクティブ期間</translation>
 		</message>
 		<message>
 			<source>s</source>
@@ -706,7 +706,7 @@
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>トロフィーのポップアップを無効化</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -714,19 +714,19 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>起動時に互換性データベースを更新する</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>ゲームの互換性</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>互換性に関するデータを表示</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>互換性データベースを更新</translation>
 		</message>
 		<message>
 			<source>Volume</source>
@@ -734,7 +734,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>オーディオ バックエンド</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -754,15 +754,15 @@
 		</message>
 		<message>
 			<source>Point your mouse at an option to display its description.</source>
-			<translation>オプションにマウスをポイントすると、その説明が表示されます。</translation>
+			<translation>設定項目にマウスをホバーすると、説明が表示されます。</translation>
 		</message>
 		<message>
 			<source>consoleLanguageGroupBox</source>
-			<translation>コンソール言語:\nPS4ゲームが使用する言語を設定します。\nこれはゲームがサポートする言語に設定することをお勧めしますが、地域によって異なる場合があります。</translation>
+			<translation>コンソールの言語:\nPS4ゲームが使用する言語を設定します。\nゲームでサポートされている言語に設定することをお勧めしますが、地域によって異なる場合があります。</translation>
 		</message>
 		<message>
 			<source>emulatorLanguageGroupBox</source>
-			<translation>エミュレーター言語:\nエミュレーターのユーザーインターフェースの言語を設定します。</translation>
+			<translation>エミュレーターの言語:\nエミュレーターのユーザーインターフェースの言語を設定します。</translation>
 		</message>
 		<message>
 			<source>fullscreenCheckBox</source>
@@ -770,7 +770,7 @@
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Enable Separate Update Folder:\nゲームのアップデートを別のフォルダにインストールすることで、管理が容易になります。</translation>
 		</message>
 		<message>
 			<source>showSplashCheckBox</source>
@@ -778,7 +778,7 @@
 		</message>
 		<message>
 			<source>ps4proCheckBox</source>
-			<translation>PS4 Proです:\nエミュレーターがPS4 PROとして動作するようにし、これをサポートするゲームで特別な機能を有効にする場合があります。</translation>
+			<translation>PS4 Pro モード:\nエミュレーターがPS4 PROとして動作するようになり、PS4 PROをサポートする一部のゲームで特別な機能が有効化される場合があります。</translation>
 		</message>
 		<message>
 			<source>discordRPCCheckbox</source>
@@ -790,7 +790,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>トロフィーキー:\nトロフィーの復号に使用されるキーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -798,27 +798,27 @@
 		</message>
 		<message>
 			<source>logFilter</source>
-			<translation>ログフィルター:\n特定の情報のみを印刷するようにログをフィルタリングします。\n例: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" レベル: Trace, Debug, Info, Warning, Error, Critical - この順序で、特定のレベルはリスト内のすべての前のレベルをサイレンスし、その後のすべてのレベルをログに記録します。</translation>
+			<translation>ログフィルター:\n特定の情報のみを印刷するようにログをフィルタリングします。\n例: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" \nレベル: Trace, Debug, Info, Warning, Error, Critical - レベルはこの並び通りに処理され、指定されたレベルより前のレベル ログを抑制し、それ以外のすべてのレベルをログに記録します。</translation>
 		</message>
 		<message>
 			<source>updaterGroupBox</source>
-			<translation>更新:\nRelease: 非常に古いかもしれないが、より信頼性が高くテスト済みの公式バージョンを毎月リリースします。\nNightly: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
+			<translation>更新:\nRelease: 最新の機能を利用できない可能性がありますが、より信頼性が高くテストされた公式バージョンが毎月リリースされます。\nNightly: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
 		</message>
 		<message>
 			<source>GUIgroupBox</source>
-			<translation>タイトルミュージックを再生:\nゲームがそれをサポートしている場合、GUIでゲームを選択したときに特別な音楽を再生することを有効にします。</translation>
+			<translation>タイトルミュージックを再生:\nゲームでサポートされている場合に、GUIでゲームを選択したときに特別な音楽を再生する機能を有効にします。</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>トロフィーのポップアップを無効化:\nゲーム内でのトロフィー通知を無効化します。 トロフィーの進行状況は、トロフィービューアーを使用して確認できます。(メインウィンドウでゲームを右クリック)</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>カーソルを隠す:\nカーソルが消えるタイミングを選択してください:\n決して: いつでもマウスが見えます。\nアイドル: アイダルの後に消えるまでの時間を設定します。\n常に: マウスは決して見えません。</translation>
+			<translation>カーソルを隠す:\nカーソルが消えるタイミングを選択してください:\n無効: 常にカーソルが表示されます。\n非アクティブ時: カーソルの非アクティブ期間が指定した時間を超えた場合にカーソルを隠します。\n常に: カーソルは常に隠れた状態になります。</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
-			<translation>アイドル後にマウスが消えるまでの時間を設定します。</translation>
+			<translation>カーソルが非アクティブになってから隠すまでの時間を設定します。</translation>
 		</message>
 		<message>
 			<source>backButtonBehaviorGroupBox</source>
@@ -826,23 +826,23 @@
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>互換性に関するデータを表示:\nゲームの互換性に関する情報を表として表示します。常に最新情報を取得したい場合、"起動時に互換性データベースを更新する" を有効化してください。</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>起動時に互換性データベースを更新する:\nshadPS4の起動時に自動で互換性データベースを更新します。</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>互換性データベースを更新する:\n今すぐ互換性データベースを更新します。</translation>
 		</message>
 		<message>
 			<source>Never</source>
-			<translation>決して</translation>
+			<translation>無効</translation>
 		</message>
 		<message>
 			<source>Idle</source>
-			<translation>アイドル</translation>
+			<translation>非アクティブ時</translation>
 		</message>
 		<message>
 			<source>Always</source>
@@ -850,11 +850,11 @@
 		</message>
 		<message>
 			<source>Touchpad Left</source>
-			<translation>タッチパッド左</translation>
+			<translation>左タッチパッド</translation>
 		</message>
 		<message>
 			<source>Touchpad Right</source>
-			<translation>タッチパッド右</translation>
+			<translation>右タッチパッド</translation>
 		</message>
 		<message>
 			<source>Touchpad Center</source>
@@ -866,15 +866,15 @@
 		</message>
 		<message>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>グラフィックデバイス:\n複数のGPUシステムで、ドロップダウンリストからエミュレーターで使用するGPUを選択するか、\n「自動選択」を選択して自動的に決定します。</translation>
+			<translation>グラフィックデバイス:\nシステムに複数のGPUが搭載されている場合、ドロップダウンリストからエミュレーターで使用するGPUを選択するか、\n「自動選択」を選択して自動的に決定します。</translation>
 		</message>
 		<message>
 			<source>resolutionLayout</source>
-			<translation>幅/高さ:\n起動時にエミュレーターウィンドウのサイズを設定します。ゲーム中にサイズ変更できます。\nこれはゲーム内の解像度とは異なります。</translation>
+			<translation>幅/高さ:\n起動時にエミュレーターウィンドウのサイズを設定します。ゲーム中でもサイズを変更することができます。\nこれはゲーム内の解像度とは異なります。</translation>
 		</message>
 		<message>
 			<source>heightDivider</source>
-			<translation>Vblankディバイダー:\nエミュレーターが更新されるフレームレートにこの数を掛けます。これを変更すると、ゲームの速度が上がったり、想定外の変更がある場合、ゲームの重要な機能が壊れる可能性があります！</translation>
+			<translation>Vblankディバイダー:\nエミュレーターが更新されるフレームレートにこの数を掛けます。これを変更すると、ゲームの速度が上がったり、想定外の変更がある場合、ゲームの重要な機能が壊れる可能性があります!</translation>
 		</message>
 		<message>
 			<source>dumpShadersCheckBox</source>
@@ -917,11 +917,11 @@
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>のチート/パッチ</translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
-			<translation>チート/パッチは実験的です。\n使用には注意してください。\n\nリポジトリを選択し、ダウンロードボタンをクリックしてチートを個別にダウンロードします。\n「Patches」タブでは、すべてのパッチを一度にダウンロードし、使用したいものを選択して選択を保存できます。\n\nチート/パッチを開発していないため、\n問題があればチートの作者に報告してください。\n\n新しいチートを作成しましたか？\nhttps://github.com/shadps4-emu/ps4_cheats を訪問してください。</translation>
+			<translation>チート/パッチは実験的です。\n使用には注意してください。\n\nリポジトリを選択し、ダウンロードボタンをクリックしてチートを個別にダウンロードします。\n「Patches」タブでは、すべてのパッチを一度にダウンロードし、使用したいものを選択して選択を保存できます。\n\nチート/パッチは開発を行っていないため、\n問題があればチートの作者に報告してください。\n\n新しいチートを作成しましたか？\nhttps://github.com/shadps4-emu/ps4_cheats を訪問してください。</translation>
 		</message>
 		<message>
 			<source>No Image Available</source>
@@ -997,7 +997,7 @@
 		</message>
 		<message>
 			<source>Unable to open files.json for reading.</source>
-			<translation>files.jsonを読み込み用に開けません。</translation>
+			<translation>files.jsonを読み取りのために開く事が出来ませんでした。</translation>
 		</message>
 		<message>
 			<source>No patch file found for the current serial.</source>
@@ -1005,11 +1005,11 @@
 		</message>
 		<message>
 			<source>Unable to open the file for reading.</source>
-			<translation>ファイルを読み込み用に開けません。</translation>
+			<translation>ファイルを読み取りのために開く事が出来ませんでした。</translation>
 		</message>
 		<message>
 			<source>Unable to open the file for writing.</source>
-			<translation>ファイルを記録用に開けません。</translation>
+			<translation>ファイルをを書き込みのために開く事が出来ませんでした。</translation>
 		</message>
 		<message>
 			<source>Failed to parse XML: </source>
@@ -1029,7 +1029,7 @@
 		</message>
 		<message>
 			<source>The selected source is invalid.</source>
-			<translation>選択したソースは無効です。</translation>
+			<translation>選択されたソースは無効です。</translation>
 		</message>
 		<message>
 			<source>File Exists</source>
@@ -1113,7 +1113,7 @@
 		</message>
 		<message>
 			<source>Failed to open files.json for writing</source>
-			<translation>files.jsonを記録用に開けません</translation>
+			<translation>files.jsonを読み取りのために開く事が出来ませんでした。</translation>
 		</message>
 		<message>
 			<source>Author: </source>
@@ -1125,7 +1125,7 @@
 		</message>
 		<message>
 			<source>Failed to open files.json for reading.</source>
-			<translation>files.jsonを読み込み用に開けません。</translation>
+			<translation>files.jsonを読み取りのために開く事が出来ませんでした。</translation>
 		</message>
 		<message>
 			<source>Name:</source>
@@ -1180,43 +1180,43 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>未プレイ</translation>
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>時間</translation>
 		</message>
 		<message>
 			<source>m</source>
-			<translation>m</translation>
+			<translation>分</translation>
 		</message>
 		<message>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>秒</translation>
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>互換性は未検証です</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>ゲームが正常に初期化されない/エミュレーターがクラッシュする</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>ゲームは起動しますが、空のスクリーンが表示されます</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>正常にゲーム画面が表示されますが、メニューから先に進むことができません</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>ゲームを壊すような不具合や、プレイが不可能なほどのパフォーマンスの問題があります</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>パフォーマンスに問題はなく、大きな不具合なしでゲームをプレイすることができます</translation>
 		</message>
 	</context>
 	<context>
