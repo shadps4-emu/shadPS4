@@ -350,9 +350,6 @@ jobs:
       with:
         submodules: recursive
 
-    #- name: Install dependencies
-      #run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
-
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with: 
         packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
@@ -402,9 +399,6 @@ jobs:
       with:
         submodules: recursive
 
-    #- name: Install dependencies
-      #run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
-
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with: 
         packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
@@ -442,9 +436,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    #- name: Install dependencies
-      #run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with: 
