@@ -35,6 +35,8 @@ class ShaderList;
 
 namespace DebugStateType {
 
+extern bool showing_debug_menu_bar;
+
 enum class QueueType {
     dcb = 0,
     ccb = 1,
@@ -130,8 +132,6 @@ class DebugStateImpl {
     friend class Core::Devtools::Layer;
     friend class Core::Devtools::Widget::FrameGraph;
     friend class Core::Devtools::Widget::ShaderList;
-
-    bool showing_debug_menu_bar = false;
 
     std::queue<std::string> debug_message_popup;
 
