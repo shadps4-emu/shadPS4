@@ -52,7 +52,7 @@
 		</message>
 		<message>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Wybierz katalog, do którego chcesz zainstalować.</translation>
 		</message>
 	</context>
 	<context>
@@ -130,35 +130,35 @@
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Usuń...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Usuń Grę</translation>
 		</message>
 		<message>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
+			<translation>Usuń Aktualizację</translation>
 		</message>
 		<message>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Usuń DLC</translation>
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>kompatybilność...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Zaktualizuj bazę danych</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Wyświetl zgłoszenie</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Wyślij zgłoszenie</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -182,23 +182,23 @@
 		</message>
 		<message>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Gra</translation>
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Ta funkcja wymaga do działania opcji „Włącz oddzielny folder aktualizacji”. Jeśli chcesz korzystać z tej funkcji, włącz ją.</translation>
 		</message>
 		<message>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>Ta gra nie ma aktualizacji do usunięcia!</translation>
 		</message>
 		<message>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Aktualizacja</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>Ta gra nie ma DLC do usunięcia!</translation>
 		</message>
 		<message>
 			<source>DLC</source>
@@ -206,11 +206,11 @@
 		</message>
 		<message>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Usuń %1</translation>
 		</message>
 		<message>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Czy na pewno chcesz usunąć katalog %1 z %2?</translation>
 		</message>
 	</context>
 	<context>
@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Otwórz folder shadPS4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -546,7 +546,7 @@
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Włącz oddzielny folder aktualizacji</translation>
 		</message>
 		<message>
 			<source>Default tab when opening settings</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Klucz trofeów</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofeum</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -722,7 +722,7 @@
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Wyłącz wyskakujące okienka trofeów</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -730,19 +730,19 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Aktualizuj bazę danych zgodności podczas uruchamiania</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Kompatybilność gier</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Wyświetl dane zgodności</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Aktualizuj bazę danych zgodności</translation>
 		</message>
 		<message>
 			<source>Volume</source>
@@ -750,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Zaplecze audio</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -786,7 +786,7 @@
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Włącz oddzielny folder aktualizacji:\nUmożliwia instalowanie aktualizacji gier w oddzielnym folderze w celu łatwego zarządzania.</translation>
 		</message>
 		<message>
 			<source>showSplashCheckBox</source>
@@ -798,7 +798,7 @@
 		</message>
 		<message>
 			<source>discordRPCCheckbox</source>
-			<translation>Włącz Discord Rich Presence:\nWyświetla ikonę emuladora i odpowiednie informacje na twoim profilu Discord.</translation>
+			<translation>Włącz Discord Rich Presence:\nWyświetla ikonę emulatora i odpowiednie informacje na twoim profilu Discord.</translation>
 		</message>
 		<message>
 			<source>userName</source>
@@ -806,7 +806,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Klucz trofeów:\nKlucz używany do odszyfrowywania trofeów. Musi być uzyskany z konsoli po jailbreaku. Musi zawierać tylko znaki w kodzie szesnastkowym.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -826,7 +826,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Wyłącz wyskakujące okienka trofeów:\nWyłącz powiadomienia o trofeach w grze. Postępy w zdobywaniu trofeów można nadal śledzić za pomocą przeglądarki trofeów (kliknij prawym przyciskiem myszy grę w oknie głównym).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -842,15 +842,15 @@
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Wyświetl dane zgodności:\nWyświetla informacje o kompatybilności gry w widoku tabeli. Włącz opcję „Aktualizuj zgodność przy uruchomieniu”, aby uzyskać aktualne informacje.</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Aktualizuj zgodność przy uruchomieniu:\nAutomatycznie aktualizuj bazę danych kompatybilności podczas uruchamiania shadPS4.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Zaktualizuj bazę danych zgodności:\nNatychmiast zaktualizuj bazę danych zgodności.</translation>
 		</message>
 		<message>
 			<source>Never</source>
@@ -933,7 +933,7 @@
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Kody / Łatki dla </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -1145,7 +1145,7 @@
 		</message>
 		<message>
 			<source>Failed to parse JSON:</source>
-			<translation>Nie udało się przeanlizować JSON:</translation>
+			<translation>Nie udało się przeanalizować JSON:</translation>
 		</message>
 		<message>
 			<source>Can't apply cheats before the game is started</source>
@@ -1168,7 +1168,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Zgodność</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1196,7 +1196,7 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Nigdy nie grane</translation>
 		</message>
 		<message>
 			<source>h</source>
@@ -1212,27 +1212,27 @@
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Kompatybilność nie została przetestowana</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Gra nie inicjuje się poprawnie / zawiesza się emulator</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Gra uruchamia się, ale wyświetla tylko pusty ekran</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Gra wyświetla obraz, ale nie przechodzi do menu</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Gra ma usterki przerywające rozgrywkę lub niegrywalną wydajność</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Grę można ukończyć z grywalną wydajnością i bez większych usterek</translation>
 		</message>
 	</context>
 	<context>
