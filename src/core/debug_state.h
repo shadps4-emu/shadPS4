@@ -35,7 +35,7 @@ class ShaderList;
 
 namespace DebugStateType {
 
-static bool showing_debug_menu_bar = false;
+extern bool showing_debug_menu_bar;
 
 enum class QueueType {
     dcb = 0,
