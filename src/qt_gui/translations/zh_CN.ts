@@ -830,7 +830,7 @@
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>隐藏光标：\n选择光标何时消失:\n从不: 始终显示光标。\闲置: 光标在闲置若干秒后消失。\n始终: 始终显示光标。</translation>
+			<translation>隐藏光标：\n选择光标何时消失：\n从不: 从不隐藏光标。\闲置：光标在闲置若干秒后消失。\n始终：始终隐藏光标。</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
