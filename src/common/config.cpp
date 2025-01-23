@@ -45,6 +45,9 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
+static std::string chooseHomeTab;
+static u16 deadZoneLeft = 2.0;
+static u16 deadZoneRight = 2.0;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
@@ -61,9 +64,10 @@ static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
-static bool rdocEnable = false;
-static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
+static bool vkHostMarkers = false;
+static bool vkGuestMarkers = false;
+static bool rdocEnable = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool separateupdatefolder = false;
@@ -75,6 +79,7 @@ static std::string trophyKey;
 static bool load_game_size = true;
 std::vector<std::filesystem::path> settings_install_dirs = {};
 std::filesystem::path settings_addon_install_dir = {};
+std::filesystem::path save_data_path = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -107,6 +112,13 @@ bool GetLoadGameSizeEnabled() {
     return load_game_size;
 }
 
+std::filesystem::path GetSaveDataPath() {
+    if (save_data_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
+    }
+    return save_data_path;
+}
+
 void setLoadGameSizeEnabled(bool enable) {
     load_game_size = enable;
 }
@@ -137,6 +149,14 @@ int getBGMvolume() {
 
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
+}
+
+u16 leftDeadZone() {
+    return deadZoneLeft;
+}
+
+u16 rightDeadZone() {
+    return deadZoneRight;
 }
 
 s16 getCursorState() {
@@ -173,6 +193,10 @@ std::string getUserName() {
 
 std::string getUpdateChannel() {
     return updateChannel;
+}
+
+std::string getChooseHomeTab() {
+    return chooseHomeTab;
 }
 
 std::string getBackButtonBehavior() {
@@ -227,10 +251,6 @@ bool isRdocEnabled() {
     return rdocEnable;
 }
 
-bool isMarkersEnabled() {
-    return vkMarkers;
-}
-
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -247,12 +267,18 @@ bool vkValidationGpuEnabled() {
     return vkValidationGpu;
 }
 
-bool vkMarkersEnabled() {
-    return vkMarkers || vkCrashDiagnostic; // Crash diagnostic forces markers on
-}
-
 bool vkCrashDiagnosticEnabled() {
     return vkCrashDiagnostic;
+}
+
+bool vkHostMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkHostMarkers || vkCrashDiagnostic;
+}
+
+bool vkGuestMarkersEnabled() {
+    // Forced on when crash diagnostic enabled.
+    return vkGuestMarkers || vkCrashDiagnostic;
 }
 
 bool getSeparateUpdateEnabled() {
@@ -378,6 +404,9 @@ void setUserName(const std::string& type) {
 void setUpdateChannel(const std::string& type) {
     updateChannel = type;
 }
+void setChooseHomeTab(const std::string& type) {
+    chooseHomeTab = type;
+}
 
 void setBackButtonBehavior(const std::string& type) {
     backButtonBehavior = type;
@@ -487,6 +516,10 @@ void setEmulatorLanguage(std::string language) {
 
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config) {
     settings_install_dirs = settings_install_dirs_config;
+}
+
+void setSaveDataPath(const std::filesystem::path& path) {
+    save_data_path = path;
 }
 
 u32 getMainWindowGeometryX() {
@@ -612,11 +645,14 @@ void load(const std::filesystem::path& path) {
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
+        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
+        deadZoneLeft = toml::find_or<float>(input, "deadZoneLeft", 2.0);
+        deadZoneRight = toml::find_or<float>(input, "deadZoneRight", 2.0);
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
@@ -644,9 +680,10 @@ void load(const std::filesystem::path& path) {
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
         vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
-        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
-        vkMarkers = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
         vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
+        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", false);
+        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", false);
+        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
     }
 
     if (data.contains("Debug")) {
@@ -673,6 +710,8 @@ void load(const std::filesystem::path& path) {
         for (const auto& dir : install_dir_array) {
             addGameInstallDir(std::filesystem::path{dir});
         }
+
+        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
@@ -730,11 +769,14 @@ void save(const std::filesystem::path& path) {
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
     data["General"]["updateChannel"] = updateChannel;
+    data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["Input"]["deadZoneLeft"] = deadZoneLeft;
+    data["Input"]["deadZoneRight"] = deadZoneRight;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -752,9 +794,10 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Vulkan"]["validation_gpu"] = vkValidationGpu;
-    data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
     data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
+    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
+    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
+    data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
 
@@ -765,6 +808,7 @@ void save(const std::filesystem::path& path) {
         install_dirs.emplace_back(std::string{fmt::UTF(dirString.u8string()).data});
     }
     data["GUI"]["installDirs"] = install_dirs;
+    data["GUI"]["saveDataPath"] = std::string{fmt::UTF(save_data_path.u8string()).data};
     data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
     data["GUI"]["addonInstallDir"] =
@@ -837,6 +881,7 @@ void setDefaultValues() {
     } else {
         updateChannel = "Nightly";
     }
+    chooseHomeTab = "General";
     cursorState = HideCursorState::Idle;
     cursorHideTimeout = 5;
     backButtonBehavior = "left";
@@ -852,9 +897,10 @@ void setDefaultValues() {
     vkValidation = false;
     vkValidationSync = false;
     vkValidationGpu = false;
-    rdocEnable = false;
-    vkMarkers = false;
     vkCrashDiagnostic = false;
+    vkHostMarkers = false;
+    vkGuestMarkers = false;
+    rdocEnable = false;
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;

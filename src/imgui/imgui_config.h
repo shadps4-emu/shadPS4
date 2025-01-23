@@ -30,6 +30,12 @@ extern void assert_fail_debug_msg(const char* msg);
 #define IM_VEC4_CLASS_EXTRA                                                                        \
     constexpr ImVec4(float _v) : x(_v), y(_v), z(_v), w(_v) {}
 
+namespace ImGui {
+struct Texture;
+}
+#define ImTextureID ImTextureID
+using ImTextureID = ::ImGui::Texture*;
+
 #ifdef IMGUI_USE_WCHAR32
 #error "This project uses 16 bits wchar standard like Orbis"
 #endif

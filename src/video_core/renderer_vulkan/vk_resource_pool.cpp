@@ -73,9 +73,7 @@ CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semap
     ASSERT_MSG(pool_result == vk::Result::eSuccess, "Failed to create command pool: {}",
                vk::to_string(pool_result));
     cmd_pool = std::move(pool);
-    if (instance.HasDebuggingToolAttached()) {
-        SetObjectName(device, *cmd_pool, "CommandPool");
-    }
+    SetObjectName(device, *cmd_pool, "CommandPool");
 }
 
 CommandPool::~CommandPool() = default;
@@ -94,10 +92,8 @@ void CommandPool::Allocate(std::size_t begin, std::size_t end) {
         device.allocateCommandBuffers(&buffer_alloc_info, cmd_buffers.data() + begin);
     ASSERT(result == vk::Result::eSuccess);
 
-    if (instance.HasDebuggingToolAttached()) {
-        for (std::size_t i = begin; i < end; ++i) {
-            SetObjectName(device, cmd_buffers[i], "CommandPool: Command Buffer {}", i);
-        }
+    for (std::size_t i = begin; i < end; ++i) {
+        SetObjectName(device, cmd_buffers[i], "CommandPool: Command Buffer {}", i);
     }
 }
 

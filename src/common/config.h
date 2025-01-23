@@ -18,6 +18,7 @@ void saveMainWindow(const std::filesystem::path& path);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
 bool GetLoadGameSizeEnabled();
+std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
 std::string getFullscreenMode();
@@ -34,7 +35,10 @@ std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 std::string getUpdateChannel();
+std::string getChooseHomeTab();
 
+u16 leftDeadZone();
+u16 rightDeadZone();
 s16 getCursorState();
 int getCursorHideTimeout();
 std::string getBackButtonBehavior();
@@ -78,8 +82,10 @@ void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
+void setChooseHomeTab(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
 
@@ -100,8 +106,9 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
-bool vkMarkersEnabled();
 bool vkCrashDiagnosticEnabled();
+bool vkHostMarkersEnabled();
+bool vkGuestMarkersEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);

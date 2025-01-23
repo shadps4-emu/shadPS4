@@ -120,7 +120,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.303 CONFIG)
+find_package(VulkanHeaders 1.4.305 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -250,6 +250,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/time.h
                src/core/libraries/kernel/orbis_error.h
                src/core/libraries/kernel/posix_error.h
+               src/core/libraries/kernel/aio.cpp
+               src/core/libraries/kernel/aio.h
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
@@ -555,6 +557,16 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/logger.cpp
          src/core/devices/logger.h
          src/core/devices/nop_device.h
+         src/core/devices/console_device.cpp
+         src/core/devices/console_device.h
+         src/core/devices/deci_tty6_device.cpp
+         src/core/devices/deci_tty6_device.h
+         src/core/devices/random_device.cpp
+         src/core/devices/random_device.h
+         src/core/devices/urandom_device.cpp
+         src/core/devices/urandom_device.h
+         src/core/devices/srandom_device.cpp
+         src/core/devices/srandom_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h

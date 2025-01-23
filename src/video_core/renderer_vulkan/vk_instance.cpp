@@ -92,15 +92,13 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {}
+      physical_devices{EnumeratePhysicalDevices(instance)} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{EnumeratePhysicalDevices(instance)},
-      crash_diagnostic{enable_crash_diagnostic} {
+      physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -210,6 +208,7 @@ std::string Instance::GetDriverVersionName() {
 bool Instance::CreateDevice() {
     const vk::StructureChain feature_chain = physical_device.getFeatures2<
         vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
@@ -233,7 +232,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 25> enabled_extensions;
+    boost::container::static_vector<const char*, 32> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -284,6 +283,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+    add_extension(VK_EXT_4444_FORMATS_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
@@ -317,6 +317,9 @@ bool Instance::CreateDevice() {
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
     };
+
+    const auto topology_list_restart_features =
+        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
 
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk::StructureChain device_chain = {
@@ -407,6 +410,8 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
+            .primitiveTopologyPatchListRestart =
+                topology_list_restart_features.primitiveTopologyPatchListRestart,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,
@@ -564,8 +569,6 @@ void Instance::CollectToolingInfo() {
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
-        has_renderdoc = has_renderdoc || name == "RenderDoc";
-        has_nsight_graphics = has_nsight_graphics || name == "NVIDIA Nsight Graphics";
     }
 }
 

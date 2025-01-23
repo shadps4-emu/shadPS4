@@ -5,6 +5,9 @@
 
 #include <memory>
 #include <boost/icl/interval_map.hpp>
+#ifdef __linux__
+#include "common/adaptive_mutex.h"
+#endif
 #include "common/spin_lock.h"
 #include "common/types.h"
 
@@ -36,7 +39,11 @@ private:
     std::unique_ptr<Impl> impl;
     Vulkan::Rasterizer* rasterizer;
     boost::icl::interval_map<VAddr, s32> cached_pages;
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+    Common::AdaptiveMutex lock;
+#else
     Common::SpinLock lock;
+#endif
 };
 
 } // namespace VideoCore
