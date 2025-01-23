@@ -6,14 +6,18 @@
 #define GIT_REV      "@GIT_REV@"
 #define GIT_BRANCH   "@GIT_BRANCH@"
 #define GIT_DESC     "@GIT_DESC@"
+#define GIT_REMOTE_NAME   "@GIT_REMOTE_NAME@"
+#define GIT_REMOTE_URL    "@GIT_REMOTE_URL@"
 #define BUILD_DATE   "@BUILD_DATE@"
 
 namespace Common {
 
-const char g_scm_rev[]      = GIT_REV;
-const char g_scm_branch[]   = GIT_BRANCH;
-const char g_scm_desc[]     = GIT_DESC;
-const char g_scm_date[]     = BUILD_DATE;
+const char g_scm_rev[]         = GIT_REV;
+const char g_scm_branch[]      = GIT_BRANCH;
+const char g_scm_desc[]        = GIT_DESC;
+const char g_scm_remote_name[] = GIT_REMOTE_NAME;
+const char g_scm_remote_url[]  = GIT_REMOTE_URL;
+const char g_scm_date[]        = BUILD_DATE;
 
 } // namespace
 

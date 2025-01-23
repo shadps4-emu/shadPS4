@@ -56,6 +56,7 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
+    LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
