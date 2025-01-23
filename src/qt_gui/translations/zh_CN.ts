@@ -552,7 +552,7 @@
 			<source>Default tab when opening settings</source>
 			<translation>打开设置时的默认选项卡</translation>
 		</message>
-		<message> 
+		<message>
 			<source>Show Game Size In List</source>
 			<translation>显示游戏大小在列表中</translation>
 		</message>
@@ -927,6 +927,14 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>存档数据路径：\n保存游戏存档数据的目录。</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
 		</message>
 	</context>
 	<context>
