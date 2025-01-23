@@ -541,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Volledig schermmodus</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standaardtabblad bij het openen van instellingen</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Interface</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Gebruiker</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Updateren:\nRelease: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nNightly: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Speel titelsong:\nAls een game dit ondersteunt, wordt speciale muziek afgespeeld wanneer je het spel in de GUI selecteert.</translation>
 		</message>
 		<message>

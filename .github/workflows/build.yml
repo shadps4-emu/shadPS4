@@ -24,20 +24,27 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
+      
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
     - name: Install
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
-        sudo apt update
-        sudo apt install clang-format-18
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with: 
+        packages: clang-format-18
+        version: 1.0
+
     - name: Build
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
       run: ./.ci/clang-format.sh
-      
+
+
   get-info:
     runs-on: ubuntu-24.04
     outputs:
@@ -282,7 +289,13 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: |
+            sudo apt install -y libfuse2
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with: 
+        packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+        version: 1.0
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -338,7 +351,13 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: |
+            sudo apt install -y libfuse2 qt6-base-dev qt6-tools-dev qt6-multimedia-dev
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with: 
+        packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+        version: 1.0      
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -385,7 +404,13 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: |
+            sudo apt install -y libfuse2
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with: 
+        packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+        version: 1.0      
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -421,7 +446,13 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: |
+            sudo apt install -y libfuse2 qt6-base-dev qt6-tools-dev qt6-multimedia-dev
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with: 
+        packages: libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+        version: 1.0 
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -443,7 +474,8 @@ jobs:
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
 
     - name: Configure CMake
-      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14 -DENABLE_QT_GUI=ON -DENABLE_UPDATER=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: |
+            cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14 -DENABLE_QT_GUI=ON -DENABLE_UPDATER=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)

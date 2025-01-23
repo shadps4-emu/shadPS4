@@ -541,10 +541,18 @@
 			<translation>启用全屏</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>全屏模式</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>启用单独的更新目录</translation>
 		</message>
-		<message> 
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>打开设置时的默认选项卡</translation>
+		</message>
+		<message>
 			<source>Show Game Size In List</source>
 			<translation>显示游戏大小在列表中</translation>
 		</message>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>图像</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>界面</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>用户</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>播放标题音乐：\n如果游戏支持，在图形界面选择游戏时播放特殊音乐。</translation>
 		</message>
 		<message>
@@ -814,7 +830,7 @@
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>隐藏光标：\n选择光标何时消失:\n从不: 始终显示光标。\闲置: 光标在闲置若干秒后消失。\n始终: 始终显示光标。</translation>
+			<translation>隐藏光标：\n选择光标何时消失：\n从不: 从不隐藏光标。\n闲置：光标在闲置若干秒后消失。\n始终：始终隐藏光标。</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
@@ -911,6 +927,14 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>存档数据路径：\n保存游戏存档数据的目录。</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
 		</message>
 	</context>
 	<context>

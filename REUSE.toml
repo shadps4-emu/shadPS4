@@ -14,6 +14,7 @@ path = [
     "documents/changelog.md",
     "documents/Quickstart/2.png",
     "documents/Screenshots/*",
+    "documents/Screenshots/Linux/*",
     "externals/MoltenVK/MoltenVK_icd.json",
     "scripts/ps4_names.txt",
     "src/images/about_icon.png",

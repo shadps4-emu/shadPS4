@@ -1033,9 +1033,17 @@
         <translation>Aktivera helskärm</translation>
     </message>
     <message>
+        <source>Fullscreen Mode</source>
+        <translation>Helskärmsläge</translation>
+    </message>
+    <message>
         <source>Enable Separate Update Folder</source>
         <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standardflik när inställningar öppnas</translation>
+		</message>
     <message> 
         <source>Show Game Size In List</source>
         <translation>Visa spelstorlek i listan</translation>
@@ -1107,6 +1115,14 @@
     <message>
         <source>Graphics</source>
         <translation>Grafik</translation>
+    </message>
+    <message>
+        <source>Gui</source>
+        <translation>Gränssnitt</translation>
+    </message>
+    <message>
+        <source>User</source>
+        <translation>Användare</translation>
     </message>
     <message>
         <source>Graphics Device</source>
@@ -1285,7 +1301,7 @@
         <translation>updaterGroupBox</translation>
     </message>
     <message>
-        <source>GUIgroupBox</source>
+        <source>GUIMusicGroupBox</source>
         <translation>Spela upp titelmusik:\nOm ett spel har stöd för det kan speciell musik spelas upp från spelet i gränssnittet</translation>
     </message>
     <message>

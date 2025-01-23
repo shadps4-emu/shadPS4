@@ -541,8 +541,16 @@
 			<translation>Teljes Képernyő Engedélyezése</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Teljes képernyős mód</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Külön Frissítési Mappa Engedélyezése</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Alapértelmezett fül a beállítások megnyitásakor</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafika</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Felület</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Felhasználó</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Frissítés:\nRelease: Hivatalos verziók, amelyeket havonta adnak ki, és amelyek nagyon elavultak lehetnek, de megbízhatóbbak és teszteltek.\nNightly: Fejlesztési verziók, amelyek az összes legújabb funkciót és javítást tartalmazzák, de hibákat tartalmazhatnak és kevésbé stabilak.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Játék címzene lejátszása:\nHa a játék támogatja, engedélyezze egy speciális zene lejátszását, amikor a játékot kiválasztja a GUI-ban.</translation>
 		</message>
 		<message>

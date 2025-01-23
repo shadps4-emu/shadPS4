@@ -541,8 +541,16 @@
 			<translation>Aktiver fullskjerm</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Fullskjermmodus</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Aktiver seperat oppdateringsmappe</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standardfanen når innstillingene åpnes</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafikk</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Grensesnitt</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Bruker</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Oppdatering:\nRelease: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNightly: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Spille tittelmusikk:\nHvis et spill støtter det, så aktiveres det spesiell musikk når du velger spillet i menyen.</translation>
 		</message>
 		<message>

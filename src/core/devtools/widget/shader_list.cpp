@@ -24,16 +24,33 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
-ShaderList::Selection::Selection(int index) : index(index) {
-    isa_editor.SetPalette(TextEditor::GetDarkPalette());
-    isa_editor.SetReadOnly(true);
-    glsl_editor.SetPalette(TextEditor::GetDarkPalette());
-    glsl_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+ShaderList::Selection::Selection(int index)
+    : index(index), isa_editor(std::make_unique<TextEditor>()),
+      glsl_editor(std::make_unique<TextEditor>()) {
+    isa_editor->SetPalette(TextEditor::GetDarkPalette());
+    isa_editor->SetReadOnly(true);
+    glsl_editor->SetPalette(TextEditor::GetDarkPalette());
+    glsl_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
     presenter->GetWindow().RequestKeyboard();
 }
 
 ShaderList::Selection::~Selection() {
-    presenter->GetWindow().ReleaseKeyboard();
+    if (index >= 0) {
+        presenter->GetWindow().ReleaseKeyboard();
+    }
+}
+
+ShaderList::Selection::Selection(Selection&& other) noexcept
+    : index{other.index}, isa_editor{std::move(other.isa_editor)},
+      glsl_editor{std::move(other.glsl_editor)}, open{other.open}, showing_bin{other.showing_bin},
+      patch_path{std::move(other.patch_path)}, patch_bin_path{std::move(other.patch_bin_path)} {
+    other.index = -1;
+}
+
+ShaderList::Selection& ShaderList::Selection::operator=(Selection other) {
+    using std::swap;
+    swap(*this, other);
+    return *this;
 }
 
 void ShaderList::Selection::ReloadShader(DebugStateType::ShaderDump& value) {
@@ -72,13 +89,13 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
 
         value.is_patched = !value.patch_spv.empty();
         if (!value.is_patched) { // No patch
-            isa_editor.SetText(value.cache_isa_disasm);
-            glsl_editor.SetText(value.cache_spv_disasm);
+            isa_editor->SetText(value.cache_isa_disasm);
+            glsl_editor->SetText(value.cache_spv_disasm);
         } else {
-            isa_editor.SetText(value.cache_patch_disasm);
-            isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
-            glsl_editor.SetText(value.patch_source);
-            glsl_editor.SetReadOnly(false);
+            isa_editor->SetText(value.cache_patch_disasm);
+            isa_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
+            glsl_editor->SetText(value.patch_source);
+            glsl_editor->SetReadOnly(false);
         }
     }
 
@@ -97,18 +114,18 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             if (value.patch_source.empty()) {
                 value.patch_source = value.cache_spv_disasm;
             }
-            isa_editor.SetText(value.cache_patch_disasm);
-            isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
-            glsl_editor.SetText(value.patch_source);
-            glsl_editor.SetReadOnly(false);
+            isa_editor->SetText(value.cache_patch_disasm);
+            isa_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::SPIRV());
+            glsl_editor->SetText(value.patch_source);
+            glsl_editor->SetReadOnly(false);
             if (!value.patch_spv.empty()) {
                 ReloadShader(value);
             }
         } else {
-            isa_editor.SetText(value.cache_isa_disasm);
-            isa_editor.SetLanguageDefinition(TextEditor::LanguageDefinition());
-            glsl_editor.SetText(value.cache_spv_disasm);
-            glsl_editor.SetReadOnly(true);
+            isa_editor->SetText(value.cache_isa_disasm);
+            isa_editor->SetLanguageDefinition(TextEditor::LanguageDefinition());
+            glsl_editor->SetText(value.cache_spv_disasm);
+            glsl_editor->SetReadOnly(true);
             ReloadShader(value);
         }
     }
@@ -154,7 +171,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             compile = true;
         }
         if (save) {
-            value.patch_source = glsl_editor.GetText();
+            value.patch_source = glsl_editor->GetText();
             std::ofstream file{patch_path, std::ios::binary | std::ios::trunc};
             file << value.patch_source;
             std::string msg = "Patch saved to ";
@@ -192,7 +209,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                         DebugState.ShowDebugMessage("Decompilation failed (Compile was ok):\n" +
                                                     res);
                     } else {
-                        isa_editor.SetText(value.cache_patch_disasm);
+                        isa_editor->SetText(value.cache_patch_disasm);
                         ReloadShader(value);
                     }
                 }
@@ -201,9 +218,9 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
     }
 
     if (showing_bin) {
-        isa_editor.Render(value.is_patched ? "SPIRV" : "ISA", GetContentRegionAvail());
+        isa_editor->Render(value.is_patched ? "SPIRV" : "ISA", GetContentRegionAvail());
     } else {
-        glsl_editor.Render("GLSL", GetContentRegionAvail());
+        glsl_editor->Render("GLSL", GetContentRegionAvail());
     }
 
     End();
