@@ -795,6 +795,38 @@ Value IREmitter::UnpackHalf2x16(const U32& value) {
     return Inst(Opcode::UnpackHalf2x16, value);
 }
 
+U32 IREmitter::PackUnorm2x16(const Value& vector) {
+    return Inst<U32>(Opcode::PackUnorm2x16, vector);
+}
+
+Value IREmitter::UnpackUnorm2x16(const U32& value) {
+    return Inst(Opcode::UnpackUnorm2x16, value);
+}
+
+U32 IREmitter::PackSnorm2x16(const Value& vector) {
+    return Inst<U32>(Opcode::PackSnorm2x16, vector);
+}
+
+Value IREmitter::UnpackSnorm2x16(const U32& value) {
+    return Inst(Opcode::UnpackSnorm2x16, value);
+}
+
+U32 IREmitter::PackUint2x16(const Value& value) {
+    return Inst<U32>(Opcode::PackUint2x16, value);
+}
+
+Value IREmitter::UnpackUint2x16(const U32& value) {
+    return Inst(Opcode::UnpackUint2x16, value);
+}
+
+U32 IREmitter::PackSint2x16(const Value& value) {
+    return Inst<U32>(Opcode::PackSint2x16, value);
+}
+
+Value IREmitter::UnpackSint2x16(const U32& value) {
+    return Inst(Opcode::UnpackSint2x16, value);
+}
+
 F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
