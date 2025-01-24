@@ -904,7 +904,7 @@ struct Liverpool {
         }
 
         bool IsTiled() const {
-            return !info.linear_general;
+            return GetTilingMode() != TilingMode::Display_Linear;
         }
 
         [[nodiscard]] DataFormat GetDataFmt() const {
