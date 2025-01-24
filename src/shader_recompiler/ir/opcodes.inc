@@ -321,7 +321,8 @@ OPCODE(SLessThanEqual,                                      U1,             U32,
 OPCODE(ULessThanEqual,                                      U1,             U32,            U32,                                                            )
 OPCODE(SGreaterThan,                                        U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThan,                                        U1,             U32,            U32,                                                            )
-OPCODE(INotEqual,                                           U1,             U32,            U32,                                                            )
+OPCODE(INotEqual32,                                         U1,             U32,            U32,                                                            )
+OPCODE(INotEqual64,                                         U1,             U64,            U64,                                                            )
 OPCODE(SGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 
