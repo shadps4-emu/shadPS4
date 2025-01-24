@@ -586,9 +586,7 @@ void Shutdown() {
     IM_ASSERT(bd != nullptr && "No platform backend to shutdown, or already shutdown?");
     ImGuiIO& io = ImGui::GetIO();
 
-    if (bd->clipboard_text_data) {
-        SDL_free((void*)bd->clipboard_text_data);
-    }
+    SDL_free((void*)bd->clipboard_text_data);
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
         SDL_DestroyCursor(bd->mouse_cursors[cursor_n]);
     CloseGamepads();

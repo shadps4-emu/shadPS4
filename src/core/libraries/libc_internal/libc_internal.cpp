@@ -208,9 +208,7 @@ void* PS4_SYSV_ABI internal_operator_new(size_t size) {
 }
 
 void PS4_SYSV_ABI internal_operator_delete(void* ptr) {
-    if (ptr) {
-        std::free(ptr);
-    }
+    std::free(ptr);
 }
 
 int PS4_SYSV_ABI internal_posix_memalign(void** ptr, size_t alignment, size_t size) {

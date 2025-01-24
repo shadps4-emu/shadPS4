@@ -120,10 +120,8 @@ void NativeThread::Exit() {
     };
     sigaltstack(&sig_stack, nullptr);
 
-    if (sig_stack_ptr) {
-        free(sig_stack_ptr);
-        sig_stack_ptr = nullptr;
-    }
+    free(sig_stack_ptr);
+    sig_stack_ptr = nullptr;
 
     pthread_exit(nullptr);
 #endif
