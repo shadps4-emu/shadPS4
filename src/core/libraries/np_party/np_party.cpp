@@ -4,7 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_party/npparty.h"
+#include "core/libraries/np_party/np_party.h"
 
 namespace Libraries::NpParty {
 
@@ -138,16 +138,6 @@ s32 PS4_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI module_start() {
-    LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI module_stop() {
-    LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 void RegisterlibSceNpParty(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3e4k2mzLkmc", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyCheckCallback);
     LIB_FUNCTION("nOZRy-slBoA", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyCreate);
@@ -200,8 +190,6 @@ void RegisterlibSceNpParty(Core::Loader::SymbolsResolver* sym) {
                  sceNpPartyRegisterHandler);
     LIB_FUNCTION("-MFiL7hEnPE", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
                  sceNpPartyShowInvitationList);
-    LIB_FUNCTION("BaOKcng8g88", "libSceIpmi", 1, "libSceNpParty", 1, 1, module_start);
-    LIB_FUNCTION("KpDMrPHvt3Q", "libSceIpmi", 1, "libSceNpParty", 1, 1, module_stop);
 };
 
 } // namespace Libraries::NpParty

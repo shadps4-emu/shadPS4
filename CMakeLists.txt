@@ -436,8 +436,8 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_trophy/np_trophy_error.h
             src/core/libraries/np_web_api/np_web_api.cpp
             src/core/libraries/np_web_api/np_web_api.h
-            src/core/libraries/np_party/npparty.cpp
-            src/core/libraries/np_party/npparty.h
+            src/core/libraries/np_party/np_party.cpp
+            src/core/libraries/np_party/np_party.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp

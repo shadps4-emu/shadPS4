@@ -28,7 +28,7 @@
 #include "core/libraries/network/ssl2.h"
 #include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
-#include "core/libraries/np_party/npparty.h"
+#include "core/libraries/np_party/np_party.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/np_web_api/np_web_api.h"
