@@ -418,8 +418,9 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     vma.phys_base = 0;
     vma.disallow_merge = false;
     vma.name = "";
-    MergeAdjacent(vma_map, new_it);
-    bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
+    const auto post_merge_it = MergeAdjacent(vma_map, new_it);
+    auto& post_merge_vma = post_merge_it->second;
+    bool readonly_file = post_merge_vma.prot == MemoryProt::CpuRead && type == VMAType::File;
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + adjusted_size,
