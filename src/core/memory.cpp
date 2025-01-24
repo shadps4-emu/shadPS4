@@ -389,8 +389,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     return UnmapMemoryImpl(virtual_addr, size);
 }
 
-size_t MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base,
-                                          size_t size) {
+u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
     const auto vma_base_addr = vma_base.base;
     const auto vma_base_size = vma_base.size;
     const auto type = vma_base.type;
@@ -430,8 +429,8 @@ size_t MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea 
     return adjusted_size;
 }
 
-s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, size_t size) {
-    auto unmapped_bytes = 0;
+s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
+    u64 unmapped_bytes = 0;
     do {
         auto it = FindVMA(virtual_addr + unmapped_bytes);
         auto& vma_base = it->second;
