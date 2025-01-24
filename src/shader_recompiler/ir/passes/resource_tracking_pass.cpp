@@ -569,7 +569,7 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, 1U));
 
     if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
+        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect().Inverse());
         const auto converted =
             ApplyWriteNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
         inst.SetArg(2, converted);
@@ -829,7 +829,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             auto texel = inst.Arg(4);
             if (is_storage) {
                 // Storage image requires shader swizzle.
-                texel = ApplySwizzle(ir, texel, image.DstSelect());
+                texel = ApplySwizzle(ir, texel, image.DstSelect().Inverse());
             }
             const auto converted =
                 ApplyWriteNumberConversionVec4(ir, texel, image.GetNumberConversion());
