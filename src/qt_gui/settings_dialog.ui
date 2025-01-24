@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -9,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>970</width>
-    <height>663</height>
+    <width>1010</width>
+    <height>754</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -57,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -71,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -481,7 +483,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>919</width>
+         <width>980</width>
          <height>497</height>
         </rect>
        </property>
@@ -516,14 +518,14 @@
               <property name="title">
                <string>GUI Settings</string>
               </property>
-              <layout class="QVBoxLayout" name="GUILayout">
+              <layout class="QGridLayout" name="gridLayout_4">
                <property name="topMargin">
                 <number>9</number>
                </property>
                <property name="bottomMargin">
                 <number>9</number>
                </property>
-               <item>
+               <item row="0" column="0">
                 <widget class="QGroupBox" name="chooseHomeTabGroupBox">
                  <property name="title">
                   <string>Default tab when opening settings</string>
@@ -577,14 +579,82 @@
                  </layout>
                 </widget>
                </item>
-               <item>
+               <item row="1" column="0">
                 <widget class="QCheckBox" name="gameSizeCheckBox">
                  <property name="text">
                   <string>Show Game Size In List</string>
                  </property>
                 </widget>
                </item>
-               <item>
+               <item row="2" column="0">
+                <widget class="QGroupBox" name="widgetComboBox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>97</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="title">
+                  <string>Current Widget Style</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="currentwidgetLayout_3">
+                  <item>
+                   <widget class="QComboBox" name="currentWidgetComboBox">
+                    <property name="enabled">
+                     <bool>true</bool>
+                    </property>
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="sizeIncrement">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="baseSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Fusion</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>System</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item row="3" column="0">
                 <widget class="QGroupBox" name="GUIMusicGroupBox">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -603,101 +673,91 @@
                   <bool>false</bool>
                  </property>
                  <property name="title">
-                  <string/>
+                  <string>Title Music</string>
                  </property>
                  <property name="flat">
                   <bool>false</bool>
                  </property>
-                 <widget class="QSlider" name="BGMVolumeSlider">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>80</y>
-                    <width>416</width>
-                    <height>29</height>
-                   </rect>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="toolTip">
-                   <string>Set the volume of the background music.</string>
-                  </property>
-                  <property name="maximum">
-                   <number>100</number>
-                  </property>
-                  <property name="singleStep">
-                   <number>10</number>
-                  </property>
-                  <property name="pageStep">
-                   <number>20</number>
-                  </property>
-                  <property name="value">
-                   <number>50</number>
-                  </property>
-                  <property name="orientation">
-                   <enum>Qt::Orientation::Horizontal</enum>
-                  </property>
-                  <property name="invertedAppearance">
-                   <bool>false</bool>
-                  </property>
-                  <property name="invertedControls">
-                   <bool>false</bool>
-                  </property>
-                  <property name="tickPosition">
-                   <enum>QSlider::TickPosition::NoTicks</enum>
-                  </property>
-                  <property name="tickInterval">
-                   <number>10</number>
-                  </property>
-                 </widget>
-                 <widget class="QCheckBox" name="playBGMCheckBox">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>22</y>
-                    <width>416</width>
-                    <height>26</height>
-                   </rect>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="text">
-                   <string>Play title music</string>
-                  </property>
-                 </widget>
-                 <widget class="QLabel" name="label_Volume">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>54</y>
-                    <width>416</width>
-                    <height>20</height>
-                   </rect>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Volume</string>
-                  </property>
-                 </widget>
+                 <layout class="QGridLayout" name="gridLayout_3">
+                  <item row="2" column="0">
+                   <widget class="QSlider" name="BGMVolumeSlider">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>431</width>
+                      <height>29</height>
+                     </size>
+                    </property>
+                    <property name="toolTip">
+                     <string>Set the volume of the background music.</string>
+                    </property>
+                    <property name="maximum">
+                     <number>100</number>
+                    </property>
+                    <property name="singleStep">
+                     <number>10</number>
+                    </property>
+                    <property name="pageStep">
+                     <number>20</number>
+                    </property>
+                    <property name="value">
+                     <number>50</number>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="invertedAppearance">
+                     <bool>false</bool>
+                    </property>
+                    <property name="invertedControls">
+                     <bool>false</bool>
+                    </property>
+                    <property name="tickPosition">
+                     <enum>QSlider::TickPosition::NoTicks</enum>
+                    </property>
+                    <property name="tickInterval">
+                     <number>10</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_Volume">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Volume</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QCheckBox" name="playBGMCheckBox">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Play title music</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
                </item>
               </layout>
@@ -706,7 +766,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0,0">
+           <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0">
             <property name="spacing">
              <number>6</number>
             </property>
@@ -788,74 +848,6 @@
               </layout>
              </widget>
             </item>
-            <item>
-             <widget class="QGroupBox" name="widgetComboBox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>97</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="title">
-               <string>Current Widget Style</string>
-              </property>
-              <layout class="QVBoxLayout" name="currentwidgetLayout_3">
-               <item>
-                <widget class="QComboBox" name="currentWidgetComboBox">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="sizeIncrement">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="baseSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <item>
-                  <property name="text">
-                   <string>Fusion</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>System</string>
-                  </property>
-                 </item>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
            </layout>
           </item>
          </layout>
@@ -875,8 +867,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1119,8 +1111,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0,1">
@@ -1263,8 +1255,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1547,8 +1539,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1637,8 +1629,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>940</width>
-         <height>406</height>
+         <width>980</width>
+         <height>497</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
