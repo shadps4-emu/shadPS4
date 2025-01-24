@@ -422,8 +422,8 @@ size_t MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea 
     bool readonly_file = vma.prot == MemoryProt::CpuRead && type == VMAType::File;
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Unmap the memory region.
-        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + adjusted_size, phys_base,
-                is_exec, has_backing, readonly_file);
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + adjusted_size,
+                   phys_base, is_exec, has_backing, readonly_file);
         TRACK_FREE(virtual_addr, "VMEM");
     }
     return adjusted_size;
