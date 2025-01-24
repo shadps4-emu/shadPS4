@@ -35,9 +35,8 @@ struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     u32 num_color_attachments;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
-    std::array<AmdGpu::NumberFormat, Liverpool::NumColorBuffers> color_num_formats;
-    std::array<AmdGpu::NumberConversion, Liverpool::NumColorBuffers> color_num_conversions;
-    std::array<AmdGpu::CompMapping, Liverpool::NumColorBuffers> color_swizzles;
+    std::array<Shader::FragmentRuntimeInfo::PsColorBuffer, Liverpool::NumColorBuffers>
+        color_buffers;
     vk::Format depth_format;
     vk::Format stencil_format;
 

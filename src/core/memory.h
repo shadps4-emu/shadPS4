@@ -252,7 +252,9 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
-    s32 UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+    u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
+
+    s32 UnmapMemoryImpl(VAddr virtual_addr, u64 size);
 
 private:
     AddressSpace impl;
