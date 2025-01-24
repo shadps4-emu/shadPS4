@@ -1273,6 +1273,10 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
             ir.SetVectorReg(dst_reg + 1, ir.Imm32(static_cast<u32>(result >> 32)));
             return;
         }
+
+        const IR::U64 result = ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F))));
+        SetDst64(inst.dst[0], result);
+        return;
     }
     UNREACHABLE_MSG("Unimplemented V_LSHL_B64 arguments");
 }
