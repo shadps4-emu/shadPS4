@@ -4,6 +4,8 @@
 // https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/blob/master/include/orbis/_types/sys_service.h
 #pragma once
 
+#include <mutex>
+#include <queue>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -602,6 +604,8 @@ int PS4_SYSV_ABI sceSystemServiceDisableVoiceRecognition();
 int PS4_SYSV_ABI sceSystemServiceReenableVoiceRecognition();
 int PS4_SYSV_ABI Func_6B1CDB955F0EBD65();
 int PS4_SYSV_ABI Func_CB5E885E225F69F0();
+
+void PushSystemServiceEvent(const OrbisSystemServiceEvent& event);
 
 void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SystemService

@@ -12,6 +12,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/system/systemservice.h"
 
 namespace Libraries::AppContent {
 
@@ -262,6 +263,15 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
             entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label));
         }
     }
+
+    if (addcont_count > 0) {
+        SystemService::OrbisSystemServiceEvent event{};
+        event.event_type = SystemService::OrbisSystemServiceEventType::EntitlementUpdate;
+        event.service_entitlement_update.user_id = 0;
+        event.service_entitlement_update.np_service_label = 0;
+        SystemService::PushSystemServiceEvent(event);
+    }
+
     return ORBIS_OK;
 }
 
