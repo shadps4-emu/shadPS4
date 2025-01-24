@@ -394,15 +394,16 @@ size_t MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea 
     const auto vma_base_addr = vma_base.base;
     const auto vma_base_size = vma_base.size;
     const auto type = vma_base.type;
-    if (type == VMAType::Free) {
-        return ORBIS_OK;
-    }
     const auto phys_base = vma_base.phys_base;
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto adjusted_size =
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
+
+    if (type == VMAType::Free) {
+        return adjusted_size;
+    }
     if (type == VMAType::Direct || type == VMAType::Pooled) {
         rasterizer->UnmapMemory(virtual_addr, adjusted_size);
     }
@@ -538,8 +539,8 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_stack.Assign(vma.type == VMAType::Stack);
-    info->is_pooled.Assign(vma.type == VMAType::PoolReserved);
-    info->is_committed.Assign(vma.type != VMAType::Reserved);
+    info->is_pooled.Assign(vma.type == VMAType::PoolReserved || vma.type == VMAType::Pooled);
+    info->is_committed.Assign(vma.IsMapped());
     vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
