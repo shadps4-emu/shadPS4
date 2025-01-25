@@ -10,6 +10,8 @@
 namespace Libraries::SystemService {
 
 bool g_splash_status{true};
+std::queue<OrbisSystemServiceEvent> g_event_queue;
+std::mutex g_event_queue_mutex;
 
 bool IsSplashVisible() {
     return Config::showSplash() && g_splash_status;
@@ -1772,7 +1774,9 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
         LOG_ERROR(Lib_SystemService, "OrbisSystemServiceStatus is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
-    status->event_num = 0;
+
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    status->event_num = static_cast<s32>(g_event_queue.size());
     status->is_system_ui_overlaid = false;
     status->is_in_background_execution = false;
     status->is_cpu_mode7_cpu_normal = true;
@@ -1940,11 +1944,19 @@ int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event) {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
+    LOG_TRACE(Lib_SystemService, "called");
     if (event == nullptr) {
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
-    return ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT;
+
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    if (g_event_queue.empty()) {
+        return ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT;
+    }
+
+    *event = g_event_queue.front();
+    g_event_queue.pop();
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemServiceReenableMusicPlayer() {
@@ -2410,6 +2422,11 @@ int PS4_SYSV_ABI Func_6B1CDB955F0EBD65() {
 int PS4_SYSV_ABI Func_CB5E885E225F69F0() {
     LOG_ERROR(Lib_SystemService, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    g_event_queue.push(event);
 }
 
 void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym) {
