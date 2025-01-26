@@ -51,7 +51,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Path is relative?
-    if(corrected_path.at(0) != '/') {
+    if (corrected_path.at(0) != '/') {
         corrected_path = "/app0/" + corrected_path;
     }
 
