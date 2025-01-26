@@ -43,12 +43,17 @@ void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
     columnCnt = this->columnCount();
 
     auto itemID = (crtRow * columnCnt) + currentColumn;
+    static QString originalStyle = this->styleSheet();
     if (itemID > m_game_info->m_games.count() - 1) {
         cellClicked = false;
         validCellSelected = false;
         BackgroundMusicPlayer::getInstance().stopMusic();
+        this->setStyleSheet(originalStyle +
+                            "QTableWidget {outline: auto;}"
+                            "QTableWidget::item:selected {background-color: transparent;}");
         return;
     }
+    this->setStyleSheet(originalStyle);
     cellClicked = true;
     validCellSelected = true;
     SetGridBackgroundImage(crtRow, crtColumn);
