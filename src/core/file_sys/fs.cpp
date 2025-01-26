@@ -50,6 +50,11 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         pos = corrected_path.find("//", pos + 1);
     }
 
+    // Path is relative?
+    if(corrected_path.at(0) != '/') {
+        corrected_path = "/app0/" + corrected_path;
+    }
+
     const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
         return "";
