@@ -41,8 +41,8 @@ public:
             itemID = widget->currentRow() * widget->columnCount() + widget->currentColumn();
         }
 
-        // Do not show the menu if an item is selected
-        if (itemID == -1) {
+        // Do not show the menu if no item is selected
+        if (itemID < 0 || itemID >= m_games.size()) {
             return;
         }
 
