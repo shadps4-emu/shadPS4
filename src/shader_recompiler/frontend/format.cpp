@@ -1836,7 +1836,9 @@ constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64, ScalarType::Uint32},
     // 22 = V_CVT_F64_U32
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32, ScalarType::Float64},
-    {},
+    // 23 = V_TRUNC_F64
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+     ScalarType::Float64},
     {},
     {},
     {},
