@@ -68,6 +68,11 @@ public:
         return &gds_buffer;
     }
 
+    /// Returns a pointer to LDS device local buffer.
+    [[nodiscard]] const Buffer* GetLdsBuffer() const noexcept {
+        return &lds_buffer;
+    }
+
     /// Retrieves the buffer with the specified id.
     [[nodiscard]] Buffer& GetBuffer(BufferId id) {
         return slot_buffers[id];
@@ -154,6 +159,7 @@ private:
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
+    Buffer lds_buffer;
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
