@@ -38,17 +38,18 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
 
 void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                                          int previousColumn) {
-    cellClicked = true;
     crtRow = currentRow;
     crtColumn = currentColumn;
     columnCnt = this->columnCount();
 
     auto itemID = (crtRow * columnCnt) + currentColumn;
     if (itemID > m_game_info->m_games.count() - 1) {
+        cellClicked = false;
         validCellSelected = false;
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
+    cellClicked = true;
     validCellSelected = true;
     SetGridBackgroundImage(crtRow, crtColumn);
     auto snd0Path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path.string());
