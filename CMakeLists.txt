@@ -316,6 +316,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_error.h
                  src/core/libraries/network/epoll.cpp
                  src/core/libraries/network/epoll.h
+                 src/core/libraries/network/net_util.cpp
+                 src/core/libraries/network/net_util.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp

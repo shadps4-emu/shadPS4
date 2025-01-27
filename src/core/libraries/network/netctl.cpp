@@ -12,11 +12,13 @@
 #include <unistd.h>
 #endif
 
+#include <common/singleton.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
+#include "net_util.h"
 
 namespace Libraries::NetCtl {
 
@@ -162,6 +164,11 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     case ORBIS_NET_CTL_INFO_DEVICE:
         info->device = ORBIS_NET_CTL_DEVICE_WIRED;
         break;
+    case ORBIS_NET_CTL_INFO_ETHER_ADDR: {
+        auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+        netinfo->RetrieveEthernetAddr();
+        memcpy(info->ether_addr.data, netinfo->GetEthernetAddr().data(), 6);
+    } break;
     case ORBIS_NET_CTL_INFO_LINK:
         info->link = ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
