@@ -29,6 +29,7 @@ typedef int net_socket;
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <string.h>
 #include "net_util.h"
 
 namespace NetUtil {
