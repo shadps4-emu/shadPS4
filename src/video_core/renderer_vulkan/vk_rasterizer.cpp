@@ -1172,6 +1172,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
             continue;
         }
 
+        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
         if (pipeline.IsClipDisabled()) {
             // In case if clipping is disabled we patch the shader to convert vertex position
             // from screen space coordinates to NDC by defining a render space as full hardware
@@ -1181,16 +1183,14 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
                 .y = 0.f,
                 .width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB)),
                 .height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB)),
-                .minDepth = 0.0,
-                .maxDepth = 1.0,
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
             });
         } else {
             const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
             const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
             const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
             const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
-            const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
-            const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
             viewports.push_back({
                 .x = xoffset - xscale,
                 .y = yoffset - yscale,
