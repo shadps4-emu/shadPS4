@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Hap dosjen e shadPS4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -542,7 +542,7 @@
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
-			<translation>Modaliteti i Plotë</translation>
+			<translation>Mënyra me ekran të plotë</translation>
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
@@ -550,7 +550,7 @@
 		</message>
 		<message>
 			<source>Default tab when opening settings</source>
-			<translation>Skeda e parazgjedhur kur hapni cilësimet</translation>
+			<translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -594,7 +594,7 @@
 		</message>
 		<message>
 			<source>Open Log Location</source>
-			<translation>Hap vendndodhjen e regjistrit</translation>
+			<translation>Hap vendndodhjen e Ditarit</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -630,11 +630,11 @@
 		</message>
 		<message>
 			<source>Gui</source>
-			<translation>Ndërfaqe</translation>
+			<translation>Ndërfaqja</translation>
 		</message>
 		<message>
 			<source>User</source>
-			<translation>Përdorues</translation>
+			<translation>Përdoruesi</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -822,7 +822,7 @@
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
-			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
+			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në ndërfaqe.</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
