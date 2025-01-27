@@ -20,6 +20,11 @@ typedef int socklen_t;
 #include <unistd.h>
 typedef int net_socket;
 #endif
+#if defined(__APPLE__)
+#include <ifaddrs.h>
+#include <net/if_dl.h>
+#endif
+
 #include <map>
 #include <memory>
 #include <mutex>
@@ -49,7 +54,7 @@ bool NetUtilInternal::RetrieveEthernetAddr() {
         memcpy(ether_address.data(), info[0].Address, 6);
         return true;
     }
-#elif defined __APPLE__
+#elif defined(__APPLE__)
     ifaddrs* ifap;
 
     if (getifaddrs(&ifap) == 0) {
