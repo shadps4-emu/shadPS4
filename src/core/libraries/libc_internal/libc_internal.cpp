@@ -13255,9 +13255,9 @@ s32 PS4_SYSV_ABI logl() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI longjmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI longjmp(std::jmp_buf env, int status) {
+    LOG_INFO(Lib_LibcInternal, "called");
+    std::longjmp(env, status);
 }
 
 s32 PS4_SYSV_ABI lrand48() {
@@ -14031,9 +14031,10 @@ s32 PS4_SYSV_ABI sceLibcMspaceCalloc() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceLibcMspaceCreate() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void* PS4_SYSV_ABI sceLibcMspaceCreate(char* param_1, ulong param_2, ulong param_3, uint param_4,
+                                       short* param_5) {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called {}", param_1);
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceLibcMspaceDestroy() {
@@ -14341,7 +14342,7 @@ s32 PS4_SYSV_ABI snprintf(char* s, size_t n, const char* format, ...) {
     int result = std::vsnprintf(s, n, format, args);
     if (result >= 0) {
         // Null-terminate the buffer manually if needed
-        s[size] = '\0';  // Ensures that s is null-terminated
+        s[size] = '\0'; // Ensures that s is null-terminated
         LOG_DEBUG(Lib_LibcInternal, "Formatted result: {}", s);
     } else {
         LOG_ERROR(Lib_LibcInternal, "vsnprintf failed during formatting");
@@ -14610,10 +14611,12 @@ char* PS4_SYSV_ABI strsep(char** strp, const char* delim) {
 #ifdef _GNU_SOURCE
     return strsep(strp, delim);
 #else
-    if (!*strp) return nullptr;
+    if (!*strp)
+        return nullptr;
     char* token = *strp;
     *strp = std::strpbrk(token, delim);
-    if (*strp) *(*strp)++ = '\0';
+    if (*strp)
+        *(*strp)++ = '\0';
     return token;
 #endif
 }
@@ -14928,7 +14931,7 @@ s32 PS4_SYSV_ABI vfwscanf_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI vprintf(const char *format, va_list args) {
+s32 PS4_SYSV_ABI vprintf(const char* format, va_list args) {
     // Copy the va_list because vsnprintf consumes it
     va_list args_copy;
     va_copy(args_copy, args);
@@ -14947,7 +14950,8 @@ s32 PS4_SYSV_ABI vprintf(const char *format, va_list args) {
     std::string buffer(size, '\0');
 
     // Format the string into the buffer
-    int result = std::vsnprintf(buffer.data(), buffer.size() + 1, format, args); // +1 for null terminator
+    int result =
+        std::vsnprintf(buffer.data(), buffer.size() + 1, format, args); // +1 for null terminator
     if (result >= 0) {
         // Log the formatted result
         LOG_INFO(Lib_LibcInternal, "{}", buffer);
@@ -15494,8 +15498,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  __atomic_fetch_xor_8);
     LIB_FUNCTION("JZWEhLSIMoQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  __atomic_is_lock_free);
-    LIB_FUNCTION("+iy+BecyFVw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __atomic_load);
+    LIB_FUNCTION("+iy+BecyFVw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __atomic_load);
     LIB_FUNCTION("cWgvLiSJSOQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  __atomic_load_1);
     LIB_FUNCTION("ufqiLmjiBeM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -15572,8 +15575,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  __cxa_increment_exception_refcount);
     LIB_FUNCTION("zr094EQ39Ww", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  __cxa_pure_virtual);
-    LIB_FUNCTION("ZL9FV4mJXxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __cxa_rethrow);
+    LIB_FUNCTION("ZL9FV4mJXxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __cxa_rethrow);
     LIB_FUNCTION("qKQiNX91IGo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  __cxa_rethrow_primary_exception);
     LIB_FUNCTION("vkuuLfhnSZI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __cxa_throw);
@@ -15591,8 +15593,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  __dynamic_cast);
     LIB_FUNCTION("8F52nf7VDS8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __eqdf2);
     LIB_FUNCTION("LmXIpdHppBM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __eqsf2);
-    LIB_FUNCTION("6zU++1tayjA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __extendsfdf2);
+    LIB_FUNCTION("6zU++1tayjA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __extendsfdf2);
     LIB_FUNCTION("CVoT4wFYleE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __fe_dfl_env);
     LIB_FUNCTION("1IB0U3rUtBw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  __fedisableexcept);
@@ -15626,28 +15627,17 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EtpM9Qdy8D4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floattidf);
     LIB_FUNCTION("VlDpPYOXL58", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floattisf);
     LIB_FUNCTION("dJvVWc2jOP4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floattixf);
-    LIB_FUNCTION("1RNxpXpVWs4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatundidf);
-    LIB_FUNCTION("9tnIVFbvOrw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatundisf);
-    LIB_FUNCTION("3A9RVSwG8B0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatundixf);
-    LIB_FUNCTION("OdvMJCV7Oxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatunsidf);
-    LIB_FUNCTION("RC3VBr2l94o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatunsisf);
-    LIB_FUNCTION("ibs6jIR0Bw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatuntidf);
-    LIB_FUNCTION("KLfd8g4xp+c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatuntisf);
-    LIB_FUNCTION("OdzLUcBLhb4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __floatuntixf);
-    LIB_FUNCTION("qlWiRfOJx1A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __fpclassifyd);
-    LIB_FUNCTION("z7aCCd9hMsI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __fpclassifyf);
-    LIB_FUNCTION("zwV79ZJ9qAU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __fpclassifyl);
+    LIB_FUNCTION("1RNxpXpVWs4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatundidf);
+    LIB_FUNCTION("9tnIVFbvOrw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatundisf);
+    LIB_FUNCTION("3A9RVSwG8B0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatundixf);
+    LIB_FUNCTION("OdvMJCV7Oxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatunsidf);
+    LIB_FUNCTION("RC3VBr2l94o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatunsisf);
+    LIB_FUNCTION("ibs6jIR0Bw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatuntidf);
+    LIB_FUNCTION("KLfd8g4xp+c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatuntisf);
+    LIB_FUNCTION("OdzLUcBLhb4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __floatuntixf);
+    LIB_FUNCTION("qlWiRfOJx1A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __fpclassifyd);
+    LIB_FUNCTION("z7aCCd9hMsI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __fpclassifyf);
+    LIB_FUNCTION("zwV79ZJ9qAU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __fpclassifyl);
     LIB_FUNCTION("hXA24GbAPBk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __gedf2);
     LIB_FUNCTION("mdLGxBXl6nk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __gesf2);
     LIB_FUNCTION("1PvImz6yb4M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __gtdf2);
@@ -15657,8 +15647,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7p7kTAJcuGg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __inet_addr);
     LIB_FUNCTION("a7ToDPsIQrc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __inet_aton);
     LIB_FUNCTION("6i5aLrxRhG0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __inet_ntoa);
-    LIB_FUNCTION("H2QD+kNpa+U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __inet_ntoa_r);
+    LIB_FUNCTION("H2QD+kNpa+U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __inet_ntoa_r);
     LIB_FUNCTION("dhK16CKwhQg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __isfinite);
     LIB_FUNCTION("Q8pvJimUWis", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __isfinitef);
     LIB_FUNCTION("3-zCDXatSU4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __isfinitel);
@@ -15688,8 +15677,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tcBJa2sYx0w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __ltdf2);
     LIB_FUNCTION("259y57ZdZ3I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __ltsf2);
     LIB_FUNCTION("77pL1FoD4I4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __mb_cur_max);
-    LIB_FUNCTION("fGYLBr2COwA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __mb_sb_limit);
+    LIB_FUNCTION("fGYLBr2COwA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __mb_sb_limit);
     LIB_FUNCTION("gQFVRFgFi48", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __moddi3);
     LIB_FUNCTION("k0vARyJi9oU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __modsi3);
     LIB_FUNCTION("J8JRHcUKWP4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __modti3);
@@ -15719,12 +15707,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("RDeUB6JGi1U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __paritydi2);
     LIB_FUNCTION("9xUnIQ53Ao4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __paritysi2);
     LIB_FUNCTION("vBP4ytNRXm0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __parityti2);
-    LIB_FUNCTION("m4S+lkRvTVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __popcountdi2);
-    LIB_FUNCTION("IBn9qjWnXIw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __popcountsi2);
-    LIB_FUNCTION("l1wz5R6cIxE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 __popcountti2);
+    LIB_FUNCTION("m4S+lkRvTVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __popcountdi2);
+    LIB_FUNCTION("IBn9qjWnXIw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __popcountsi2);
+    LIB_FUNCTION("l1wz5R6cIxE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __popcountti2);
     LIB_FUNCTION("H+8UBOwfScI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __powidf2);
     LIB_FUNCTION("EiMkgQsOfU0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __powisf2);
     LIB_FUNCTION("DSI7bz2Jt-I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, __powixf2);
@@ -15875,8 +15860,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-7vr7t-uto8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _Atomic_thread_fence);
     LIB_FUNCTION("M6nCy6H8Hs4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Atqexit);
-    LIB_FUNCTION("IHiK3lL7CvI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _Atthreadexit);
+    LIB_FUNCTION("IHiK3lL7CvI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Atthreadexit);
     LIB_FUNCTION("aMucxariNg8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Btowc);
     LIB_FUNCTION("fttiF7rDdak", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Call_once);
     LIB_FUNCTION("G1kDk+5L6dU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Call_onceEx);
@@ -16042,8 +16026,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8xXiEPby8h8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getptimes);
     LIB_FUNCTION("1uJgoVq3bQU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getptolower);
     LIB_FUNCTION("rcQCUr0EaRU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getptoupper);
-    LIB_FUNCTION("hzsdjKbFD7g", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _Getpwcostate);
+    LIB_FUNCTION("hzsdjKbFD7g", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getpwcostate);
     LIB_FUNCTION("zS94yyJRSUs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getpwcstate);
     LIB_FUNCTION("RLdcWoBjmT4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getpwctrtab);
     LIB_FUNCTION("uF8hDs1CqWI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Getpwctytab);
@@ -16089,8 +16072,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _Lock_shared_ptr_spin_lock);
     LIB_FUNCTION("Cv-8x++GS9A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _Lock_spin_lock);
-    LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _Lockfilelock);
+    LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Lockfilelock);
     LIB_FUNCTION("kALvdgEv5ME", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Locksyslock);
     LIB_FUNCTION("sYz-SxY8H6M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Locsum);
     LIB_FUNCTION("rvNWRuHY6AQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Loctab);
@@ -16245,8 +16227,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("z-OrNOmb6kk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Tgamma);
     LIB_FUNCTION("JOV1XY47eQA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_abort);
     LIB_FUNCTION("SkRR6WxCTcE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_create);
-    LIB_FUNCTION("n2-b3O8qvqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _Thrd_current);
+    LIB_FUNCTION("n2-b3O8qvqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_current);
     LIB_FUNCTION("L7f7zYwBvZA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_detach);
     LIB_FUNCTION("BnV7WrHdPLU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_equal);
     LIB_FUNCTION("cFsD9R4iY50", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Thrd_exit);
@@ -16315,8 +16296,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _Unlocksyslock);
     LIB_FUNCTION("s62MgBhosjU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _Unwind_Backtrace);
-    LIB_FUNCTION("sETNbyWsEHs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _Unwind_GetIP);
+    LIB_FUNCTION("sETNbyWsEHs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _Unwind_GetIP);
     LIB_FUNCTION("f1zwJ3jAI2k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _Unwind_Resume);
     LIB_FUNCTION("xUsJSLsdv9I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16456,10 +16436,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZGVNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE2idE);
     LIB_FUNCTION("HDnBZ+mkyjg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZGVNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE2idE);
-    LIB_FUNCTION("0ND8MZiuTR8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZGVZNSt13basic_filebufIcSt11char_traitsIcEE5_InitEP7__sFILENS2_7_InitflEE7_Stinit);
-    LIB_FUNCTION("O2wxIdbMcMQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZGVZNSt13basic_filebufIwSt11char_traitsIwEE5_InitEP7__sFILENS2_7_InitflEE7_Stinit);
+    LIB_FUNCTION(
+        "0ND8MZiuTR8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZGVZNSt13basic_filebufIcSt11char_traitsIcEE5_InitEP7__sFILENS2_7_InitflEE7_Stinit);
+    LIB_FUNCTION(
+        "O2wxIdbMcMQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZGVZNSt13basic_filebufIwSt11char_traitsIwEE5_InitEP7__sFILENS2_7_InitflEE7_Stinit);
     LIB_FUNCTION("CjzjU2nFUWw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZN10__cxxabiv116__enum_type_infoD0Ev);
     LIB_FUNCTION("upwSZWmYwqE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16765,198 +16747,290 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNKSt7collateIwE7do_hashEPKwS2_);
     LIB_FUNCTION("81uX7PzrtG8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt7collateIwE9transformEPKwS2_);
-    LIB_FUNCTION("OWO5cpNw3NA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
-    LIB_FUNCTION("mAwXCpkWaYc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
-    LIB_FUNCTION("wUCRGap1j0U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("6RGkooTERsE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
-    LIB_FUNCTION("N1VqUWz2OEI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
-    LIB_FUNCTION("I2UzwkwwEPs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
-    LIB_FUNCTION("2bfL3yIBi5k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
-    LIB_FUNCTION("my9ujasm6-0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
-    LIB_FUNCTION("gozsp4urvq8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
-    LIB_FUNCTION("4hiQK82QuLc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
-    LIB_FUNCTION("eZfFLyWCkvg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
-    LIB_FUNCTION("SmtBNDda5qU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
-    LIB_FUNCTION("bNQpG-eKogg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
-    LIB_FUNCTION("uukWbYS6Bn4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("IntAnFb+tw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
-    LIB_FUNCTION("ywJpNe675zo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
-    LIB_FUNCTION("ALEXgLx9fqU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
-    LIB_FUNCTION("Pq4PkG0x1fk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
-    LIB_FUNCTION("VKdXFE7ualw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
-    LIB_FUNCTION("dRu2RLn4SKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
-    LIB_FUNCTION("F+AmVDFUyqM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
-    LIB_FUNCTION("TtYifKtVkYA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
-    LIB_FUNCTION("4+y8-2NsDw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetffldEPcRS3_S6_RSt8ios_basePi);
-    LIB_FUNCTION("G9LB1YD5-xc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6locale);
-    LIB_FUNCTION("J-0I2PtiZc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE9_GetffldxEPcRS3_S6_RSt8ios_basePi);
-    LIB_FUNCTION("vW-nnV62ea4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
-    LIB_FUNCTION("+hjXHfvy1Mg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
-    LIB_FUNCTION("xLZr4GJRMLo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("2mb8FYgER+E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
-    LIB_FUNCTION("Y3hBU5FYmhM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
-    LIB_FUNCTION("-m2YPwVCwJQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
-    LIB_FUNCTION("94ZLp2+AOq0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
-    LIB_FUNCTION("zomvAQ5RFdA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
-    LIB_FUNCTION("bZ+lKHGvOr8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
-    LIB_FUNCTION("cG5hQhjFGog", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
-    LIB_FUNCTION("banNSumaAZ0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
-    LIB_FUNCTION("wEU8oFtBXT8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
-    LIB_FUNCTION("t39dKpPEuVA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
-    LIB_FUNCTION("MCtJ9D7B5Cs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("Gy2iRxp3LGk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
-    LIB_FUNCTION("2bUUbbcqHUo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
-    LIB_FUNCTION("QossXdwWltI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
-    LIB_FUNCTION("ig6SRr1GCU4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
-    LIB_FUNCTION("BNZq-mRvDS8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
-    LIB_FUNCTION("kU7PvJJKUng", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
-    LIB_FUNCTION("Ou7GV51-ng4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
-    LIB_FUNCTION("rYLrGFoqfi4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
-    LIB_FUNCTION("W5VYncHdreo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetffldEPcRS3_S6_RSt8ios_basePi);
-    LIB_FUNCTION("GGqIV4cjzzI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6locale);
-    LIB_FUNCTION("bZ0oEGQUKO8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE9_GetffldxEPcRS3_S6_RSt8ios_basePi);
-    LIB_FUNCTION("nftirmo6hBg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecb);
-    LIB_FUNCTION("w9NzCYAjEpQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecd);
-    LIB_FUNCTION("VPcTGA-LwSo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basece);
-    LIB_FUNCTION("ffnhh0HcxJ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecl);
-    LIB_FUNCTION("uODuM76vS4U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecm);
-    LIB_FUNCTION("8NVUcufbklM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPKv);
-    LIB_FUNCTION("NJtKruu9qOs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecx);
-    LIB_FUNCTION("dep6W2Ix35s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecy);
+    LIB_FUNCTION(
+        "OWO5cpNw3NA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
+    LIB_FUNCTION(
+        "mAwXCpkWaYc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
+    LIB_FUNCTION(
+        "wUCRGap1j0U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "6RGkooTERsE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
+    LIB_FUNCTION(
+        "N1VqUWz2OEI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
+    LIB_FUNCTION(
+        "I2UzwkwwEPs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
+    LIB_FUNCTION(
+        "2bfL3yIBi5k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
+    LIB_FUNCTION(
+        "my9ujasm6-0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
+    LIB_FUNCTION(
+        "gozsp4urvq8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
+    LIB_FUNCTION(
+        "4hiQK82QuLc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
+    LIB_FUNCTION(
+        "eZfFLyWCkvg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
+    LIB_FUNCTION(
+        "SmtBNDda5qU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
+    LIB_FUNCTION(
+        "bNQpG-eKogg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
+    LIB_FUNCTION(
+        "uukWbYS6Bn4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "IntAnFb+tw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
+    LIB_FUNCTION(
+        "ywJpNe675zo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
+    LIB_FUNCTION(
+        "ALEXgLx9fqU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
+    LIB_FUNCTION(
+        "Pq4PkG0x1fk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
+    LIB_FUNCTION(
+        "VKdXFE7ualw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
+    LIB_FUNCTION(
+        "dRu2RLn4SKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
+    LIB_FUNCTION(
+        "F+AmVDFUyqM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
+    LIB_FUNCTION(
+        "TtYifKtVkYA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
+    LIB_FUNCTION(
+        "4+y8-2NsDw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetffldEPcRS3_S6_RSt8ios_basePi);
+    LIB_FUNCTION(
+        "G9LB1YD5-xc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6locale);
+    LIB_FUNCTION(
+        "J-0I2PtiZc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE9_GetffldxEPcRS3_S6_RSt8ios_basePi);
+    LIB_FUNCTION(
+        "vW-nnV62ea4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
+    LIB_FUNCTION(
+        "+hjXHfvy1Mg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
+    LIB_FUNCTION(
+        "xLZr4GJRMLo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "2mb8FYgER+E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
+    LIB_FUNCTION(
+        "Y3hBU5FYmhM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
+    LIB_FUNCTION(
+        "-m2YPwVCwJQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
+    LIB_FUNCTION(
+        "94ZLp2+AOq0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
+    LIB_FUNCTION(
+        "zomvAQ5RFdA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
+    LIB_FUNCTION(
+        "bZ+lKHGvOr8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
+    LIB_FUNCTION(
+        "cG5hQhjFGog", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
+    LIB_FUNCTION(
+        "banNSumaAZ0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
+    LIB_FUNCTION(
+        "wEU8oFtBXT8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERb);
+    LIB_FUNCTION(
+        "t39dKpPEuVA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERd);
+    LIB_FUNCTION(
+        "MCtJ9D7B5Cs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "Gy2iRxp3LGk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERf);
+    LIB_FUNCTION(
+        "2bUUbbcqHUo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERj);
+    LIB_FUNCTION(
+        "QossXdwWltI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERl);
+    LIB_FUNCTION(
+        "ig6SRr1GCU4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERm);
+    LIB_FUNCTION(
+        "BNZq-mRvDS8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERPv);
+    LIB_FUNCTION(
+        "kU7PvJJKUng", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERt);
+    LIB_FUNCTION(
+        "Ou7GV51-ng4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERx);
+    LIB_FUNCTION(
+        "rYLrGFoqfi4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateERy);
+    LIB_FUNCTION(
+        "W5VYncHdreo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetffldEPcRS3_S6_RSt8ios_basePi);
+    LIB_FUNCTION(
+        "GGqIV4cjzzI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6locale);
+    LIB_FUNCTION(
+        "bZ0oEGQUKO8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE9_GetffldxEPcRS3_S6_RSt8ios_basePi);
+    LIB_FUNCTION(
+        "nftirmo6hBg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecb);
+    LIB_FUNCTION(
+        "w9NzCYAjEpQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecd);
+    LIB_FUNCTION(
+        "VPcTGA-LwSo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basece);
+    LIB_FUNCTION(
+        "ffnhh0HcxJ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecl);
+    LIB_FUNCTION(
+        "uODuM76vS4U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecm);
+    LIB_FUNCTION(
+        "8NVUcufbklM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPKv);
+    LIB_FUNCTION(
+        "NJtKruu9qOs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecx);
+    LIB_FUNCTION(
+        "dep6W2Ix35s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecy);
     LIB_FUNCTION("k8zgjeBmpVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE4_PutES3_PKcm);
     LIB_FUNCTION("tCihLs4UJxQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE4_RepES3_cm);
-    LIB_FUNCTION("w11G58-u4p8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FfmtEPccNSt5_IosbIiE9_FmtflagsE);
-    LIB_FUNCTION("ll99KkqO6ig", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FputES3_RSt8ios_basecPKcm);
-    LIB_FUNCTION("mNk6FfI8T7I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FputES3_RSt8ios_basecPKcmmmm);
-    LIB_FUNCTION("xlgA01CQtBo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_IfmtEPcPKcNSt5_IosbIiE9_FmtflagsE);
-    LIB_FUNCTION("jykT-VWQVBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_IputES3_RSt8ios_basecPcm);
-    LIB_FUNCTION("ke36E2bqNmI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecb);
-    LIB_FUNCTION("F+cp2B3cWNU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecd);
-    LIB_FUNCTION("rLiFc4+HyHw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basece);
-    LIB_FUNCTION("I3+xmBWGPGo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl);
-    LIB_FUNCTION("nlAk46weq1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecm);
-    LIB_FUNCTION("0xgFRKf0Lc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecPKv);
-    LIB_FUNCTION("H2KGT3vA7yQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecx);
-    LIB_FUNCTION("Vbeoft607aI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecy);
-    LIB_FUNCTION("mY9FWooxqJY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewb);
-    LIB_FUNCTION("V7aIsVIsIIA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewd);
-    LIB_FUNCTION("vCIFGeI6adI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewe);
-    LIB_FUNCTION("USLhWp7sZoU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewl);
-    LIB_FUNCTION("qtpzdwMMCPc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewm);
-    LIB_FUNCTION("xfOSCbCiY44", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPKv);
-    LIB_FUNCTION("ryykbHJ04Cw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewx);
-    LIB_FUNCTION("lmb3oBpMNPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewy);
+    LIB_FUNCTION(
+        "w11G58-u4p8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FfmtEPccNSt5_IosbIiE9_FmtflagsE);
+    LIB_FUNCTION(
+        "ll99KkqO6ig", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FputES3_RSt8ios_basecPKcm);
+    LIB_FUNCTION(
+        "mNk6FfI8T7I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_FputES3_RSt8ios_basecPKcmmmm);
+    LIB_FUNCTION(
+        "xlgA01CQtBo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_IfmtEPcPKcNSt5_IosbIiE9_FmtflagsE);
+    LIB_FUNCTION(
+        "jykT-VWQVBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_IputES3_RSt8ios_basecPcm);
+    LIB_FUNCTION(
+        "ke36E2bqNmI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecb);
+    LIB_FUNCTION(
+        "F+cp2B3cWNU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecd);
+    LIB_FUNCTION(
+        "rLiFc4+HyHw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basece);
+    LIB_FUNCTION(
+        "I3+xmBWGPGo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl);
+    LIB_FUNCTION(
+        "nlAk46weq1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecm);
+    LIB_FUNCTION(
+        "0xgFRKf0Lc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecPKv);
+    LIB_FUNCTION(
+        "H2KGT3vA7yQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecx);
+    LIB_FUNCTION(
+        "Vbeoft607aI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecy);
+    LIB_FUNCTION(
+        "mY9FWooxqJY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewb);
+    LIB_FUNCTION(
+        "V7aIsVIsIIA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewd);
+    LIB_FUNCTION(
+        "vCIFGeI6adI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewe);
+    LIB_FUNCTION(
+        "USLhWp7sZoU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewl);
+    LIB_FUNCTION(
+        "qtpzdwMMCPc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewm);
+    LIB_FUNCTION(
+        "xfOSCbCiY44", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPKv);
+    LIB_FUNCTION(
+        "ryykbHJ04Cw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewx);
+    LIB_FUNCTION(
+        "lmb3oBpMNPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewy);
     LIB_FUNCTION("kRGVhisjgMg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE4_PutES3_PKwm);
     LIB_FUNCTION("-b+Avqa2v9k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE4_RepES3_wm);
-    LIB_FUNCTION("T07KcAOlIeU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FfmtEPccNSt5_IosbIiE9_FmtflagsE);
-    LIB_FUNCTION("IdV-tXejEGQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FputES3_RSt8ios_basewPKcm);
-    LIB_FUNCTION("B6JXVOMDdlw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FputES3_RSt8ios_basewPKcmmmm);
-    LIB_FUNCTION("WheFSRlZ9JA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_IfmtEPcPKcNSt5_IosbIiE9_FmtflagsE);
-    LIB_FUNCTION("4pQ3B1BTMgo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_IputES3_RSt8ios_basewPcm);
-    LIB_FUNCTION("1C2-2WB9NN4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewb);
-    LIB_FUNCTION("sX3o6Zmihw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewd);
-    LIB_FUNCTION("6OYWLisfrB8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewe);
-    LIB_FUNCTION("VpwhOe58wsM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewl);
-    LIB_FUNCTION("jHo78LGEtmU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewm);
-    LIB_FUNCTION("BDteGj1gqBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewPKv);
-    LIB_FUNCTION("9SSHrlIamto", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewx);
-    LIB_FUNCTION("uX0nKsUo8gc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewy);
+    LIB_FUNCTION(
+        "T07KcAOlIeU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FfmtEPccNSt5_IosbIiE9_FmtflagsE);
+    LIB_FUNCTION(
+        "IdV-tXejEGQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FputES3_RSt8ios_basewPKcm);
+    LIB_FUNCTION(
+        "B6JXVOMDdlw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_FputES3_RSt8ios_basewPKcmmmm);
+    LIB_FUNCTION(
+        "WheFSRlZ9JA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_IfmtEPcPKcNSt5_IosbIiE9_FmtflagsE);
+    LIB_FUNCTION(
+        "4pQ3B1BTMgo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_IputES3_RSt8ios_basewPcm);
+    LIB_FUNCTION(
+        "1C2-2WB9NN4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewb);
+    LIB_FUNCTION(
+        "sX3o6Zmihw0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewd);
+    LIB_FUNCTION(
+        "6OYWLisfrB8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewe);
+    LIB_FUNCTION(
+        "VpwhOe58wsM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewl);
+    LIB_FUNCTION(
+        "jHo78LGEtmU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewm);
+    LIB_FUNCTION(
+        "BDteGj1gqBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewPKv);
+    LIB_FUNCTION(
+        "9SSHrlIamto", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewx);
+    LIB_FUNCTION(
+        "uX0nKsUo8gc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewy);
     LIB_FUNCTION("6CPwoi-cFZM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt8bad_cast4whatEv);
     LIB_FUNCTION("NEemVJeMwd0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17029,84 +17103,120 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNKSt8numpunctIwE9falsenameEv);
     LIB_FUNCTION("ShlQcYrzRF8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE10date_orderEv);
-    LIB_FUNCTION("T85u2sPrKOo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("73GV+sRHbeY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("dSfKN47p6ac", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("KwJ5V3D0v3A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "T85u2sPrKOo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "73GV+sRHbeY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "dSfKN47p6ac", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11do_get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "KwJ5V3D0v3A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE11get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
     LIB_FUNCTION("8PIh8BFpNYQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE13do_date_orderEv);
-    LIB_FUNCTION("vvA7HtdtWnY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE13get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("xzYpD5d24aA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE14do_get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("ZuCHPDq-dPw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE16do_get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("+RuThw5axA4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
-    LIB_FUNCTION("S5WbPO54nD0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKcSE_);
-    LIB_FUNCTION("Vw03kdKZUN0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
-    LIB_FUNCTION("E7UermPZVcw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetfmtES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKc);
-    LIB_FUNCTION("8raXTYQ11cg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetintERS3_S5_iiRiRKSt5ctypeIcE);
-    LIB_FUNCTION("OY5mqEBxP+8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("rrqNi95bhMs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("5L5Aft+9nZU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "vvA7HtdtWnY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE13get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "xzYpD5d24aA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE14do_get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "ZuCHPDq-dPw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE16do_get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "+RuThw5axA4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
+    LIB_FUNCTION(
+        "S5WbPO54nD0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKcSE_);
+    LIB_FUNCTION(
+        "Vw03kdKZUN0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
+    LIB_FUNCTION(
+        "E7UermPZVcw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetfmtES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKc);
+    LIB_FUNCTION(
+        "8raXTYQ11cg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetintERS3_S5_iiRiRKSt5ctypeIcE);
+    LIB_FUNCTION(
+        "OY5mqEBxP+8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "rrqNi95bhMs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "5L5Aft+9nZU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
     LIB_FUNCTION("nc6OsiDx630", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE10date_orderEv);
-    LIB_FUNCTION("SYCwZXKZQ08", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("2pJJ0dl-aPQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("cRSJysDpVl4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("A0PftWMfrhk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "SYCwZXKZQ08", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "2pJJ0dl-aPQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "cRSJysDpVl4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11do_get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "A0PftWMfrhk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE11get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
     LIB_FUNCTION("dP14OHWe4nI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE13do_date_orderEv);
-    LIB_FUNCTION("xy0MR+OOZI8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE13get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("hGlkh5YpcKw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE14do_get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("R1ITHuTUMEI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE16do_get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("64pqofAwJEg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
-    LIB_FUNCTION("B8c4P1vCixQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKwSE_);
-    LIB_FUNCTION("0MzJAexrlr4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
-    LIB_FUNCTION("r8003V6UwZg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetfmtES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKc);
-    LIB_FUNCTION("lhJWkEh-HXM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetintERS3_S5_iiRiRKSt5ctypeIwE);
-    LIB_FUNCTION("kwp-0uidHpw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("9TfGnN6xq-U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("Krt-A7EnHHs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
-    LIB_FUNCTION("qkuA-unH7PU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPK2tmcc);
-    LIB_FUNCTION("j9LU8GsuEGw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPK2tmPKcSB_);
-    LIB_FUNCTION("+i81FtUCarA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecPK2tmcc);
-    LIB_FUNCTION("Nt6eyVKm+Z4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPK2tmcc);
-    LIB_FUNCTION("Sc0lXhQG5Ko", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPK2tmPKwSB_);
-    LIB_FUNCTION("Fr7j8dMsy4s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewPK2tmcc);
+    LIB_FUNCTION(
+        "xy0MR+OOZI8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE13get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "hGlkh5YpcKw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE14do_get_weekdayES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "R1ITHuTUMEI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE16do_get_monthnameES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "64pqofAwJEg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
+    LIB_FUNCTION(
+        "B8c4P1vCixQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKwSE_);
+    LIB_FUNCTION(
+        "0MzJAexrlr4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmcc);
+    LIB_FUNCTION(
+        "r8003V6UwZg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetfmtES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tmPKc);
+    LIB_FUNCTION(
+        "lhJWkEh-HXM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetintERS3_S5_iiRiRKSt5ctypeIwE);
+    LIB_FUNCTION(
+        "kwp-0uidHpw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_dateES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "9TfGnN6xq-U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_timeES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "Krt-A7EnHHs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8get_yearES3_S3_RSt8ios_baseRNSt5_IosbIiE8_IostateEP2tm);
+    LIB_FUNCTION(
+        "qkuA-unH7PU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPK2tmcc);
+    LIB_FUNCTION(
+        "j9LU8GsuEGw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_RSt8ios_basecPK2tmPKcSB_);
+    LIB_FUNCTION(
+        "+i81FtUCarA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecPK2tmcc);
+    LIB_FUNCTION(
+        "Nt6eyVKm+Z4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPK2tmcc);
+    LIB_FUNCTION(
+        "Sc0lXhQG5Ko", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_RSt8ios_basewPK2tmPKwSB_);
+    LIB_FUNCTION(
+        "Fr7j8dMsy4s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_RSt8ios_basewPK2tmcc);
     LIB_FUNCTION("xvRvFtnUk3E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt9bad_alloc4whatEv);
     LIB_FUNCTION("pS-t9AJblSM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17117,46 +17227,66 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNKSt9exception6_RaiseEv);
     LIB_FUNCTION("tyHd3P7oDrU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNKSt9exception8_DoraiseEv);
-    LIB_FUNCTION("G84okRnyJJg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("2fxdcyt5tGs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSs);
-    LIB_FUNCTION("IRVqdGwSNXE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("D2njLPpEt1E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSs);
-    LIB_FUNCTION("CLT04GjI7UE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetmfldERS3_S5_bRSt8ios_basePc);
-    LIB_FUNCTION("cx-1THpef1A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("wWIsjOqfcSc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSbIwS2_SaIwEE);
-    LIB_FUNCTION("zzubCm+nDzc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
-    LIB_FUNCTION("DhXTD5eM7LQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSbIwS2_SaIwEE);
-    LIB_FUNCTION("RalOJcOXJJo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetmfldERS3_S5_bRSt8ios_basePw);
-    LIB_FUNCTION("65cvm2NDLmU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_bRSt8ios_basece);
-    LIB_FUNCTION("DR029KeWsHw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_bRSt8ios_basecRKSs);
-    LIB_FUNCTION("iXVrhA51z0M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basece);
-    LIB_FUNCTION("OR-4zyIi2aE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basecRKSs);
-    LIB_FUNCTION("d57FDzON1h0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE8_PutmfldES3_bRSt8ios_basecbSsc);
-    LIB_FUNCTION("fsF-tGtGsD4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_bRSt8ios_basewe);
-    LIB_FUNCTION("JruBeQgsAaU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_bRSt8ios_basewRKSbIwS2_SaIwEE);
-    LIB_FUNCTION("wVY5DpvU6PU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewe);
-    LIB_FUNCTION("GDiCYtaiUyM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewRKSbIwS2_SaIwEE);
-    LIB_FUNCTION("r-JSsJQFUsY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE8_PutmfldES3_bRSt8ios_basewbSbIwS2_SaIwEEw);
+    LIB_FUNCTION(
+        "G84okRnyJJg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "2fxdcyt5tGs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSs);
+    LIB_FUNCTION(
+        "IRVqdGwSNXE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "D2njLPpEt1E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSs);
+    LIB_FUNCTION(
+        "CLT04GjI7UE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetmfldERS3_S5_bRSt8ios_basePc);
+    LIB_FUNCTION(
+        "cx-1THpef1A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "wWIsjOqfcSc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE3getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSbIwS2_SaIwEE);
+    LIB_FUNCTION(
+        "zzubCm+nDzc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERe);
+    LIB_FUNCTION(
+        "DhXTD5eM7LQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE6do_getES3_S3_bRSt8ios_baseRNSt5_IosbIiE8_IostateERSbIwS2_SaIwEE);
+    LIB_FUNCTION(
+        "RalOJcOXJJo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetmfldERS3_S5_bRSt8ios_basePw);
+    LIB_FUNCTION(
+        "65cvm2NDLmU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_bRSt8ios_basece);
+    LIB_FUNCTION(
+        "DR029KeWsHw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE3putES3_bRSt8ios_basecRKSs);
+    LIB_FUNCTION(
+        "iXVrhA51z0M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basece);
+    LIB_FUNCTION(
+        "OR-4zyIi2aE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basecRKSs);
+    LIB_FUNCTION(
+        "d57FDzON1h0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE8_PutmfldES3_bRSt8ios_basecbSsc);
+    LIB_FUNCTION(
+        "fsF-tGtGsD4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_bRSt8ios_basewe);
+    LIB_FUNCTION(
+        "JruBeQgsAaU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE3putES3_bRSt8ios_basewRKSbIwS2_SaIwEE);
+    LIB_FUNCTION(
+        "wVY5DpvU6PU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewe);
+    LIB_FUNCTION(
+        "GDiCYtaiUyM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewRKSbIwS2_SaIwEE);
+    LIB_FUNCTION(
+        "r-JSsJQFUsY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE8_PutmfldES3_bRSt8ios_basewbSbIwS2_SaIwEEw);
     LIB_FUNCTION("Ti86LmOKvr0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSbIwSt11char_traitsIwESaIwEE5_CopyEmm);
     LIB_FUNCTION("TgEb5a+nOnk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17473,10 +17603,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt13basic_filebufIcSt11char_traitsIcEE6setbufEPci);
     LIB_FUNCTION("yofHspnD9us", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt13basic_filebufIcSt11char_traitsIcEE7_UnlockEv);
-    LIB_FUNCTION("7oio2Gs1GNk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt13basic_filebufIcSt11char_traitsIcEE7seekoffElNSt5_IosbIiE8_SeekdirENS4_9_OpenmodeE);
-    LIB_FUNCTION("rsS5cBMihAM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt13basic_filebufIcSt11char_traitsIcEE7seekposESt4fposI9_MbstatetENSt5_IosbIiE9_OpenmodeE);
+    LIB_FUNCTION(
+        "7oio2Gs1GNk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt13basic_filebufIcSt11char_traitsIcEE7seekoffElNSt5_IosbIiE8_SeekdirENS4_9_OpenmodeE);
+    LIB_FUNCTION(
+        "rsS5cBMihAM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt13basic_filebufIcSt11char_traitsIcEE7seekposESt4fposI9_MbstatetENSt5_IosbIiE9_OpenmodeE);
     LIB_FUNCTION("oYMRgkQHoJM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt13basic_filebufIcSt11char_traitsIcEE8overflowEi);
     LIB_FUNCTION("JTwt9OTgk1k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17503,10 +17635,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt13basic_filebufIwSt11char_traitsIwEE6setbufEPwi);
     LIB_FUNCTION("ryl2DYMxlZ0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt13basic_filebufIwSt11char_traitsIwEE7_UnlockEv);
-    LIB_FUNCTION("g7gjCDEedJA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt13basic_filebufIwSt11char_traitsIwEE7seekoffElNSt5_IosbIiE8_SeekdirENS4_9_OpenmodeE);
-    LIB_FUNCTION("10VcrHqHAlw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt13basic_filebufIwSt11char_traitsIwEE7seekposESt4fposI9_MbstatetENSt5_IosbIiE9_OpenmodeE);
+    LIB_FUNCTION(
+        "g7gjCDEedJA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt13basic_filebufIwSt11char_traitsIwEE7seekoffElNSt5_IosbIiE8_SeekdirENS4_9_OpenmodeE);
+    LIB_FUNCTION(
+        "10VcrHqHAlw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt13basic_filebufIwSt11char_traitsIwEE7seekposESt4fposI9_MbstatetENSt5_IosbIiE9_OpenmodeE);
     LIB_FUNCTION("PjH5dZGfQHQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt13basic_filebufIwSt11char_traitsIwEE8overflowEi);
     LIB_FUNCTION("cV6KpJiF0Ck", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18043,8 +18177,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE2idE);
     LIB_FUNCTION("cXL+LN0lSwc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("p1WMhxL4Wds", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "p1WMhxL4Wds", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("uXj-oWD2334", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("iTODM3uXS2s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18063,8 +18198,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE2idE);
     LIB_FUNCTION("4MHgRGOKOXY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("zTX7LL+w12Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "zTX7LL+w12Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("18rLbEV-NQs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("0UPU3kvxWb0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18083,8 +18219,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE2idE);
     LIB_FUNCTION("BbJ4naWZeRw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("hNAh1l09UpA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "hNAh1l09UpA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("LAEVU8cBSh4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("Hg1im-rUeHc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18103,8 +18240,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE2idE);
     LIB_FUNCTION("V2FICbvPa+s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("6iDi6e2e4x8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "6iDi6e2e4x8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("xdHqQoggdfo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt7num_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("Ky+C-qbKcX0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18277,8 +18415,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE2idE);
     LIB_FUNCTION("+yrOX7MgVlk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE5_TidyEv);
-    LIB_FUNCTION("eMnBe5mZFLw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "eMnBe5mZFLw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("13xzrgS8N4o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("9pPbNXw5N9E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18301,8 +18440,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE2idE);
     LIB_FUNCTION("ImblNB7fVVU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE5_TidyEv);
-    LIB_FUNCTION("e5jQyuEE+9U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "e5jQyuEE+9U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("J2xO4cttypo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("gOzIhGUAkME", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18325,8 +18465,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE2idE);
     LIB_FUNCTION("QdPT7uDTlo0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("ec0YLGHS8cw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "ec0YLGHS8cw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("6htjEH2Gi-w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("u5yK3bGG1+w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18345,8 +18486,9 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE2idE);
     LIB_FUNCTION("ZolDcuDSD0Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("bF2uVCqVhBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "bF2uVCqVhBY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("X3DrtC2AZCI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt8time_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("oi3kpQPqpMY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18427,10 +18569,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt9exceptionD2Ev);
     LIB_FUNCTION("TsGewdW9Rto", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE2idE);
-    LIB_FUNCTION("6zg3ziZ4Qis", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("MSSvHmcbs3g", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "6zg3ziZ4Qis", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
+    LIB_FUNCTION(
+        "MSSvHmcbs3g", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("YGPopdkhujM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("7NQGsY7VY3c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18447,10 +18591,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEED2Ev);
     LIB_FUNCTION("dplyQ6+xatg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE2idE);
-    LIB_FUNCTION("JOj6qfc4VLs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("DTH1zTBrOO8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "JOj6qfc4VLs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
+    LIB_FUNCTION(
+        "DTH1zTBrOO8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("bY9Y0J3GGbA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("ej+44l1PjjY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18467,14 +18613,17 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEED2Ev);
     LIB_FUNCTION("hf2Ljaf19Fs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE2idE);
-    LIB_FUNCTION("66AuqgLnsQE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE4_PutES3_St22_String_const_iteratorISt11_String_valISt13_Simple_typesIcEEEm);
+    LIB_FUNCTION(
+        "66AuqgLnsQE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE4_PutES3_St22_String_const_iteratorISt11_String_valISt13_Simple_typesIcEEEm);
     LIB_FUNCTION("1dY2KJfkgMM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE4_RepES3_cm);
-    LIB_FUNCTION("riBxNiKLvI0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("w9fCz0pbHdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "riBxNiKLvI0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE5_InitERKSt8_Locinfo);
+    LIB_FUNCTION(
+        "w9fCz0pbHdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("Qi5fpNt5+T0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEEC1Em);
     LIB_FUNCTION("mdYczJb+bb0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18491,14 +18640,17 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZNSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEED2Ev);
     LIB_FUNCTION("pzfFqaTMsFc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE2idE);
-    LIB_FUNCTION("-hrHhi-UFxs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE4_PutES3_St22_String_const_iteratorISt11_String_valISt13_Simple_typesIwEEEm);
+    LIB_FUNCTION(
+        "-hrHhi-UFxs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE4_PutES3_St22_String_const_iteratorISt11_String_valISt13_Simple_typesIwEEEm);
     LIB_FUNCTION("6QU40olMkOM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE4_RepES3_wm);
-    LIB_FUNCTION("kJmdxo4uM+8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
-    LIB_FUNCTION("0sHarDG9BY4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
+    LIB_FUNCTION(
+        "kJmdxo4uM+8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE5_InitERKSt8_Locinfo);
+    LIB_FUNCTION(
+        "0sHarDG9BY4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE7_GetcatEPPKNSt6locale5facetEPKS5_);
     LIB_FUNCTION("rme+Po9yI5M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZNSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEEC1Em);
     LIB_FUNCTION("RV6sGVpYa-o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -18649,8 +18801,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ozk+Z6QnlTY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZSt7_MP_RemPyy);
     LIB_FUNCTION("NLwJ3q+64bY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _ZSt7nothrow);
-    LIB_FUNCTION("4rrOHCHAV1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZSt7setbasei);
+    LIB_FUNCTION("4rrOHCHAV1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, _ZSt7setbasei);
     LIB_FUNCTION("yYk819F9TyU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZSt8_XLgammad);
     LIB_FUNCTION("bl0DPP6kFBk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -19331,26 +19482,36 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  _ZTVSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE);
     LIB_FUNCTION("749AEdSd4Go", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZTVSt9type_info);
-    LIB_FUNCTION("4-Fllbzfh2k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetffldEPcRS3_S6_RSt8ios_basePiE4_Src);
-    LIB_FUNCTION("NQW6QjEPUak", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6localeE4_Src);
-    LIB_FUNCTION("3P+CcdakSi0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE9_GetffldxEPcRS3_S6_RSt8ios_basePiE4_Src);
-    LIB_FUNCTION("o-gc5R8f50M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetffldEPcRS3_S6_RSt8ios_basePiE4_Src);
-    LIB_FUNCTION("3kjXzznHyCg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6localeE4_Src);
-    LIB_FUNCTION("DKkwPpi+uWc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE9_GetffldxEPcRS3_S6_RSt8ios_basePiE4_Src);
-    LIB_FUNCTION("mZW-My-zemM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetmfldERS3_S5_bRSt8ios_basePcE4_Src);
-    LIB_FUNCTION("HCzNCcPxu+w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetmfldERS3_S5_bRSt8ios_basePwE4_Src);
-    LIB_FUNCTION("sHagUsvHBnk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basecRKSsE4_Src);
-    LIB_FUNCTION("A5EX+eJmQI8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 _ZZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewRKSbIwS2_SaIwEEE4_Src);
+    LIB_FUNCTION(
+        "4-Fllbzfh2k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetffldEPcRS3_S6_RSt8ios_basePiE4_Src);
+    LIB_FUNCTION(
+        "NQW6QjEPUak", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6localeE4_Src);
+    LIB_FUNCTION(
+        "3P+CcdakSi0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE9_GetffldxEPcRS3_S6_RSt8ios_basePiE4_Src);
+    LIB_FUNCTION(
+        "o-gc5R8f50M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetffldEPcRS3_S6_RSt8ios_basePiE4_Src);
+    LIB_FUNCTION(
+        "3kjXzznHyCg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetifldEPcRS3_S6_NSt5_IosbIiE9_FmtflagsERKSt6localeE4_Src);
+    LIB_FUNCTION(
+        "DKkwPpi+uWc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt7num_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE9_GetffldxEPcRS3_S6_RSt8ios_basePiE4_Src);
+    LIB_FUNCTION(
+        "mZW-My-zemM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt9money_getIcSt19istreambuf_iteratorIcSt11char_traitsIcEEE8_GetmfldERS3_S5_bRSt8ios_basePcE4_Src);
+    LIB_FUNCTION(
+        "HCzNCcPxu+w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt9money_getIwSt19istreambuf_iteratorIwSt11char_traitsIwEEE8_GetmfldERS3_S5_bRSt8ios_basePwE4_Src);
+    LIB_FUNCTION(
+        "sHagUsvHBnk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt9money_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_bRSt8ios_basecRKSsE4_Src);
+    LIB_FUNCTION(
+        "A5EX+eJmQI8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+        _ZZNKSt9money_putIwSt19ostreambuf_iteratorIwSt11char_traitsIwEEE6do_putES3_bRSt8ios_basewRKSbIwS2_SaIwEEE4_Src);
     LIB_FUNCTION("jfq92K8E1Vc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  _ZZNSt13basic_filebufIcSt11char_traitsIcEE5_InitEP7__sFILENS2_7_InitflEE7_Stinit);
     LIB_FUNCTION("AoZRvn-vaq4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -19366,8 +19527,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("u14Y1HFh0uY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, acoshl);
     LIB_FUNCTION("iH4YAIRcecA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, acosl);
     LIB_FUNCTION("DQXJraCc1rA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, alarm);
-    LIB_FUNCTION("2Btkg8k24Zg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 aligned_alloc);
+    LIB_FUNCTION("2Btkg8k24Zg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, aligned_alloc);
     LIB_FUNCTION("jT3xiGpA3B4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asctime);
     LIB_FUNCTION("qPe7-h5Jnuc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asctime_s);
     LIB_FUNCTION("7Ly52zaL44Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asin);
@@ -19377,8 +19537,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("iCl-Z-g-uuA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asinhl);
     LIB_FUNCTION("Nx-F5v0-qU8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asinl);
     LIB_FUNCTION("cOYia2dE0Ik", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, asprintf);
-    LIB_FUNCTION("HC8vbJStYVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 at_quick_exit);
+    LIB_FUNCTION("HC8vbJStYVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, at_quick_exit);
     LIB_FUNCTION("OXmauLdQ8kY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, atan);
     LIB_FUNCTION("HUbZmOnT-Dg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, atan2);
     LIB_FUNCTION("EH-x713A99c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, atan2f);
@@ -19469,8 +19628,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("IMt+UO5YoQI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, fdiml);
     LIB_FUNCTION("qdlHjTa9hQ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, fdopen);
     LIB_FUNCTION("j+XjoRSIvwU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, fdopendir);
-    LIB_FUNCTION("cqt8emEH3kQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 feclearexcept);
+    LIB_FUNCTION("cqt8emEH3kQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, feclearexcept);
     LIB_FUNCTION("y4WlO8qzHqI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  fedisableexcept);
     LIB_FUNCTION("utLW7uXm3Ss", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -19484,10 +19642,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  fegettrapenable);
     LIB_FUNCTION("1kduKXMqx7k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, feholdexcept);
     LIB_FUNCTION("LxcEU+ICu8U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, feof);
-    LIB_FUNCTION("NuydofHcR1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 feof_unlocked);
-    LIB_FUNCTION("NIfFNcyeCTo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 feraiseexcept);
+    LIB_FUNCTION("NuydofHcR1w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, feof_unlocked);
+    LIB_FUNCTION("NIfFNcyeCTo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, feraiseexcept);
     LIB_FUNCTION("AHxyhN96dy4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, ferror);
     LIB_FUNCTION("yxbGzBQC5xA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  ferror_unlocked);
@@ -19566,8 +19722,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sZ93QMbGRJY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, gammaf);
     LIB_FUNCTION("E3RYvWbYLgk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, gammaf_r);
     LIB_FUNCTION("8Q60JLJ6Rv4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, getc);
-    LIB_FUNCTION("5tM252Rs2fc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 getc_unlocked);
+    LIB_FUNCTION("5tM252Rs2fc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, getc_unlocked);
     LIB_FUNCTION("L3XZiuKqZUM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, getchar);
     LIB_FUNCTION("H0pVDvSuAVQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  getchar_unlocked);
@@ -19803,8 +19958,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("w1NxRBQqfmQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, printf_s);
     LIB_FUNCTION("tjuEJo1obls", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, psignal);
     LIB_FUNCTION("tLB5+4TEOK0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, putc);
-    LIB_FUNCTION("H-QeERgWuTM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 putc_unlocked);
+    LIB_FUNCTION("H-QeERgWuTM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, putc_unlocked);
     LIB_FUNCTION("m5wN+SwZOR4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, putchar);
     LIB_FUNCTION("v95AEAzqm+0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  putchar_unlocked);
@@ -19950,8 +20104,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("QMFyLoqNxIg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, setvbuf);
     LIB_FUNCTION("Bm3k7JQMN5w", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, sigblock);
     LIB_FUNCTION("TsrS8nGDQok", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, siginterrupt);
-    LIB_FUNCTION("SQGxZCv3aYk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 signalcontext);
+    LIB_FUNCTION("SQGxZCv3aYk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, signalcontext);
     LIB_FUNCTION("5gOOC0kzW0c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, signgam);
     LIB_FUNCTION("Az3tTyAy380", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, significand);
     LIB_FUNCTION("L2YaHYQdmHw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, significandf);
@@ -19997,8 +20150,7 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("RIa6GnWp+iU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strerror);
     LIB_FUNCTION("RBcs3uut1TA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strerror_r);
     LIB_FUNCTION("o+ok6Y+DtgY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strerror_s);
-    LIB_FUNCTION("-g26XITGVgE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 strerrorlen_s);
+    LIB_FUNCTION("-g26XITGVgE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strerrorlen_s);
     LIB_FUNCTION("Av3zjWi64Kw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strftime);
     LIB_FUNCTION("ByfjUZsWiyg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strlcat);
     LIB_FUNCTION("SfQIZcqvvms", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, strlcpy);
