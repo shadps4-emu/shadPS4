@@ -11748,34 +11748,34 @@ s32 PS4_SYSV_ABI abs() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI acos() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI acos(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acos(x);
 }
 
-s32 PS4_SYSV_ABI acosf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI acosf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acosf(x);
 }
 
-s32 PS4_SYSV_ABI acosh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI acosh(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acosh(x);
 }
 
-s32 PS4_SYSV_ABI acoshf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI acoshf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acoshf(x);
 }
 
-s32 PS4_SYSV_ABI acoshl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI acoshl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acoshl(x);
 }
 
-s32 PS4_SYSV_ABI acosl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI acosl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::acosl(x);
 }
 
 s32 PS4_SYSV_ABI alarm() {
@@ -11798,34 +11798,34 @@ s32 PS4_SYSV_ABI asctime_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI asin() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI asin(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asin(x);
 }
 
-s32 PS4_SYSV_ABI asinf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI asinf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asinf(x);
 }
 
-s32 PS4_SYSV_ABI asinh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI asinh(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asinh(x);
 }
 
-s32 PS4_SYSV_ABI asinhf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI asinhf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asinhf(x);
 }
 
-s32 PS4_SYSV_ABI asinhl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI asinhl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asinhl(x);
 }
 
-s32 PS4_SYSV_ABI asinl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI asinl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::asinl(x);
 }
 
 s32 PS4_SYSV_ABI asprintf() {
@@ -11838,14 +11838,14 @@ s32 PS4_SYSV_ABI at_quick_exit() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI atan() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI atan(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::atan(x);
 }
 
-s32 PS4_SYSV_ABI atan2() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI atan2(double y, double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::atan2(y, x);
 }
 
 s32 PS4_SYSV_ABI atan2f() {
@@ -12033,14 +12033,14 @@ s32 PS4_SYSV_ABI copysignl() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI cos() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI cos(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::cos(x);
 }
 
-s32 PS4_SYSV_ABI cosf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI cosf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::cosf(x);
 }
 
 s32 PS4_SYSV_ABI cosh() {
@@ -12188,29 +12188,29 @@ s32 PS4_SYSV_ABI exit() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI exp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI exp(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::exp(x);
 }
 
-s32 PS4_SYSV_ABI exp2() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI exp2(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::exp2(x);
 }
 
-s32 PS4_SYSV_ABI exp2f() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI exp2f(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::exp2f(x);
 }
 
-s32 PS4_SYSV_ABI exp2l() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI exp2l(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::exp2l(x);
 }
 
-s32 PS4_SYSV_ABI expf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI expf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::expf(x);
 }
 
 s32 PS4_SYSV_ABI expl() {
@@ -13188,9 +13188,9 @@ s32 PS4_SYSV_ABI log10() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI log10f() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI log10f(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::log10f(x);
 }
 
 s32 PS4_SYSV_ABI log10l() {
@@ -13413,19 +13413,24 @@ s32 PS4_SYSV_ABI memchr() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI memcmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI memcmp(const void* s1, const void* s2, size_t n) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::memcmp(s1, s2, n);
 }
 
-s32 PS4_SYSV_ABI memcpy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void* PS4_SYSV_ABI memcpy(void* dest, const void* src, size_t n) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::memcpy(dest, src, n);
 }
 
-s32 PS4_SYSV_ABI memcpy_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI memcpy_s(void* dest, size_t destsz, const void* src, size_t count) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+#ifdef _WIN64
+    return memcpy_s(dest, destsz, src, count);
+#else
+    std::memcpy(dest, src, count);
+    return 0; // ALL OK
+#endif
 }
 
 s32 PS4_SYSV_ABI memmove() {
@@ -13443,9 +13448,9 @@ s32 PS4_SYSV_ABI memrchr() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI memset() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void* PS4_SYSV_ABI memset(void* s, int c, size_t n) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::memset(s, c, n);
 }
 
 s32 PS4_SYSV_ABI memset_s() {
@@ -13698,14 +13703,14 @@ s32 PS4_SYSV_ABI posix_spawnp() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI pow() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI pow(double x, double y) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::pow(x, y);
 }
 
-s32 PS4_SYSV_ABI powf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI powf(float x, float y) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::powf(x, y);
 }
 
 s32 PS4_SYSV_ABI powl() {
@@ -14268,44 +14273,46 @@ s32 PS4_SYSV_ABI sigvec() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sin() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI sin(double x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sin(x);
 }
 
-s32 PS4_SYSV_ABI sincos() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sincos(double x, double* sinp, double* cosp) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    *sinp = std::sin(x);
+    *cosp = std::cos(x);
 }
 
-s32 PS4_SYSV_ABI sincosf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sincosf(double x, double* sinp, double* cosp) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    *sinp = std::sinf(x);
+    *cosp = std::cosf(x);
 }
 
-s32 PS4_SYSV_ABI sinf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI sinf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sinf(x);
 }
 
-s32 PS4_SYSV_ABI sinh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI sinh(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sinh(x);
 }
 
-s32 PS4_SYSV_ABI sinhf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI sinhf(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sinhf(x);
 }
 
-s32 PS4_SYSV_ABI sinhl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI sinhl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sinhl(x);
 }
 
-s32 PS4_SYSV_ABI sinl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI sinl(float x) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::sinl(x);
 }
 
 s32 PS4_SYSV_ABI snprintf() {
@@ -14408,9 +14415,9 @@ s32 PS4_SYSV_ABI strcasecmp() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strcat() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strcat(char* dest, const char* src) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strcat(dest, src);
 }
 
 s32 PS4_SYSV_ABI strcat_s() {
@@ -14418,14 +14425,14 @@ s32 PS4_SYSV_ABI strcat_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strchr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI strchr(const char* str, int c) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strchr(str, c);
 }
 
-s32 PS4_SYSV_ABI strcmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strcmp(const char* str1, const char* str2) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strcmp(str1, str2);
 }
 
 s32 PS4_SYSV_ABI strcoll() {
@@ -14488,9 +14495,9 @@ s32 PS4_SYSV_ABI strlcpy() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strlen() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+size_t PS4_SYSV_ABI strlen(const char* str) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strlen(str);
 }
 
 s32 PS4_SYSV_ABI strncasecmp() {
@@ -14508,19 +14515,24 @@ s32 PS4_SYSV_ABI strncat_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strncmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strncmp(const char* str1, const char* str2, size_t num) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strncmp(str1, str2, num);
 }
 
-s32 PS4_SYSV_ABI strncpy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strncpy(char* dest, const char* src, std::size_t count) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strncpy(dest, src, count);
 }
 
-s32 PS4_SYSV_ABI strncpy_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strncpy_s(char* dest, size_t destsz, const char* src, size_t count) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+#ifdef _WIN64
+    return strncpy_s(dest, destsz, src, count);
+#else
+    std::strcpy(dest, src);
+    return 0;
+#endif
 }
 
 s32 PS4_SYSV_ABI strndup() {
@@ -14868,9 +14880,34 @@ s32 PS4_SYSV_ABI vfwscanf_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI vprintf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI vprintf(const char *format, va_list args) {
+    // Copy the va_list because vsnprintf consumes it
+    va_list args_copy;
+    va_copy(args_copy, args);
+
+    // Calculate the required buffer size
+    int size = std::vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+
+    if (size < 0) {
+        // Handle vsnprintf error
+        LOG_ERROR(Lib_LibcInternal, "vsnprintf failed to calculate size");
+        return size;
+    }
+
+    // Create a string with the required size
+    std::string buffer(size, '\0');
+
+    // Format the string into the buffer
+    int result = std::vsnprintf(buffer.data(), buffer.size() + 1, format, args); // +1 for null terminator
+    if (result >= 0) {
+        // Log the formatted result
+        LOG_INFO(Lib_LibcInternal, "{}", buffer);
+    } else {
+        LOG_ERROR(Lib_LibcInternal, "vsnprintf failed during formatting");
+    }
+
+    return result;
 }
 
 s32 PS4_SYSV_ABI vprintf_s() {
