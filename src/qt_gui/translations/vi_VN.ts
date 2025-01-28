@@ -710,7 +710,7 @@
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Enable RenderDoc Debugging</translation>
+			<translation>Copy GPU Buffers</translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
