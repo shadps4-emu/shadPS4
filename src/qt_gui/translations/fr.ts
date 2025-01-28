@@ -186,7 +186,7 @@
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>Cette fonctionnalité nécessite 'Dossier séparé pour les mises à jour' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Cette fonctionnalité nécessite l'option 'Dossier séparé pour les mises à jour' pour fonctionner. Si vous voulez utiliser cette fonctionnalité, veuillez l'activer.</translation>
 		</message>
 		<message>
 			<source>This game has no update to delete!</source>
