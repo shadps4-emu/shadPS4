@@ -30,15 +30,15 @@ struct InflateResult {
     s32 status;
 };
 
-Kernel::Thread task_thread;
+static Kernel::Thread task_thread;
 
-std::mutex mutex;
-std::queue<InflateTask> task_queue;
-std::condition_variable_any task_queue_cv;
-std::queue<u64> done_queue;
-std::condition_variable_any done_queue_cv;
-std::unordered_map<u64, InflateResult> results;
-u64 next_request_id;
+static std::mutex mutex;
+static std::queue<InflateTask> task_queue;
+static std::condition_variable_any task_queue_cv;
+static std::queue<u64> done_queue;
+static std::condition_variable_any done_queue_cv;
+static std::unordered_map<u64, InflateResult> results;
+static u64 next_request_id;
 
 void ZlibTaskThread(const std::stop_token& stop) {
     Common::SetCurrentThreadName("shadPS4:ZlibTaskThread");
