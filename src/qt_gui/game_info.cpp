@@ -7,6 +7,25 @@
 #include "compatibility_info.h"
 #include "game_info.h"
 
+void ScanDirectoryRecursively(const QString& dir, QStringList& filePaths) {
+    QDir directory(dir);
+    QFileInfoList entries = directory.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+    
+    for (const auto& entry : entries) {
+        if (entry.fileName().endsWith("-UPDATE")) {
+            continue;
+        }
+        
+        // Check if this directory contains a PS4 game (has sce_sys/param.sfo)
+        if (QFile::exists(entry.filePath() + "/sce_sys/param.sfo")) {
+            filePaths.append(entry.absoluteFilePath());
+        } else {
+            // If not a game directory, recursively scan it
+            ScanDirectoryRecursively(entry.absoluteFilePath(), filePaths);
+        }
+    }
+}
+
 GameInfoClass::GameInfoClass() = default;
 GameInfoClass::~GameInfoClass() = default;
 
@@ -15,13 +34,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
     for (const auto& installLoc : Config::getGameInstallDirs()) {
         QString installDir;
         Common::FS::PathToQString(installDir, installLoc);
-        QDir parentFolder(installDir);
-        QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const auto& fileInfo : fileList) {
-            if (fileInfo.isDir() && !fileInfo.filePath().endsWith("-UPDATE")) {
-                filePaths.append(fileInfo.absoluteFilePath());
-            }
-        }
+        ScanDirectoryRecursively(installDir, filePaths);
     }
 
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
