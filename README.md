@@ -85,7 +85,7 @@ F12 | | Trigger RenderDoc Capture |
 
 > [!NOTE]
 > These functions are for the default keyboard mappings of the corresponding OS only.
-Xbox and DualShock controllers work out of the box.
+|Xbox and DualShock controllers work out of the box.
 
 | Controller button | Keyboard equivelant | Mac alternative |
 |-------------|-------------|--------------|
