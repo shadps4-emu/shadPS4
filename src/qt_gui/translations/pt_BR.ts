@@ -574,7 +574,7 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Chave de Troféu</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
@@ -594,7 +594,7 @@
 		</message>
 		<message>
 			<source>Open Log Location</source>
-			<translation>Abrir local do log</translation>
+			<translation>Abrir local do registro</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -698,11 +698,11 @@
 		</message>
 		<message>
 			<source>Enable RenderDoc Debugging</source>
-			<translation>Habilitar depuração do RenderDoc</translation>
+			<translation>Habilitar Depuração do RenderDoc</translation>
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Habilitar diagnóstico de falhas</translation>
+			<translation>Habilitar Diagnóstico de Falhas</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
@@ -714,11 +714,11 @@
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Marcadores de depuração do host</translation>
+			<translation>Marcadores de Depuração do Host</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Marcadores de depuração do convidado</translation>
+			<translation>Marcadores de Depuração do Convidado</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -954,7 +954,7 @@
 		</message>
 		<message>
 			<source>rdocCheckBox</source>
-			<translation>Habilitar depuração por RenderDoc:\nSe ativado, permite que o emulador tenha compatibilidade com RenderDoc para gravação e análise do quadro renderizado atual.</translation>
+			<translation>Habilitar Depuração por RenderDoc:\nSe ativado, permite que o emulador tenha compatibilidade com RenderDoc para gravação e análise do quadro renderizado atual.</translation>
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
@@ -970,11 +970,11 @@
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Insere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o Crash Diagnostics.\nÚtil para programas como o RenderDoc.</translation>
+			<translation>Insere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Insere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar o Crash Diagnostics.\nÚtil para programas como o RenderDoc.</translation>
+			<translation>Insere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
