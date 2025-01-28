@@ -76,12 +76,12 @@ For more information on how to test, debug and report issues with the emulator o
 
 # Keyboard mapping
 
-| Button | Function |
-|-------------|-------------|
-F10 | FPS Counter
-Ctrl+F10 | Video Debug Info
-F11 | Fullscreen
-F12 | Trigger RenderDoc Capture
+| Button | Function | Mac alternative |
+|-------------|-------------|--------------|
+F10 | FPS Counter | fn+F10
+Ctrl+F10 | Video Debug Info |
+F11 | Fullscreen |
+F12 | Trigger RenderDoc Capture |
 
 > [!NOTE]
 > Xbox and DualShock controllers work out of the box.
