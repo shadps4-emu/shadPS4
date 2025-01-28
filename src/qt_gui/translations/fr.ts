@@ -1232,7 +1232,7 @@
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Le jeu peut être terminé avec des performances acceptables et sans problèmes majeurs </translation>
+			<translation>Le jeu peut être terminé avec des performances acceptables et sans problèmes majeurs</translation>
 		</message>
 	</context>
 	<context>
