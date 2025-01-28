@@ -958,23 +958,23 @@
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
-			<translation>Você precisa habilitar isso para editar shaders com o menu de depuração (Ctrl + F10).</translation>
+			<translation>Coletar Shaders:\nVocê precisa habilitar isso para editar shaders com o menu de depuração (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Cria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depurar erros de 'Device lost'. Se você tiver isso habilitado, você deve habilitar os Marcadores de Depuração de Host e de Convidado.\nNão funciona em GPUs da Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o SDK do Vulkan para que isso funcione.</translation>
+			<translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depurar erros de 'Device lost'. Se você tiver isso habilitado, você deve habilitar os Marcadores de Depuração de Host e de Convidado.\nNão funciona em GPUs da Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o SDK do Vulkan para que isso funcione.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Contorna condições de corrida envolvendo envios de GPU.\nPode ou não ajudar com travamentos do PM4 tipo 0.</translation>
+			<translation>Copiar Buffers de GPU:\nContorna condições de corrida envolvendo envios de GPU.\nPode ou não ajudar com travamentos do PM4 tipo 0.</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Insere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
+			<translation>Marcadores de Depuração de Host:\nInsere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Insere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
+			<translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
