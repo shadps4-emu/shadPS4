@@ -152,7 +152,7 @@ void WorkerLoop() {
             g_job_list.pop_front();
             g_job_list_mtx.unlock();
 
-            if (Config::vkCrashDiagnosticEnabled()) {
+            if (Config::getVkCrashDiagnosticEnabled()) {
                 // FIXME: Crash diagnostic hangs when building the command buffer here
                 continue;
             }

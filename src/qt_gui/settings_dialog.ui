@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>600</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>535</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -476,15 +476,15 @@
        <bool>true</bool>
       </property>
       <attribute name="title">
-       <string>Gui</string>
+       <string>GUI</string>
       </attribute>
       <widget class="QWidget" name="guiTabContents">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>676</width>
+         <height>381</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -546,7 +546,7 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>Gui</string>
+                      <string>GUI</string>
                      </property>
                     </item>
                     <item>
@@ -809,8 +809,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>563</width>
+         <height>143</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1053,8 +1053,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>244</width>
+         <height>295</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0,1">
@@ -1197,8 +1197,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>475</width>
+         <height>253</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1481,8 +1481,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>216</width>
+         <height>256</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1571,11 +1571,11 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>386</height>
+         <width>534</width>
+         <height>477</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <property name="leftMargin">
@@ -1585,7 +1585,7 @@
            <number>0</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="1">
+           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="0">
             <item>
              <widget class="QGroupBox" name="debugTabGroupBox">
               <property name="enabled">
@@ -1728,20 +1728,57 @@
          </layout>
         </item>
         <item>
-         <spacer name="debugTabSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
+         <widget class="QGroupBox" name="advancedGroupBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          <property name="title">
+           <string>Advanced</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
           </property>
-         </spacer>
+          <layout class="QVBoxLayout" name="advancedLayout">
+           <item>
+            <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+             <property name="text">
+              <string>Enable Crash Diagnostics</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="collectShaderCheckBox">
+             <property name="text">
+              <string>Collect Shaders</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+             <property name="text">
+              <string>Copy GPU Buffers</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="hostMarkersCheckBox">
+             <property name="text">
+              <string>Host Debug Markers</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="guestMarkersCheckBox">
+             <property name="text">
+              <string>Guest Debug Markers</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>

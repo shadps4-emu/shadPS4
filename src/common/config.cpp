@@ -267,18 +267,28 @@ bool vkValidationGpuEnabled() {
     return vkValidationGpu;
 }
 
-bool vkCrashDiagnosticEnabled() {
+bool getVkCrashDiagnosticEnabled() {
     return vkCrashDiagnostic;
 }
 
-bool vkHostMarkersEnabled() {
-    // Forced on when crash diagnostic enabled.
-    return vkHostMarkers || vkCrashDiagnostic;
+bool getVkHostMarkersEnabled() {
+    return vkHostMarkers;
 }
 
-bool vkGuestMarkersEnabled() {
-    // Forced on when crash diagnostic enabled.
-    return vkGuestMarkers || vkCrashDiagnostic;
+bool getVkGuestMarkersEnabled() {
+    return vkGuestMarkers;
+}
+
+void setVkCrashDiagnosticEnabled(bool enable) {
+    vkCrashDiagnostic = enable;
+}
+
+void setVkHostMarkersEnabled(bool enable) {
+    vkHostMarkers = enable;
+}
+
+void setVkGuestMarkersEnabled(bool enable) {
+    vkGuestMarkers = enable;
 }
 
 bool getSeparateUpdateEnabled() {
