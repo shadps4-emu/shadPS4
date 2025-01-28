@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <csetjmp>
 #include <cstdarg>
 #include <cstdio>
+#include <string>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -13433,8 +13435,9 @@ s32 PS4_SYSV_ABI memcpy_s(void* dest, size_t destsz, const void* src, size_t cou
 #endif
 }
 
-s32 PS4_SYSV_ABI memmove() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+s32 PS4_SYSV_ABI memmove(void* d, void* s, size_t n) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    std::memmove(d, s, n);
     return ORBIS_OK;
 }
 
@@ -14213,9 +14216,9 @@ s32 PS4_SYSV_ABI setenv() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI setjmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI setjmp(std::jmp_buf* buf) {
+    LOG_ERROR(Lib_LibcInternal, "(TEST) called");
+    return setjmp(buf); // todo this feels platform specific but maybe not
 }
 
 s32 PS4_SYSV_ABI setlocale() {
@@ -14315,9 +14318,38 @@ float PS4_SYSV_ABI sinl(float x) {
     return std::sinl(x);
 }
 
-s32 PS4_SYSV_ABI snprintf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI snprintf(char* s, size_t n, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    // Calculate the required buffer size
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int size = std::vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+
+    if (size < 0) {
+        // Handle vsnprintf error
+        LOG_ERROR(Lib_LibcInternal, "vsnprintf failed to calculate size");
+        return size;
+    }
+
+    // Ensure that the size doesn't exceed the given buffer size
+    size = std::min(size, static_cast<int>(n - 1)); // -1 to leave space for null terminator
+
+    // Format the string into the provided buffer
+    int result = std::vsnprintf(s, n, format, args);
+    if (result >= 0) {
+        // Null-terminate the buffer manually if needed
+        s[size] = '\0';  // Ensures that s is null-terminated
+        LOG_DEBUG(Lib_LibcInternal, "Formatted result: {}", s);
+    } else {
+        LOG_ERROR(Lib_LibcInternal, "vsnprintf failed during formatting");
+    }
+
+    va_end(args);
+
+    return result;
 }
 
 s32 PS4_SYSV_ABI snprintf_s() {
@@ -14410,9 +14442,13 @@ s32 PS4_SYSV_ABI stpcpy() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strcasecmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strcasecmp(const char* str1, const char* str2) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+#ifdef _WIN32
+    return _stricmp(str1, str2);
+#else
+    return strcasecmp(str1, str2);
+#endif
 }
 
 char* PS4_SYSV_ABI strcat(char* dest, const char* src) {
@@ -14440,19 +14476,19 @@ s32 PS4_SYSV_ABI strcoll() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strcpy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strcpy(char* dest, const char* src) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strcpy(dest, src);
 }
 
-s32 PS4_SYSV_ABI strcpy_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strcpy_s(char* dest, u64 len, const char* src) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strncpy(dest, src, len);
 }
 
-s32 PS4_SYSV_ABI strcspn() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strcspn(const char* str1, const char* str2) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strcspn(str1, str2);
 }
 
 s32 PS4_SYSV_ABI strdup() {
@@ -14500,9 +14536,13 @@ size_t PS4_SYSV_ABI strlen(const char* str) {
     return std::strlen(str);
 }
 
-s32 PS4_SYSV_ABI strncasecmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strncasecmp(const char* str1, const char* str2, size_t num) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+#ifdef _WIN32
+    return _strnicmp(str1, str2, num);
+#else
+    return strncasecmp(str1, str2, num);
+#endif
 }
 
 s32 PS4_SYSV_ABI strncat() {
@@ -14540,9 +14580,9 @@ s32 PS4_SYSV_ABI strndup() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strnlen() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strnlen(const char* str, size_t maxlen) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::min(std::strlen(str), maxlen);
 }
 
 s32 PS4_SYSV_ABI strnlen_s() {
@@ -14555,39 +14595,47 @@ s32 PS4_SYSV_ABI strnstr() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI strpbrk() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI strpbrk(const char* str1, const char* str2) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strpbrk(str1, str2);
 }
 
-s32 PS4_SYSV_ABI strrchr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI strrchr(const char* str, int c) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strrchr(str, c);
 }
 
-s32 PS4_SYSV_ABI strsep() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strsep(char** strp, const char* delim) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+#ifdef _GNU_SOURCE
+    return strsep(strp, delim);
+#else
+    if (!*strp) return nullptr;
+    char* token = *strp;
+    *strp = std::strpbrk(token, delim);
+    if (*strp) *(*strp)++ = '\0';
+    return token;
+#endif
 }
 
-s32 PS4_SYSV_ABI strspn() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI strspn(const char* str1, const char* str2) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strspn(str1, str2);
 }
 
-s32 PS4_SYSV_ABI strstr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI strstr(char* h, char* n) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strstr(h, n);
 }
 
-s32 PS4_SYSV_ABI strtod() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+double PS4_SYSV_ABI strtod(const char* str, char** endptr) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strtod(str, endptr);
 }
 
-s32 PS4_SYSV_ABI strtof() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+float PS4_SYSV_ABI strtof(const char* str, char** endptr) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::strtof(str, endptr);
 }
 
 s32 PS4_SYSV_ABI strtoimax() {
