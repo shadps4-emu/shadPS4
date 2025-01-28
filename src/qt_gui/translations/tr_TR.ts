@@ -546,7 +546,7 @@
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Ayrı Güncelleme Klasörünü Etkinleştir</translation>
 		</message>
 		<message>
 			<source>Default tab when opening settings</source>
@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Göster oyun boyutunu listede</translation>
+			<translation>Oyun Boyutunu Listede Göster</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Kupa Anahtarı</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Kupa</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -722,7 +722,7 @@
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Kupa Açılır Pencerelerini Devre Dışı Bırak</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -730,23 +730,23 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Başlangıçta Uyumluluk Veritabanını Güncelle</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Oyun Uyumluluğu</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Uyumluluk Verilerini Göster</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Uyumluluk Veritabanını Güncelle</translation>
 		</message>
 		<message>
 			<source>Volume</source>
-			<translation>Ses seviyesi</translation>
+			<translation>Ses Seviyesi</translation>
 		</message>
 		<message>
 			<source>Audio Backend</source>
@@ -1105,11 +1105,11 @@
 		</message>
 		<message>
 			<source>The game is in version: %1</source>
-			<translation>Oyun sürümde: %1</translation>
+			<translation>Oyun sürümü: %1</translation>
 		</message>
 		<message>
 			<source>The downloaded patch only works on version: %1</source>
-			<translation>İndirilen yamanın sadece sürümde çalışıyor: %1</translation>
+			<translation>İndirilen yama sadece şu sürümde çalışıyor: %1</translation>
 		</message>
 		<message>
 			<source>You may need to update your game.</source>
@@ -1168,7 +1168,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Uyumluluk</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1196,35 +1196,35 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Hiç Oynanmadı</translation>
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>sa</translation>
 		</message>
 		<message>
 			<source>m</source>
-			<translation>m</translation>
+			<translation>dk</translation>
 		</message>
 		<message>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>sn</translation>
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Uyumluluk test edilmemiş</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Oyun düzgün bir şekilde başlatılamıyor / emülatörü çökertiyor</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Oyun başlatılabiliyor ancak yalnızca boş bir ekran gösteriyor</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Oyun bir resim gösteriyor ancak menüleri geçemiyor</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
@@ -1232,7 +1232,7 @@
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Oyun, oynanabilir performansla tamamlanabilir ve büyük aksaklık yok</translation>
 		</message>
 	</context>
 	<context>
@@ -1267,7 +1267,7 @@
 		</message>
 		<message>
 			<source>Your version is already up to date!</source>
-			<translation>Versiyonunuz zaten güncel!</translation>
+			<translation>Sürümünüz zaten güncel!</translation>
 		</message>
 		<message>
 			<source>Update Available</source>
@@ -1279,11 +1279,11 @@
 		</message>
 		<message>
 			<source>Current Version</source>
-			<translation>Mevcut Versiyon</translation>
+			<translation>Mevcut Sürüm</translation>
 		</message>
 		<message>
 			<source>Latest Version</source>
-			<translation>Son Versiyon</translation>
+			<translation>Son Sürüm</translation>
 		</message>
 		<message>
 			<source>Do you want to update?</source>
@@ -1335,7 +1335,7 @@
 		</message>
 		<message>
 			<source>Failed to create the update script file</source>
-			<translation>Güncelleme betiği dosyası oluşturulamadı</translation>
+			<translation>Güncelleme komut dosyası oluşturulamadı</translation>
 		</message>
 	</context>
 	<context>
