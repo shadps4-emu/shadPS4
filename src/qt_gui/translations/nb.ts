@@ -98,7 +98,7 @@
 		</message>
 		<message>
 			<source>Open Folder...</source>
-			<translation>Åpne mappen...</translation>
+			<translation>Åpne mappe...</translation>
 		</message>
 		<message>
 			<source>Open Game Folder</source>
@@ -126,7 +126,7 @@
 		</message>
 		<message>
 			<source>Copy All</source>
-			<translation>Kopier alle</translation>
+			<translation>Kopier alt</translation>
 		</message>
 		<message>
 			<source>Delete...</source>
@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Kompatibilitet...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Oppdater database</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Vis rapport</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Send inn en rapport</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Trofénøkkel</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofé</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -658,7 +658,7 @@
 		</message>
 		<message>
 			<source>Enable Shaders Dumping</source>
-			<translation>Aktiver dumping av skyggelegger</translation>
+			<translation>Aktiver skyggeleggerdumping</translation>
 		</message>
 		<message>
 			<source>Enable NULL GPU</source>
@@ -666,7 +666,7 @@
 		</message>
 		<message>
 			<source>Paths</source>
-			<translation>Stier</translation>
+			<translation>Mapper</translation>
 		</message>
 		<message>
 			<source>Game Folders</source>
@@ -686,7 +686,7 @@
 		</message>
 		<message>
 			<source>Enable Debug Dumping</source>
-			<translation>Aktiver dumping av feilretting</translation>
+			<translation>Aktiver feilrettingsdumping</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
@@ -718,7 +718,7 @@
 		</message>
 		<message>
 			<source>GUI Settings</source>
-			<translation>GUI-innstillinger</translation>
+			<translation>Grensesnitt-innstillinger</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -730,7 +730,7 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Oppdater kompatibilitets-database ved oppstart</translation>
+			<translation>Oppdater database ved oppstart</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
@@ -750,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Lydsystem</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -806,7 +806,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Trofénøkkel:\nNøkkel brukes til å dekryptere trofeer. Må hentes fra din konsoll (jailbroken).\nMå bare inneholde sekskantede tegn.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -846,7 +846,7 @@
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
+			<translation>Oppdater database ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
@@ -894,7 +894,7 @@
 		</message>
 		<message>
 			<source>dumpShadersCheckBox</source>
-			<translation>Aktiver dumping av skyggelegger:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
+			<translation>Aktiver skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
 		</message>
 		<message>
 			<source>nullGpuCheckBox</source>
@@ -914,7 +914,7 @@
 		</message>
 		<message>
 			<source>debugDump</source>
-			<translation>Aktiver dumping av feilsøking:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
+			<translation>Aktiver feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
@@ -1188,7 +1188,7 @@
 		</message>
 		<message>
 			<source>Path</source>
-			<translation>Sti</translation>
+			<translation>Adresse</translation>
 		</message>
 		<message>
 			<source>Play Time</source>
@@ -1232,7 +1232,7 @@
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Spillet kan fullføres med spillbar ytelse og ingen store feil</translation>
+			<translation>Spillet kan fullføres med spillbar ytelse og uten store feil</translation>
 		</message>
 	</context>
 	<context>
