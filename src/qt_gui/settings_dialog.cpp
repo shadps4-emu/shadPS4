@@ -563,6 +563,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("vkValidationCheckBox");
     } else if (elementName == "vkSyncValidationCheckBox") {
         text = tr("vkSyncValidationCheckBox");
+    } else if (elementName == "rdocCheckBox") {
+        text = tr("rdocCheckBox");
     } else if (elementName == "crashDiagnosticsCheckBox") {
         text = tr("crashDiagnosticsCheckBox");
     } else if (elementName == "guestMarkersCheckBox") {
