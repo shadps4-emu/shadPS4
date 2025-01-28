@@ -54,7 +54,7 @@
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
-#include "core/libraries/zlib/zlib.h"
+#include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
 #include "jpeg/jpegenc.h"
 

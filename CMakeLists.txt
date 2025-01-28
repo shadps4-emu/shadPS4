@@ -441,7 +441,7 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
-             src/core/libraries/zlib/zlib.h
+             src/core/libraries/zlib/zlib_sce.h
              src/core/libraries/zlib/zlib_error.h
 )
 
