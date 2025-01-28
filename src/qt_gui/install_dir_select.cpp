@@ -59,6 +59,10 @@ QWidget* InstallDirSelect::SetupInstallDirList() {
     connect(checkbox, &QCheckBox::toggled, this, &InstallDirSelect::setUseForAllQueued);
     vlayout->addWidget(checkbox);
 
+    auto checkbox2 = new QCheckBox(tr("Delete PKG File on Install"));
+    connect(checkbox2, &QCheckBox::toggled, this, &InstallDirSelect::setDeleteFileOnInstall);
+    vlayout->addWidget(checkbox2);
+
     group->setLayout(vlayout);
     return group;
 }
@@ -74,6 +78,10 @@ void InstallDirSelect::setSelectedDirectory(QListWidgetItem* item) {
 
 void InstallDirSelect::setUseForAllQueued(bool enabled) {
     use_for_all_queued = enabled;
+}
+
+void InstallDirSelect::setDeleteFileOnInstall(bool enabled) {
+    delete_file_on_install = enabled;
 }
 
 QWidget* InstallDirSelect::SetupDialogActions() {
