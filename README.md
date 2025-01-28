@@ -76,12 +76,12 @@ For more information on how to test, debug and report issues with the emulator o
 
 # Keyboard mapping
 
-| Button | Function | Mac alternative |
+| Button | Mac alternative | Function |
 |-------------|-------------|--------------|
-F10 | FPS Counter | fn+F10
-Ctrl+F10 | Video Debug Info |
-F11 | Fullscreen |
-F12 | Trigger RenderDoc Capture |
+F10 | fn+F10 | FPS Counter |
+Ctrl+F10 | | Video Debug Info |
+F11 | | Fullscreen |
+F12 | | Trigger RenderDoc Capture |
 
 > [!NOTE]
 > These functions are for the default keyboard mappings of the corresponding OS only.
