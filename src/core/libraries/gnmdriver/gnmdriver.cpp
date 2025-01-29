@@ -1366,7 +1366,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
     // pointer to a stack memory, so the check will likely fail. To workaround it we will
     // repeat set shader functionality here as it is trivial.
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
-                                     0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
+                                     ps_regs[1]); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
                                      ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c4u, ps_regs[4],

@@ -187,6 +187,14 @@ OPCODE(PackFloat2x16,                                       U32,            F16x
 OPCODE(UnpackFloat2x16,                                     F16x2,          U32,                                                                            )
 OPCODE(PackHalf2x16,                                        U32,            F32x2,                                                                          )
 OPCODE(UnpackHalf2x16,                                      F32x2,          U32,                                                                            )
+OPCODE(PackUnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackSnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackSnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackUint2x16,                                        U32,            U32x2,                                                                          )
+OPCODE(UnpackUint2x16,                                      U32x2,          U32,                                                                            )
+OPCODE(PackSint2x16,                                        U32,            U32x2,                                                                          )
+OPCODE(UnpackSint2x16,                                      U32x2,          U32,                                                                            )
 
 // Floating-point operations
 OPCODE(FPAbs32,                                             F32,            F32,                                                                            )

@@ -362,6 +362,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
                 src/core/libraries/mouse/mouse.cpp
                 src/core/libraries/mouse/mouse.h
+                src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
+                src/core/libraries/web_browser_dialog/webbrowserdialog.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -452,6 +454,13 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_trophy/np_trophy_error.h
             src/core/libraries/np_web_api/np_web_api.cpp
             src/core/libraries/np_web_api/np_web_api.h
+            src/core/libraries/np_party/np_party.cpp
+            src/core/libraries/np_party/np_party.h
+)
+
+set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
+             src/core/libraries/zlib/zlib_sce.h
+             src/core/libraries/zlib/zlib_error.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
@@ -626,6 +635,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
+         ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
          ${FIBER_LIB}

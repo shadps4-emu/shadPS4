@@ -37,8 +37,9 @@ extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) {
 
 void PS4_SYSV_ABI _sceFiberCheckStackOverflow(OrbisFiberContext* ctx) {
     u64* stack_base = reinterpret_cast<u64*>(ctx->current_fiber->addr_context);
+    u64 stack_size = ctx->current_fiber->size_context;
     if (stack_base && *stack_base != kFiberStackSignature) {
-        UNREACHABLE_MSG("Stack overflow detected in fiber.");
+        UNREACHABLE_MSG("Stack overflow detected in fiber with size = 0x{:x}", stack_size);
     }
 }
 
