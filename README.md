@@ -84,8 +84,7 @@ F11 | Fullscreen |
 F12 | Trigger RenderDoc Capture |
 
 > [!NOTE]
-> Xbox and DualShock controllers work out of the box.
-> Some operating systems may require you on default to hold the fn button additionally to the ones listed above to use the said functions, on MacOS only the fps counter of the said functions works though.
+> Xbox and DualShock controllers work out of the box. Some operating systems may require you to hold down the fn key in addition to those listed above in order to use the above functions; however, under MacOS, only the fps counter of the above functions will work.
 
 | Controller button | Keyboard equivelant | Mac alternative |
 |-------------|-------------|--------------|
