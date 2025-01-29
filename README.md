@@ -76,6 +76,9 @@ For more information on how to test, debug and report issues with the emulator o
 
 # Keyboard mapping
 
+> [!NOTE]
+> In some operating systems, the default settings require you to press the fn key together with one of the above keys in order to use their function. On MacOS, however, only the FPS counter works.
+
 | Button | Function |
 |-------------|-------------|
 F10 | FPS Counter |
@@ -84,7 +87,7 @@ F11 | Fullscreen |
 F12 | Trigger RenderDoc Capture |
 
 > [!NOTE]
-> In some operating systems, the default settings require you to press the fn key together with one of the above keys in order to use their function. On MacOS, however, only the FPS counter works. Xbox and DualShock controllers work right out of the box.
+>  Xbox and DualShock controllers work right out of the box.
 
 | Controller button | Keyboard equivelant | Mac alternative |
 |-------------|-------------|--------------|
