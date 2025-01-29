@@ -63,8 +63,8 @@ bool MainWindow::Init() {
                                        Common::g_scm_desc);
         } else {
             std::string remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-            window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::VERSION, remote_host, Common::g_scm_branch,
-                                       Common::g_scm_desc);
+            window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::VERSION, remote_host,
+                                       Common::g_scm_branch, Common::g_scm_desc);
         }
     }
     setWindowTitle(QString::fromStdString(window_title));
