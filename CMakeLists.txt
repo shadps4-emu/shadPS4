@@ -362,6 +362,12 @@ set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal_mspace.h
                  src/core/libraries/libc_internal/libc_internal_io.cpp
                  src/core/libraries/libc_internal/libc_internal_io.h
+                 src/core/libraries/libc_internal/libc_internal_memory.cpp
+                 src/core/libraries/libc_internal/libc_internal_memory.h
+                 src/core/libraries/libc_internal/libc_internal_str.cpp
+                 src/core/libraries/libc_internal/libc_internal_str.h
+                 src/core/libraries/libc_internal/libc_internal_stream.cpp
+                 src/core/libraries/libc_internal/libc_internal_stream.h
 )
 
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
