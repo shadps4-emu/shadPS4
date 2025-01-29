@@ -1,5 +1,5 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-//  SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 #include <memory>
@@ -7,14 +7,14 @@
 
 namespace Core::Devices {
 
-class RandomDevice final : BaseDevice {
+class URandomDevice final : BaseDevice {
     u32 handle;
 
 public:
     static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, int, u16);
-    explicit RandomDevice(u32 handle) : handle(handle) {}
+    explicit URandomDevice(u32 handle) : handle(handle) {}
 
-    ~RandomDevice() override = default;
+    ~URandomDevice() override = default;
 
     int ioctl(u64 cmd, Common::VaCtx* args) override;
     s64 write(const void* buf, size_t nbytes) override;

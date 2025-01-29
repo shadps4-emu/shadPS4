@@ -100,9 +100,21 @@ Emulator::~Emulator() {
 }
 
 void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+    const auto eboot_name = file.filename().string();
+    auto game_folder = file.parent_path();
+    if (const auto game_folder_name = game_folder.filename().string();
+        game_folder_name.ends_with("-UPDATE")) {
+        // If an executable was launched from a separate update directory,
+        // use the base game directory as the game folder.
+        const auto base_name = game_folder_name.substr(0, game_folder_name.size() - 7);
+        const auto base_path = game_folder.parent_path() / base_name;
+        if (std::filesystem::is_directory(base_path)) {
+            game_folder = base_path;
+        }
+    }
+
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto game_folder = file.parent_path();
     mnt->Mount(game_folder, "/app0");
     // Certain games may use /hostapp as well such as CUSA001100
     mnt->Mount(game_folder, "/hostapp");
@@ -223,7 +235,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    const auto eboot_path = mnt->GetHostPath("/app0/" + file.filename().string());
+    const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
     linker->LoadModule(eboot_path);
 
     // check if we have system modules to load

@@ -126,11 +126,11 @@
 		</message>
 		<message>
 			<source>Copy All</source>
-			<translation>Копировать все</translation>
+			<translation>Копировать всё</translation>
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Удаление...</translation>
+			<translation>Удалить...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
@@ -158,7 +158,7 @@
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Отправить отчет</translation>
+			<translation>Отправить отчёт</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -297,7 +297,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Elf</translation>
+			<translation>Исполняемый файл</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -541,8 +541,16 @@
 			<translation>Полноэкранный режим</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Тип полноэкранного режима</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Отдельная папка обновлений</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Вкладка по умолчанию при открытии настроек</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -566,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Ключ трофеев</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Трофеи</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Графика</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Интерфейс</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Пользователь</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -734,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Звуковая Подсистема</translation>
+			<translation>Звуковая подсистема</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -805,12 +821,12 @@
 			<translation>Обновление:\nRelease: Официальные версии, которые выпускаются каждый месяц и могут быть очень старыми, но они более надежные и проверенные.\nNightly: Версии разработки, которые содержат все последние функции и исправления, но могут содержать ошибки и менее стабильны.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Играть заглавную музыку:\nВключает воспроизведение специальной музыки при выборе игры в списке, если она это поддерживает.</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню Просмотр трофеев (правая кнопка мыши по игре в главном окне).</translation>
+			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню просмотра трофеев (правая кнопка мыши по игре в главном окне).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -1176,11 +1192,11 @@
 		</message>
 		<message>
 			<source>Play Time</source>
-			<translation>Времени в игре</translation>
+			<translation>Время в игре</translation>
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Вы не играли</translation>
+			<translation>Нет</translation>
 		</message>
 		<message>
 			<source>h</source>

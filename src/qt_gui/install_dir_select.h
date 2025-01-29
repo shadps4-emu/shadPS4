@@ -22,9 +22,21 @@ public:
         return selected_dir;
     }
 
+    bool useForAllQueued() {
+        return use_for_all_queued;
+    }
+
+    bool deleteFileOnInstall() {
+        return delete_file_on_install;
+    }
+
 private:
     QWidget* SetupInstallDirList();
     QWidget* SetupDialogActions();
     void setSelectedDirectory(QListWidgetItem* item);
+    void setDeleteFileOnInstall(bool enabled);
+    void setUseForAllQueued(bool enabled);
     std::filesystem::path selected_dir;
+    bool delete_file_on_install = false;
+    bool use_for_all_queued = false;
 };

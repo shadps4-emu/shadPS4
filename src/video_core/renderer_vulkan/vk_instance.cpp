@@ -232,7 +232,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 25> enabled_extensions;
+    boost::container::static_vector<const char*, 32> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -283,6 +283,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+    add_extension(VK_EXT_4444_FORMATS_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.

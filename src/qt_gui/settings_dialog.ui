@@ -12,11 +12,11 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>820</height>
+    <height>600</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -52,6 +52,12 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="baseSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -68,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>611</height>
+         <height>386</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -77,14 +83,56 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item row="0" column="0">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item row="0" column="1">
            <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
              <widget class="QGroupBox" name="emulatorSettingsGroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="title">
                <string>Emulator</string>
               </property>
-              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft</set>
+              </property>
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+              <property name="checkable">
+               <bool>false</bool>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsVLayout" stretch="0">
+               <property name="spacing">
+                <number>6</number>
+               </property>
+               <property name="leftMargin">
+                <number>9</number>
+               </property>
+               <property name="topMargin">
+                <number>9</number>
+               </property>
+               <property name="rightMargin">
+                <number>9</number>
+               </property>
+               <property name="bottomMargin">
+                <number>9</number>
+               </property>
                <item>
                 <layout class="QVBoxLayout" name="emulatorverticalLayout">
                  <property name="spacing">
@@ -106,7 +154,7 @@
                     <item>
                      <widget class="QComboBox" name="fullscreenModeComboBox">
                       <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
@@ -149,215 +197,40 @@
                  </item>
                 </layout>
                </item>
-               <item>
-                <layout class="QVBoxLayout" name="vLayoutUserName">
-                 <property name="spacing">
-                  <number>6</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <layout class="QHBoxLayout" name="hLayoutUserName">
-                   <item>
-                    <widget class="QGroupBox" name="userName">
-                     <property name="title">
-                      <string>Username</string>
-                     </property>
-                     <layout class="QVBoxLayout" name="userNameLayout">
-                      <item>
-                       <widget class="QLineEdit" name="userNameLineEdit"/>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </item>
               </layout>
              </widget>
             </item>
            </layout>
           </item>
-          <item row="0" column="1">
-           <layout class="QVBoxLayout" name="GUITabLayoutMiddle" stretch="0">
+          <item row="0" column="0">
+           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
-             <widget class="QGroupBox" name="GUIgroupBox">
+             <widget class="QGroupBox" name="SystemSettings">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="minimumSize">
+              <property name="sizeIncrement">
                <size>
                 <width>0</width>
                 <height>0</height>
                </size>
               </property>
               <property name="title">
-               <string>GUI Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="GUILayout">
-               <property name="topMargin">
-                <number>1</number>
-               </property>
-               <property name="bottomMargin">
-                <number>11</number>
-               </property>
-               <item>
-                <widget class="QCheckBox" name="gameSizeCheckBox">
-                 <property name="text">
-                  <string>Show Game Size In List</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="playBGMCheckBox">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Play title music</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="GUIMusicLayout">
-                 <property name="topMargin">
-                  <number>1</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="label_Volume">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Volume</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSlider" name="BGMVolumeSlider">
-                   <property name="toolTip">
-                    <string>Set the volume of the background music.</string>
-                   </property>
-                   <property name="maximum">
-                    <number>100</number>
-                   </property>
-                   <property name="singleStep">
-                    <number>10</number>
-                   </property>
-                   <property name="pageStep">
-                    <number>20</number>
-                   </property>
-                   <property name="value">
-                    <number>50</number>
-                   </property>
-                   <property name="orientation">
-                    <enum>Qt::Orientation::Horizontal</enum>
-                   </property>
-                   <property name="invertedAppearance">
-                    <bool>false</bool>
-                   </property>
-                   <property name="invertedControls">
-                    <bool>false</bool>
-                   </property>
-                   <property name="tickPosition">
-                    <enum>QSlider::TickPosition::NoTicks</enum>
-                   </property>
-                   <property name="tickInterval">
-                    <number>10</number>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="vLayoutTrophy">
-                 <property name="spacing">
-                  <number>6</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>50</number>
-                 </property>
-                 <item>
-                  <layout class="QHBoxLayout" name="hLayoutTrophy">
-                   <item>
-                    <widget class="QGroupBox" name="trophyGroupBox">
-                     <property name="title">
-                      <string>Trophy</string>
-                     </property>
-                     <layout class="QVBoxLayout" name="userNameLayout">
-                      <item>
-                       <widget class="QCheckBox" name="disableTrophycheckBox">
-                        <property name="text">
-                         <string>Disable Trophy Pop-ups</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLabel" name="label_Trophy">
-                        <property name="text">
-                         <string>Trophy Key</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLineEdit" name="trophyKeyLineEdit">
-                        <property name="minimumSize">
-                         <size>
-                          <width>0</width>
-                          <height>0</height>
-                         </size>
-                        </property>
-                        <property name="font">
-                         <font>
-                          <pointsize>10</pointsize>
-                          <bold>false</bold>
-                         </font>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="1" column="0">
-           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
-            <item>
-             <widget class="QGroupBox" name="SystemSettings">
-              <property name="title">
                <string>System</string>
               </property>
               <layout class="QVBoxLayout" name="emuSettingsLayout">
+               <property name="bottomMargin">
+                <number>70</number>
+               </property>
                <item>
                 <widget class="QGroupBox" name="consoleLanguageGroupBox">
                  <property name="title">
@@ -386,6 +259,45 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item row="1" column="1">
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="2">
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
           <item row="0" column="2">
            <layout class="QVBoxLayout" name="updaterTabLayoutLeft">
@@ -432,16 +344,16 @@
               </property>
               <layout class="QVBoxLayout" name="UpdateLayout" stretch="0,0,0">
                <property name="spacing">
-                <number>10</number>
+                <number>6</number>
                </property>
                <property name="topMargin">
-                <number>1</number>
+                <number>9</number>
                </property>
                <property name="rightMargin">
-                <number>11</number>
+                <number>9</number>
                </property>
                <property name="bottomMargin">
-                <number>190</number>
+                <number>80</number>
                </property>
                <item>
                 <widget class="QGroupBox" name="updaterComboBox">
@@ -508,7 +420,7 @@
                <item>
                 <widget class="QPushButton" name="checkUpdateButton">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -554,8 +466,255 @@
             </item>
            </layout>
           </item>
-          <item row="1" column="1" colspan="2">
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QScrollArea" name="guiTab">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <attribute name="title">
+       <string>Gui</string>
+      </attribute>
+      <widget class="QWidget" name="guiTabContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>946</width>
+         <height>386</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_1">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QVBoxLayout" name="GUITabLayoutMiddle" stretch="0">
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="GUIgroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="title">
+               <string>GUI Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="GUILayout">
+               <property name="topMargin">
+                <number>9</number>
+               </property>
+               <property name="bottomMargin">
+                <number>9</number>
+               </property>
+               <item>
+                <widget class="QGroupBox" name="chooseHomeTabGroupBox">
+                 <property name="title">
+                  <string>Default tab when opening settings</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="settingsLayout">
+                  <item>
+                   <widget class="QComboBox" name="chooseHomeTabComboBox">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>General</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Gui</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Graphics</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>User</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Input</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Paths</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Debug</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="gameSizeCheckBox">
+                 <property name="text">
+                  <string>Show Game Size In List</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="GUIMusicGroupBox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <pointsize>11</pointsize>
+                   <bold>false</bold>
+                   <kerning>true</kerning>
+                  </font>
+                 </property>
+                 <property name="autoFillBackground">
+                  <bool>false</bool>
+                 </property>
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                 <widget class="QSlider" name="BGMVolumeSlider">
+                  <property name="geometry">
+                   <rect>
+                    <x>10</x>
+                    <y>80</y>
+                    <width>416</width>
+                    <height>29</height>
+                   </rect>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="toolTip">
+                   <string>Set the volume of the background music.</string>
+                  </property>
+                  <property name="maximum">
+                   <number>100</number>
+                  </property>
+                  <property name="singleStep">
+                   <number>10</number>
+                  </property>
+                  <property name="pageStep">
+                   <number>20</number>
+                  </property>
+                  <property name="value">
+                   <number>50</number>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Orientation::Horizontal</enum>
+                  </property>
+                  <property name="invertedAppearance">
+                   <bool>false</bool>
+                  </property>
+                  <property name="invertedControls">
+                   <bool>false</bool>
+                  </property>
+                  <property name="tickPosition">
+                   <enum>QSlider::TickPosition::NoTicks</enum>
+                  </property>
+                  <property name="tickInterval">
+                   <number>10</number>
+                  </property>
+                 </widget>
+                 <widget class="QCheckBox" name="playBGMCheckBox">
+                  <property name="geometry">
+                   <rect>
+                    <x>10</x>
+                    <y>22</y>
+                    <width>416</width>
+                    <height>26</height>
+                   </rect>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>Play title music</string>
+                  </property>
+                 </widget>
+                 <widget class="QLabel" name="label_Volume">
+                  <property name="geometry">
+                   <rect>
+                    <x>10</x>
+                    <y>54</y>
+                    <width>416</width>
+                    <height>20</height>
+                   </rect>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Volume</string>
+                  </property>
+                 </widget>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
            <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0">
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>210</number>
+            </property>
             <item>
              <widget class="QGroupBox" name="CompatgroupBox">
               <property name="sizePolicy">
@@ -570,6 +729,12 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="baseSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
               <property name="title">
                <string>Game Compatibility</string>
               </property>
@@ -578,10 +743,10 @@
                 <number>10</number>
                </property>
                <property name="topMargin">
-                <number>1</number>
+                <number>9</number>
                </property>
                <property name="bottomMargin">
-                <number>11</number>
+                <number>9</number>
                </property>
                <item>
                 <widget class="QCheckBox" name="enableCompatibilityCheckBox">
@@ -632,6 +797,394 @@
        </layout>
       </widget>
      </widget>
+     <widget class="QScrollArea" name="graphicsTab">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <attribute name="title">
+       <string>Graphics</string>
+      </attribute>
+      <widget class="QWidget" name="graphicsTabLayout">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>946</width>
+         <height>386</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
+        <item>
+         <layout class="QHBoxLayout" name="graphicsTabHLayout" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="graphicsTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="graphicsAdapterGroupBox">
+              <property name="title">
+               <string>Graphics Device</string>
+              </property>
+              <layout class="QVBoxLayout" name="graphicsAdapterLayout">
+               <item>
+                <widget class="QComboBox" name="graphicsAdapterBox"/>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="nullGpuCheckBox">
+                 <property name="text">
+                  <string>Enable NULL GPU</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetgraphicsBottom" native="true">
+              <layout class="QHBoxLayout" name="widgetgraphicsBottomHLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="verticalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="graphicsTabLayoutMiddle">
+            <item>
+             <layout class="QVBoxLayout" name="layoutResolution">
+              <property name="spacing">
+               <number>6</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="resolutionLayout">
+                <item>
+                 <widget class="QGroupBox" name="widthGroupBox">
+                  <property name="title">
+                   <string>Width</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="widthLayout">
+                   <item>
+                    <widget class="QSpinBox" name="widthSpinBox">
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>1280</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="heightGroupBox">
+                  <property name="title">
+                   <string>Height</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="heightLayout">
+                   <item>
+                    <widget class="QSpinBox" name="heightSpinBox">
+                     <property name="frame">
+                      <bool>true</bool>
+                     </property>
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>720</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="heightDivider">
+                  <property name="title">
+                   <string>Vblank Divider</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="vblankLayout">
+                   <item>
+                    <widget class="QSpinBox" name="vblankSpinBox">
+                     <property name="frame">
+                      <bool>true</bool>
+                     </property>
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>1</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="graphicsTabLayoutRight">
+            <property name="rightMargin">
+             <number>12</number>
+            </property>
+            <property name="bottomMargin">
+             <number>12</number>
+            </property>
+            <item>
+             <spacer name="AdvancedSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="graphicSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QScrollArea" name="userTab">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <attribute name="title">
+       <string>User</string>
+      </attribute>
+      <widget class="QWidget" name="userTabContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>946</width>
+         <height>386</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0,1">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="hLayoutUserName">
+            <item>
+             <widget class="QGroupBox" name="userName">
+              <property name="title">
+               <string>Username</string>
+              </property>
+              <layout class="QVBoxLayout" name="userNameLayout">
+               <item>
+                <widget class="QLineEdit" name="userNameLineEdit"/>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vLayoutTrophy">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>50</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="hLayoutTrophy">
+            <item>
+             <widget class="QGroupBox" name="trophyGroupBox">
+              <property name="title">
+               <string>Trophy</string>
+              </property>
+              <layout class="QVBoxLayout" name="userNameLayout_2">
+               <item>
+                <widget class="QCheckBox" name="disableTrophycheckBox">
+                 <property name="text">
+                  <string>Disable Trophy Pop-ups</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_Trophy">
+                 <property name="text">
+                  <string>Trophy Key</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="trophyKeyLineEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <pointsize>10</pointsize>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="userTabSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
      <widget class="QScrollArea" name="inputTab">
       <property name="widgetResizable">
        <bool>true</bool>
@@ -645,7 +1198,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>605</height>
+         <height>386</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -916,260 +1469,6 @@
        </layout>
       </widget>
      </widget>
-     <widget class="QScrollArea" name="graphicsTab">
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <attribute name="title">
-       <string>Graphics</string>
-      </attribute>
-      <widget class="QWidget" name="graphicsTabLayout">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>946</width>
-         <height>605</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
-        <item>
-         <layout class="QHBoxLayout" name="graphicsTabHLayout" stretch="1,1,1">
-          <item>
-           <layout class="QVBoxLayout" name="graphicsTabLayoutLeft">
-            <item>
-             <widget class="QGroupBox" name="graphicsAdapterGroupBox">
-              <property name="title">
-               <string>Graphics Device</string>
-              </property>
-              <layout class="QVBoxLayout" name="graphicsAdapterLayout">
-               <item>
-                <widget class="QComboBox" name="graphicsAdapterBox"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="widgetgraphicsBottom" native="true">
-              <layout class="QHBoxLayout" name="widgetgraphicsBottomHLayout">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="graphicsTabLayoutMiddle">
-            <item>
-             <layout class="QVBoxLayout" name="layoutResolution">
-              <property name="spacing">
-               <number>6</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <layout class="QHBoxLayout" name="resolutionLayout">
-                <item>
-                 <widget class="QGroupBox" name="widthGroupBox">
-                  <property name="title">
-                   <string>Width</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="widthLayout">
-                   <item>
-                    <widget class="QSpinBox" name="widthSpinBox">
-                     <property name="accelerated">
-                      <bool>true</bool>
-                     </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
-                     </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>1280</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="heightGroupBox">
-                  <property name="title">
-                   <string>Height</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="heightLayout">
-                   <item>
-                    <widget class="QSpinBox" name="heightSpinBox">
-                     <property name="frame">
-                      <bool>true</bool>
-                     </property>
-                     <property name="accelerated">
-                      <bool>true</bool>
-                     </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
-                     </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>720</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="vLayoutVblank">
-              <property name="spacing">
-               <number>6</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <layout class="QHBoxLayout" name="hLayoutVblank">
-                <item>
-                 <widget class="QGroupBox" name="heightDivider">
-                  <property name="title">
-                   <string>Vblank Divider</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="vblankLayout">
-                   <item>
-                    <widget class="QSpinBox" name="vblankSpinBox">
-                     <property name="frame">
-                      <bool>true</bool>
-                     </property>
-                     <property name="accelerated">
-                      <bool>true</bool>
-                     </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
-                     </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>1</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="graphicsTabLayoutRight">
-            <property name="rightMargin">
-             <number>12</number>
-            </property>
-            <property name="bottomMargin">
-             <number>12</number>
-            </property>
-            <item>
-             <widget class="QGroupBox" name="additionalSettingsGroupBox">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="title">
-               <string>Advanced</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-              </property>
-              <layout class="QVBoxLayout" name="additionalSettingsLayout">
-               <item>
-                <widget class="QCheckBox" name="dumpShadersCheckBox">
-                 <property name="text">
-                  <string>Enable Shaders Dumping</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="nullGpuCheckBox">
-                 <property name="text">
-                  <string>Enable NULL GPU</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <spacer name="AdvancedSpacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="graphicSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </widget>
      <widget class="QScrollArea" name="pathsTab">
       <property name="widgetResizable">
        <bool>true</bool>
@@ -1183,46 +1482,79 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>605</height>
+         <height>386</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="pathsTabLayout" stretch="0">
+       <layout class="QVBoxLayout" name="pathsTabLayout">
         <item>
-         <layout class="QHBoxLayout" name="pathsTabVLayout">
-          <item>
-           <widget class="QGroupBox" name="gameFoldersGroupBox">
-            <property name="title">
-             <string>Game Folders</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout">
+         <widget class="QGroupBox" name="gameFoldersGroupBox">
+          <property name="title">
+           <string>Game Folders</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout">
-               <property name="topMargin">
-                <number>0</number>
+              <widget class="QPushButton" name="addFolderButton">
+               <property name="text">
+                <string>Add...</string>
                </property>
-               <item>
-                <widget class="QPushButton" name="addFolderButton">
-                 <property name="text">
-                  <string>Add...</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="removeFolderButton">
-                 <property name="text">
-                  <string>Remove</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              </widget>
              </item>
              <item>
-              <widget class="QListWidget" name="gameFoldersListWidget"/>
+              <widget class="QPushButton" name="removeFolderButton">
+               <property name="text">
+                <string>Remove</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
              </item>
             </layout>
-           </widget>
-          </item>
-         </layout>
+           </item>
+           <item>
+            <widget class="QListWidget" name="gameFoldersListWidget"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="saveDataGroupBox">
+          <property name="title">
+           <string>Save Data Path</string>
+          </property>
+          <layout class="QVBoxLayout" name="saveDataLayout">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QLineEdit" name="currentSaveDataPath">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="browseButton">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -1240,12 +1572,12 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>586</height>
+         <height>386</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -1266,6 +1598,13 @@
                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
               </property>
               <layout class="QVBoxLayout" name="debugTabLayout">
+               <item>
+                <widget class="QCheckBox" name="dumpShadersCheckBox">
+                 <property name="text">
+                  <string>Enable Shaders Dumping</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QCheckBox" name="debugDump">
                  <property name="text">

@@ -14,14 +14,17 @@ class ShaderList {
     struct Selection {
         explicit Selection(int index);
         ~Selection();
+        Selection(const Selection& other) = delete;
+        Selection(Selection&& other) noexcept;
+        Selection& operator=(Selection other);
 
         void ReloadShader(DebugStateType::ShaderDump& value);
 
         bool DrawShader(DebugStateType::ShaderDump& value);
 
-        int index;
-        TextEditor isa_editor{};
-        TextEditor glsl_editor{};
+        int index{-1};
+        std::unique_ptr<TextEditor> isa_editor{};
+        std::unique_ptr<TextEditor> glsl_editor{};
         bool open = true;
         bool showing_bin = false;
 

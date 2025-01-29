@@ -541,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Chế độ Toàn màn hình</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Tab mặc định khi mở cài đặt</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Giao diện</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Người dùng</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Cập nhật:\nRelease: Các phiên bản chính thức được phát hành hàng tháng; có thể khá cũ nhưng đáng tin cậy hơn và đã được thử nghiệm.\nNightly: Các phiên bản phát triển có tất cả các tính năng và sửa lỗi mới nhất; có thể có lỗi và ít ổn định hơn.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Phát nhạc tiêu đề trò chơi:\nNếu một trò chơi hỗ trợ điều này, hãy kích hoạt phát nhạc đặc biệt khi bạn chọn trò chơi trong GUI.</translation>
 		</message>
 		<message>

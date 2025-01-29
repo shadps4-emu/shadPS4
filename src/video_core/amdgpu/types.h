@@ -200,10 +200,10 @@ enum class NumberConversion : u32 {
 };
 
 struct CompMapping {
-    CompSwizzle r : 3;
-    CompSwizzle g : 3;
-    CompSwizzle b : 3;
-    CompSwizzle a : 3;
+    CompSwizzle r;
+    CompSwizzle g;
+    CompSwizzle b;
+    CompSwizzle a;
 
     auto operator<=>(const CompMapping& other) const = default;
 
@@ -215,6 +215,15 @@ struct CompMapping {
             ApplySingle(data, b),
             ApplySingle(data, a),
         };
+    }
+
+    [[nodiscard]] CompMapping Inverse() const {
+        CompMapping result{};
+        InverseSingle(result.r, CompSwizzle::Red);
+        InverseSingle(result.g, CompSwizzle::Green);
+        InverseSingle(result.b, CompSwizzle::Blue);
+        InverseSingle(result.a, CompSwizzle::Alpha);
+        return result;
     }
 
 private:
@@ -235,6 +244,20 @@ private:
             return data[3];
         default:
             UNREACHABLE();
+        }
+    }
+
+    void InverseSingle(CompSwizzle& dst, const CompSwizzle target) const {
+        if (r == target) {
+            dst = CompSwizzle::Red;
+        } else if (g == target) {
+            dst = CompSwizzle::Green;
+        } else if (b == target) {
+            dst = CompSwizzle::Blue;
+        } else if (a == target) {
+            dst = CompSwizzle::Alpha;
+        } else {
+            dst = CompSwizzle::Zero;
         }
     }
 };
@@ -283,13 +306,20 @@ inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizz
         result.a = swizzle.a;
         return result;
     }
-    case DataFormat::Format10_10_10_2:
-    case DataFormat::Format5_5_5_1: {
+    case DataFormat::Format10_10_10_2: {
         CompMapping result;
         result.r = swizzle.a;
         result.g = swizzle.b;
         result.b = swizzle.g;
         result.a = swizzle.r;
+        return result;
+    }
+    case DataFormat::Format1_5_5_5: {
+        CompMapping result;
+        result.r = swizzle.b;
+        result.g = swizzle.g;
+        result.b = swizzle.r;
+        result.a = swizzle.a;
         return result;
     }
     default:

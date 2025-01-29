@@ -11,8 +11,6 @@ class SymbolsResolver;
 
 namespace Libraries::NpManager {
 
-constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
-
 enum class OrbisNpState : u32 { Unknown = 0, SignedOut, SignedIn };
 
 using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
@@ -220,22 +218,22 @@ int PS4_SYSV_ABI sceNpGetAccountCountry();
 int PS4_SYSV_ABI sceNpGetAccountCountryA();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirth();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA();
-int PS4_SYSV_ABI sceNpGetAccountId();
-int PS4_SYSV_ABI sceNpGetAccountIdA();
+int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id);
+int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id);
 int PS4_SYSV_ABI sceNpGetAccountLanguage();
 int PS4_SYSV_ABI sceNpGetAccountLanguage2();
 int PS4_SYSV_ABI sceNpGetAccountLanguageA();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatus();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatusA();
-int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId);
+int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id);
 int PS4_SYSV_ABI sceNpGetNpReachabilityState();
-int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId);
+int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineId* online_id);
 int PS4_SYSV_ABI sceNpGetParentalControlInfo();
 int PS4_SYSV_ABI sceNpGetParentalControlInfoA();
-int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state);
+int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state);
 int PS4_SYSV_ABI sceNpGetUserIdByAccountId();
 int PS4_SYSV_ABI sceNpGetUserIdByOnlineId();
-int PS4_SYSV_ABI sceNpHasSignedUp();
+int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up);
 int PS4_SYSV_ABI sceNpIdMapperAbortRequest();
 int PS4_SYSV_ABI sceNpIdMapperAccountIdToNpId();
 int PS4_SYSV_ABI sceNpIdMapperAccountIdToOnlineId();

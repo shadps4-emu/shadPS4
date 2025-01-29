@@ -8,13 +8,13 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/devices/deci_tty6.h"
-#include "core/devices/dev_console.h"
+#include "core/devices/console_device.h"
+#include "core/devices/deci_tty6_device.h"
 #include "core/devices/logger.h"
 #include "core/devices/nop_device.h"
-#include "core/devices/random.h"
-#include "core/devices/srandom.h"
-#include "core/devices/urandom.h"
+#include "core/devices/random_device.h"
+#include "core/devices/srandom_device.h"
+#include "core/devices/urandom_device.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -270,13 +270,6 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
 }
 
 size_t PS4_SYSV_ABI _writev(int fd, const SceKernelIovec* iov, int iovcn) {
-    if (fd == 1) {
-        size_t total_written = 0;
-        for (int i = 0; i < iovcn; i++) {
-            total_written += ::fwrite(iov[i].iov_base, 1, iov[i].iov_len, stdout);
-        }
-        return total_written;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {

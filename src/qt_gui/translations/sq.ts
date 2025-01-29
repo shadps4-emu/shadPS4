@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Hap dosjen e shadPS4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -541,8 +541,16 @@
 			<translation>Aktivizo Ekranin e plotë</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Mënyra me ekran të plotë</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Aktivizo dosjen e ndarë të përditësimit</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -586,7 +594,7 @@
 		</message>
 		<message>
 			<source>Open Log Location</source>
-			<translation>Hap vendndodhjen e regjistrit</translation>
+			<translation>Hap vendndodhjen e Ditarit</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafika</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Ndërfaqja</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Përdoruesi</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,8 +821,8 @@
 			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
-			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
+			<source>GUIMusicGroupBox</source>
+			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në ndërfaqe.</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>

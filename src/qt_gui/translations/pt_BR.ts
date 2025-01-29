@@ -541,8 +541,16 @@
 			<translation>Ativar Tela Cheia</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Modo de Tela Cheia</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Habilitar pasta de atualização separada</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Aba padrão ao abrir as configurações</translation>
 		</message>
 		<message>
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Gráficos</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Interface</translation>
+		</message>
+		<message>
+			<source>User</source> 
+			<translation>Usuário</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -766,7 +782,7 @@
 		</message>
 		<message>
 			<source>fullscreenCheckBox</source>
-			<translation>Ativar Tela Cheia:\nMove automaticamente a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+			<translation>Ativar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
@@ -805,7 +821,11 @@
 			<translation>Atualizações:\nRelease: Versões oficiais que são lançadas todo mês e podem ser bastante antigas, mas são mais confiáveis e testadas.\nNightly: Versões de desenvolvimento que têm todos os novos recursos e correções, mas podem ter bugs e ser instáveis.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>chooseHomeTabGroupBox</source>
+			<translation>do menu.</translation>
+		</message>
+		<message>
+			<source>GUIMusicGroupBox</source>
 			<translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
 		</message>
 		<message>

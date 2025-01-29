@@ -313,8 +313,8 @@ constexpr std::pair<u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 
     const auto& [pitch_align, height_align] = micro_tile_extent;
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
-    size_t log_sz = (pitch_aligned * height_aligned * bpp * num_samples * thickness + 7) / 8;
-    while (log_sz % 256) {
+    size_t log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
+    while ((log_sz * thickness) % 256) {
         pitch_aligned += pitch_align;
         log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
     }

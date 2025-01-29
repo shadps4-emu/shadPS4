@@ -541,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Mod Ecran Complet</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Tab-ul implicit la deschiderea setărilor</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -619,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Graphics</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Interfață</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Utilizator</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -805,7 +821,7 @@
 			<translation>Actualizare:\nRelease: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nNightly: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Redă muzica titlului:\nDacă un joc o suportă, activează redarea muzicii speciale când selectezi jocul în GUI.</translation>
 		</message>
 		<message>

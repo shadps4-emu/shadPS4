@@ -884,4 +884,65 @@ struct PM4CmdDrawIndexIndirectMulti {
     u32 draw_initiator; ///< Draw Initiator Register
 };
 
+struct PM4CmdMemSemaphore {
+    enum class ClientCode : u32 {
+        CommandProcessor = 0u,
+        CommandBuffer = 1u,
+        DataBuffer = 2u,
+    };
+    enum class Select : u32 {
+        SignalSemaphore = 6u,
+        WaitSemaphore = 7u,
+    };
+    enum class SignalType : u32 {
+        Increment = 0u,
+        Write = 1u,
+    };
+
+    PM4Type3Header header; ///< header
+    union {
+        u32 dw1;
+        BitField<3, 29, u32> addr_lo; ///< Semaphore address bits [31:3]
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi;             ///< Semaphore address bits [39:32]
+        BitField<16, 1, u32> use_mailbox;        ///< Enables waiting until mailbox is written to
+        BitField<20, 1, SignalType> signal_type; ///< Indicates the type of signal sent
+        BitField<24, 2, ClientCode> client_code;
+        BitField<29, 3, Select> sem_sel; ///< Indicates whether to do a signal or wait operation
+    };
+
+    template <typename T>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>(u64(addr_lo) << 3 | (u64(addr_hi) << 32));
+    }
+
+    [[nodiscard]] bool IsSignaling() const {
+        return sem_sel == Select::SignalSemaphore;
+    }
+
+    [[nodiscard]] bool Signaled() const {
+        return *Address<u64*>() > 0;
+    }
+
+    void Decrement() const {
+        *Address<u64*>() -= 1;
+    }
+
+    void Signal() const {
+        auto* ptr = Address<u64*>();
+        switch (signal_type) {
+        case SignalType::Increment:
+            *ptr += 1;
+            break;
+        case SignalType::Write:
+            *ptr = 1;
+            break;
+        default:
+            UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
+        }
+    }
+};
+
 } // namespace AmdGpu

@@ -175,6 +175,14 @@ public:
 
     [[nodiscard]] U32 PackHalf2x16(const Value& vector);
     [[nodiscard]] Value UnpackHalf2x16(const U32& value);
+    [[nodiscard]] U32 PackUnorm2x16(const Value& vector);
+    [[nodiscard]] Value UnpackUnorm2x16(const U32& value);
+    [[nodiscard]] U32 PackSnorm2x16(const Value& vector);
+    [[nodiscard]] Value UnpackSnorm2x16(const U32& value);
+    [[nodiscard]] U32 PackUint2x16(const Value& value);
+    [[nodiscard]] Value UnpackUint2x16(const U32& value);
+    [[nodiscard]] U32 PackSint2x16(const Value& value);
+    [[nodiscard]] Value UnpackSint2x16(const U32& value);
 
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);
@@ -258,7 +266,7 @@ public:
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
     [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
     [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);
-    [[nodiscard]] U1 INotEqual(const U32& lhs, const U32& rhs);
+    [[nodiscard]] U1 INotEqual(const U32U64& lhs, const U32U64& rhs);
     [[nodiscard]] U1 IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
 
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
