@@ -77,7 +77,7 @@ For more information on how to test, debug and report issues with the emulator o
 # Keyboard mapping
 
 > [!NOTE]
-> In some operating systems, the default settings require you to press the fn key together with one of the below keys in order to use their function. On MacOS, however, only the FPS counter works.
+> In some operating systems, the default settings require you to press the fn key together with one of the following keys in order to use their function. On MacOS, however, only the FPS counter works.
 
 | Button | Function |
 |-------------|-------------|
