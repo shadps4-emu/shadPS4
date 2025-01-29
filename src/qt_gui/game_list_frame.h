@@ -8,6 +8,7 @@
 #include <QNetworkRequest>
 #include <QPainter>
 #include <QScrollBar>
+#include <cctype>    // std::tolower
 
 #include "background_music_player.h"
 #include "compatibility_info.h"
@@ -66,7 +67,7 @@ public:
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1:
-            return a.name < b.name;
+            return std::tolower(a.name) < std::tolower(b.name);
         case 2:
             return a.compatibility.status < b.compatibility.status;
         case 3:
@@ -91,7 +92,7 @@ public:
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1:
-            return a.name > b.name;
+            return std::tolower(a.name) > std::tolower(b.name);
         case 2:
             return a.compatibility.status > b.compatibility.status;
         case 3:
