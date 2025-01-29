@@ -14037,7 +14037,7 @@ s32 PS4_SYSV_ABI sceLibcMspaceCalloc() {
 
 void* PS4_SYSV_ABI sceLibcMspaceCreate(char* param_1, ulong param_2, ulong param_3, uint param_4,
                                        short* param_5) {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called {}", param_1);
+    UNREACHABLE_MSG("Missing sceLibcMspace impementation!");
     return 0;
 }
 
