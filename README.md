@@ -76,16 +76,16 @@ For more information on how to test, debug and report issues with the emulator o
 
 # Keyboard mapping
 
-| Button | Mac alternative | Function |
-|-------------|-------------|--------------|
-F10 | fn+F10 | FPS Counter |
-Ctrl+F10 | | Video Debug Info |
-F11 | | Fullscreen |
-F12 | | Trigger RenderDoc Capture |
+| Button | Function |
+|-------------|-------------|
+F10 | FPS Counter |
+Ctrl+F10 | Video Debug Info |
+F11 | Fullscreen |
+F12 | Trigger RenderDoc Capture |
 
 > [!NOTE]
-> These functions are for the default keyboard mappings of the corresponding OS only.
-Xbox and DualShock controllers work out of the box.
+> Xbox and DualShock controllers work out of the box.
+> Some operating systems may require you on default to hold the fn button additionally to the ones listed above to use the said functions, on MacOS only the fps counter of the said functions works though.
 
 | Controller button | Keyboard equivelant | Mac alternative |
 |-------------|-------------|--------------|
