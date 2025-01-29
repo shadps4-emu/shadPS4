@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Compatibilità...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Aggiorna database</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Visualizza rapporto</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Invia rapporto</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -194,7 +194,7 @@
 		</message>
 		<message>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Aggiornamento</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Apri Cartella shadps4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Chiave Trofei</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofei</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -750,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Backend Audio</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -806,7 +806,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Chiave Trofei:\nChiave utilizzata per la decrittazione dei trofei. Deve essere estratta dalla vostra console con jailbreak.\nDeve contenere solo caratteri esadecimali.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -826,7 +826,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Disabilita Notifica Trofei:\nDisabilita notifiche in gioco dei trofei. Il progresso dei Trofei può ancora essere controllato con il Visualizzatore Trofei (clicca tasto destro sul gioco nella finestra principale).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -933,7 +933,7 @@
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Cheats / Patch per </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -1200,7 +1200,7 @@
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>o</translation>
 		</message>
 		<message>
 			<source>m</source>
