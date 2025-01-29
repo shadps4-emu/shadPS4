@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Clé de trophé</translation>
+			<translation>Clé de trophée</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophé</translation>
+			<translation>Trophée</translation>
 		</message>
 		<message>
 			<source>Logger</source>
