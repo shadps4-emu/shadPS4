@@ -42,7 +42,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     }
 
     std::string guest_path(moduleFileName);
-    if(moduleFileName[0] != '/') {
+    if (moduleFileName[0] != '/') {
         guest_path = "/app0/" + guest_path;
     }
 
