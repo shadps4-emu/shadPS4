@@ -240,32 +240,32 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
-        if (!merged_image_id) {
-            // We need to have a larger, already allocated image to copy this one into
-            return {{}, -1, -1};
-        }
-
         if (auto mip = tex_cache_image.info.IsMipOf(image_info); mip >= 0) {
             if (tex_cache_image.binding.is_target) {
                 // We have a larger image created and a separate one, representing a subres of it,
                 // bound as render target. In this case we need to rebind render target.
                 tex_cache_image.binding.needs_rebind = 1u;
-                GetImage(merged_image_id).binding.is_target = 1u;
+                if (merged_image_id) {
+                    GetImage(merged_image_id).binding.is_target = 1u;
+                }
 
                 FreeImage(cache_image_id);
                 return {merged_image_id, -1, -1};
             }
 
-            tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                    vk::AccessFlagBits2::eTransferRead, {});
+            // We need to have a larger, already allocated image to copy this one into
+            if (merged_image_id) {
+                tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
+                                        vk::AccessFlagBits2::eTransferRead, {});
 
-            const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
-            ASSERT(num_mips_to_copy == 1);
+                const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
+                ASSERT(num_mips_to_copy == 1);
 
-            auto& merged_image = slot_images[merged_image_id];
-            merged_image.CopyMip(tex_cache_image, mip);
+                auto& merged_image = slot_images[merged_image_id];
+                merged_image.CopyMip(tex_cache_image, mip);
 
-            FreeImage(cache_image_id);
+                FreeImage(cache_image_id);
+            }
         }
     }
 
