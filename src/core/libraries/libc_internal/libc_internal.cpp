@@ -12,6 +12,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "libc_internal.h"
+#include "core/libraries/libc_internal/libc_internal_mspace.h"
 
 namespace Libraries::LibcInternal {
 
@@ -14029,173 +14030,7 @@ s32 PS4_SYSV_ABI internal_sceLibcInternalSetMallocCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_sceLibcMspaceAlignedAlloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceCalloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-void* PS4_SYSV_ABI internal_sceLibcMspaceCreate(char* param_1, ulong param_2, ulong param_3, uint param_4,
-                                       short* param_5) {
-    UNREACHABLE_MSG("Missing sceLibcMspace impementation!");
-    return 0;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceDestroy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceFree() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceGetAddressRanges() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceIsHeapEmpty() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceMalloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceMallocStats() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceMallocStatsFast() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceMallocUsableSize() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceMemalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspacePosixMemalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceRealloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceReallocalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcMspaceSetMallocCallback() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_sceLibcOnce() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceCalloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceCheckMemoryBounds() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceCreate() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceDestroy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceFree() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceGetFooterValue() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceIsHeapEmpty() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceMalloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceMallocStats() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceMallocStatsFast() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceMallocUsableSize() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceMemalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspacePosixMemalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceRealloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceReallocalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceReportMemoryBlocks() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sceLibcPafMspaceTrim() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -15426,6 +15261,8 @@ s32 PS4_SYSV_ABI internal_Func_C14A89D29B148C3A() {
 }
 
 void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
+    RegisterlibSceLibcInternalMspace(sym);
+
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  internal_sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("ys1W6EwuVw4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -20934,74 +20771,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_sceLibcInternalMemoryMutexEnable);
     LIB_FUNCTION("LXqt47GvaRA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sceLibcInternalSetMallocCallback);
-    LIB_FUNCTION("ljkqMcC4-mk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceAlignedAlloc);
-    LIB_FUNCTION("LYo3GhIlB38", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceCalloc);
-    LIB_FUNCTION("-hn1tcVHq5Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceCreate);
-    LIB_FUNCTION("W6SiVSiCDtI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceDestroy);
-    LIB_FUNCTION("Vla-Z+eXlxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceFree);
-    LIB_FUNCTION("raRgiuQfvWk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceGetAddressRanges);
-    LIB_FUNCTION("pzUa7KEoydw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceIsHeapEmpty);
-    LIB_FUNCTION("OJjm-QOIHlI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceMalloc);
-    LIB_FUNCTION("mfHdJTIvhuo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceMallocStats);
-    LIB_FUNCTION("k04jLXu3+Ic", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceMallocStatsFast);
-    LIB_FUNCTION("fEoW6BJsPt4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceMallocUsableSize);
-    LIB_FUNCTION("iF1iQHzxBJU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceMemalign);
-    LIB_FUNCTION("qWESlyXMI3E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspacePosixMemalign);
-    LIB_FUNCTION("gigoVHZvVPE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceRealloc);
-    LIB_FUNCTION("p6lrRW8-MLY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceReallocalign);
-    LIB_FUNCTION("+CbwGRMnlfU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcMspaceSetMallocCallback);
     LIB_FUNCTION("HmgKoOWpUc8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sceLibcOnce);
-    LIB_FUNCTION("-lZdT34nAAE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceCalloc);
-    LIB_FUNCTION("Pcq7UoYAcFE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceCheckMemoryBounds);
-    LIB_FUNCTION("6hdfGRKHefs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceCreate);
-    LIB_FUNCTION("qB5nGjWa-bk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceDestroy);
-    LIB_FUNCTION("9mMuuhXMwqQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceFree);
-    LIB_FUNCTION("kv4kgdjswN0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceGetFooterValue);
-    LIB_FUNCTION("htdTOnMxDbQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceIsHeapEmpty);
-    LIB_FUNCTION("QuZzFJD5Hrw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceMalloc);
-    LIB_FUNCTION("mO8NB8whKy8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceMallocStats);
-    LIB_FUNCTION("OmG3YPCBLJs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceMallocStatsFast);
-    LIB_FUNCTION("6JcY5RDA4jY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceMallocUsableSize);
-    LIB_FUNCTION("PKJcFUfhKtw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceMemalign);
-    LIB_FUNCTION("7hOUKGcT6jM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspacePosixMemalign);
-    LIB_FUNCTION("u32UXVridxQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceRealloc);
-    LIB_FUNCTION("4SvlEtd0j40", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceReallocalign);
-    LIB_FUNCTION("0FnzR6qum90", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceReportMemoryBlocks);
-    LIB_FUNCTION("AUYdq63RG3U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sceLibcPafMspaceTrim);
     LIB_FUNCTION("2g5wco7AAHg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_seed48);
     LIB_FUNCTION("7WoI+lVawlc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,

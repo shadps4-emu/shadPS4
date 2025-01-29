@@ -358,6 +358,8 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
 
 set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
+                 src/core/libraries/libc_internal/libc_internal_mspace.cpp
+                 src/core/libraries/libc_internal/libc_internal_mspace.h
 )
 
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
