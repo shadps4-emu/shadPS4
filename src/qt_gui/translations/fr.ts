@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Compatibilité...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Mettre à jour la base de données</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Voir rapport</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Soumettre un rapport</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -186,7 +186,7 @@
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Cette fonctionnalité nécessite l'option 'Dossier séparé pour les mises à jour' pour fonctionner. Si vous voulez utiliser cette fonctionnalité, veuillez l'activer.</translation>
 		</message>
 		<message>
 			<source>This game has no update to delete!</source>
@@ -546,7 +546,7 @@
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Dossier séparé pour les mises à jours</translation>
+			<translation>Dossier séparé pour les mises à jour</translation>
 		</message>
 		<message>
 			<source>Default tab when opening settings</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Clé de trophée</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trophée</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -586,11 +586,11 @@
 		</message>
 		<message>
 			<source>Log Type</source>
-			<translation>Type</translation>
+			<translation>Type de journal</translation>
 		</message>
 		<message>
 			<source>Log Filter</source>
-			<translation>Filtre</translation>
+			<translation>Filtre du journal</translation>
 		</message>
 		<message>
 			<source>Open Log Location</source>
@@ -722,7 +722,7 @@
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Désactiver les notifications de trophées</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -730,19 +730,19 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Mettre à jour la base de données de compatibilité au lancement</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Compatibilité du jeu</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Afficher les données de compatibilité</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Mettre à jour la base de données de compatibilité</translation>
 		</message>
 		<message>
 			<source>Volume</source>
@@ -750,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Back-end audio</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -786,7 +786,7 @@
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Dossier séparé pour les mises à jours:\nInstalle les mises à jours des jeux dans un dossier séparé pour une gestion plus facile.</translation>
+			<translation>Dossier séparé pour les mises à jour:\nInstalle les mises à jours des jeux dans un dossier séparé pour une gestion plus facile.</translation>
 		</message>
 		<message>
 			<source>showSplashCheckBox</source>
@@ -806,7 +806,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Clé de trophées:\nClé utilisée pour décrypter les trophées. Doit être obtenu à partir de votre console jailbreakée.\nDoit contenir des caractères hexadécimaux uniquement.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -826,7 +826,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Désactiver les notifications de trophées:\nDésactive les notifications de trophées en jeu. La progression des trophées peut toujours être suivie à l'aide de la Visionneuse de trophées (clique droit sur le jeu sur la fenêtre principale).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -842,15 +842,15 @@
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Afficher les données de compatibilité:\nAffiche les informations de compatibilité des jeux dans une colonne dédiée. Activez "Mettre à jour la compatibilité au démarrage" pour avoir des informations à jour.</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Mettre à jour la compatibilité au démarrage:\nMettre à jour automatiquement la base de données de compatibilité au démarrage de shadPS4.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Mettre à jour la compatibilité au démarrage:\nMet à jour immédiatement la base de données de compatibilité.</translation>
 		</message>
 		<message>
 			<source>Never</source>
@@ -1093,7 +1093,7 @@
 		</message>
 		<message>
 			<source>DownloadComplete_MSG</source>
-			<translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats. Si le correctif n'apparaît pas, il se peut qu'il n'existe pas pour le numéro de série et la version spécifiques du jeu.</translation>
+			<translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats. Si le correctif n'apparaît pas, il se peut qu'il n'existe pas pour la série et la version spécifiques du jeu.</translation>
 		</message>
 		<message>
 			<source>Failed to parse JSON data from HTML.</source>
@@ -1113,7 +1113,7 @@
 		</message>
 		<message>
 			<source>You may need to update your game.</source>
-			<translation>Vous devrez peut-être mettre à jour votre jeu.</translation>
+			<translation>Vous devriez peut-être mettre à jour votre jeu.</translation>
 		</message>
 		<message>
 			<source>Incompatibility Notice</source>
@@ -1137,7 +1137,7 @@
 		</message>
 		<message>
 			<source>Directory does not exist:</source>
-			<translation>Répertoire n'existe pas:</translation>
+			<translation>Le répertoire n'existe pas:</translation>
 		</message>
 		<message>
 			<source>Failed to open files.json for reading.</source>
@@ -1149,7 +1149,7 @@
 		</message>
 		<message>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Impossible d'appliquer les Cheats avant que le jeu ne commence.</translation>
+			<translation>Impossible d'appliquer les cheats avant que le jeu ne soit lancé</translation>
 		</message>
 	</context>
 	<context>
@@ -1168,7 +1168,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Compatibilité</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1212,27 +1212,27 @@
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>La compatibilité n'a pas été testé</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Le jeu ne se lance pas correctement / crash l'émulateur</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Le jeu démarre, mais n'affiche qu'un écran noir</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Le jeu affiche une image mais ne dépasse pas le menu</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Le jeu a des problèmes majeurs ou des performances qui le rendent injouable</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Le jeu peut être terminé avec des performances acceptables et sans problèmes majeurs</translation>
 		</message>
 	</context>
 	<context>
