@@ -360,8 +360,9 @@ s32 PS4_SYSV_ABI __cxa_allocate_exception() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI __cxa_atexit() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+s32 PS4_SYSV_ABI __cxa_atexit(void (*func) (), void * arg, void * dso_handle) {
+    LOG_ERROR(Lib_LibcInternal, "(TEST) called"); // todo idek what I'm doing with this
+    std::atexit(func);
     return ORBIS_OK;
 }
 
@@ -7605,7 +7606,7 @@ s32 PS4_SYSV_ABI _ZNSt6_Winit9_Init_cntE() {
 }
 
 s32 PS4_SYSV_ABI _ZNSt6_WinitC1Ev() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called"); // GRR
     return ORBIS_OK;
 }
 
@@ -8303,12 +8304,12 @@ s32 PS4_SYSV_ABI _ZNSt8ios_base4Init9_Init_cntE() {
 }
 
 s32 PS4_SYSV_ABI _ZNSt8ios_base4InitC1Ev() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called"); // alien isolation
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI _ZNSt8ios_base4InitC2Ev() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called"); // GRR
     return ORBIS_OK;
 }
 
@@ -12795,14 +12796,17 @@ s32 PS4_SYSV_ABI getwchar() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI gmtime() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+tm* PS4_SYSV_ABI gmtime(time_t* timer) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    return std::gmtime(timer);
 }
 
-s32 PS4_SYSV_ABI gmtime_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+tm* PS4_SYSV_ABI gmtime_s(time_t* timer, u64 flags) {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    if (timer == nullptr || flags == 0) {
+        return 0;
+    }
+    return std::gmtime(timer);
 }
 
 s32 PS4_SYSV_ABI hypot() {
