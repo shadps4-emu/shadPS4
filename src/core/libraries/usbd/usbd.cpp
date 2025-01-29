@@ -25,6 +25,10 @@ s32 libusb_to_orbis_error(int retVal) {
 
 libusb_context* g_libusb_context;
 
+#if defined(_WIN32)
+bool s_has_removed_driver = false;
+#endif
+
 s32 PS4_SYSV_ABI sceUsbdInit() {
     LOG_DEBUG(Lib_Usbd, "called");
 
@@ -201,7 +205,10 @@ s32 PS4_SYSV_ABI sceUsbdKernelDriverActive(SceUsbdDeviceHandle* dev_handle, int 
     LOG_DEBUG(Lib_Usbd, "called");
 
 #if defined(_WIN32)
-    return 0;
+    if (!s_has_removed_driver)
+        return 1;
+    else
+        return 0;
 #endif
 
     return libusb_to_orbis_error(libusb_kernel_driver_active(dev_handle, interface_number));
@@ -211,6 +218,7 @@ s32 PS4_SYSV_ABI sceUsbdDetachKernelDriver(SceUsbdDeviceHandle* dev_handle, int 
     LOG_DEBUG(Lib_Usbd, "called");
 
 #if defined(_WIN32)
+    s_has_removed_driver = true;
     return 0;
 #endif
 
@@ -221,6 +229,7 @@ s32 PS4_SYSV_ABI sceUsbdAttachKernelDriver(SceUsbdDeviceHandle* dev_handle, int 
     LOG_DEBUG(Lib_Usbd, "called");
 
 #if defined(_WIN32)
+    s_has_removed_driver = false;
     return 0;
 #endif
 
