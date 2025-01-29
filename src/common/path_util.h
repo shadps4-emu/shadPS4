@@ -122,7 +122,7 @@ void PathToQString(QString& result, const std::filesystem::path& path);
  *
  * @param dir Base directory to start the search from
  * @param game_id The game ID to search for
- * @param max_depth Maximum directory depth to search (default: 2)
+ * @param max_depth Maximum directory depth to search
  *
  * @returns Path to eboot.bin if found, std::nullopt otherwise
  */
