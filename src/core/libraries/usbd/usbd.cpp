@@ -200,17 +200,29 @@ s32 PS4_SYSV_ABI sceUsbdResetDevice(SceUsbdDeviceHandle* dev_handle) {
 s32 PS4_SYSV_ABI sceUsbdKernelDriverActive(SceUsbdDeviceHandle* dev_handle, int interface_number) {
     LOG_DEBUG(Lib_Usbd, "called");
 
+#if defined(_WIN32)
+    return 0;
+#endif
+
     return libusb_to_orbis_error(libusb_kernel_driver_active(dev_handle, interface_number));
 }
 
 s32 PS4_SYSV_ABI sceUsbdDetachKernelDriver(SceUsbdDeviceHandle* dev_handle, int interface_number) {
     LOG_DEBUG(Lib_Usbd, "called");
 
+#if defined(_WIN32)
+    return 0;
+#endif
+
     return libusb_to_orbis_error(libusb_detach_kernel_driver(dev_handle, interface_number));
 }
 
 s32 PS4_SYSV_ABI sceUsbdAttachKernelDriver(SceUsbdDeviceHandle* dev_handle, int interface_number) {
     LOG_DEBUG(Lib_Usbd, "called");
+
+#if defined(_WIN32)
+    return 0;
+#endif
 
     return libusb_to_orbis_error(libusb_attach_kernel_driver(dev_handle, interface_number));
 }
