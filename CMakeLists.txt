@@ -110,12 +110,18 @@ string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 execute_process(
   COMMAND git rev-parse --abbrev-ref --symbolic-full-name @{u}
   OUTPUT_VARIABLE GIT_REMOTE_NAME
+  RESULT_VARIABLE GIT_BRANCH_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Extract remote name from full name
-string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
-string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
+# Default to origin if branch is not set
+if (GIT_BRANCH_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+  set(GIT_REMOTE_NAME "origin")
+else()
+  # Extract remote name from full name
+  string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
+  string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
+endif()
 
 # Get remote link
 execute_process(
