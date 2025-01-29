@@ -734,7 +734,7 @@
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Compatibilité de jeu</translation>
+			<translation>Compatibilité du jeu</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
@@ -842,11 +842,11 @@
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Afficher les données de compatibilité:\nAffiche les informations de compatibilité du jeu en vue de tableau. Activez "Mettre à jour la compatibilité au démarrage" pour avoir des informations à jour.</translation>
+			<translation>Afficher les données de compatibilité:\nAffiche les informations de compatibilité des jeux dans une colonne dédiée. Activez "Mettre à jour la compatibilité au démarrage" pour avoir des informations à jour.</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Mettre à jour la compatibilité au démarrage:\nMettre à jour automatiquement la compatibilité au démarrage de shadPS4.</translation>
+			<translation>Mettre à jour la compatibilité au démarrage:\nMettre à jour automatiquement la base de données de compatibilité au démarrage de shadPS4.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
@@ -1149,7 +1149,7 @@
 		</message>
 		<message>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Impossible d'appliquer les cheats avant que le jeu ne commence</translation>
+			<translation>Impossible d'appliquer les cheats avant que le jeu ne soit lancé</translation>
 		</message>
 	</context>
 	<context>
