@@ -373,7 +373,7 @@
 		</message>
 		<message>
 			<source>toolBar</source>
-			<translation>Bare d'outils</translation>
+			<translation>Barre d'outils</translation>
 		</message>
 		<message>
 			<source>Game List</source>
@@ -489,7 +489,7 @@
 		</message>
 		<message>
 			<source>Game successfully installed at %1</source>
-			<translation>Jeu installé avec succès à %1</translation>
+			<translation>Jeu installé avec succès dans %1</translation>
 		</message>
 		<message>
 			<source>File doesn't appear to be a valid PKG file</source>
@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Afficher la taille du jeu dans la liste</translation>
+			<translation>Afficher la taille des jeux dans la liste</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -945,7 +945,7 @@
 		</message>
 		<message>
 			<source>Serial: </source>
-			<translation>Série: </translation>
+			<translation>Numéro de série: </translation>
 		</message>
 		<message>
 			<source>Version: </source>
@@ -1164,7 +1164,7 @@
 		</message>
 		<message>
 			<source>Serial</source>
-			<translation>Série</translation>
+			<translation>Numéro de série</translation>
 		</message>
 		<message>
 			<source>Compatibility</source>
