@@ -966,7 +966,7 @@
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Marcatori di Debug dell'Host:\nInserisce nel log informazioni ottenute dall'emulatore come ad esempio marcatori per comandi specifici AMDGPU quando si hanno comandi Vulkan e associa nomi di debug per le risorse.\nSe hai questa opzione abilitata dovresti abilitare anche Diagnostica Crash.\nUseful for programs like RenderDoc.</translation>
+			<translation>Marcatori di Debug dell'Host:\nInserisce nel log informazioni ottenute dall'emulatore come ad esempio marcatori per comandi specifici AMDGPU quando si hanno comandi Vulkan e associa nomi di debug per le risorse.\nSe hai questa opzione abilitata dovresti abilitare anche Diagnostica Crash.\nUtile per programmi come RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
