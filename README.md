@@ -89,7 +89,7 @@ F12 | Trigger RenderDoc Capture
 > [!NOTE]
 > Xbox and DualShock controllers work out of the box.
 
-| Controller button | Keyboard equivelant |
+| Controller button | Keyboard equivalent |
 |-------------|-------------|
 LEFT AXIS UP | W |
 LEFT AXIS DOWN | S |
