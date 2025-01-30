@@ -106,6 +106,30 @@ git_describe(GIT_DESC --always --long --dirty)
 git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
+# Get current remote name and branch
+execute_process(
+  COMMAND git rev-parse --abbrev-ref --symbolic-full-name @{u}
+  OUTPUT_VARIABLE GIT_REMOTE_NAME
+  RESULT_VARIABLE GIT_BRANCH_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Default to origin if branch is not set
+if (GIT_BRANCH_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+  set(GIT_REMOTE_NAME "origin")
+else()
+  # Extract remote name from full name
+  string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
+  string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
+endif()
+
+# Get remote link
+execute_process(
+  COMMAND git config --get remote.${GIT_REMOTE_NAME}.url
+  OUTPUT_VARIABLE GIT_REMOTE_URL
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 find_package(Boost 1.84.0 CONFIG)
