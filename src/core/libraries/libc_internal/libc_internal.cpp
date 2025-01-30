@@ -2704,41 +2704,6 @@ s32 PS4_SYSV_ABI internal__Makewct() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal__malloc_finalize_lv2() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_fini() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_init() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_init_lv2() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_postfork() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_prefork() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__malloc_thread_cleanup() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal__Mbcurmax() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -2970,11 +2935,6 @@ s32 PS4_SYSV_ABI internal__Save_state() {
 }
 
 s32 PS4_SYSV_ABI internal__SceLibcDebugOut() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal__sceLibcGetMallocParam() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -3557,12 +3517,6 @@ s32 PS4_SYSV_ABI internal__Xtime_get_ticks() {
 s32 PS4_SYSV_ABI internal__Xtime_to_ts() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-void PS4_SYSV_ABI internal_operator_delete(void* ptr) {
-    if (ptr) {
-        std::free(ptr);
-    }
 }
 
 s32 PS4_SYSV_ABI internal__ZdaPvm() {
@@ -7366,16 +7320,6 @@ s32 PS4_SYSV_ABI internal__ZNSt9type_infoD2Ev() {
     return ORBIS_OK;
 }
 
-void* PS4_SYSV_ABI internal_operator_new(size_t size) {
-    if (size == 0) {
-        // Size of 1 is used if 0 is provided.
-        size = 1;
-    }
-    void* ptr = std::malloc(size);
-    ASSERT_MSG(ptr, "Failed to allocate new object with size {}", size);
-    return ptr;
-}
-
 s32 PS4_SYSV_ABI internal__ZnwmRKSt9nothrow_t() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -9518,41 +9462,6 @@ s32 PS4_SYSV_ABI internal_abort_handler_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_abs() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-double PS4_SYSV_ABI internal_acos(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acos(x);
-}
-
-float PS4_SYSV_ABI internal_acosf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosf(x);
-}
-
-float PS4_SYSV_ABI internal_acosh(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosh(x);
-}
-
-float PS4_SYSV_ABI internal_acoshf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acoshf(x);
-}
-
-float PS4_SYSV_ABI internal_acoshl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acoshl(x);
-}
-
-float PS4_SYSV_ABI internal_acosl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosl(x);
-}
-
 s32 PS4_SYSV_ABI internal_alarm() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -9573,82 +9482,7 @@ s32 PS4_SYSV_ABI internal_asctime_s() {
     return ORBIS_OK;
 }
 
-double PS4_SYSV_ABI internal_asin(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asin(x);
-}
-
-float PS4_SYSV_ABI internal_asinf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinf(x);
-}
-
-float PS4_SYSV_ABI internal_asinh(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinh(x);
-}
-
-float PS4_SYSV_ABI internal_asinhf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinhf(x);
-}
-
-float PS4_SYSV_ABI internal_asinhl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinhl(x);
-}
-
-float PS4_SYSV_ABI internal_asinl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinl(x);
-}
-
 s32 PS4_SYSV_ABI internal_at_quick_exit() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-double PS4_SYSV_ABI internal_atan(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::atan(x);
-}
-
-double PS4_SYSV_ABI internal_atan2(double y, double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::atan2(y, x);
-}
-
-s32 PS4_SYSV_ABI internal_atan2f() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atan2l() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atanf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atanh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atanhf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atanhl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_atanl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -9748,21 +9582,6 @@ s32 PS4_SYSV_ABI internal_cbrtl() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_ceil() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_ceilf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_ceill() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_clearerr() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -9799,36 +9618,6 @@ s32 PS4_SYSV_ABI internal_copysignf() {
 }
 
 s32 PS4_SYSV_ABI internal_copysignl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-double PS4_SYSV_ABI internal_cos(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::cos(x);
-}
-
-float PS4_SYSV_ABI internal_cosf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::cosf(x);
-}
-
-s32 PS4_SYSV_ABI internal_cosh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_coshf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_coshl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_cosl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -9954,66 +9743,6 @@ s32 PS4_SYSV_ABI internal_errx() {
 }
 
 s32 PS4_SYSV_ABI internal_exit() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-double PS4_SYSV_ABI internal_exp(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp(x);
-}
-
-double PS4_SYSV_ABI internal_exp2(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2(x);
-}
-
-float PS4_SYSV_ABI internal_exp2f(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2f(x);
-}
-
-float PS4_SYSV_ABI internal_exp2l(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2l(x);
-}
-
-float PS4_SYSV_ABI internal_expf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::expf(x);
-}
-
-s32 PS4_SYSV_ABI internal_expl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_expm1() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_expm1f() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_expm1l() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fabs() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fabsf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fabsl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -10213,21 +9942,6 @@ s32 PS4_SYSV_ABI internal_flockfile() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_floor() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_floorf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_floorl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_flsl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -10244,51 +9958,6 @@ s32 PS4_SYSV_ABI internal_fmaf() {
 }
 
 s32 PS4_SYSV_ABI internal_fmal() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmax() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmaxf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmaxl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmin() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fminf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fminl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmod() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmodf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_fmodl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -10333,10 +10002,6 @@ s32 PS4_SYSV_ABI internal_fread() {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI internal_free(void* ptr) {
-    std::free(ptr);
-}
-
 s32 PS4_SYSV_ABI internal_freeifaddrs() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -10348,21 +10013,6 @@ s32 PS4_SYSV_ABI internal_freopen() {
 }
 
 s32 PS4_SYSV_ABI internal_freopen_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_frexp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_frexpf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_frexpl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -10570,31 +10220,6 @@ s32 PS4_SYSV_ABI internal_ignore_handler_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_ilogb() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_ilogbf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_ilogbl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_imaxabs() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_imaxdiv() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_index() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -10655,26 +10280,6 @@ s32 PS4_SYSV_ABI internal_isgraph() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_isinf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_islower() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_isnan() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_isnanf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_isprint() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -10686,11 +10291,6 @@ s32 PS4_SYSV_ABI internal_ispunct() {
 }
 
 s32 PS4_SYSV_ABI internal_isspace() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_isupper() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -10910,81 +10510,6 @@ s32 PS4_SYSV_ABI internal_localtime_s() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_log() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log10() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-float PS4_SYSV_ABI internal_log10f(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::log10f(x);
-}
-
-s32 PS4_SYSV_ABI internal_log10l() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log1p() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log1pf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log1pl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log2() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log2f() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_log2l() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_logb() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_logbf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_logbl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_logf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_logl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 void PS4_SYSV_ABI internal_longjmp(std::jmp_buf env, int status) {
     LOG_INFO(Lib_LibcInternal, "called");
     std::longjmp(env, status);
@@ -11010,71 +10535,7 @@ s32 PS4_SYSV_ABI internal_lrintl() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_lround() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_lroundf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_lroundl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_makecontext() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-void* PS4_SYSV_ABI internal_malloc(size_t size) {
-    return std::malloc(size);
-}
-
-s32 PS4_SYSV_ABI internal_malloc_check_memory_bounds() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_finalize() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_get_footer_value() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_get_malloc_state() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_initialize() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_report_memory_blocks() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_stats() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_stats_fast() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_malloc_usable_size() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -11134,62 +10595,6 @@ s32 PS4_SYSV_ABI internal_mbtowc() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_memalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_memchr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_memcmp(const void* s1, const void* s2, size_t n) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::memcmp(s1, s2, n);
-}
-
-void* PS4_SYSV_ABI internal_memcpy(void* dest, const void* src, size_t n) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::memcpy(dest, src, n);
-}
-
-s32 PS4_SYSV_ABI internal_memcpy_s(void* dest, size_t destsz, const void* src, size_t count) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-#ifdef _WIN64
-    return memcpy_s(dest, destsz, src, count);
-#else
-    std::memcpy(dest, src, count);
-    return 0; // ALL OK
-#endif
-}
-
-s32 PS4_SYSV_ABI internal_memmove(void* d, void* s, size_t n) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    std::memmove(d, s, n);
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_memmove_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_memrchr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-void* PS4_SYSV_ABI internal_memset(void* s, int c, size_t n) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::memset(s, c, n);
-}
-
-s32 PS4_SYSV_ABI internal_memset_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_mergesort() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -11216,21 +10621,6 @@ s32 PS4_SYSV_ABI internal_modfl() {
 }
 
 s32 PS4_SYSV_ABI internal_mrand48() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_nan() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_nanf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_nanl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -11321,11 +10711,6 @@ s32 PS4_SYSV_ABI internal_optreset() {
 }
 
 s32 PS4_SYSV_ABI internal_perror() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_posix_memalign() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -11435,21 +10820,6 @@ s32 PS4_SYSV_ABI internal_posix_spawnp() {
     return ORBIS_OK;
 }
 
-double PS4_SYSV_ABI internal_pow(double x, double y) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::pow(x, y);
-}
-
-float PS4_SYSV_ABI internal_powf(float x, float y) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::powf(x, y);
-}
-
-s32 PS4_SYSV_ABI internal_powl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_psignal() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -11540,27 +10910,7 @@ s32 PS4_SYSV_ABI internal_readdir_r() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI internal_realloc() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_reallocalign() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_reallocf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_realpath() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_remainder() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -11820,68 +11170,6 @@ s32 PS4_SYSV_ABI internal_sigvec() {
     return ORBIS_OK;
 }
 
-double PS4_SYSV_ABI internal_sin(double x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sin(x);
-}
-
-void PS4_SYSV_ABI internal_sincos(double x, double* sinp, double* cosp) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    *sinp = std::sin(x);
-    *cosp = std::cos(x);
-}
-
-void PS4_SYSV_ABI internal_sincosf(double x, double* sinp, double* cosp) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    *sinp = std::sinf(x);
-    *cosp = std::cosf(x);
-}
-
-float PS4_SYSV_ABI internal_sinf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinf(x);
-}
-
-float PS4_SYSV_ABI internal_sinh(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinh(x);
-}
-
-float PS4_SYSV_ABI internal_sinhf(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinhf(x);
-}
-
-float PS4_SYSV_ABI internal_sinhl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinhl(x);
-}
-
-float PS4_SYSV_ABI internal_sinl(float x) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinl(x);
-}
-
-s32 PS4_SYSV_ABI internal_sqrt() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sqrtf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_sqrtl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_srand() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI internal_srand48() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
@@ -11938,36 +11226,6 @@ s32 PS4_SYSV_ABI internal_sys_signame() {
 }
 
 s32 PS4_SYSV_ABI internal_syslog() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tan() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tanf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tanh() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tanhf() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tanhl() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_tanl() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -12328,41 +11586,6 @@ s32 PS4_SYSV_ABI internal_wctrans() {
 }
 
 s32 PS4_SYSV_ABI internal_wctype() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemchr() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemcmp() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemcpy() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemcpy_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemmove() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemmove_s() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI internal_wmemset() {
     LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -13508,20 +12731,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__Makestab);
     LIB_FUNCTION("QalEczzSNqc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__Makewct);
-    LIB_FUNCTION("RnqlvEmvkdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_finalize_lv2);
-    LIB_FUNCTION("21KFhEQDJ3s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_fini);
-    LIB_FUNCTION("z8GPiQwaAEY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_init);
-    LIB_FUNCTION("20cUk0qX9zo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_init_lv2);
-    LIB_FUNCTION("V94pLruduLg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_postfork);
-    LIB_FUNCTION("aLYyS4Kx6rQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_prefork);
-    LIB_FUNCTION("Sopthb9ztZI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__malloc_thread_cleanup);
     LIB_FUNCTION("pCWh67X1PHU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__Mbcurmax);
     LIB_FUNCTION("wKsLxRq5+fg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -13616,8 +12825,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__Save_state);
     LIB_FUNCTION("vhETq-NiqJA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__SceLibcDebugOut);
-    LIB_FUNCTION("1nZ4Xfnyp38", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__sceLibcGetMallocParam);
     LIB_FUNCTION("-hOAbTf3Cqc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__SceLibcTelemetoryOut);
     LIB_FUNCTION("Do3zPpsXj1o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -13850,8 +13057,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__Xtime_get_ticks);
     LIB_FUNCTION("Zs8Xq-ce3rY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__Xtime_to_ts);
-    LIB_FUNCTION("MLWl90SFWNE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_operator_delete);
     LIB_FUNCTION("FOt55ZNaVJk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__ZdaPvm);
     LIB_FUNCTION("7lCihI18N9I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -15370,8 +14575,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__ZNSt9type_infoD1Ev);
     LIB_FUNCTION("zb3436295XU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__ZNSt9type_infoD2Ev);
-    LIB_FUNCTION("fJnpuVVBbKk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_operator_new);
     LIB_FUNCTION("ryUxD-60bKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__ZnwmRKSt9nothrow_t);
     LIB_FUNCTION("3yxLpdKD0RA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16228,19 +15431,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_abort);
     LIB_FUNCTION("SmYrO79NzeI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_abort_handler_s);
-    LIB_FUNCTION("Ye20uNnlglA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_abs);
-    LIB_FUNCTION("JBcgYuW8lPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acos);
-    LIB_FUNCTION("QI-x0SL8jhw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acosf);
-    LIB_FUNCTION("Fk7-KFKZi-8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acosh);
-    LIB_FUNCTION("XJp2C-b0tRU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acoshf);
-    LIB_FUNCTION("u14Y1HFh0uY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acoshl);
-    LIB_FUNCTION("iH4YAIRcecA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acosl);
     LIB_FUNCTION("DQXJraCc1rA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_alarm);
     LIB_FUNCTION("2Btkg8k24Zg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16249,38 +15439,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_asctime);
     LIB_FUNCTION("qPe7-h5Jnuc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_asctime_s);
-    LIB_FUNCTION("7Ly52zaL44Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asin);
-    LIB_FUNCTION("GZWjF-YIFFk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asinf);
-    LIB_FUNCTION("2eQpqTjJ5Y4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asinh);
-    LIB_FUNCTION("yPPtp1RMihw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asinhf);
-    LIB_FUNCTION("iCl-Z-g-uuA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asinhl);
-    LIB_FUNCTION("Nx-F5v0-qU8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asinl);
     LIB_FUNCTION("HC8vbJStYVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_at_quick_exit);
-    LIB_FUNCTION("OXmauLdQ8kY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atan);
-    LIB_FUNCTION("HUbZmOnT-Dg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atan2);
-    LIB_FUNCTION("EH-x713A99c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atan2f);
-    LIB_FUNCTION("9VeY8wiqf8M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atan2l);
-    LIB_FUNCTION("weDug8QD-lE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atanf);
-    LIB_FUNCTION("YjbpxXpi6Zk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atanh);
-    LIB_FUNCTION("cPGyc5FGjy0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atanhf);
-    LIB_FUNCTION("a3BNqojL4LM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atanhl);
-    LIB_FUNCTION("KvOHPTz595Y", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atanl);
     LIB_FUNCTION("8G2LB+A3rzg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_atexit);
     LIB_FUNCTION("SRI6S9B+-a4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16319,12 +15479,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_cbrtf);
     LIB_FUNCTION("lO01m-JcDqM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_cbrtl);
-    LIB_FUNCTION("gacfOmO8hNs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ceil);
-    LIB_FUNCTION("GAUuLKGhsCw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ceilf);
-    LIB_FUNCTION("aJKn6X+40Z8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ceill);
     LIB_FUNCTION("St9nbxSoezk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_clearerr);
     LIB_FUNCTION("cYNk9M+7YkY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16341,17 +15495,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_copysignf);
     LIB_FUNCTION("j84nSG4V0B0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_copysignl);
-    LIB_FUNCTION("2WE3BTYVwKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_cos);
-    LIB_FUNCTION("-P6FNMzk2Kc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosf);
-    LIB_FUNCTION("m7iLTaO9RMs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosh);
-    LIB_FUNCTION("RCQAffkEh9A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_coshf);
-    LIB_FUNCTION("XK2R46yx0jc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_coshl);
-    LIB_FUNCTION("x8dc5Y8zFgc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosl);
     LIB_FUNCTION("0uAUs3hYuG4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_ctime);
     LIB_FUNCTION("2UFh+YKfuzk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16399,29 +15542,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_errx);
     LIB_FUNCTION("uMei1W9uyNo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_exit);
-    LIB_FUNCTION("NVadfnzQhHQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_exp);
-    LIB_FUNCTION("dnaeGXbjP6E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_exp2);
-    LIB_FUNCTION("wuAQt-j+p4o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_exp2f);
-    LIB_FUNCTION("9O1Xdko-wSo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_exp2l);
-    LIB_FUNCTION("8zsu04XNsZ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expf);
-    LIB_FUNCTION("qMp2fTDCyMo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expl);
-    LIB_FUNCTION("gqKfOiJaCOo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expm1);
-    LIB_FUNCTION("3EgxfDRefdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expm1f);
-    LIB_FUNCTION("jVS263HH1b0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expm1l);
-    LIB_FUNCTION("388LcMWHRCA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fabs);
-    LIB_FUNCTION("fmT2cjPoWBs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fabsf);
-    LIB_FUNCTION("w-AryX51ObA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fabsl);
     LIB_FUNCTION("uodLYyUip20", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fclose);
     LIB_FUNCTION("cBSM-YB7JVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16500,12 +15620,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_finitef);
     LIB_FUNCTION("hGljHZEfF0U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_flockfile);
-    LIB_FUNCTION("mpcTgMzhUY8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_floor);
-    LIB_FUNCTION("mKhVDmYciWA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_floorf);
-    LIB_FUNCTION("06QaR1Cpn-k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_floorl);
     LIB_FUNCTION("G3qjOUu7KnM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_flsl);
     LIB_FUNCTION("YKbL5KR6RDI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_fma);
@@ -16513,24 +15627,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_fmaf);
     LIB_FUNCTION("uMeLdbwheag", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fmal);
-    LIB_FUNCTION("fiOgmWkP+Xc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmax);
-    LIB_FUNCTION("Lyx2DzUL7Lc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmaxf);
-    LIB_FUNCTION("0H5TVprQSkA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmaxl);
-    LIB_FUNCTION("iU0z6SdUNbI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmin);
-    LIB_FUNCTION("uVRcM2yFdP4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fminf);
-    LIB_FUNCTION("DQ7K6s8euWY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fminl);
-    LIB_FUNCTION("pKwslsMUmSk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmod);
-    LIB_FUNCTION("88Vv-AzHVj8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmodf);
-    LIB_FUNCTION("A1R5T0xOyn8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmodl);
     LIB_FUNCTION("xeYO4u7uyJ0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fopen);
     LIB_FUNCTION("NL836gOLANs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16547,20 +15643,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_fputws);
     LIB_FUNCTION("lbB+UlZqVG0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fread);
-    LIB_FUNCTION("tIhsqj0qsFE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_free);
     LIB_FUNCTION("N2OjwJJGjeQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_freeifaddrs);
     LIB_FUNCTION("gkWgn0p1AfU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_freopen);
     LIB_FUNCTION("NdvAi34vV3g", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_freopen_s);
-    LIB_FUNCTION("kA-TdiOCsaY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_frexp);
-    LIB_FUNCTION("aaDMGGkXFxo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_frexpf);
-    LIB_FUNCTION("YZk9sHO0yNg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_frexpl);
     LIB_FUNCTION("rQFVBXp-Cxg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fseek);
     LIB_FUNCTION("pkYiKw09PRA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16641,16 +15729,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_hypotl);
     LIB_FUNCTION("ODGONXcSmz4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_ignore_handler_s);
-    LIB_FUNCTION("h6pVBKjcLiU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ilogb);
-    LIB_FUNCTION("0dQrYWd7g94", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ilogbf);
-    LIB_FUNCTION("wXs12eD3uvA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ilogbl);
-    LIB_FUNCTION("UgZ7Rhk60cQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_imaxabs);
-    LIB_FUNCTION("V0X-mrfdM9E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_imaxdiv);
     LIB_FUNCTION("t3RFHn0bTPg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_index);
     LIB_FUNCTION("sBBuXmJ5Kjk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16675,22 +15753,12 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_isdigit);
     LIB_FUNCTION("rrgxakQtvc0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_isgraph);
-    LIB_FUNCTION("2q5PPh7HsKE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_isinf);
-    LIB_FUNCTION("KqYTqtSfGos", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_islower);
-    LIB_FUNCTION("20qj+7O69XY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_isnan);
-    LIB_FUNCTION("3pF7bUSIH8o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_isnanf);
     LIB_FUNCTION("eGkOpTojJl4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_isprint);
     LIB_FUNCTION("I6Z-684E2C4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_ispunct);
     LIB_FUNCTION("wazw2x2m3DQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_isspace);
-    LIB_FUNCTION("GcFKlTJEMkI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_isupper);
     LIB_FUNCTION("wDmL2EH0CBs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_iswalnum);
     LIB_FUNCTION("D-qDARDb1aM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16771,35 +15839,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_localtime);
     LIB_FUNCTION("fiiNDnNBKVY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_localtime_s);
-    LIB_FUNCTION("rtV7-jWC6Yg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_log);
-    LIB_FUNCTION("WuMbPBKN1TU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log10);
-    LIB_FUNCTION("lhpd6Wk6ccs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log10f);
-    LIB_FUNCTION("CT4aR0tBgkQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log10l);
-    LIB_FUNCTION("VfsML+n9cDM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log1p);
-    LIB_FUNCTION("MFe91s8apQk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log1pf);
-    LIB_FUNCTION("77qd0ksTwdI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log1pl);
-    LIB_FUNCTION("Y5DhuDKGlnQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log2);
-    LIB_FUNCTION("hsi9drzHR2k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log2f);
-    LIB_FUNCTION("CfOrGjBj-RY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log2l);
-    LIB_FUNCTION("owKuegZU4ew", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logb);
-    LIB_FUNCTION("RWqyr1OKuw4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logbf);
-    LIB_FUNCTION("txJTOe0Db6M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logbl);
-    LIB_FUNCTION("RQXLbdT2lc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logf);
-    LIB_FUNCTION("EiHf-aLDImI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logl);
     LIB_FUNCTION("lKEN2IebgJ0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_longjmp);
     LIB_FUNCTION("5IpoNfxu84U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16810,34 +15849,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_lrintf);
     LIB_FUNCTION("jp2e+RSrcow", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_lrintl);
-    LIB_FUNCTION("J3XuGS-cC0Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_lround);
-    LIB_FUNCTION("C6gWCWJKM+U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_lroundf);
-    LIB_FUNCTION("4ITASgL50uc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_lroundl);
     LIB_FUNCTION("GipcbdDM5cI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_makecontext);
-    LIB_FUNCTION("gQX+4GDQjpM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc);
-    LIB_FUNCTION("ECOPpUQEch0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_check_memory_bounds);
-    LIB_FUNCTION("J6FoFNydpFI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_finalize);
-    LIB_FUNCTION("SlG1FN-y0N0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_get_footer_value);
-    LIB_FUNCTION("Nmezc1Lh7TQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_get_malloc_state);
-    LIB_FUNCTION("owT6zLJxrTs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_initialize);
-    LIB_FUNCTION("0F08WOP8G3s", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_report_memory_blocks);
-    LIB_FUNCTION("CC-BLMBu9-I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_stats);
-    LIB_FUNCTION("KuOuD58hqn4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_stats_fast);
-    LIB_FUNCTION("NDcSfcYZRC8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_malloc_usable_size);
     LIB_FUNCTION("hew0fReI2H0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_mblen);
     LIB_FUNCTION("j6OnScWpu7k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16860,26 +15873,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_mbstowcs_s);
     LIB_FUNCTION("6eU9xX9oEdQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_mbtowc);
-    LIB_FUNCTION("Ujf3KzMvRmI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memalign);
-    LIB_FUNCTION("8u8lPzUEq+U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memchr);
-    LIB_FUNCTION("DfivPArhucg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memcmp);
-    LIB_FUNCTION("Q3VBxCXhUHs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memcpy);
-    LIB_FUNCTION("NFLs+dRJGNg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memcpy_s);
-    LIB_FUNCTION("+P6FRGH4LfA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memmove);
-    LIB_FUNCTION("B59+zQQCcbU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memmove_s);
-    LIB_FUNCTION("5G2ONUzRgjY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memrchr);
-    LIB_FUNCTION("8zTFvBIAIN8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memset);
-    LIB_FUNCTION("h8GwqPFbu6I", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_memset_s);
     LIB_FUNCTION("HWEOv0+n7cU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_mergesort);
     LIB_FUNCTION("n7AepwR0s34", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16892,11 +15885,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_modfl);
     LIB_FUNCTION("k-l0Jth-Go8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_mrand48);
-    LIB_FUNCTION("zck+6bVj5pA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_nan);
-    LIB_FUNCTION("DZU+K1wozGI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_nanf);
-    LIB_FUNCTION("ZUvemFIkkhQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_nanl);
     LIB_FUNCTION("cJLTwtKGXJk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_nearbyint);
     LIB_FUNCTION("c+4r-T-tEIc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16933,8 +15921,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_optreset);
     LIB_FUNCTION("EMutwaQ34Jo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_perror);
-    LIB_FUNCTION("cVSk9y8URbc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_posix_memalign);
     LIB_FUNCTION("3Nr9caNHhyg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_posix_spawn);
     LIB_FUNCTION("Heh4KJwyoX8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -16977,11 +15963,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_posix_spawnattr_setsigmask);
     LIB_FUNCTION("IUfBO5UIZNc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_posix_spawnp);
-    LIB_FUNCTION("9LCjpWyQ5Zc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_pow);
-    LIB_FUNCTION("1D0H2KNjshE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_powf);
-    LIB_FUNCTION("95V3PF0kUEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_powl);
     LIB_FUNCTION("tjuEJo1obls", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_psignal);
     LIB_FUNCTION("tLB5+4TEOK0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17018,16 +15999,8 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_readdir);
     LIB_FUNCTION("J0kng1yac3M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_readdir_r);
-    LIB_FUNCTION("Y7aJ1uydPMo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_realloc);
-    LIB_FUNCTION("OGybVuPAhAY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_reallocalign);
-    LIB_FUNCTION("YMZO9ChZb0E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_reallocf);
     LIB_FUNCTION("vhtcIgZG-Lk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_realpath);
-    LIB_FUNCTION("pv2etu4pocs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_remainder);
     LIB_FUNCTION("eS+MVq+Lltw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_remainderf);
     LIB_FUNCTION("MvdnffYU3jg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17130,29 +16103,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_sigsetmask);
     LIB_FUNCTION("yhxKO9LYc8A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sigvec);
-    LIB_FUNCTION("H8ya2H00jbI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sin);
-    LIB_FUNCTION("jMB7EFyu30Y", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sincos);
-    LIB_FUNCTION("pztV4AF18iI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sincosf);
-    LIB_FUNCTION("Q4rRL34CEeE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinf);
-    LIB_FUNCTION("ZjtRqSMJwdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinh);
-    LIB_FUNCTION("1t1-JoZ0sZQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinhf);
-    LIB_FUNCTION("lYdqBvDgeHU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinhl);
-    LIB_FUNCTION("vxgqrJxDPHo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinl);
-    LIB_FUNCTION("MXRNWnosNlM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sqrt);
-    LIB_FUNCTION("Q+xU11-h0xQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sqrtf);
-    LIB_FUNCTION("RIkUZRadZgc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sqrtl);
-    LIB_FUNCTION("VPbJwTCgME0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_srand);
     LIB_FUNCTION("+KSnjvZ0NMc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_srand48);
     LIB_FUNCTION("sPC7XE6hfFY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17177,17 +16127,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_sys_signame);
     LIB_FUNCTION("UNS2V4S097M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_syslog);
-    LIB_FUNCTION("T7uyNqP7vQA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tan);
-    LIB_FUNCTION("ZE6RNL+eLbk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanf);
-    LIB_FUNCTION("JM4EBvWT9rc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanh);
-    LIB_FUNCTION("SAd0Z3wKwLA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanhf);
-    LIB_FUNCTION("JCmHsYVc2eo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanhl);
-    LIB_FUNCTION("QL+3q43NfEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanl);
     LIB_FUNCTION("RZA5RZawY04", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_telldir);
     LIB_FUNCTION("b7J3q7-UABY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -17332,20 +16271,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal_wctrans);
     LIB_FUNCTION("+3PtYiUxl-U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_wctype);
-    LIB_FUNCTION("fnUEjBCNRVU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemchr);
-    LIB_FUNCTION("QJ5xVfKkni0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemcmp);
-    LIB_FUNCTION("fL3O02ypZFE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemcpy);
-    LIB_FUNCTION("BTsuaJ6FxKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemcpy_s);
-    LIB_FUNCTION("Noj9PsJrsa8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemmove);
-    LIB_FUNCTION("F8b+Wb-YQVs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemmove_s);
-    LIB_FUNCTION("Al8MZJh-4hM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_wmemset);
     LIB_FUNCTION("inwDBwEvw18", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_xtime_get);
     LIB_FUNCTION("RvsFE8j3C38", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_y0);
