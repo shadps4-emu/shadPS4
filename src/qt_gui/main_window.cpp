@@ -58,7 +58,8 @@ bool MainWindow::Init() {
         window_title = fmt::format("shadPS4 v{}", Common::VERSION);
     } else {
         std::string remote_url(Common::g_scm_remote_url);
-        if (remote_url == "https://github.com/shadps4-emu/shadPS4.git") {
+        if (remote_url == "https://github.com/shadps4-emu/shadPS4.git" ||
+            remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
                                        Common::g_scm_desc);
         } else {
