@@ -526,4 +526,4 @@ void RegisterlibSceLibcInternalStr(Core::Loader::SymbolsResolver* sym) {
                  internal_wcsstr);
 }
 
-}
+} // namespace Libraries::LibcInternal

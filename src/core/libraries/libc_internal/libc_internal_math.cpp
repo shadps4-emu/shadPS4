@@ -568,8 +568,7 @@ s32 PS4_SYSV_ABI internal_tanl() {
 
 void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ye20uNnlglA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_abs);
-    LIB_FUNCTION("JBcgYuW8lPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_acos);
+    LIB_FUNCTION("JBcgYuW8lPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_acos);
     LIB_FUNCTION("QI-x0SL8jhw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_acosf);
     LIB_FUNCTION("Fk7-KFKZi-8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -580,8 +579,7 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_acoshl);
     LIB_FUNCTION("iH4YAIRcecA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_acosl);
-    LIB_FUNCTION("7Ly52zaL44Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_asin);
+    LIB_FUNCTION("7Ly52zaL44Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_asin);
     LIB_FUNCTION("GZWjF-YIFFk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_asinf);
     LIB_FUNCTION("2eQpqTjJ5Y4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -592,8 +590,7 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_asinhl);
     LIB_FUNCTION("Nx-F5v0-qU8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_asinl);
-    LIB_FUNCTION("OXmauLdQ8kY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_atan);
+    LIB_FUNCTION("OXmauLdQ8kY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_atan);
     LIB_FUNCTION("HUbZmOnT-Dg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_atan2);
     LIB_FUNCTION("EH-x713A99c", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -610,42 +607,34 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_atanhl);
     LIB_FUNCTION("KvOHPTz595Y", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_atanl);
-    LIB_FUNCTION("gacfOmO8hNs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_ceil);
+    LIB_FUNCTION("gacfOmO8hNs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_ceil);
     LIB_FUNCTION("GAUuLKGhsCw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_ceilf);
     LIB_FUNCTION("aJKn6X+40Z8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_ceill);
     LIB_FUNCTION("2WE3BTYVwKM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_cos);
-    LIB_FUNCTION("-P6FNMzk2Kc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosf);
-    LIB_FUNCTION("m7iLTaO9RMs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosh);
+    LIB_FUNCTION("-P6FNMzk2Kc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_cosf);
+    LIB_FUNCTION("m7iLTaO9RMs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_cosh);
     LIB_FUNCTION("RCQAffkEh9A", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_coshf);
     LIB_FUNCTION("XK2R46yx0jc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_coshl);
-    LIB_FUNCTION("x8dc5Y8zFgc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_cosl);
+    LIB_FUNCTION("x8dc5Y8zFgc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_cosl);
     LIB_FUNCTION("NVadfnzQhHQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_exp);
-    LIB_FUNCTION("dnaeGXbjP6E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_exp2);
+    LIB_FUNCTION("dnaeGXbjP6E", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_exp2);
     LIB_FUNCTION("wuAQt-j+p4o", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_exp2f);
     LIB_FUNCTION("9O1Xdko-wSo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_exp2l);
-    LIB_FUNCTION("8zsu04XNsZ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expf);
-    LIB_FUNCTION("qMp2fTDCyMo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_expl);
+    LIB_FUNCTION("8zsu04XNsZ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_expf);
+    LIB_FUNCTION("qMp2fTDCyMo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_expl);
     LIB_FUNCTION("gqKfOiJaCOo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_expm1);
     LIB_FUNCTION("3EgxfDRefdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_expm1f);
     LIB_FUNCTION("jVS263HH1b0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_expm1l);
-    LIB_FUNCTION("388LcMWHRCA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fabs);
+    LIB_FUNCTION("388LcMWHRCA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_fabs);
     LIB_FUNCTION("fmT2cjPoWBs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fabsf);
     LIB_FUNCTION("w-AryX51ObA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -656,20 +645,17 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_floorf);
     LIB_FUNCTION("06QaR1Cpn-k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_floorl);
-    LIB_FUNCTION("fiOgmWkP+Xc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmax);
+    LIB_FUNCTION("fiOgmWkP+Xc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_fmax);
     LIB_FUNCTION("Lyx2DzUL7Lc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fmaxf);
     LIB_FUNCTION("0H5TVprQSkA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fmaxl);
-    LIB_FUNCTION("iU0z6SdUNbI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmin);
+    LIB_FUNCTION("iU0z6SdUNbI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_fmin);
     LIB_FUNCTION("uVRcM2yFdP4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fminf);
     LIB_FUNCTION("DQ7K6s8euWY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fminl);
-    LIB_FUNCTION("pKwslsMUmSk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_fmod);
+    LIB_FUNCTION("pKwslsMUmSk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_fmod);
     LIB_FUNCTION("88Vv-AzHVj8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_fmodf);
     LIB_FUNCTION("A1R5T0xOyn8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -713,22 +699,18 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_log1pf);
     LIB_FUNCTION("77qd0ksTwdI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_log1pl);
-    LIB_FUNCTION("Y5DhuDKGlnQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_log2);
+    LIB_FUNCTION("Y5DhuDKGlnQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_log2);
     LIB_FUNCTION("hsi9drzHR2k", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_log2f);
     LIB_FUNCTION("CfOrGjBj-RY", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_log2l);
-    LIB_FUNCTION("owKuegZU4ew", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logb);
+    LIB_FUNCTION("owKuegZU4ew", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_logb);
     LIB_FUNCTION("RWqyr1OKuw4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_logbf);
     LIB_FUNCTION("txJTOe0Db6M", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_logbl);
-    LIB_FUNCTION("RQXLbdT2lc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logf);
-    LIB_FUNCTION("EiHf-aLDImI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_logl);
+    LIB_FUNCTION("RQXLbdT2lc4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_logf);
+    LIB_FUNCTION("EiHf-aLDImI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_logl);
     LIB_FUNCTION("J3XuGS-cC0Q", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_lround);
     LIB_FUNCTION("C6gWCWJKM+U", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -736,15 +718,11 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4ITASgL50uc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_lroundl);
     LIB_FUNCTION("zck+6bVj5pA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_nan);
-    LIB_FUNCTION("DZU+K1wozGI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_nanf);
-    LIB_FUNCTION("ZUvemFIkkhQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_nanl);
+    LIB_FUNCTION("DZU+K1wozGI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_nanf);
+    LIB_FUNCTION("ZUvemFIkkhQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_nanl);
     LIB_FUNCTION("9LCjpWyQ5Zc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_pow);
-    LIB_FUNCTION("1D0H2KNjshE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_powf);
-    LIB_FUNCTION("95V3PF0kUEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_powl);
+    LIB_FUNCTION("1D0H2KNjshE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_powf);
+    LIB_FUNCTION("95V3PF0kUEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_powl);
     LIB_FUNCTION("pv2etu4pocs", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_remainder);
     LIB_FUNCTION("H8ya2H00jbI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sin);
@@ -752,18 +730,14 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
                  internal_sincos);
     LIB_FUNCTION("pztV4AF18iI", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sincosf);
-    LIB_FUNCTION("Q4rRL34CEeE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinf);
-    LIB_FUNCTION("ZjtRqSMJwdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinh);
+    LIB_FUNCTION("Q4rRL34CEeE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sinf);
+    LIB_FUNCTION("ZjtRqSMJwdw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sinh);
     LIB_FUNCTION("1t1-JoZ0sZQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sinhf);
     LIB_FUNCTION("lYdqBvDgeHU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sinhl);
-    LIB_FUNCTION("vxgqrJxDPHo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sinl);
-    LIB_FUNCTION("MXRNWnosNlM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_sqrt);
+    LIB_FUNCTION("vxgqrJxDPHo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sinl);
+    LIB_FUNCTION("MXRNWnosNlM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_sqrt);
     LIB_FUNCTION("Q+xU11-h0xQ", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_sqrtf);
     LIB_FUNCTION("RIkUZRadZgc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -771,16 +745,13 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("VPbJwTCgME0", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_srand);
     LIB_FUNCTION("T7uyNqP7vQA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tan);
-    LIB_FUNCTION("ZE6RNL+eLbk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanf);
-    LIB_FUNCTION("JM4EBvWT9rc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanh);
+    LIB_FUNCTION("ZE6RNL+eLbk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tanf);
+    LIB_FUNCTION("JM4EBvWT9rc", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tanh);
     LIB_FUNCTION("SAd0Z3wKwLA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_tanhf);
     LIB_FUNCTION("JCmHsYVc2eo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_tanhl);
-    LIB_FUNCTION("QL+3q43NfEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_tanl);
+    LIB_FUNCTION("QL+3q43NfEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tanl);
 }
 
-}
+} // namespace Libraries::LibcInternal

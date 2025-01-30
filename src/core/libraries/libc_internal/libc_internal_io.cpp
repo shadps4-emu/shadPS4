@@ -469,4 +469,4 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
                  internal_scanf_s);
 }
 
-}
+} // namespace Libraries::LibcInternal

@@ -312,9 +312,7 @@ void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
                  internal_malloc_usable_size);
     LIB_FUNCTION("MLWl90SFWNE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_operator_delete);
-    LIB_FUNCTION("tIhsqj0qsFE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_free);
-
+    LIB_FUNCTION("tIhsqj0qsFE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_free);
 }
 
-}
+} // namespace Libraries::LibcInternal

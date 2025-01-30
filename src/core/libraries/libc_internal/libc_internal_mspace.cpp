@@ -244,4 +244,4 @@ void RegisterlibSceLibcInternalMspace(Core::Loader::SymbolsResolver* sym) {
                  sceLibcPafMspaceTrim);
 }
 
-}
+} // namespace Libraries::LibcInternal
