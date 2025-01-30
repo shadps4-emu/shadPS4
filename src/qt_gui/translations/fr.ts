@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Afficher la taille des jeu dans la liste</translation>
+			<translation>Afficher la taille des jeux dans la liste</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
