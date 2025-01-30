@@ -114,7 +114,7 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
     if (isInitialPopulation) {
         std::sort(m_game_info->m_games.begin(), m_game_info->m_games.end(),
                   [this](const GameInfo& a, const GameInfo& b) {
-                      return CompareStringsAscending(a, b, 1); // Column 1 = Nome
+                      return CompareStringsAscending(a, b, 1); // Column 1 = Name
                   });
         ResizeIcons(icon_size);
     }
