@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm> // std::transform
-#include <cctype>    // std::tolower
 #include <QToolTip>
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -71,7 +69,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                 ListSortedAsc = true;
             }
             this->clearContents();
-            PopulateGameList();
+            PopulateGameList(false);
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
@@ -105,78 +103,65 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
-void GameListFrame::PopulateGameList() {
+void GameListFrame::PopulateGameList(bool isInitialPopulation) {
     // Do not show status column if it is not enabled
     this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setColumnHidden(6, !Config::GetLoadGameSizeEnabled());
 
-    // Update the row count in the table based on the number of games
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
 
-    // Populate the columns with data for each game
-    for (int i = 0; i < m_game_info->m_games.size(); i++) {
-        FillRowData(i);
+    if (isInitialPopulation) {
+        std::sort(m_game_info->m_games.begin(), m_game_info->m_games.end(),
+                  [this](const GameInfo& a, const GameInfo& b) {
+                      return CompareStringsAscending(a, b, 1); // Column 1 = Nome
+                  });
+        ResizeIcons(icon_size);
     }
 
-    std::sort(
-        m_game_info->m_games.begin(), m_game_info->m_games.end(),
-        [this](const GameInfo& a, const GameInfo& b) { return CompareStringsAscending(a, b, 1); });
-
-    ResizeIcons(icon_size);
-
-    // Update the table with the sorted data , Refill the row after sorting
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
-        FillRowData(i);
-    }
-}
+        SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
+        SetTableItem(i, 3, QString::fromStdString(m_game_info->m_games[i].serial));
+        SetRegionFlag(i, 4, QString::fromStdString(m_game_info->m_games[i].region));
+        SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].fw));
+        SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
+        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
 
-void GameListFrame::FillRowData(int i) {
-    // Fill columns with game data
-    SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
-    SetTableItem(i, 3, QString::fromStdString(m_game_info->m_games[i].serial));
-    SetRegionFlag(i, 4, QString::fromStdString(m_game_info->m_games[i].region));
-    SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].fw));
-    SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
-    SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
+        m_game_info->m_games[i].compatibility =
+            m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
+        SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility);
 
-    // Fill compatibility column
-    m_game_info->m_games[i].compatibility =
-        m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
-    SetCompatibilityItem(i, 2, m_game_info->m_games[i].compatibility);
-
-    // Fill playtime column
-    QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
-    if (playTime.isEmpty()) {
-        m_game_info->m_games[i].play_time = "0:00:00";
-        SetTableItem(i, 8, tr("Never Played"));
-    } else {
-        QStringList timeParts = playTime.split(':');
-        int hours = timeParts[0].toInt();
-        int minutes = timeParts[1].toInt();
-        int seconds = timeParts[2].toInt();
-
-        QString formattedPlayTime;
-        if (hours > 0) {
-            formattedPlayTime += QString("%1").arg(hours) + tr("h");
-        }
-        if (minutes > 0) {
-            formattedPlayTime += QString("%1").arg(minutes) + tr("m");
-        }
-
-        formattedPlayTime = formattedPlayTime.trimmed();
-        m_game_info->m_games[i].play_time = playTime.toStdString();
-        if (formattedPlayTime.isEmpty()) {
-            SetTableItem(i, 8, QString("%1").arg(seconds) + tr("s"));
+        QString playTime = GetPlayTime(m_game_info->m_games[i].serial);
+        if (playTime.isEmpty()) {
+            m_game_info->m_games[i].play_time = "0:00:00";
+            SetTableItem(i, 8, tr("Never Played"));
         } else {
-            SetTableItem(i, 8, formattedPlayTime);
-        }
-    }
+            QStringList timeParts = playTime.split(':');
+            int hours = timeParts[0].toInt();
+            int minutes = timeParts[1].toInt();
+            int seconds = timeParts[2].toInt();
 
-    // Fill path column
-    QString path;
-    Common::FS::PathToQString(path, m_game_info->m_games[i].path);
-    SetTableItem(i, 9, path);
+            QString formattedPlayTime;
+            if (hours > 0) {
+                formattedPlayTime += QString("%1").arg(hours) + tr("h");
+            }
+            if (minutes > 0) {
+                formattedPlayTime += QString("%1").arg(minutes) + tr("m");
+            }
+
+            formattedPlayTime = formattedPlayTime.trimmed();
+            m_game_info->m_games[i].play_time = playTime.toStdString();
+            if (formattedPlayTime.isEmpty()) {
+                SetTableItem(i, 8, QString("%1").arg(seconds) + tr("s"));
+            } else {
+                SetTableItem(i, 8, formattedPlayTime);
+            }
+        }
+
+        QString path;
+        Common::FS::PathToQString(path, m_game_info->m_games[i].path);
+        SetTableItem(i, 9, path);
+    }
 }
 
 void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {

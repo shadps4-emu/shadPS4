@@ -46,8 +46,7 @@ private:
     bool ListSortedAsc = true;
 
 public:
-    void PopulateGameList();
-    void FillRowData(int i);
+    void PopulateGameList(bool isInitialPopulation = true);
     void ResizeIcons(int iconSize);
 
     QImage backgroundImage;
