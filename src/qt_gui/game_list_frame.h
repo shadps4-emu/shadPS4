@@ -47,6 +47,7 @@ private:
 
 public:
     void PopulateGameList();
+    void FillRowData(int i);
     void ResizeIcons(int iconSize);
 
     QImage backgroundImage;
