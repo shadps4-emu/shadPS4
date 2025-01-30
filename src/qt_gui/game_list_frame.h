@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <algorithm>    // std::transform
-#include <cctype>   // std::tolower
+#include <algorithm> // std::transform
+#include <cctype>    // std::tolower
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
