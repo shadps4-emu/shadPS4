@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <algorithm> // std::transform
+#include <cctype>    // std::tolower
+
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -43,7 +46,7 @@ private:
     bool ListSortedAsc = true;
 
 public:
-    void PopulateGameList();
+    void PopulateGameList(bool isInitialPopulation = true);
     void ResizeIcons(int iconSize);
 
     QImage backgroundImage;
@@ -65,8 +68,12 @@ public:
 
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
-        case 1:
-            return a.name < b.name;
+        case 1: {
+            std::string name_a = a.name, name_b = b.name;
+            std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
+            std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
+            return name_a < name_b;
+        }
         case 2:
             return a.compatibility.status < b.compatibility.status;
         case 3:
@@ -90,8 +97,12 @@ public:
 
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
-        case 1:
-            return a.name > b.name;
+        case 1: {
+            std::string name_a = a.name, name_b = b.name;
+            std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
+            std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
+            return name_a > name_b;
+        }
         case 2:
             return a.compatibility.status > b.compatibility.status;
         case 3:

@@ -294,7 +294,7 @@ void Presenter::CreatePostProcessPipeline() {
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
-               Config::vkCrashDiagnosticEnabled()},
+               Config::getVkCrashDiagnosticEnabled()},
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
@@ -467,7 +467,7 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
     draw_scheduler.EndRendering();
     const auto cmdbuf = draw_scheduler.CommandBuffer();
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ShowSplash",
         });
@@ -541,7 +541,7 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
         .pImageMemoryBarriers = &post_barrier,
     });
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
@@ -573,7 +573,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         const auto label = fmt::format("PrepareFrameInternal:{}", image_id.index);
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = label.c_str(),
@@ -704,7 +704,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &post_barrier,
     });
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
@@ -755,7 +755,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Present",
         });
@@ -857,7 +857,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         }
     }
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
