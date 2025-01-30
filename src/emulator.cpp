@@ -57,6 +57,7 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
+    LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
@@ -199,8 +200,15 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     if (Common::isRelease) {
         window_title = fmt::format("shadPS4 v{} | {}", Common::VERSION, game_title);
     } else {
-        window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::VERSION, Common::g_scm_branch,
-                                   Common::g_scm_desc, game_title);
+        std::string remote_url(Common::g_scm_remote_url);
+        if (remote_url == "https://github.com/shadps4-emu/shadPS4.git") {
+            window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::VERSION,
+                                       Common::g_scm_branch, Common::g_scm_desc, game_title);
+        } else {
+            std::string remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
+            window_title = fmt::format("shadPS4 v{} {}/{} {} | {}", Common::VERSION, remote_host,
+                                       Common::g_scm_branch, Common::g_scm_desc, game_title);
+        }
     }
     window = std::make_unique<Frontend::WindowSDL>(
         Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
