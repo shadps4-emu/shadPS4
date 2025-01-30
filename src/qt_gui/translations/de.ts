@@ -329,11 +329,11 @@
 		</message>
 		<message>
 			<source>Game List Icons</source>
-			<translation>Game List Icons</translation>
+			<translation>Spiellisten-Symbole</translation>
 		</message>
 		<message>
 			<source>Game List Mode</source>
-			<translation>Spiellisten-Symoble</translation>
+			<translation>Spiellisten-Modus</translation>
 		</message>
 		<message>
 			<source>Settings</source>
@@ -1165,7 +1165,7 @@
 		</message>
 		<message>
 			<source>Failed to open file:</source>
-			<translation>Fehler beim Öffnen der Datei:</translation>
+			<translation>Öffnung der Datei ist fehlgeschlagen:</translation>
 		</message>
 		<message>
 			<source>XML ERROR:</source>
@@ -1212,7 +1212,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Kompatibilität</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1240,7 +1240,7 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Niemals gespielt</translation>
 		</message>
 		<message>
 			<source>h</source>
@@ -1256,27 +1256,27 @@
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Kompatibilität wurde noch nicht getested</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Das Spiel wird nicht richtig initialisiert / stürzt den Emulator ab</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Spiel startet, aber zeigt nur einen blanken Bildschirm</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Spiel zeigt ein Bild aber geht nicht über das Menü hinaus</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Spiel hat spiel-brechende Störungen oder unspielbare Leistung</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Spiel kann mit spielbarer Leistung und keinen großen Störungen abgeschlossen werden</translation>
 		</message>
 	</context>
 	<context>
