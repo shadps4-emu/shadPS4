@@ -42,8 +42,6 @@ class SaveInstance {
     std::filesystem::path param_sfo_path;
     std::filesystem::path corrupt_file_path;
 
-    Common::FS::IOFile corrupt_file;
-
     PSF param_sfo;
     std::string mount_point;
 

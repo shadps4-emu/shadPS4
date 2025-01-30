@@ -121,15 +121,17 @@ static void BackupThreadBody() {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.pop_front();
-            g_result_queue.push_back(std::move(req));
-            if (g_result_queue.size() > 20) {
-                g_result_queue.pop_front();
+            if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
+                g_result_queue.push_back(std::move(req));
+                if (g_result_queue.size() > 20) {
+                    g_result_queue.pop_front();
+                }
             }
         }
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
     }
     g_backup_status = WorkerStatus::NotStarted;
 }
