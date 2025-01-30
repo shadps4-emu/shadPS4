@@ -10,6 +10,7 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
+#include "save_backup.h"
 #include "save_instance.h"
 
 constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
@@ -140,7 +141,8 @@ SaveInstance& SaveInstance::operator=(SaveInstance&& other) noexcept {
     return *this;
 }
 
-void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_corrupt) {
+void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_corrupt,
+                                 bool dont_restore_backup) {
     if (mounted) {
         UNREACHABLE_MSG("Save instance is already mounted");
     }
@@ -159,13 +161,21 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         }
         exists = true;
     } else {
+        std::optional<fs::filesystem_error> err;
         if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
-            throw fs::filesystem_error("Corrupted save data", corrupt_file_path,
+            err = fs::filesystem_error("Corrupted save data", corrupt_file_path,
+                                       std::make_error_code(std::errc::illegal_byte_sequence));
+        } else if (!param_sfo.Open(param_sfo_path)) {
+            err = fs::filesystem_error("Failed to read param.sfo", param_sfo_path,
                                        std::make_error_code(std::errc::illegal_byte_sequence));
         }
-        if (!param_sfo.Open(param_sfo_path)) {
-            throw fs::filesystem_error("Failed to read param.sfo", param_sfo_path,
-                                       std::make_error_code(std::errc::illegal_byte_sequence));
+        if (err.has_value()) {
+            if (dont_restore_backup) {
+                throw err.value();
+            }
+            if (Backup::Restore(save_path)) {
+                return SetupAndMount(read_only, copy_icon, ignore_corrupt, true);
+            }
         }
     }
 

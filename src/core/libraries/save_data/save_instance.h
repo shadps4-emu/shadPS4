@@ -78,7 +78,8 @@ public:
     SaveInstance& operator=(const SaveInstance& other) = delete;
     SaveInstance& operator=(SaveInstance&& other) noexcept;
 
-    void SetupAndMount(bool read_only = false, bool copy_icon = false, bool ignore_corrupt = false);
+    void SetupAndMount(bool read_only = false, bool copy_icon = false, bool ignore_corrupt = false,
+                       bool dont_restore_backup = false);
 
     void Umount();
 

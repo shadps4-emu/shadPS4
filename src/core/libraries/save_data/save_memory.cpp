@@ -126,7 +126,7 @@ size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_
 
     const auto memory = save_dir / FilenameSaveDataMemory;
     if (fs::exists(memory)) {
-        return {fs::file_size(memory)};
+        return fs::file_size(memory);
     }
 
     return 0;
