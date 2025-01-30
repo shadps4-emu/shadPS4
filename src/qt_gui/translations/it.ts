@@ -702,23 +702,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Abilita Diagnostica Crash</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Raccogli Shaders</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Copia Buffer GPU </translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Marcatori di Debug dell'Host </translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Marcatori di Debug del Guest </translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -742,7 +742,7 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Musica del Titolo</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -954,23 +954,23 @@
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
-			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+			<translation>Raccogli Shader:\nBisogna attivare questa opzione per poter modificare gli shader nel menu di debug (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+			<translation>Diagnostica Crash:\nCrea un file .yaml che contiene informazioni riguardo lo stato del renderer Vulkan nel momento in cui si verifica un crash.\nUtile per poter effettuare il debug degli errori di tipo "Device Lost". Se hai questa opzione attiva dovresti abilitare anche Marcatori di Debug Host e Guest.\nNon è funzionante su GPU Intel.\nVulkan Validation Layers deve essere abilitato e bisogna aver installato l'SDK Vulkan per poter utilizzare questa funzione.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+			<translation>Copia Buffer GPU:\nCerca di aggirare le race conditions che riguardano gli invii alla GPU.\nPotrebbe aiutare ad evitare crash che riguardano i PM4 di tipo 0.</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Marcatori di Debug dell'Host:\nInserisce nel log informazioni ottenute dall'emulatore come ad esempio marcatori per comandi specifici AMDGPU quando si hanno comandi Vulkan e associa nomi di debug per le risorse.\nSe hai questa opzione abilitata dovresti abilitare anche Diagnostica Crash.\nUseful for programs like RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Marcatori di Debug del Guest:\nInserisce nel log marcatori di debug che il gioco stesso ha aggiunto al buffer dei comandi.\nSe hai abilitato questa opzione dovresti abilitare anche Diagnostica Crash.\nUtile per programmi come RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
