@@ -702,23 +702,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Activer le diagnostic de crash</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Collecter les shaders</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Copier la mémoire tampon GPU</translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Marqueur de débogage hôte</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Marqueur de débogage invité</translation>
 		</message>
 		<message>
 			<source>Update</source>
