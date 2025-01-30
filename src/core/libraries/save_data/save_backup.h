@@ -25,6 +25,8 @@ enum class OrbisSaveDataEventType : u32 {
     UMOUNT_BACKUP = 1,
     BACKUP = 2,
     SAVE_DATA_MEMORY_SYNC = 3,
+
+    __DO_NOT_SAVE = 1000000, // This value is only for the backup thread
 };
 
 struct BackupRequest {
