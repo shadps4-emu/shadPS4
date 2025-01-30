@@ -105,7 +105,11 @@
 			<translation>Spielordner öffnen</translation>
 		</message>
 		<message>
-			<source>Open Save Data Folder</source>
+    			<source>Open Update Folder</source>
+    			<translation>Öffne Update-Ordner</translation>
+		</message>
+		<message>
+		 	<source>Open Save Data Folder</source>
 			<translation>Speicherordner öffnen</translation>
 		</message>
 		<message>
@@ -139,7 +143,11 @@
 		<message>
 			<source>Delete Update</source>
 			<translation>Lösche Aktualisierung</translation>
-		</message>
+		 </message>
+		 <message>
+    			<source>Delete Save Data</source>
+   			<translation>Lösche Speicherdaten</translation>
+		</message>		 
 		<message>
 			<source>Delete DLC</source>
 			<translation>Lösche DLC</translation>
@@ -513,7 +521,11 @@
 	<context>
 		<name>SettingsDialog</name>
 		<message>
-			<source>Settings</source>
+  		  	<source>Save Data Path</source>
+   		 	<translation>Speicherdaten-Pfad</translation>
+		</message>
+		<message>
+		 <source>Settings</source>
 			<translation>Einstellungen</translation>
 		</message>
 		<message>
@@ -599,6 +611,10 @@
 		<message>
 			<source>Input</source>
 			<translation>Eingabe</translation>
+		</message> 
+		<message>
+			 <source>Enable Motion Controls</source>
+   			 <translation>Aktiviere Bewegungssteuerung</translation>
 		</message>
 		<message>
 			<source>Cursor</source>
