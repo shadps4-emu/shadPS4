@@ -35,20 +35,20 @@ struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     u32 num_color_attachments;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
-    std::array<AmdGpu::NumberFormat, Liverpool::NumColorBuffers> color_num_formats;
-    std::array<AmdGpu::NumberConversion, Liverpool::NumColorBuffers> color_num_conversions;
-    std::array<AmdGpu::CompMapping, Liverpool::NumColorBuffers> color_swizzles;
+    std::array<Shader::FragmentRuntimeInfo::PsColorBuffer, Liverpool::NumColorBuffers>
+        color_buffers;
     vk::Format depth_format;
     vk::Format stencil_format;
 
     struct {
+        bool clip_disable : 1;
         bool depth_test_enable : 1;
         bool depth_write_enable : 1;
         bool depth_bounds_test_enable : 1;
         bool depth_bias_enable : 1;
         bool stencil_test_enable : 1;
         // Must be named to be zero-initialized.
-        u8 _unused : 3;
+        u8 _unused : 2;
     };
     vk::CompareOp depth_compare_op;
 
@@ -92,6 +92,10 @@ public:
 
     auto GetMrtMask() const {
         return key.mrt_mask;
+    }
+
+    auto IsClipDisabled() const {
+        return key.clip_disable;
     }
 
     [[nodiscard]] bool IsPrimitiveListTopology() const {

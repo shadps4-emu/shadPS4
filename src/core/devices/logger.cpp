@@ -1,5 +1,5 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-//  SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
 #include "core/libraries/kernel/file_system.h"
@@ -17,10 +17,12 @@ s64 Logger::write(const void* buf, size_t nbytes) {
 }
 
 size_t Logger::writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+    size_t total_written = 0;
     for (int i = 0; i < iovcnt; i++) {
         log(static_cast<const char*>(iov[i].iov_base), iov[i].iov_len);
+        total_written += iov[i].iov_len;
     }
-    return iovcnt;
+    return total_written;
 }
 
 s64 Logger::pwrite(const void* buf, size_t nbytes, u64 offset) {

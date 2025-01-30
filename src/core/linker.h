@@ -49,7 +49,7 @@ class Linker;
 struct EntryParams {
     int argc;
     u32 padding;
-    const char* argv[3];
+    const char* argv[33];
     VAddr entry_addr;
 };
 
@@ -109,10 +109,13 @@ public:
 
     void RelocateAnyImports(Module* m) {
         Relocate(m);
-        for (auto& module : m_modules) {
-            const auto imports = module->GetImportModules();
-            if (std::ranges::contains(imports, m->name, &ModuleInfo::name)) {
-                Relocate(module.get());
+        const auto exports = m->GetExportModules();
+        for (auto& export_mod : exports) {
+            for (auto& module : m_modules) {
+                const auto imports = module->GetImportModules();
+                if (std::ranges::contains(imports, export_mod.name, &ModuleInfo::name)) {
+                    Relocate(module.get());
+                }
             }
         }
     }
@@ -143,7 +146,7 @@ public:
     void Relocate(Module* module);
     bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
-    void Execute();
+    void Execute(const std::vector<std::string> args = {});
     void DebugDump();
 
 private:

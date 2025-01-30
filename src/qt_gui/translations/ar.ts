@@ -248,6 +248,10 @@
 			<translation>الألعاب الأخيرة</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>خروج</translation>
 		</message>
@@ -537,8 +541,16 @@
 			<translation>تمكين ملء الشاشة</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>وضع ملء الشاشة</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>علامة التبويب الافتراضية عند فتح الإعدادات</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -617,6 +629,14 @@
 			<translation>الرسومات</translation>
 		</message>
 		<message>
+			<source>Gui</source>
+			<translation>واجهة</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>مستخدم</translation>
+		</message>
+		<message>
 			<source>Graphics Device</source>
 			<translation>جهاز الرسومات</translation>
 		</message>
@@ -681,6 +701,26 @@
 			<translation>RenderDoc تمكين تصحيح أخطاء</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>تحديث</translation>
 		</message>
@@ -699,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>إعدادات الواجهة</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -801,7 +845,7 @@
 			<translation>تحديث: Release: إصدارات رسمية تصدر شهريًا، قد تكون قديمة بعض الشيء، لكنها أكثر استقرارًا واختبارًا. Nightly: إصدارات تطوير تحتوي على أحدث الميزات والإصلاحات، لكنها قد تحتوي على أخطاء وأقل استقرارًا.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>تشغيل موسيقى العنوان:\nإذا كانت اللعبة تدعم ذلك، قم بتمكين تشغيل موسيقى خاصة عند اختيار اللعبة في واجهة المستخدم.</translation>
 		</message>
 		<message>
@@ -907,6 +951,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>تمكين تصحيح RenderDoc:\nإذا تم التمكين، سيوفر المحاكي توافقًا مع Renderdoc لالتقاط وتحليل الإطار الذي يتم عرضه حاليًا.</translation>
+		</message>
+        <message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
 		</message>
 	</context>
 	<context>

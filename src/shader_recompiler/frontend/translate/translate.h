@@ -90,8 +90,10 @@ public:
     void S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst);
     void S_XOR_B32(const GcnInst& inst);
     void S_LSHL_B32(const GcnInst& inst);
+    void S_LSHL_B64(const GcnInst& inst);
     void S_LSHR_B32(const GcnInst& inst);
     void S_ASHR_I32(const GcnInst& inst);
+    void S_ASHR_I64(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_BFE(const GcnInst& inst, bool is_signed);
@@ -168,6 +170,7 @@ public:
     void V_SUBBREV_U32(const GcnInst& inst);
     void V_LDEXP_F32(const GcnInst& inst);
     void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
+    void V_CVT_PKNORM_I16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
 
     // VOP1
@@ -242,6 +245,7 @@ public:
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_CVT_PK_U16_U32(const GcnInst& inst);
+    void V_CVT_PK_I16_I32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
@@ -303,6 +307,13 @@ private:
 
     IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
                              const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
+
+    void ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
+                        const FragmentRuntimeInfo::PsColorBuffer& color_buffer);
+    void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
+    void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
+    void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
+    void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
 
     void LogMissingOpcode(const GcnInst& inst);
 

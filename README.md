@@ -55,6 +55,9 @@ This project began as a fun project. Given our limited free time, it may take so
 
 # Building
 
+> [!IMPORTANT]
+> If you want to use shadPS4 to play your games, you don't have to follow the build instructions, you can simply download the emulator from either the [**release tab**](https://github.com/shadps4-emu/shadPS4/releases) or the [**action tab**](https://github.com/shadps4-emu/shadPS4/actions).
+
 ## Windows
 
 Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
@@ -75,6 +78,9 @@ Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shad
 For more information on how to test, debug and report issues with the emulator or games, read the [**Debugging documentation**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
 
 # Keyboard and Mouse Mappings
+
+> [!NOTE]
+> Some keyboards may also require you to hold the Fn key to use the F\* keys. Mac users should use the Command key instead of Control, and need to use Command+F11 for full screen to avoid conflicting with system key bindings.
 
 | Button | Function |
 |-------------|-------------|

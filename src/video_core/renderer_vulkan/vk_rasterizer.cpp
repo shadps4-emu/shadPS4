@@ -504,6 +504,17 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         push_data.step0 = regs.vgt_instance_step_rate_0;
         push_data.step1 = regs.vgt_instance_step_rate_1;
+
+        // TODO(roamic): add support for multiple viewports and geometry shaders when ViewportIndex
+        // is encountered and implemented in the recompiler.
+        if (stage->stage == Shader::Stage::Vertex) {
+            push_data.xoffset =
+                regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
+            push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
+            push_data.yoffset =
+                regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
+            push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
+        }
         stage->PushUd(binding, push_data);
 
         BindBuffers(*stage, binding, push_data, set_writes, buffer_barriers);
@@ -791,8 +802,6 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             const auto mip = view.info.range.base.level;
             state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
             state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
-            ASSERT(old_img.info.size.width == state.width);
-            ASSERT(old_img.info.size.height == state.height);
         }
         auto& image = texture_cache.GetImage(image_id);
         if (image.binding.force_general) {
@@ -1032,7 +1041,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
-    UpdateViewportScissorState();
+    UpdateViewportScissorState(pipeline);
 
     auto& regs = liverpool->regs;
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1112,7 +1121,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     }
 }
 
-void Rasterizer::UpdateViewportScissorState() {
+void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
     const auto& regs = liverpool->regs;
 
     const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
@@ -1146,10 +1155,12 @@ void Rasterizer::UpdateViewportScissorState() {
 
     const auto& vp_ctl = regs.viewport_control;
     const float reduce_z =
-        instance.IsDepthClipControlSupported() &&
-                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
-            ? 1.0f
-            : 0.0f;
+        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
+
+    if (regs.polygon_control.enable_window_offset) {
+        LOG_ERROR(Render_Vulkan,
+                  "PA_SU_SC_MODE_CNTL.VTX_WINDOW_OFFSET_ENABLE support is not yet implemented.");
+    }
 
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
@@ -1157,20 +1168,35 @@ void Rasterizer::UpdateViewportScissorState() {
         if (vp.xscale == 0) {
             continue;
         }
-        const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
-        const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
-        const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
-        const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
+
         const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
         const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
-        viewports.push_back({
-            .x = xoffset - xscale,
-            .y = yoffset - yscale,
-            .width = xscale * 2.0f,
-            .height = yscale * 2.0f,
-            .minDepth = zoffset - zscale * reduce_z,
-            .maxDepth = zscale + zoffset,
-        });
+        if (pipeline.IsClipDisabled()) {
+            // In case if clipping is disabled we patch the shader to convert vertex position
+            // from screen space coordinates to NDC by defining a render space as full hardware
+            // window range [0..16383, 0..16383] and setting the viewport to its size.
+            viewports.push_back({
+                .x = 0.f,
+                .y = 0.f,
+                .width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB)),
+                .height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB)),
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
+            });
+        } else {
+            const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
+            const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
+            const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
+            const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
+            viewports.push_back({
+                .x = xoffset - xscale,
+                .y = yoffset - yscale,
+                .width = xscale * 2.0f,
+                .height = yscale * 2.0f,
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
+            });
+        }
 
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
@@ -1192,8 +1218,8 @@ void Rasterizer::UpdateViewportScissorState() {
     if (viewports.empty()) {
         // Vulkan requires providing at least one viewport.
         constexpr vk::Viewport empty_viewport = {
-            .x = 0.0f,
-            .y = 0.0f,
+            .x = -1.0f,
+            .y = -1.0f,
             .width = 1.0f,
             .height = 1.0f,
             .minDepth = 0.0f,
@@ -1213,8 +1239,8 @@ void Rasterizer::UpdateViewportScissorState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1224,8 +1250,8 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) 
 }
 
 void Rasterizer::ScopeMarkerEnd(bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1233,8 +1259,8 @@ void Rasterizer::ScopeMarkerEnd(bool from_guest) {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1245,8 +1271,8 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest
 
 void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                          bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();

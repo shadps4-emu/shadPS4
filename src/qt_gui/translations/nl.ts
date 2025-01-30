@@ -248,6 +248,10 @@
 			<translation>Recent Games</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Exit</translation>
 		</message>
@@ -537,8 +541,16 @@
 			<translation>Enable Fullscreen</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Volledig schermmodus</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Enable Separate Update Folder</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Standaardtabblad bij het openen van instellingen</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -617,6 +629,14 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
+			<source>Gui</source>
+			<translation>Interface</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Gebruiker</translation>
+		</message>
+		<message>
 			<source>Graphics Device</source>
 			<translation>Graphics Device</translation>
 		</message>
@@ -681,6 +701,26 @@
 			<translation>Enable RenderDoc Debugging</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Bijwerken</translation>
 		</message>
@@ -699,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>GUI-Instellingen</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -801,7 +845,7 @@
 			<translation>Updateren:\nRelease: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nNightly: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Speel titelsong:\nAls een game dit ondersteunt, wordt speciale muziek afgespeeld wanneer je het spel in de GUI selecteert.</translation>
 		</message>
 		<message>
@@ -907,6 +951,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>RenderDoc foutopsporing inschakelen:\nAls ingeschakeld, biedt de emulator compatibiliteit met Renderdoc om de momenteel gerenderde frame vast te leggen en te analyseren.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
 		</message>
 	</context>
 	<context>

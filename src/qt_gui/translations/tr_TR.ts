@@ -248,6 +248,10 @@
 			<translation>Son Oyunlar</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Çıkış</translation>
 		</message>
@@ -537,12 +541,20 @@
 			<translation>Tam Ekranı Etkinleştir</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Tam Ekran Modu</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Ayrı Güncelleme Klasörünü Etkinleştir</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Ayarlar açıldığında varsayılan sekme</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Göster oyun boyutunu listede</translation>
+			<translation>Oyun Boyutunu Listede Göster</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -562,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Kupa Anahtarı</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Kupa</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -615,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafikler</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Arayüz</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Kullanıcı</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -681,6 +701,26 @@
 			<translation>RenderDoc Hata Ayıklamayı Etkinleştir</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Güncelle</translation>
 		</message>
@@ -701,8 +741,12 @@
 			<translation>GUI Ayarları</translation>
 		</message>
 		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
+		</message>
+		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Kupa Açılır Pencerelerini Devre Dışı Bırak</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -710,23 +754,23 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Başlangıçta Uyumluluk Veritabanını Güncelle</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Oyun Uyumluluğu</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Uyumluluk Verilerini Göster</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Uyumluluk Veritabanını Güncelle</translation>
 		</message>
 		<message>
 			<source>Volume</source>
-			<translation>Ses seviyesi</translation>
+			<translation>Ses Seviyesi</translation>
 		</message>
 		<message>
 			<source>Audio Backend</source>
@@ -801,7 +845,7 @@
 			<translation>Güncelleme:\nRelease: Her ay yayınlanan resmi sürümler; çok eski olabilirler, ancak daha güvenilirdir ve test edilmiştir.\nNightly: Tüm en son özellikler ve düzeltmeler ile birlikte geliştirme sürümleri; hatalar içerebilir ve daha az kararlıdırlar.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI'de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
 		</message>
 		<message>
@@ -907,6 +951,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>RenderDoc Hata Ayıklamayı Etkinleştir:\nEğer etkinleştirilirse, emülatör mevcut render edilmiş çerçeveyi yakalamak ve analiz etmek için Renderdoc ile uyumluluk sunar.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
@@ -1085,11 +1149,11 @@
 		</message>
 		<message>
 			<source>The game is in version: %1</source>
-			<translation>Oyun sürümde: %1</translation>
+			<translation>Oyun sürümü: %1</translation>
 		</message>
 		<message>
 			<source>The downloaded patch only works on version: %1</source>
-			<translation>İndirilen yamanın sadece sürümde çalışıyor: %1</translation>
+			<translation>İndirilen yama sadece şu sürümde çalışıyor: %1</translation>
 		</message>
 		<message>
 			<source>You may need to update your game.</source>
@@ -1148,7 +1212,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Uyumluluk</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1176,35 +1240,35 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Hiç Oynanmadı</translation>
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>sa</translation>
 		</message>
 		<message>
 			<source>m</source>
-			<translation>m</translation>
+			<translation>dk</translation>
 		</message>
 		<message>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>sn</translation>
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Uyumluluk test edilmemiş</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Oyun düzgün bir şekilde başlatılamıyor / emülatörü çökertiyor</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Oyun başlatılabiliyor ancak yalnızca boş bir ekran gösteriyor</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Oyun bir resim gösteriyor ancak menüleri geçemiyor</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
@@ -1212,7 +1276,7 @@
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Oyun, oynanabilir performansla tamamlanabilir ve büyük aksaklık yok</translation>
 		</message>
 	</context>
 	<context>
@@ -1247,7 +1311,7 @@
 		</message>
 		<message>
 			<source>Your version is already up to date!</source>
-			<translation>Versiyonunuz zaten güncel!</translation>
+			<translation>Sürümünüz zaten güncel!</translation>
 		</message>
 		<message>
 			<source>Update Available</source>
@@ -1259,11 +1323,11 @@
 		</message>
 		<message>
 			<source>Current Version</source>
-			<translation>Mevcut Versiyon</translation>
+			<translation>Mevcut Sürüm</translation>
 		</message>
 		<message>
 			<source>Latest Version</source>
-			<translation>Son Versiyon</translation>
+			<translation>Son Sürüm</translation>
 		</message>
 		<message>
 			<source>Do you want to update?</source>
@@ -1315,7 +1379,7 @@
 		</message>
 		<message>
 			<source>Failed to create the update script file</source>
-			<translation>Güncelleme betiği dosyası oluşturulamadı</translation>
+			<translation>Güncelleme komut dosyası oluşturulamadı</translation>
 		</message>
 	</context>
 	<context>

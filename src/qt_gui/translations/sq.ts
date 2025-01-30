@@ -248,6 +248,10 @@
 			<translation>Lojërat e fundit</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Hap dosjen e shadPS4</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>Dil</translation>
 		</message>
@@ -537,8 +541,16 @@
 			<translation>Aktivizo Ekranin e plotë</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>Mënyra me ekran të plotë</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Aktivizo dosjen e ndarë të përditësimit</translation>
+		</message>
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
@@ -582,7 +594,7 @@
 		</message>
 		<message>
 			<source>Open Log Location</source>
-			<translation>Hap vendndodhjen e regjistrit</translation>
+			<translation>Hap vendndodhjen e Ditarit</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -615,6 +627,14 @@
 		<message>
 			<source>Graphics</source>
 			<translation>Grafika</translation>
+		</message>
+		<message>
+			<source>Gui</source>
+			<translation>Ndërfaqja</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>Përdoruesi</translation>
 		</message>
 		<message>
 			<source>Graphics Device</source>
@@ -681,6 +701,26 @@
 			<translation>Aktivizo Korrigjimin RenderDoc</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Përditëso</translation>
 		</message>
@@ -699,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>Cilësimet e GUI-së</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -801,8 +845,8 @@
 			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
-			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në GUI.</translation>
+			<source>GUIMusicGroupBox</source>
+			<translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në ndërfaqe.</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
@@ -907,6 +951,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
 		</message>
 	</context>
 	<context>

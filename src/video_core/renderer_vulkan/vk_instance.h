@@ -239,6 +239,11 @@ public:
         return subgroup_size;
     }
 
+    /// Returns the maximum size of compute shared memory.
+    u32 MaxComputeSharedMemorySize() const {
+        return properties.limits.maxComputeSharedMemorySize;
+    }
+
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;
@@ -272,6 +277,14 @@ public:
     /// Returns the minimum imported host pointer alignment
     u64 GetMinImportedHostPointerAlignment() const {
         return min_imported_host_pointer_alignment;
+    }
+
+    u32 GetMaxViewportWidth() const {
+        return properties.limits.maxViewportDimensions[0];
+    }
+
+    u32 GetMaxViewportHeight() const {
+        return properties.limits.maxViewportDimensions[1];
     }
 
     /// Returns the sample count flags supported by framebuffers.

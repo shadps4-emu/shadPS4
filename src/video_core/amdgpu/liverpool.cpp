@@ -636,6 +636,18 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 break;
             }
+            case PM4ItOpcode::MemSemaphore: {
+                const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
+                if (mem_semaphore->IsSignaling()) {
+                    mem_semaphore->Signal();
+                } else {
+                    while (!mem_semaphore->Signaled()) {
+                        YIELD_GFX();
+                    }
+                    mem_semaphore->Decrement();
+                }
+                break;
+            }
             case PM4ItOpcode::AcquireMem: {
                 // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
                 break;
@@ -845,6 +857,18 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 std::memcpy(write_data->Address<void*>(), write_data->data, data_size);
             } else {
                 UNREACHABLE();
+            }
+            break;
+        }
+        case PM4ItOpcode::MemSemaphore: {
+            const auto* mem_semaphore = reinterpret_cast<const PM4CmdMemSemaphore*>(header);
+            if (mem_semaphore->IsSignaling()) {
+                mem_semaphore->Signal();
+            } else {
+                while (!mem_semaphore->Signaled()) {
+                    YIELD_ASC(vqid);
+                }
+                mem_semaphore->Decrement();
             }
             break;
         }

@@ -125,6 +125,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+        info.vs_info.clip_disable = graphics_key.clip_disable;
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
             info.vs_info.tess_topology = regs.tess_config.topology;
@@ -166,11 +167,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
             };
         }
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
-            info.fs_info.color_buffers[i] = {
-                .num_format = graphics_key.color_num_formats[i],
-                .num_conversion = graphics_key.color_num_conversions[i],
-                .swizzle = graphics_key.color_swizzles[i],
-            };
+            info.fs_info.color_buffers[i] = graphics_key.color_buffers[i];
         }
         break;
     }
@@ -183,6 +180,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.cs_info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
                                     cs_pgm.IsTgidEnabled(2)};
         info.cs_info.shared_memory_size = cs_pgm.SharedMemSize();
+        info.cs_info.max_shared_memory_size = instance.MaxComputeSharedMemorySize();
         break;
     }
     default:
@@ -209,6 +207,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        .max_viewport_width = instance.GetMaxViewportWidth(),
+        .max_viewport_height = instance.GetMaxViewportHeight(),
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -261,6 +261,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
+    key.clip_disable =
+        regs.clipper_control.clip_disable || regs.primitive_type == AmdGpu::PrimitiveType::RectList;
     key.depth_test_enable = regs.depth_control.depth_enable;
     key.depth_write_enable =
         regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;
@@ -303,11 +305,9 @@ bool PipelineCache::RefreshGraphicsKey() {
     // order. We need to do some arrays compaction at this stage
     key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
-    key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
-    key.color_num_conversions.fill(AmdGpu::NumberConversion::None);
+    key.color_buffers.fill({});
     key.blend_controls.fill({});
     key.write_masks.fill({});
-    key.color_swizzles.fill({});
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     key.patch_control_points = 0;
@@ -332,9 +332,12 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_num_formats[remapped_cb] = col_buf.GetNumberFmt();
-        key.color_num_conversions[remapped_cb] = col_buf.GetNumberConversion();
-        key.color_swizzles[remapped_cb] = col_buf.Swizzle();
+        key.color_buffers[remapped_cb] = {
+            .num_format = col_buf.GetNumberFmt(),
+            .num_conversion = col_buf.GetNumberConversion(),
+            .swizzle = col_buf.Swizzle(),
+            .export_format = regs.color_export_format.GetFormat(cb),
+        };
     }
 
     fetch_shader = std::nullopt;
@@ -450,7 +453,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
             key.color_formats[remapped_cb] = vk::Format::eUndefined;
-            key.color_swizzles[remapped_cb] = {};
+            key.color_buffers[remapped_cb] = {};
             ++remapped_cb;
             continue;
         }

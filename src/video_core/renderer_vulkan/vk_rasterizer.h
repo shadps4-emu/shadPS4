@@ -76,7 +76,7 @@ private:
     void EliminateFastClear();
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
-    void UpdateViewportScissorState();
+    void UpdateViewportScissorState(const GraphicsPipeline& pipeline);
 
     bool FilterDraw();
 

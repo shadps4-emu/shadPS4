@@ -248,6 +248,10 @@
 			<translation>最近启动的游戏</translation>
 		</message>
 		<message>
+			<source>Open shadPS4 Folder</source>
+			<translation>Open shadPS4 Folder</translation>
+		</message>
+		<message>
 			<source>Exit</source>
 			<translation>退出</translation>
 		</message>
@@ -537,10 +541,18 @@
 			<translation>启用全屏</translation>
 		</message>
 		<message>
+			<source>Fullscreen Mode</source>
+			<translation>全屏模式</translation>
+		</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>启用单独的更新目录</translation>
 		</message>
-		<message> 
+		<message>
+			<source>Default tab when opening settings</source>
+			<translation>打开设置时的默认选项卡</translation>
+		</message>
+		<message>
 			<source>Show Game Size In List</source>
 			<translation>显示游戏大小在列表中</translation>
 		</message>
@@ -617,6 +629,14 @@
 			<translation>图像</translation>
 		</message>
 		<message>
+			<source>Gui</source>
+			<translation>界面</translation>
+		</message>
+		<message>
+			<source>User</source>
+			<translation>用户</translation>
+		</message>
+		<message>
 			<source>Graphics Device</source>
 			<translation>图形设备</translation>
 		</message>
@@ -681,6 +701,26 @@
 			<translation>启用 RenderDoc 调试</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>更新</translation>
 		</message>
@@ -699,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>界面设置</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -801,7 +845,7 @@
 			<translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
 		</message>
 		<message>
-			<source>GUIgroupBox</source>
+			<source>GUIMusicGroupBox</source>
 			<translation>播放标题音乐：\n如果游戏支持，在图形界面选择游戏时播放特殊音乐。</translation>
 		</message>
 		<message>
@@ -810,7 +854,7 @@
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>隐藏光标：\n选择光标何时消失:\n从不: 始终显示光标。\闲置: 光标在闲置若干秒后消失。\n始终: 始终显示光标。</translation>
+			<translation>隐藏光标：\n选择光标何时消失：\n从不: 从不隐藏光标。\n闲置：光标在闲置若干秒后消失。\n始终：始终隐藏光标。</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
@@ -907,6 +951,34 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
+		</message>
+        <message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>存档数据路径：\n保存游戏存档数据的目录。</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
 		</message>
 	</context>
 	<context>

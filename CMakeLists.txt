@@ -120,7 +120,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.303 CONFIG)
+find_package(VulkanHeaders 1.4.305 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -344,6 +344,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
                 src/core/libraries/mouse/mouse.cpp
                 src/core/libraries/mouse/mouse.h
+                src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
+                src/core/libraries/web_browser_dialog/webbrowserdialog.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -434,6 +436,13 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_trophy/np_trophy_error.h
             src/core/libraries/np_web_api/np_web_api.cpp
             src/core/libraries/np_web_api/np_web_api.h
+            src/core/libraries/np_party/np_party.cpp
+            src/core/libraries/np_party/np_party.h
+)
+
+set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
+             src/core/libraries/zlib/zlib_sce.h
+             src/core/libraries/zlib/zlib_error.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
@@ -557,6 +566,16 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/logger.cpp
          src/core/devices/logger.h
          src/core/devices/nop_device.h
+         src/core/devices/console_device.cpp
+         src/core/devices/console_device.h
+         src/core/devices/deci_tty6_device.cpp
+         src/core/devices/deci_tty6_device.h
+         src/core/devices/random_device.cpp
+         src/core/devices/random_device.h
+         src/core/devices/urandom_device.cpp
+         src/core/devices/urandom_device.h
+         src/core/devices/srandom_device.cpp
+         src/core/devices/srandom_device.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
          src/core/file_format/pkg.h
@@ -598,6 +617,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
+         ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
          ${FIBER_LIB}
@@ -741,8 +761,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
                src/video_core/renderer_vulkan/vk_compute_pipeline.h
-               src/video_core/renderer_vulkan/vk_descriptor_update_queue.cpp
-               src/video_core/renderer_vulkan/vk_descriptor_update_queue.h
                src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
                src/video_core/renderer_vulkan/vk_graphics_pipeline.h
                src/video_core/renderer_vulkan/vk_instance.cpp

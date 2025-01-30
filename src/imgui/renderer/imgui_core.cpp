@@ -186,7 +186,8 @@ ImGuiID NewFrame(bool is_reusing_frame) {
     Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
 
-    ImGuiWindowFlags flags = ImGuiDockNodeFlags_PassthruCentralNode;
+    ImGuiWindowFlags flags =
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
     if (!DebugState.IsShowingDebugMenuBar()) {
         flags |= ImGuiDockNodeFlags_NoTabBar;
     }
@@ -207,7 +208,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
         return;
     }
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",
         });
@@ -232,7 +233,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
     cmdbuf.beginRendering(render_info);
     Vulkan::RenderDrawData(*draw_data, cmdbuf);
     cmdbuf.endRendering();
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 }

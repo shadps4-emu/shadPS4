@@ -146,14 +146,14 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
         }
 
         QString currentRev = (updateChannel == "Nightly")
-                                 ? QString::fromStdString(Common::g_scm_rev).left(7)
+                                 ? QString::fromStdString(Common::g_scm_rev)
                                  : "v." + QString::fromStdString(Common::VERSION);
         QString currentDate = Common::g_scm_date;
 
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
         latestDate = dateTime.isValid() ? dateTime.toString("yyyy-MM-dd HH:mm:ss") : "Unknown date";
 
-        if (latestRev == currentRev) {
+        if (latestRev == currentRev.left(7)) {
             if (showMessage) {
                 QMessageBox::information(this, tr("Auto Updater"),
                                          tr("Your version is already up to date!"));
@@ -190,7 +190,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
         QString("<p><b><br>" + tr("Update Channel") + ": </b>" + updateChannel + "<br><b>" +
                 tr("Current Version") + ":</b> %1 (%2)<br><b>" + tr("Latest Version") +
                 ":</b> %3 (%4)</p><p>" + tr("Do you want to update?") + "</p>")
-            .arg(currentRev, currentDate, latestRev, latestDate);
+            .arg(currentRev.left(7), currentDate, latestRev, latestDate);
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 

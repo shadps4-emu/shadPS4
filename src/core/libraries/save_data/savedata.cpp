@@ -177,7 +177,8 @@ struct OrbisSaveDataMemoryGet2 {
     OrbisSaveDataMemoryData* data;
     OrbisSaveDataParam* param;
     OrbisSaveDataIcon* icon;
-    std::array<u8, 32> _reserved;
+    u32 slotId;
+    std::array<u8, 28> _reserved;
 };
 
 struct OrbisSaveDataMemorySet2 {
@@ -186,6 +187,8 @@ struct OrbisSaveDataMemorySet2 {
     const OrbisSaveDataMemoryData* data;
     const OrbisSaveDataParam* param;
     const OrbisSaveDataIcon* icon;
+    u32 dataNum;
+    u32 slotId;
     std::array<u8, 32> _reserved;
 };
 
@@ -198,7 +201,8 @@ struct OrbisSaveDataMemorySetup2 {
     const OrbisSaveDataParam* initParam;
     // +4.5
     const OrbisSaveDataIcon* initIcon;
-    std::array<u8, 24> _reserved;
+    u32 slotId;
+    std::array<u8, 20> _reserved;
 };
 
 struct OrbisSaveDataMemorySetupResult {
@@ -206,9 +210,16 @@ struct OrbisSaveDataMemorySetupResult {
     std::array<u8, 16> _reserved;
 };
 
+enum OrbisSaveDataMemorySyncOption : u32 {
+    NONE = 0,
+    BLOCKING = 1,
+};
+
 struct OrbisSaveDataMemorySync {
     OrbisUserServiceUserId userId;
-    std::array<u8, 36> _reserved;
+    u32 slotId;
+    OrbisSaveDataMemorySyncOption option;
+    std::array<u8, 28> _reserved;
 };
 
 struct OrbisSaveDataMount2 {
@@ -327,6 +338,7 @@ static void initialize() {
     g_initialized = true;
     g_game_serial = ElfInfo::Instance().GameSerial();
     g_fw_ver = ElfInfo::Instance().FirmwareVer();
+    Backup::StartThread();
 }
 
 // game_00other | game*other
@@ -558,7 +570,6 @@ Error PS4_SYSV_ABI sceSaveDataBackup(const OrbisSaveDataBackup* backup) {
         }
     }
 
-    Backup::StartThread();
     Backup::NewRequest(backup->userId, title, dir_name, OrbisSaveDataEventType::BACKUP);
 
     return Error::OK;
@@ -1136,22 +1147,27 @@ Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getPar
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
-    if (!SaveMemory::IsSaveMemoryInitialized()) {
+
+    u32 slot_id = 0;
+    if (g_fw_ver > ElfInfo::FW_50) {
+        slot_id = getParam->slotId;
+    }
+    if (!SaveMemory::IsSaveMemoryInitialized(slot_id)) {
         LOG_INFO(Lib_SaveData, "called without save memory initialized");
         return Error::MEMORY_NOT_READY;
     }
     LOG_DEBUG(Lib_SaveData, "called");
     auto data = getParam->data;
     if (data != nullptr) {
-        SaveMemory::ReadMemory(data->buf, data->bufSize, data->offset);
+        SaveMemory::ReadMemory(slot_id, data->buf, data->bufSize, data->offset);
     }
     auto param = getParam->param;
     if (param != nullptr) {
-        param->FromSFO(SaveMemory::GetParamSFO());
+        param->FromSFO(SaveMemory::GetParamSFO(slot_id));
     }
     auto icon = getParam->icon;
     if (icon != nullptr) {
-        auto icon_mem = SaveMemory::GetIcon();
+        auto icon_mem = SaveMemory::GetIcon(slot_id);
         size_t total = std::min(icon->bufSize, icon_mem.size());
         std::memcpy(icon->buf, icon_mem.data(), total);
         icon->dataSize = total;
@@ -1494,36 +1510,37 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* 
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
-    if (!SaveMemory::IsSaveMemoryInitialized()) {
+    u32 slot_id = 0;
+    u32 data_num = 1;
+    if (g_fw_ver > ElfInfo::FW_50) {
+        slot_id = setParam->slotId;
+        if (setParam->dataNum > 1) {
+            data_num = setParam->dataNum;
+        }
+    }
+    if (!SaveMemory::IsSaveMemoryInitialized(slot_id)) {
         LOG_INFO(Lib_SaveData, "called without save memory initialized");
         return Error::MEMORY_NOT_READY;
     }
-    if (SaveMemory::IsSaving()) {
-        int count = 0;
-        while (++count < 100 && SaveMemory::IsSaving()) { // try for more 10 seconds
-            std::this_thread::sleep_for(chrono::milliseconds(100));
-        }
-        if (SaveMemory::IsSaving()) {
-            LOG_TRACE(Lib_SaveData, "called while saving");
-            return Error::BUSY_FOR_SAVING;
-        }
-    }
+
     LOG_DEBUG(Lib_SaveData, "called");
     auto data = setParam->data;
     if (data != nullptr) {
-        SaveMemory::WriteMemory(data->buf, data->bufSize, data->offset);
+        for (int i = 0; i < data_num; i++) {
+            SaveMemory::WriteMemory(slot_id, data[i].buf, data[i].bufSize, data[i].offset);
+        }
     }
     auto param = setParam->param;
     if (param != nullptr) {
-        param->ToSFO(SaveMemory::GetParamSFO());
-        SaveMemory::SaveSFO();
-    }
-    auto icon = setParam->icon;
-    if (icon != nullptr) {
-        SaveMemory::WriteIcon(icon->buf, icon->bufSize);
+        param->ToSFO(SaveMemory::GetParamSFO(slot_id));
+        SaveMemory::SaveSFO(slot_id);
     }
 
-    SaveMemory::TriggerSaveWithoutEvent();
+    auto icon = setParam->icon;
+    if (icon != nullptr) {
+        SaveMemory::SetIcon(slot_id, icon->buf, icon->bufSize);
+    }
+
     return Error::OK;
 }
 
@@ -1563,9 +1580,12 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     }
     LOG_DEBUG(Lib_SaveData, "called");
 
-    SaveMemory::SetDirectories(setupParam->userId, g_game_serial);
+    u32 slot_id = 0;
+    if (g_fw_ver > ElfInfo::FW_50) {
+        slot_id = setupParam->slotId;
+    }
 
-    const auto& save_path = SaveMemory::GetSavePath();
+    const auto& save_path = SaveMemory::GetSavePath(setupParam->userId, slot_id, g_game_serial);
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetSavePath() == save_path) {
             return Error::BUSY;
@@ -1573,21 +1593,21 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     }
 
     try {
-        size_t existed_size = SaveMemory::CreateSaveMemory(setupParam->memorySize);
+        size_t existed_size =
+            SaveMemory::SetupSaveMemory(setupParam->userId, slot_id, g_game_serial);
         if (existed_size == 0) { // Just created
             if (g_fw_ver >= ElfInfo::FW_45 && setupParam->initParam != nullptr) {
-                auto& sfo = SaveMemory::GetParamSFO();
+                auto& sfo = SaveMemory::GetParamSFO(slot_id);
                 setupParam->initParam->ToSFO(sfo);
             }
-            SaveMemory::SaveSFO();
+            SaveMemory::SaveSFO(slot_id);
 
             auto init_icon = setupParam->initIcon;
             if (g_fw_ver >= ElfInfo::FW_45 && init_icon != nullptr) {
-                SaveMemory::SetIcon(init_icon->buf, init_icon->bufSize);
+                SaveMemory::SetIcon(slot_id, init_icon->buf, init_icon->bufSize);
             } else {
-                SaveMemory::SetIcon(nullptr, 0);
+                SaveMemory::SetIcon(slot_id);
             }
-            SaveMemory::TriggerSaveWithoutEvent();
         }
         if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
             result->existedMemorySize = existed_size;
@@ -1631,15 +1651,23 @@ Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncPa
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
-    if (!SaveMemory::IsSaveMemoryInitialized()) {
+
+    u32 slot_id = 0;
+    if (g_fw_ver > ElfInfo::FW_50) {
+        slot_id = syncParam->slotId;
+    }
+
+    if (!SaveMemory::IsSaveMemoryInitialized(slot_id)) {
         LOG_INFO(Lib_SaveData, "called without save memory initialized");
         return Error::MEMORY_NOT_READY;
     }
     LOG_DEBUG(Lib_SaveData, "called");
-    bool ok = SaveMemory::TriggerSave();
-    if (!ok) {
-        return Error::BUSY_FOR_SAVING;
-    }
+
+    SaveMemory::PersistMemory(slot_id);
+    const auto& save_path = SaveMemory::GetSaveDir(slot_id);
+    Backup::NewRequest(syncParam->userId, g_game_serial, save_path,
+                       OrbisSaveDataEventType::SAVE_DATA_MEMORY_SYNC);
+
     return Error::OK;
 }
 

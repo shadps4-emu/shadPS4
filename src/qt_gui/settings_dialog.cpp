@@ -65,6 +65,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
+
     initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
@@ -150,7 +151,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         });
 #else
         ui->updaterGroupBox->setVisible(false);
-        ui->GUIgroupBox->setMaximumSize(265, 16777215);
 #endif
         connect(ui->updateCompatibilityButton, &QPushButton::clicked, this,
                 [this, parent, m_compat_info]() {
@@ -169,6 +169,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         });
     }
 
+    // Gui TAB
+    {
+        connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
+                [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
+    }
     // Input TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -202,6 +207,21 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                 delete selected_item;
             }
         });
+
+        connect(ui->browseButton, &QPushButton::clicked, this, [this]() {
+            const auto save_data_path = Config::GetSaveDataPath();
+            QString initial_path;
+            Common::FS::PathToQString(initial_path, save_data_path);
+
+            QString save_data_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Directory to save data"), initial_path);
+
+            auto file_path = Common::FS::PathFromQString(save_data_path_string);
+            if (!file_path.empty()) {
+                Config::setSaveDataPath(file_path);
+                ui->currentSaveDataPath->setText(save_data_path_string);
+            }
+        });
     }
 
     // DEBUG TAB
@@ -231,7 +251,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 #ifdef ENABLE_UPDATER
         ui->updaterGroupBox->installEventFilter(this);
 #endif
-        ui->GUIgroupBox->installEventFilter(this);
+        ui->GUIMusicGroupBox->installEventFilter(this);
         ui->disableTrophycheckBox->installEventFilter(this);
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
@@ -256,11 +276,20 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->addFolderButton->installEventFilter(this);
         ui->removeFolderButton->installEventFilter(this);
 
+        ui->saveDataGroupBox->installEventFilter(this);
+        ui->currentSaveDataPath->installEventFilter(this);
+        ui->browseButton->installEventFilter(this);
+
         // Debug
         ui->debugDump->installEventFilter(this);
         ui->vkValidationCheckBox->installEventFilter(this);
         ui->vkSyncValidationCheckBox->installEventFilter(this);
         ui->rdocCheckBox->installEventFilter(this);
+        ui->crashDiagnosticsCheckBox->installEventFilter(this);
+        ui->guestMarkersCheckBox->installEventFilter(this);
+        ui->hostMarkersCheckBox->installEventFilter(this);
+        ui->collectShaderCheckBox->installEventFilter(this);
+        ui->copyGPUBuffersCheckBox->installEventFilter(this);
     }
 }
 
@@ -285,6 +314,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     const toml::value data = toml::parse(userdir / "config.toml");
     const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                           15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
+
+    const auto save_data_path = Config::GetSaveDataPath();
+    QString save_data_path_string;
+    Common::FS::PathToQString(save_data_path_string, save_data_path);
+    ui->currentSaveDataPath->setText(save_data_path_string);
 
     ui->consoleLanguageComboBox->setCurrentIndex(
         std::distance(languageIndexes.begin(),
@@ -331,6 +365,15 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
     ui->rdocCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "rdocEnable", false));
+    ui->crashDiagnosticsCheckBox->setChecked(
+        toml::find_or<bool>(data, "Vulkan", "crashDiagnostic", false));
+    ui->guestMarkersCheckBox->setChecked(
+        toml::find_or<bool>(data, "Vulkan", "guestMarkers", false));
+    ui->hostMarkersCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "hostMarkers", false));
+    ui->copyGPUBuffersCheckBox->setChecked(
+        toml::find_or<bool>(data, "GPU", "copyGPUBuffers", false));
+    ui->collectShaderCheckBox->setChecked(
+        toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->enableCompatibilityCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "compatibilityEnabled", false));
     ui->checkCompatibilityOnStartupCheckBox->setChecked(
@@ -348,6 +391,15 @@ void SettingsDialog::LoadValuesFromConfig() {
     }
     ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
 #endif
+
+    std::string chooseHomeTab = toml::find_or<std::string>(data, "General", "chooseHomeTab", "");
+    ui->chooseHomeTabComboBox->setCurrentText(QString::fromStdString(chooseHomeTab));
+    QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
+                            tr("Input"),   tr("Paths"), tr("Debug")};
+    QString chooseHomeTabQString = QString::fromStdString(chooseHomeTab);
+    int indexTab = tabNames.indexOf(chooseHomeTabQString);
+    indexTab = (indexTab == -1) ? 0 : indexTab;
+    ui->tabWidgetSettings->setCurrentIndex(indexTab);
 
     QString backButtonBehavior = QString::fromStdString(
         toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
@@ -452,8 +504,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "updaterGroupBox") {
         text = tr("updaterGroupBox");
 #endif
-    } else if (elementName == "GUIgroupBox") {
-        text = tr("GUIgroupBox");
+    } else if (elementName == "GUIMusicGroupBox") {
+        text = tr("GUIMusicGroupBox");
     } else if (elementName == "disableTrophycheckBox") {
         text = tr("disableTrophycheckBox");
     } else if (elementName == "enableCompatibilityCheckBox") {
@@ -497,6 +549,13 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("removeFolderButton");
     }
 
+    // Save Data
+    if (elementName == "saveDataGroupBox" || elementName == "currentSaveDataPath") {
+        text = tr("saveDataBox");
+    } else if (elementName == "browseButton") {
+        text = tr("browseButton");
+    }
+
     // Debug
     if (elementName == "debugDump") {
         text = tr("debugDump");
@@ -506,6 +565,16 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("vkSyncValidationCheckBox");
     } else if (elementName == "rdocCheckBox") {
         text = tr("rdocCheckBox");
+    } else if (elementName == "crashDiagnosticsCheckBox") {
+        text = tr("crashDiagnosticsCheckBox");
+    } else if (elementName == "guestMarkersCheckBox") {
+        text = tr("guestMarkersCheckBox");
+    } else if (elementName == "hostMarkersCheckBox") {
+        text = tr("hostMarkersCheckBox");
+    } else if (elementName == "copyGPUBuffersCheckBox") {
+        text = tr("copyGPUBuffersCheckBox");
+    } else if (elementName == "collectShaderCheckBox") {
+        text = tr("collectShaderCheckBox");
     }
 
     ui->descriptionText->setText(text.replace("\\n", "\n"));
@@ -521,22 +590,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
                 updateNoteTextEdit(elementName);
             } else {
                 ui->descriptionText->setText(defaultTextEdit);
-            }
-
-            // if the text exceeds the size of the box, it will increase the size
-            QRect currentGeometry = this->geometry();
-            int newWidth = currentGeometry.width();
-
-            int documentHeight = ui->descriptionText->document()->size().height();
-            int visibleHeight = ui->descriptionText->viewport()->height();
-            if (documentHeight > visibleHeight) {
-                ui->descriptionText->setMaximumSize(16777215, 110);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  currentGeometry.height() + 40);
-            } else {
-                ui->descriptionText->setMaximumSize(16777215, 70);
-                this->setGeometry(currentGeometry.x(), currentGeometry.y(), newWidth,
-                                  initialHeight);
             }
             return true;
         }
@@ -575,8 +628,14 @@ void SettingsDialog::UpdateSettings() {
     Config::setVkValidation(ui->vkValidationCheckBox->isChecked());
     Config::setVkSyncValidation(ui->vkSyncValidationCheckBox->isChecked());
     Config::setRdocEnabled(ui->rdocCheckBox->isChecked());
+    Config::setVkHostMarkersEnabled(ui->hostMarkersCheckBox->isChecked());
+    Config::setVkGuestMarkersEnabled(ui->guestMarkersCheckBox->isChecked());
+    Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked());
+    Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
+    Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
+    Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
 

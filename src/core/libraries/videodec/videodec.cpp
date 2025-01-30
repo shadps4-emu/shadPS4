@@ -9,7 +9,7 @@
 
 namespace Libraries::Videodec {
 
-static constexpr u64 kMinimumMemorySize = 32_MB; ///> Fake minimum memory size for querying
+static constexpr u64 kMinimumMemorySize = 16_MB; ///> Fake minimum memory size for querying
 
 int PS4_SYSV_ABI sceVideodecCreateDecoder(const OrbisVideodecConfigInfo* pCfgInfoIn,
                                           const OrbisVideodecResourceInfo* pRsrcInfoIn,
