@@ -109,7 +109,7 @@ The default controls are inspired by the *Elden Ring* PC controls. Inputs suppor
 | L2          | Right Button                |
 | R2          | Left Button, LShift         |
 | L3          | X                           |
-| R3          | Q / Middle Button          |
+| R3          | Q / Middle Button           |
 | Options     | Escape                      |
 | Touchpad    | G                           |
 
