@@ -1155,10 +1155,7 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
 
     const auto& vp_ctl = regs.viewport_control;
     const float reduce_z =
-        instance.IsDepthClipControlSupported() &&
-                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
-            ? 1.0f
-            : 0.0f;
+        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
 
     if (regs.polygon_control.enable_window_offset) {
         LOG_ERROR(Render_Vulkan,

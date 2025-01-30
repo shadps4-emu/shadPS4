@@ -126,11 +126,11 @@
 		</message>
 		<message>
 			<source>Copy All</source>
-			<translation>Копировать все</translation>
+			<translation>Копировать всё</translation>
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Удаление...</translation>
+			<translation>Удалить...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
@@ -158,7 +158,7 @@
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Отправить отчет</translation>
+			<translation>Отправить отчёт</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -297,7 +297,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Elf</translation>
+			<translation>Исполняемый файл</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -542,7 +542,7 @@
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
-			<translation>Режим Полного Экран</translation>
+			<translation>Тип полноэкранного режима</translation>
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Ключ трофеев</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Трофеи</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -750,7 +750,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Звуковая Подсистема</translation>
+			<translation>Звуковая подсистема</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -826,7 +826,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню Просмотр трофеев (правая кнопка мыши по игре в главном окне).</translation>
+			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню просмотра трофеев (правая кнопка мыши по игре в главном окне).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -1192,11 +1192,11 @@
 		</message>
 		<message>
 			<source>Play Time</source>
-			<translation>Времени в игре</translation>
+			<translation>Время в игре</translation>
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Вы не играли</translation>
+			<translation>Нет</translation>
 		</message>
 		<message>
 			<source>h</source>

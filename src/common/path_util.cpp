@@ -176,7 +176,8 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
     UserPaths.insert_or_assign(shad_path, new_path);
 }
 
-std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& game_id, int max_depth) {
+std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& game_id,
+                                     int max_depth) {
     if (max_depth < 0) {
         return std::nullopt;
     }

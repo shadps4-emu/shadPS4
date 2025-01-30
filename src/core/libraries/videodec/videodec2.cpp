@@ -10,7 +10,7 @@
 
 namespace Libraries::Vdec2 {
 
-static constexpr u64 kMinimumMemorySize = 32_MB; ///> Fake minimum memory size for querying
+static constexpr u64 kMinimumMemorySize = 16_MB; ///> Fake minimum memory size for querying
 
 s32 PS4_SYSV_ABI
 sceVideodec2QueryComputeMemoryInfo(OrbisVideodec2ComputeMemoryInfo* computeMemInfo) {

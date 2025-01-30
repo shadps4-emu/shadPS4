@@ -52,10 +52,12 @@ public:
         // "Open Folder..." submenu
         QMenu* openFolderMenu = new QMenu(tr("Open Folder..."), widget);
         QAction* openGameFolder = new QAction(tr("Open Game Folder"), widget);
+        QAction* openUpdateFolder = new QAction(tr("Open Update Folder"), widget);
         QAction* openSaveDataFolder = new QAction(tr("Open Save Data Folder"), widget);
         QAction* openLogFolder = new QAction(tr("Open Log Folder"), widget);
 
         openFolderMenu->addAction(openGameFolder);
+        openFolderMenu->addAction(openUpdateFolder);
         openFolderMenu->addAction(openSaveDataFolder);
         openFolderMenu->addAction(openLogFolder);
 
@@ -87,10 +89,12 @@ public:
         QMenu* deleteMenu = new QMenu(tr("Delete..."), widget);
         QAction* deleteGame = new QAction(tr("Delete Game"), widget);
         QAction* deleteUpdate = new QAction(tr("Delete Update"), widget);
+        QAction* deleteSaveData = new QAction(tr("Delete Save Data"), widget);
         QAction* deleteDLC = new QAction(tr("Delete DLC"), widget);
 
         deleteMenu->addAction(deleteGame);
         deleteMenu->addAction(deleteUpdate);
+        deleteMenu->addAction(deleteSaveData);
         deleteMenu->addAction(deleteDLC);
 
         menu.addMenu(deleteMenu);
@@ -122,6 +126,18 @@ public:
             QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
         }
 
+        if (selected == openUpdateFolder) {
+            QString open_update_path;
+            Common::FS::PathToQString(open_update_path, m_games[itemID].path);
+            open_update_path += "-UPDATE";
+            if (!std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                QMessageBox::critical(nullptr, tr("Error"),
+                                      QString(tr("This game has no update folder to open!")));
+            } else {
+                QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
+            }
+        }
+
         if (selected == openSaveDataFolder) {
             QString userPath;
             Common::FS::PathToQString(userPath,
@@ -143,7 +159,7 @@ public:
             PSF psf;
             std::filesystem::path game_folder_path = m_games[itemID].path;
             std::filesystem::path game_update_path = game_folder_path;
-            game_update_path += "UPDATE";
+            game_update_path += "-UPDATE";
             if (std::filesystem::exists(game_update_path)) {
                 game_folder_path = game_update_path;
             }
@@ -238,6 +254,11 @@ public:
             QString trophyPath, gameTrpPath;
             Common::FS::PathToQString(trophyPath, m_games[itemID].serial);
             Common::FS::PathToQString(gameTrpPath, m_games[itemID].path);
+            auto game_update_path = Common::FS::PathFromQString(gameTrpPath);
+            game_update_path += "-UPDATE";
+            if (std::filesystem::exists(game_update_path)) {
+                Common::FS::PathToQString(gameTrpPath, game_update_path);
+            }
             TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
@@ -335,14 +356,18 @@ public:
             clipboard->setText(combinedText);
         }
 
-        if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC) {
+        if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC ||
+            selected == deleteSaveData) {
             bool error = false;
-            QString folder_path, game_update_path, dlc_path;
+            QString folder_path, game_update_path, dlc_path, save_data_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             game_update_path = folder_path + "-UPDATE";
             Common::FS::PathToQString(
                 dlc_path, Config::getAddonInstallDir() /
                               Common::FS::PathFromQString(folder_path).parent_path().filename());
+            Common::FS::PathToQString(save_data_path,
+                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
+                                          "savedata/1" / m_games[itemID].serial);
             QString message_type = tr("Game");
 
             if (selected == deleteUpdate) {
@@ -363,6 +388,15 @@ public:
                     folder_path = dlc_path;
                     message_type = tr("DLC");
                 }
+            } else if (selected == deleteSaveData) {
+                if (!std::filesystem::exists(Common::FS::PathFromQString(save_data_path))) {
+                    QMessageBox::critical(nullptr, tr("Error"),
+                                          QString(tr("This game has no save data to delete!")));
+                    error = true;
+                } else {
+                    folder_path = save_data_path;
+                    message_type = tr("Save Data");
+                }
             }
             if (!error) {
                 QString gameName = QString::fromStdString(m_games[itemID].name);
@@ -374,7 +408,10 @@ public:
                     QMessageBox::Yes | QMessageBox::No);
                 if (reply == QMessageBox::Yes) {
                     dir.removeRecursively();
-                    widget->removeRow(itemID);
+                    if (selected == deleteGame) {
+                        widget->removeRow(itemID);
+                        m_games.removeAt(itemID);
+                    }
                 }
             }
         }

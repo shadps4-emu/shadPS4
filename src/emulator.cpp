@@ -33,6 +33,7 @@
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
@@ -271,7 +272,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     UpdatePlayTime(id);
 #endif
 
-    std::exit(0);
+    std::quick_exit(0);
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {

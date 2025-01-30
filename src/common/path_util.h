@@ -127,7 +127,7 @@ void PathToQString(QString& result, const std::filesystem::path& path);
  * @returns Path to eboot.bin if found, std::nullopt otherwise
  */
 [[nodiscard]] std::optional<std::filesystem::path> FindGameByID(const std::filesystem::path& dir,
-                                                              const std::string& game_id,
-                                                              int max_depth);
+                                                                const std::string& game_id,
+                                                                int max_depth);
 
 } // namespace Common::FS

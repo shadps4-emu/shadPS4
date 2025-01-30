@@ -6,14 +6,16 @@
 #include <condition_variable>
 #include <filesystem>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <fmt/format.h>
 
 #include <core/libraries/system/msgdialog_ui.h>
 
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
-#include "common/polyfill_thread.h"
+#include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
@@ -23,265 +25,202 @@ using Common::FS::IOFile;
 namespace fs = std::filesystem;
 
 constexpr std::string_view sce_sys = "sce_sys"; // system folder inside save
-constexpr std::string_view DirnameSaveDataMemory = "sce_sdmemory";
+constexpr std::string_view StandardDirnameSaveDataMemory = "sce_sdmemory";
 constexpr std::string_view FilenameSaveDataMemory = "memory.dat";
+constexpr std::string_view IconName = "icon0.png";
+constexpr std::string_view CorruptFileName = "corrupted";
 
 namespace Libraries::SaveData::SaveMemory {
 
 static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-static OrbisUserServiceUserId g_user_id{};
-static std::string g_game_serial{};
-static std::filesystem::path g_save_path{};
-static std::filesystem::path g_param_sfo_path{};
-static PSF g_param_sfo;
+struct SlotData {
+    OrbisUserServiceUserId user_id;
+    std::string game_serial;
+    std::filesystem::path folder_path;
+    PSF sfo;
+    std::vector<u8> memory_cache;
+};
 
-static bool g_save_memory_initialized = false;
-static std::mutex g_saving_memory_mutex;
-static std::vector<u8> g_save_memory;
+static std::mutex g_slot_mtx;
+static std::unordered_map<u32, SlotData> g_attached_slots;
 
-static std::filesystem::path g_icon_path;
-static std::vector<u8> g_icon_memory;
+void PersistMemory(u32 slot_id, bool lock) {
+    std::unique_lock lck{g_slot_mtx, std::defer_lock};
+    if (lock) {
+        lck.lock();
+    }
+    auto& data = g_attached_slots[slot_id];
+    auto memoryPath = data.folder_path / FilenameSaveDataMemory;
+    fs::create_directories(memoryPath.parent_path());
 
-static std::condition_variable g_trigger_save_memory;
-static std::atomic_bool g_saving_memory = false;
-static std::atomic_bool g_save_event = false;
-static std::jthread g_save_memory_thread;
-
-static std::atomic_bool g_memory_dirty = false;
-static std::atomic_bool g_param_dirty = false;
-static std::atomic_bool g_icon_dirty = false;
-
-static void SaveFileSafe(void* buf, size_t count, const std::filesystem::path& path) {
-    const auto& dir = path.parent_path();
-    const auto& name = path.filename();
-    const auto tmp_path = dir / (name.string() + ".tmp");
-
-    IOFile file(tmp_path, Common::FS::FileAccessMode::Write);
-    file.WriteRaw<u8>(buf, count);
-    file.Close();
-
-    fs::remove(path);
-    fs::rename(tmp_path, path);
-}
-
-[[noreturn]] void SaveThreadLoop() {
-    Common::SetCurrentThreadName("shadPS4:SaveData:SaveDataMemoryThread");
-    std::mutex mtx;
-    while (true) {
-        {
-            std::unique_lock lk{mtx};
-            g_trigger_save_memory.wait(lk);
-        }
-        // Save the memory
-        g_saving_memory = true;
-        std::scoped_lock lk{g_saving_memory_mutex};
+    int n = 0;
+    std::string errMsg;
+    while (n++ < 10) {
         try {
-            LOG_DEBUG(Lib_SaveData, "Saving save data memory {}", fmt::UTF(g_save_path.u8string()));
-
-            if (g_memory_dirty) {
-                g_memory_dirty = false;
-                SaveFileSafe(g_save_memory.data(), g_save_memory.size(),
-                             g_save_path / FilenameSaveDataMemory);
+            IOFile f;
+            int r = f.Open(memoryPath, Common::FS::FileAccessMode::Write);
+            if (f.IsOpen()) {
+                f.WriteRaw<u8>(data.memory_cache.data(), data.memory_cache.size());
+                f.Close();
+                return;
             }
-            if (g_param_dirty) {
-                g_param_dirty = false;
-                static std::vector<u8> buf;
-                g_param_sfo.Encode(buf);
-                SaveFileSafe(buf.data(), buf.size(), g_param_sfo_path);
-            }
-            if (g_icon_dirty) {
-                g_icon_dirty = false;
-                SaveFileSafe(g_icon_memory.data(), g_icon_memory.size(), g_icon_path);
-            }
-
-            if (g_save_event) {
-                Backup::PushBackupEvent(Backup::BackupRequest{
-                    .user_id = g_user_id,
-                    .title_id = g_game_serial,
-                    .dir_name = std::string{DirnameSaveDataMemory},
-                    .origin = Backup::OrbisSaveDataEventType::SAVE_DATA_MEMORY_SYNC,
-                    .save_path = g_save_path,
-                });
-                g_save_event = false;
-            }
-        } catch (const fs::filesystem_error& e) {
-            LOG_ERROR(Lib_SaveData, "Failed to save save data memory: {}", e.what());
-            MsgDialog::ShowMsgDialog(MsgDialog::MsgDialogState{
-                MsgDialog::MsgDialogState::UserState{
-                    .type = MsgDialog::ButtonType::OK,
-                    .msg = fmt::format("Failed to save save data memory.\nCode: <{}>\n{}",
-                                       e.code().message(), e.what()),
-                },
-            });
+            const auto err = std::error_code{r, std::iostream_category()};
+            throw std::filesystem::filesystem_error{err.message(), err};
+        } catch (const std::filesystem::filesystem_error& e) {
+            errMsg = std::string{e.what()};
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        g_saving_memory = false;
     }
+    const MsgDialog::MsgDialogState dialog{MsgDialog::MsgDialogState::UserState{
+        .type = MsgDialog::ButtonType::OK,
+        .msg = "Failed to persist save memory:\n" + errMsg + "\nat " +
+               Common::FS::PathToUTF8String(memoryPath),
+    }};
+    MsgDialog::ShowMsgDialog(dialog);
 }
 
-void SetDirectories(OrbisUserServiceUserId user_id, std::string _game_serial) {
-    g_user_id = user_id;
-    g_game_serial = std::move(_game_serial);
-    g_save_path = SaveInstance::MakeDirSavePath(user_id, g_game_serial, DirnameSaveDataMemory);
-    g_param_sfo_path = SaveInstance::GetParamSFOPath(g_save_path);
-    g_param_sfo = PSF();
-    g_icon_path = g_save_path / sce_sys / "icon0.png";
+std::string GetSaveDir(u32 slot_id) {
+    std::string dir(StandardDirnameSaveDataMemory);
+    if (slot_id > 0) {
+        dir += std::to_string(slot_id);
+    }
+    return dir;
 }
 
-const std::filesystem::path& GetSavePath() {
-    return g_save_path;
+std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
+                                  std::string_view game_serial) {
+    std::string dir(StandardDirnameSaveDataMemory);
+    if (slot_id > 0) {
+        dir += std::to_string(slot_id);
+    }
+    return SaveInstance::MakeDirSavePath(user_id, Common::ElfInfo::Instance().GameSerial(), dir);
 }
 
-size_t CreateSaveMemory(size_t memory_size) {
-    size_t existed_size = 0;
+size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial) {
+    std::lock_guard lck{g_slot_mtx};
 
-    static std::once_flag init_save_thread_flag;
-    std::call_once(init_save_thread_flag,
-                   [] { g_save_memory_thread = std::jthread{SaveThreadLoop}; });
+    const auto save_dir = GetSavePath(user_id, slot_id, game_serial);
 
-    g_save_memory.resize(memory_size);
-    SaveInstance::SetupDefaultParamSFO(g_param_sfo, std::string{DirnameSaveDataMemory},
-                                       g_game_serial);
+    auto& data = g_attached_slots[slot_id];
+    data = SlotData{
+        .user_id = user_id,
+        .game_serial = std::string{game_serial},
+        .folder_path = save_dir,
+        .sfo = {},
+        .memory_cache = {},
+    };
 
-    g_save_memory_initialized = true;
+    SaveInstance::SetupDefaultParamSFO(data.sfo, GetSaveDir(slot_id), std::string{game_serial});
 
-    if (!fs::exists(g_param_sfo_path)) {
-        // Create save memory
-        fs::create_directories(g_save_path / sce_sys);
-
-        IOFile memory_file{g_save_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Write};
-        bool ok = memory_file.SetSize(memory_size);
-        if (!ok) {
-            LOG_ERROR(Lib_SaveData, "Failed to set memory size");
-            throw std::filesystem::filesystem_error(
-                "Failed to set save memory size", g_save_path / FilenameSaveDataMemory,
-                std::make_error_code(std::errc::no_space_on_device));
-        }
-        memory_file.Close();
-    } else {
-        // Load save memory
-
-        bool ok = g_param_sfo.Open(g_param_sfo_path);
-        if (!ok) {
-            LOG_ERROR(Lib_SaveData, "Failed to open SFO at {}",
-                      fmt::UTF(g_param_sfo_path.u8string()));
-            throw std::filesystem::filesystem_error(
-                "failed to open SFO", g_param_sfo_path,
-                std::make_error_code(std::errc::illegal_byte_sequence));
-        }
-
-        IOFile memory_file{g_save_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
-        if (!memory_file.IsOpen()) {
-            LOG_ERROR(Lib_SaveData, "Failed to open save memory");
-            throw std::filesystem::filesystem_error(
-                "failed to open save memory", g_save_path / FilenameSaveDataMemory,
-                std::make_error_code(std::errc::permission_denied));
-        }
-        size_t save_size = memory_file.GetSize();
-        existed_size = save_size;
-        memory_file.Seek(0);
-        memory_file.ReadRaw<u8>(g_save_memory.data(), std::min(save_size, memory_size));
-        memory_file.Close();
+    auto param_sfo_path = SaveInstance::GetParamSFOPath(save_dir);
+    if (!fs::exists(param_sfo_path)) {
+        return 0;
     }
 
-    return existed_size;
+    if (!data.sfo.Open(param_sfo_path) || fs::exists(save_dir / CorruptFileName)) {
+        if (!Backup::Restore(save_dir)) { // Could not restore the backup
+            return 0;
+        }
+    }
+
+    const auto memory = save_dir / FilenameSaveDataMemory;
+    if (fs::exists(memory)) {
+        return fs::file_size(memory);
+    }
+
+    return 0;
 }
 
-void SetIcon(void* buf, size_t buf_size) {
+void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
+    std::lock_guard lck{g_slot_mtx};
+    const auto& data = g_attached_slots[slot_id];
+    const auto icon_path = data.folder_path / sce_sys / "icon0.png";
     if (buf == nullptr) {
         const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-        if (fs::exists(src_icon)) {
-            if (fs::exists(g_icon_path)) {
-                fs::remove(g_icon_path);
-            }
-            fs::copy_file(src_icon, g_icon_path);
+        if (fs::exists(icon_path)) {
+            fs::remove(icon_path);
         }
-        if (fs::exists(g_icon_path)) {
-            IOFile file(g_icon_path, Common::FS::FileAccessMode::Read);
-            size_t size = file.GetSize();
-            file.Seek(0);
-            g_icon_memory.resize(size);
-            file.ReadRaw<u8>(g_icon_memory.data(), size);
-            file.Close();
+        if (fs::exists(src_icon)) {
+            fs::create_directories(icon_path.parent_path());
+            fs::copy_file(src_icon, icon_path);
         }
     } else {
-        g_icon_memory.resize(buf_size);
-        std::memcpy(g_icon_memory.data(), buf, buf_size);
-        IOFile file(g_icon_path, Common::FS::FileAccessMode::Write);
-        file.Seek(0);
-        file.WriteRaw<u8>(g_icon_memory.data(), buf_size);
+        IOFile file(icon_path, Common::FS::FileAccessMode::Write);
+        file.WriteRaw<u8>(buf, buf_size);
         file.Close();
     }
 }
 
-void WriteIcon(void* buf, size_t buf_size) {
-    if (buf_size != g_icon_memory.size()) {
-        g_icon_memory.resize(buf_size);
+bool IsSaveMemoryInitialized(u32 slot_id) {
+    std::lock_guard lck{g_slot_mtx};
+    return g_attached_slots.contains(slot_id);
+}
+
+PSF& GetParamSFO(u32 slot_id) {
+    std::lock_guard lck{g_slot_mtx};
+    auto& data = g_attached_slots[slot_id];
+    return data.sfo;
+}
+
+std::vector<u8> GetIcon(u32 slot_id) {
+    std::lock_guard lck{g_slot_mtx};
+    auto& data = g_attached_slots[slot_id];
+    const auto icon_path = data.folder_path / sce_sys / "icon0.png";
+    IOFile f{icon_path, Common::FS::FileAccessMode::Read};
+    if (!f.IsOpen()) {
+        return {};
     }
-    std::memcpy(g_icon_memory.data(), buf, buf_size);
-    g_icon_dirty = true;
+    const u64 size = f.GetSize();
+    std::vector<u8> ret;
+    ret.resize(size);
+    f.ReadSpan(std::span{ret});
+    return ret;
 }
 
-bool IsSaveMemoryInitialized() {
-    return g_save_memory_initialized;
-}
-
-PSF& GetParamSFO() {
-    return g_param_sfo;
-}
-
-std::span<u8> GetIcon() {
-    return {g_icon_memory};
-}
-
-void SaveSFO(bool sync) {
-    if (!sync) {
-        g_param_dirty = true;
-        return;
-    }
-    const bool ok = g_param_sfo.Encode(g_param_sfo_path);
+void SaveSFO(u32 slot_id) {
+    std::lock_guard lck{g_slot_mtx};
+    const auto& data = g_attached_slots[slot_id];
+    const auto sfo_path = SaveInstance::GetParamSFOPath(data.folder_path);
+    fs::create_directories(sfo_path.parent_path());
+    const bool ok = data.sfo.Encode(sfo_path);
     if (!ok) {
         LOG_ERROR(Lib_SaveData, "Failed to encode param.sfo");
-        throw std::filesystem::filesystem_error("Failed to write param.sfo", g_param_sfo_path,
+        throw std::filesystem::filesystem_error("Failed to write param.sfo", sfo_path,
                                                 std::make_error_code(std::errc::permission_denied));
     }
 }
-bool IsSaving() {
-    return g_saving_memory;
+
+void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
+    std::lock_guard lk{g_slot_mtx};
+    auto& data = g_attached_slots[slot_id];
+    auto& memory = data.memory_cache;
+    if (memory.empty()) { // Load file
+        IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
+        if (f.IsOpen()) {
+            memory.resize(f.GetSize());
+            f.Seek(0);
+            f.ReadSpan(std::span{memory});
+        }
+    }
+    s64 read_size = buf_size;
+    if (read_size + offset > memory.size()) {
+        read_size = memory.size() - offset;
+    }
+    std::memcpy(buf, memory.data() + offset, read_size);
 }
 
-bool TriggerSaveWithoutEvent() {
-    if (g_saving_memory) {
-        return false;
+void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
+    std::lock_guard lk{g_slot_mtx};
+    auto& data = g_attached_slots[slot_id];
+    auto& memory = data.memory_cache;
+    if (offset + buf_size > memory.size()) {
+        memory.resize(offset + buf_size);
     }
-    g_trigger_save_memory.notify_one();
-    return true;
-}
-
-bool TriggerSave() {
-    if (g_saving_memory) {
-        return false;
-    }
-    g_save_event = true;
-    g_trigger_save_memory.notify_one();
-    return true;
-}
-
-void ReadMemory(void* buf, size_t buf_size, int64_t offset) {
-    std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset + buf_size > g_save_memory.size()) {
-        UNREACHABLE_MSG("ReadMemory out of bounds");
-    }
-    std::memcpy(buf, g_save_memory.data() + offset, buf_size);
-}
-
-void WriteMemory(void* buf, size_t buf_size, int64_t offset) {
-    std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset + buf_size > g_save_memory.size()) {
-        g_save_memory.resize(offset + buf_size);
-    }
-    std::memcpy(g_save_memory.data() + offset, buf, buf_size);
-    g_memory_dirty = true;
+    std::memcpy(memory.data() + offset, buf, buf_size);
+    PersistMemory(slot_id, false);
+    Backup::NewRequest(data.user_id, data.game_serial, GetSaveDir(slot_id),
+                       Backup::OrbisSaveDataEventType::__DO_NOT_SAVE);
 }
 
 } // namespace Libraries::SaveData::SaveMemory

@@ -440,6 +440,11 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_party/np_party.h
 )
 
+set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
+             src/core/libraries/zlib/zlib_sce.h
+             src/core/libraries/zlib/zlib_error.h
+)
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
@@ -612,6 +617,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
+         ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
          ${FIBER_LIB}
