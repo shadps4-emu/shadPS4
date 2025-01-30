@@ -108,9 +108,6 @@
               <property name="title">
                <string>Emulator</string>
               </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft</set>
-              </property>
               <property name="flat">
                <bool>false</bool>
               </property>
