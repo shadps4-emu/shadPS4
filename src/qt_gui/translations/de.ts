@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Zeigen Sie die Spielgröße in der Liste</translation>
+			<translation>Zeige Spielgröße in der Liste</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -714,11 +714,11 @@
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host-Debug-Markierungen</translation>
+			<translation>Host-Debug-Markierer</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest-Debug-Markierungen</translation>
+			<translation>Guest-Debug-Markierer</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -742,7 +742,7 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Titelmusik</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -830,7 +830,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Trophäenschlüssel:\nSchlüssel zum Entschlüsseln von Trophäen. Muss von Ihrer gejailbreakten Konsole abgerufen werden.\nDarf nur Hex-Zeichen enthalten.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -850,7 +850,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Trophäen-Popups deaktivieren:\nDeaktivieren Sie Trophäenbenachrichtigungen im Spiel. Der Trophäenfortschritt kann weiterhin mit dem Trophäen-Viewer verfolgt werden (klicken Sie mit der rechten Maustaste auf das Spiel im Hauptfenster)..</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -977,7 +977,7 @@
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Cheats / Patches für </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
