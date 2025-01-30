@@ -42,8 +42,6 @@ class SaveInstance {
     std::filesystem::path param_sfo_path;
     std::filesystem::path corrupt_file_path;
 
-    Common::FS::IOFile corrupt_file;
-
     PSF param_sfo;
     std::string mount_point;
 
@@ -80,7 +78,8 @@ public:
     SaveInstance& operator=(const SaveInstance& other) = delete;
     SaveInstance& operator=(SaveInstance&& other) noexcept;
 
-    void SetupAndMount(bool read_only = false, bool copy_icon = false, bool ignore_corrupt = false);
+    void SetupAndMount(bool read_only = false, bool copy_icon = false, bool ignore_corrupt = false,
+                       bool dont_restore_backup = false);
 
     void Umount();
 

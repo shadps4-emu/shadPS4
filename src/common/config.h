@@ -106,9 +106,12 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
-bool vkCrashDiagnosticEnabled();
-bool vkHostMarkersEnabled();
-bool vkGuestMarkersEnabled();
+bool getVkCrashDiagnosticEnabled();
+bool getVkHostMarkersEnabled();
+bool getVkGuestMarkersEnabled();
+void setVkCrashDiagnosticEnabled(bool enable);
+void setVkHostMarkersEnabled(bool enable);
+void setVkGuestMarkersEnabled(bool enable);
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
