@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
 #include <QCompleter>
 #include <QDirIterator>
 #include <QFileDialog>
@@ -54,10 +51,11 @@ QStringList languageNames = {"Arabic",
                              "Traditional Chinese",
                              "Turkish",
                              "Ukrainian",
-                             "Vietnamese"};
+                             "Vietnamese",
+                             "Slovak"};
 
-const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
-                                      15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
+const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,   25, 24, 29, 5,  0, 9,
+                                      15, 16, 17, 7, 26, 8, 11, 20, 3,  13, 27, 10, 19, 30, 28, 31};
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
