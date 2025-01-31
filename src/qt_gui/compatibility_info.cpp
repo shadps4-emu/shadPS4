@@ -260,3 +260,22 @@ void CompatibilityInfoClass::ExtractCompatibilityInfo(QByteArray response) {
 
     return;
 }
+
+const QString CompatibilityInfoClass::GetCompatStatusString(const CompatibilityStatus status) {
+    switch (status) {
+    case CompatibilityStatus::Unknown:
+        return tr("Unknown");
+    case CompatibilityStatus::Nothing:
+        return tr("Nothing");
+    case CompatibilityStatus::Boots:
+        return tr("Boots");
+    case CompatibilityStatus::Menus:
+        return tr("Menus");
+    case CompatibilityStatus::Ingame:
+        return tr("Ingame");
+    case CompatibilityStatus::Playable:
+        return tr("Playable");
+    default:
+        return tr("Unknown");
+    }
+}
