@@ -12,8 +12,8 @@
 #include "game_info.h"
 #include "src/sdl_window.h"
 
-#include <QCloseEvent>
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QFile>
 #include <QHBoxLayout>
