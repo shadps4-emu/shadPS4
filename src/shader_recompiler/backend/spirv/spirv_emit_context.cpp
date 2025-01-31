@@ -65,17 +65,17 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 
 } // Anonymous namespace
 
-EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
-                         const Info& info_, Bindings& binding_)
+EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_, Info& info_,
+                         Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
+    DefineSharedMemory();
     DefineBuffers();
     DefineTextureBuffers();
     DefineImagesAndSamplers();
-    DefineSharedMemory();
 }
 
 EmitContext::~EmitContext() = default;
@@ -852,20 +852,45 @@ void EmitContext::DefineSharedMemory() {
     if (!info.uses_shared) {
         return;
     }
+    const u32 max_shared_memory_size = profile.max_shared_memory_size;
     u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     if (shared_memory_size == 0) {
         shared_memory_size = DefaultSharedMemSize;
     }
 
-    const u32 max_shared_memory_size = runtime_info.cs_info.max_shared_memory_size;
-    ASSERT(shared_memory_size <= max_shared_memory_size);
-
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
-    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
-    shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
-    shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
-    interfaces.push_back(shared_memory_u32);
+
+    if (shared_memory_size <= max_shared_memory_size) {
+        shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+        shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
+        shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
+        Name(shared_memory_u32, "shared_mem");
+        interfaces.push_back(shared_memory_u32);
+    } else {
+        shared_memory_u32_type = TypePointer(spv::StorageClass::StorageBuffer, type);
+        shared_u32 = TypePointer(spv::StorageClass::StorageBuffer, U32[1]);
+
+        Decorate(type, spv::Decoration::ArrayStride, 4);
+
+        const Id struct_type{TypeStruct(type)};
+        Name(struct_type, "shared_memory_buf");
+        Decorate(struct_type, spv::Decoration::Block);
+        MemberName(struct_type, 0, "data");
+        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+
+        const Id struct_pointer_type{TypePointer(spv::StorageClass::StorageBuffer, struct_type)};
+        const Id ssbo_id{AddGlobalVariable(struct_pointer_type, spv::StorageClass::StorageBuffer)};
+        Decorate(ssbo_id, spv::Decoration::Binding, binding.unified++);
+        Decorate(ssbo_id, spv::Decoration::DescriptorSet, 0U);
+        Name(ssbo_id, "shared_mem_ssbo");
+
+        shared_memory_u32 = ssbo_id;
+
+        info.has_emulated_shared_memory = true;
+        info.shared_memory_size = shared_memory_size;
+        interfaces.push_back(ssbo_id);
+    }
 }
 
 } // namespace Shader::Backend::SPIRV

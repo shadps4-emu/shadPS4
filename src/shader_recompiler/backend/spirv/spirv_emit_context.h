@@ -37,7 +37,7 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
+    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
 
@@ -132,7 +132,7 @@ public:
         return ConstantComposite(type, constituents);
     }
 
-    const Info& info;
+    Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage;

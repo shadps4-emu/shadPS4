@@ -29,6 +29,14 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
 
+    if (info->has_emulated_shared_memory) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     if (info->has_readconst) {
         bindings.push_back({
             .binding = binding++,
