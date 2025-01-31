@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Compatibilità...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Aggiorna database</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Visualizza rapporto</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Invia rapporto</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -194,7 +194,7 @@
 		</message>
 		<message>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Aggiornamento</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Apri Cartella shadps4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Chiave Trofei</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofei</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -702,23 +702,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Abilita Diagnostica Crash</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Raccogli Shaders</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Copia Buffer GPU </translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Marcatori di Debug dell'Host </translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Marcatori di Debug del Guest </translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -742,7 +742,7 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Musica del Titolo</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -774,7 +774,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Backend Audio</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -830,7 +830,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Chiave Trofei:\nChiave utilizzata per la decrittazione dei trofei. Deve essere estratta dalla vostra console con jailbreak.\nDeve contenere solo caratteri esadecimali.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -850,7 +850,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Disabilita Notifica Trofei:\nDisabilita notifiche in gioco dei trofei. Il progresso dei Trofei può ancora essere controllato con il Visualizzatore Trofei (clicca tasto destro sul gioco nella finestra principale).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -954,30 +954,30 @@
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
-			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+			<translation>Raccogli Shader:\nBisogna attivare questa opzione per poter modificare gli shader nel menu di debug (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+			<translation>Diagnostica Crash:\nCrea un file .yaml che contiene informazioni riguardo lo stato del renderer Vulkan nel momento in cui si verifica un crash.\nUtile per poter effettuare il debug degli errori di tipo "Device Lost". Se hai questa opzione attiva dovresti abilitare anche Marcatori di Debug Host e Guest.\nNon è funzionante su GPU Intel.\nVulkan Validation Layers deve essere abilitato e bisogna aver installato l'SDK Vulkan per poter utilizzare questa funzione.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+			<translation>Copia Buffer GPU:\nCerca di aggirare le race conditions che riguardano gli invii alla GPU.\nPotrebbe aiutare ad evitare crash che riguardano i PM4 di tipo 0.</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Marcatori di Debug dell'Host:\nInserisce nel log informazioni ottenute dall'emulatore come ad esempio marcatori per comandi specifici AMDGPU quando si hanno comandi Vulkan e associa nomi di debug per le risorse.\nSe hai questa opzione abilitata dovresti abilitare anche Diagnostica Crash.\nUtile per programmi come RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Marcatori di Debug del Guest:\nInserisce nel log marcatori di debug che il gioco stesso ha aggiunto al buffer dei comandi.\nSe hai abilitato questa opzione dovresti abilitare anche Diagnostica Crash.\nUtile per programmi come RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Cheats / Patch per </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -1244,7 +1244,7 @@
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>o</translation>
 		</message>
 		<message>
 			<source>m</source>
