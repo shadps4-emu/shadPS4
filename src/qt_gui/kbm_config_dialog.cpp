@@ -12,6 +12,7 @@
 #include "game_info.h"
 #include "src/sdl_window.h"
 
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QFile>
@@ -50,7 +51,16 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     // Load all installed games
     loadInstalledGames();
 
+    QCheckBox* unifiedInputCheckBox = new QCheckBox("Use Per-Game configs", this);
+    unifiedInputCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
+
+    // Connect checkbox signal
+    connect(unifiedInputCheckBox, &QCheckBox::toggled, this, [](bool checked) {
+        Config::SetUseUnifiedInputConfig(!checked);
+        Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+    });
     // Create Save, Cancel, and Help buttons
+    Config::SetUseUnifiedInputConfig(!Config::GetUseUnifiedInputConfig());
     QPushButton* saveButton = new QPushButton("Save", this);
     QPushButton* cancelButton = new QPushButton("Cancel", this);
     QPushButton* helpButton = new QPushButton("Help", this);
@@ -58,6 +68,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
     // Layout for the game selection and buttons
     QHBoxLayout* topLayout = new QHBoxLayout();
+    topLayout->addWidget(unifiedInputCheckBox);
     topLayout->addWidget(gameComboBox);
     topLayout->addStretch();
     topLayout->addWidget(saveButton);
