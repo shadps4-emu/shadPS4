@@ -26,6 +26,8 @@ int main(int argc, char* argv[]) {
 
     QApplication a(argc, argv);
 
+    QApplication::setDesktopFileName("net.shadps4.shadPS4");
+
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
