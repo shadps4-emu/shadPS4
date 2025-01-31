@@ -84,14 +84,15 @@ auto output_array = std::array{
     ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),// Right
 
     // Axis mappings
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY, false),
+    // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
+    // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY, false),
+    // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX, false),
+    // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY, false),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
+
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
 
@@ -99,15 +100,10 @@ auto output_array = std::array{
 };
 
 void ControllerOutput::LinkJoystickAxes() {
-    for (int i = 17; i < 21; i++) {
-        delete output_array[i].new_param;
-        output_array[i].new_param = output_array[i + 4].new_param;
-    }
-    for (int i = 0; i < output_array.size(); i++) {
-        if (output_array[i].new_param == nullptr) {
-            LOG_ERROR(Input, "Output {} has a broken pointer!", i);
-        }
-    }
+    // for (int i = 17; i < 23; i += 2) {
+    //     delete output_array[i].new_param;
+    //     output_array[i].new_param = output_array[i + 1].new_param;
+    // }
 }
 
 static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
@@ -447,7 +443,7 @@ void ControllerOutput::AddUpdate(InputEvent event) {
             bool temp = event.axis_value * (positive_axis ? 1 : -1) > 0x40;
             new_button_state |= event.active && event.axis_value * (positive_axis ? 1 : -1) > 0x40;
             if (temp) {
-                LOG_INFO(Input, "Toggled a button from an axis");
+                LOG_DEBUG(Input, "Toggled a button from an axis");
             }
         } else {
             new_button_state |= event.active;
@@ -549,11 +545,11 @@ bool UpdatePressedKeys(InputEvent event) {
         // and from there, it only changes the parameter
         auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
                                    [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                       return e.first.input.type <= i.type &&
-                                              e.first.input.sdl_id < i.sdl_id;
-                                   });
-        if (it == pressed_keys.end()) {
-            pressed_keys.push_back({event, false});
+                                        return std::tie(e.first.input.type, e.first.input.sdl_id) <
+                                            std::tie(i.type, i.sdl_id);
+                                    });
+        if (it == pressed_keys.end() || it->first.input != input) {
+            pressed_keys.insert(it, {event, false});
             LOG_DEBUG(Input, "Added axis {} to the input list", event.input.sdl_id);
         } else {
             it->first.axis_value = event.axis_value;
@@ -563,9 +559,9 @@ bool UpdatePressedKeys(InputEvent event) {
         // Find the correct position for insertion to maintain order
         auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
                                    [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                       return e.first.input.type <= i.type &&
-                                              e.first.input.sdl_id < i.sdl_id;
-                                   });
+                                        return std::tie(e.first.input.type, e.first.input.sdl_id) <
+                                            std::tie(i.type, i.sdl_id);
+                                    });
 
         // Insert only if 'value' is not already in the list
         if (it == pressed_keys.end() || it->first.input != input) {
@@ -631,13 +627,13 @@ InputEvent BindingConnection::ProcessBinding() {
         bool key_found = false;
 
         while (pressed_it != pressed_keys.end()) {
-            if (pressed_it->first.input == key && pressed_it->second == false) {
+            if (pressed_it->first.input == key && (pressed_it->second == false)) {
                 key_found = true;
-                flags_to_set.push_back(&pressed_it->second);
+                if (output->positive_axis) {
+                    flags_to_set.push_back(&pressed_it->second);
+                }
                 if (pressed_it->first.input.type == InputType::Axis) {
-                    // clamp to + or - range based on whether it's the + or - axis direction output
-                    event.axis_value = // pressed_it->first.axis_value;
-                        SDL_clamp(pressed_it->first.axis_value, output->positive_axis ? 0 : -127, output->positive_axis ? 127 : 0);
+                    event.axis_value = pressed_it->first.axis_value;
                 }
                 ++pressed_it;
                 break;

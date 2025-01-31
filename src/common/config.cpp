@@ -981,15 +981,11 @@ pad_right = pad_right
 options = options
 touchpad = back
 
-axis_left_x_plus = axis_left_x_plus
-axis_left_y_plus = axis_left_y_plus
-axis_left_x_minus = axis_left_x_minus
-axis_left_y_minus = axis_left_y_minus
+axis_left_x = axis_left_x
+axis_left_y = axis_left_y
 
-axis_right_x_plus = axis_right_x_plus
-axis_right_y_plus = axis_right_y_plus
-axis_right_x_minus = axis_right_x_minus
-axis_right_y_minus = axis_right_y_minus
+axis_right_x = axis_right_x
+axis_right_y = axis_right_y
 )";
 }
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {

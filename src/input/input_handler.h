@@ -118,10 +118,10 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
     {"r2", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}},
 
     // should only use these to bind analog inputs to analog outputs
-    // {"axis_left_x", {Input::Axis::LeftX, 0}},
-    // {"axis_left_y", {Input::Axis::LeftY, 0}},
-    // {"axis_right_x", {Input::Axis::RightX, 0}},
-    // {"axis_right_y", {Input::Axis::RightY, 0}},
+    {"axis_left_x", {SDL_GAMEPAD_AXIS_LEFTX, 127}},
+    {"axis_left_y", {SDL_GAMEPAD_AXIS_LEFTY, 127}},
+    {"axis_right_x", {SDL_GAMEPAD_AXIS_RIGHTX, 127}},
+    {"axis_right_y", {SDL_GAMEPAD_AXIS_RIGHTY, 127}},
 };
 const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"a", SDLK_A},
