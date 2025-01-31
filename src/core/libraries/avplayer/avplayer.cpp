@@ -22,7 +22,7 @@ s32 PS4_SYSV_ABI sceAvPlayerAddSource(SceAvPlayerHandle handle, const char* file
 s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(SceAvPlayerHandle handle, SceAvPlayerUriType uriType,
                                         SceAvPlayerSourceDetails* sourceDetails) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
-    if (handle == nullptr) {
+    if (handle == nullptr || uriType != SceAvPlayerUriType::validAddSourceEx) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     return ORBIS_OK;

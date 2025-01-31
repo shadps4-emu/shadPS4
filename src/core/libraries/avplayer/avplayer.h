@@ -20,6 +20,7 @@ using SceAvPlayerHandle = AvPlayer*;
 
 enum class SceAvPlayerUriType : u32 {
     Source = 0,
+    validAddSourceEx = 99,
 };
 
 struct SceAvPlayerUri {
