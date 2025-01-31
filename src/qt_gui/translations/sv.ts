@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="sv_SE">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+    	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
-	<context>
+<context>
     <name>AboutDialog</name>
     <message>
         <source>About shadPS4</source>
@@ -251,6 +251,10 @@
     <message>
         <source>ERROR</source>
         <translation>FEL</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Stäng</translation>
     </message>
 </context>
 <context>
@@ -676,6 +680,26 @@
         <source>Failed to convert icon.</source>
         <translation>Misslyckades med att konvertera ikon.</translation>
     </message>
+    <message>
+        <source>Open Update Folder</source>
+        <translation>Öppna uppdateringsmapp</translation>
+    </message>
+    <message>
+        <source>Delete Save Data</source>
+        <translation>Ta bort sparat data</translation>
+    </message>
+    <message>
+        <source>This game has no update folder to open!</source>
+        <translation>Detta spel har ingen uppdateringsmapp att öppna!</translation>
+    </message>
+    <message>
+        <source>This game has no save data to delete!</source>
+        <translation>Detta spel har inget sparat data att ta bort!</translation>
+    </message>
+    <message>
+        <source>Save Data</source>
+        <translation>Sparat data</translation>
+    </message>
 </context>
 <context>
     <name>InstallDirSelect</name>
@@ -686,6 +710,14 @@
     <message>
         <source>Select which directory you want to install to.</source>
         <translation>Välj vilken katalog som du vill installera till.</translation>
+    </message>
+    <message>
+        <source>Install All Queued to Selected Folder</source>
+        <translation>Installera alla köade till markerad mapp</translation>
+    </message>
+    <message>
+        <source>Delete PKG File on Install</source>
+        <translation>Ta bort PKG-fil efter installation</translation>
     </message>
 </context>
 <context>
@@ -1040,11 +1072,11 @@
         <source>Enable Separate Update Folder</source>
         <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
-		<message>
-			<source>Default tab when opening settings</source>
-			<translation>Standardflik när inställningar öppnas</translation>
-		</message>
-    <message> 
+    <message>
+        <source>Default tab when opening settings</source>
+        <translation>Standardflik när inställningar öppnas</translation>
+    </message>
+    <message>
         <source>Show Game Size In List</source>
         <translation>Visa spelstorlek i listan</translation>
     </message>
@@ -1142,7 +1174,7 @@
     </message>
     <message>
         <source>Advanced</source>
-        <translation>Avancerat</translation>
+        <translation type="vanished">Avancerat</translation>
     </message>
     <message>
         <source>Enable Shaders Dumping</source>
@@ -1322,7 +1354,7 @@
     </message>
     <message>
         <source>updaterGroupBox</source>
-        <translation>updaterGroupBox</translation>
+        <translation>Uppdatering:\nRelease: Officiella versioner som släpps varje månad som kan vara mycket utdaterade, men är mer pålitliga och testade.\nNightly: Utvecklingsversioner som har de senaste funktionerna och fixarna, men kan innehålla fel och är mindre stabila</translation>
     </message>
     <message>
         <source>GUIMusicGroupBox</source>
@@ -1475,6 +1507,38 @@
     <message>
         <source>Directory to install games</source>
         <translation>Katalog att installera spel till</translation>
+    </message>
+    <message>
+        <source>Borderless</source>
+        <translation>Fönster utan kanter</translation>
+    </message>
+    <message>
+        <source>True</source>
+        <translation>Sant</translation>
+    </message>
+    <message>
+        <source>Enable Motion Controls</source>
+        <translation>Aktivera rörelsekontroller</translation>
+    </message>
+    <message>
+        <source>Save Data Path</source>
+        <translation>Sökväg för sparat data</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Bläddra</translation>
+    </message>
+    <message>
+        <source>Directory to save data</source>
+        <translation>Katalog för sparat data</translation>
+    </message>
+    <message>
+        <source>saveDataBox</source>
+        <translation>Sökväg för sparat data:\nSökvägen där spelets sparade data kommer att sparas</translation>
+    </message>
+    <message>
+        <source>browseButton</source>
+        <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
     </message>
 </context>
 <context>
