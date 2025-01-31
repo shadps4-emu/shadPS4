@@ -8,7 +8,7 @@
 
 namespace Common {
 
-constexpr char VERSION[] = "0.5.1 WIP";
-constexpr bool isRelease = false;
+constexpr char VERSION[] = "0.6.0";
+constexpr bool isRelease = true;
 
 } // namespace Common
