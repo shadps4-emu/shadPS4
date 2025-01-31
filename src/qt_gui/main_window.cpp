@@ -747,12 +747,42 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         }
         std::filesystem::path game_install_dir = last_install_dir;
 
-        auto game_folder_path = game_install_dir / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         bool use_game_update = pkgType.contains("PATCH") && Config::getSeparateUpdateEnabled();
-        auto game_update_path = use_game_update
-                                    ? game_install_dir / (std::string(pkg.GetTitleID()) + "-UPDATE")
-                                    : game_folder_path;
+
+        // Default paths
+        auto game_folder_path = game_install_dir / pkg.GetTitleID();
+        auto game_update_path = use_game_update ? game_folder_path.parent_path() /
+                                                      (std::string{pkg.GetTitleID()} + "-UPDATE")
+                                                : game_folder_path;
+        const int max_depth = 5;
+
+        if (pkgType.contains("PATCH")) {
+            // For patches, try to find the game recursively
+            auto found_game = Common::FS::FindGameByID(game_install_dir,
+                                                       std::string{pkg.GetTitleID()}, max_depth);
+            if (found_game.has_value()) {
+                game_folder_path = found_game.value().parent_path();
+                game_update_path = use_game_update ? game_folder_path.parent_path() /
+                                                         (std::string{pkg.GetTitleID()} + "-UPDATE")
+                                                   : game_folder_path;
+            }
+        } else {
+            // For base games, we check if the game is already installed
+            auto found_game = Common::FS::FindGameByID(game_install_dir,
+                                                       std::string{pkg.GetTitleID()}, max_depth);
+            if (found_game.has_value()) {
+                game_folder_path = found_game.value().parent_path();
+            }
+            // If the game is not found, we install it in the game install directory
+            else {
+                game_folder_path = game_install_dir / pkg.GetTitleID();
+            }
+            game_update_path = use_game_update ? game_folder_path.parent_path() /
+                                                     (std::string{pkg.GetTitleID()} + "-UPDATE")
+                                               : game_folder_path;
+        }
+
         QString gameDirPath;
         Common::FS::PathToQString(gameDirPath, game_folder_path);
         QDir game_dir(gameDirPath);
@@ -897,10 +927,13 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
                     if (pkgNum == nPkg) {
                         QString path;
-                        Common::FS::PathToQString(path, game_install_dir);
+
+                        // We want to show the parent path instead of the full path
+                        Common::FS::PathToQString(path, game_folder_path.parent_path());
                         QIcon windowIcon(
                             Common::FS::PathToUTF8String(game_folder_path / "sce_sys/icon0.png")
                                 .c_str());
+
                         QMessageBox extractMsgBox(this);
                         extractMsgBox.setWindowTitle(tr("Extraction Finished"));
                         if (!windowIcon.isNull()) {

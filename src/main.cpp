@@ -167,12 +167,12 @@ int main(int argc, char* argv[]) {
 
     // Check if the provided path is a valid file
     if (!std::filesystem::exists(eboot_path)) {
-        // If not a file, treat it as a game ID and search in install directories
+        // If not a file, treat it as a game ID and search in install directories recursively
         bool game_found = false;
+        const int max_depth = 5;
         for (const auto& install_dir : Config::getGameInstallDirs()) {
-            const auto candidate_path = install_dir / game_path / "eboot.bin";
-            if (std::filesystem::exists(candidate_path)) {
-                eboot_path = candidate_path;
+            if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
+                eboot_path = *found_path;
                 game_found = true;
                 break;
             }
