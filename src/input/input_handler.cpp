@@ -498,7 +498,7 @@ void ControllerOutput::FinalizeUpdate() {
         int deadzone = 0;
         auto ApplyDeadzone = [](s16* value, int deadzone) {
             if (std::abs(*value) <= deadzone) {
-                // *value = 0;
+                *value = 0;
             }
         };
         Axis c_axis = GetAxisFromSDLAxis(axis);
