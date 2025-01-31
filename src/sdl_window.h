@@ -5,8 +5,8 @@
 
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
-#include "string"
 #include "input/controller.h"
+#include "string"
 
 struct SDL_Window;
 struct SDL_Gamepad;

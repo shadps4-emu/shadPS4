@@ -68,20 +68,20 @@ auto output_array = std::array{
     ControllerOutput(KEY_TOGGLE),
 
     // Button mappings
-    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),    // Triangle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),     // Circle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),    // Cross
-    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),     // Square
+    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),          // Triangle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),           // Circle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),          // Cross
+    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),           // Square
     ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),  // L1
     ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),     // L3
     ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER), // R1
     ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),    // R3
-    ControllerOutput(SDL_GAMEPAD_BUTTON_START),    // Options
-    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD), // TouchPad
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),  // Up
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),// Down
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),// Left
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),// Right
+    ControllerOutput(SDL_GAMEPAD_BUTTON_START),          // Options
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD),       // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),        // Up
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),      // Down
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),      // Left
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),     // Right
 
     // Axis mappings
     // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -146,8 +146,7 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 }
 
 Axis GetAxisFromSDLAxis(u8 sdl_axis) {
-    switch (sdl_axis)
-    {
+    switch (sdl_axis) {
     case SDL_GAMEPAD_AXIS_LEFTX:
         return Axis::LeftX;
     case SDL_GAMEPAD_AXIS_LEFTY:
@@ -278,8 +277,8 @@ void ParseInputConfig(const std::string game_id = "") {
                                 line);
                     continue;
                 }
-                ControllerOutput* toggle_out = &*std::ranges::find(
-                    output_array, ControllerOutput(KEY_TOGGLE));
+                ControllerOutput* toggle_out =
+                    &*std::ranges::find(output_array, ControllerOutput(KEY_TOGGLE));
                 BindingConnection toggle_connection = BindingConnection(
                     InputBinding(toggle_keys.keys[0]), toggle_out, 0, toggle_keys.keys[1]);
                 connections.insert(connections.end(), toggle_connection);
@@ -348,7 +347,8 @@ void ParseInputConfig(const std::string game_id = "") {
             connection = BindingConnection(
                 binding,
                 &*std::ranges::find(output_array, ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID,
-                                                                   axis_it->second.axis, axis_it->second.value >= 0)),
+                                                                   axis_it->second.axis,
+                                                                   axis_it->second.value >= 0)),
                 value_to_set);
             connections.insert(connections.end(), connection);
         } else {
@@ -390,16 +390,14 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
         return InputEvent(InputType::KeyboardMouse, e.key.key, e.key.down, 0);
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        return InputEvent(InputType::KeyboardMouse, (u32)e.button.button,
-                          e.button.down, 0);
+        return InputEvent(InputType::KeyboardMouse, (u32)e.button.button, e.button.down, 0);
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
         return InputEvent(InputType::KeyboardMouse, GetMouseWheelEvent(e),
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        return InputEvent(InputType::Controller, (u32)e.gbutton.button,
-                          e.gbutton.down, 0);
+        return InputEvent(InputType::Controller, (u32)e.gbutton.button, e.gbutton.down, 0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         return InputEvent(InputType::Axis, (u32)e.gaxis.axis, true, e.gaxis.value / 256);
     default:
@@ -467,7 +465,7 @@ void ControllerOutput::FinalizeUpdate() {
     if (!state_changed) {
         // return;
     }
-    
+
     old_button_state = new_button_state;
     old_param = *new_param;
     float touchpad_x = 0;
@@ -545,9 +543,9 @@ bool UpdatePressedKeys(InputEvent event) {
         // and from there, it only changes the parameter
         auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
                                    [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                        return std::tie(e.first.input.type, e.first.input.sdl_id) <
-                                            std::tie(i.type, i.sdl_id);
-                                    });
+                                       return std::tie(e.first.input.type, e.first.input.sdl_id) <
+                                              std::tie(i.type, i.sdl_id);
+                                   });
         if (it == pressed_keys.end() || it->first.input != input) {
             pressed_keys.insert(it, {event, false});
             LOG_DEBUG(Input, "Added axis {} to the input list", event.input.sdl_id);
@@ -559,9 +557,9 @@ bool UpdatePressedKeys(InputEvent event) {
         // Find the correct position for insertion to maintain order
         auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
                                    [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                        return std::tie(e.first.input.type, e.first.input.sdl_id) <
-                                            std::tie(i.type, i.sdl_id);
-                                    });
+                                       return std::tie(e.first.input.type, e.first.input.sdl_id) <
+                                              std::tie(i.type, i.sdl_id);
+                                   });
 
         // Insert only if 'value' is not already in the list
         if (it == pressed_keys.end() || it->first.input != input) {

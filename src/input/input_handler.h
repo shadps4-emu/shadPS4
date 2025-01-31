@@ -43,7 +43,7 @@ struct AxisMapping {
 };
 
 enum class InputType { Axis, KeyboardMouse, Controller, Count };
-const std::array<std::string, 4> input_type_names = { "Axis", "KBM", "Controller", "Unknown"};
+const std::array<std::string, 4> input_type_names = {"Axis", "KBM", "Controller", "Unknown"};
 
 class InputID {
 public:
@@ -310,7 +310,8 @@ public:
         case 2:
             return fmt::format("({}, {})", keys[0].ToString(), keys[1].ToString());
         case 3:
-            return fmt::format("({}, {}, {})", keys[0].ToString(), keys[1].ToString(), keys[2].ToString());
+            return fmt::format("({}, {}, {})", keys[0].ToString(), keys[1].ToString(),
+                               keys[2].ToString());
         default:
             return "Empty";
         }
@@ -331,7 +332,7 @@ public:
     // these are only used as s8,
     // but I added some padding to avoid overflow if it's activated by multiple inputs
     // axis_plus and axis_minus pairs share a common new_param, the other outputs have their own
-    s16 old_param; 
+    s16 old_param;
     s16* new_param;
     bool old_button_state, new_button_state, state_changed, positive_axis;
 
