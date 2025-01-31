@@ -46,8 +46,6 @@ static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
 static std::string chooseHomeTab;
-static u16 deadZoneLeft = 2.0;
-static u16 deadZoneRight = 2.0;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
@@ -149,14 +147,6 @@ int getBGMvolume() {
 
 bool getEnableDiscordRPC() {
     return enableDiscordRPC;
-}
-
-u16 leftDeadZone() {
-    return deadZoneLeft;
-}
-
-u16 rightDeadZone() {
-    return deadZoneRight;
 }
 
 s16 getCursorState() {
@@ -661,8 +651,6 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
-        deadZoneLeft = toml::find_or<float>(input, "deadZoneLeft", 2.0);
-        deadZoneRight = toml::find_or<float>(input, "deadZoneRight", 2.0);
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
         backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
@@ -785,8 +773,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-    data["Input"]["deadZoneLeft"] = deadZoneLeft;
-    data["Input"]["deadZoneRight"] = deadZoneRight;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -917,6 +903,111 @@ void setDefaultValues() {
     separateupdatefolder = false;
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
+}
+
+constexpr std::string_view GetDefaultKeyboardConfig() {
+    return R"(#Feeling lost? Check out the Help section!
+
+#Keyboard bindings
+
+triangle = f
+circle = space
+cross = e
+square = r
+
+pad_up = w, lalt
+pad_up = mousewheelup
+pad_down = s, lalt
+pad_down = mousewheeldown
+pad_left = a, lalt
+pad_left = mousewheelleft
+pad_right = d, lalt
+pad_right = mousewheelright
+
+l1 = rightbutton, lshift
+r1 = leftbutton
+l2 = rightbutton
+r2 = leftbutton, lshift
+l3 = x
+r3 = q
+r3 = middlebutton
+
+options = escape
+touchpad = g
+
+key_toggle = i, lalt
+mouse_to_joystick = right
+mouse_movement_params = 0.5, 1, 0.125
+leftjoystick_halfmode = lctrl
+
+axis_left_x_minus = a
+axis_left_x_plus = d
+axis_left_y_minus = w
+axis_left_y_plus = s
+
+#Controller bindings
+
+triangle = triangle
+cross = cross
+square = square
+circle = circle
+
+l1 = l1
+l2 = l2
+l3 = l3
+r1 = r1
+r2 = r2
+r3 = r3
+
+pad_up = pad_up
+pad_down = pad_down
+pad_left = pad_left
+pad_right = pad_right
+
+options = options
+touchpad = back
+
+axis_left_x = axis_left_x
+axis_left_y = axis_left_y
+
+axis_right_x = axis_right_x
+axis_right_y = axis_right_y
+)";
+}
+std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
+    // Read configuration file of the game, and if it doesn't exist, generate it from default
+    // If that doesn't exist either, generate that from getDefaultConfig() and try again
+    // If even the folder is missing, we start with that.
+
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "input_config";
+    const auto config_file = config_dir / (game_id + ".ini");
+    const auto default_config_file = config_dir / "default.ini";
+
+    // Ensure the config directory exists
+    if (!std::filesystem::exists(config_dir)) {
+        std::filesystem::create_directories(config_dir);
+    }
+
+    // Check if the default config exists
+    if (!std::filesystem::exists(default_config_file)) {
+        // If the default config is also missing, create it from getDefaultConfig()
+        const auto default_config = GetDefaultKeyboardConfig();
+        std::ofstream default_config_stream(default_config_file);
+        if (default_config_stream) {
+            default_config_stream << default_config;
+        }
+    }
+
+    // if empty, we only need to execute the function up until this point
+    if (game_id.empty()) {
+        return default_config_file;
+    }
+
+    // If game-specific config doesn't exist, create it from the default config
+    if (!std::filesystem::exists(config_file)) {
+        std::filesystem::copy(default_config_file, config_file);
+    }
+    return config_file;
 }
 
 } // namespace Config

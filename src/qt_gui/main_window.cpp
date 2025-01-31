@@ -3,6 +3,7 @@
 
 #include <QDockWidget>
 #include <QKeyEvent>
+#include <QPlainTextEdit>
 #include <QProgressDialog>
 
 #include "about_dialog.h"
@@ -21,6 +22,9 @@
 #include "install_dir_select.h"
 #include "main_window.h"
 #include "settings_dialog.h"
+
+#include "kbm_config_dialog.h"
+
 #include "video_core/renderer_vulkan/vk_instance.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
@@ -289,6 +293,12 @@ void MainWindow::CreateConnects() {
                 &MainWindow::RefreshGameTable);
 
         settingsDialog->exec();
+    });
+
+    // this is the editor for kbm keybinds
+    connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
+        EditorDialog* editorWindow = new EditorDialog(this);
+        editorWindow->exec(); // Show the editor window modally
     });
 
 #ifdef ENABLE_UPDATER
