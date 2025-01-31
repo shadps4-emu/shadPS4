@@ -41,8 +41,13 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    std::string guest_path(moduleFileName);
+    if (moduleFileName[0] != '/') {
+        guest_path = "/app0/" + guest_path;
+    }
+
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path = mnt->GetHostPath(moduleFileName);
+    const auto path = mnt->GetHostPath(guest_path);
 
     // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
