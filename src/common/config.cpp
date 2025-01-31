@@ -993,7 +993,7 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
 
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "inputConfig";
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "input_config";
     const auto config_file = config_dir / (game_id + ".ini");
     const auto default_config_file = config_dir / "default.ini";
 
