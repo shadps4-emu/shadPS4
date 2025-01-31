@@ -37,8 +37,9 @@ using Input::Axis;
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
 struct AxisMapping {
-    Axis axis;
-    int value; // Value to set for key press (+127 or -127 for movement)
+    u32 axis;
+    s16 value;
+    AxisMapping(SDL_GamepadAxis a, s16 v) : axis(a), value(v) {}
 };
 
 enum class InputType { Axis, KeyboardMouse, Controller, Count };
@@ -104,17 +105,17 @@ const std::map<std::string, u32> string_to_cbutton_map = {
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {
-    {"axis_left_x_plus", {Input::Axis::LeftX, 127}},
-    {"axis_left_x_minus", {Input::Axis::LeftX, -127}},
-    {"axis_left_y_plus", {Input::Axis::LeftY, 127}},
-    {"axis_left_y_minus", {Input::Axis::LeftY, -127}},
-    {"axis_right_x_plus", {Input::Axis::RightX, 127}},
-    {"axis_right_x_minus", {Input::Axis::RightX, -127}},
-    {"axis_right_y_plus", {Input::Axis::RightY, 127}},
-    {"axis_right_y_minus", {Input::Axis::RightY, -127}},
+    {"axis_left_x_plus", {SDL_GAMEPAD_AXIS_LEFTX, 127}},
+    {"axis_left_x_minus", {SDL_GAMEPAD_AXIS_LEFTX, -127}},
+    {"axis_left_y_plus", {SDL_GAMEPAD_AXIS_LEFTY, 127}},
+    {"axis_left_y_minus", {SDL_GAMEPAD_AXIS_LEFTY, -127}},
+    {"axis_right_x_plus", {SDL_GAMEPAD_AXIS_RIGHTX, 127}},
+    {"axis_right_x_minus", {SDL_GAMEPAD_AXIS_RIGHTX, -127}},
+    {"axis_right_y_plus", {SDL_GAMEPAD_AXIS_RIGHTY, 127}},
+    {"axis_right_y_minus", {SDL_GAMEPAD_AXIS_RIGHTY, -127}},
 
-    {"l2", {Axis::TriggerLeft, 0}},
-    {"r2", {Axis::TriggerRight, 0}},
+    {"l2", {SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 127}},
+    {"r2", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}},
 
     // should only use these to bind analog inputs to analog outputs
     // {"axis_left_x", {Input::Axis::LeftX, 0}},
@@ -326,7 +327,7 @@ public:
     static void LinkJoystickAxes();
 
     u32 button;
-    Axis axis;
+    u32 axis;
     // these are only used as s8,
     // but I added some padding to avoid overflow if it's activated by multiple inputs
     // axis_plus and axis_minus pairs share a common new_param, the other outputs have their own
@@ -334,7 +335,7 @@ public:
     s16* new_param;
     bool old_button_state, new_button_state, state_changed, positive_axis;
 
-    ControllerOutput(const u32 b, Axis a = Axis::AxisMax, bool p = true) {
+    ControllerOutput(const u32 b, u32 a = SDL_GAMEPAD_AXIS_INVALID, bool p = true) {
         button = b;
         axis = a;
         new_param = new s16(0);
@@ -357,10 +358,10 @@ public:
         return fmt::format("({}, {}, {})", (s32)button, (int)axis, old_param);
     }
     inline bool IsButton() const {
-        return axis == Axis::AxisMax && button != SDL_GAMEPAD_BUTTON_INVALID;
+        return axis == SDL_GAMEPAD_AXIS_INVALID && button != SDL_GAMEPAD_BUTTON_INVALID;
     }
     inline bool IsAxis() const {
-        return axis != Axis::AxisMax && button == SDL_GAMEPAD_BUTTON_INVALID;
+        return axis != SDL_GAMEPAD_AXIS_INVALID && button == SDL_GAMEPAD_BUTTON_INVALID;
     }
 
     void ResetUpdate();
@@ -384,8 +385,8 @@ public:
         // a button is a higher priority than an axis, as buttons can influence axes
         // (e.g. joystick_halfmode)
         if (output->IsButton() &&
-            (other.output->IsAxis() && (other.output->axis != Axis::TriggerLeft &&
-                                        other.output->axis != Axis::TriggerRight))) {
+            (other.output->IsAxis() && (other.output->axis != SDL_GAMEPAD_AXIS_LEFT_TRIGGER &&
+                                        other.output->axis != SDL_GAMEPAD_AXIS_RIGHT_TRIGGER))) {
             return true;
         }
         if (binding < other.binding) {

@@ -84,18 +84,18 @@ auto output_array = std::array{
     ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),// Right
 
     // Axis mappings
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::LeftX, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::LeftY, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::RightX, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::RightY, false),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::LeftX),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::LeftY),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::RightX),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::RightY),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::TriggerLeft),
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::TriggerRight),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY, false),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX, false),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY, false),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
 
-    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, Axis::AxisMax),
+    ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
 };
 
 void ControllerOutput::LinkJoystickAxes() {
@@ -146,6 +146,26 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
         return OPBDO::R3;
     default:
         return OPBDO::None;
+    }
+}
+
+Axis GetAxisFromSDLAxis(u8 sdl_axis) {
+    switch (sdl_axis)
+    {
+    case SDL_GAMEPAD_AXIS_LEFTX:
+        return Axis::LeftX;
+    case SDL_GAMEPAD_AXIS_LEFTY:
+        return Axis::LeftY;
+    case SDL_GAMEPAD_AXIS_RIGHTX:
+        return Axis::RightX;
+    case SDL_GAMEPAD_AXIS_RIGHTY:
+        return Axis::RightY;
+    case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+        return Axis::TriggerLeft;
+    case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+        return Axis::TriggerRight;
+    default:
+        return Axis::AxisMax;
     }
 }
 
@@ -328,11 +348,7 @@ void ParseInputConfig(const std::string game_id = "") {
             connections.insert(connections.end(), connection);
 
         } else if (axis_it != string_to_axis_map.end()) {
-            int value_to_set = binding.keys[2].type == InputType::Axis ? 0
-                               : (axis_it->second.axis == Axis::TriggerLeft ||
-                                  axis_it->second.axis == Axis::TriggerRight)
-                                   ? 127
-                                   : axis_it->second.value;
+            int value_to_set = binding.keys[2].type == InputType::Axis ? 0 : axis_it->second.value;
             connection = BindingConnection(
                 binding,
                 &*std::ranges::find(output_array, ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID,
@@ -375,21 +391,21 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        return InputEvent(InputType::KeyboardMouse, e.key.key, e.type == SDL_EVENT_KEY_DOWN, 0);
+        return InputEvent(InputType::KeyboardMouse, e.key.key, e.key.down, 0);
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        return InputEvent(InputType::KeyboardMouse, e.button.button,
-                          e.type == SDL_EVENT_MOUSE_BUTTON_DOWN, 0);
+        return InputEvent(InputType::KeyboardMouse, (u32)e.button.button,
+                          e.button.down, 0);
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
         return InputEvent(InputType::KeyboardMouse, GetMouseWheelEvent(e),
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        return InputEvent(InputType::Controller, e.gbutton.button,
-                          e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN, 0);
+        return InputEvent(InputType::Controller, (u32)e.gbutton.button,
+                          e.gbutton.down, 0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        return InputEvent(InputType::Axis, e.gaxis.axis, true, (s8)(e.gaxis.value / 256));
+        return InputEvent(InputType::Axis, (u32)e.gaxis.axis, true, e.gaxis.value / 256);
     default:
         return InputEvent();
     }
@@ -437,10 +453,10 @@ void ControllerOutput::AddUpdate(InputEvent event) {
             new_button_state |= event.active;
         }
 
-    } else if (axis != Axis::AxisMax) {
+    } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
         switch (axis) {
-        case Axis::TriggerLeft:
-        case Axis::TriggerRight:
+        case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+        case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
             // if it's a button input, then we know the value to set, so the param is 0.
             // if it's an analog input, then the param isn't 0
             *new_param = (event.active ? event.axis_value : 0) + *new_param;
@@ -482,7 +498,7 @@ void ControllerOutput::FinalizeUpdate() {
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         }
-    } else if (axis != Axis::AxisMax && positive_axis) {
+    } else if (axis != SDL_GAMEPAD_AXIS_INVALID && positive_axis) {
         // avoid double-updating axes, but don't skip directional button bindings
         float multiplier = 1.0;
         int deadzone = 0;
@@ -490,8 +506,9 @@ void ControllerOutput::FinalizeUpdate() {
             if (std::abs(*value) <= deadzone) {
                 // *value = 0;
             }
-        }; 
-        switch (axis) {
+        };
+        Axis c_axis = GetAxisFromSDLAxis(axis);
+        switch (c_axis) {
         case Axis::LeftX:
         case Axis::LeftY:
             ApplyDeadzone(new_param, leftjoystick_deadzone);
@@ -504,18 +521,18 @@ void ControllerOutput::FinalizeUpdate() {
             break;
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
-            controller->Axis(0, axis, GetAxis(0x0, 0x80, *new_param));
+            controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
-            controller->Axis(0, axis, GetAxis(0x0, 0x80, *new_param));
+            controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;
         }
-        controller->Axis(0, axis, GetAxis(-0x80, 0x80, *new_param * multiplier));
+        controller->Axis(0, c_axis, GetAxis(-0x80, 0x80, *new_param * multiplier));
     }
 }
 
@@ -565,6 +582,7 @@ bool UpdatePressedKeys(InputEvent event) {
             return true;
         }
     }
+    LOG_DEBUG(Input, "No change was made!");
     return false;
 }
 // Check if the binding's all keys are currently active.
