@@ -198,8 +198,8 @@ InputBinding GetBindingFromString(std::string& line) {
 }
 
 void ParseInputConfig(const std::string game_id = "") {
-    std::string config_file = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_file);
+    std::string config_type = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
+    const auto config_file = Config::GetFoolproofKbmConfigFile(config_type);
 
     // we reset these here so in case the user fucks up or doesn't include some of these,
     // we can fall back to default
