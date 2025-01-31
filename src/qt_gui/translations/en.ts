@@ -1414,4 +1414,31 @@
 			<translation>TB</translation>
 		</message>
 	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Unknown</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nothing</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Boots</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menus</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Ingame</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Playable</translation>
+		</message>
+	</context>
 </TS>
