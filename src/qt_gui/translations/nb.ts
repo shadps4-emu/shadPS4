@@ -686,7 +686,7 @@
 		</message>
 		<message>
 			<source>Browse</source>
-			<translation>Velg mappe</translation>
+			<translation>Endre mappe</translation>
 		</message>
 		<message>
 			<source>saveDataBox</source>
@@ -694,7 +694,7 @@
 		</message>
 		<message>
 			<source>browseButton</source>
-			<translation>Velg mappe:\nVelger hvilken mappe shadPS4 skal lagre data til.</translation>
+			<translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
 		</message>
 		<message>
 			<source>Debug</source>
@@ -706,7 +706,7 @@
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Aktiver Vulkan valideringslag</translation>
+			<translation>Aktiver Vulkan Validation Layers</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Synchronization Validation</source>
@@ -958,7 +958,7 @@
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
@@ -974,7 +974,7 @@
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking 'Device lost' feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan valideringslag og Vulkan SDK for at dette skal fungere.</translation>
+			<translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking 'Device lost' feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
@@ -1030,6 +1030,10 @@
 		<message>
 			<source>Delete File</source>
 			<translation>Slett fil</translation>
+		</message>
+		<message>
+			<source>Close</source>
+			<translation>Lukk</translation>
 		</message>
 		<message>
 			<source>No files selected.</source>
