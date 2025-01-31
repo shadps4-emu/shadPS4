@@ -629,7 +629,7 @@
 			<translation>Grafikk</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Grensesnitt</translation>
 		</message>
 		<message>
@@ -681,6 +681,22 @@
 			<translation>Fjern</translation>
 		</message>
 		<message>
+			<source>Save Data Path</source>
+			<translation>Lagrede datamappe</translation>
+		</message>
+		<message>
+			<source>Browse</source>
+			<translation>Endre mappe</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Lagrede datamappe:\nListe over data shadPS4 lagrer.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
+		</message>
+		<message>
 			<source>Debug</source>
 			<translation>Feilretting</translation>
 		</message>
@@ -690,7 +706,7 @@
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Aktiver Vulkan valideringslag</translation>
+			<translation>Aktiver Vulkan Validation Layers</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Synchronization Validation</source>
@@ -702,23 +718,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Aktiver krasjdiagnostikk</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Lagre skyggeleggere</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Kopier GPU-buffere</translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Vertsfeilsøkingsmarkører</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Gjestefeilsøkingsmarkører</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -742,7 +758,7 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Tittelmusikk</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -926,7 +942,7 @@
 		</message>
 		<message>
 			<source>gameFoldersBox</source>
-			<translation>Spillmapper:\nListen over mapper som brukes for å se etter installerte spill.</translation>
+			<translation>Spillmapper:\nListe over mapper som brukes for å se etter installerte spill.</translation>
 		</message>
 		<message>
 			<source>addFolderButton</source>
@@ -942,7 +958,7 @@
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
@@ -954,23 +970,23 @@
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
-			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+			<translation>Lagre skyggeleggere:\nDu trenger dette aktivert for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+			<translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking 'Device lost' feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+			<translation>Kopier GPU-buffere:\nKommer rundt løpsforhold som involverer GPU-innsendinger.\nKan muligens hjelpe med PM4 type 0 krasj.</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Vertsfeilsøkingsmarkører:\nSetter inn etterligner-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
@@ -1014,6 +1030,10 @@
 		<message>
 			<source>Delete File</source>
 			<translation>Slett fil</translation>
+		</message>
+		<message>
+			<source>Close</source>
+			<translation>Lukk</translation>
 		</message>
 		<message>
 			<source>No files selected.</source>
