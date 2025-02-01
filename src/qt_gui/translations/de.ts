@@ -129,6 +129,14 @@
 			<translation>Seriennummer kopieren</translation>
 		</message>
 		<message>
+		        <source>Copy Firmware</source>
+			<translation>Firmware kopieren</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Größe kopieren</translation>
+		</message>
+		<message>
 			<source>Copy All</source>
 			<translation>Alles kopieren</translation>
 		</message>
