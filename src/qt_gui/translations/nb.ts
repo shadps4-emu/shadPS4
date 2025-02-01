@@ -1298,6 +1298,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Spillet kan fullføres med spillbar ytelse og uten store feil</translation>
 		</message>
+		<message>
+			<source>Click to go to issue</source>
+			<translation>Klikk for å gå til rapporten</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Sist oppdatert</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
