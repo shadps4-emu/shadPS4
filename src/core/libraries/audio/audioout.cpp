@@ -89,6 +89,9 @@ int PS4_SYSV_ABI sceAudioOutChangeAppModuleState() {
 
 int PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
     LOG_INFO(Lib_AudioOut, "handle = {}", handle);
+    if (audio == nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
@@ -171,6 +174,9 @@ int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
 }
 
 int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
+    if (audio == nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
@@ -305,6 +311,10 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
              user_id, magic_enum::enum_name(port_type), index, length, sample_rate,
              magic_enum::enum_name(param_type.data_format.Value()),
              magic_enum::enum_name(param_type.attributes.Value()));
+    if (audio == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
     if ((port_type < OrbisAudioOutPort::Main || port_type > OrbisAudioOutPort::Padspk) &&
         (port_type != OrbisAudioOutPort::Aux)) {
         LOG_ERROR(Lib_AudioOut, "Invalid port type");
@@ -368,6 +378,9 @@ int PS4_SYSV_ABI sceAudioOutOpenEx() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
+    if (audio == nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
@@ -489,6 +502,9 @@ int PS4_SYSV_ABI sceAudioOutSetUsbVolume() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
+    if (audio == nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
     if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
