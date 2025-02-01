@@ -742,7 +742,7 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Musique du titre</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -1403,6 +1403,33 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Inconnu</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Rien</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Démarre</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menus</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>En jeu</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Jouable</translation>
 		</message>
 	</context>
 </TS>
