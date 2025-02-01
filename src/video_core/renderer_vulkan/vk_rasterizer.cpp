@@ -1172,7 +1172,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
     const float reduce_z =
         regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
 
-    if (regs.polygon_control.enable_window_offset) {
+    if (regs.polygon_control.enable_window_offset &&
+        (regs.window_offset.window_x_offset != 0 || regs.window_offset.window_y_offset != 0)) {
         LOG_ERROR(Render_Vulkan,
                   "PA_SU_SC_MODE_CNTL.VTX_WINDOW_OFFSET_ENABLE support is not yet implemented.");
     }
