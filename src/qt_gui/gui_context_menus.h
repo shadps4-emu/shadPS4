@@ -365,7 +365,7 @@ public:
             QString combinedText = QString("Name:%1 | Serial:%2 | Version:%3 | Size:%4")
                                        .arg(QString::fromStdString(m_games[itemID].name))
                                        .arg(QString::fromStdString(m_games[itemID].serial))
-                                       .arg(QString::fromStdString(m_games[itemID].version))        
+                                       .arg(QString::fromStdString(m_games[itemID].version))
                                        .arg(QString::fromStdString(m_games[itemID].size));
             clipboard->setText(combinedText);
         }
