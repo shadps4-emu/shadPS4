@@ -549,7 +549,7 @@
     </message>
     <message>
         <source>Game is already running!</source>
-        <translation>Игра уже запущенна!</translation>
+        <translation>Игра уже запущена!</translation>
     </message>
     <message>
         <source>shadPS4</source>
@@ -806,7 +806,7 @@
     </message>
     <message>
         <source>GUI Settings</source>
-        <translation>Интерфейс</translation>
+        <translation>Настройки интерфейса</translation>
     </message>
     <message>
         <source>Title Music</source>
@@ -874,11 +874,11 @@
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Полноэкранный режим:\nАвтоматически переводит игровое окно в полноэкранный режим.\nВы можете отключить это, нажав клавишу F11.</translation>
+        <translation>Полноэкранный режим:\nАвтоматически переводит игровое окно в полноэкранный режим.\nЭто можно переключить, нажав клавишу F11..</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
-        <translation>Отдельная папка обновлений:\nПозволяет устанавливать обновления игры в отдельную папку для удобства.</translation>
+        <translation>Отдельная папка обновлений:\nПозволяет устанавливать обновления игры в отдельную папку для удобства.\nМожно создать вручную, добавив извлеченное обновление в папку с игрой с именем &quot;CUSA00000-UPDATE&quot;, где идентификатор CUSA совпадает с идентификатором игры.</translation>
     </message>
     <message>
         <source>showSplashCheckBox</source>
@@ -926,7 +926,7 @@
     </message>
     <message>
         <source>idleTimeoutGroupBox</source>
-        <translation>Установите время, через которое курсор исчезнет при бездействии.</translation>
+        <translation>Время скрытия курсора при бездействии:\nУстановите время, через которое курсор исчезнет при бездействии.</translation>
     </message>
     <message>
         <source>backButtonBehaviorGroupBox</source>
@@ -974,7 +974,7 @@
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Графическое устройство:\nВ системах с несколькими GPU выберите GPU, который будет использовать эмулятор.\nВыберите &quot;Auto Select&quot;, чтобы определить его автоматически.</translation>
+        <translation>Графическое устройство:\nВ системах с несколькими GPU выберите тот, который будет использовать эмулятор.\nВыберите &quot;Автовыбор&quot;, чтобы определить GPU автоматически.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
@@ -1066,7 +1066,7 @@
     </message>
     <message>
         <source>GUI</source>
-        <translation>Графический интерфейс</translation>
+        <translation>Интерфейс</translation>
     </message>
     <message>
         <source>Set the volume of the background music.</source>
@@ -1099,6 +1099,10 @@
     <message>
         <source>Directory to save data</source>
         <translation>Каталог для сохранений</translation>
+    </message>
+    <message>
+        <source>Auto Select</source>
+        <translation>Автовыбор</translation>
     </message>
 </context>
 <context>
