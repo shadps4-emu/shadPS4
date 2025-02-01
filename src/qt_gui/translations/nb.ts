@@ -1451,5 +1451,17 @@
 			<source>Playable</source>
 			<translation>Spillbar</translation>
 		</message>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Avbryt</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Laster...</translation>
+		</message>
 	</context>
 </TS>
