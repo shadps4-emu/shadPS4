@@ -32,6 +32,7 @@ struct Profile {
     u64 min_ssbo_alignment{};
     u32 max_viewport_width{};
     u32 max_viewport_height{};
+    u32 max_shared_memory_size{};
 };
 
 } // namespace Shader

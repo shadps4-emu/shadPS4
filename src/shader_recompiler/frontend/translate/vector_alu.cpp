@@ -96,6 +96,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LDEXP_F32(inst);
     case Opcode::V_CVT_PKNORM_U16_F32:
         return V_CVT_PKNORM_U16_F32(inst);
+    case Opcode::V_CVT_PKNORM_I16_F32:
+        return V_CVT_PKNORM_I16_F32(inst);
     case Opcode::V_CVT_PKRTZ_F16_F32:
         return V_CVT_PKRTZ_F16_F32(inst);
 
@@ -376,6 +378,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_SAD_U32(inst);
     case Opcode::V_CVT_PK_U16_U32:
         return V_CVT_PK_U16_U32(inst);
+    case Opcode::V_CVT_PK_I16_I32:
+        return V_CVT_PK_I16_I32(inst);
     case Opcode::V_CVT_PK_U8_F32:
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
@@ -645,12 +649,15 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
-    const IR::U32 dst0 = ir.ConvertFToU(32, ir.FPMul(src0, ir.Imm32(65535.f)));
-    const IR::U32 dst1 = ir.ConvertFToU(32, ir.FPMul(src1, ir.Imm32(65535.f)));
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.BitFieldInsert(dst0, dst1, ir.Imm32(16), ir.Imm32(16)));
+    const IR::Value vec_f32 =
+        ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.PackUnorm2x16(vec_f32));
+}
+
+void Translator::V_CVT_PKNORM_I16_F32(const GcnInst& inst) {
+    const IR::Value vec_f32 =
+        ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.PackSnorm2x16(vec_f32));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
@@ -1237,11 +1244,15 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_PK_U16_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 lo = ir.IMin(src0, ir.Imm32(0xFFFF), false);
-    const IR::U32 hi = ir.IMin(src1, ir.Imm32(0xFFFF), false);
-    SetDst(inst.dst[0], ir.BitFieldInsert(lo, hi, ir.Imm32(16), ir.Imm32(16)));
+    const IR::Value vec_u32 =
+        ir.CompositeConstruct(GetSrc<IR::U32>(inst.src[0]), GetSrc<IR::U32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.PackUint2x16(vec_u32));
+}
+
+void Translator::V_CVT_PK_I16_I32(const GcnInst& inst) {
+    const IR::Value vec_u32 =
+        ir.CompositeConstruct(GetSrc<IR::U32>(inst.src[0]), GetSrc<IR::U32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.PackSint2x16(vec_u32));
 }
 
 void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
@@ -1257,24 +1268,7 @@ void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
 void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    if (src0.IsImmediate()) {
-        if (src0.U64() == -1) {
-            // If src0 is a fixed -1, the result will always be -1.
-            ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
-            ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
-            return;
-        }
-        if (src1.IsImmediate()) {
-            // If both src0 and src1 are immediates, we can calculate the result now.
-            // Note that according to the manual, only bits 4:0 are used from src1.
-            const u64 result = src0.U64() << (src1.U64() & 0x1F);
-            ir.SetVectorReg(dst_reg, ir.Imm32(static_cast<u32>(result)));
-            ir.SetVectorReg(dst_reg + 1, ir.Imm32(static_cast<u32>(result >> 32)));
-            return;
-        }
-    }
-    UNREACHABLE_MSG("Unimplemented V_LSHL_B64 arguments");
+    SetDst64(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
 }
 
 void Translator::V_MUL_F64(const GcnInst& inst) {

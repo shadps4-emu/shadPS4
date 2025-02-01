@@ -187,6 +187,14 @@ OPCODE(PackFloat2x16,                                       U32,            F16x
 OPCODE(UnpackFloat2x16,                                     F16x2,          U32,                                                                            )
 OPCODE(PackHalf2x16,                                        U32,            F32x2,                                                                          )
 OPCODE(UnpackHalf2x16,                                      F32x2,          U32,                                                                            )
+OPCODE(PackUnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackSnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackSnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackUint2x16,                                        U32,            U32x2,                                                                          )
+OPCODE(UnpackUint2x16,                                      U32x2,          U32,                                                                            )
+OPCODE(PackSint2x16,                                        U32,            U32x2,                                                                          )
+OPCODE(UnpackSint2x16,                                      U32x2,          U32,                                                                            )
 
 // Floating-point operations
 OPCODE(FPAbs32,                                             F32,            F32,                                                                            )
@@ -321,7 +329,8 @@ OPCODE(SLessThanEqual,                                      U1,             U32,
 OPCODE(ULessThanEqual,                                      U1,             U32,            U32,                                                            )
 OPCODE(SGreaterThan,                                        U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThan,                                        U1,             U32,            U32,                                                            )
-OPCODE(INotEqual,                                           U1,             U32,            U32,                                                            )
+OPCODE(INotEqual32,                                         U1,             U32,            U32,                                                            )
+OPCODE(INotEqual64,                                         U1,             U64,            U64,                                                            )
 OPCODE(SGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 

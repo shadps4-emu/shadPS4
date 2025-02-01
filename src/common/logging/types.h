@@ -98,6 +98,9 @@ enum class Class : u8 {
     Lib_Videodec,          ///< The LibSceVideodec implementation.
     Lib_RazorCpu,          ///< The LibRazorCpu implementation.
     Lib_Mouse,             ///< The LibSceMouse implementation
+    Lib_WebBrowserDialog,  ///< The LibSceWebBrowserDialog implementation
+    Lib_NpParty,           ///< The LibSceNpParty implementation
+    Lib_Zlib,              ///< The LibSceZlib implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

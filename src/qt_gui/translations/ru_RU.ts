@@ -126,11 +126,11 @@
 		</message>
 		<message>
 			<source>Copy All</source>
-			<translation>Копировать все</translation>
+			<translation>Копировать всё</translation>
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Удаление...</translation>
+			<translation>Удалить...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
@@ -158,7 +158,7 @@
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Отправить отчет</translation>
+			<translation>Отправить отчёт</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -297,7 +297,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Elf</translation>
+			<translation>Исполняемый файл</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -542,7 +542,7 @@
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
-			<translation>Режим Полного Экран</translation>
+			<translation>Тип полноэкранного режима</translation>
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Ключ трофеев</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Трофеи</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -701,6 +701,26 @@
 			<translation>Включить отладку RenderDoc</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Enable Crash Diagnostics</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collect Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copy GPU Buffers</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host Debug Markers</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest Debug Markers</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Обновление</translation>
 		</message>
@@ -719,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>Интерфейс</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -750,7 +774,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Звуковая Подсистема</translation>
+			<translation>Звуковая подсистема</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -826,7 +850,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню Просмотр трофеев (правая кнопка мыши по игре в главном окне).</translation>
+			<translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню просмотра трофеев (правая кнопка мыши по игре в главном окне).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -927,6 +951,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>Включить отладку RenderDoc:\nЕсли включено, эмулятор обеспечит совместимость с Renderdoc, позволяя захватывать и анализировать текущие кадры во время рендеринга.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
@@ -1192,11 +1236,11 @@
 		</message>
 		<message>
 			<source>Play Time</source>
-			<translation>Времени в игре</translation>
+			<translation>Время в игре</translation>
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Вы не играли</translation>
+			<translation>Нет</translation>
 		</message>
 		<message>
 			<source>h</source>

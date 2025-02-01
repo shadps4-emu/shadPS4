@@ -569,7 +569,7 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, 1U));
 
     if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect());
+        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect().Inverse());
         const auto converted =
             ApplyWriteNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
         inst.SetArg(2, converted);
@@ -581,6 +581,18 @@ void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             ApplyReadNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
         inst.ReplaceUsesWith(converted);
     }
+}
+
+IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR::Value& x,
+                        const IR::Value& y, const IR::Value& face) {
+    if (!image.IsCube()) {
+        return ir.CompositeConstruct(x, y, face);
+    }
+    // AMD cube math results in coordinates in the range [1.0, 2.0]. We need
+    // to convert this to the range [0.0, 1.0] to get correct results.
+    const auto fixed_x = ir.FPSub(IR::F32{x}, ir.Imm32(1.f));
+    const auto fixed_y = ir.FPSub(IR::F32{y}, ir.Imm32(1.f));
+    return ir.CompositeConstruct(fixed_x, fixed_y, face);
 }
 
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
@@ -643,8 +655,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color1DArray:
             return read(0);
         case AmdGpu::ImageType::Color2D:
-        case AmdGpu::ImageType::Color2DArray:
         case AmdGpu::ImageType::Color2DMsaa:
+        case AmdGpu::ImageType::Color2DArray:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
             return ir.CompositeConstruct(read(0), read(8), read(16));
@@ -665,8 +677,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 2;
             return {get_addr_reg(addr_reg - 2), get_addr_reg(addr_reg - 1)};
         case AmdGpu::ImageType::Color2D:
-        case AmdGpu::ImageType::Color2DArray:
         case AmdGpu::ImageType::Color2DMsaa:
+        case AmdGpu::ImageType::Color2DArray:
             // (du/dx, dv/dx), (du/dy, dv/dy)
             addr_reg = addr_reg + 4;
             return {ir.CompositeConstruct(get_addr_reg(addr_reg - 4), get_addr_reg(addr_reg - 3)),
@@ -711,12 +723,13 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         case AmdGpu::ImageType::Color2D: // x, y
             addr_reg = addr_reg + 2;
             return ir.CompositeConstruct(get_coord(addr_reg - 2, 0), get_coord(addr_reg - 1, 1));
-        case AmdGpu::ImageType::Color2DArray: // x, y, slice
-            [[fallthrough]];
         case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DArray: // x, y, slice
             addr_reg = addr_reg + 3;
-            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
-                                         get_addr_reg(addr_reg - 1));
+            // Note we can use FixCubeCoords with fallthrough cases since it checks for image type.
+            return FixCubeCoords(ir, image, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
+                                 get_addr_reg(addr_reg - 1));
         case AmdGpu::ImageType::Color3D: // x, y, z
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
@@ -829,7 +842,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             auto texel = inst.Arg(4);
             if (is_storage) {
                 // Storage image requires shader swizzle.
-                texel = ApplySwizzle(ir, texel, image.DstSelect());
+                texel = ApplySwizzle(ir, texel, image.DstSelect().Inverse());
             }
             const auto converted =
                 ApplyWriteNumberConversionVec4(ir, texel, image.GetNumberConversion());

@@ -98,7 +98,7 @@
 		</message>
 		<message>
 			<source>Open Folder...</source>
-			<translation>Åpne mappen...</translation>
+			<translation>Åpne mappe...</translation>
 		</message>
 		<message>
 			<source>Open Game Folder</source>
@@ -126,7 +126,7 @@
 		</message>
 		<message>
 			<source>Copy All</source>
-			<translation>Kopier alle</translation>
+			<translation>Kopier alt</translation>
 		</message>
 		<message>
 			<source>Delete...</source>
@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Kompatibilitet...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Oppdater database</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Vis rapport</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Send inn en rapport</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Trofénøkkel</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trofé</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -629,7 +629,7 @@
 			<translation>Grafikk</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Grensesnitt</translation>
 		</message>
 		<message>
@@ -658,7 +658,7 @@
 		</message>
 		<message>
 			<source>Enable Shaders Dumping</source>
-			<translation>Aktiver dumping av skyggelegger</translation>
+			<translation>Aktiver skyggeleggerdumping</translation>
 		</message>
 		<message>
 			<source>Enable NULL GPU</source>
@@ -666,7 +666,7 @@
 		</message>
 		<message>
 			<source>Paths</source>
-			<translation>Stier</translation>
+			<translation>Mapper</translation>
 		</message>
 		<message>
 			<source>Game Folders</source>
@@ -681,16 +681,32 @@
 			<translation>Fjern</translation>
 		</message>
 		<message>
+			<source>Save Data Path</source>
+			<translation>Lagrede datamappe</translation>
+		</message>
+		<message>
+			<source>Browse</source>
+			<translation>Endre mappe</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Lagrede datamappe:\nListe over data shadPS4 lagrer.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
+		</message>
+		<message>
 			<source>Debug</source>
 			<translation>Feilretting</translation>
 		</message>
 		<message>
 			<source>Enable Debug Dumping</source>
-			<translation>Aktiver dumping av feilretting</translation>
+			<translation>Aktiver feilrettingsdumping</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Aktiver Vulkan valideringslag</translation>
+			<translation>Aktiver Vulkan Validation Layers</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Synchronization Validation</source>
@@ -699,6 +715,26 @@
 		<message>
 			<source>Enable RenderDoc Debugging</source>
 			<translation>Aktiver RenderDoc feilretting</translation>
+		</message>
+		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Aktiver krasjdiagnostikk</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Lagre skyggeleggere</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Kopier GPU-buffere</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Vertsfeilsøkingsmarkører</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Gjestefeilsøkingsmarkører</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -718,7 +754,11 @@
 		</message>
 		<message>
 			<source>GUI Settings</source>
-			<translation>GUI-innstillinger</translation>
+			<translation>Grensesnitt-innstillinger</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Tittelmusikk</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -730,7 +770,7 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Oppdater kompatibilitets-database ved oppstart</translation>
+			<translation>Oppdater database ved oppstart</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
@@ -750,7 +790,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Lydsystem</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -806,7 +846,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Trofénøkkel:\nNøkkel brukes til å dekryptere trofeer. Må hentes fra din konsoll (jailbroken).\nMå bare inneholde sekskantede tegn.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -846,7 +886,7 @@
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Oppdater kompatibilitets-data ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
+			<translation>Oppdater database ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
@@ -894,7 +934,7 @@
 		</message>
 		<message>
 			<source>dumpShadersCheckBox</source>
-			<translation>Aktiver dumping av skyggelegger:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
+			<translation>Aktiver skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
 		</message>
 		<message>
 			<source>nullGpuCheckBox</source>
@@ -902,7 +942,7 @@
 		</message>
 		<message>
 			<source>gameFoldersBox</source>
-			<translation>Spillmapper:\nListen over mapper som brukes for å se etter installerte spill.</translation>
+			<translation>Spillmapper:\nListe over mapper som brukes for å se etter installerte spill.</translation>
 		</message>
 		<message>
 			<source>addFolderButton</source>
@@ -914,11 +954,11 @@
 		</message>
 		<message>
 			<source>debugDump</source>
-			<translation>Aktiver dumping av feilsøking:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
+			<translation>Aktiver feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
@@ -927,6 +967,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil etterligneren gi kompatibilitet med Renderdoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Lagre skyggeleggere:\nDu trenger dette aktivert for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking 'Device lost' feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Kopier GPU-buffere:\nKommer rundt løpsforhold som involverer GPU-innsendinger.\nKan muligens hjelpe med PM4 type 0 krasj.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Vertsfeilsøkingsmarkører:\nSetter inn etterligner-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
@@ -970,6 +1030,10 @@
 		<message>
 			<source>Delete File</source>
 			<translation>Slett fil</translation>
+		</message>
+		<message>
+			<source>Close</source>
+			<translation>Lukk</translation>
 		</message>
 		<message>
 			<source>No files selected.</source>
@@ -1188,7 +1252,7 @@
 		</message>
 		<message>
 			<source>Path</source>
-			<translation>Sti</translation>
+			<translation>Adresse</translation>
 		</message>
 		<message>
 			<source>Play Time</source>
@@ -1232,7 +1296,7 @@
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Spillet kan fullføres med spillbar ytelse og ingen store feil</translation>
+			<translation>Spillet kan fullføres med spillbar ytelse og uten store feil</translation>
 		</message>
 	</context>
 	<context>

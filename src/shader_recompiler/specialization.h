@@ -47,6 +47,7 @@ struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
     bool is_storage = false;
+    bool is_cube = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
 
@@ -100,6 +101,9 @@ struct StageSpecialization {
                          });
         }
         u32 binding{};
+        if (info->has_emulated_shared_memory) {
+            binding++;
+        }
         if (info->has_readconst) {
             binding++;
         }
@@ -127,6 +131,7 @@ struct StageSpecialization {
                          spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.is_written;
+                         spec.is_cube = sharp.IsCube();
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          }
@@ -195,8 +200,14 @@ struct StageSpecialization {
             }
         }
         u32 binding{};
+        if (info->has_emulated_shared_memory != other.info->has_emulated_shared_memory) {
+            return false;
+        }
         if (info->has_readconst != other.info->has_readconst) {
             return false;
+        }
+        if (info->has_emulated_shared_memory) {
+            binding++;
         }
         if (info->has_readconst) {
             binding++;

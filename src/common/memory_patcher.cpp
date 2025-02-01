@@ -7,6 +7,7 @@
 #include <string>
 #include <pugixml.hpp>
 #ifdef ENABLE_QT_GUI
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -189,14 +190,16 @@ void OnGameLoaded() {
     // We use the QT headers for the xml and json parsing, this define is only true on QT builds
     QString patchDir;
     Common::FS::PathToQString(patchDir, Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
-    QString repositories[] = {"GoldHEN", "shadPS4"};
+    QDir dir(patchDir);
+    QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
-    for (const QString& repository : repositories) {
-        QString filesJsonPath = patchDir + "/" + repository + "/files.json";
+    for (const QString& folder : folders) {
+        QString filesJsonPath = patchDir + "/" + folder + "/files.json";
 
         QFile jsonFile(filesJsonPath);
         if (!jsonFile.open(QIODevice::ReadOnly)) {
-            LOG_ERROR(Loader, "Unable to open files.json for reading.");
+            LOG_ERROR(Loader, "Unable to open files.json for reading in repository {}",
+                      folder.toStdString());
             continue;
         }
 
@@ -220,11 +223,12 @@ void OnGameLoaded() {
         }
 
         if (selectedFileName.isEmpty()) {
-            LOG_ERROR(Loader, "No patch file found for the current serial.");
+            LOG_ERROR(Loader, "No patch file found for the current serial in repository {}",
+                      folder.toStdString());
             continue;
         }
 
-        QString filePath = patchDir + "/" + repository + "/" + selectedFileName;
+        QString filePath = patchDir + "/" + folder + "/" + selectedFileName;
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             LOG_ERROR(Loader, "Unable to open the file for reading.");

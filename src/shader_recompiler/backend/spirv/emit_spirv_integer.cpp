@@ -324,7 +324,11 @@ Id EmitUGreaterThan(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpUGreaterThan(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitINotEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitINotEqual32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpINotEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitINotEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpINotEqual(ctx.U1[1], lhs, rhs);
 }
 

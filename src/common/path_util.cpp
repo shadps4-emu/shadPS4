@@ -176,6 +176,34 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
     UserPaths.insert_or_assign(shad_path, new_path);
 }
 
+std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& game_id,
+                                     int max_depth) {
+    if (max_depth < 0) {
+        return std::nullopt;
+    }
+
+    // Check if this is the game we're looking for
+    if (dir.filename() == game_id && fs::exists(dir / "sce_sys" / "param.sfo")) {
+        auto eboot_path = dir / "eboot.bin";
+        if (fs::exists(eboot_path)) {
+            return eboot_path;
+        }
+    }
+
+    // Recursively search subdirectories
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(dir, ec)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        if (auto found = FindGameByID(entry.path(), game_id, max_depth - 1)) {
+            return found;
+        }
+    }
+
+    return std::nullopt;
+}
+
 #ifdef ENABLE_QT_GUI
 void PathToQString(QString& result, const std::filesystem::path& path) {
 #ifdef _WIN32

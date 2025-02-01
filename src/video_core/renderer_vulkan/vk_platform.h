@@ -33,7 +33,7 @@ concept VulkanHandleType = vk::isVulkanHandleType<T>::value;
 
 template <VulkanHandleType HandleType>
 void SetObjectName(vk::Device device, const HandleType& handle, std::string_view debug_name) {
-    if (!Config::vkHostMarkersEnabled()) {
+    if (!Config::getVkHostMarkersEnabled()) {
         return;
     }
     const vk::DebugUtilsObjectNameInfoEXT name_info = {
@@ -50,7 +50,7 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
 template <VulkanHandleType HandleType, typename... Args>
 void SetObjectName(vk::Device device, const HandleType& handle, const char* format,
                    const Args&... args) {
-    if (!Config::vkHostMarkersEnabled()) {
+    if (!Config::getVkHostMarkersEnabled()) {
         return;
     }
     const std::string debug_name = fmt::vformat(format, fmt::make_format_args(args...));

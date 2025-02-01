@@ -109,10 +109,13 @@ public:
 
     void RelocateAnyImports(Module* m) {
         Relocate(m);
-        for (auto& module : m_modules) {
-            const auto imports = module->GetImportModules();
-            if (std::ranges::contains(imports, m->name, &ModuleInfo::name)) {
-                Relocate(module.get());
+        const auto exports = m->GetExportModules();
+        for (auto& export_mod : exports) {
+            for (auto& module : m_modules) {
+                const auto imports = module->GetImportModules();
+                if (std::ranges::contains(imports, export_mod.name, &ModuleInfo::name)) {
+                    Relocate(module.get());
+                }
             }
         }
     }

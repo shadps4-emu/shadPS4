@@ -69,7 +69,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                 ListSortedAsc = true;
             }
             this->clearContents();
-            PopulateGameList();
+            PopulateGameList(false);
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
@@ -103,13 +103,18 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
-void GameListFrame::PopulateGameList() {
+void GameListFrame::PopulateGameList(bool isInitialPopulation) {
     // Do not show status column if it is not enabled
     this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setColumnHidden(6, !Config::GetLoadGameSizeEnabled());
 
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
+
+    if (isInitialPopulation) {
+        SortNameAscending(1); // Column 1 = Name
+        ResizeIcons(icon_size);
+    }
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
@@ -284,7 +289,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     QLabel* dotLabel = new QLabel("", widget);
     dotLabel->setPixmap(circle_pixmap);
 
-    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
+    QLabel* label = new QLabel(m_compat_info->GetCompatStatusString(entry.status), widget);
 
     label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 

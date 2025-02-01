@@ -69,13 +69,6 @@ public:
         {QStringLiteral("os-windows"), OSType::Win32},
     };
 
-    inline static const std::unordered_map<CompatibilityStatus, QString> CompatStatusToString = {
-        {CompatibilityStatus::Unknown, QStringLiteral("Unknown")},
-        {CompatibilityStatus::Nothing, QStringLiteral("Nothing")},
-        {CompatibilityStatus::Boots, QStringLiteral("Boots")},
-        {CompatibilityStatus::Menus, QStringLiteral("Menus")},
-        {CompatibilityStatus::Ingame, QStringLiteral("Ingame")},
-        {CompatibilityStatus::Playable, QStringLiteral("Playable")}};
     inline static const std::unordered_map<OSType, QString> OSTypeToString = {
         {OSType::Linux, QStringLiteral("os-linux")},
         {OSType::macOS, QStringLiteral("os-macOS")},
@@ -87,6 +80,7 @@ public:
     void UpdateCompatibilityDatabase(QWidget* parent = nullptr, bool forced = false);
     bool LoadCompatibilityFile();
     CompatibilityEntry GetCompatibilityInfo(const std::string& serial);
+    const QString GetCompatStatusString(const CompatibilityStatus status);
     void ExtractCompatibilityInfo(QByteArray response);
     static bool WaitForReply(QNetworkReply* reply);
     QNetworkReply* FetchPage(int page_num);

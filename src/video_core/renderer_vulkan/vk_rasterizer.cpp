@@ -175,7 +175,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         const bool is_depth_clear = regs.depth_render_control.depth_clear_enable ||
                                     texture_cache.IsMetaCleared(htile_address, slice);
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
-        ASSERT(desc.view_info.range.extent.layers == 1);
+        ASSERT(desc.view_info.range.extent.levels == 1);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
@@ -552,6 +552,21 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         } else {
             texbuffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp);
         }
+    }
+
+    // Bind a SSBO to act as shared memory in case of not being able to use a workgroup buffer
+    // (e.g. when the compute shared memory is bigger than the GPU's shared memory)
+    if (stage.has_emulated_shared_memory) {
+        const auto* lds_buf = buffer_cache.GetLdsBuffer();
+        buffer_infos.emplace_back(lds_buf->Handle(), 0, lds_buf->SizeBytes());
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
     }
 
     // Bind the flattened user data buffer as a UBO so it's accessible to the shader
@@ -1155,12 +1170,10 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
 
     const auto& vp_ctl = regs.viewport_control;
     const float reduce_z =
-        instance.IsDepthClipControlSupported() &&
-                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
-            ? 1.0f
-            : 0.0f;
+        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
 
-    if (regs.polygon_control.enable_window_offset) {
+    if (regs.polygon_control.enable_window_offset &&
+        (regs.window_offset.window_x_offset != 0 || regs.window_offset.window_y_offset != 0)) {
         LOG_ERROR(Render_Vulkan,
                   "PA_SU_SC_MODE_CNTL.VTX_WINDOW_OFFSET_ENABLE support is not yet implemented.");
     }
@@ -1172,6 +1185,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
             continue;
         }
 
+        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
         if (pipeline.IsClipDisabled()) {
             // In case if clipping is disabled we patch the shader to convert vertex position
             // from screen space coordinates to NDC by defining a render space as full hardware
@@ -1181,16 +1196,14 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
                 .y = 0.f,
                 .width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB)),
                 .height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB)),
-                .minDepth = 0.0,
-                .maxDepth = 1.0,
+                .minDepth = zoffset - zscale * reduce_z,
+                .maxDepth = zscale + zoffset,
             });
         } else {
             const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
             const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
             const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
             const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
-            const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
-            const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
             viewports.push_back({
                 .x = xoffset - xscale,
                 .y = yoffset - yscale,
@@ -1242,8 +1255,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1253,8 +1266,8 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) 
 }
 
 void Rasterizer::ScopeMarkerEnd(bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1262,8 +1275,8 @@ void Rasterizer::ScopeMarkerEnd(bool from_guest) {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1274,8 +1287,8 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest
 
 void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                          bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();

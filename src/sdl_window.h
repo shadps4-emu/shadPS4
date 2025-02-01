@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include <string>
 #include "common/types.h"
+#include "core/libraries/pad/pad.h"
 #include "input/controller.h"
+#include "string"
 
 struct SDL_Window;
 struct SDL_Gamepad;
@@ -94,7 +95,7 @@ public:
 
 private:
     void OnResize();
-    void OnKeyPress(const SDL_Event* event);
+    void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
 
 private:
