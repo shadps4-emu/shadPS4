@@ -1421,7 +1421,7 @@
 		</message>
 		<message>
 			<source>Menus</source>
-			<translation>Menus</translation>
+			<translation>Menu</translation>
 		</message>
 		<message>
 			<source>Ingame</source>
