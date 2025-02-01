@@ -71,10 +71,31 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     int count_axis_right_y = 0;
     std::fstream file(config_file);
     std::string line;
-    std::string add;
     std::vector<std::string> lines;
     std::string output_string = "";
     std::string input_string = "";
+
+    QList<QComboBox*> list;
+    list << ui->RStickUpBox << ui->RStickRightBox << ui->LStickUpBox << ui->LStickRightBox;
+    for (const auto& i : list) {
+        if (i->currentText() == "axis_left_x") {
+            count_axis_left_x = count_axis_left_x + 1;
+        } else if (i->currentText() == "axis_left_y") {
+            count_axis_left_y = count_axis_left_y + 1;
+        } else if (i->currentText() == "axis_right_x") {
+            count_axis_right_x = count_axis_right_x + 1;
+        } else if (i->currentText() == "axis_right_y") {
+            count_axis_right_y = count_axis_right_y + 1;
+        }
+    }
+
+    if (count_axis_left_x > 1 | count_axis_left_y > 1 | count_axis_right_x > 1 |
+        count_axis_right_y > 1) {
+        QMessageBox::StandardButton nosave;
+        nosave = QMessageBox::information(this, "Unable to Save",
+                                          "Cannot bind axis values more than once");
+        return;
+    }
 
     while (std::getline(file, line)) {
         lineCount++;
@@ -97,97 +118,110 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         if (std::find(controlleroutputs.begin(), controlleroutputs.end(), input_string) !=
                 controlleroutputs.end() ||
             output_string == "analog_deadzone") {
-
-            // can be made a lot more elegent if you could map a string to a widget
-            if (input_string == "cross") {
-                output_string = ui->ABox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "circle") {
-                output_string = ui->BBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "square") {
-                output_string = ui->XBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "triangle") {
-                output_string = ui->YBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "l1") {
-                output_string = ui->LBBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "r1") {
-                output_string = ui->RBBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "l2") {
-                output_string = ui->LTBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "r2") {
-                output_string = ui->RTBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "l3") {
-                output_string = ui->LClickBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "r3") {
-                output_string = ui->RClickBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "options") {
-                output_string = ui->StartBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "pad_up") {
-                output_string = ui->DpadUpBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "pad_down") {
-                output_string = ui->DpadDownBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "pad_left") {
-                output_string = ui->DpadLeftBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "pad_right") {
-                output_string = ui->DpadRightBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "back") {
-                output_string = ui->BackBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "axis_left_x") {
-                output_string = ui->LStickRightBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "axis_left_y") {
-                output_string = ui->LStickUpBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "axis_right_x") {
-                output_string = ui->RStickRightBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string == "axis_right_y") {
-                output_string = ui->RStickUpBox->currentText().toStdString();
-                line = output_string + " = " + input_string;
-            } else if (input_string.contains("leftjoystick")) {
-                std::string deadzonevalue = std::to_string(ui->LeftDeadzoneSlider->value());
-                line = output_string + " = leftjoystick, " + deadzonevalue;
-            } else if (input_string.contains("rightjoystick")) {
-                std::string deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
-                line = output_string + " = rightjoystick, " + deadzonevalue;
-            }
+            line.erase();
+            continue;
         }
-
         lines.push_back(line);
-
-        if (output_string == "axis_left_x") {
-            count_axis_left_x = count_axis_left_x + 1;
-        } else if (output_string == "axis_left_y") {
-            count_axis_left_y = count_axis_left_y + 1;
-        } else if (output_string == "axis_right_x") {
-            count_axis_right_x = count_axis_right_x + 1;
-        } else if (output_string == "axis_right_y") {
-            count_axis_right_y = count_axis_right_y + 1;
-        }
-
-        if (count_axis_left_x > 1 | count_axis_left_y > 1 | count_axis_right_x > 1 |
-            count_axis_right_y > 1) {
-            QMessageBox::StandardButton nosave;
-            nosave = QMessageBox::information(this, "Unable to Save",
-                                              "Cannot bind axis values more than once");
-            return;
-        }
     }
+
+    lines.resize(lines.size() - 6);
+
+    input_string = "cross";
+    output_string = ui->ABox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "circle";
+    output_string = ui->BBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "square";
+    output_string = ui->XBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "triangle";
+    output_string = ui->YBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    lines.push_back("");
+
+    input_string = "l1";
+    output_string = ui->LBBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "r1";
+    output_string = ui->RBBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "l2";
+    output_string = ui->LTBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "r2";
+    output_string = ui->RTBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "l3";
+    output_string = ui->LClickBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "r3";
+    output_string = ui->RClickBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    lines.push_back("");
+
+    input_string = "back";
+    output_string = ui->BackBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "options";
+    output_string = ui->StartBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    lines.push_back("");
+
+    input_string = "pad_up";
+    output_string = ui->DpadUpBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "pad_down";
+    output_string = ui->DpadDownBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "pad_left";
+    output_string = ui->DpadLeftBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "pad_right";
+    output_string = ui->DpadRightBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    lines.push_back("");
+
+    input_string = "axis_left_x";
+    output_string = ui->LStickRightBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "axis_left_y";
+    output_string = ui->LStickUpBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "axis_right_x";
+    output_string = ui->RStickRightBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    input_string = "axis_right_y";
+    output_string = ui->RStickUpBox->currentText().toStdString();
+    lines.push_back(output_string + " = " + input_string);
+
+    lines.push_back("");
+    lines.push_back("# Range of deadzones: 1 (almost none) to 127 (max)");
+
+    std::string deadzonevalue = std::to_string(ui->LeftDeadzoneSlider->value());
+    lines.push_back("analog_deadzone = leftjoystick, " + deadzonevalue);
+
+    deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
+    lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue);
 
     std::ofstream output_file(config_file);
     for (auto const& line : lines) {
@@ -295,7 +329,6 @@ void ControlSettings::SetUIValuestoMappings() {
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
 
-        // can be made a lot more elegent if you could map a string to a widget
         if (std::find(controlleroutputs.begin(), controlleroutputs.end(), input_string) !=
                 controlleroutputs.end() ||
             output_string == "analog_deadzone") {
