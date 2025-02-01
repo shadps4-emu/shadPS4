@@ -1432,6 +1432,10 @@
 			<translation>Nichts</translation>
 		</message>
 		<message>
+			<source>Boots</source>
+			<translation>Startet</translation>		
+		</message>
+		<message>
 			<source>Menus</source>
 			<translation>Menüs</translation>
 		</message>
