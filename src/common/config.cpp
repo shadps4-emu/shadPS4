@@ -919,44 +919,44 @@ void setDefaultValues() {
 constexpr std::string_view GetDefaultKeyboardConfig() {
     return R"(#Feeling lost? Check out the Help section!
 
-#Keyboard bindings
+# Keyboard bindings
 
-triangle = f
-circle = space
-cross = e
-square = r
+triangle = kp8
+circle = kp6
+cross = kp2
+square = kp4
+# Alternatives for users without a keypad
+triangle = c
+circle = b
+cross = n
+square = v
 
-pad_up = w, lalt
-pad_up = mousewheelup
-pad_down = s, lalt
-pad_down = mousewheeldown
-pad_left = a, lalt
-pad_left = mousewheelleft
-pad_right = d, lalt
-pad_right = mousewheelright
-
-l1 = rightbutton, lshift
-r1 = leftbutton
-l2 = rightbutton
-r2 = leftbutton, lshift
+l1 = q
+r1 = u
+l2 = e
+r2 = o
 l3 = x
-r3 = q
-r3 = middlebutton
+r3 = m
 
-options = escape
-touchpad = g
+options = enter
+touchpad = space
 
-key_toggle = i, lalt
-mouse_to_joystick = right
-mouse_movement_params = 0.5, 1, 0.125
-leftjoystick_halfmode = lctrl
+pad_up = up
+pad_down = down
+pad_left = left
+pad_right = right
 
 axis_left_x_minus = a
 axis_left_x_plus = d
 axis_left_y_minus = w
 axis_left_y_plus = s
 
-#Controller bindings
+axis_right_x_minus = j
+axis_right_x_plus = l
+axis_right_y_minus = i
+axis_right_y_plus = k
+
+# Controller bindings
 
 triangle = triangle
 cross = cross
@@ -970,13 +970,13 @@ r1 = r1
 r2 = r2
 r3 = r3
 
+options = options
+touchpad = back
+
 pad_up = pad_up
 pad_down = pad_down
 pad_left = pad_left
 pad_right = pad_right
-
-options = options
-touchpad = back
 
 axis_left_x = axis_left_x
 axis_left_y = axis_left_y
