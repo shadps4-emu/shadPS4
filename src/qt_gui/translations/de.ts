@@ -52,7 +52,7 @@
 		</message>
 		<message>
 			<source>Select which directory you want to install to.</source>
-			<translation>Select which directory you want to install to.</translation>
+			<translation>Wählen Sie das Verzeichnis aus, in das Sie installieren möchten.</translation>
 		</message>
 	</context>
 	<context>
@@ -105,7 +105,11 @@
 			<translation>Spielordner öffnen</translation>
 		</message>
 		<message>
-			<source>Open Save Data Folder</source>
+    			<source>Open Update Folder</source>
+    			<translation>Öffne Update-Ordner</translation>
+		</message>
+		<message>
+		 	<source>Open Save Data Folder</source>
 			<translation>Speicherordner öffnen</translation>
 		</message>
 		<message>
@@ -130,35 +134,39 @@
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Delete...</translation>
+			<translation>Löschen...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
-			<translation>Delete Game</translation>
+			<translation>Lösche Spiel</translation>
 		</message>
 		<message>
 			<source>Delete Update</source>
-			<translation>Delete Update</translation>
-		</message>
+			<translation>Lösche Aktualisierung</translation>
+		 </message>
+		 <message>
+    			<source>Delete Save Data</source>
+   			<translation>Lösche Speicherdaten</translation>
+		</message>		 
 		<message>
 			<source>Delete DLC</source>
-			<translation>Delete DLC</translation>
+			<translation>Lösche DLC</translation>
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Kompatibilität...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Aktualisiere Datenbank</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Bericht ansehen</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Einen Bericht einreichen</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -182,23 +190,23 @@
 		</message>
 		<message>
 			<source>Game</source>
-			<translation>Game</translation>
+			<translation>Spiel</translation>
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
-			<translation>This feature requires the 'Enable Separate Update Folder' config option to work. If you want to use this feature, please enable it.</translation>
+			<translation>Damit diese Funktion funktioniert, ist die Konfigurationsoption „Separaten Update-Ordner aktivieren“ erforderlich. Wenn Sie diese Funktion nutzen möchten, aktivieren Sie sie bitte.</translation>
 		</message>
 		<message>
 			<source>This game has no update to delete!</source>
-			<translation>This game has no update to delete!</translation>
+			<translation>Dieses Spiel hat keine Aktualisierung zum löschen!</translation>
 		</message>
 		<message>
 			<source>Update</source>
-			<translation>Update</translation>
+			<translation>Aktualisieren</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
-			<translation>This game has no DLC to delete!</translation>
+			<translation>Dieses Spiel hat kein DLC zum aktualisieren!</translation>
 		</message>
 		<message>
 			<source>DLC</source>
@@ -206,11 +214,11 @@
 		</message>
 		<message>
 			<source>Delete %1</source>
-			<translation>Delete %1</translation>
+			<translation>Lösche %1</translation>
 		</message>
 		<message>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Are you sure you want to delete %1's %2 directory?</translation>
+			<translation>Sind Sie sicher dass Sie %1 %2 Ordner löschen wollen?</translation>
 		</message>
 	</context>
 	<context>
@@ -249,7 +257,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Öffne shadPS4 Ordner</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -305,7 +313,7 @@
 		</message>
 		<message>
 			<source>Download Cheats/Patches</source>
-			<translation>Cheats / Patches herunterladen</translation>
+			<translation>Cheats/Patches herunterladen</translation>
 		</message>
 		<message>
 			<source>Dump Game List</source>
@@ -313,7 +321,7 @@
 		</message>
 		<message>
 			<source>PKG Viewer</source>
-			<translation>PKG-Ansicht</translation>
+			<translation>PKG-Anschauer</translation>
 		</message>
 		<message>
 			<source>Search...</source>
@@ -329,11 +337,11 @@
 		</message>
 		<message>
 			<source>Game List Icons</source>
-			<translation>Game List Icons</translation>
+			<translation>Spiellisten-Symbole</translation>
 		</message>
 		<message>
 			<source>Game List Mode</source>
-			<translation>Spiellisten-Symoble</translation>
+			<translation>Spiellisten-Modus</translation>
 		</message>
 		<message>
 			<source>Settings</source>
@@ -373,7 +381,7 @@
 		</message>
 		<message>
 			<source>toolBar</source>
-			<translation>toolBar</translation>
+			<translation>Werkzeugleiste</translation>
 		</message>
 		<message>
 			<source>Game List</source>
@@ -461,7 +469,7 @@
 		</message>
 		<message>
 			<source>Would you like to install DLC: %1?</source>
-			<translation>Willst du den DLC installieren: %1?</translation>
+			<translation>Willst du das DLC installieren: %1?</translation>
 		</message>
 		<message>
 			<source>DLC already installed:</source>
@@ -513,7 +521,11 @@
 	<context>
 		<name>SettingsDialog</name>
 		<message>
-			<source>Settings</source>
+  		  	<source>Save Data Path</source>
+   		 	<translation>Speicherdaten-Pfad</translation>
+		</message>
+		<message>
+		 <source>Settings</source>
 			<translation>Einstellungen</translation>
 		</message>
 		<message>
@@ -546,7 +558,7 @@
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
-			<translation>Enable Separate Update Folder</translation>
+			<translation>Separaten Update-Ordner aktivieren</translation>
 		</message>
 		<message>
 			<source>Default tab when opening settings</source>
@@ -554,7 +566,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Zeigen Sie die Spielgröße in der Liste</translation>
+			<translation>Zeige Spielgröße in der Liste</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -574,11 +586,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Trophäenschlüssel</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Trophäe</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -599,6 +611,10 @@
 		<message>
 			<source>Input</source>
 			<translation>Eingabe</translation>
+		</message> 
+		<message>
+			 <source>Enable Motion Controls</source>
+   			 <translation>Aktiviere Bewegungssteuerung</translation>
 		</message>
 		<message>
 			<source>Cursor</source>
@@ -701,6 +717,26 @@
 			<translation>RenderDoc-Debugging aktivieren</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Absturz-Diagnostik aktivieren</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Sammle Shader</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Kopiere GPU Puffer</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Host-Debug-Markierer</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Guest-Debug-Markierer</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Aktualisieren</translation>
 		</message>
@@ -721,8 +757,12 @@
 			<translation>GUI-Einstellungen</translation>
 		</message>
 		<message>
+			<source>Title Music</source>
+			<translation>Titelmusik</translation>
+		</message>
+		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Deaktiviere Trophäen Pop-ups</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -730,19 +770,19 @@
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Aktualisiere Kompatibilitätsdatenbank beim Start</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Spielkompatibilität</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Zeige Kompatibilitätsdaten</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Aktualisiere Kompatibilitätsdatenbank</translation>
 		</message>
 		<message>
 			<source>Volume</source>
@@ -786,7 +826,7 @@
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
-			<translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+			<translation>Separaten Update-Ordner aktivieren:\nErmöglicht die Installation von Spielaktualiserungen in einem separaten Ordner zur einfachen Verwaltung.</translation>
 		</message>
 		<message>
 			<source>showSplashCheckBox</source>
@@ -806,7 +846,7 @@
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Trophäenschlüssel:\nSchlüssel zum Entschlüsseln von Trophäen. Muss von Ihrer gejailbreakten Konsole abgerufen werden.\nDarf nur Hex-Zeichen enthalten.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -826,7 +866,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Trophäen-Popups deaktivieren:\nDeaktivieren Sie Trophäenbenachrichtigungen im Spiel. Der Trophäenfortschritt kann weiterhin mit dem Trophäen-Viewer verfolgt werden (klicken Sie mit der rechten Maustaste auf das Spiel im Hauptfenster)..</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
@@ -842,15 +882,15 @@
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Kompatibilitätsdaten anzeigen:\nZeigt Spielkompatibilitätsinformationen in Tabellenansicht an. Aktivieren Sie „Aktualisiere Kompatibilitätsdatenbank beim Start“, um aktuelle Informationen zu erhalten.</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Kompatibilität beim Start aktualisieren:\nAktualisiert die Kompatibilitätsdatenbank automatisch, wenn shadPS4 startet.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Aktualisiere Kompatibilitätsdatenbank:\nAktualisiere sofort die Kompatibilitätsdatenbank.</translation>
 		</message>
 		<message>
 			<source>Never</source>
@@ -928,12 +968,32 @@
 			<source>rdocCheckBox</source>
 			<translation>RenderDoc-Debugging aktivieren:\nWenn aktiviert, bietet der Emulator Kompatibilität mit Renderdoc zur Erfassung und Analyse des aktuell gerenderten Frames.</translation>
 		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Shader sammeln:\nSie müssen diese Option aktivieren, um Shader mit dem Debug-Menü (Strg + F10) bearbeiten zu können.</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Absturzdiagnose:\nErstellt eine .yaml-Datei mit Informationen über den Vulkan-Status zum Zeitpunkt des Absturzes.\nNützlich zum Debuggen von „Gerät verloren“-Fehlern. Wenn Sie dies aktiviert haben, sollten Sie Host- UND Gast-Debug-Markierungen aktivieren.\nFunktioniert nicht auf Intel-GPUs.\nDamit dies funktioniert, müssen Vulkan Validationsschichten aktiviert und das Vulkan SDK installiert sein.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>GPU-Puffer kopieren:\nUmgeht Race-Bedingungen mit GPU-Übermittlungen.\nKann bei PM4-Abstürzen vom Typ 0 hilfreich sein oder auch nicht.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Host-Debug-Marker:\nFügt emulatorseitige Informationen wie Marker für bestimmte AMDGPU-Befehle rund um Vulkan-Befehle ein und gibt Ressourcen-Debug-Namen an.\nWenn Sie dies aktiviert haben, sollten Sie die Absturzdiagnose aktivieren.\nNützlich für Programme wie RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Gast-Debug-Markierer:\nFügt alle Debug-Markierer, die das Spiel selbst hinzugefügt hat, in den Befehlspuffer ein.\nWenn Sie dies aktiviert haben, sollten Sie die Absturzdiagnose aktivieren.\nNützlich für Programme wie RenderDoc.</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Cheats / Patches für </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -1121,7 +1181,7 @@
 		</message>
 		<message>
 			<source>Failed to open file:</source>
-			<translation>Fehler beim Öffnen der Datei:</translation>
+			<translation>Öffnung der Datei fehlgeschlagen:</translation>
 		</message>
 		<message>
 			<source>XML ERROR:</source>
@@ -1168,7 +1228,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Kompatibilität</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1196,7 +1256,7 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Niemals gespielt</translation>
 		</message>
 		<message>
 			<source>h</source>
@@ -1212,27 +1272,27 @@
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Kompatibilität wurde noch nicht getested</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Das Spiel wird nicht richtig initialisiert / stürzt den Emulator ab</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Spiel startet, aber zeigt nur einen blanken Bildschirm</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Spiel zeigt ein Bild aber geht nicht über das Menü hinaus</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>Spiel hat spiel-brechende Störungen oder unspielbare Leistung</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Spiel kann mit spielbarer Leistung und keinen großen Störungen abgeschlossen werden</translation>
 		</message>
 	</context>
 	<context>

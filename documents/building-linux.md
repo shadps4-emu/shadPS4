@@ -29,7 +29,7 @@ sudo dnf install clang git cmake libatomic alsa-lib-devel pipewire-jack-audio-co
 sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declarative qt6-multimedia sdl2 vulkan-validation-layers
 ```
 
-**Note** : The `shadps4-git` AUR package is not maintained by any of the developers, and it uses the default compiler, which is often set to GCC. Use at your own discretion.
+**Note**: The `shadps4-git` AUR package is not maintained by any of the developers, and it uses the default compiler, which is often set to GCC. Use at your own discretion.
 
 #### OpenSUSE
 

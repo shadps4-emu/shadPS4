@@ -175,7 +175,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         const bool is_depth_clear = regs.depth_render_control.depth_clear_enable ||
                                     texture_cache.IsMetaCleared(htile_address, slice);
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
-        ASSERT(desc.view_info.range.extent.layers == 1);
+        ASSERT(desc.view_info.range.extent.levels == 1);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
@@ -552,6 +552,21 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         } else {
             texbuffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp);
         }
+    }
+
+    // Bind a SSBO to act as shared memory in case of not being able to use a workgroup buffer
+    // (e.g. when the compute shared memory is bigger than the GPU's shared memory)
+    if (stage.has_emulated_shared_memory) {
+        const auto* lds_buf = buffer_cache.GetLdsBuffer();
+        buffer_infos.emplace_back(lds_buf->Handle(), 0, lds_buf->SizeBytes());
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
     }
 
     // Bind the flattened user data buffer as a UBO so it's accessible to the shader
@@ -1239,8 +1254,8 @@ void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1250,8 +1265,8 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) 
 }
 
 void Rasterizer::ScopeMarkerEnd(bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1259,8 +1274,8 @@ void Rasterizer::ScopeMarkerEnd(bool from_guest) {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1271,8 +1286,8 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest
 
 void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                          bool from_guest) {
-    if ((from_guest && !Config::vkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::vkHostMarkersEnabled())) {
+    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
+        (!from_guest && !Config::getVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();

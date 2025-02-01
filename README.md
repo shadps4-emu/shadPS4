@@ -55,6 +55,9 @@ This project began as a fun project. Given our limited free time, it may take so
 
 # Building
 
+> [!IMPORTANT]
+> If you want to use shadPS4 to play your games, you don't have to follow the build instructions, you can simply download the emulator from either the [**release tab**](https://github.com/shadps4-emu/shadPS4/releases) or the [**action tab**](https://github.com/shadps4-emu/shadPS4/actions).
+
 ## Windows
 
 Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
@@ -74,7 +77,10 @@ Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shad
 
 For more information on how to test, debug and report issues with the emulator or games, read the [**Debugging documentation**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
 
-# Keyboard mapping
+# Keyboard and Mouse Mappings
+
+> [!NOTE]
+> Some keyboards may also require you to hold the Fn key to use the F\* keys. Mac users should use the Command key instead of Control, and need to use Command+F11 for full screen to avoid conflicting with system key bindings.
 
 | Button | Function |
 |-------------|-------------|
@@ -86,32 +92,35 @@ F12 | Trigger RenderDoc Capture
 > [!NOTE]
 > Xbox and DualShock controllers work out of the box.
 
-| Controller button | Keyboard equivelant | Mac alternative |
-|-------------|-------------|--------------|
-LEFT AXIS UP | W | |
-LEFT AXIS DOWN | S | |
-LEFT AXIS LEFT | A | |
-LEFT AXIS RIGHT | D | |
-RIGHT AXIS UP | I | |
-RIGHT AXIS DOWN | K | |
-RIGHT AXIS LEFT | J | |
-RIGHT AXIS RIGHT | L | |
-TRIANGLE | Numpad 8 | C |
-CIRCLE | Numpad 6 | B |
-CROSS | Numpad 2 | N |
-SQUARE | Numpad 4 | V |
-PAD UP | UP | |
-PAD DOWN | DOWN | |
-PAD LEFT | LEFT | |
-PAD RIGHT | RIGHT | |
-OPTIONS | RETURN | |
-BACK BUTTON / TOUCH PAD | SPACE | |
-L1 | Q | |
-R1 | U | |
-L2 | E | |
-R2 | O | |
-L3 | X | |
-R3 | M | |
+| Controller button | Keyboard equivalent |
+|-------------|-------------|
+LEFT AXIS UP | W |
+LEFT AXIS DOWN | S |
+LEFT AXIS LEFT | A |
+LEFT AXIS RIGHT | D |
+RIGHT AXIS UP | I |
+RIGHT AXIS DOWN | K |
+RIGHT AXIS LEFT | J |
+RIGHT AXIS RIGHT | L |
+TRIANGLE | Numpad 8 or C |
+CIRCLE | Numpad 6 or B |
+CROSS | Numpad 2 or N |
+SQUARE | Numpad 4 or V |
+PAD UP | UP |
+PAD DOWN | DOWN |
+PAD LEFT | LEFT |
+PAD RIGHT | RIGHT |
+OPTIONS | RETURN |
+BACK BUTTON / TOUCH PAD | SPACE |
+L1 | Q |
+R1 | U |
+L2 | E |
+R2 | O |
+L3 | X |
+R3 | M |
+
+Keyboard and mouse inputs can be customized in the settings menu by clicking the Controller button, and further details and help on controls are  also found there. Custom bindings are saved per-game. Inputs support up to three keys per binding, mouse buttons, mouse movement mapped to joystick input, and more.
+
 
 # Main team
 

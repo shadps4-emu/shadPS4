@@ -207,7 +207,9 @@ struct Info {
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
+    bool has_emulated_shared_memory{};
     bool has_readconst{};
+    u32 shared_memory_size{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};

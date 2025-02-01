@@ -148,7 +148,7 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
         const auto& io = GetIO();
         return io.WantCaptureMouse && io.Ctx->NavWindow != nullptr &&
-               io.Ctx->NavWindow->ID != dock_id;
+               (io.Ctx->NavWindow->Flags & ImGuiWindowFlags_NoNav) == 0;
     }
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN: {
@@ -208,7 +208,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
         return;
     }
 
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",
         });
@@ -233,7 +233,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
     cmdbuf.beginRendering(render_info);
     Vulkan::RenderDrawData(*draw_data, cmdbuf);
     cmdbuf.endRendering();
-    if (Config::vkHostMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 }

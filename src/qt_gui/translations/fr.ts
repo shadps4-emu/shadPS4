@@ -373,7 +373,7 @@
 		</message>
 		<message>
 			<source>toolBar</source>
-			<translation>Bare d'outils</translation>
+			<translation>Barre d'outils</translation>
 		</message>
 		<message>
 			<source>Game List</source>
@@ -489,7 +489,7 @@
 		</message>
 		<message>
 			<source>Game successfully installed at %1</source>
-			<translation>Jeu installé avec succès à %1</translation>
+			<translation>Jeu installé avec succès dans %1</translation>
 		</message>
 		<message>
 			<source>File doesn't appear to be a valid PKG file</source>
@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Afficher la taille du jeu dans la liste</translation>
+			<translation>Afficher la taille des jeux dans la liste</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -701,6 +701,26 @@
 			<translation>Activer le débogage RenderDoc</translation>
 		</message>
 		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Activer le diagnostic de crash</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Collecter les shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copier la mémoire tampon GPU</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Marqueur de débogage hôte</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Marqueur de débogage invité</translation>
+		</message>
+		<message>
 			<source>Update</source>
 			<translation>Mise à jour</translation>
 		</message>
@@ -719,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>Paramètres de l'interface</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Title Music</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -928,12 +952,32 @@
 			<source>rdocCheckBox</source>
 			<translation>Activer le débogage RenderDoc:\nS'il est activé, l'émulateur fournit une compatibilité avec Renderdoc, permettant d'enregistrer et d'analyser la trame rendue actuelle.</translation>
 		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Collecter les Shaders:\nVous devez activer cette option pour modifier les shaders avec le menu de débogage (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Diagnostic de crash:\nCrée un fichier .yaml avec des informations sur l'état de Vulkan au moment du crash.\nUtile pour déboguer les erreurs "Device lost". Si cette option est activée, vous devez aussi activer Marqueur de débogage hôte ET invité.\nNe marche pas pour les GPUs Intel.\nVous devez activer le Vulkan Validation Layers ainsi que le Vulkan SDK pour que cela fonctionne.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copier la mémoire tampon GPU:\nContourne les conditions de course impliquant des soumissions GPU.\nPeut aider ou non en cas de crash PM4 type 0.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Marqueur de débogage hôte:\nInsère des informations côté émulateur telles que des marqueurs pour des commandes spécifiques AMDGPU autour des commandes Vulkan, ainsi que donner les noms de débogages des ressources.\nSi cette option est activée, vous devriez activer "Diagnostic de crash".\nUtile pour des programmes comme RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Marqueur de débogage invité:\nInsère tous les marqueurs de débogage que le jeu a ajouté a la commande mémoire tampon.\nSi cette option est activée, vous devriez activer "Diagnostic de crash".\nUtile pour des programmes comme RenderDoc.</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats/Patchs pour </translation>
+			<translation>Cheats / Patchs pour </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -945,7 +989,7 @@
 		</message>
 		<message>
 			<source>Serial: </source>
-			<translation>Série: </translation>
+			<translation>Numéro de série: </translation>
 		</message>
 		<message>
 			<source>Version: </source>
@@ -1164,7 +1208,7 @@
 		</message>
 		<message>
 			<source>Serial</source>
-			<translation>Série</translation>
+			<translation>Numéro de série</translation>
 		</message>
 		<message>
 			<source>Compatibility</source>

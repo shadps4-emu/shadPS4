@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>600</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -107,9 +107,6 @@
               </property>
               <property name="title">
                <string>Emulator</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft</set>
               </property>
               <property name="flat">
                <bool>false</bool>
@@ -476,7 +473,7 @@
        <bool>true</bool>
       </property>
       <attribute name="title">
-       <string>Gui</string>
+       <string>GUI</string>
       </attribute>
       <widget class="QWidget" name="guiTabContents">
        <property name="geometry">
@@ -484,7 +481,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -497,14 +494,14 @@
            <number>0</number>
           </property>
           <item>
-           <layout class="QVBoxLayout" name="GUITabLayoutMiddle" stretch="0">
+           <layout class="QVBoxLayout" name="GUITabLayoutMiddle" stretch="0,0">
             <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
              <widget class="QGroupBox" name="GUIgroupBox">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -530,7 +527,7 @@
                  <property name="title">
                   <string>Default tab when opening settings</string>
                  </property>
-                 <layout class="QVBoxLayout" name="settingsLayout">
+                 <layout class="QVBoxLayout" name="tabSettingsLayout">
                   <item>
                    <widget class="QComboBox" name="chooseHomeTabComboBox">
                     <property name="sizePolicy">
@@ -546,7 +543,7 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>Gui</string>
+                      <string>GUI</string>
                      </property>
                     </item>
                     <item>
@@ -594,6 +591,18 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>100</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
                  <property name="font">
                   <font>
                    <pointsize>11</pointsize>
@@ -605,62 +614,16 @@
                   <bool>false</bool>
                  </property>
                  <property name="title">
-                  <string/>
+                  <string>Title Music</string>
                  </property>
                  <property name="flat">
                   <bool>false</bool>
                  </property>
-                 <widget class="QSlider" name="BGMVolumeSlider">
-                  <property name="geometry">
-                   <rect>
-                    <x>10</x>
-                    <y>80</y>
-                    <width>416</width>
-                    <height>29</height>
-                   </rect>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="toolTip">
-                   <string>Set the volume of the background music.</string>
-                  </property>
-                  <property name="maximum">
-                   <number>100</number>
-                  </property>
-                  <property name="singleStep">
-                   <number>10</number>
-                  </property>
-                  <property name="pageStep">
-                   <number>20</number>
-                  </property>
-                  <property name="value">
-                   <number>50</number>
-                  </property>
-                  <property name="orientation">
-                   <enum>Qt::Orientation::Horizontal</enum>
-                  </property>
-                  <property name="invertedAppearance">
-                   <bool>false</bool>
-                  </property>
-                  <property name="invertedControls">
-                   <bool>false</bool>
-                  </property>
-                  <property name="tickPosition">
-                   <enum>QSlider::TickPosition::NoTicks</enum>
-                  </property>
-                  <property name="tickInterval">
-                   <number>10</number>
-                  </property>
-                 </widget>
                  <widget class="QCheckBox" name="playBGMCheckBox">
                   <property name="geometry">
                    <rect>
-                    <x>10</x>
-                    <y>22</y>
+                    <x>9</x>
+                    <y>30</y>
                     <width>416</width>
                     <height>26</height>
                    </rect>
@@ -675,45 +638,119 @@
                    <string>Play title music</string>
                   </property>
                  </widget>
-                 <widget class="QLabel" name="label_Volume">
+                 <widget class="QWidget" name="horizontalLayoutWidget">
                   <property name="geometry">
                    <rect>
-                    <x>10</x>
-                    <y>54</y>
-                    <width>416</width>
-                    <height>20</height>
+                    <x>0</x>
+                    <y>50</y>
+                    <width>431</width>
+                    <height>47</height>
                    </rect>
                   </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Volume</string>
-                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <property name="spacing">
+                    <number>9</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>9</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_Volume">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Volume</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSlider" name="BGMVolumeSlider">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Set the volume of the background music.</string>
+                     </property>
+                     <property name="maximum">
+                      <number>100</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>10</number>
+                     </property>
+                     <property name="pageStep">
+                      <number>20</number>
+                     </property>
+                     <property name="value">
+                      <number>50</number>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Orientation::Horizontal</enum>
+                     </property>
+                     <property name="invertedAppearance">
+                      <bool>false</bool>
+                     </property>
+                     <property name="invertedControls">
+                      <bool>false</bool>
+                     </property>
+                     <property name="tickPosition">
+                      <enum>QSlider::TickPosition::NoTicks</enum>
+                     </property>
+                     <property name="tickInterval">
+                      <number>10</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </widget>
                 </widget>
                </item>
               </layout>
              </widget>
             </item>
+            <item>
+             <spacer name="verticalSpacer_7">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0">
+           <layout class="QVBoxLayout" name="CompatTabLayoutRight" stretch="0,0">
             <property name="spacing">
              <number>6</number>
             </property>
             <property name="bottomMargin">
-             <number>210</number>
+             <number>0</number>
             </property>
             <item>
              <widget class="QGroupBox" name="CompatgroupBox">
@@ -790,6 +827,19 @@
               </layout>
              </widget>
             </item>
+            <item>
+             <spacer name="verticalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
          </layout>
@@ -810,7 +860,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1054,10 +1104,10 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0,1">
+       <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <property name="leftMargin">
@@ -1198,7 +1248,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1482,7 +1532,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1572,10 +1622,10 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>386</height>
+         <height>536</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <property name="leftMargin">
@@ -1585,7 +1635,7 @@
            <number>0</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="1">
+           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="0">
             <item>
              <widget class="QGroupBox" name="debugTabGroupBox">
               <property name="enabled">
@@ -1728,20 +1778,57 @@
          </layout>
         </item>
         <item>
-         <spacer name="debugTabSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
+         <widget class="QGroupBox" name="advancedGroupBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          <property name="title">
+           <string>Advanced</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
           </property>
-         </spacer>
+          <layout class="QVBoxLayout" name="advancedLayout">
+           <item>
+            <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+             <property name="text">
+              <string>Enable Crash Diagnostics</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="collectShaderCheckBox">
+             <property name="text">
+              <string>Collect Shaders</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+             <property name="text">
+              <string>Copy GPU Buffers</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="hostMarkersCheckBox">
+             <property name="text">
+              <string>Host Debug Markers</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="guestMarkersCheckBox">
+             <property name="text">
+              <string>Guest Debug Markers</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>

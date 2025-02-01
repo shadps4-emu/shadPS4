@@ -95,8 +95,8 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->touchPadInfo.pixelDensity = 1;
         pInfo->touchPadInfo.resolution.x = 1920;
         pInfo->touchPadInfo.resolution.y = 950;
-        pInfo->stickInfo.deadZoneLeft = Config::leftDeadZone();
-        pInfo->stickInfo.deadZoneRight = Config::rightDeadZone();
+        pInfo->stickInfo.deadZoneLeft = 1;
+        pInfo->stickInfo.deadZoneRight = 1;
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
         pInfo->connectedCount = 1;
         pInfo->connected = false;
@@ -106,8 +106,8 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
-    pInfo->stickInfo.deadZoneLeft = Config::leftDeadZone();
-    pInfo->stickInfo.deadZoneRight = Config::rightDeadZone();
+    pInfo->stickInfo.deadZoneLeft = 1;
+    pInfo->stickInfo.deadZoneRight = 1;
     pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
     pInfo->connectedCount = 1;
     pInfo->connected = true;

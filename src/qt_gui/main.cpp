@@ -26,6 +26,8 @@ int main(int argc, char* argv[]) {
 
     QApplication a(argc, argv);
 
+    QApplication::setDesktopFileName("net.shadps4.shadPS4");
+
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
@@ -181,12 +183,12 @@ int main(int argc, char* argv[]) {
 
         // Check if the provided path is a valid file
         if (!std::filesystem::exists(game_file_path)) {
-            // If not a file, treat it as a game ID and search in install directories
+            // If not a file, treat it as a game ID and search in install directories recursively
             bool game_found = false;
+            const int max_depth = 5;
             for (const auto& install_dir : Config::getGameInstallDirs()) {
-                auto potential_game_path = install_dir / game_path / "eboot.bin";
-                if (std::filesystem::exists(potential_game_path)) {
-                    game_file_path = potential_game_path;
+                if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
+                    game_file_path = *found_path;
                     game_found = true;
                     break;
                 }

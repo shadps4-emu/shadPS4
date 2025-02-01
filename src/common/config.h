@@ -37,14 +37,14 @@ std::string getUserName();
 std::string getUpdateChannel();
 std::string getChooseHomeTab();
 
-u16 leftDeadZone();
-u16 rightDeadZone();
 s16 getCursorState();
 int getCursorHideTimeout();
 std::string getBackButtonBehavior();
 bool getUseSpecialPad();
 int getSpecialPadClass();
 bool getIsMotionControlsEnabled();
+bool GetUseUnifiedInputConfig();
+void SetUseUnifiedInputConfig(bool use);
 
 u32 getScreenWidth();
 u32 getScreenHeight();
@@ -106,9 +106,12 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
-bool vkCrashDiagnosticEnabled();
-bool vkHostMarkersEnabled();
-bool vkGuestMarkersEnabled();
+bool getVkCrashDiagnosticEnabled();
+bool getVkHostMarkersEnabled();
+bool getVkGuestMarkersEnabled();
+void setVkCrashDiagnosticEnabled(bool enable);
+void setVkHostMarkersEnabled(bool enable);
+void setVkGuestMarkersEnabled(bool enable);
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
@@ -148,6 +151,9 @@ std::vector<std::string> getRecentFiles();
 std::string getEmulatorLanguage();
 
 void setDefaultValues();
+
+// todo: name and function location pending
+std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id = "");
 
 // settings
 u32 GetLanguage();

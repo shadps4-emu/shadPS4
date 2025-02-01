@@ -629,7 +629,7 @@
 			<translation>Grafikk</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Grensesnitt</translation>
 		</message>
 		<message>
@@ -681,6 +681,22 @@
 			<translation>Fjern</translation>
 		</message>
 		<message>
+			<source>Save Data Path</source>
+			<translation>Lagrede datamappe</translation>
+		</message>
+		<message>
+			<source>Browse</source>
+			<translation>Endre mappe</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Lagrede datamappe:\nListe over data shadPS4 lagrer.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
+		</message>
+		<message>
 			<source>Debug</source>
 			<translation>Feilretting</translation>
 		</message>
@@ -690,7 +706,7 @@
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Aktiver Vulkan valideringslag</translation>
+			<translation>Aktiver Vulkan Validation Layers</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Synchronization Validation</source>
@@ -699,6 +715,26 @@
 		<message>
 			<source>Enable RenderDoc Debugging</source>
 			<translation>Aktiver RenderDoc feilretting</translation>
+		</message>
+		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Aktiver krasjdiagnostikk</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Lagre skyggeleggere</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Kopier GPU-buffere</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Vertsfeilsøkingsmarkører</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Gjestefeilsøkingsmarkører</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -719,6 +755,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>Grensesnitt-innstillinger</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Tittelmusikk</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -902,7 +942,7 @@
 		</message>
 		<message>
 			<source>gameFoldersBox</source>
-			<translation>Spillmapper:\nListen over mapper som brukes for å se etter installerte spill.</translation>
+			<translation>Spillmapper:\nListe over mapper som brukes for å se etter installerte spill.</translation>
 		</message>
 		<message>
 			<source>addFolderButton</source>
@@ -918,7 +958,7 @@
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
@@ -927,6 +967,26 @@
 		<message>
 			<source>rdocCheckBox</source>
 			<translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil etterligneren gi kompatibilitet med Renderdoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Lagre skyggeleggere:\nDu trenger dette aktivert for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking 'Device lost' feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Kopier GPU-buffere:\nKommer rundt løpsforhold som involverer GPU-innsendinger.\nKan muligens hjelpe med PM4 type 0 krasj.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Vertsfeilsøkingsmarkører:\nSetter inn etterligner-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
@@ -970,6 +1030,10 @@
 		<message>
 			<source>Delete File</source>
 			<translation>Slett fil</translation>
+		</message>
+		<message>
+			<source>Close</source>
+			<translation>Lukk</translation>
 		</message>
 		<message>
 			<source>No files selected.</source>

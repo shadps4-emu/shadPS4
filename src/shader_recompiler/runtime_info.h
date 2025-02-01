@@ -201,7 +201,6 @@ struct FragmentRuntimeInfo {
 
 struct ComputeRuntimeInfo {
     u32 shared_memory_size;
-    u32 max_shared_memory_size;
     std::array<u32, 3> workgroup_size;
     std::array<bool, 3> tgid_enable;
 

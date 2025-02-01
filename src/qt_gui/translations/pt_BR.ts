@@ -538,7 +538,7 @@
 		</message>
 		<message>
 			<source>Enable Fullscreen</source>
-			<translation>Ativar Tela Cheia</translation>
+			<translation>Habilitar Tela Cheia</translation>
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
@@ -566,7 +566,7 @@
 		</message>
 		<message>
 			<source>Enable Discord Rich Presence</source>
-			<translation>Ativar Discord Rich Presence</translation>
+			<translation>Habilitar Discord Rich Presence</translation>
 		</message>
 		<message>
 			<source>Username</source>
@@ -574,7 +574,7 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Chave de Troféu</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
@@ -582,7 +582,7 @@
 		</message>
 		<message>
 			<source>Logger</source>
-			<translation>Registro</translation>
+			<translation>Registro-Log</translation>
 		</message>
 		<message>
 			<source>Log Type</source>
@@ -594,7 +594,7 @@
 		</message>
 		<message>
 			<source>Open Log Location</source>
-			<translation>Abrir local do log</translation>
+			<translation>Abrir local do registro</translation>
 		</message>
 		<message>
 			<source>Input</source>
@@ -658,11 +658,11 @@
 		</message>
 		<message>
 			<source>Enable Shaders Dumping</source>
-			<translation>Ativar Dumping de Shaders</translation>
+			<translation>Habilitar Dumping de Shaders</translation>
 		</message>
 		<message>
 			<source>Enable NULL GPU</source>
-			<translation>Ativar GPU NULA</translation>
+			<translation>Habilitar GPU NULA</translation>
 		</message>
 		<message>
 			<source>Paths</source>
@@ -686,19 +686,39 @@
 		</message>
 		<message>
 			<source>Enable Debug Dumping</source>
-			<translation>Ativar Depuração de Dumping</translation>
+			<translation>Habilitar Depuração de Dumping</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Validation Layers</source>
-			<translation>Ativar Camadas de Validação do Vulkan</translation>
+			<translation>Habilitar Camadas de Validação do Vulkan</translation>
 		</message>
 		<message>
 			<source>Enable Vulkan Synchronization Validation</source>
-			<translation>Ativar Validação de Sincronização do Vulkan</translation>
+			<translation>Habilitar Validação de Sincronização do Vulkan</translation>
 		</message>
 		<message>
 			<source>Enable RenderDoc Debugging</source>
-			<translation>Ativar Depuração por RenderDoc</translation>
+			<translation>Habilitar Depuração do RenderDoc</translation>
+		</message>
+		<message>
+			<source>Enable Crash Diagnostics</source>
+			<translation>Habilitar Diagnóstico de Falhas</translation>
+		</message>
+		<message>
+			<source>Collect Shaders</source>
+			<translation>Coletar Shaders</translation>
+		</message>
+		<message>
+			<source>Copy GPU Buffers</source>
+			<translation>Copiar Buffers de GPU</translation>
+		</message>
+		<message>
+			<source>Host Debug Markers</source>
+			<translation>Marcadores de Depuração do Host</translation>
+		</message>
+		<message>
+			<source>Guest Debug Markers</source>
+			<translation>Marcadores de Depuração do Convidado</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -719,6 +739,10 @@
 		<message>
 			<source>GUI Settings</source>
 			<translation>Configurações da Interface</translation>
+		</message>
+		<message>
+			<source>Title Music</source>
+			<translation>Música no Menu</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
@@ -782,7 +806,7 @@
 		</message>
 		<message>
 			<source>fullscreenCheckBox</source>
-			<translation>Ativar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+			<translation>Habilitar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
 		</message>
 		<message>
 			<source>separateUpdatesCheckBox</source>
@@ -798,7 +822,7 @@
 		</message>
 		<message>
 			<source>discordRPCCheckbox</source>
-			<translation>Ativar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
+			<translation>Habilitar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
 		</message>
 		<message>
 			<source>userName</source>
@@ -898,11 +922,11 @@
 		</message>
 		<message>
 			<source>dumpShadersCheckBox</source>
-			<translation>Ativar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
+			<translation>Habilitar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
 		</message>
 		<message>
 			<source>nullGpuCheckBox</source>
-			<translation>Ativar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse nenhuma placa gráfica.</translation>
+			<translation>Habilitar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse nenhuma placa gráfica.</translation>
 		</message>
 		<message>
 			<source>gameFoldersBox</source>
@@ -918,19 +942,39 @@
 		</message>
 		<message>
 			<source>debugDump</source>
-			<translation>Ativar Depuração de Dumping:\nArmazena os símbolos de importação e exportação e as informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
+			<translation>Habilitar Depuração de Dumping:\nArmazena os símbolos de importação e exportação e as informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Ativar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+			<translation>Habilitar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Ativar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+			<translation>Habilitar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
 		</message>
 		<message>
 			<source>rdocCheckBox</source>
-			<translation>Ativar depuração por RenderDoc:\nSe ativado, permite que o emulador tenha compatibilidade com RenderDoc para gravação e análise do quadro renderizado atual.</translation>
+			<translation>Habilitar Depuração por RenderDoc:\nSe ativado, permite que o emulador tenha compatibilidade com RenderDoc para gravação e análise do quadro renderizado atual.</translation>
+		</message>
+		<message>
+			<source>collectShaderCheckBox</source>
+			<translation>Coletar Shaders:\nVocê precisa habilitar isso para editar shaders com o menu de depuração (Ctrl + F10).</translation>
+		</message>
+		<message>
+			<source>crashDiagnosticsCheckBox</source>
+			<translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depurar erros de 'Device lost'. Se você tiver isso habilitado, você deve habilitar os Marcadores de Depuração de Host e de Convidado.\nNão funciona em GPUs da Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o SDK do Vulkan para que isso funcione.</translation>
+		</message>
+		<message>
+			<source>copyGPUBuffersCheckBox</source>
+			<translation>Copiar Buffers de GPU:\nContorna condições de corrida envolvendo envios de GPU.\nPode ou não ajudar com travamentos do PM4 tipo 0.</translation>
+		</message>
+		<message>
+			<source>hostMarkersCheckBox</source>
+			<translation>Marcadores de Depuração de Host:\nInsere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
+		</message>
+		<message>
+			<source>guestMarkersCheckBox</source>
+			<translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar "Diagnóstico de Falha".\nÚtil para programas como o RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
