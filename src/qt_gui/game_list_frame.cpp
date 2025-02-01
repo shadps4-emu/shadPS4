@@ -289,7 +289,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     QLabel* dotLabel = new QLabel("", widget);
     dotLabel->setPixmap(circle_pixmap);
 
-    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
+    QLabel* label = new QLabel(m_compat_info->GetCompatStatusString(entry.status), widget);
 
     label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
