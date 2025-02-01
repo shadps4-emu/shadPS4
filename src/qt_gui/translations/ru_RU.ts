@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
-    <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-    SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
     <message>
@@ -186,7 +186,7 @@
     </message>
     <message>
         <source>requiresEnableSeparateUpdateFolder_MSG</source>
-        <translation>Эта функция требует включения настройки 'Отдельная папка обновлений'. Если вы хотите использовать эту функцию, пожалуйста включите её.</translation>
+        <translation>Эта функция требует включения настройки &apos;Отдельная папка обновлений&apos;. Если вы хотите использовать эту функцию, пожалуйста включите её.</translation>
     </message>
     <message>
         <source>This game has no update to delete!</source>
@@ -209,7 +209,7 @@
         <translation>Удалить %1</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete %1's %2 directory?</source>
+        <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
         <translation>Вы уверены, что хотите удалить папку %2 %1?</translation>
     </message>
 </context>
@@ -492,7 +492,7 @@
         <translation>Игра успешно установлена в %1</translation>
     </message>
     <message>
-        <source>File doesn't appear to be a valid PKG file</source>
+        <source>File doesn&apos;t appear to be a valid PKG file</source>
         <translation>Файл не является допустимым файлом PKG</translation>
     </message>
 </context>
@@ -838,7 +838,7 @@
     </message>
     <message>
         <source>logFilter</source>
-        <translation>Фильтр логов:\nФильтрует логи, чтобы показывать только определенную информацию.\nПримеры: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Уровни: Trace, Debug, Info, Warning, Error, Critical - в этом порядке, конкретный уровень глушит все предыдущие уровни в списке и показывает все последующие уровни.</translation>
+        <translation>Фильтр логов:\nФильтрует логи, чтобы показывать только определенную информацию.\nПримеры: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Уровни: Trace, Debug, Info, Warning, Error, Critical - в этом порядке, конкретный уровень глушит все предыдущие уровни в списке и показывает все последующие уровни.</translation>
     </message>
     <message>
         <source>updaterGroupBox</source>
@@ -906,7 +906,7 @@
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Графическое устройство:\nВ системах с несколькими GPU выберите GPU, который будет использовать эмулятор.\nВыберите "Auto Select", чтобы определить его автоматически.</translation>
+        <translation>Графическое устройство:\nВ системах с несколькими GPU выберите GPU, который будет использовать эмулятор.\nВыберите &quot;Auto Select&quot;, чтобы определить его автоматически.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
@@ -958,7 +958,7 @@
     </message>
     <message>
         <source>crashDiagnosticsCheckBox</source>
-        <translation>Диагностика сбоев:\nСоздает .yaml файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок 'Device lost'. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Cлои валидации Vulkan и установить Vulkan SDK.</translation>
+        <translation>Диагностика сбоев:\nСоздает .yaml файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Cлои валидации Vulkan и установить Vulkan SDK.</translation>
     </message>
     <message>
         <source>copyGPUBuffersCheckBox</source>
@@ -989,7 +989,7 @@
     </message>
     <message>
         <source>defaultTextEdit_MSG</source>
-        <translation>Читы и патчи экспериментальны.\nИспользуйте с осторожностью.\n\nСкачивайте читы, выбрав репозиторий и нажав на кнопку загрузки.\nВо вкладке "Патчи" вы можете скачать все патчи сразу, выбирать какие вы хотите использовать, и сохранять выбор.\n\nПоскольку мы не разрабатываем читы/патчи,\nпожалуйста сообщайте о проблемах автору чита/патча.\n\nСоздали новый чит? Посетите:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        <translation>Читы и патчи экспериментальны.\nИспользуйте с осторожностью.\n\nСкачивайте читы, выбрав репозиторий и нажав на кнопку загрузки.\nВо вкладке &quot;Патчи&quot; вы можете скачать все патчи сразу, выбирать какие вы хотите использовать, и сохранять выбор.\n\nПоскольку мы не разрабатываем читы/патчи,\nпожалуйста сообщайте о проблемах автору чита/патча.\n\nСоздали новый чит? Посетите:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
         <source>No Image Available</source>
@@ -1028,7 +1028,7 @@
         <translation>Файлы не выбраны.</translation>
     </message>
     <message>
-        <source>You can delete the cheats you don't want after downloading them.</source>
+        <source>You can delete the cheats you don&apos;t want after downloading them.</source>
         <translation>Вы можете удалить ненужные читы после их скачивания.</translation>
     </message>
     <message>
@@ -1200,7 +1200,7 @@
         <translation>Имя:</translation>
     </message>
     <message>
-        <source>Can't apply cheats before the game is started</source>
+        <source>Can&apos;t apply cheats before the game is started</source>
         <translation>Невозможно применить читы до начала игры</translation>
     </message>
 </context>
