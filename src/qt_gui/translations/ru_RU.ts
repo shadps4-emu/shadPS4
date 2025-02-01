@@ -54,6 +54,14 @@
         <source>Select which directory you want to install to.</source>
         <translation>Выберите папку, в которую вы хотите установить.</translation>
     </message>
+    <message>
+        <source>Install All Queued to Selected Folder</source>
+        <translation>Установить все из очереди в выбранную папку</translation>
+    </message>
+    <message>
+        <source>Delete PKG File on Install</source>
+        <translation>Удалить файл PKG при установке</translation>
+    </message>
 </context>
 <context>
     <name>GameInstallDialog</name>
@@ -63,7 +71,7 @@
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation>Папка для установки игр</translation>
+        <translation>Каталог для установки игр</translation>
     </message>
     <message>
         <source>Browse</source>
@@ -76,6 +84,10 @@
     <message>
         <source>The value for location to install games is not valid.</source>
         <translation>Недопустимое значение местоположения для установки игр.</translation>
+    </message>
+    <message>
+        <source>Directory to install DLC</source>
+        <translation>Каталог для установки DLC</translation>
     </message>
 </context>
 <context>
@@ -211,6 +223,30 @@
     <message>
         <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
         <translation>Вы уверены, что хотите удалить папку %2 %1?</translation>
+    </message>
+    <message>
+        <source>Open Update Folder</source>
+        <translation>Открыть папку обновлений</translation>
+    </message>
+    <message>
+        <source>Delete Save Data</source>
+        <translation>Удалить сохранения</translation>
+    </message>
+    <message>
+        <source>This game has no update folder to open!</source>
+        <translation>У этой игры нет папки обновлений, которую можно открыть!</translation>
+    </message>
+    <message>
+        <source>Failed to convert icon.</source>
+        <translation>Не удалось преобразовать иконку.</translation>
+    </message>
+    <message>
+        <source>This game has no save data to delete!</source>
+        <translation>У этой игры нет сохранений, которые можно удалить!</translation>
+    </message>
+    <message>
+        <source>Save Data</source>
+        <translation>Сохранения</translation>
     </message>
 </context>
 <context>
@@ -495,12 +531,44 @@
         <source>File doesn&apos;t appear to be a valid PKG file</source>
         <translation>Файл не является допустимым файлом PKG</translation>
     </message>
+    <message>
+        <source>Run Game</source>
+        <translation>Запустить игру</translation>
+    </message>
+    <message>
+        <source>Eboot.bin file not found</source>
+        <translation>Файл eboot.bin не найден</translation>
+    </message>
+    <message>
+        <source>PKG File (*.PKG *.pkg)</source>
+        <translation>Файл PKG (*.PKG *.pkg)</translation>
+    </message>
+    <message>
+        <source>PKG is a patch or DLC, please install the game first!</source>
+        <translation>Выбранный PKG это патч или DLC, сначала установите игру!</translation>
+    </message>
+    <message>
+        <source>Game is already running!</source>
+        <translation>Игра уже запущенна!</translation>
+    </message>
+    <message>
+        <source>shadPS4</source>
+        <translation>shadPS4</translation>
+    </message>
 </context>
 <context>
     <name>PKGViewer</name>
     <message>
         <source>Open Folder</source>
         <translation>Открыть папку</translation>
+    </message>
+    <message>
+        <source>&amp;File</source>
+        <translation>Файл</translation>
+    </message>
+    <message>
+        <source>PKG ERROR</source>
+        <translation>ОШИБКА PKG</translation>
     </message>
 </context>
 <context>
@@ -980,6 +1048,58 @@
         <source>browseButton</source>
         <translation>Обзор:\nНайдите папку, которую можно указать в качестве пути для сохранений.</translation>
     </message>
+    <message>
+        <source>Borderless</source>
+        <translation>Без полей</translation>
+    </message>
+    <message>
+        <source>True</source>
+        <translation>Истинный</translation>
+    </message>
+    <message>
+        <source>Release</source>
+        <translation>Release</translation>
+    </message>
+    <message>
+        <source>Nightly</source>
+        <translation>Nightly</translation>
+    </message>
+    <message>
+        <source>GUI</source>
+        <translation>Графический интерфейс</translation>
+    </message>
+    <message>
+        <source>Set the volume of the background music.</source>
+        <translation>Установите громкость фоновой музыки.</translation>
+    </message>
+    <message>
+        <source>Enable Motion Controls</source>
+        <translation>Включить управление движением</translation>
+    </message>
+    <message>
+        <source>Save Data Path</source>
+        <translation>Путь сохранений</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <source>async</source>
+        <translation>асинхронный</translation>
+    </message>
+    <message>
+        <source>sync</source>
+        <translation>синхронный</translation>
+    </message>
+    <message>
+        <source>Directory to install games</source>
+        <translation>Каталог для установки игр</translation>
+    </message>
+    <message>
+        <source>Directory to save data</source>
+        <translation>Каталог для сохранений</translation>
+    </message>
 </context>
 <context>
     <name>CheatsPatches</name>
@@ -1203,6 +1323,18 @@
         <source>Can&apos;t apply cheats before the game is started</source>
         <translation>Невозможно применить читы до начала игры</translation>
     </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Error:</source>
+        <translation>Ошибка:</translation>
+    </message>
+    <message>
+        <source>ERROR</source>
+        <translation>ОШИБКА</translation>
+    </message>
 </context>
 <context>
     <name>GameListFrame</name>
@@ -1285,6 +1417,14 @@
     <message>
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Игра может быть пройдена с хорошей производительностью и без серьезных сбоев</translation>
+    </message>
+    <message>
+        <source>Click to go to issue</source>
+        <translation>Нажмите, чтобы перейти к проблеме</translation>
+    </message>
+    <message>
+        <source>Last updated</source>
+        <translation>Последнее обновление</translation>
     </message>
 </context>
 <context>
@@ -1411,6 +1551,57 @@
     <message>
         <source>TB</source>
         <translation>ТБ</translation>
+    </message>
+</context>
+<context>
+    <name>CompatibilityInfoClass</name>
+    <message>
+        <source>Fetching compatibility data, please wait</source>
+        <translation>Загрузка данных о совместимости, пожалуйста, подождите</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Loading...</source>
+        <translation>Загрузка...</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>Unable to update compatibility data! Try again later.</source>
+        <translation>Не удалось обновить данные совместимости! Повторите попытку позже.</translation>
+    </message>
+    <message>
+        <source>Unable to open compatibility.json for writing.</source>
+        <translation>Не удалось открыть файл compatibility.json для записи.</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Неизвестно</translation>
+    </message>
+    <message>
+        <source>Nothing</source>
+        <translation>Ничего</translation>
+    </message>
+    <message>
+        <source>Boots</source>
+        <translation>Запускается</translation>
+    </message>
+    <message>
+        <source>Menus</source>
+        <translation>В меню</translation>
+    </message>
+    <message>
+        <source>Ingame</source>
+        <translation>В игре</translation>
+    </message>
+    <message>
+        <source>Playable</source>
+        <translation>Играбельно</translation>
     </message>
 </context>
 </TS>
