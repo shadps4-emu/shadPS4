@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="nb">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1423,6 +1423,33 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Ukjent</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Ingenting</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Starter opp</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Meny</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>I spill</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spillbar</translation>
 		</message>
 	</context>
 </TS>
