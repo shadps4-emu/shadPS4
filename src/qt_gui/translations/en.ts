@@ -125,6 +125,14 @@
 			<translation>Copy Serial</translation>
 		</message>
 		<message>
+			<source>Copy Firmware</source>
+			<translation>Copy Firmware</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Copy Size</translation>		 
+	        </message>
+		<message>
 			<source>Copy All</source>
 			<translation>Copy All</translation>
 		</message>
