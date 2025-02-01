@@ -1419,6 +1419,29 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>	
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Unbekannt</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nichts</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menüs</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>ImSpiel</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spielbar</translation>
 		</message>
 	</context>
 </TS>
