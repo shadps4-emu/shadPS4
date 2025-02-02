@@ -958,7 +958,7 @@
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Diagnostic de crash:\nCrée un fichier .yaml avec des informations sur l'état de Vulkan au moment du crash.\nUtile pour déboguer les erreurs "Device lost". Si cette option est activée, vous devez aussi activer Marqueur de débogage hôte ET invité.\nNe marche pas pour les GPUs Intel.\nVous devez activer le Vulkan Validation Layers ainsi que le Vulkan SDK pour que cela fonctionne.</translation>
+			<translation>Diagnostic de crash:\nCrée un fichier .yaml avec des informations sur l'état de Vulkan au moment du crash.\nUtile pour déboguer les erreurs "Device lost". Si cette option est activée, vous devez aussi activer Marqueur de débogage hôte ET invité.\nNe marche pas pour les GPUs Intel.\nVous devez activer la couche de validation Vulkan ainsi que le Vulkan SDK pour que cela fonctionne.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
