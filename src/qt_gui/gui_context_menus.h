@@ -345,7 +345,7 @@ public:
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].name));
         }
-                
+
         if (selected == copySerial) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].serial));
@@ -355,7 +355,7 @@ public:
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].version));
         }
-                
+   
         if (selected == copySize) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].size));
