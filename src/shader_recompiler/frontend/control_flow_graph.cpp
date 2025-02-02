@@ -161,6 +161,12 @@ void CFG::EmitDivergenceLabels() {
                 // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
                 if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
+                    // Determine the last instruction affected by the exec mask, so that any
+                    // trailing instructions not affected can be excluded from the scope.
+                    s32 curr_end = index;
+                    while (IgnoresExecMask(inst_list[curr_end - 1])) {
+                        --curr_end;
+                    }
                     // Add a label to the instruction right after the open scope call.
                     // It is the start of a new basic block.
                     const auto& save_inst = inst_list[curr_begin];
@@ -173,8 +179,8 @@ void CFG::EmitDivergenceLabels() {
                     // * Normal instruction at the end of the block
                     // For the last case we must NOT add a label as that would cause
                     // the instruction to be separated into its own basic block.
-                    if (is_close) {
-                        AddLabel(index_to_pc[index]);
+                    if (curr_end != end_index - 1) {
+                        AddLabel(index_to_pc[curr_end]);
                     }
                 }
                 // Reset scope begin.
