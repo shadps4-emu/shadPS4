@@ -344,24 +344,23 @@ public:
         if (selected == copyName) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].name));
-        }
-
+            }
+                
         if (selected == copySerial) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].serial));
-        }
-        
+            }
+
         if (selected == copyFirmware) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].version));
-        }
+            }
                 
         if (selected == copySize) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].size));
-            
-        }        
-        
+            {
+
         if (selected == copyNameAll) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             QString combinedText = QString("Name:%1 | Serial:%2 | Version:%3 | Size:%4")
