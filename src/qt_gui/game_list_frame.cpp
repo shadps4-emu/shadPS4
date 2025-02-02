@@ -177,7 +177,7 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     backgroundImage = QImage(blurredPic1PathQt);
     if (backgroundImage.isNull()) {
         QImage image(pic1Path);
-        backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
+        backgroundImage = m_game_list_utils.ChangeImageOpacity(image, image.rect(), 0.5);
 
         std::filesystem::path img_path =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
