@@ -97,7 +97,7 @@ struct EqueueEvent {
                     mask = (static_cast<u32>(event.data) + 0x1000) & 0xF000;
                 }
                 event.data = (mask | static_cast<u64>(static_cast<u32>(time) & 0xFFF) |
-                                (hint & 0xFFFFFFFFFFFF0000));
+                              (hint & 0xFFFFFFFFFFFF0000));
             }
         }
     }
