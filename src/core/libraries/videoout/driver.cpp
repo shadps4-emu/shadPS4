@@ -187,7 +187,7 @@ void VideoOutDriver::Flip(const Request& req) {
         if (event != nullptr) {
             event->TriggerEvent(u64(OrbisVideoOutEventId::Flip),
                                 Kernel::SceKernelEvent::Filter::VideoOut,
-                                reinterpret_cast<void*>(req.flip_arg));
+                                (void*)(u64(OrbisVideoOutEventId::Flip) | (req.flip_arg << 16)));
         }
     }
 

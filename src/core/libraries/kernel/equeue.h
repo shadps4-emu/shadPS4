@@ -81,6 +81,30 @@ struct EqueueEvent {
         event.data = reinterpret_cast<uintptr_t>(data);
     }
 
+    void TriggerDisplay(void* data) {
+        is_triggered = true;
+        auto hint = reinterpret_cast<u64>(data);
+        if (data == 0) {
+            event.data = (hint >> 12) & 0xF;
+        } else {
+            auto event_id = event.ident << 48;
+            auto hint_h = u32(hint >> 8) & 0xFFFFFF;
+            auto ident_h = u32(event.ident >> 40);
+            auto i = 0;
+            if ((u32(hint) & 0xFF) == event_id && event_id != 0xFE && ((hint_h ^ ident_h) & 0xFF) == 0) {
+                auto time = __rdtsc();
+                auto mask = 0xF000;
+                if ((u32(event.data) & 0xF000) != 0xF000) {
+                    mask = (u32(event.data) + 0x1000) & 0xF000;
+                }
+                i = 1;
+                event.data = (mask | u64(u32(time) & 0xFFF) | (hint & 0xFFFFFFFFFFFF0000));
+            } else {
+                event.data = 1;
+            }
+        }
+    }
+
     bool IsTriggered() const {
         return is_triggered;
     }
