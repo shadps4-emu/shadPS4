@@ -38,17 +38,34 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
 
 void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                                          int previousColumn) {
-    crtRow = currentRow;
-    crtColumn = currentColumn;
-    columnCnt = this->columnCount();
-
-    auto itemID = (crtRow * columnCnt) + currentColumn;
-    if (itemID > m_game_info->m_games.count() - 1) {
+    // Early exit for invalid indices
+    if (currentRow < 0 || currentColumn < 0) {
         cellClicked = false;
         validCellSelected = false;
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
+
+    crtRow = currentRow;
+    crtColumn = currentColumn;
+    columnCnt = this->columnCount();
+
+    // Prevent integer overflow
+    if (columnCnt <= 0 || crtRow > (std::numeric_limits<int>::max() / columnCnt)) {
+        cellClicked = false;
+        validCellSelected = false;
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+
+    auto itemID = (crtRow * columnCnt) + currentColumn;
+    if (itemID < 0 || itemID > m_game_info->m_games.count() - 1) {
+        cellClicked = false;
+        validCellSelected = false;
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+
     cellClicked = true;
     validCellSelected = true;
     SetGridBackgroundImage(crtRow, crtColumn);
