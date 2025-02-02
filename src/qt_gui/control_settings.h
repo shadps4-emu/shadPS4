@@ -14,7 +14,7 @@ public:
     explicit ControlSettings(std::shared_ptr<GameInfoClass> game_info_get,
                              QWidget* parent = nullptr);
     ~ControlSettings();
-    const std::vector<std::string> controlleroutputs = {
+    const std::vector<std::string> ControllerInputs = {
         "cross",        "circle",    "square",      "triangle",    "l1",
         "r1",           "l2",        "r2",          "l3",
 
@@ -25,16 +25,17 @@ public:
         "pad_left",     "pad_right", "axis_left_x", "axis_left_y", "axis_right_x",
         "axis_right_y", "back"};
 
-    const QStringList ButtonInputs = {"cross",    "circle",    "square",  "triangle", "l1",
-                                      "r1",       "l2",        "r2",      "l3",
+    const QStringList ButtonOutputs = {"cross",    "circle",    "square",   "triangle", "l1",
+                                       "r1",       "l2",        "r2",       "l3",
 
-                                      "r3",       "options",   "pad_up",
+                                       "r3",       "options",   "pad_up",
 
-                                      "pad_down",
+                                       "pad_down",
 
-                                      "pad_left", "pad_right", "touchpad"};
+                                       "pad_left", "pad_right", "touchpad", "unmapped"};
 
-    const QStringList StickInputs = {"axis_left_x", "axis_left_y", "axis_right_x", "axis_right_y"};
+    const QStringList StickOutputs = {"axis_left_x", "axis_left_y", "axis_right_x", "axis_right_y",
+                                      "unmapped"};
 
 private Q_SLOTS:
     void SaveControllerConfig(bool CloseOnSave);

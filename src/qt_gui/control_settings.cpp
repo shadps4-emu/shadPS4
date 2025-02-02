@@ -9,8 +9,6 @@
 #include "kbm_config_dialog.h"
 #include "ui_control_settings.h"
 
-static std::string game_id = "";
-
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
     : QDialog(parent), m_game_info(game_info_get), ui(new Ui::ControlSettings) {
 
@@ -87,12 +85,13 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         return;
     }
 
+    std::string config_id;
     if (ui->ProfileComboBox->currentText() == "Common Config") {
-        game_id = ("default");
+        config_id = ("default");
     } else {
-        game_id = (ui->ProfileComboBox->currentText().toStdString());
+        config_id = (ui->ProfileComboBox->currentText().toStdString());
     }
-    const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
+    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
 
     int lineCount = 0;
     std::string line;
@@ -120,9 +119,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
 
-        // Remove all controller lines
-        if (std::find(controlleroutputs.begin(), controlleroutputs.end(), input_string) !=
-                controlleroutputs.end() ||
+        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
+                ControllerInputs.end() ||
             output_string == "analog_deadzone") {
             line.erase();
             continue;
@@ -229,7 +227,6 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
     lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue);
 
-    // remove consecutive empty lines
     std::vector<std::string> save;
     bool CurrentLineEmpty = false;
     bool LastLineEmpty = false;
@@ -258,7 +255,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
     output_file.close();
 
-    Input::ParseInputConfig(game_id);
+    Input::ParseInputConfig(config_id);
     if (CloseOnSave) {
         QWidget::close();
     }
@@ -299,31 +296,31 @@ void ControlSettings::SetDefault() {
 }
 
 void ControlSettings::AddBoxItems() {
-    ui->DpadUpBox->addItems(ButtonInputs);
-    ui->DpadDownBox->addItems(ButtonInputs);
-    ui->DpadLeftBox->addItems(ButtonInputs);
-    ui->DpadRightBox->addItems(ButtonInputs);
-    ui->LBBox->addItems(ButtonInputs);
-    ui->RBBox->addItems(ButtonInputs);
-    ui->LTBox->addItems(ButtonInputs);
-    ui->RTBox->addItems(ButtonInputs);
-    ui->RClickBox->addItems(ButtonInputs);
-    ui->LClickBox->addItems(ButtonInputs);
-    ui->StartBox->addItems(ButtonInputs);
-    ui->ABox->addItems(ButtonInputs);
-    ui->BBox->addItems(ButtonInputs);
-    ui->XBox->addItems(ButtonInputs);
-    ui->YBox->addItems(ButtonInputs);
-    ui->BackBox->addItems(ButtonInputs);
+    ui->DpadUpBox->addItems(ButtonOutputs);
+    ui->DpadDownBox->addItems(ButtonOutputs);
+    ui->DpadLeftBox->addItems(ButtonOutputs);
+    ui->DpadRightBox->addItems(ButtonOutputs);
+    ui->LBBox->addItems(ButtonOutputs);
+    ui->RBBox->addItems(ButtonOutputs);
+    ui->LTBox->addItems(ButtonOutputs);
+    ui->RTBox->addItems(ButtonOutputs);
+    ui->RClickBox->addItems(ButtonOutputs);
+    ui->LClickBox->addItems(ButtonOutputs);
+    ui->StartBox->addItems(ButtonOutputs);
+    ui->ABox->addItems(ButtonOutputs);
+    ui->BBox->addItems(ButtonOutputs);
+    ui->XBox->addItems(ButtonOutputs);
+    ui->YBox->addItems(ButtonOutputs);
+    ui->BackBox->addItems(ButtonOutputs);
 
-    ui->LStickUpBox->addItems(StickInputs);
-    ui->LStickDownBox->addItems(StickInputs);
-    ui->LStickLeftBox->addItems(StickInputs);
-    ui->LStickRightBox->addItems(StickInputs);
-    ui->RStickUpBox->addItems(StickInputs);
-    ui->RStickDownBox->addItems(StickInputs);
-    ui->RStickLeftBox->addItems(StickInputs);
-    ui->RStickRightBox->addItems(StickInputs);
+    ui->LStickUpBox->addItems(StickOutputs);
+    ui->LStickDownBox->addItems(StickOutputs);
+    ui->LStickLeftBox->addItems(StickOutputs);
+    ui->LStickRightBox->addItems(StickOutputs);
+    ui->RStickUpBox->addItems(StickOutputs);
+    ui->RStickDownBox->addItems(StickOutputs);
+    ui->RStickLeftBox->addItems(StickOutputs);
+    ui->RStickRightBox->addItems(StickOutputs);
 
     ui->ProfileComboBox->addItem("Common Config");
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
@@ -334,14 +331,36 @@ void ControlSettings::AddBoxItems() {
 }
 
 void ControlSettings::SetUIValuestoMappings() {
+    std::string config_id;
     if (ui->ProfileComboBox->currentText() == "Common Config") {
-        game_id = ("default");
+        config_id = ("default");
     } else {
-        game_id = (ui->ProfileComboBox->currentText().toStdString());
+        config_id = (ui->ProfileComboBox->currentText().toStdString());
     }
-    const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
+
+    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
     std::ifstream file(config_file);
 
+    bool CrossExists = false;
+    bool CircleExists = false;
+    bool SquareExists = false;
+    bool TriangleExists = false;
+    bool L1Exists = false;
+    bool L2Exists = false;
+    bool L3Exists = false;
+    bool R1Exists = false;
+    bool R2Exists = false;
+    bool R3Exists = false;
+    bool DPadUpExists = false;
+    bool DPadDownExists = false;
+    bool DPadLeftExists = false;
+    bool DPadRightExists = false;
+    bool StartExists = false;
+    bool BackExists = false;
+    bool LStickXExists = false;
+    bool LStickYExists = false;
+    bool RStickXExists = false;
+    bool RStickYExists = false;
     int lineCount = 0;
     std::string line = "";
     while (std::getline(file, line)) {
@@ -365,53 +384,73 @@ void ControlSettings::SetUIValuestoMappings() {
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
 
-        if (std::find(controlleroutputs.begin(), controlleroutputs.end(), input_string) !=
-                controlleroutputs.end() ||
+        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
+                ControllerInputs.end() ||
             output_string == "analog_deadzone") {
             if (input_string == "cross") {
                 ui->ABox->setCurrentText(QString::fromStdString(output_string));
+                CrossExists = true;
             } else if (input_string == "circle") {
                 ui->BBox->setCurrentText(QString::fromStdString(output_string));
+                CircleExists = true;
             } else if (input_string == "square") {
                 ui->XBox->setCurrentText(QString::fromStdString(output_string));
+                SquareExists = true;
             } else if (input_string == "triangle") {
                 ui->YBox->setCurrentText(QString::fromStdString(output_string));
+                TriangleExists = true;
             } else if (input_string == "l1") {
                 ui->LBBox->setCurrentText(QString::fromStdString(output_string));
+                L1Exists = true;
             } else if (input_string == "l2") {
                 ui->LTBox->setCurrentText(QString::fromStdString(output_string));
+                L2Exists = true;
             } else if (input_string == "r1") {
                 ui->RBBox->setCurrentText(QString::fromStdString(output_string));
+                R1Exists = true;
             } else if (input_string == "r2") {
                 ui->RTBox->setCurrentText(QString::fromStdString(output_string));
+                R2Exists = true;
             } else if (input_string == "l3") {
                 ui->LClickBox->setCurrentText(QString::fromStdString(output_string));
+                L3Exists = true;
             } else if (input_string == "r3") {
                 ui->RClickBox->setCurrentText(QString::fromStdString(output_string));
+                R3Exists = true;
             } else if (input_string == "pad_up") {
                 ui->DpadUpBox->setCurrentText(QString::fromStdString(output_string));
+                DPadUpExists = true;
             } else if (input_string == "pad_down") {
                 ui->DpadDownBox->setCurrentText(QString::fromStdString(output_string));
+                DPadDownExists = true;
             } else if (input_string == "pad_left") {
                 ui->DpadLeftBox->setCurrentText(QString::fromStdString(output_string));
+                DPadLeftExists = true;
             } else if (input_string == "pad_right") {
                 ui->DpadRightBox->setCurrentText(QString::fromStdString(output_string));
+                DPadRightExists = true;
             } else if (input_string == "options") {
                 ui->StartBox->setCurrentText(QString::fromStdString(output_string));
+                StartExists = true;
             } else if (input_string == "back") {
                 ui->BackBox->setCurrentText(QString::fromStdString(output_string));
+                BackExists = true;
             } else if (input_string == "axis_left_x") {
                 ui->LStickRightBox->setCurrentText(QString::fromStdString(output_string));
                 ui->LStickLeftBox->setCurrentText(QString::fromStdString(output_string));
+                LStickXExists = true;
             } else if (input_string == "axis_left_y") {
                 ui->LStickUpBox->setCurrentText(QString::fromStdString(output_string));
                 ui->LStickDownBox->setCurrentText(QString::fromStdString(output_string));
+                LStickYExists = true;
             } else if (input_string == "axis_right_x") {
                 ui->RStickRightBox->setCurrentText(QString::fromStdString(output_string));
                 ui->RStickLeftBox->setCurrentText(QString::fromStdString(output_string));
+                RStickXExists = true;
             } else if (input_string == "axis_right_y") {
                 ui->RStickUpBox->setCurrentText(QString::fromStdString(output_string));
                 ui->RStickDownBox->setCurrentText(QString::fromStdString(output_string));
+                RStickYExists = true;
             } else if (input_string.contains("leftjoystick")) {
                 std::size_t comma_pos = line.find(',');
                 int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
@@ -424,6 +463,57 @@ void ControlSettings::SetUIValuestoMappings() {
                 ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
             }
         }
+    }
+
+    // If an entry does not exist in the config file, we assume the user wants it unmapped
+    if (!CrossExists)
+        ui->ABox->setCurrentText("unmapped");
+    if (!CircleExists)
+        ui->BBox->setCurrentText("unmapped");
+    if (!SquareExists)
+        ui->XBox->setCurrentText("unmapped");
+    if (!TriangleExists)
+        ui->YBox->setCurrentText("unmapped");
+    if (!L1Exists)
+        ui->LBBox->setCurrentText("unmapped");
+    if (!L2Exists)
+        ui->LTBox->setCurrentText("unmapped");
+    if (!L3Exists)
+        ui->LClickBox->setCurrentText("unmapped");
+    if (!R1Exists)
+        ui->RBBox->setCurrentText("unmapped");
+    if (!R2Exists)
+        ui->RTBox->setCurrentText("unmapped");
+    if (!R3Exists)
+        ui->RClickBox->setCurrentText("unmapped");
+    if (!DPadUpExists)
+        ui->DpadUpBox->setCurrentText("unmapped");
+    if (!DPadDownExists)
+        ui->DpadDownBox->setCurrentText("unmapped");
+    if (!DPadLeftExists)
+        ui->DpadLeftBox->setCurrentText("unmapped");
+    if (!DPadRightExists)
+        ui->DpadRightBox->setCurrentText("unmapped");
+    if (!BackExists)
+        ui->BackBox->setCurrentText("unmapped");
+    if (!StartExists)
+        ui->StartBox->setCurrentText("unmapped");
+
+    if (!LStickXExists) {
+        ui->LStickRightBox->setCurrentText("unmapped");
+        ui->LStickLeftBox->setCurrentText("unmapped");
+    }
+    if (!LStickYExists) {
+        ui->LStickUpBox->setCurrentText("unmapped");
+        ui->LStickDownBox->setCurrentText("unmapped");
+    }
+    if (!RStickXExists) {
+        ui->RStickRightBox->setCurrentText("unmapped");
+        ui->RStickLeftBox->setCurrentText("unmapped");
+    }
+    if (!RStickYExists) {
+        ui->RStickUpBox->setCurrentText("unmapped");
+        ui->RStickDownBox->setCurrentText("unmapped");
     }
 
     file.close();
