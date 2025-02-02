@@ -762,7 +762,7 @@
                 <item>
                  <widget class="QGroupBox" name="gb_r2">
                   <property name="title">
-                   <string>R2 / LT</string>
+                   <string>R2 / RT</string>
                   </property>
                   <layout class="QVBoxLayout" name="gb_r2_layout">
                    <property name="leftMargin">
