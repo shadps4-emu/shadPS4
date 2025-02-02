@@ -81,9 +81,6 @@
               <property name="title">
                <string>D-Pad</string>
               </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
               <layout class="QVBoxLayout" name="gb_dpad_layout">
                <property name="spacing">
                 <number>6</number>
@@ -546,14 +543,14 @@
                </font>
               </property>
               <property name="title">
-               <string>Profile Selection</string>
+               <string>Config Selection</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignCenter</set>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <layout class="QVBoxLayout" name="verticalLayout_16">
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout">
+                <layout class="QHBoxLayout" name="horizontalLayout_6">
                  <item>
                   <widget class="QComboBox" name="ProfileComboBox">
                    <property name="font">
@@ -569,24 +566,20 @@
                     <number>-1</number>
                    </property>
                    <property name="placeholderText">
-                    <string>CUSA03173</string>
+                    <string>Common Config</string>
                    </property>
                   </widget>
                  </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <item>
                   <widget class="QLabel" name="TitleLabel">
                    <property name="font">
                     <font>
-                     <pointsize>12</pointsize>
+                     <pointsize>10</pointsize>
                      <bold>true</bold>
                     </font>
                    </property>
                    <property name="text">
-                    <string>Game Title</string>
+                    <string>Common Config</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -597,6 +590,25 @@
                   </widget>
                  </item>
                 </layout>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="PerGameCheckBox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <pointsize>9</pointsize>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Use per-game configs</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>

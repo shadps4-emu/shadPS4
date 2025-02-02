@@ -17,6 +17,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     : QDialog(parent), m_game_info(game_info_get), ui(new Ui::ControlSettings) {
 
     ui->setupUi(this);
+    ui->PerGameCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
 
     AddBoxItems();
     SetUIValuestoMappings();
@@ -61,7 +62,11 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
-    game_id = (ui->ProfileComboBox->currentText().toStdString());
+    if (ui->ProfileComboBox->currentText() == "Common Config") {
+        game_id = ("default");
+    } else {
+        game_id = (ui->ProfileComboBox->currentText().toStdString());
+    }
     const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
 
     int lineCount = 0;
@@ -102,7 +107,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
         std::size_t comment_pos = line.find('#');
         if (comment_pos != std::string::npos) {
-            lines.push_back(line);
+            if (!line.contains("Range of deadzones"))
+                lines.push_back(line);
             continue;
         }
 
@@ -115,6 +121,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
 
+        // Remove all controller lines
         if (std::find(controlleroutputs.begin(), controlleroutputs.end(), input_string) !=
                 controlleroutputs.end() ||
             output_string == "analog_deadzone") {
@@ -123,8 +130,6 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         }
         lines.push_back(line);
     }
-
-    lines.resize(lines.size() - 6);
 
     input_string = "cross";
     output_string = ui->ABox->currentText().toStdString();
@@ -223,8 +228,31 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
     lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue);
 
-    std::ofstream output_file(config_file);
+    // remove consecutive empty lines
+    std::vector<std::string> save;
+    bool CurrentLineEmpty = false;
+    bool LastLineEmpty = false;
     for (auto const& line : lines) {
+        if (CurrentLineEmpty) {
+            LastLineEmpty = true;
+        } else {
+            LastLineEmpty = false;
+        }
+
+        if (line.empty()) {
+            CurrentLineEmpty = true;
+        } else {
+            CurrentLineEmpty = false;
+        }
+
+        if (CurrentLineEmpty && LastLineEmpty)
+            continue;
+
+        save.push_back(line);
+    }
+
+    std::ofstream output_file(config_file);
+    for (auto const& line : save) {
         output_file << line << '\n';
     }
 
@@ -232,6 +260,9 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     if (CloseOnSave) {
         QWidget::close();
     }
+
+    Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
+    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
 }
 
 void ControlSettings::SetDefault() {
@@ -292,16 +323,20 @@ void ControlSettings::AddBoxItems() {
     ui->RStickLeftBox->addItems(StickInputs);
     ui->RStickRightBox->addItems(StickInputs);
 
-    ui->ProfileComboBox->addItem("Default");
+    ui->ProfileComboBox->addItem("Common Config");
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
-    ui->ProfileComboBox->setCurrentText("Default");
-    ui->TitleLabel->setText("Default Config");
+    ui->ProfileComboBox->setCurrentText("Common Config");
+    ui->TitleLabel->setText("Common Config");
 }
 
 void ControlSettings::SetUIValuestoMappings() {
-    game_id = (ui->ProfileComboBox->currentText().toStdString());
+    if (ui->ProfileComboBox->currentText() == "Common Config") {
+        game_id = ("default");
+    } else {
+        game_id = (ui->ProfileComboBox->currentText().toStdString());
+    }
     const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
 
     int lineCount = 0;
