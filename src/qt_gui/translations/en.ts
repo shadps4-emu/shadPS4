@@ -131,7 +131,7 @@
 		<message>
 			<source>Copy Size</source>
 			<translation>Copy Size</translation>		 
-	        </message>
+	 </message>
 		<message>
 			<source>Copy All</source>
 			<translation>Copy All</translation>
