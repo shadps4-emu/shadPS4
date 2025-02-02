@@ -339,7 +339,7 @@
                </size>
               </property>
               <property name="title">
-               <string>Left Stick Mapping</string>
+               <string>Left Stick</string>
               </property>
               <layout class="QVBoxLayout" name="gb_left_stick_layout">
                <property name="leftMargin">
@@ -623,7 +623,7 @@
                 <item>
                  <widget class="QGroupBox" name="gb_l1">
                   <property name="title">
-                   <string>L1</string>
+                   <string>L1 / LB</string>
                   </property>
                   <layout class="QVBoxLayout" name="gb_l1_layout">
                    <property name="leftMargin">
@@ -647,7 +647,7 @@
                 <item>
                  <widget class="QGroupBox" name="gb_l2">
                   <property name="title">
-                   <string>L2</string>
+                   <string>L2 / LT</string>
                   </property>
                   <layout class="QVBoxLayout" name="gb_l2_layout">
                    <property name="leftMargin">
@@ -724,7 +724,7 @@
                 <item>
                  <widget class="QGroupBox" name="gb_r1">
                   <property name="title">
-                   <string>R1</string>
+                   <string>R1 / RB</string>
                   </property>
                   <layout class="QVBoxLayout" name="gb_r1_layout">
                    <property name="leftMargin">
@@ -748,7 +748,7 @@
                 <item>
                  <widget class="QGroupBox" name="gb_r2">
                   <property name="title">
-                   <string>R2</string>
+                   <string>R2 / LT</string>
                   </property>
                   <layout class="QVBoxLayout" name="gb_r2_layout">
                    <property name="leftMargin">
@@ -851,7 +851,7 @@
               <item>
                <widget class="QGroupBox" name="gb_start">
                 <property name="title">
-                 <string>Start</string>
+                 <string>Options / Start</string>
                 </property>
                 <layout class="QVBoxLayout" name="gb_start_layout">
                  <property name="leftMargin">
@@ -959,7 +959,7 @@
                      </size>
                     </property>
                     <property name="title">
-                     <string>Triangle</string>
+                     <string>Triangle / Y</string>
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_3">
                      <item>
@@ -986,7 +986,7 @@
                  <item>
                   <widget class="QGroupBox" name="gb_square">
                    <property name="title">
-                    <string>Square</string>
+                    <string>Square / X</string>
                    </property>
                    <layout class="QVBoxLayout" name="gb_square_layout">
                     <property name="leftMargin">
@@ -1010,7 +1010,7 @@
                  <item>
                   <widget class="QGroupBox" name="gb_circle">
                    <property name="title">
-                    <string>Circle</string>
+                    <string>Circle / B</string>
                    </property>
                    <layout class="QVBoxLayout" name="gb_circle_layout">
                     <property name="leftMargin">
@@ -1063,7 +1063,7 @@
                      </size>
                     </property>
                     <property name="title">
-                     <string>Cross</string>
+                     <string>Cross / A</string>
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_5">
                      <item>
@@ -1157,7 +1157,7 @@
                </size>
               </property>
               <property name="title">
-               <string>Right Stick Mapping</string>
+               <string>Right Stick</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_2">
                <property name="leftMargin">
