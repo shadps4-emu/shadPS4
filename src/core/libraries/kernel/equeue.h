@@ -86,7 +86,7 @@ struct EqueueEvent {
         is_triggered = true;
         auto hint = reinterpret_cast<u64>(data);
         if (hint != 0) {
-            auto event_id = event.ident << 48;
+            auto event_id = event.ident >> 48;
             auto hint_h = u32(hint >> 8) & 0xFFFFFF;
             auto ident_h = u32(event.ident >> 40);
             if ((u32(hint) & 0xFF) == event_id && event_id != 0xFE &&
