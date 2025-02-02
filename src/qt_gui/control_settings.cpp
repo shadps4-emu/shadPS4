@@ -9,8 +9,6 @@
 #include "kbm_config_dialog.h"
 #include "ui_control_settings.h"
 
-// #include "common/logging/log.h"
-
 static std::string game_id = "";
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -62,26 +60,13 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        game_id = ("default");
-    } else {
-        game_id = (ui->ProfileComboBox->currentText().toStdString());
-    }
-    const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
-
-    int lineCount = 0;
+    QList<QComboBox*> list;
+    list << ui->RStickUpBox << ui->RStickRightBox << ui->LStickUpBox << ui->LStickRightBox;
     int count_axis_left_x = 0;
     int count_axis_left_y = 0;
     int count_axis_right_x = 0;
     int count_axis_right_y = 0;
-    std::fstream file(config_file);
-    std::string line;
-    std::vector<std::string> lines;
-    std::string output_string = "";
-    std::string input_string = "";
 
-    QList<QComboBox*> list;
-    list << ui->RStickUpBox << ui->RStickRightBox << ui->LStickUpBox << ui->LStickRightBox;
     for (const auto& i : list) {
         if (i->currentText() == "axis_left_x") {
             count_axis_left_x = count_axis_left_x + 1;
@@ -101,6 +86,20 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
                                           "Cannot bind axis values more than once");
         return;
     }
+
+    if (ui->ProfileComboBox->currentText() == "Common Config") {
+        game_id = ("default");
+    } else {
+        game_id = (ui->ProfileComboBox->currentText().toStdString());
+    }
+    const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
+
+    int lineCount = 0;
+    std::string line;
+    std::vector<std::string> lines;
+    std::string output_string = "";
+    std::string input_string = "";
+    std::fstream file(config_file);
 
     while (std::getline(file, line)) {
         lineCount++;
@@ -130,6 +129,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         }
         lines.push_back(line);
     }
+
+    file.close();
 
     input_string = "cross";
     output_string = ui->ABox->currentText().toStdString();
@@ -255,6 +256,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     for (auto const& line : save) {
         output_file << line << '\n';
     }
+    output_file.close();
 
     Input::ParseInputConfig(game_id);
     if (CloseOnSave) {
@@ -338,11 +340,10 @@ void ControlSettings::SetUIValuestoMappings() {
         game_id = (ui->ProfileComboBox->currentText().toStdString());
     }
     const auto config_file = Config::GetFoolproofKbmConfigFile(game_id);
+    std::ifstream file(config_file);
 
     int lineCount = 0;
-    std::ifstream file(config_file);
     std::string line = "";
-
     while (std::getline(file, line)) {
         lineCount++;
 
@@ -429,8 +430,8 @@ void ControlSettings::SetUIValuestoMappings() {
 }
 
 void ControlSettings::GetGameTitle() {
-    if (ui->ProfileComboBox->currentText() == "Default") {
-        ui->TitleLabel->setText("Default Config");
+    if (ui->ProfileComboBox->currentText() == "Common Config") {
+        ui->TitleLabel->setText("Common Config");
     } else {
         for (int i = 0; i < m_game_info->m_games.size(); i++) {
             if (m_game_info->m_games[i].serial ==
