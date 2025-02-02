@@ -87,16 +87,17 @@ struct EqueueEvent {
         auto hint = reinterpret_cast<u64>(data);
         if (hint != 0) {
             auto event_id = event.ident >> 48;
-            auto hint_h = u32(hint >> 8) & 0xFFFFFF;
-            auto ident_h = u32(event.ident >> 40);
-            if ((u32(hint) & 0xFF) == event_id && event_id != 0xFE &&
+            auto hint_h = static_cast<u32>(hint >> 8) & 0xFFFFFF;
+            auto ident_h = static_cast<u32>(event.ident >> 40);
+            if ((static_cast<u32>(hint) & 0xFF) == event_id && event_id != 0xFE &&
                 ((hint_h ^ ident_h) & 0xFF) == 0) {
                 auto time = Common::FencedRDTSC();
                 auto mask = 0xF000;
-                if ((u32(event.data) & 0xF000) != 0xF000) {
-                    mask = (u32(event.data) + 0x1000) & 0xF000;
+                if ((static_cast<u32>(event.data) & 0xF000) != 0xF000) {
+                    mask = (static_cast<u32>(event.data) + 0x1000) & 0xF000;
                 }
-                event.data = (mask | u64(u32(time) & 0xFFF) | (hint & 0xFFFFFFFFFFFF0000));
+                event.data = (mask | static_cast<u64>(static_cast<u32>(time) & 0xFFF) |
+                                (hint & 0xFFFFFFFFFFFF0000));
             }
         }
     }
