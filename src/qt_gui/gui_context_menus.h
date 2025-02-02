@@ -340,7 +340,6 @@ public:
         }
 
         // Handle the "Copy" actions
-
         if (selected == copyName) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].name));
