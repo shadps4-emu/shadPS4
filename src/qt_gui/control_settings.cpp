@@ -5,7 +5,6 @@
 #include <QMessageBox>
 #include "common/path_util.h"
 #include "control_settings.h"
-#include "input/input_handler.h"
 #include "kbm_config_dialog.h"
 #include "ui_control_settings.h"
 
@@ -60,11 +59,8 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     QList<QComboBox*> list;
     list << ui->RStickUpBox << ui->RStickRightBox << ui->LStickUpBox << ui->LStickRightBox;
-    int count_axis_left_x = 0;
-    int count_axis_left_y = 0;
-    int count_axis_right_x = 0;
-    int count_axis_right_y = 0;
-
+    int count_axis_left_x = 0, count_axis_left_y = 0, count_axis_right_x = 0,
+        count_axis_right_y = 0;
     for (const auto& i : list) {
         if (i->currentText() == "axis_left_x") {
             count_axis_left_x = count_axis_left_x + 1;
@@ -96,8 +92,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     int lineCount = 0;
     std::string line;
     std::vector<std::string> lines;
-    std::string output_string = "";
-    std::string input_string = "";
+    std::string output_string = "", input_string = "";
     std::fstream file(config_file);
 
     while (std::getline(file, line)) {
@@ -228,8 +223,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue);
 
     std::vector<std::string> save;
-    bool CurrentLineEmpty = false;
-    bool LastLineEmpty = false;
+    bool CurrentLineEmpty = false, LastLineEmpty = false;
     for (auto const& line : lines) {
         if (CurrentLineEmpty) {
             LastLineEmpty = true;
@@ -258,9 +252,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
 
-    if (CloseOnSave) {
+    if (CloseOnSave)
         QWidget::close();
-    }
 }
 
 void ControlSettings::SetDefault() {
@@ -340,26 +333,11 @@ void ControlSettings::SetUIValuestoMappings() {
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
     std::ifstream file(config_file);
 
-    bool CrossExists = false;
-    bool CircleExists = false;
-    bool SquareExists = false;
-    bool TriangleExists = false;
-    bool L1Exists = false;
-    bool L2Exists = false;
-    bool L3Exists = false;
-    bool R1Exists = false;
-    bool R2Exists = false;
-    bool R3Exists = false;
-    bool DPadUpExists = false;
-    bool DPadDownExists = false;
-    bool DPadLeftExists = false;
-    bool DPadRightExists = false;
-    bool StartExists = false;
-    bool BackExists = false;
-    bool LStickXExists = false;
-    bool LStickYExists = false;
-    bool RStickXExists = false;
-    bool RStickYExists = false;
+    bool CrossExists = false, CircleExists = false, SquareExists = false, TriangleExists = false,
+         L1Exists = false, L2Exists = false, L3Exists = false, R1Exists = false, R2Exists = false,
+         R3Exists = false, DPadUpExists = false, DPadDownExists = false, DPadLeftExists = false,
+         DPadRightExists = false, StartExists = false, BackExists = false, LStickXExists = false,
+         LStickYExists = false, RStickXExists = false, RStickYExists = false;
     int lineCount = 0;
     std::string line = "";
     while (std::getline(file, line)) {
