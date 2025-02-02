@@ -159,7 +159,8 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
     }
 
-    OrbisVideoOutInternalEventId internal_event_id = static_cast<OrbisVideoOutInternalEventId>(ev->ident);
+    OrbisVideoOutInternalEventId internal_event_id =
+        static_cast<OrbisVideoOutInternalEventId>(ev->ident);
     switch (internal_event_id) {
     case OrbisVideoOutInternalEventId::Flip:
         return static_cast<s32>(OrbisVideoOutEventId::Flip);

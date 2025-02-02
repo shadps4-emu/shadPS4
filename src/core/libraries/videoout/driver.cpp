@@ -185,9 +185,11 @@ void VideoOutDriver::Flip(const Request& req) {
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
         if (event != nullptr) {
-            event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
-                                Kernel::SceKernelEvent::Filter::VideoOut,
-                                reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) | (req.flip_arg << 16)));
+            event->TriggerEvent(
+                static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
+                Kernel::SceKernelEvent::Filter::VideoOut,
+                reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) |
+                                        (req.flip_arg << 16)));
         }
     }
 
