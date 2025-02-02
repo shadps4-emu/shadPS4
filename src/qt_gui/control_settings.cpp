@@ -255,13 +255,12 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
     output_file.close();
 
-    Input::ParseInputConfig(config_id);
+    Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
+    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+
     if (CloseOnSave) {
         QWidget::close();
     }
-
-    Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
-    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
 }
 
 void ControlSettings::SetDefault() {
