@@ -125,8 +125,8 @@
 			<translation>Copy Serial</translation>
 		</message>
 		<message>
-			<source>Copy Firmware</source>
-			<translation>Copy Firmware</translation>
+			<source>Copy Version</source>
+			<translation>Copy Version</translation>
 		</message>
 		<message>
 			<source>Copy Size</source>
