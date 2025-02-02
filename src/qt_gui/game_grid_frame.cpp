@@ -162,6 +162,12 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
         return;
     }
 
+    if (!Config::getShowBackgroundImage()) {
+        backgroundImage = QImage();
+        RefreshGridBackgroundImage();
+        return;
+    }
+
     const auto& game = (*m_games_shared)[itemID];
     const int opacity = Config::getBackgroundImageOpacity();
     const auto cache_path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
@@ -195,14 +201,14 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
 }
 
 void GameGridFrame::RefreshGridBackgroundImage() {
-    if (!backgroundImage.isNull()) {
-        QPalette palette;
+    QPalette palette;
+    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
         palette.setBrush(QPalette::Base,
                          QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
-        QColor transparentColor = QColor(135, 206, 235, 40);
-        palette.setColor(QPalette::Highlight, transparentColor);
-        this->setPalette(palette);
     }
+    QColor transparentColor = QColor(135, 206, 235, 40);
+    palette.setColor(QPalette::Highlight, transparentColor);
+    this->setPalette(palette);
 }
 
 bool GameGridFrame::IsValidCellSelected() {

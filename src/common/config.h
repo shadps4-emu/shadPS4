@@ -31,6 +31,7 @@ bool getSeparateUpdateEnabled();
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
 int getBackgroundImageOpacity();
+bool getShowBackgroundImage();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -90,6 +91,7 @@ void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
 void setBackgroundImageOpacity(int opacity);
+void setShowBackgroundImage(bool show);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);

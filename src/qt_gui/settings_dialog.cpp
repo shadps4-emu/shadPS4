@@ -174,7 +174,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
-        // Add background image opacity slider connection
+        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this,
+                [](int state) { Config::setShowBackgroundImage(state == Qt::Checked); });
         connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
                 [](int value) { Config::setBackgroundImageOpacity(value); });
     }
@@ -416,6 +417,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
     ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
+    ui->showBackgroundImageCheckBox->setChecked(Config::getShowBackgroundImage());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -646,6 +648,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
+    Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
+    Config::setShowBackgroundImage(ui->showBackgroundImageCheckBox->isChecked());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();

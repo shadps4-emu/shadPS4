@@ -167,6 +167,13 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
+    // If background images are hidden, clear the background image
+    if (!Config::getShowBackgroundImage()) {
+        backgroundImage = QImage();
+        RefreshListBackgroundImage();
+        return;
+    }
+
     const auto& game = m_game_info->m_games[item->row()];
     const int opacity = Config::getBackgroundImageOpacity();
     const auto cache_path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
@@ -200,14 +207,14 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 }
 
 void GameListFrame::RefreshListBackgroundImage() {
-    if (!backgroundImage.isNull()) {
-        QPalette palette;
+    QPalette palette;
+    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
         palette.setBrush(QPalette::Base,
                          QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
-        QColor transparentColor = QColor(135, 206, 235, 40);
-        palette.setColor(QPalette::Highlight, transparentColor);
-        this->setPalette(palette);
     }
+    QColor transparentColor = QColor(135, 206, 235, 40);
+    palette.setColor(QPalette::Highlight, transparentColor);
+    this->setPalette(palette);
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {
