@@ -40,7 +40,7 @@ sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-
 #### NixOS
 
 ```
-nix-shell documents/building-nixos/shell.nix
+nix-shell shell.nix
 ```
 
 #### Other Linux distributions
