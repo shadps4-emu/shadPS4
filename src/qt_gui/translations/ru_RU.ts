@@ -19,7 +19,7 @@
     </message>
     <message>
         <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>Это програмное обеспечение не должно использоваться для запуска игр, которые вы получили нелегально.</translation>
+        <translation>Это программное обеспечение не должно использоваться для запуска игр, которые вы получили нелегально.</translation>
     </message>
 </context>
 <context>
@@ -481,7 +481,7 @@
     </message>
     <message>
         <source>PKG Version %1 is older than installed version: </source>
-        <translation>Версия PKG %1 старее установленной версии: </translation>
+        <translation>Версия PKG %1 старше установленной версии: </translation>
     </message>
     <message>
         <source>Game is installed: </source>
@@ -545,7 +545,7 @@
     </message>
     <message>
         <source>PKG is a patch or DLC, please install the game first!</source>
-        <translation>Выбранный PKG это патч или DLC, сначала установите игру!</translation>
+        <translation>Выбранный PKG является патчем или DLC, пожалуйста, сначала установите игру!</translation>
     </message>
     <message>
         <source>Game is already running!</source>
@@ -866,7 +866,7 @@
     </message>
     <message>
         <source>consoleLanguageGroupBox</source>
-        <translation>Язык консоли:\nУстановите язык, который будет использоваться в играх PS4.\nРекомендуется устанавливать язык который поддерживается игрой, так как он может отличаться в зависимости от региона.</translation>
+        <translation>Язык консоли:\nУстановите язык, который будет использоваться в играх PS4.\nРекомендуется устанавливать язык, который поддерживается игрой, так как он может отличаться в зависимости от региона.</translation>
     </message>
     <message>
         <source>emulatorLanguageGroupBox</source>
@@ -874,7 +874,7 @@
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Полноэкранный режим:\nАвтоматически переводит игровое окно в полноэкранный режим.\nЭто можно переключить, нажав клавишу F11..</translation>
+        <translation>Полноэкранный режим:\nАвтоматически переводит игровое окно в полноэкранный режим.\nЭто можно переключить, нажав клавишу F11.</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
@@ -918,7 +918,7 @@
     </message>
     <message>
         <source>disableTrophycheckBox</source>
-        <translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по прежнему можно отслеживать в меню просмотра трофеев (правая кнопка мыши по игре в главном окне).</translation>
+        <translation>Отключить уведомления о трофеях:\nОтключает внутриигровые уведомления о трофеях. Прогресс трофеев по-прежнему можно отслеживать в меню просмотра трофеев (правая кнопка мыши по игре в главном окне).</translation>
     </message>
     <message>
         <source>hideCursorGroupBox</source>
@@ -1018,7 +1018,7 @@
     </message>
     <message>
         <source>rdocCheckBox</source>
-        <translation>Включить отладку RenderDoc:\nЕсли включено, эмулятор обеспечит совместимость с Renderdoc, позволяя захватывать и анализировать текущие кадры во время рендеринга.</translation>
+        <translation>Включить отладку RenderDoc:\nЕсли включено, эмулятор обеспечит совместимость с RenderDoc, позволяя захватывать и анализировать текущие кадры во время рендеринга.</translation>
     </message>
     <message>
         <source>collectShaderCheckBox</source>
@@ -1026,7 +1026,7 @@
     </message>
     <message>
         <source>crashDiagnosticsCheckBox</source>
-        <translation>Диагностика сбоев:\nСоздает .yaml файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Cлои валидации Vulkan и установить Vulkan SDK.</translation>
+        <translation>Диагностика сбоев:\nСоздает .yaml файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
     </message>
     <message>
         <source>copyGPUBuffersCheckBox</source>
@@ -1042,7 +1042,7 @@
     </message>
     <message>
         <source>saveDataBox</source>
-        <translation>Путь сохранений:\nПапка, в которой будут хранится сохранения игр.</translation>
+        <translation>Путь сохранений:\nПапка, в которой будут храниться сохранения игр.</translation>
     </message>
     <message>
         <source>browseButton</source>
@@ -1404,7 +1404,7 @@
     </message>
     <message>
         <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Игра не иницализируется правильно / эмулятор вылетает</translation>
+        <translation>Игра не инициализируется правильно / эмулятор вылетает</translation>
     </message>
     <message>
         <source>Game boots, but only displays a blank screen</source>
