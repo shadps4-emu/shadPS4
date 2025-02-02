@@ -202,16 +202,17 @@ public:
         return result;
     }
 
-    QImage ChangeImageOpacity(const QImage& image, const QRect& rect, float opacity) {
+    // Opacity is a float between 0 and 1
+    static QImage ChangeImageOpacity(const QImage& image, const QRect& rect, float opacity) {
         // Convert to ARGB32 format to ensure alpha channel support
         QImage result = image.convertToFormat(QImage::Format_ARGB32);
-        
+
         // Ensure opacity is between 0 and 1
         opacity = std::clamp(opacity, 0.0f, 1.0f);
-        
+
         // Convert opacity to integer alpha value (0-255)
         int alpha = static_cast<int>(opacity * 255);
-        
+
         // Process only the specified rectangle area
         for (int y = rect.top(); y <= rect.bottom(); ++y) {
             QRgb* line = reinterpret_cast<QRgb*>(result.scanLine(y));
@@ -223,7 +224,20 @@ public:
                 line[x] = qRgba(qRed(pixel), qGreen(pixel), qBlue(pixel), newAlpha);
             }
         }
-        
+
         return result;
+    }
+
+    void CleanupOldOpacityImages(const std::filesystem::path& dir) {
+        if (!std::filesystem::exists(dir)) {
+            return;
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+            const auto& path = entry.path();
+            if (path.filename().string().starts_with("pic1") && path.extension() == ".png") {
+                std::filesystem::remove(path);
+            }
+        }
     }
 };

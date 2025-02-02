@@ -95,6 +95,7 @@ std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en";
+static int backgroundImageOpacity = 50;
 
 // Language
 u32 m_language = 1; // english
@@ -611,6 +612,14 @@ u32 GetLanguage() {
     return m_language;
 }
 
+int getBackgroundImageOpacity() {
+    return backgroundImageOpacity;
+}
+
+void setBackgroundImageOpacity(int opacity) {
+    backgroundImageOpacity = std::clamp(opacity, 0, 100);
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -655,6 +664,7 @@ void load(const std::filesystem::path& path) {
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
+        backgroundImageOpacity = toml::find_or<int>(general, "backgroundImageOpacity", 50);
     }
 
     if (data.contains("Input")) {
@@ -783,6 +793,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["General"]["backgroundImageOpacity"] = backgroundImageOpacity;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -914,6 +925,7 @@ void setDefaultValues() {
     separateupdatefolder = false;
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
+    backgroundImageOpacity = 50;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {

@@ -30,6 +30,7 @@ bool getEnableDiscordRPC();
 bool getSeparateUpdateEnabled();
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
+int getBackgroundImageOpacity();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -88,6 +89,7 @@ void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_insta
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
+void setBackgroundImageOpacity(int opacity);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);

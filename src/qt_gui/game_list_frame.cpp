@@ -167,26 +167,35 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path;
-    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
-    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                 m_game_info->m_games[item->row()].serial / "pic1.png";
-    QString blurredPic1PathQt;
-    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
+    const auto& game = m_game_info->m_games[item->row()];
+    const int opacity = Config::getBackgroundImageOpacity();
+    const auto cache_path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                            game.serial / fmt::format("pic1_{}.png", opacity);
 
-    backgroundImage = QImage(blurredPic1PathQt);
-    if (backgroundImage.isNull()) {
-        QImage image(pic1Path);
-        backgroundImage = m_game_list_utils.ChangeImageOpacity(image, image.rect(), 0.5);
-
-        std::filesystem::path img_path =
-            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-            m_game_info->m_games[item->row()].serial;
-        std::filesystem::create_directories(img_path);
-        if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
-            // qDebug() << "Error: Unable to save image.";
+    // Fast path - try to load cached version first
+    if (std::filesystem::exists(cache_path)) {
+        backgroundImage = QImage(QString::fromStdString(cache_path.string()));
+        if (!backgroundImage.isNull()) {
+            RefreshListBackgroundImage();
+            return;
         }
     }
+
+    // Cache miss - generate and store
+    m_game_list_utils.CleanupOldOpacityImages(cache_path.parent_path());
+    QImage original_image(QString::fromStdString(game.pic_path.string()));
+    if (!original_image.isNull()) {
+        std::filesystem::create_directories(cache_path.parent_path());
+        backgroundImage = m_game_list_utils.ChangeImageOpacity(
+            original_image, original_image.rect(), opacity / 100.0f);
+        if (!backgroundImage.isNull()) {
+            // Save the image to the cache asynchronously
+            QFuture<void> future = QtConcurrent::run([this, cache_path]() {
+                backgroundImage.save(QString::fromStdString(cache_path.string()), "PNG");
+            });
+        }
+    }
+
     RefreshListBackgroundImage();
 }
 

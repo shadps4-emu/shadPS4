@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fmt/format.h>
+
 #include "common/path_util.h"
 #include "game_grid_frame.h"
 #include "qt_gui/compatibility_info.h"
@@ -153,32 +155,43 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
 }
 
 void GameGridFrame::SetGridBackgroundImage(int row, int column) {
-
     int itemID = (row * this->columnCount()) + column;
     QWidget* item = this->cellWidget(row, column);
-    if (item) {
-        QString pic1Path;
-        Common::FS::PathToQString(pic1Path, (*m_games_shared)[itemID].pic_path);
-        const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                     (*m_games_shared)[itemID].serial / "pic1.png";
-        QString blurredPic1PathQt;
-        Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
-
-        backgroundImage = QImage(blurredPic1PathQt);
-        if (backgroundImage.isNull()) {
-            QImage image(pic1Path);
-            backgroundImage = m_game_list_utils.ChangeImageOpacity(image, image.rect(), 0.5);
-
-            std::filesystem::path img_path =
-                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                (*m_games_shared)[itemID].serial;
-            std::filesystem::create_directories(img_path);
-            if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
-                // qDebug() << "Error: Unable to save image.";
-            }
-        }
-        RefreshGridBackgroundImage();
+    if (!item) {
+        // handle case where no item was clicked
+        return;
     }
+
+    const auto& game = (*m_games_shared)[itemID];
+    const int opacity = Config::getBackgroundImageOpacity();
+    const auto cache_path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                            game.serial / fmt::format("pic1_{}.png", opacity);
+
+    // Fast path - try to load cached version first
+    if (std::filesystem::exists(cache_path)) {
+        backgroundImage = QImage(QString::fromStdString(cache_path.string()));
+        if (!backgroundImage.isNull()) {
+            RefreshGridBackgroundImage();
+            return;
+        }
+    }
+
+    // Cache miss - generate and store
+    m_game_list_utils.CleanupOldOpacityImages(cache_path.parent_path());
+    QImage original_image(QString::fromStdString(game.pic_path.string()));
+    if (!original_image.isNull()) {
+        std::filesystem::create_directories(cache_path.parent_path());
+        backgroundImage = m_game_list_utils.ChangeImageOpacity(
+            original_image, original_image.rect(), opacity / 100.0f);
+        if (!backgroundImage.isNull()) {
+            // Save the image to the cache asynchronously
+            QFuture<void> future = QtConcurrent::run([this, cache_path]() {
+                backgroundImage.save(QString::fromStdString(cache_path.string()), "PNG");
+            });
+        }
+    }
+
+    RefreshGridBackgroundImage();
 }
 
 void GameGridFrame::RefreshGridBackgroundImage() {

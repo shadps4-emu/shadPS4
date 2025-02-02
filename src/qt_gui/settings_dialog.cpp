@@ -173,6 +173,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     {
         connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
+
+        // Add background image opacity slider connection
+        connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
+                [](int value) { Config::setBackgroundImageOpacity(value); });
     }
     // Input TAB
     {
@@ -251,6 +255,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 #ifdef ENABLE_UPDATER
         ui->updaterGroupBox->installEventFilter(this);
 #endif
+        ui->GUIBackgroundImageGroupBox->installEventFilter(this);
         ui->GUIMusicGroupBox->installEventFilter(this);
         ui->disableTrophycheckBox->installEventFilter(this);
         ui->enableCompatibilityCheckBox->installEventFilter(this);
@@ -410,6 +415,7 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
+    ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -504,6 +510,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "updaterGroupBox") {
         text = tr("updaterGroupBox");
 #endif
+    } else if (elementName == "GUIBackgroundImageGroupBox") {
+        text = tr("GUIBackgroundImageGroupBox");
     } else if (elementName == "GUIMusicGroupBox") {
         text = tr("GUIMusicGroupBox");
     } else if (elementName == "disableTrophycheckBox") {
