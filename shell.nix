@@ -1,3 +1,5 @@
+### Vulkan packages in official nix repo are still using version 1.3.296.0 while 1.4.305 or 1.4.304.0 is required for this package, so we have to use a custom vulkan packages to build shadPS4.
+
 with import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/606996d74f6e2a12635d41c1bf58bfc7ea3bb5ec.tar.gz") { };
 
 let
