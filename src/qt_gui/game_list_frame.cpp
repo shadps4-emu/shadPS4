@@ -171,6 +171,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     // If background images are hidden, clear the background image
     if (!Config::getShowBackgroundImage()) {
         backgroundImage = QImage();
+        m_last_opacity = -1;         // Reset opacity tracking when disabled
+        m_current_game_path.clear(); // Reset current game path
         RefreshListBackgroundImage();
         return;
     }
@@ -178,10 +180,15 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     const auto& game = m_game_info->m_games[item->row()];
     const int opacity = Config::getBackgroundImageOpacity();
 
-    QImage original_image(QString::fromStdString(game.pic_path.string()));
-    if (!original_image.isNull()) {
-        backgroundImage = m_game_list_utils.ChangeImageOpacity(
-            original_image, original_image.rect(), opacity / 100.0f);
+    // Recompute if opacity changed or we switched to a different game
+    if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
+        QImage original_image(QString::fromStdString(game.pic_path.string()));
+        if (!original_image.isNull()) {
+            backgroundImage = m_game_list_utils.ChangeImageOpacity(
+                original_image, original_image.rect(), opacity / 100.0f);
+            m_last_opacity = opacity;
+            m_current_game_path = game.pic_path;
+        }
     }
 
     RefreshListBackgroundImage();

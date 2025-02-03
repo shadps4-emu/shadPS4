@@ -45,6 +45,8 @@ private:
     GameInfoClass* game_inf_get = nullptr;
     bool ListSortedAsc = true;
     QTableWidgetItem* m_current_item = nullptr;
+    int m_last_opacity = -1; // Track last opacity to avoid unnecessary recomputation
+    std::filesystem::path m_current_game_path; // Track current game path to detect changes
 
 public:
     void PopulateGameList(bool isInitialPopulation = true);

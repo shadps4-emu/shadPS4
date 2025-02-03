@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/format.h>
-
 #include "common/path_util.h"
 #include "game_grid_frame.h"
 #include "qt_gui/compatibility_info.h"
@@ -165,6 +163,8 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     // If background images are hidden, clear the background image
     if (!Config::getShowBackgroundImage()) {
         backgroundImage = QImage();
+        m_last_opacity = -1;         // Reset opacity tracking when disabled
+        m_current_game_path.clear(); // Reset current game path
         RefreshGridBackgroundImage();
         return;
     }
@@ -172,10 +172,15 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     const auto& game = (*m_games_shared)[itemID];
     const int opacity = Config::getBackgroundImageOpacity();
 
-    QImage original_image(QString::fromStdString(game.pic_path.string()));
-    if (!original_image.isNull()) {
-        backgroundImage = m_game_list_utils.ChangeImageOpacity(
-            original_image, original_image.rect(), opacity / 100.0f);
+    // Recompute if opacity changed or we switched to a different game
+    if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
+        QImage original_image(QString::fromStdString(game.pic_path.string()));
+        if (!original_image.isNull()) {
+            backgroundImage = m_game_list_utils.ChangeImageOpacity(
+                original_image, original_image.rect(), opacity / 100.0f);
+            m_last_opacity = opacity;
+            m_current_game_path = game.pic_path;
+        }
     }
 
     RefreshGridBackgroundImage();
