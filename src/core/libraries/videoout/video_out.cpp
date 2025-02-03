@@ -50,7 +50,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = u64(OrbisVideoOutEventId::Flip);
+    event.event.ident = static_cast<u64>(OrbisVideoOutInternalEventId::Flip);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     event.event.flags = Kernel::SceKernelEvent::Flags::Add;
     event.event.udata = udata;
@@ -76,7 +76,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     }
 
     Kernel::EqueueEvent event{};
-    event.event.ident = u64(OrbisVideoOutEventId::Vblank);
+    event.event.ident = static_cast<u64>(OrbisVideoOutInternalEventId::Vblank);
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     event.event.flags = Kernel::SceKernelEvent::Flags::Add;
     event.event.udata = udata;
@@ -156,9 +156,27 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
-        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
     }
-    return ev->ident;
+
+    OrbisVideoOutInternalEventId internal_event_id =
+        static_cast<OrbisVideoOutInternalEventId>(ev->ident);
+    switch (internal_event_id) {
+    case OrbisVideoOutInternalEventId::Flip:
+        return static_cast<s32>(OrbisVideoOutEventId::Flip);
+    case OrbisVideoOutInternalEventId::Vblank:
+    case OrbisVideoOutInternalEventId::SysVblank:
+        return static_cast<s32>(OrbisVideoOutEventId::Vblank);
+    case OrbisVideoOutInternalEventId::PreVblankStart:
+        return static_cast<s32>(OrbisVideoOutEventId::PreVblankStart);
+    case OrbisVideoOutInternalEventId::SetMode:
+        return static_cast<s32>(OrbisVideoOutEventId::SetMode);
+    case OrbisVideoOutInternalEventId::Position:
+        return static_cast<s32>(OrbisVideoOutEventId::Position);
+    default: {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
+    }
+    }
 }
 
 int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
