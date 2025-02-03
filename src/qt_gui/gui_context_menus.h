@@ -77,10 +77,14 @@ public:
         QMenu* copyMenu = new QMenu(tr("Copy info..."), widget);
         QAction* copyName = new QAction(tr("Copy Name"), widget);
         QAction* copySerial = new QAction(tr("Copy Serial"), widget);
+        QAction* copyVersion = new QAction(tr("Copy Version"), widget);
+        QAction* copySize = new QAction(tr("Copy Size"), widget);
         QAction* copyNameAll = new QAction(tr("Copy All"), widget);
 
         copyMenu->addAction(copyName);
         copyMenu->addAction(copySerial);
+        copyMenu->addAction(copyVersion);
+        copyMenu->addAction(copySize);
         copyMenu->addAction(copyNameAll);
 
         menu.addMenu(copyMenu);
@@ -344,6 +348,16 @@ public:
         if (selected == copySerial) {
             QClipboard* clipboard = QGuiApplication::clipboard();
             clipboard->setText(QString::fromStdString(m_games[itemID].serial));
+        }
+
+        if (selected == copyVersion) {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            clipboard->setText(QString::fromStdString(m_games[itemID].version));
+        }
+
+        if (selected == copySize) {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            clipboard->setText(QString::fromStdString(m_games[itemID].size));
         }
 
         if (selected == copyNameAll) {

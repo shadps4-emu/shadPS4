@@ -129,6 +129,14 @@
 			<translation>Seriennummer kopieren</translation>
 		</message>
 		<message>
+		        <source>Copy Version</source>
+			<translation>Version kopieren</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Größe kopieren</translation>
+		</message>
+		<message>
 			<source>Copy All</source>
 			<translation>Alles kopieren</translation>
 		</message>
@@ -1419,6 +1427,33 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Unbekannt</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nichts</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Startet</translation>		
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menüs</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>ImSpiel</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spielbar</translation>
 		</message>
 	</context>
 </TS>

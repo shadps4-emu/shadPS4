@@ -125,6 +125,14 @@
 			<translation>Copy Serial</translation>
 		</message>
 		<message>
+			<source>Copy Version</source>
+			<translation>Copy Version</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Copy Size</translation>		 
+	 </message>
+		<message>
 			<source>Copy All</source>
 			<translation>Copy All</translation>
 		</message>
