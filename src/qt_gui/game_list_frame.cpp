@@ -176,31 +176,11 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 
     const auto& game = m_game_info->m_games[item->row()];
     const int opacity = Config::getBackgroundImageOpacity();
-    const auto cache_path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                            game.serial / fmt::format("pic1_{}.png", opacity);
 
-    // Fast path - try to load cached version first
-    if (std::filesystem::exists(cache_path)) {
-        backgroundImage = QImage(QString::fromStdString(cache_path.string()));
-        if (!backgroundImage.isNull()) {
-            RefreshListBackgroundImage();
-            return;
-        }
-    }
-
-    // Cache miss - generate and store
-    m_game_list_utils.CleanupOldOpacityImages(cache_path.parent_path());
     QImage original_image(QString::fromStdString(game.pic_path.string()));
     if (!original_image.isNull()) {
-        std::filesystem::create_directories(cache_path.parent_path());
         backgroundImage = m_game_list_utils.ChangeImageOpacity(
             original_image, original_image.rect(), opacity / 100.0f);
-        if (!backgroundImage.isNull()) {
-            // Save the image to the cache asynchronously
-            QFuture<void> future = QtConcurrent::run([this, cache_path]() {
-                backgroundImage.save(QString::fromStdString(cache_path.string()), "PNG");
-            });
-        }
     }
 
     RefreshListBackgroundImage();
