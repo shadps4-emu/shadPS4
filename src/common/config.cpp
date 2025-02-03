@@ -673,8 +673,6 @@ void load(const std::filesystem::path& path) {
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
-        backgroundImageOpacity = toml::find_or<int>(general, "backgroundImageOpacity", 50);
-        showBackgroundImage = toml::find_or<bool>(general, "showBackgroundImage", true);
     }
 
     if (data.contains("Input")) {
@@ -751,6 +749,8 @@ void load(const std::filesystem::path& path) {
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en");
+        backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
+        showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
     }
 
     if (data.contains("Settings")) {
@@ -803,8 +803,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-    data["General"]["backgroundImageOpacity"] = backgroundImageOpacity;
-    data["General"]["showBackgroundImage"] = showBackgroundImage;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["backButtonBehavior"] = backButtonBehavior;
@@ -843,6 +841,8 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["GUI"]["emulatorLanguage"] = emulator_language;
+    data["GUI"]["backgroundImageOpacity"] = backgroundImageOpacity;
+    data["GUI"]["showBackgroundImage"] = showBackgroundImage;
     data["Settings"]["consoleLanguage"] = m_language;
 
     std::ofstream file(path, std::ios::binary);
