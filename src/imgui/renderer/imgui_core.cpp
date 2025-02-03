@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/path_util.h"
+#include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
@@ -14,7 +15,7 @@
 #include "imgui_internal.h"
 #include "sdl_window.h"
 #include "texture_manager.h"
-#include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
@@ -49,7 +50,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
+    io.DisplaySize = ImVec2((float)window.GetWidth(), (float)window.GetHeight());
     PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f); // Makes the window edges rounded
 
     auto path = config_path.u8string();
@@ -83,7 +84,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     StyleColorsDark();
 
     ::Core::Devtools::Layer::SetupSettings();
-    Sdl::Init(window.GetSdlWindow());
+    Sdl::Init(window.GetSDLWindow());
 
     const Vulkan::InitInfo vk_info{
         .instance = instance.GetInstance(),
@@ -108,7 +109,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFormatString(label, IM_ARRAYSIZE(label), "WindowOverViewport_%08X", GetMainViewport()->ID);
     dock_id = ImHashStr(label);
 
-    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSdlWindow()); dpi > 0.0f) {
+    if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSDLWindow()); dpi > 0.0f) {
         GetIO().FontGlobalScale = dpi;
     }
 }
@@ -147,7 +148,7 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
         const auto& io = GetIO();
         return io.WantCaptureMouse && io.Ctx->NavWindow != nullptr &&
-               io.Ctx->NavWindow->ID != dock_id;
+               (io.Ctx->NavWindow->Flags & ImGuiWindowFlags_NoNav) == 0;
     }
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN: {
@@ -167,7 +168,7 @@ bool ProcessEvent(SDL_Event* event) {
     }
 }
 
-void NewFrame() {
+ImGuiID NewFrame(bool is_reusing_frame) {
     {
         std::scoped_lock lock{change_layers_mutex};
         while (!change_layers.empty()) {
@@ -182,24 +183,32 @@ void NewFrame() {
         }
     }
 
-    Sdl::NewFrame();
+    Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
 
-    DockSpaceOverViewport(0, GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGuiWindowFlags flags =
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
+    if (!DebugState.IsShowingDebugMenuBar()) {
+        flags |= ImGuiDockNodeFlags_NoTabBar;
+    }
+    ImGuiID dockId = DockSpaceOverViewport(0, GetMainViewport(), flags);
 
     for (auto* layer : layers) {
         layer->Draw();
     }
+
+    return dockId;
 }
 
-void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
+void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
+            const vk::Extent2D& extent) {
     ImGui::Render();
     ImDrawData* draw_data = GetDrawData();
     if (draw_data->CmdListsCount == 0) {
         return;
     }
 
-    if (Config::vkMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",
         });
@@ -207,16 +216,16 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
 
     vk::RenderingAttachmentInfo color_attachments[1]{
         {
-            .imageView = frame->image_view,
+            .imageView = image_view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .loadOp = vk::AttachmentLoadOp::eClear,
             .storeOp = vk::AttachmentStoreOp::eStore,
         },
     };
     vk::RenderingInfo render_info{};
     render_info.renderArea = vk::Rect2D{
         .offset = {0, 0},
-        .extent = {frame->width, frame->height},
+        .extent = extent,
     };
     render_info.layerCount = 1;
     render_info.colorAttachmentCount = 1;
@@ -224,9 +233,13 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
     cmdbuf.beginRendering(render_info);
     Vulkan::RenderDrawData(*draw_data, cmdbuf);
     cmdbuf.endRendering();
-    if (Config::vkMarkersEnabled()) {
+    if (Config::getVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
+}
+
+bool MustKeepDrawing() {
+    return layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
 }
 
 } // namespace Core

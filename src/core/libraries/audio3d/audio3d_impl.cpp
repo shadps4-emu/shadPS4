@@ -6,7 +6,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/kernel.h"
 
 using namespace Libraries::Kernel;
 

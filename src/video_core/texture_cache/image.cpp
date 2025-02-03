@@ -61,6 +61,15 @@ bool ImageInfo::IsDepthStencil() const {
     }
 }
 
+bool ImageInfo::HasStencil() const {
+    if (pixel_format == vk::Format::eD32SfloatS8Uint ||
+        pixel_format == vk::Format::eD24UnormS8Uint ||
+        pixel_format == vk::Format::eD16UnormS8Uint) {
+        return true;
+    }
+    return false;
+}
+
 static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
@@ -135,22 +144,21 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
              const ImageInfo& info_)
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
-      image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{info.guest_address},
-      cpu_addr_end{cpu_addr + info.guest_size_bytes} {
+      image{instance->GetDevice(), instance->GetAllocator()} {
+    if (info.pixel_format == vk::Format::eUndefined) {
+        return;
+    }
     mip_hashes.resize(info.resources.levels);
-    ASSERT(info.pixel_format != vk::Format::eUndefined);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
-    if (info.props.is_cube || (info.type == vk::ImageType::e2D && info.resources.layers >= 6)) {
-        flags |= vk::ImageCreateFlagBits::eCubeCompatible;
-    } else if (info.props.is_volume) {
+    if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
 
-    usage = ImageUsageFlags(info);
-    format_features = FormatFeatureFlags(usage);
+    usage_flags = ImageUsageFlags(info);
+    format_features = FormatFeatureFlags(usage_flags);
 
     switch (info.pixel_format) {
     case vk::Format::eD16Unorm:
@@ -170,7 +178,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     constexpr auto tiling = vk::ImageTiling::eOptimal;
     const auto supported_format = instance->GetSupportedFormat(info.pixel_format, format_features);
     const auto properties = instance->GetPhysicalDevice().getImageFormatProperties(
-        supported_format, info.type, tiling, usage, flags);
+        supported_format, info.type, tiling, usage_flags, flags);
     const auto supported_samples = properties.result == vk::Result::eSuccess
                                        ? properties.value.sampleCounts
                                        : vk::SampleCountFlagBits::e1;
@@ -188,7 +196,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .arrayLayers = static_cast<u32>(info.resources.layers),
         .samples = LiverpoolToVK::NumSamples(info.num_samples, supported_samples),
         .tiling = tiling,
-        .usage = usage,
+        .usage = usage_flags,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
@@ -196,7 +204,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {:#x}:{:#x}",
                           info.size.width, info.size.height, info.size.depth, info.guest_address,
-                          info.guest_size_bytes);
+                          info.guest_size);
 }
 
 boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(

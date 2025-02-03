@@ -5,6 +5,7 @@
 #include <limits>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -14,7 +15,9 @@ namespace Vulkan {
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window)
     : instance{instance_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
-    Create(window.getWidth(), window.getHeight(), surface);
+
+    Create(window.GetWidth(), window.GetHeight());
+    ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
 }
 
 Swapchain::~Swapchain() {
@@ -22,10 +25,9 @@ Swapchain::~Swapchain() {
     instance.GetInstance().destroySurfaceKHR(surface);
 }
 
-void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
+void Swapchain::Create(u32 width_, u32 height_) {
     width = width_;
     height = height_;
-    surface = surface_;
     needs_recreation = false;
 
     Destroy();
@@ -84,7 +86,8 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
 }
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
-    Create(width_, height_, surface);
+    LOG_DEBUG(Render_Vulkan, "Recreate the swapchain: width={} height={}", width_, height_);
+    Create(width_, height_);
 }
 
 bool Swapchain::AcquireNextImage() {
@@ -112,7 +115,7 @@ bool Swapchain::AcquireNextImage() {
     return !needs_recreation;
 }
 
-void Swapchain::Present() {
+bool Swapchain::Present() {
 
     const vk::PresentInfoKHR present_info = {
         .waitSemaphoreCount = 1,
@@ -131,6 +134,8 @@ void Swapchain::Present() {
     }
 
     frame_index = (frame_index + 1) % image_count;
+
+    return !needs_recreation;
 }
 
 void Swapchain::FindPresentFormat() {
@@ -142,7 +147,7 @@ void Swapchain::FindPresentFormat() {
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
     if (formats[0].format == vk::Format::eUndefined) {
-        surface_format.format = vk::Format::eR8G8B8A8Srgb;
+        surface_format.format = vk::Format::eR8G8B8A8Unorm;
         surface_format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         return;
     }
@@ -150,7 +155,7 @@ void Swapchain::FindPresentFormat() {
     // Try to find a suitable format.
     for (const vk::SurfaceFormatKHR& sformat : formats) {
         vk::Format format = sformat.format;
-        if (format != vk::Format::eR8G8B8A8Srgb && format != vk::Format::eB8G8R8A8Srgb) {
+        if (format != vk::Format::eR8G8B8A8Unorm && format != vk::Format::eB8G8R8A8Unorm) {
             continue;
         }
 
@@ -205,10 +210,14 @@ void Swapchain::Destroy() {
     if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }
-    for (u32 i = 0; i < image_count; i++) {
-        device.destroySemaphore(image_acquired[i]);
-        device.destroySemaphore(present_ready[i]);
+
+    for (const auto& sem : image_acquired) {
+        device.destroySemaphore(sem);
     }
+    for (const auto& sem : present_ready) {
+        device.destroySemaphore(sem);
+    }
+
     image_acquired.clear();
     present_ready.clear();
 }
@@ -232,11 +241,9 @@ void Swapchain::RefreshSemaphores() {
         semaphore = sem;
     }
 
-    if (instance.HasDebuggingToolAttached()) {
-        for (u32 i = 0; i < image_count; ++i) {
-            SetObjectName(device, image_acquired[i], "Swapchain Semaphore: image_acquired {}", i);
-            SetObjectName(device, present_ready[i], "Swapchain Semaphore: present_ready {}", i);
-        }
+    for (u32 i = 0; i < image_count; ++i) {
+        SetObjectName(device, image_acquired[i], "Swapchain Semaphore: image_acquired {}", i);
+        SetObjectName(device, present_ready[i], "Swapchain Semaphore: present_ready {}", i);
     }
 }
 
@@ -247,11 +254,30 @@ void Swapchain::SetupImages() {
                vk::to_string(images_result));
     images = std::move(imgs);
     image_count = static_cast<u32>(images.size());
-
-    if (instance.HasDebuggingToolAttached()) {
-        for (u32 i = 0; i < image_count; ++i) {
-            SetObjectName(device, images[i], "Swapchain Image {}", i);
+    images_view.resize(image_count);
+    for (u32 i = 0; i < image_count; ++i) {
+        if (images_view[i]) {
+            device.destroyImageView(images_view[i]);
         }
+        auto [im_view_result, im_view] = device.createImageView(vk::ImageViewCreateInfo{
+            .image = images[i],
+            .viewType = vk::ImageViewType::e2D,
+            .format = surface_format.format,
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+        });
+        ASSERT_MSG(im_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
+                   vk::to_string(im_view_result));
+        images_view[i] = im_view;
+    }
+
+    for (u32 i = 0; i < image_count; ++i) {
+        SetObjectName(device, images[i], "Swapchain Image {}", i);
+        SetObjectName(device, images_view[i], "Swapchain ImageView {}", i);
     }
 }
 

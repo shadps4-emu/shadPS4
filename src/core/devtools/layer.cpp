@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "layer.h"
+
 #include <imgui.h>
 
 #include "common/config.h"
@@ -9,10 +11,14 @@
 #include "core/debug_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
-#include "layer.h"
 #include "options.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
+#include "widget/memory_map.h"
+#include "widget/shader_list.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 using namespace Core::Devtools;
@@ -22,7 +28,6 @@ static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 
 static float fps_scale = 1.0f;
-static bool show_advanced_debug = false;
 static int dump_frame_count = 1;
 
 static Widget::FrameGraph frame_graph;
@@ -31,6 +36,9 @@ static std::vector<Widget::FrameDumpViewer> frame_viewers;
 static float debug_popup_timing = 3.0f;
 
 static bool just_opened_options = false;
+
+static Widget::MemoryMapViewer memory_map;
+static Widget::ShaderList shader_list;
 
 // clang-format off
 static std::string help_text =
@@ -60,6 +68,7 @@ void L::DrawMenuBar() {
         }
         if (BeginMenu("GPU Tools")) {
             MenuItem("Show frame info", nullptr, &frame_graph.is_open);
+            MenuItem("Show loaded shaders", nullptr, &shader_list.open);
             if (BeginMenu("Dump frames")) {
                 SliderInt("Count", &dump_frame_count, 1, 5);
                 if (MenuItem("Dump", "Ctrl+Alt+F9", nullptr, !DebugState.DumpingCurrentFrame())) {
@@ -71,6 +80,25 @@ void L::DrawMenuBar() {
             open_popup_help = MenuItem("Help & Tips");
             ImGui::EndMenu();
         }
+        if (BeginMenu("Display")) {
+            if (BeginMenu("Brightness")) {
+                SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if (BeginMenu("Debug")) {
+            if (MenuItem("Memory map")) {
+                memory_map.open = true;
+            }
+            ImGui::EndMenu();
+        }
+
+        SameLine(ImGui::GetWindowWidth() - 30.0f);
+        if (Button("X", ImVec2(25, 25))) {
+            DebugState.IsShowingDebugMenuBar() = false;
+        }
+
         EndMainMenuBar();
     }
 
@@ -165,19 +193,29 @@ void L::DrawAdvanced() {
     bool close_popup_options = true;
     if (BeginPopupModal("GPU Tools Options", &close_popup_options,
                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-        static char disassembly_cli[512];
+        static char disassembler_cli_isa[512];
+        static char disassembler_cli_spv[512];
         static bool frame_dump_render_on_collapse;
 
         if (just_opened_options) {
             just_opened_options = false;
-            auto s = Options.disassembly_cli.copy(disassembly_cli, sizeof(disassembly_cli) - 1);
-            disassembly_cli[s] = '\0';
+            auto s = Options.disassembler_cli_isa.copy(disassembler_cli_isa,
+                                                       sizeof(disassembler_cli_isa) - 1);
+            disassembler_cli_isa[s] = '\0';
+            s = Options.disassembler_cli_spv.copy(disassembler_cli_spv,
+                                                  sizeof(disassembler_cli_spv) - 1);
+            disassembler_cli_spv[s] = '\0';
             frame_dump_render_on_collapse = Options.frame_dump_render_on_collapse;
         }
 
-        InputText("Shader disassembler: ", disassembly_cli, sizeof(disassembly_cli));
+        InputText("Shader isa disassembler: ", disassembler_cli_isa, sizeof(disassembler_cli_isa));
         if (IsItemHovered()) {
-            SetTooltip(R"(Command to disassemble shaders. Example "dis.exe" --raw "{src}")");
+            SetTooltip(R"(Command to disassemble shaders. Example: dis.exe --raw "{src}")");
+        }
+        InputText("Shader SPIRV disassembler: ", disassembler_cli_spv,
+                  sizeof(disassembler_cli_spv));
+        if (IsItemHovered()) {
+            SetTooltip(R"(Command to disassemble shaders. Example: spirv-cross -V "{src}")");
         }
         Checkbox("Show frame dump popups even when collapsed", &frame_dump_render_on_collapse);
         if (IsItemHovered()) {
@@ -186,7 +224,8 @@ void L::DrawAdvanced() {
         }
 
         if (Button("Save")) {
-            Options.disassembly_cli = disassembly_cli;
+            Options.disassembler_cli_isa = disassembler_cli_isa;
+            Options.disassembler_cli_spv = disassembler_cli_spv;
             Options.frame_dump_render_on_collapse = frame_dump_render_on_collapse;
             SaveIniSettingsToDisk(io.IniFilename);
             CloseCurrentPopup();
@@ -209,11 +248,18 @@ void L::DrawAdvanced() {
 
         EndPopup();
     }
+
+    if (memory_map.open) {
+        memory_map.Draw();
+    }
+    if (shader_list.open) {
+        shader_list.Draw();
+    }
 }
 
 void L::DrawSimple() {
-    const auto io = GetIO();
-    Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    const float frameRate = DebugState.Framerate;
+    Text("%d FPS (%.1f ms)", static_cast<int>(std::round(frameRate)), 1000.0f / frameRate);
 }
 
 static void LoadSettings(const char* line) {
@@ -224,7 +270,7 @@ static void LoadSettings(const char* line) {
         return;
     }
     if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
-        show_advanced_debug = i != 0;
+        DebugState.IsShowingDebugMenuBar() = i != 0;
         return;
     }
     if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
@@ -269,7 +315,7 @@ void L::SetupSettings() {
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
         buf->appendf("fps_scale=%f\n", fps_scale);
-        buf->appendf("show_advanced_debug=%d\n", show_advanced_debug);
+        buf->appendf("show_advanced_debug=%d\n", DebugState.IsShowingDebugMenuBar());
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
@@ -295,11 +341,12 @@ void L::Draw() {
 
     if (!DebugState.IsGuestThreadsPaused()) {
         const auto fn = DebugState.flip_frame_count.load();
-        frame_graph.AddFrame(fn, io.DeltaTime);
+        frame_graph.AddFrame(fn, DebugState.FrameDeltaTime);
     }
+
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
-            show_advanced_debug = !show_advanced_debug;
+            DebugState.IsShowingDebugMenuBar() ^= true;
         } else {
             show_simple_fps = !show_simple_fps;
         }
@@ -334,7 +381,7 @@ void L::Draw() {
         End();
     }
 
-    if (show_advanced_debug) {
+    if (DebugState.IsShowingDebugMenuBar()) {
         PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();

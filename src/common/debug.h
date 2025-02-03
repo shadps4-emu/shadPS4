@@ -14,8 +14,14 @@
 #include <tracy/Tracy.hpp>
 
 static inline bool IsProfilerConnected() {
+#if TRACY_ENABLE
     return tracy::GetProfiler().IsConnected();
+#else
+    return false;
+#endif
 }
+
+#define TRACY_GPU_ENABLED 0
 
 #define CUSTOM_LOCK(type, varname)                                                                 \
     tracy::LockableCtx varname {                                                                   \
@@ -41,7 +47,7 @@ enum MarkersPalette : int {
 #define RENDERER_TRACE ZoneScopedC(RendererMarkerColor)
 #define HLE_TRACE ZoneScopedC(HleMarkerColor)
 
-#define TRACE_HINT(str) ZoneText(str.c_str(), str.size())
+#define TRACE_HINT(str) ZoneText(str.data(), str.size())
 
 #define TRACE_WARN(msg)                                                                            \
     [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::DarkOrange); }(msg);
@@ -57,3 +63,11 @@ enum MarkersPalette : int {
     tracy::SourceLocationData{nullptr, name, TracyFile, (uint32_t)TracyLine, 0};
 
 #define FRAME_END FrameMark
+
+#ifdef TRACY_FIBERS
+#define FIBER_ENTER(name) TracyFiberEnter(name)
+#define FIBER_EXIT TracyFiberLeave
+#else
+#define FIBER_ENTER(name)
+#define FIBER_EXIT
+#endif

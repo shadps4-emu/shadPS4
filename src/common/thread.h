@@ -23,6 +23,8 @@ void SetCurrentThreadPriority(ThreadPriority new_priority);
 
 void SetCurrentThreadName(const char* name);
 
+void SetThreadName(void* thread, const char* name);
+
 class AccurateTimer {
     std::chrono::nanoseconds target_interval{};
     std::chrono::nanoseconds total_wait{};
@@ -35,6 +37,10 @@ public:
     void Start();
 
     void End();
+
+    std::chrono::nanoseconds GetTotalWait() const {
+        return total_wait;
+    }
 };
 
 } // namespace Common

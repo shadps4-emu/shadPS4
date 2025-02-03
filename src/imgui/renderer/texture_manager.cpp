@@ -4,12 +4,13 @@
 #include <deque>
 #include <utility>
 
-#include <externals/stb_image.h>
-
+#include <imgui.h>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/polyfill_thread.h"
+#include "common/stb.h"
+#include "common/thread.h"
 #include "imgui_impl_vulkan.h"
 #include "texture_manager.h"
 
@@ -82,6 +83,7 @@ RefCountedTexture::~RefCountedTexture() {
         }
     }
 }
+
 RefCountedTexture::Image RefCountedTexture::GetTexture() const {
     if (inner == nullptr) {
         return {};
@@ -92,6 +94,7 @@ RefCountedTexture::Image RefCountedTexture::GetTexture() const {
         .height = inner->height,
     };
 }
+
 RefCountedTexture::operator bool() const {
     return inner != nullptr && inner->texture_id != nullptr;
 }
@@ -121,7 +124,7 @@ static std::deque<UploadJob> g_upload_list;
 namespace Core::TextureManager {
 
 Inner::~Inner() {
-    if (upload_data.descriptor_set != nullptr) {
+    if (upload_data.im_texture != nullptr) {
         std::unique_lock lk{g_upload_mtx};
         g_upload_list.emplace_back(UploadJob{
             .data = this->upload_data,
@@ -131,6 +134,7 @@ Inner::~Inner() {
 }
 
 void WorkerLoop() {
+    Common::SetCurrentThreadName("shadPS4:ImGuiTextureManager");
     std::mutex mtx;
     while (g_is_worker_running) {
         std::unique_lock lk{mtx};
@@ -148,7 +152,7 @@ void WorkerLoop() {
             g_job_list.pop_front();
             g_job_list_mtx.unlock();
 
-            if (Config::vkCrashDiagnosticEnabled()) {
+            if (Config::getVkCrashDiagnosticEnabled()) {
                 // FIXME: Crash diagnostic hangs when building the command buffer here
                 continue;
             }
@@ -236,7 +240,7 @@ void Submit() {
     }
     if (upload.core != nullptr) {
         upload.core->upload_data.Upload();
-        upload.core->texture_id = upload.core->upload_data.descriptor_set;
+        upload.core->texture_id = upload.core->upload_data.im_texture;
         if (upload.core->count.fetch_sub(1) == 1) {
             delete upload.core;
         }

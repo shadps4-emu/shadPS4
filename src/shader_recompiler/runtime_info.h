@@ -7,6 +7,8 @@
 #include <span>
 #include <boost/container/static_vector.hpp>
 #include "common/types.h"
+#include "shader_recompiler/frontend/tessellation.h"
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/types.h"
 
 namespace Shader {
@@ -20,11 +22,30 @@ enum class Stage : u32 {
     Local,
     Compute,
 };
-constexpr u32 MaxStageTypes = 6;
+
+// Vertex intentionally comes after TCS/TES due to order of compilation
+enum class LogicalStage : u32 {
+    Fragment,
+    TessellationControl,
+    TessellationEval,
+    Vertex,
+    Geometry,
+    Compute,
+    NumLogicalStages
+};
+
+constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
 
 [[nodiscard]] constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
 }
+
+struct LocalRuntimeInfo {
+    u32 ls_stride;
+    bool links_with_tcs;
+
+    auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
+};
 
 struct ExportRuntimeInfo {
     u32 vertex_data_size;
@@ -63,9 +84,59 @@ struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
+    bool clip_disable{};
+    // Domain
+    AmdGpu::TessellationType tess_type;
+    AmdGpu::TessellationTopology tess_topology;
+    AmdGpu::TessellationPartitioning tess_partitioning;
+    u32 hs_output_cp_stride{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
-        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one;
+        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
+               clip_disable == other.clip_disable && tess_type == other.tess_type &&
+               tess_topology == other.tess_topology &&
+               tess_partitioning == other.tess_partitioning &&
+               hs_output_cp_stride == other.hs_output_cp_stride;
+    }
+
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        hs_output_cp_stride = tess_constants.hs_cp_stride;
+    }
+};
+
+struct HullRuntimeInfo {
+    // from registers
+    u32 num_input_control_points;
+    u32 num_threads;
+    AmdGpu::TessellationType tess_type;
+
+    // from tess constants buffer
+    u32 ls_stride;
+    u32 hs_output_cp_stride;
+    u32 hs_output_base;
+
+    auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
+
+    // It might be possible for a non-passthrough TCS to have these conditions, in some
+    // dumb situation.
+    // In that case, it should be fine to assume passthrough and declare some extra
+    // output control points and attributes that shouldnt be read by the TES anyways
+    bool IsPassthrough() const {
+        return hs_output_base == 0 && ls_stride == hs_output_cp_stride && num_threads == 1;
+    };
+
+    // regs.ls_hs_config.hs_output_control_points contains the number of threads, which
+    // isn't exactly the number of output control points.
+    // For passthrough shaders, the register field is set to 1, so use the number of
+    // input control points
+    u32 NumOutputControlPoints() const {
+        return IsPassthrough() ? num_input_control_points : num_threads;
+    }
+
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        ls_stride = tess_constants.ls_stride;
+        hs_output_cp_stride = tess_constants.hs_cp_stride;
+        hs_output_base = tess_constants.hs_output_base;
     }
 };
 
@@ -105,11 +176,15 @@ struct FragmentRuntimeInfo {
 
         auto operator<=>(const PsInput&) const noexcept = default;
     };
+    AmdGpu::Liverpool::PsInput en_flags;
+    AmdGpu::Liverpool::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     struct PsColorBuffer {
         AmdGpu::NumberFormat num_format;
-        MrtSwizzle mrt_swizzle;
+        AmdGpu::NumberConversion num_conversion;
+        AmdGpu::CompMapping swizzle;
+        AmdGpu::Liverpool::ShaderExportFormat export_format;
 
         auto operator<=>(const PsColorBuffer&) const noexcept = default;
     };
@@ -117,6 +192,7 @@ struct FragmentRuntimeInfo {
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
+               en_flags.raw == other.en_flags.raw && addr_flags.raw == other.addr_flags.raw &&
                num_inputs == other.num_inputs &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
@@ -146,14 +222,16 @@ struct RuntimeInfo {
     AmdGpu::FpDenormMode fp_denorm_mode32;
     AmdGpu::FpRoundMode fp_round_mode32;
     union {
+        LocalRuntimeInfo ls_info;
         ExportRuntimeInfo es_info;
         VertexRuntimeInfo vs_info;
+        HullRuntimeInfo hs_info;
         GeometryRuntimeInfo gs_info;
         FragmentRuntimeInfo fs_info;
         ComputeRuntimeInfo cs_info;
     };
 
-    RuntimeInfo(Stage stage_) {
+    void Initialize(Stage stage_) {
         memset(this, 0, sizeof(*this));
         stage = stage_;
     }
@@ -170,6 +248,10 @@ struct RuntimeInfo {
             return es_info == other.es_info;
         case Stage::Geometry:
             return gs_info == other.gs_info;
+        case Stage::Hull:
+            return hs_info == other.hs_info;
+        case Stage::Local:
+            return ls_info == other.ls_info;
         default:
             return true;
         }

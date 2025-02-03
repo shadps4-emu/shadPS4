@@ -37,21 +37,27 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
+    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
-    void DefineBufferOffsets();
 
-    [[nodiscard]] Id DefineInput(Id type, u32 location) {
-        const Id input_id{DefineVar(type, spv::StorageClass::Input)};
-        Decorate(input_id, spv::Decoration::Location, location);
+    void DefineBufferOffsets();
+    void DefineInterpolatedAttribs();
+
+    [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
+                                 std::optional<spv::BuiltIn> builtin = std::nullopt) {
+        const Id input_id{DefineVariable(type, builtin, spv::StorageClass::Input)};
+        if (location) {
+            Decorate(input_id, spv::Decoration::Location, *location);
+        }
         return input_id;
     }
 
-    [[nodiscard]] Id DefineOutput(Id type, std::optional<u32> location = std::nullopt) {
-        const Id output_id{DefineVar(type, spv::StorageClass::Output)};
+    [[nodiscard]] Id DefineOutput(Id type, std::optional<u32> location = std::nullopt,
+                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
+        const Id output_id{DefineVariable(type, builtin, spv::StorageClass::Output)};
         if (location) {
             Decorate(output_id, spv::Decoration::Location, *location);
         }
@@ -126,10 +132,11 @@ public:
         return ConstantComposite(type, constituents);
     }
 
-    const Info& info;
+    Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    Stage stage{};
+    Stage stage;
+    LogicalStage l_stage{};
 
     Id void_id{};
     Id U8{};
@@ -146,6 +153,8 @@ public:
 
     Id full_result_i32x2;
     Id full_result_u32x2;
+    Id frexp_result_f32;
+    Id frexp_result_f64;
 
     Id pi_x2;
 
@@ -184,8 +193,15 @@ public:
     Id clip_distances{};
     Id cull_distances{};
 
+    Id patch_vertices{};
+    Id output_tess_level_outer{};
+    Id output_tess_level_inner{};
+    Id tess_coord;
+    std::array<Id, 30> patches{};
+
     Id workgroup_id{};
     Id local_invocation_id{};
+    Id invocation_id{}; // for instanced geoshaders or output vertices within TCS patch
     Id subgroup_local_invocation_id{};
     Id image_u32{};
 
@@ -197,12 +213,16 @@ public:
 
     Id shared_memory_u32_type{};
 
+    Id interpolate_func{};
+    Id gl_bary_coord_id{};
+
     struct TextureDefinition {
         const VectorIds* data_types;
         Id id;
         Id sampled_type;
         Id pointer_type;
         Id image_type;
+        AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
     };
@@ -218,6 +238,7 @@ public:
     struct TextureBufferDefinition {
         Id id;
         Id coord_offset;
+        Id coord_shift;
         u32 binding;
         Id image_type;
         Id result_type;
@@ -241,9 +262,11 @@ public:
         Id component_type;
         u32 num_components;
         bool is_integer{};
-        bool is_default{};
+        bool is_loaded{};
         s32 buffer_handle{-1};
     };
+    Id input_attr_array;
+    Id output_attr_array;
     std::array<SpirvAttribute, IR::NumParams> input_params{};
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};

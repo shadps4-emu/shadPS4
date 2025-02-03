@@ -30,7 +30,7 @@ struct OrbisAppContentBootParam {
     char reserved2[32];
 };
 
-typedef u32 OrbisAppContentTemporaryDataOption;
+using OrbisAppContentTemporaryDataOption = u32;
 
 constexpr int ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE = 16;
 
@@ -44,12 +44,12 @@ constexpr int ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE = 17;
 constexpr int ORBIS_APP_CONTENT_ENTITLEMENT_KEY_SIZE = 16;
 constexpr int ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE = 2500;
 
-enum OrbisAppContentAddcontDownloadStatus : u32 {
-    ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_NO_EXTRA_DATA = 0,
-    ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_NO_IN_QUEUE = 1,
-    ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_DOWNLOADING = 2,
-    ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_DOWNLOAD_SUSPENDED = 3,
-    ORBIS_APP_CONTENT_ADDCONT_DOWNLOAD_STATUS_INSTALLED = 4
+enum class OrbisAppContentAddcontDownloadStatus : u32 {
+    NoExtraData = 0,
+    NoInQueue = 1,
+    Downloading = 2,
+    DownloadSuspended = 3,
+    Installed = 4
 };
 
 struct OrbisNpUnifiedEntitlementLabel {
@@ -57,11 +57,11 @@ struct OrbisNpUnifiedEntitlementLabel {
     char padding[3];
 };
 
-typedef u32 OrbisAppContentAppParamId;
+using OrbisAppContentAppParamId = u32;
 
 struct OrbisAppContentAddcontInfo {
     OrbisNpUnifiedEntitlementLabel entitlement_label;
-    u32 status;
+    OrbisAppContentAddcontDownloadStatus status;
 };
 
 struct OrbisAppContentGetEntitlementKey {
@@ -84,7 +84,8 @@ int PS4_SYSV_ABI sceAppContentDownload0Shrink();
 int PS4_SYSV_ABI sceAppContentDownload1Expand();
 int PS4_SYSV_ABI sceAppContentDownload1Shrink();
 int PS4_SYSV_ABI sceAppContentDownloadDataFormat();
-int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb();
+int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb(OrbisAppContentMountPoint* mountPoint,
+                                                              u64* availableSpaceKb);
 int PS4_SYSV_ABI sceAppContentGetAddcontDownloadProgress();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
                                              const OrbisNpUnifiedEntitlementLabel* entitlementLabel,
@@ -105,7 +106,7 @@ int PS4_SYSV_ABI sceAppContentSmallSharedDataMount();
 int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataFormat();
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
-    const OrbisAppContentMountPoint* mountPoint, size_t* availableSpaceKb);
+    const OrbisAppContentMountPoint* mountPoint, u64* availableSpaceKb);
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint);

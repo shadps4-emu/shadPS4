@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <span>
+#include <vector>
 #include "save_backup.h"
 
 class PSF;
@@ -14,36 +14,30 @@ using OrbisUserServiceUserId = s32;
 
 namespace Libraries::SaveData::SaveMemory {
 
-void SetDirectories(OrbisUserServiceUserId user_id, std::string game_serial);
+void PersistMemory(u32 slot_id, bool lock = true);
 
-[[nodiscard]] const std::filesystem::path& GetSavePath();
+[[nodiscard]] std::string GetSaveDir(u32 slot_id);
 
-// returns the size of the existed save memory
-size_t CreateSaveMemory(size_t memory_size);
+[[nodiscard]] std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
+                                                std::string_view game_serial);
 
-// Initialize the icon. Set buf to null to read the standard icon.
-void SetIcon(void* buf, size_t buf_size);
+// returns the size of the save memory if exists
+size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial);
 
-// Update the icon
-void WriteIcon(void* buf, size_t buf_size);
+// Write the icon. Set buf to null to read the standard icon.
+void SetIcon(u32 slot_id, void* buf = nullptr, size_t buf_size = 0);
 
-[[nodiscard]] bool IsSaveMemoryInitialized();
+[[nodiscard]] bool IsSaveMemoryInitialized(u32 slot_id);
 
-[[nodiscard]] PSF& GetParamSFO();
+[[nodiscard]] PSF& GetParamSFO(u32 slot_id);
 
-[[nodiscard]] std::span<u8> GetIcon();
+[[nodiscard]] std::vector<u8> GetIcon(u32 slot_id);
 
 // Save now or wait for the background thread to save
-void SaveSFO(bool sync = false);
+void SaveSFO(u32 slot_id);
 
-[[nodiscard]] bool IsSaving();
+void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset);
 
-bool TriggerSaveWithoutEvent();
-
-bool TriggerSave();
-
-void ReadMemory(void* buf, size_t buf_size, int64_t offset);
-
-void WriteMemory(void* buf, size_t buf_size, int64_t offset);
+void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset);
 
 } // namespace Libraries::SaveData::SaveMemory

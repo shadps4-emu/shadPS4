@@ -9,10 +9,14 @@ namespace Xbyak {
 class CodeGenerator;
 }
 
+namespace Libraries::Fiber {
+struct OrbisFiberContext;
+}
+
 namespace Core {
 
 union DtvEntry {
-    size_t counter;
+    std::size_t counter;
     u8* pointer;
 };
 
@@ -20,6 +24,7 @@ struct Tcb {
     Tcb* tcb_self;
     DtvEntry* tcb_dtv;
     void* tcb_thread;
+    ::Libraries::Fiber::OrbisFiberContext* tcb_fiber;
 };
 
 #ifdef _WIN32
@@ -32,5 +37,14 @@ void SetTcbBase(void* image_address);
 
 /// Retrieves Tcb structure for the calling thread.
 Tcb* GetTcbBase();
+
+/// Makes sure TLS is initialized for the thread before entering guest.
+void EnsureThreadInitialized();
+
+template <class ReturnType, class... FuncArgs, class... CallArgs>
+ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
+    EnsureThreadInitialized();
+    return func(std::forward<CallArgs>(args)...);
+}
 
 } // namespace Core

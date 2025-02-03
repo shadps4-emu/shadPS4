@@ -3,11 +3,13 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/ajm/ajm_at9.h"
 #include "core/libraries/ajm/ajm_context.h"
 #include "core/libraries/ajm/ajm_error.h"
 #include "core/libraries/ajm/ajm_instance.h"
+#include "core/libraries/ajm/ajm_instance_statistics.h"
 #include "core/libraries/ajm/ajm_mp3.h"
 #include "core/libraries/error_codes.h"
 
@@ -53,6 +55,7 @@ s32 AjmContext::ModuleRegister(AjmCodecType type) {
 }
 
 void AjmContext::WorkerThread(std::stop_token stop) {
+    Common::SetCurrentThreadName("shadPS4:AjmWorker");
     while (!stop.stop_requested()) {
         auto batch = batch_queue.PopWait(stop);
         if (batch != nullptr) {
@@ -68,15 +71,19 @@ void AjmContext::ProcessBatch(u32 id, std::span<AjmJob> jobs) {
         LOG_TRACE(Lib_Ajm, "Processing job {} for instance {}. flags = {:#x}", id, job.instance_id,
                   job.flags.raw);
 
-        std::shared_ptr<AjmInstance> instance;
-        {
-            std::shared_lock lock(instances_mutex);
-            auto* p_instance = instances.Get(job.instance_id);
-            ASSERT_MSG(p_instance != nullptr, "Attempting to execute job on null instance");
-            instance = *p_instance;
-        }
+        if (job.instance_id == AJM_INSTANCE_STATISTICS) {
+            AjmInstanceStatistics::Getinstance().ExecuteJob(job);
+        } else {
+            std::shared_ptr<AjmInstance> instance;
+            {
+                std::shared_lock lock(instances_mutex);
+                auto* p_instance = instances.Get(job.instance_id);
+                ASSERT_MSG(p_instance != nullptr, "Attempting to execute job on null instance");
+                instance = *p_instance;
+            }
 
-        instance->ExecuteJob(job);
+            instance->ExecuteJob(job);
+        }
     }
 }
 
@@ -149,7 +156,6 @@ s32 AjmContext::InstanceCreate(AjmCodecType codec_type, AjmInstanceFlags flags, 
     if (!IsRegistered(codec_type)) {
         return ORBIS_AJM_ERROR_CODEC_NOT_REGISTERED;
     }
-    ASSERT_MSG(flags.format == 0, "Only signed 16-bit PCM output is supported currently!");
     std::optional<u32> opt_index;
     {
         std::unique_lock lock(instances_mutex);

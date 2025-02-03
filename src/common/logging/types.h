@@ -35,6 +35,7 @@ enum class Class : u8 {
     Common_Memory,         ///< Memory mapping and management functions
     Core,                  ///< LLE emulation core
     Core_Linker,           ///< The module linker
+    Core_Devices,          ///< Devices emulation
     Config,                ///< Emulator configuration (including commandline)
     Debug,                 ///< Debugging tools
     Kernel,                ///< The HLE implementation of the PS4 kernel.
@@ -56,23 +57,30 @@ enum class Class : u8 {
     Lib_MsgDlg,            ///< The LibSceMsgDialog implementation.
     Lib_AudioOut,          ///< The LibSceAudioOut implementation.
     Lib_AudioIn,           ///< The LibSceAudioIn implementation.
+    Lib_Move,              ///< The LibSceMove implementation.
     Lib_Net,               ///< The LibSceNet implementation.
-    Lib_NetCtl,            ///< The LibSecNetCtl implementation.
+    Lib_NetCtl,            ///< The LibSceNetCtl implementation.
     Lib_SaveData,          ///< The LibSceSaveData implementation.
     Lib_SaveDataDialog,    ///< The LibSceSaveDataDialog implementation.
     Lib_Ssl,               ///< The LibSceSsl implementation.
+    Lib_Ssl2,              ///< The LibSceSsl2 implementation.
     Lib_Http,              ///< The LibSceHttp implementation.
+    Lib_Http2,             ///< The LibSceHttp2 implementation.
     Lib_SysModule,         ///< The LibSceSysModule implementation
+    Lib_NpCommon,          ///< The LibSceNpCommon implementation
     Lib_NpManager,         ///< The LibSceNpManager implementation
     Lib_NpScore,           ///< The LibSceNpScore implementation
     Lib_NpTrophy,          ///< The LibSceNpTrophy implementation
+    Lib_NpWebApi,          ///< The LibSceWebApi implementation
     Lib_Screenshot,        ///< The LibSceScreenshot implementation
     Lib_LibCInternal,      ///< The LibCInternal implementation.
     Lib_AppContent,        ///< The LibSceAppContent implementation.
     Lib_Rtc,               ///< The LibSceRtc implementation.
     Lib_DiscMap,           ///< The LibSceDiscMap implementation.
     Lib_Png,               ///< The LibScePng implementation.
+    Lib_Jpeg,              ///< The LibSceJpeg implementation.
     Lib_PlayGo,            ///< The LibScePlayGo implementation.
+    Lib_PlayGoDialog,      ///< The LibScePlayGoDialog implementation.
     Lib_Random,            ///< The libSceRandom implementation.
     Lib_Usbd,              ///< The LibSceUsbd implementation.
     Lib_Ajm,               ///< The LibSceAjm implementation.
@@ -87,6 +95,12 @@ enum class Class : u8 {
     Lib_SharePlay,         ///< The LibSceSharePlay implemenation
     Lib_Fiber,             ///< The LibSceFiber implementation.
     Lib_Vdec2,             ///< The LibSceVideodec2 implementation.
+    Lib_Videodec,          ///< The LibSceVideodec implementation.
+    Lib_RazorCpu,          ///< The LibRazorCpu implementation.
+    Lib_Mouse,             ///< The LibSceMouse implementation
+    Lib_WebBrowserDialog,  ///< The LibSceWebBrowserDialog implementation
+    Lib_NpParty,           ///< The LibSceNpParty implementation
+    Lib_Zlib,              ///< The LibSceZlib implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

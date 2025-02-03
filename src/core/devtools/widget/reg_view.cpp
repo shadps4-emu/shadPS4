@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 #include <imgui.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <stdio.h>
 
 #include "common.h"
@@ -25,21 +25,6 @@ using magic_enum::enum_name;
 
 constexpr auto depth_id = 0xF3;
 
-static std::optional<std::string> exec_cli(const char* cli) {
-    std::array<char, 64> buffer{};
-    std::string output;
-    const auto f = popen(cli, "r");
-    if (!f) {
-        pclose(f);
-        return {};
-    }
-    while (fgets(buffer.data(), buffer.size(), f)) {
-        output += buffer.data();
-    }
-    pclose(f);
-    return output;
-}
-
 namespace Core::Devtools::Widget {
 
 void RegView::ProcessShader(int shader_id) {
@@ -54,38 +39,12 @@ void RegView::ProcessShader(int shader_id) {
         user_data = s.user_data.user_data;
     }
 
-    std::string shader_dis;
-
-    if (Options.disassembly_cli.empty()) {
-        shader_dis = "No disassembler set";
-    } else {
-        auto bin_path = std::filesystem::temp_directory_path() / "shadps4_tmp_shader.bin";
-
-        constexpr std::string_view src_arg = "{src}";
-        std::string cli = Options.disassembly_cli;
-        const auto pos = cli.find(src_arg);
-        if (pos == std::string::npos) {
-            DebugState.ShowDebugMessage("Disassembler CLI does not contain {src} argument");
-        } else {
-            cli.replace(pos, src_arg.size(), "\"" + bin_path.string() + "\"");
-            Common::FS::IOFile file(bin_path, Common::FS::FileAccessMode::Write);
-            file.Write(shader_code);
-            file.Close();
-
-            auto result = exec_cli(cli.c_str());
-            shader_dis = result.value_or("Could not disassemble shader");
-            if (shader_dis.empty()) {
-                shader_dis = "Disassembly empty or failed";
-            }
-
-            std::filesystem::remove(bin_path);
-        }
-    }
+    std::string shader_dis = RunDisassembler(Options.disassembler_cli_isa, shader_code);
 
     MemoryEditor hex_view;
     hex_view.Open = true;
     hex_view.ReadOnly = true;
-    hex_view.Cols = 8;
+    hex_view.Cols = 16;
     hex_view.OptShowAscii = false;
     hex_view.OptShowOptions = false;
 
@@ -196,7 +155,7 @@ void RegView::DrawGraphicsRegs() {
         TableNextColumn();
         TextUnformatted("Depth buffer");
         TableNextColumn();
-        if (regs.depth_buffer.Address() == 0 || !regs.depth_control.depth_enable) {
+        if (regs.depth_buffer.DepthAddress() == 0 || !regs.depth_control.depth_enable) {
             TextUnformatted("N/A");
         } else {
             const char* text = last_selected_cb == depth_id && default_reg_popup.open ? "x" : "->";
@@ -282,7 +241,7 @@ void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_tit
             default_reg_popup.open = false;
             if (last_selected_cb == depth_id) {
                 const auto& has_depth =
-                    regs.depth_buffer.Address() != 0 && regs.depth_control.depth_enable;
+                    regs.depth_buffer.DepthAddress() != 0 && regs.depth_control.depth_enable;
                 if (has_depth) {
                     default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
                     default_reg_popup.open = true;
@@ -333,6 +292,17 @@ void RegView::Draw() {
             EndMenuBar();
         }
 
+        const char* shader_name = "_";
+        if (data.is_compute) {
+            shader_name = data.cs_data.name.c_str();
+        } else if (selected_shader >= 0) {
+            shader_name = data.stages[selected_shader].name.c_str();
+        }
+
+        TextUnformatted("Shader: ");
+        SameLine();
+        TextUnformatted(shader_name);
+
         if (!data.is_compute &&
             BeginChild("STAGES", {},
                        ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeY)) {
@@ -376,7 +346,9 @@ void RegView::Draw() {
             if (!shader) {
                 Text("Stage not selected");
             } else {
-                shader->hex_view.DrawContents(shader->user_data.data(), shader->user_data.size());
+                shader->hex_view.DrawContents(shader->user_data.data(),
+                                              shader->user_data.size() *
+                                                  sizeof(Vulkan::Liverpool::UserData::value_type));
             }
         }
         End();

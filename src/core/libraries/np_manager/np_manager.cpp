@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/singleton.h>
-#include <core/linker.h>
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "np_manager.h"
+#include "core/libraries/np_manager/np_manager.h"
+#include "core/libraries/np_manager/np_manager_error.h"
+#include "core/tls.h"
 
 namespace Libraries::NpManager {
 
@@ -937,14 +936,22 @@ int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountId() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (online_id == nullptr || account_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    *account_id = 0;
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountIdA() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
+    LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (account_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    *account_id = 0;
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountLanguage() {
@@ -972,13 +979,12 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId) {
-    LOG_INFO(Lib_NpManager, "userId {}", userId);
-    std::string name = Config::getUserName();
-    // Fill the unused stuffs to 0
-    memset(npId, 0, sizeof(*npId));
-    strcpy(npId->handle.data, name.c_str());
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) {
+    LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (np_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
@@ -986,13 +992,12 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetOnlineId(s32 userId, OrbisNpOnlineId* onlineId) {
-    LOG_DEBUG(Lib_NpManager, "userId {}", userId);
-    std::string name = Config::getUserName();
-    // Fill the unused stuffs to 0
-    memset(onlineId, 0, sizeof(*onlineId));
-    strcpy(onlineId->data, name.c_str());
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineId* online_id) {
+    LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (online_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    return ORBIS_NP_ERROR_SIGNED_OUT;
 }
 
 int PS4_SYSV_ABI sceNpGetParentalControlInfo() {
@@ -1005,8 +1010,11 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state) {
-    *state = ORBIS_NP_STATE_SIGNED_OUT;
+int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state) {
+    if (state == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    *state = OrbisNpState::SignedOut;
     LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
 }
@@ -1021,8 +1029,12 @@ int PS4_SYSV_ABI sceNpGetUserIdByOnlineId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpHasSignedUp() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (has_signed_up == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    *has_signed_up = false;
     return ORBIS_OK;
 }
 
@@ -2519,10 +2531,7 @@ struct NpStateCallbackForNpToolkit {
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    const auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->ExecuteGuest(NpStateCbForNp.func, 1, ORBIS_NP_STATE_SIGNED_OUT,
-                         NpStateCbForNp.userdata);
+    LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
     return ORBIS_OK;
 }
 

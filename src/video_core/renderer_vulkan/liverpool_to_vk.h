@@ -18,6 +18,8 @@ vk::StencilOp StencilOp(Liverpool::StencilFunc op);
 
 vk::CompareOp CompareOp(Liverpool::CompareFunc func);
 
+bool IsPrimitiveCulled(AmdGpu::PrimitiveType type);
+
 vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type);
 
 vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode);
@@ -40,6 +42,10 @@ vk::SamplerMipmapMode MipFilter(AmdGpu::MipFilter filter);
 
 vk::BorderColor BorderColor(AmdGpu::BorderColor color);
 
+vk::ComponentSwizzle ComponentSwizzle(AmdGpu::CompSwizzle comp_swizzle);
+
+vk::ComponentMapping ComponentMapping(AmdGpu::CompMapping comp_mapping);
+
 struct SurfaceFormatInfo {
     AmdGpu::DataFormat data_format;
     AmdGpu::NumberFormat number_format;
@@ -49,9 +55,6 @@ struct SurfaceFormatInfo {
 std::span<const SurfaceFormatInfo> SurfaceFormats();
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format);
-
-vk::Format AdjustColorBufferFormat(vk::Format base_format,
-                                   Liverpool::ColorBuffer::SwapMode comp_swap, bool is_vo_surface);
 
 struct DepthFormatInfo {
     Liverpool::DepthBuffer::ZFormat z_format;
@@ -68,10 +71,35 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
 
 vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags);
 
-void EmitQuadToTriangleListIndices(u8* out_indices, u32 num_vertices);
+static inline bool IsFormatDepthCompatible(vk::Format fmt) {
+    switch (fmt) {
+    // 32-bit float compatible
+    case vk::Format::eD32Sfloat:
+    case vk::Format::eR32Sfloat:
+    case vk::Format::eR32Uint:
+    // 16-bit unorm compatible
+    case vk::Format::eD16Unorm:
+    case vk::Format::eR16Unorm:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static inline bool IsFormatStencilCompatible(vk::Format fmt) {
+    switch (fmt) {
+    // 8-bit uint compatible
+    case vk::Format::eS8Uint:
+    case vk::Format::eR8Uint:
+    case vk::Format::eR8Unorm:
+        return true;
+    default:
+        return false;
+    }
+}
 
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
-    if (fmt == vk::Format::eR32Sfloat) {
+    if (fmt == vk::Format::eR32Sfloat || fmt == vk::Format::eR32Uint) {
         return vk::Format::eD32Sfloat;
     } else if (fmt == vk::Format::eR16Unorm) {
         return vk::Format::eD16Unorm;

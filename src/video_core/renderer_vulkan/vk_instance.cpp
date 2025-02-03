@@ -9,6 +9,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/debug.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -68,9 +69,9 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     }
     // Other miscellaneous formats, e.g. for color buffers, swizzles, or compatibility
     static constexpr std::array misc_formats = {
-        vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
-        vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
-        vk::Format::eB8G8R8A8Srgb,           vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eA2R10G10B10UnormPack32,
+        vk::Format::eB8G8R8A8Unorm,
+        vk::Format::eB8G8R8A8Srgb,
         vk::Format::eD24UnormS8Uint,
     };
     for (const auto& format : misc_formats) {
@@ -95,7 +96,7 @@ Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
-    : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
+    : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
       physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
@@ -207,6 +208,7 @@ std::string Instance::GetDriverVersionName() {
 bool Instance::CreateDevice() {
     const vk::StructureChain feature_chain = physical_device.getFeatures2<
         vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
@@ -230,7 +232,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 25> enabled_extensions;
+    boost::container::static_vector<const char*, 32> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -256,14 +258,19 @@ bool Instance::CreateDevice() {
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+    fragment_shader_barycentric = add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
 
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
-    const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const bool calibrated_timestamps =
+        TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
+    image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
+    amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -276,6 +283,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+    add_extension(VK_EXT_4444_FORMATS_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
@@ -310,6 +318,9 @@ bool Instance::CreateDevice() {
         .pQueuePriorities = queue_priorities.data(),
     };
 
+    const auto topology_list_restart_features =
+        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
@@ -324,6 +335,7 @@ bool Instance::CreateDevice() {
                 .imageCubeArray = features.imageCubeArray,
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
+                .tessellationShader = features.tessellationShader,
                 .logicOp = features.logicOp,
                 .depthBiasClamp = features.depthBiasClamp,
                 .fillModeNonSolid = features.fillModeNonSolid,
@@ -345,6 +357,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceVulkan12Features{
             .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
+            .drawIndirectCount = vk12_features.drawIndirectCount,
             .shaderFloat16 = vk12_features.shaderFloat16,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
             .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
@@ -397,6 +410,14 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
             .primitiveTopologyListRestart = true,
+            .primitiveTopologyPatchListRestart =
+                topology_list_restart_features.primitiveTopologyPatchListRestart,
+        },
+        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
+            .fragmentShaderBarycentric = true,
+        },
+        vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
+            .legacyVertexAttributes = true,
         },
 #ifdef __APPLE__
         feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
@@ -436,6 +457,12 @@ bool Instance::CreateDevice() {
     }
     if (!vertex_input_dynamic_state) {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
+    }
+    if (!fragment_shader_barycentric) {
+        device_chain.unlink<vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
+    }
+    if (!legacy_vertex_attributes) {
+        device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
@@ -542,8 +569,6 @@ void Instance::CollectToolingInfo() {
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
-        has_renderdoc = has_renderdoc || name == "RenderDoc";
-        has_nsight_graphics = has_nsight_graphics || name == "NVIDIA Nsight Graphics";
     }
 }
 
@@ -564,42 +589,22 @@ bool Instance::IsFormatSupported(const vk::Format format,
     return (GetFormatFeatureFlags(format) & flags) == flags;
 }
 
-static vk::Format GetAlternativeFormat(const vk::Format format) {
-    switch (format) {
-    case vk::Format::eB5G6R5UnormPack16:
-        return vk::Format::eR5G6B5UnormPack16;
-    case vk::Format::eD16UnormS8Uint:
-        return vk::Format::eD24UnormS8Uint;
-    default:
-        return format;
-    }
-}
-
 vk::Format Instance::GetSupportedFormat(const vk::Format format,
                                         const vk::FormatFeatureFlags2 flags) const {
-    if (IsFormatSupported(format, flags)) [[likely]] {
-        return format;
-    }
-    const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsFormatSupported(alternative, flags)) [[likely]] {
-        return alternative;
+    if (!IsFormatSupported(format, flags)) [[unlikely]] {
+        switch (format) {
+        case vk::Format::eD16UnormS8Uint:
+            if (IsFormatSupported(vk::Format::eD24UnormS8Uint, flags)) {
+                return vk::Format::eD24UnormS8Uint;
+            }
+            if (IsFormatSupported(vk::Format::eD32SfloatS8Uint, flags)) {
+                return vk::Format::eD32SfloatS8Uint;
+            }
+        default:
+            break;
+        }
     }
     return format;
-}
-
-vk::ComponentMapping Instance::GetSupportedComponentSwizzle(
-    const vk::Format format, const vk::ComponentMapping swizzle,
-    const vk::FormatFeatureFlags2 flags) const {
-    if (IsFormatSupported(format, flags)) [[likely]] {
-        return swizzle;
-    }
-
-    vk::ComponentMapping supported_swizzle = swizzle;
-    if (format == vk::Format::eB5G6R5UnormPack16) {
-        // B5G6R5 -> R5G6B5
-        std::swap(supported_swizzle.r, supported_swizzle.b);
-    }
-    return supported_swizzle;
 }
 
 } // namespace Vulkan

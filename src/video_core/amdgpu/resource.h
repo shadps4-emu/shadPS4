@@ -11,15 +11,6 @@
 
 namespace AmdGpu {
 
-enum class CompSwizzle : u32 {
-    Zero = 0,
-    One = 1,
-    Red = 4,
-    Green = 5,
-    Blue = 6,
-    Alpha = 7,
-};
-
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     u64 base_address : 44;
@@ -52,17 +43,26 @@ struct Buffer {
         return std::memcmp(this, &other, sizeof(Buffer)) == 0;
     }
 
-    CompSwizzle GetSwizzle(u32 comp) const noexcept {
-        const std::array select{dst_sel_x, dst_sel_y, dst_sel_z, dst_sel_w};
-        return static_cast<CompSwizzle>(select[comp]);
+    CompMapping DstSelect() const {
+        const CompMapping dst_sel{
+            .r = CompSwizzle(dst_sel_x),
+            .g = CompSwizzle(dst_sel_y),
+            .b = CompSwizzle(dst_sel_z),
+            .a = CompSwizzle(dst_sel_w),
+        };
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format);
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
     }
 
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format);
+        return RemapDataFormat(DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     u32 GetStride() const noexcept {
@@ -75,6 +75,16 @@ struct Buffer {
 
     u32 GetSize() const noexcept {
         return stride == 0 ? num_records : (stride * num_records);
+    }
+
+    u32 GetIndexStride() const noexcept {
+        // Index stride is 2 bits, meaning 8, 16, 32, or 64.
+        return 8 << index_stride;
+    }
+
+    u32 GetElementSize() const noexcept {
+        // Element size is 2 bits, meaning 2, 4, 8, or 16.
+        return 2 << element_size;
     }
 };
 static_assert(sizeof(Buffer) == 16); // 128bits
@@ -119,9 +129,11 @@ constexpr std::string_view NameOf(ImageType type) {
 enum class TilingMode : u32 {
     Depth_MacroTiled = 0u,
     Display_Linear = 0x8u,
+    Display_MicroTiled = 0x9u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
     Texture_MacroTiled = 0xEu,
+    Texture_Volume = 0x13u,
 };
 
 constexpr std::string_view NameOf(TilingMode type) {
@@ -130,12 +142,16 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
         return "Display_Linear";
+    case TilingMode::Display_MicroTiled:
+        return "Display_MicroTiled";
     case TilingMode::Display_MacroTiled:
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:
         return "Texture_MicroTiled";
     case TilingMode::Texture_MacroTiled:
         return "Texture_MacroTiled";
+    case TilingMode::Texture_Volume:
+        return "Texture_Volume";
     default:
         return "Unknown";
     }
@@ -174,15 +190,24 @@ struct Image {
     u64 min_lod_warn : 12;
     u64 counter_bank_id : 8;
     u64 lod_hw_cnt_en : 1;
-    u64 : 43;
+    /// Neo-mode only
+    u64 compression_en : 1;
+    /// Neo-mode only
+    u64 alpha_is_on_msb : 1;
+    /// Neo-mode only
+    u64 color_transform : 1;
+    /// Neo-mode only
+    u64 alt_tile_mode : 1;
+    u64 : 39;
 
     static constexpr Image Null() {
         Image image{};
         image.data_format = u64(DataFormat::Format8_8_8_8);
-        image.dst_sel_x = 4;
-        image.dst_sel_y = 5;
-        image.dst_sel_z = 6;
-        image.dst_sel_w = 7;
+        image.num_format = u64(NumberFormat::Unorm);
+        image.dst_sel_x = u64(CompSwizzle::Red);
+        image.dst_sel_y = u64(CompSwizzle::Green);
+        image.dst_sel_z = u64(CompSwizzle::Blue);
+        image.dst_sel_w = u64(CompSwizzle::Alpha);
         image.tiling_index = u64(TilingMode::Texture_MicroTiled);
         image.type = u64(ImageType::Color2D);
         return image;
@@ -200,53 +225,29 @@ struct Image {
         return base_address != 0;
     }
 
-    u32 DstSelect() const {
-        return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
-    }
-
-    static char SelectComp(u32 sel) {
-        switch (sel) {
-        case 0:
-            return '0';
-        case 1:
-            return '1';
-        case 4:
-            return 'R';
-        case 5:
-            return 'G';
-        case 6:
-            return 'B';
-        case 7:
-            return 'A';
-        default:
-            UNREACHABLE();
-        }
-    }
-
-    std::string DstSelectName() const {
-        std::string result = "[";
-        u32 dst_sel = DstSelect();
-        for (u32 i = 0; i < 4; i++) {
-            result += SelectComp(dst_sel & 7);
-            dst_sel >>= 3;
-        }
-        result += ']';
-        return result;
+    CompMapping DstSelect() const {
+        const CompMapping dst_sel{
+            .r = CompSwizzle(dst_sel_x),
+            .g = CompSwizzle(dst_sel_y),
+            .b = CompSwizzle(dst_sel_z),
+            .a = CompSwizzle(dst_sel_w),
+        };
+        return RemapSwizzle(DataFormat(data_format), dst_sel);
     }
 
     u32 Pitch() const {
         return pitch + 1;
     }
 
-    u32 NumLayers(bool is_array) const {
-        u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
-        if (GetType() == ImageType::Cube) {
-            if (is_array) {
-                slices = last_array + 1;
-                ASSERT(slices % 6 == 0);
-            } else {
-                slices = 6;
-            }
+    [[nodiscard]] u32 NumLayers() const noexcept {
+        // Depth is the number of layers for Array images.
+        u32 slices = depth + 1;
+        if (GetType() == ImageType::Color3D) {
+            // Depth is the actual texture depth for 3D images.
+            slices = 1;
+        } else if (IsCube()) {
+            // Depth is the number of full cubes for Cube images.
+            slices *= 6;
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -268,25 +269,30 @@ struct Image {
         return 1;
     }
 
+    bool IsCube() const noexcept {
+        return static_cast<ImageType>(type) == ImageType::Cube;
+    }
+
     ImageType GetType() const noexcept {
-        return static_cast<ImageType>(type);
+        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format);
+        return RemapDataFormat(DataFormat(data_format));
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format);
+        return RemapNumberFormat(NumberFormat(num_format), DataFormat(data_format));
+    }
+
+    NumberConversion GetNumberConversion() const noexcept {
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {
         if (tiling_index >= 0 && tiling_index <= 7) {
             return tiling_index == 5 ? TilingMode::Texture_MicroTiled
                                      : TilingMode::Depth_MacroTiled;
-        }
-        if (tiling_index == 0x13) {
-            return TilingMode::Texture_MicroTiled;
         }
         return static_cast<TilingMode>(tiling_index);
     }
@@ -295,9 +301,53 @@ struct Image {
         return GetTilingMode() != TilingMode::Display_Linear;
     }
 
-    bool IsPartialCubemap() const {
-        const auto viewed_slice = last_array - base_array + 1;
-        return GetType() == ImageType::Cube && viewed_slice < 6;
+    bool IsFmask() const noexcept {
+        return GetDataFmt() >= DataFormat::FormatFmask8_1 &&
+               GetDataFmt() <= DataFormat::FormatFmask64_8;
+    }
+
+    [[nodiscard]] ImageType GetViewType(const bool is_array) const noexcept {
+        const auto base_type = GetType();
+        if (IsCube()) {
+            // Cube needs to remain array type regardless of instruction array specifier.
+            return base_type;
+        }
+        if (base_type == ImageType::Color1DArray && !is_array) {
+            return ImageType::Color1D;
+        }
+        if (base_type == ImageType::Color2DArray && !is_array) {
+            return ImageType::Color2D;
+        }
+        if (base_type == ImageType::Color2DMsaaArray && !is_array) {
+            return ImageType::Color2DMsaa;
+        }
+        return base_type;
+    }
+
+    [[nodiscard]] u32 NumViewLevels(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color2DMsaa:
+        case ImageType::Color2DMsaaArray:
+            return 1;
+        default:
+            // Constrain to actual number of available levels.
+            const auto max_level = std::min<u32>(last_level + 1, NumLevels());
+            return max_level > base_level ? max_level - base_level : 1;
+        }
+    }
+
+    [[nodiscard]] u32 NumViewLayers(const bool is_array) const noexcept {
+        switch (GetViewType(is_array)) {
+        case ImageType::Color1D:
+        case ImageType::Color2D:
+        case ImageType::Color2DMsaa:
+        case ImageType::Color3D:
+            return 1;
+        default:
+            // Constrain to actual number of available layers.
+            const auto max_array = std::min<u32>(last_array + 1, NumLayers());
+            return max_array > base_array ? max_array - base_array : 1;
+        }
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits
@@ -346,6 +396,16 @@ enum class Filter : u64 {
     AnisoLinear = 3,
 };
 
+constexpr bool IsAnisoFilter(const Filter filter) {
+    switch (filter) {
+    case Filter::AnisoPoint:
+    case Filter::AnisoLinear:
+        return true;
+    default:
+        return false;
+    }
+}
+
 enum class MipFilter : u64 {
     None = 0,
     Point = 1,
@@ -353,8 +413,8 @@ enum class MipFilter : u64 {
 };
 
 enum class BorderColor : u64 {
-    OpaqueBlack = 0,
-    TransparentBlack = 1,
+    TransparentBlack = 0,
+    OpaqueBlack = 1,
     White = 2,
     Custom = 3,
 };
@@ -411,11 +471,28 @@ struct Sampler {
     }
 
     float MinLod() const noexcept {
-        return static_cast<float>(min_lod);
+        return static_cast<float>(min_lod.Value()) / 256.0f;
     }
 
     float MaxLod() const noexcept {
-        return static_cast<float>(max_lod);
+        return static_cast<float>(max_lod.Value()) / 256.0f;
+    }
+
+    float MaxAniso() const {
+        switch (max_aniso.Value()) {
+        case AnisoRatio::One:
+            return 1.0f;
+        case AnisoRatio::Two:
+            return 2.0f;
+        case AnisoRatio::Four:
+            return 4.0f;
+        case AnisoRatio::Eight:
+            return 8.0f;
+        case AnisoRatio::Sixteen:
+            return 16.0f;
+        default:
+            UNREACHABLE();
+        }
     }
 };
 

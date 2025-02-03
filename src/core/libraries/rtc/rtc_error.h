@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "core/libraries/error_codes.h"
+
 constexpr int ORBIS_RTC_ERROR_DATETIME_UNINITIALIZED = 0x7FFEF9FE;
 constexpr int ORBIS_RTC_ERROR_INVALID_PARAMETER = 0x80010602;
 constexpr int ORBIS_RTC_ERROR_INVALID_TICK_PARAMETER = 0x80010603;

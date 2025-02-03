@@ -5,7 +5,7 @@
 #include <mutex>
 #include <semaphore>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "save_backup.h"
 #include "save_instance.h"
@@ -79,7 +79,7 @@ static void backup(const std::filesystem::path& dir_name) {
 }
 
 static void BackupThreadBody() {
-    Common::SetCurrentThreadName("shadPS4:SaveData_BackupThread");
+    Common::SetCurrentThreadName("shadPS4:SaveData:BackupThread");
     while (g_backup_status != WorkerStatus::Stopping) {
         g_backup_status = WorkerStatus::Waiting;
 
@@ -121,15 +121,17 @@ static void BackupThreadBody() {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.pop_front();
-            g_result_queue.push_back(std::move(req));
-            if (g_result_queue.size() > 20) {
-                g_result_queue.pop_front();
+            if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
+                g_result_queue.push_back(std::move(req));
+                if (g_result_queue.size() > 20) {
+                    g_result_queue.pop_front();
+                }
             }
         }
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
     }
     g_backup_status = WorkerStatus::NotStarted;
 }
@@ -141,6 +143,15 @@ void StartThread() {
     LOG_DEBUG(Lib_SaveData, "Starting backup thread");
     g_backup_status = WorkerStatus::Waiting;
     g_backup_thread = std::jthread{BackupThreadBody};
+    static std::once_flag flag;
+    std::call_once(flag, [] {
+        std::at_quick_exit([] {
+            StopThread();
+            while (GetWorkerStatus() != WorkerStatus::NotStarted) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        });
+    });
 }
 
 void StopThread() {
@@ -148,12 +159,12 @@ void StopThread() {
         return;
     }
     LOG_DEBUG(Lib_SaveData, "Stopping backup thread");
+    g_backup_status = WorkerStatus::Stopping;
     {
         std::scoped_lock lk{g_backup_queue_mutex};
         g_backup_queue.emplace_back(BackupRequest{});
     }
     g_backup_thread_semaphore.release();
-    g_backup_status = WorkerStatus::Stopping;
 }
 
 bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,

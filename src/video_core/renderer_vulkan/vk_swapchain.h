@@ -23,7 +23,7 @@ public:
     ~Swapchain();
 
     /// Creates (or recreates) the swapchain with a given size.
-    void Create(u32 width, u32 height, vk::SurfaceKHR surface);
+    void Create(u32 width, u32 height);
 
     /// Recreates the swapchain with a given size and current surface.
     void Recreate(u32 width, u32 height);
@@ -32,7 +32,7 @@ public:
     bool AcquireNextImage();
 
     /// Presents the current image and move to the next one
-    void Present();
+    bool Present();
 
     vk::SurfaceKHR GetSurface() const {
         return surface;
@@ -40,6 +40,10 @@ public:
 
     vk::Image Image() const {
         return images[image_index];
+    }
+
+    vk::ImageView ImageView() const {
+        return images_view[image_index];
     }
 
     vk::SurfaceFormatKHR GetSurfaceFormat() const {
@@ -99,10 +103,12 @@ private:
     vk::SwapchainKHR swapchain{};
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
+    vk::Format view_format;
     vk::Extent2D extent;
     vk::SurfaceTransformFlagBitsKHR transform;
     vk::CompositeAlphaFlagBitsKHR composite_alpha;
     std::vector<vk::Image> images;
+    std::vector<vk::ImageView> images_view;
     std::vector<vk::Semaphore> image_acquired;
     std::vector<vk::Semaphore> present_ready;
     u32 width = 0;

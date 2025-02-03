@@ -14,12 +14,16 @@ std::mutex Scheduler::submit_mutex;
 
 Scheduler::Scheduler(const Instance& instance)
     : instance{instance}, master_semaphore{instance}, command_pool{instance, &master_semaphore} {
+#if TRACY_GPU_ENABLED
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
+#endif
     AllocateWorkerCommandBuffers();
 }
 
 Scheduler::~Scheduler() {
+#if TRACY_GPU_ENABLED
     std::free(profiler_scope);
+#endif
 }
 
 void Scheduler::BeginRendering(const RenderState& new_state) {
@@ -30,7 +34,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto witdh =
+    const auto width =
         render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
     const auto height =
         render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
@@ -39,7 +43,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {witdh, height},
+                .extent = {width, height},
             },
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,
@@ -47,7 +51,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
                                  ? render_state.color_attachments.data()
                                  : nullptr,
         .pDepthAttachment = render_state.has_depth ? &render_state.depth_attachment : nullptr,
-        .pStencilAttachment = render_state.has_stencil ? &render_state.depth_attachment : nullptr,
+        .pStencilAttachment = render_state.has_stencil ? &render_state.stencil_attachment : nullptr,
     };
 
     current_cmdbuf.beginRendering(rendering_info);
@@ -93,23 +97,27 @@ void Scheduler::AllocateWorkerCommandBuffers() {
     ASSERT_MSG(begin_result == vk::Result::eSuccess, "Failed to begin command buffer: {}",
                vk::to_string(begin_result));
 
+#if TRACY_GPU_ENABLED
     auto* profiler_ctx = instance.GetProfilerContext();
     if (profiler_ctx) {
         static const auto scope_loc =
             GPU_SCOPE_LOCATION("Guest Frame", MarkersPalette::GpuMarkerColor);
         new (profiler_scope) tracy::VkCtxScope{profiler_ctx, &scope_loc, current_cmdbuf, true};
     }
+#endif
 }
 
 void Scheduler::SubmitExecution(SubmitInfo& info) {
     std::scoped_lock lk{submit_mutex};
     const u64 signal_value = master_semaphore.NextTick();
 
+#if TRACY_GPU_ENABLED
     auto* profiler_ctx = instance.GetProfilerContext();
     if (profiler_ctx) {
         profiler_scope->~VkCtxScope();
         TracyVkCollect(profiler_ctx, current_cmdbuf);
     }
+#endif
 
     EndRendering();
     auto end_result = current_cmdbuf.end();

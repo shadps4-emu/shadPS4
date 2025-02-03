@@ -4,8 +4,11 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
 #include <boost/icl/interval_map.hpp>
+#ifdef __linux__
+#include "common/adaptive_mutex.h"
+#endif
+#include "common/spin_lock.h"
 #include "common/types.h"
 
 namespace Vulkan {
@@ -28,12 +31,19 @@ public:
     /// Increase/decrease the number of surface in pages touching the specified region
     void UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta);
 
+    static VAddr GetPageAddr(VAddr addr);
+    static VAddr GetNextPageAddr(VAddr addr);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;
     Vulkan::Rasterizer* rasterizer;
-    std::mutex mutex;
     boost::icl::interval_map<VAddr, s32> cached_pages;
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+    Common::AdaptiveMutex lock;
+#else
+    Common::SpinLock lock;
+#endif
 };
 
 } // namespace VideoCore

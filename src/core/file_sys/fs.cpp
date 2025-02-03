@@ -4,22 +4,34 @@
 #include <algorithm>
 #include "common/config.h"
 #include "common/string_util.h"
+#include "core/devices/logger.h"
+#include "core/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
 
-constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
+std::string RemoveTrailingSlashes(const std::string& path) {
+    // Remove trailing slashes to make comparisons simpler.
+    std::string path_sanitized = path;
+    while (path_sanitized.ends_with("/")) {
+        path_sanitized.pop_back();
+    }
+    return path_sanitized;
+}
 
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
-    m_mnt_pairs.emplace_back(host_folder, guest_folder, read_only);
+    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only);
 }
 
 void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(),
-                             [&](const MntPair& pair) { return pair.mount == guest_folder; });
+    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
+        return pair.mount == guest_folder_sanitized;
+    });
     m_mnt_pairs.erase(it, m_mnt_pairs.end());
 }
 
@@ -28,7 +40,8 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only) {
+std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
+                                             bool force_base_path) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
     std::string corrected_path(path);
     size_t pos = corrected_path.find("//");
@@ -47,7 +60,8 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Nothing to do if getting the mount itself.
-    if (corrected_path == mount->mount) {
+    const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
+    if (corrected_path_sanitized == mount->mount) {
         return mount->host_path;
     }
 
@@ -59,7 +73,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     patch_path /= rel_path;
 
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        std::filesystem::exists(patch_path)) {
+        !force_base_path && std::filesystem::exists(patch_path)) {
         return patch_path;
     }
 
@@ -119,8 +133,10 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (const auto path = search(patch_path)) {
-        return *path;
+    if (!force_base_path) {
+        if (const auto path = search(patch_path)) {
+            return *path;
+        }
     }
     if (const auto path = search(host_path)) {
         return *path;
@@ -131,11 +147,43 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     return host_path;
 }
 
+// TODO: Does not handle mount points inside mount points.
+void MntPoints::IterateDirectory(std::string_view guest_directory,
+                                 const IterateDirectoryCallback& callback) {
+    const auto base_path = GetHostPath(guest_directory, nullptr, true);
+    const auto patch_path = GetHostPath(guest_directory, nullptr, false);
+    // Only need to consider patch path if it exists and does not resolve to the same as base.
+    const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
+
+    // Pass 1: Any files that existed in the base directory, using patch directory if needed.
+    if (std::filesystem::exists(base_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
+            if (apply_patch) {
+                const auto patch_entry_path = patch_path / entry.path().filename();
+                if (std::filesystem::exists(patch_entry_path)) {
+                    callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
+                    continue;
+                }
+            }
+            callback(entry.path(), !entry.is_directory());
+        }
+    }
+
+    // Pass 2: Any files that exist only in the patch directory.
+    if (apply_patch) {
+        for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
+            const auto base_entry_path = base_path / entry.path().filename();
+            if (!std::filesystem::exists(base_entry_path)) {
+                callback(entry.path(), !entry.is_directory());
+            }
+        }
+    }
+}
+
 int HandleTable::CreateHandle() {
     std::scoped_lock lock{m_mutex};
 
     auto* file = new File{};
-    file->is_directory = false;
     file->is_opened = false;
 
     int existingFilesNum = m_files.size();
@@ -143,23 +191,26 @@ int HandleTable::CreateHandle() {
     for (int index = 0; index < existingFilesNum; index++) {
         if (m_files.at(index) == nullptr) {
             m_files[index] = file;
-            return index + RESERVED_HANDLES;
+            return index;
         }
     }
 
     m_files.push_back(file);
-    return m_files.size() + RESERVED_HANDLES - 1;
+    return m_files.size() - 1;
 }
 
 void HandleTable::DeleteHandle(int d) {
     std::scoped_lock lock{m_mutex};
-    delete m_files.at(d - RESERVED_HANDLES);
-    m_files[d - RESERVED_HANDLES] = nullptr;
+    delete m_files.at(d);
+    m_files[d] = nullptr;
 }
 
 File* HandleTable::GetFile(int d) {
     std::scoped_lock lock{m_mutex};
-    return m_files.at(d - RESERVED_HANDLES);
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    return m_files.at(d);
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
@@ -169,6 +220,32 @@ File* HandleTable::GetFile(const std::filesystem::path& host_name) {
         }
     }
     return nullptr;
+}
+
+void HandleTable::CreateStdHandles() {
+    auto setup = [this](const char* path, auto* device) {
+        int fd = CreateHandle();
+        auto* file = GetFile(fd);
+        file->is_opened = true;
+        file->type = FileType::Device;
+        file->m_guest_name = path;
+        file->device =
+            std::shared_ptr<Devices::BaseDevice>{reinterpret_cast<Devices::BaseDevice*>(device)};
+    };
+    // order matters
+    setup("/dev/stdin", new Devices::Logger("stdin", false));   // stdin
+    setup("/dev/stdout", new Devices::Logger("stdout", false)); // stdout
+    setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
+}
+
+int HandleTable::GetFileDescriptor(File* file) {
+    std::scoped_lock lock{m_mutex};
+    auto it = std::find(m_files.begin(), m_files.end(), file);
+
+    if (it != m_files.end()) {
+        return std::distance(m_files.begin(), it);
+    }
+    return 0;
 }
 
 } // namespace Core::FileSys

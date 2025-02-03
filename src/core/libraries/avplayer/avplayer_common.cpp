@@ -1,29 +1,21 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "avplayer.h"
-#include "avplayer_common.h"
+#include <algorithm> // std::equal
+#include <cctype>    // std::tolower
 
-#include <algorithm>   // std::equal
-#include <cctype>      // std::tolower
-#include <string_view> // std::string_view
+#include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/avplayer/avplayer_common.h"
 
 namespace Libraries::AvPlayer {
 
-using namespace Kernel;
-
-static bool ichar_equals(char a, char b) {
-    return std::tolower(static_cast<unsigned char>(a)) ==
-           std::tolower(static_cast<unsigned char>(b));
-}
-
 static bool iequals(std::string_view l, std::string_view r) {
-    return std::ranges::equal(l, r, ichar_equals);
+    return std::ranges::equal(l, r, [](u8 a, u8 b) { return std::tolower(a) == std::tolower(b); });
 }
 
 SceAvPlayerSourceType GetSourceType(std::string_view path) {
     if (path.empty()) {
-        return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+        return SceAvPlayerSourceType::Unknown;
     }
 
     std::string_view name = path;
@@ -33,14 +25,14 @@ SceAvPlayerSourceType GetSourceType(std::string_view path) {
         // -> schema://server.domain/path/to/file.ext/and/beyond
         name = path.substr(0, path.find_first_of("?#"));
         if (name.empty()) {
-            return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+            return SceAvPlayerSourceType::Unknown;
         }
     }
 
     // schema://server.domain/path/to/file.ext/and/beyond -> .ext/and/beyond
     auto ext = name.substr(name.rfind('.'));
     if (ext.empty()) {
-        return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+        return SceAvPlayerSourceType::Unknown;
     }
 
     // .ext/and/beyond -> .ext
@@ -48,14 +40,14 @@ SceAvPlayerSourceType GetSourceType(std::string_view path) {
 
     if (iequals(ext, ".mp4") || iequals(ext, ".m4v") || iequals(ext, ".m3d") ||
         iequals(ext, ".m4a") || iequals(ext, ".mov")) {
-        return SCE_AVPLAYER_SOURCE_TYPE_FILE_MP4;
+        return SceAvPlayerSourceType::FileMp4;
     }
 
     if (iequals(ext, ".m3u8")) {
-        return SCE_AVPLAYER_SOURCE_TYPE_HLS;
+        return SceAvPlayerSourceType::Hls;
     }
 
-    return SCE_AVPLAYER_SOURCE_TYPE_UNKNOWN;
+    return SceAvPlayerSourceType::Unknown;
 }
 
 } // namespace Libraries::AvPlayer

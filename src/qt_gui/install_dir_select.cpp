@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
@@ -15,10 +16,11 @@
 #include "install_dir_select.h"
 
 InstallDirSelect::InstallDirSelect() : selected_dir() {
-    selected_dir = Config::getGameInstallDirs().empty() ? "" : Config::getGameInstallDirs().front();
+    auto install_dirs = Config::getGameInstallDirs();
+    selected_dir = install_dirs.empty() ? "" : install_dirs.front();
 
-    if (!Config::getGameInstallDirs().empty() && Config::getGameInstallDirs().size() == 1) {
-        reject();
+    if (!install_dirs.empty() && install_dirs.size() == 1) {
+        accept();
     }
 
     auto layout = new QVBoxLayout(this);
@@ -53,6 +55,14 @@ QWidget* InstallDirSelect::SetupInstallDirList() {
 
     vlayout->addWidget(m_path_list);
 
+    auto checkbox = new QCheckBox(tr("Install All Queued to Selected Folder"));
+    connect(checkbox, &QCheckBox::toggled, this, &InstallDirSelect::setUseForAllQueued);
+    vlayout->addWidget(checkbox);
+
+    auto checkbox2 = new QCheckBox(tr("Delete PKG File on Install"));
+    connect(checkbox2, &QCheckBox::toggled, this, &InstallDirSelect::setDeleteFileOnInstall);
+    vlayout->addWidget(checkbox2);
+
     group->setLayout(vlayout);
     return group;
 }
@@ -64,6 +74,14 @@ void InstallDirSelect::setSelectedDirectory(QListWidgetItem* item) {
             selected_dir = highlighted_path;
         }
     }
+}
+
+void InstallDirSelect::setUseForAllQueued(bool enabled) {
+    use_for_all_queued = enabled;
+}
+
+void InstallDirSelect::setDeleteFileOnInstall(bool enabled) {
+    delete_file_on_install = enabled;
 }
 
 QWidget* InstallDirSelect::SetupDialogActions() {

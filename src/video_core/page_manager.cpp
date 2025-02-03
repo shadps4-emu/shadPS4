@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/signal_context.h"
+#include "core/memory.h"
 #include "core/signals.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -28,10 +29,10 @@ namespace VideoCore {
 constexpr size_t PAGESIZE = 4_KB;
 constexpr size_t PAGEBITS = 12;
 
-#if ENABLE_USERFAULTFD
+#ifdef ENABLE_USERFAULTFD
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
-        uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
+        uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY);
         ASSERT_MSG(uffd != -1, "{}", Common::GetLastErrorMsg());
 
         // Request uffdio features from kernel.
@@ -113,8 +114,7 @@ struct PageManager::Impl {
 
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
-            const VAddr addr_page = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_page, PAGESIZE);
+            rasterizer->InvalidateMemory(addr, 1);
         }
     }
 
@@ -134,41 +134,30 @@ struct PageManager::Impl {
     }
 
     void OnMap(VAddr address, size_t size) {
-        owned_ranges += boost::icl::interval<VAddr>::right_open(address, address + size);
+        // No-op
     }
 
     void OnUnmap(VAddr address, size_t size) {
-        owned_ranges -= boost::icl::interval<VAddr>::right_open(address, address + size);
+        // No-op
     }
 
     void Protect(VAddr address, size_t size, bool allow_write) {
-        ASSERT_MSG(owned_ranges.find(address) != owned_ranges.end(),
-                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", address,
-                   size);
-#ifdef _WIN32
-        DWORD prot = allow_write ? PAGE_READWRITE : PAGE_READONLY;
-        DWORD old_prot{};
-        BOOL result = VirtualProtect(std::bit_cast<LPVOID>(address), size, prot, &old_prot);
-        ASSERT_MSG(result != 0, "Region protection failed");
-#else
-        mprotect(reinterpret_cast<void*>(address), size,
-                 PROT_READ | (allow_write ? PROT_WRITE : 0));
-#endif
+        auto* memory = Core::Memory::Instance();
+        auto& impl = memory->GetAddressSpace();
+        impl.Protect(address, size,
+                     allow_write ? Core::MemoryPermission::ReadWrite
+                                 : Core::MemoryPermission::Read);
     }
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
-        const bool is_write = Common::IsWriteError(context);
-        if (is_write && owned_ranges.find(addr) != owned_ranges.end()) {
-            const VAddr addr_aligned = Common::AlignDown(addr, PAGESIZE);
-            rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);
-            return true;
+        if (Common::IsWriteError(context)) {
+            return rasterizer->InvalidateMemory(addr, 1);
         }
         return false;
     }
 
     inline static Vulkan::Rasterizer* rasterizer;
-    inline static boost::icl::interval_set<VAddr> owned_ranges;
 };
 #endif
 
@@ -176,6 +165,14 @@ PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
     : impl{std::make_unique<Impl>(rasterizer_)}, rasterizer{rasterizer_} {}
 
 PageManager::~PageManager() = default;
+
+VAddr PageManager::GetPageAddr(VAddr addr) {
+    return Common::AlignDown(addr, PAGESIZE);
+}
+
+VAddr PageManager::GetNextPageAddr(VAddr addr) {
+    return Common::AlignUp(addr + 1, PAGESIZE);
+}
 
 void PageManager::OnGpuMap(VAddr address, size_t size) {
     impl->OnMap(address, size);
@@ -188,7 +185,7 @@ void PageManager::OnGpuUnmap(VAddr address, size_t size) {
 void PageManager::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
     static constexpr u64 PageShift = 12;
 
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{lock};
     const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
     const u64 page_start = addr >> PageShift;
     const u64 page_end = page_start + num_pages;
@@ -205,6 +202,9 @@ void PageManager::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
         const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
         const u32 interval_size = interval_end_addr - interval_start_addr;
+        ASSERT_MSG(rasterizer->IsMapped(interval_start_addr, interval_size),
+                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
+                   interval_start_addr, interval_size);
         if (delta > 0 && count == delta) {
             impl->Protect(interval_start_addr, interval_size, false);
         } else if (delta < 0 && count == -delta) {

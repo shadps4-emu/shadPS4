@@ -11,8 +11,7 @@
 #include <queue>
 
 #include "common/types.h"
-#include "video_core/amdgpu/liverpool.h"
-#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -30,10 +29,13 @@ namespace Core::Devtools {
 class Layer;
 namespace Widget {
 class FrameGraph;
-}
+class ShaderList;
+} // namespace Widget
 } // namespace Core::Devtools
 
 namespace DebugStateType {
+
+extern bool showing_debug_menu_bar;
 
 enum class QueueType {
     dcb = 0,
@@ -49,12 +51,16 @@ struct QueueDump {
     uintptr_t base_addr;
 };
 
-struct ShaderDump {
+struct PipelineShaderProgramDump {
+    std::string name;
+    u64 hash;
     Vulkan::Liverpool::ShaderProgram user_data{};
     std::vector<u32> code{};
 };
 
-struct ComputerShaderDump {
+struct PipelineComputerProgramDump {
+    std::string name;
+    u64 hash;
     Vulkan::Liverpool::ComputeProgram cs_program{};
     std::vector<u32> code{};
 };
@@ -63,8 +69,8 @@ struct RegDump {
     bool is_compute{false};
     static constexpr size_t MaxShaderStages = 5;
     Vulkan::Liverpool::Regs regs{};
-    std::array<ShaderDump, MaxShaderStages> stages{};
-    ComputerShaderDump cs_data{};
+    std::array<PipelineShaderProgramDump, MaxShaderStages> stages{};
+    PipelineComputerProgramDump cs_data{};
 };
 
 struct FrameDump {
@@ -73,9 +79,61 @@ struct FrameDump {
     std::unordered_map<uintptr_t, RegDump> regs; // address -> reg dump
 };
 
+struct ShaderDump {
+    std::string name;
+    Shader::LogicalStage l_stage;
+    vk::ShaderModule module;
+
+    std::vector<u32> spv;
+    std::vector<u32> isa;
+
+    std::vector<u32> patch_spv;
+    std::string patch_source{};
+
+    bool loaded_data = false;
+    bool is_patched = false;
+    std::string cache_spv_disasm{};
+    std::string cache_isa_disasm{};
+    std::string cache_patch_disasm{};
+
+    ShaderDump(std::string name, Shader::LogicalStage l_stage, vk::ShaderModule module,
+               std::vector<u32> spv, std::vector<u32> isa, std::vector<u32> patch_spv,
+               bool is_patched)
+        : name(std::move(name)), l_stage(l_stage), module(module), spv(std::move(spv)),
+          isa(std::move(isa)), patch_spv(std::move(patch_spv)), is_patched(is_patched) {}
+
+    ShaderDump(const ShaderDump& other) = delete;
+    ShaderDump(ShaderDump&& other) noexcept
+        : name{std::move(other.name)}, l_stage(other.l_stage), module{std::move(other.module)},
+          spv{std::move(other.spv)}, isa{std::move(other.isa)},
+          patch_spv{std::move(other.patch_spv)}, patch_source{std::move(other.patch_source)},
+          cache_spv_disasm{std::move(other.cache_spv_disasm)},
+          cache_isa_disasm{std::move(other.cache_isa_disasm)},
+          cache_patch_disasm{std::move(other.cache_patch_disasm)} {}
+    ShaderDump& operator=(const ShaderDump& other) = delete;
+    ShaderDump& operator=(ShaderDump&& other) noexcept {
+        if (this == &other)
+            return *this;
+        name = std::move(other.name);
+        l_stage = other.l_stage;
+        module = std::move(other.module);
+        spv = std::move(other.spv);
+        isa = std::move(other.isa);
+        patch_spv = std::move(other.patch_spv);
+        patch_source = std::move(other.patch_source);
+        cache_spv_disasm = std::move(other.cache_spv_disasm);
+        cache_isa_disasm = std::move(other.cache_isa_disasm);
+        cache_patch_disasm = std::move(other.cache_patch_disasm);
+        return *this;
+    }
+};
+
 class DebugStateImpl {
     friend class Core::Devtools::Layer;
     friend class Core::Devtools::Widget::FrameGraph;
+    friend class Core::Devtools::Widget::ShaderList;
+
+    std::queue<std::string> debug_message_popup;
 
     std::mutex guest_threads_mutex{};
     std::vector<ThreadID> guest_threads{};
@@ -94,14 +152,21 @@ class DebugStateImpl {
     std::shared_mutex frame_dump_list_mutex;
     std::vector<FrameDump> frame_dump_list{};
 
-    std::queue<std::string> debug_message_popup;
+    std::vector<ShaderDump> shader_dump_list{};
 
 public:
+    float Framerate = 1.0f / 60.0f;
+    float FrameDeltaTime;
+
     void ShowDebugMessage(std::string message) {
         if (message.empty()) {
             return;
         }
         debug_message_popup.push(std::move(message));
+    }
+
+    bool& IsShowingDebugMenuBar() {
+        return showing_debug_menu_bar;
     }
 
     void AddCurrentThreadToGuestList();
@@ -151,7 +216,17 @@ public:
     void PushQueueDump(QueueDump dump);
 
     void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs, bool is_compute = false);
+                      const AmdGpu::Liverpool::Regs& regs);
+    using CsState = AmdGpu::Liverpool::ComputeProgram;
+    void PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_addr, const CsState& cs_state);
+
+    void CollectShader(const std::string& name, Shader::LogicalStage l_stage,
+                       vk::ShaderModule module, std::span<const u32> spv,
+                       std::span<const u32> raw_code, std::span<const u32> patch_spv,
+                       bool is_patched);
+
+private:
+    std::optional<RegDump*> GetRegDump(uintptr_t base_addr, uintptr_t header_addr);
 };
 } // namespace DebugStateType
 

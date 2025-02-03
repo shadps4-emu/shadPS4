@@ -33,10 +33,6 @@ public:
     [[nodiscard]] vk::Format GetSupportedFormat(vk::Format format,
                                                 vk::FormatFeatureFlags2 flags) const;
 
-    /// Re-orders a component swizzle for format compatibility, if needed.
-    [[nodiscard]] vk::ComponentMapping GetSupportedComponentSwizzle(
-        vk::Format format, vk::ComponentMapping swizzle, vk::FormatFeatureFlags2 flags) const;
-
     /// Returns the Vulkan instance
     vk::Instance GetInstance() const {
         return *instance;
@@ -81,11 +77,6 @@ public:
 
     TracyVkCtx GetProfilerContext() const {
         return profiler_context;
-    }
-
-    /// Returns true when a known debugging tool is attached.
-    bool HasDebuggingToolAttached() const {
-        return has_renderdoc || has_nsight_graphics;
     }
 
     /// Returns true if anisotropic filtering is supported
@@ -143,8 +134,29 @@ public:
         return maintenance5;
     }
 
+    /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
+    bool IsFragmentShaderBarycentricSupported() const {
+        return fragment_shader_barycentric;
+    }
+
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
     bool IsListRestartSupported() const {
         return list_restart;
+    }
+
+    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
+    bool IsLegacyVertexAttributesSupported() const {
+        return legacy_vertex_attributes;
+    }
+
+    /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
+    bool IsImageLoadStoreLodSupported() const {
+        return image_load_store_lod;
+    }
+
+    /// Returns true when VK_AMD_gcn_shader is supported.
+    bool IsAmdGcnShaderSupported() const {
+        return amd_gcn_shader;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -227,6 +239,11 @@ public:
         return subgroup_size;
     }
 
+    /// Returns the maximum size of compute shared memory.
+    u32 MaxComputeSharedMemorySize() const {
+        return properties.limits.maxComputeSharedMemorySize;
+    }
+
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;
@@ -235,6 +252,11 @@ public:
     /// Returns the maximum sampler LOD bias.
     float MaxSamplerLodBias() const {
         return properties.limits.maxSamplerLodBias;
+    }
+
+    /// Returns the maximum sampler anisotropy.
+    float MaxSamplerAnisotropy() const {
+        return properties.limits.maxSamplerAnisotropy;
     }
 
     /// Returns the maximum number of push descriptors.
@@ -255,6 +277,14 @@ public:
     /// Returns the minimum imported host pointer alignment
     u64 GetMinImportedHostPointerAlignment() const {
         return min_imported_host_pointer_alignment;
+    }
+
+    u32 GetMaxViewportWidth() const {
+        return properties.limits.maxViewportDimensions[0];
+    }
+
+    u32 GetMaxViewportHeight() const {
+        return properties.limits.maxViewportDimensions[1];
     }
 
     /// Returns the sample count flags supported by framebuffers.
@@ -315,12 +345,12 @@ private:
     bool null_descriptor{};
     bool maintenance5{};
     bool list_restart{};
+    bool legacy_vertex_attributes{};
+    bool image_load_store_lod{};
+    bool amd_gcn_shader{};
+    bool tooling_info{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
-    bool tooling_info{};
-    bool debug_utils_supported{};
-    bool has_nsight_graphics{};
-    bool has_renderdoc{};
 };
 
 } // namespace Vulkan

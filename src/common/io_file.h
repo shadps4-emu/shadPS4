@@ -10,6 +10,7 @@
 
 #include "common/concepts.h"
 #include "common/types.h"
+#include "enum.h"
 
 namespace Common::FS {
 
@@ -42,6 +43,7 @@ enum class FileAccessMode {
      */
     ReadAppend = Read | Append,
 };
+DECLARE_ENUM_FLAG_OPERATORS(FileAccessMode);
 
 enum class FileType {
     BinaryFile,
@@ -205,7 +207,7 @@ public:
         return WriteSpan(string);
     }
 
-    static size_t WriteBytes(const std::filesystem::path path, std::span<const u8> data) {
+    static size_t WriteBytes(const std::filesystem::path path, const auto& data) {
         IOFile out(path, FileAccessMode::Write);
         return out.Write(data);
     }

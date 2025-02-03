@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include <mutex>
+#include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include <boost/icl/interval_map.hpp>
-#include <tsl/robin_map.h>
 #include "common/div_ceil.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -20,7 +18,14 @@ struct Liverpool;
 }
 
 namespace Shader {
+namespace Gcn {
+struct FetchShaderData;
+}
 struct Info;
+} // namespace Shader
+
+namespace Vulkan {
+class GraphicsPipeline;
 }
 
 namespace VideoCore {
@@ -39,7 +44,7 @@ public:
 
     struct Traits {
         using Entry = BufferId;
-        static constexpr size_t AddressSpaceBits = 39;
+        static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 14;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
     };
@@ -63,23 +68,24 @@ public:
         return &gds_buffer;
     }
 
+    /// Returns a pointer to LDS device local buffer.
+    [[nodiscard]] const Buffer* GetLdsBuffer() const noexcept {
+        return &lds_buffer;
+    }
+
     /// Retrieves the buffer with the specified id.
     [[nodiscard]] Buffer& GetBuffer(BufferId id) {
         return slot_buffers[id];
-    }
-
-    [[nodiscard]] vk::BufferView& NullBufferView() {
-        return null_buffer_view;
     }
 
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
     /// Binds host vertex buffers for the current draw.
-    bool BindVertexBuffers(const Shader::Info& vs_info);
+    void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
 
     /// Bind host index buffer for the current draw.
-    u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
+    void BindIndexBuffer(u32 index_offset);
 
     /// Writes a value to GPU buffer.
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
@@ -92,7 +98,8 @@ public:
                                                        BufferId buffer_id = {});
 
     /// Attempts to obtain a buffer without modifying the cache contents.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainViewBuffer(VAddr gpu_addr, u32 size);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainViewBuffer(VAddr gpu_addr, u32 size,
+                                                           bool prefer_gpu);
 
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
@@ -152,10 +159,10 @@ private:
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
-    std::mutex mutex;
+    Buffer lds_buffer;
+    std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
-    vk::BufferView null_buffer_view;
     MemoryTracker memory_tracker;
     PageTable page_table;
 };

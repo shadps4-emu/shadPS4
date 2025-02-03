@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
+#include "common/assert.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 
 namespace Shader::Gcn {
@@ -50,6 +52,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_OR_B64(NegateMode::None, false, inst);
         case Opcode::S_XOR_B32:
             return S_XOR_B32(inst);
+        case Opcode::S_NOT_B32:
+            return S_NOT_B32(inst);
         case Opcode::S_XOR_B64:
             return S_OR_B64(NegateMode::None, true, inst);
         case Opcode::S_ANDN2_B32:
@@ -68,16 +72,22 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_OR_B64(NegateMode::Result, true, inst);
         case Opcode::S_LSHL_B32:
             return S_LSHL_B32(inst);
+        case Opcode::S_LSHL_B64:
+            return S_LSHL_B64(inst);
         case Opcode::S_LSHR_B32:
             return S_LSHR_B32(inst);
         case Opcode::S_ASHR_I32:
             return S_ASHR_I32(inst);
+        case Opcode::S_ASHR_I64:
+            return S_ASHR_I64(inst);
         case Opcode::S_BFM_B32:
             return S_BFM_B32(inst);
         case Opcode::S_MUL_I32:
             return S_MUL_I32(inst);
+        case Opcode::S_BFE_I32:
+            return S_BFE(inst, true);
         case Opcode::S_BFE_U32:
-            return S_BFE_U32(inst);
+            return S_BFE(inst, false);
         case Opcode::S_ABSDIFF_I32:
             return S_ABSDIFF_I32(inst);
 
@@ -92,12 +102,24 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             break;
         case Opcode::S_BREV_B32:
             return S_BREV_B32(inst);
+        case Opcode::S_BCNT1_I32_B32:
+            return S_BCNT1_I32_B32(inst);
         case Opcode::S_BCNT1_I32_B64:
             return S_BCNT1_I32_B64(inst);
+        case Opcode::S_FF1_I32_B32:
+            return S_FF1_I32_B32(inst);
+        case Opcode::S_FF1_I32_B64:
+            return S_FF1_I32_B64(inst);
+        case Opcode::S_BITSET0_B32:
+            return S_BITSET_B32(inst, 0);
+        case Opcode::S_BITSET1_B32:
+            return S_BITSET_B32(inst, 1);
         case Opcode::S_AND_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::None, false, inst);
         case Opcode::S_ORN2_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::Src1, true, inst);
+        case Opcode::S_ABS_I32:
+            return S_ABS_I32(inst);
         default:
             LogMissingOpcode(inst);
         }
@@ -132,6 +154,16 @@ void Translator::EmitSOPC(const GcnInst& inst) {
         return S_CMP(ConditionOp::LT, false, inst);
     case Opcode::S_CMP_LE_U32:
         return S_CMP(ConditionOp::LE, false, inst);
+
+    case Opcode::S_BITCMP0_B32:
+        return S_BITCMP(false, 32, inst);
+    case Opcode::S_BITCMP1_B32:
+        return S_BITCMP(true, 32, inst);
+    case Opcode::S_BITCMP0_B64:
+        return S_BITCMP(false, 64, inst);
+    case Opcode::S_BITCMP1_B64:
+        return S_BITCMP(true, 64, inst);
+
     default:
         LogMissingOpcode(inst);
     }
@@ -141,8 +173,9 @@ void Translator::EmitSOPK(const GcnInst& inst) {
     switch (inst.opcode) {
         // SOPK
     case Opcode::S_MOVK_I32:
-        return S_MOVK(inst);
-
+        return S_MOVK(inst, false);
+    case Opcode::S_CMOVK_I32:
+        return S_MOVK(inst, true);
     case Opcode::S_CMPK_EQ_I32:
         return S_CMPK(ConditionOp::EQ, true, inst);
     case Opcode::S_CMPK_LG_I32:
@@ -291,6 +324,10 @@ void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
             ASSERT_MSG(-s32(operand.code) + SignedConstIntNegMin - 1 == -1,
                        "SignedConstIntNeg must be -1");
             return ir.Imm1(true);
+        case OperandField::LiteralConst:
+            ASSERT_MSG(operand.code == 0 || operand.code == std::numeric_limits<u32>::max(),
+                       "Unsupported literal {:#x}", operand.code);
+            return ir.Imm1(operand.code & 1);
         default:
             UNREACHABLE();
         }
@@ -372,12 +409,27 @@ void Translator::S_XOR_B32(const GcnInst& inst) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
+void Translator::S_NOT_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 result{ir.BitwiseNot(src0)};
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
 void Translator::S_LSHL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result = ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F)));
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_LSHL_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::U64 result = ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F))));
+    SetDst64(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
 }
 
 void Translator::S_LSHR_B32(const GcnInst& inst) {
@@ -391,9 +443,17 @@ void Translator::S_LSHR_B32(const GcnInst& inst) {
 void Translator::S_ASHR_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result{ir.ShiftRightArithmetic(src0, src1)};
+    const IR::U32 result{ir.ShiftRightArithmetic(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F)))};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_ASHR_I64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::U64 result{ir.ShiftRightArithmetic(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F))))};
+    SetDst64(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
 }
 
 void Translator::S_BFM_B32(const GcnInst& inst) {
@@ -407,12 +467,12 @@ void Translator::S_MUL_I32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
 }
 
-void Translator::S_BFE_U32(const GcnInst& inst) {
+void Translator::S_BFE(const GcnInst& inst, bool is_signed) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 offset{ir.BitwiseAnd(src1, ir.Imm32(0x1F))};
     const IR::U32 count{ir.BitFieldExtract(src1, ir.Imm32(16), ir.Imm32(7))};
-    const IR::U32 result{ir.BitFieldExtract(src0, offset, count)};
+    const IR::U32 result{ir.BitFieldExtract(src0, offset, count, is_signed)};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
@@ -427,13 +487,16 @@ void Translator::S_ABSDIFF_I32(const GcnInst& inst) {
 
 // SOPK
 
-void Translator::S_MOVK(const GcnInst& inst) {
-    const auto simm16 = inst.control.sopk.simm;
-    if (simm16 & (1 << 15)) {
-        // TODO: need to verify the case of imm sign extension
-        UNREACHABLE();
+void Translator::S_MOVK(const GcnInst& inst, bool is_conditional) {
+    const s16 simm16 = inst.control.sopk.simm;
+    // do the sign extension
+    const s32 simm32 = static_cast<s32>(simm16);
+    IR::U32 val = ir.Imm32(simm32);
+    if (is_conditional) {
+        // if !SCC its a NOP
+        val = IR::U32{ir.Select(ir.GetScc(), val, GetSrc(inst.dst[0]))};
     }
-    SetDst(inst.dst[0], ir.Imm32(simm16));
+    SetDst(inst.dst[0], val);
 }
 
 void Translator::S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst) {
@@ -544,10 +607,35 @@ void Translator::S_BREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
 }
 
-void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
+void Translator::S_BCNT1_I32_B32(const GcnInst& inst) {
     const IR::U32 result = ir.BitCount(GetSrc(inst.src[0]));
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
+    const IR::U32 result = ir.BitCount(GetSrc64(inst.src[0]));
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_FF1_I32_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 result{ir.FindILsb(src0)};
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::S_FF1_I32_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U32 result{ir.FindILsb(src0)};
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 offset{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0U), ir.Imm32(5U))};
+    const IR::U32 result{ir.BitFieldInsert(old_value, ir.Imm32(bit_value), offset, ir.Imm32(1U))};
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst) {
@@ -561,6 +649,8 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
             return ir.GetVcc();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::ExecLo:
+            return ir.GetExec();
         default:
             UNREACHABLE();
         }
@@ -589,6 +679,12 @@ void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& in
     ir.SetScc(result);
 }
 
+void Translator::S_ABS_I32(const GcnInst& inst) {
+    const auto result = ir.IAbs(GetSrc(inst.src[0]));
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
 // SOPC
 
 void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
@@ -610,6 +706,35 @@ void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
             return ir.ILessThanEqual(lhs, rhs, is_signed);
         default:
             UNREACHABLE();
+        }
+    }();
+    ir.SetScc(result);
+}
+
+void Translator::S_BITCMP(bool compare_mode, u32 bits, const GcnInst& inst) {
+    const IR::U1 result = [&] {
+        const IR::U32 src0 = GetSrc(inst.src[0]);
+        const IR::U32 src1 = GetSrc(inst.src[1]);
+
+        IR::U32 mask;
+        switch (bits) {
+        case 32:
+            mask = ir.Imm32(0x1f);
+            break;
+        case 64:
+            mask = ir.Imm32(0x3f);
+            break;
+        default:
+            UNREACHABLE();
+        }
+
+        const IR::U32 bitpos{ir.BitwiseAnd(src1, mask)};
+        const IR::U32 bittest{ir.BitwiseAnd(ir.ShiftRightLogical(src0, bitpos), ir.Imm32(1))};
+
+        if (!compare_mode) {
+            return ir.IEqual(bittest, ir.Imm32(0));
+        } else {
+            return ir.IEqual(bittest, ir.Imm32(1));
         }
     }();
     ir.SetScc(result);

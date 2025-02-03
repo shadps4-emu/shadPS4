@@ -248,7 +248,7 @@ public:
         std::string date{};
         std::string size{};
 
-        std::filesystem::file_time_type last_write{};
+        std::chrono::system_clock::time_point last_write{};
         PSF pfo{};
         bool is_corrupted{};
     };

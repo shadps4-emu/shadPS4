@@ -28,6 +28,6 @@ struct Pools {
 };
 
 [[nodiscard]] IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info,
-                                           const RuntimeInfo& runtime_info, const Profile& profile);
+                                           RuntimeInfo& runtime_info, const Profile& profile);
 
 } // namespace Shader

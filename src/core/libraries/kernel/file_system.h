@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/libraries/kernel/time_management.h"
+#include "core/libraries/kernel/time.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -37,8 +37,8 @@ struct OrbisKernelStat {
     u32 st_gen;
     s32 st_lspare;
     OrbisKernelTimespec st_birthtim;
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
+    u32 : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
+    u32 : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
 };
 
 struct OrbisKernelDirent {
@@ -65,11 +65,10 @@ constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
-int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, /* SceKernelMode*/ u16 mode);
-
-int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode);
-s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence);
-
-void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym);
+s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes);
+s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes);
+s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset);
+s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset);
+void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

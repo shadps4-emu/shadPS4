@@ -3,15 +3,13 @@
 
 #pragma once
 
-#include "avplayer.h"
-
-#include "common/assert.h"
-#include "common/logging/log.h"
-#include "core/libraries/kernel/thread_management.h"
-
+#include <mutex>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <queue>
+
+#include "core/libraries/avplayer/avplayer.h"
 
 #define AVPLAYER_IS_ERROR(x) ((x) < 0)
 

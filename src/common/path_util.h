@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #ifdef ENABLE_QT_GUI
@@ -114,5 +115,19 @@ void PathToQString(QString& result, const std::filesystem::path& path);
  */
 [[nodiscard]] std::filesystem::path PathFromQString(const QString& path);
 #endif
+
+/**
+ * Recursively searches for a game directory by its ID.
+ * Limits search depth to prevent excessive filesystem traversal.
+ *
+ * @param dir Base directory to start the search from
+ * @param game_id The game ID to search for
+ * @param max_depth Maximum directory depth to search
+ *
+ * @returns Path to eboot.bin if found, std::nullopt otherwise
+ */
+[[nodiscard]] std::optional<std::filesystem::path> FindGameByID(const std::filesystem::path& dir,
+                                                                const std::string& game_id,
+                                                                int max_depth);
 
 } // namespace Common::FS

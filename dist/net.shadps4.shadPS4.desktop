@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=shadPS4
+Exec=shadps4
+Terminal=false
+Type=Application
+Icon=net.shadps4.shadPS4
+Comment=PlayStation 4 emulator
+Categories=Game;
+StartupWMClass=shadps4;

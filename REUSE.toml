@@ -5,15 +5,21 @@ path = [
     "REUSE.toml",
     "CMakeSettings.json",
     ".github/FUNDING.yml",
-    ".github/shadps4.desktop",
     ".github/shadps4.png",
     ".gitmodules",
-    "documents/changelog.txt",
+    "dist/MacOSBundleInfo.plist.in",
+    "dist/net.shadps4.shadPS4.desktop",
+    "dist/net.shadps4.shadPS4_metadata.pot",
+    "dist/net.shadps4.shadPS4.metainfo.xml",
+    "documents/changelog.md",
     "documents/Quickstart/2.png",
     "documents/Screenshots/*",
+    "documents/Screenshots/Linux/*",
+    "externals/MoltenVK/MoltenVK_icd.json",
     "scripts/ps4_names.txt",
     "src/images/about_icon.png",
     "src/images/controller_icon.png",
+    "src/images/discord.png",
     "src/images/dump_icon.png",
     "src/images/exit_icon.png",
     "src/images/file_icon.png",
@@ -24,8 +30,10 @@ path = [
     "src/images/flag_us.png",
     "src/images/flag_world.png",
     "src/images/folder_icon.png",
+    "src/images/github.png",
     "src/images/grid_icon.png",
     "src/images/iconsize_icon.png",
+    "src/images/ko-fi.png",
     "src/images/list_icon.png",
     "src/images/list_mode_icon.png",
     "src/images/pause_icon.png",
@@ -33,10 +41,14 @@ path = [
     "src/images/refresh_icon.png",
     "src/images/settings_icon.png",
     "src/images/stop_icon.png",
+    "src/images/utils_icon.png",
     "src/images/shadPS4.icns",
     "src/images/shadps4.ico",
+    "src/images/net.shadps4.shadPS4.svg",
     "src/images/themes_icon.png",
     "src/images/update_icon.png",
+    "src/images/youtube.png",
+    "src/images/website.png",
     "src/shadps4.qrc",
     "src/shadps4.rc",
 ]
@@ -57,7 +69,7 @@ SPDX-FileCopyrightText = "2019-2024 Baldur Karlsson"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = "externals/stb_image.h"
+path = "externals/stb/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2017 Sean Barrett"
 SPDX-License-Identifier = "MIT"

@@ -69,6 +69,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Common, Memory)                                                                            \
     CLS(Core)                                                                                      \
     SUB(Core, Linker)                                                                              \
+    SUB(Core, Devices)                                                                             \
     CLS(Config)                                                                                    \
     CLS(Debug)                                                                                     \
     CLS(Kernel)                                                                                    \
@@ -94,18 +95,25 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, SaveData)                                                                             \
     SUB(Lib, SaveDataDialog)                                                                       \
     SUB(Lib, Http)                                                                                 \
+    SUB(Lib, Http2)                                                                                \
     SUB(Lib, Ssl)                                                                                  \
+    SUB(Lib, Ssl2)                                                                                 \
     SUB(Lib, SysModule)                                                                            \
+    SUB(Lib, Move)                                                                                 \
+    SUB(Lib, NpCommon)                                                                             \
     SUB(Lib, NpManager)                                                                            \
     SUB(Lib, NpScore)                                                                              \
     SUB(Lib, NpTrophy)                                                                             \
+    SUB(Lib, NpWebApi)                                                                             \
     SUB(Lib, Screenshot)                                                                           \
     SUB(Lib, LibCInternal)                                                                         \
     SUB(Lib, AppContent)                                                                           \
     SUB(Lib, Rtc)                                                                                  \
     SUB(Lib, DiscMap)                                                                              \
     SUB(Lib, Png)                                                                                  \
+    SUB(Lib, Jpeg)                                                                                 \
     SUB(Lib, PlayGo)                                                                               \
+    SUB(Lib, PlayGoDialog)                                                                         \
     SUB(Lib, Random)                                                                               \
     SUB(Lib, Usbd)                                                                                 \
     SUB(Lib, Ajm)                                                                                  \
@@ -120,6 +128,12 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, SharePlay)                                                                            \
     SUB(Lib, Fiber)                                                                                \
     SUB(Lib, Vdec2)                                                                                \
+    SUB(Lib, Videodec)                                                                             \
+    SUB(Lib, RazorCpu)                                                                             \
+    SUB(Lib, Mouse)                                                                                \
+    SUB(Lib, WebBrowserDialog)                                                                     \
+    SUB(Lib, NpParty)                                                                              \
+    SUB(Lib, Zlib)                                                                                 \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

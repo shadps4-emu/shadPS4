@@ -36,6 +36,7 @@ public:
                         const QString& m_gameVersion, bool showMessageBox);
     void downloadPatches(const QString repository, const bool showMessageBox);
     void createFilesJson(const QString& repository);
+    void clearListCheats();
     void compatibleVersionNotice(const QString repository);
 
 signals:

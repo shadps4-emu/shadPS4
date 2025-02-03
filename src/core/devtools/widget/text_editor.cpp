@@ -131,7 +131,7 @@ static int UTF8CharLength(TextEditor::Char c) {
 }
 
 // "Borrowed" from ImGui source
-static inline int ImTextCharToUtf8(char* buf, int buf_size, unsigned int c) {
+static inline int ImTextCharToUtf8(char* buf, int buf_size, u32 c) {
     if (c < 0x80) {
         buf[0] = (char)c;
         return 1;
@@ -1059,7 +1059,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder) {
     if (!mIgnoreImGuiChild)
         ImGui::BeginChild(aTitle, aSize, aBorder,
                           ImGuiWindowFlags_HorizontalScrollbar |
-                              ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
+                              ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove |
+                              ImGuiWindowFlags_NoNav);
 
     if (mHandleKeyboardInputs) {
         HandleKeyboardInputs();
@@ -2325,6 +2326,52 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::GLSL() {
         langDef.mAutoIndentation = true;
 
         langDef.mName = "GLSL";
+
+        inited = true;
+    }
+    return langDef;
+}
+
+// Source: https://github.com/dfranx/ImGuiColorTextEdit/blob/master/TextEditor.cpp
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::SPIRV() {
+    static bool inited = false;
+    static LanguageDefinition langDef;
+    if (!inited) {
+        /*
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[
+        \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string,
+        PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string,
+        PaletteIndex>("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex::Identifier));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string,
+        PaletteIndex>("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]",
+        PaletteIndex::Punctuation));
+        */
+
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>(
+            "L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
+        langDef.mTokenRegexStrings.push_back(
+            std::make_pair<std::string, PaletteIndex>("[ =\\t]Op[a-zA-Z]*", PaletteIndex::Keyword));
+        langDef.mTokenRegexStrings.push_back(
+            std::make_pair<std::string, PaletteIndex>("%[_a-zA-Z0-9]*", PaletteIndex::Identifier));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>(
+            "[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>(
+            "[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex::Number));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>(
+            "0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex::Number));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>(
+            "0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex::Number));
+
+        langDef.mCommentStart = "/*";
+        langDef.mCommentEnd = "*/";
+        langDef.mSingleLineComment = ";";
+
+        langDef.mCaseSensitive = true;
+        langDef.mAutoIndentation = false;
+
+        langDef.mName = "SPIR-V";
 
         inited = true;
     }

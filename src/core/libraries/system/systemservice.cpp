@@ -3,13 +3,15 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
+#include "core/libraries/system/systemservice_error.h"
 
 namespace Libraries::SystemService {
 
 bool g_splash_status{true};
+std::queue<OrbisSystemServiceEvent> g_event_queue;
+std::mutex g_event_queue_mutex;
 
 bool IsSplashVisible() {
     return Config::showSplash() && g_splash_status;
@@ -1772,14 +1774,14 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
         LOG_ERROR(Lib_SystemService, "OrbisSystemServiceStatus is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
-    OrbisSystemServiceStatus st = {};
-    st.eventNum = 0;
-    st.isSystemUiOverlaid = false;
-    st.isInBackgroundExecution = false;
-    st.isCpuMode7CpuNormal = true;
-    st.isGameLiveStreamingOnAir = false;
-    st.isOutOfVrPlayArea = false;
-    *status = st;
+
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    status->event_num = static_cast<s32>(g_event_queue.size());
+    status->is_system_ui_overlaid = false;
+    status->is_in_background_execution = false;
+    status->is_cpu_mode7_cpu_normal = true;
+    status->is_game_live_streaming_on_air = false;
+    status->is_out_of_vr_play_area = false;
     return ORBIS_OK;
 }
 
@@ -1889,39 +1891,38 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value) {
     // TODO this probably should be stored in config for UI configuration
-    LOG_INFO(Lib_SystemService, "called param_id {}", param_id);
+    LOG_INFO(Lib_SystemService, "called param_id {}", u32(param_id));
     if (value == nullptr) {
         LOG_ERROR(Lib_SystemService, "value is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
     switch (param_id) {
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG:
+    case OrbisSystemServiceParamId::Lang:
         *value = Config::GetLanguage();
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT:
-        *value = ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY;
+    case OrbisSystemServiceParamId::DateFormat:
+        *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT:
-        *value = ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR;
+    case OrbisSystemServiceParamId::TimeFormat:
+        *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_ZONE:
+    case OrbisSystemServiceParamId::TimeZone:
         *value = +120;
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_SUMMERTIME:
+    case OrbisSystemServiceParamId::Summertime:
         *value = 1;
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_GAME_PARENTAL_LEVEL:
-        *value = ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF;
+    case OrbisSystemServiceParamId::GameParentalLevel:
+        *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
-    case ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN:
-        *value = ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS;
+    case OrbisSystemServiceParamId::EnterButtonAssign:
+        *value = u32(OrbisSystemParamEnterButtonAssign::Cross);
         break;
     default:
-        LOG_ERROR(Lib_SystemService, "param_id {} unsupported!",
-                  param_id); // shouldn't go there but log it
-        *value = 0;          // return a dummy value
+        LOG_ERROR(Lib_SystemService, "param_id {} unsupported!", u32(param_id));
+        *value = 0;
     }
 
     return ORBIS_OK;
@@ -1943,11 +1944,19 @@ int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event) {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called, event type = {:#x}", (int)event->eventType);
+    LOG_TRACE(Lib_SystemService, "called");
     if (event == nullptr) {
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
-    return ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT;
+
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    if (g_event_queue.empty()) {
+        return ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT;
+    }
+
+    *event = g_event_queue.front();
+    g_event_queue.pop();
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemServiceReenableMusicPlayer() {
@@ -2413,6 +2422,11 @@ int PS4_SYSV_ABI Func_6B1CDB955F0EBD65() {
 int PS4_SYSV_ABI Func_CB5E885E225F69F0() {
     LOG_ERROR(Lib_SystemService, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
+    std::lock_guard<std::mutex> lock(g_event_queue_mutex);
+    g_event_queue.push(event);
 }
 
 void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym) {

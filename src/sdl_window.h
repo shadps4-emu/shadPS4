@@ -3,16 +3,35 @@
 
 #pragma once
 
-#include <string>
 #include "common/types.h"
+#include "core/libraries/pad/pad.h"
+#include "input/controller.h"
+#include "string"
 
 struct SDL_Window;
 struct SDL_Gamepad;
 union SDL_Event;
 
 namespace Input {
-class GameController;
-}
+
+class SDLInputEngine : public Engine {
+public:
+    ~SDLInputEngine() override;
+    void Init() override;
+    void SetLightBarRGB(u8 r, u8 g, u8 b) override;
+    void SetVibration(u8 smallMotor, u8 largeMotor) override;
+    float GetGyroPollRate() const override;
+    float GetAccelPollRate() const override;
+    State ReadState() override;
+
+private:
+    SDL_Gamepad* m_gamepad = nullptr;
+
+    float m_gyro_poll_rate{};
+    float m_accel_poll_rate{};
+};
+
+} // namespace Input
 
 namespace Frontend {
 
@@ -41,41 +60,43 @@ struct WindowSystemInfo {
 };
 
 class WindowSDL {
+    int keyboard_grab = 0;
+
 public:
     explicit WindowSDL(s32 width, s32 height, Input::GameController* controller,
                        std::string_view window_title);
     ~WindowSDL();
 
-    s32 getWidth() const {
+    s32 GetWidth() const {
         return width;
     }
 
-    s32 getHeight() const {
+    s32 GetHeight() const {
         return height;
     }
 
-    bool isOpen() const {
+    bool IsOpen() const {
         return is_open;
     }
 
-    [[nodiscard]] SDL_Window* GetSdlWindow() const {
+    [[nodiscard]] SDL_Window* GetSDLWindow() const {
         return window;
     }
 
-    WindowSystemInfo getWindowInfo() const {
+    WindowSystemInfo GetWindowInfo() const {
         return window_info;
     }
 
-    void waitEvent();
+    void WaitEvent();
+    void InitTimers();
 
-    void initTimers();
+    void RequestKeyboard();
+    void ReleaseKeyboard();
 
 private:
-    void onResize();
-    void onKeyPress(const SDL_Event* event);
-    void onGamepadEvent(const SDL_Event* event);
-
-    int sdlGamepadToOrbisButton(u8 button);
+    void OnResize();
+    void OnKeyboardMouseInput(const SDL_Event* event);
+    void OnGamepadEvent(const SDL_Event* event);
 
 private:
     s32 width;

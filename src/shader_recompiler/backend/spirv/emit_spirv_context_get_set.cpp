@@ -4,8 +4,11 @@
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/patch.h"
+#include "shader_recompiler/runtime_info.h"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -45,13 +48,19 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
 
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto& info{ctx.output_params.at(index)};
-        ASSERT(info.num_components > 0);
-        if (info.num_components == 1) {
-            return info.id;
+        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
+        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+            return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
+                                     ctx.ConstU32(element));
         } else {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+            const auto& info{ctx.output_params.at(attr_index)};
+            ASSERT(info.num_components > 0);
+            if (info.num_components == 1) {
+                return info.id;
+            } else {
+                return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
+            }
         }
     }
     if (IR::IsMrt(attr)) {
@@ -82,9 +91,13 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
 
 std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto& info{ctx.output_params.at(index)};
-        return {info.component_type, info.is_integer};
+        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+            return {ctx.F32[1], false};
+        } else {
+            const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
+            const auto& info{ctx.output_params.at(index)};
+            return {info.component_type, info.is_integer};
+        }
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
@@ -171,26 +184,39 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
-    if (ctx.info.stage == Stage::Geometry) {
-        if (IR::IsPosition(attr)) {
-            ASSERT(attr == IR::Attribute::Position0);
-            const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-            const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, ctx.ConstU32(index),
-                                                 ctx.ConstU32(0u))};
-            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
-        }
+Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+    if (IR::IsPosition(attr)) {
+        ASSERT(attr == IR::Attribute::Position0);
+        const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
+        const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, index, ctx.ConstU32(0u))};
+        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+    }
 
-        if (IR::IsParam(attr)) {
-            const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto param = ctx.input_params.at(param_id).id;
-            const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-            const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, ctx.ConstU32(index))};
-            const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+    if (IR::IsParam(attr)) {
+        const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto param = ctx.input_params.at(param_id).id;
+        const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
+        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
+        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
+    }
+    UNREACHABLE();
+}
+
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+    if (ctx.info.l_stage == LogicalStage::Geometry) {
+        return EmitGetAttributeForGeometry(ctx, attr, comp, index);
+    } else if (ctx.info.l_stage == LogicalStage::TessellationControl ||
+               ctx.info.l_stage == LogicalStage::TessellationEval) {
+        if (IR::IsTessCoord(attr)) {
+            const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+            const auto pointer{
+                ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
+            return ctx.OpLoad(ctx.F32[1], pointer);
         }
         UNREACHABLE();
     }
@@ -198,27 +224,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(index)};
-        if (param.buffer_handle < 0) {
-            if (!ValidId(param.id)) {
-                // Attribute is disabled or varying component is not written
-                return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
-            }
-
-            Id result;
-            if (param.is_default) {
-                result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
-            } else if (param.num_components > 1) {
-                const Id pointer{
-                    ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
-                result = ctx.OpLoad(param.component_type, pointer);
-            } else {
-                result = ctx.OpLoad(param.component_type, param.id);
-            }
-            if (param.is_integer) {
-                result = ctx.OpBitcast(ctx.F32[1], result);
-            }
-            return result;
-        } else {
+        if (param.buffer_handle >= 0) {
             const auto step_rate = EmitReadStepRate(ctx, param.id.value);
             const auto offset = ctx.OpIAdd(
                 ctx.U32[1],
@@ -229,7 +235,26 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
                 ctx.ConstU32(comp));
             return EmitReadConstBuffer(ctx, param.buffer_handle, offset);
         }
+
+        Id result;
+        if (param.is_loaded) {
+            // Attribute is either default or manually interpolated. The id points to an already
+            // loaded vector.
+            result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
+        } else if (param.num_components > 1) {
+            // Attribute is a vector and we need to access a specific component.
+            const Id pointer{ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
+            result = ctx.OpLoad(param.component_type, pointer);
+        } else {
+            // Attribute is a single float or interger, simply load it.
+            result = ctx.OpLoad(param.component_type, param.id);
+        }
+        if (param.is_integer) {
+            result = ctx.OpBitcast(ctx.F32[1], result);
+        }
+        return result;
     }
+
     switch (attr) {
     case IR::Attribute::FragCoord: {
         const Id coord = ctx.OpLoad(
@@ -239,8 +264,14 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         }
         return coord;
     }
+    case IR::Attribute::TessellationEvaluationPointU:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.u32_zero_value));
+    case IR::Attribute::TessellationEvaluationPointV:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     default:
-        throw NotImplementedException("Read attribute {}", attr);
+        UNREACHABLE_MSG("Read attribute {}", attr);
     }
 }
 
@@ -263,10 +294,32 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
     case IR::Attribute::PrimitiveId:
-        ASSERT(ctx.info.stage == Stage::Geometry);
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
+    case IR::Attribute::InvocationId:
+        ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
+               ctx.info.l_stage == LogicalStage::TessellationControl);
+        return ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+    case IR::Attribute::PatchVertices:
+        ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
+        return ctx.OpLoad(ctx.U32[1], ctx.patch_vertices);
+    case IR::Attribute::PackedHullInvocationInfo: {
+        ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
+        // [0:8]: patch id within VGT
+        // [8:12]: output control point id
+        // But 0:8 should be treated as 0 for attribute addressing purposes
+        if (ctx.runtime_info.hs_info.IsPassthrough()) {
+            // Gcn shader would run with 1 thread, but we need to run a thread for
+            // each output control point.
+            // If Gcn shader uses this value, we should make sure all threads in the
+            // Vulkan shader use 0
+            return ctx.ConstU32(0u);
+        } else {
+            const Id invocation_id = ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+            return ctx.OpShiftLeftLogical(ctx.U32[1], invocation_id, ctx.ConstU32(8u));
+        }
+    }
     default:
-        throw NotImplementedException("Read U32 attribute {}", attr);
+        UNREACHABLE_MSG("Read U32 attribute {}", attr);
     }
 }
 
@@ -282,6 +335,65 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     } else {
         ctx.OpStore(pointer, value);
     }
+}
+
+Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
+    const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+    return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array,
+                                                    vertex_index, attr_index, comp_index));
+}
+
+Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
+                                    Id comp_index) {
+    const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+    return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.output_attr_array,
+                                                    vertex_index, attr_index, comp_index));
+}
+
+void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index) {
+    // Implied vertex index is invocation_id
+    const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+    Id pointer =
+        ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), attr_index, comp_index);
+    ctx.OpStore(pointer, value);
+}
+
+Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {
+    const u32 index{IR::GenericPatchIndex(patch)};
+    const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
+    const Id type{ctx.l_stage == LogicalStage::TessellationControl ? ctx.output_f32
+                                                                   : ctx.input_f32};
+    const Id pointer{ctx.OpAccessChain(type, ctx.patches.at(index), element)};
+    return ctx.OpLoad(ctx.F32[1], pointer);
+}
+
+void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
+    const Id pointer{[&] {
+        if (IR::IsGeneric(patch)) {
+            const u32 index{IR::GenericPatchIndex(patch)};
+            const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
+            return ctx.OpAccessChain(ctx.output_f32, ctx.patches.at(index), element);
+        }
+        switch (patch) {
+        case IR::Patch::TessellationLodLeft:
+        case IR::Patch::TessellationLodRight:
+        case IR::Patch::TessellationLodTop:
+        case IR::Patch::TessellationLodBottom: {
+            const u32 index{static_cast<u32>(patch) - u32(IR::Patch::TessellationLodLeft)};
+            const Id index_id{ctx.ConstU32(index)};
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_outer, index_id);
+        }
+        case IR::Patch::TessellationLodInteriorU:
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner,
+                                     ctx.u32_zero_value);
+        case IR::Patch::TessellationLodInteriorV:
+            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner, ctx.ConstU32(1u));
+        default:
+            UNREACHABLE_MSG("Patch {}", u32(patch));
+        }
+    }()};
+    ctx.OpStore(pointer, value);
 }
 
 template <u32 N>
@@ -323,7 +435,9 @@ Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto& buffer = ctx.texture_buffers[handle];
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    const Id coord =
+        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
+                   buffer.coord_offset);
     Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
                                  : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
     if (buffer.is_integer) {
@@ -369,7 +483,9 @@ void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     const auto& buffer = ctx.texture_buffers[handle];
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    const Id coord =
+        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
+                   buffer.coord_offset);
     if (buffer.is_integer) {
         value = ctx.OpBitcast(buffer.result_type, value);
     }

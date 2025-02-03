@@ -65,11 +65,18 @@ void LoadRenderDoc() {
 #else
     static constexpr const char RENDERDOC_LIB[] = "librenderdoc.so";
 #endif
-    if (void* mod = dlopen(RENDERDOC_LIB, RTLD_NOW | RTLD_NOLOAD)) {
-        const auto RENDERDOC_GetAPI =
-            reinterpret_cast<pRENDERDOC_GetAPI>(dlsym(mod, "RENDERDOC_GetAPI"));
-        const s32 ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdoc_api);
-        ASSERT(ret == 1);
+    // Check if we are running by RDoc GUI
+    void* mod = dlopen(RENDERDOC_LIB, RTLD_NOW | RTLD_NOLOAD);
+    if (!mod && Config::isRdocEnabled()) {
+        // If enabled in config, try to load RDoc runtime in offline mode
+        if ((mod = dlopen(RENDERDOC_LIB, RTLD_NOW))) {
+            const auto RENDERDOC_GetAPI =
+                reinterpret_cast<pRENDERDOC_GetAPI>(dlsym(mod, "RENDERDOC_GetAPI"));
+            const s32 ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdoc_api);
+            ASSERT(ret == 1);
+        } else {
+            LOG_ERROR(Render, "Cannot load RenderDoc: {}", dlerror());
+        }
     }
 #endif
     if (rdoc_api) {

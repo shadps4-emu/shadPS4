@@ -3,67 +3,71 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
+
 namespace Libraries::PngDec {
 
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_ADDR = 0x80690001;
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_SIZE = 0x80690002;
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_PARAM = 0x80690003;
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_HANDLE = 0x80690004;
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_WORK_MEMORY = 0x80690005;
-constexpr int ORBIS_PNG_DEC_ERROR_INVALID_DATA = 0x80690010;
-constexpr int ORBIS_PNG_DEC_ERROR_UNSUPPORT_DATA = 0x80690011;
-constexpr int ORBIS_PNG_DEC_ERROR_DECODE_ERROR = 0x80690012;
-constexpr int ORBIS_PNG_DEC_ERROR_FATAL = 0x80690020;
+enum class OrbisPngDecColorSpace : u16 {
+    Grayscale = 2,
+    Rgb,
+    Clut,
+    GrayscaleAlpha = 18,
+    Rgba,
+};
 
-typedef struct OrbisPngDecParseParam {
-    const void* pngMemAddr;
-    u32 pngMemSize;
+enum class OrbisPngDecImageFlag : u32 {
+    None = 0,
+    Adam7Interlace = 1,
+    TrnsChunkExist = 2,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisPngDecImageFlag)
+
+enum class OrbisPngDecPixelFormat : u16 {
+    R8G8B8A8 = 0,
+    B8G8R8A8,
+};
+
+enum class OrbisPngDecAttribute {
+    None = 0,
+    BitDepth16,
+};
+
+struct OrbisPngDecParseParam {
+    const u8* png_mem_addr;
+    u32 png_mem_size;
     u32 reserved;
-} OrbisPngDecParseParam;
+};
 
-typedef struct OrbisPngDecImageInfo {
-    u32 imageWidth;
-    u32 imageHeight;
-    u16 colorSpace;
-    u16 bitDepth;
-    u32 imageFlag;
-} OrbisPngDecImageInfo;
+struct OrbisPngDecImageInfo {
+    u32 image_width;
+    u32 image_height;
+    OrbisPngDecColorSpace color_space;
+    u16 bit_depth;
+    OrbisPngDecImageFlag image_flag;
+};
 
-typedef enum OrbisPngDecColorSpace {
-    ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE = 2,
-    ORBIS_PNG_DEC_COLOR_SPACE_RGB,
-    ORBIS_PNG_DEC_COLOR_SPACE_CLUT,
-    ORBIS_PNG_DEC_COLOR_SPACE_GRAYSCALE_ALPHA = 18,
-    ORBIS_PNG_DEC_COLOR_SPACE_RGBA
-} ScePngDecColorSpace;
-
-typedef enum OrbisPngDecImageFlag {
-    ORBIS_PNG_DEC_IMAGE_FLAG_ADAM7_INTERLACE = 1,
-    ORBIS_PNG_DEC_IMAGE_FLAG_TRNS_CHUNK_EXIST = 2
-} OrbisPngDecImageFlag;
-
-typedef struct OrbisPngDecCreateParam {
-    u32 thisSize;
+struct OrbisPngDecCreateParam {
+    u32 this_size;
     u32 attribute;
-    u32 maxImageWidth;
-} OrbisPngDecCreateParam;
+    u32 max_image_width;
+};
 
-typedef void* OrbisPngDecHandle;
+using OrbisPngDecHandle = void*;
 
-typedef struct OrbisPngDecDecodeParam {
-    const void* pngMemAddr;
-    void* imageMemAddr;
-    u32 pngMemSize;
-    u32 imageMemSize;
-    u16 pixelFormat;
-    u16 alphaValue;
-    u32 imagePitch;
-} OrbisPngDecDecodeParam;
+struct OrbisPngDecDecodeParam {
+    const u8* png_mem_addr;
+    u8* image_mem_addr;
+    u32 png_mem_size;
+    u32 image_mem_size;
+    OrbisPngDecPixelFormat pixel_format;
+    u16 alpha_value;
+    u32 image_pitch;
+};
 
 s32 PS4_SYSV_ABI scePngDecCreate(const OrbisPngDecCreateParam* param, void* memoryAddress,
                                  u32 memorySize, OrbisPngDecHandle* handle);

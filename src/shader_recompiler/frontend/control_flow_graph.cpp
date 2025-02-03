@@ -47,6 +47,28 @@ static IR::Condition MakeCondition(const GcnInst& inst) {
     }
 }
 
+static bool IgnoresExecMask(const GcnInst& inst) {
+    // EXEC mask does not affect scalar instructions or branches.
+    switch (inst.category) {
+    case InstCategory::ScalarALU:
+    case InstCategory::ScalarMemory:
+    case InstCategory::FlowControl:
+        return true;
+    default:
+        break;
+    }
+    // Read/Write Lane instructions are not affected either.
+    switch (inst.opcode) {
+    case Opcode::V_READLANE_B32:
+    case Opcode::V_WRITELANE_B32:
+    case Opcode::V_READFIRSTLANE_B32:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
 static constexpr size_t LabelReserveSize = 32;
 
 CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
@@ -71,6 +93,8 @@ void CFG::EmitLabels() {
         if (inst.IsUnconditionalBranch()) {
             const u32 target = inst.BranchTarget(pc);
             AddLabel(target);
+            // Emit this label so that the block ends with s_branch instruction
+            AddLabel(pc + inst.length);
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
             const u32 false_label = pc + inst.length;
@@ -124,36 +148,46 @@ void CFG::EmitDivergenceLabels() {
         const size_t end_index = GetIndex(end);
 
         s32 curr_begin = -1;
+        s32 last_exec_idx = -1;
         for (size_t index = GetIndex(start); index < end_index; index++) {
             const auto& inst = inst_list[index];
-            const bool is_close = is_close_scope(inst);
-            if ((is_close || index == end_index - 1) && curr_begin != -1) {
-                // If there are no instructions inside scope don't do anything.
-                if (index - curr_begin == 1) {
+            if (curr_begin != -1) {
+                // Keep note of the last instruction that does not ignore exec, so we know where
+                // to end the divergence block without impacting trailing instructions that do.
+                if (!IgnoresExecMask(inst)) {
+                    last_exec_idx = index;
+                }
+                // Consider a close scope on certain instruction types or at the last instruction
+                // before the next label.
+                if (is_close_scope(inst) || index == end_index - 1) {
+                    // Only insert a scope if, since the open-scope instruction, there is at least
+                    // one instruction that does not ignore exec.
+                    if (index - curr_begin > 1 && last_exec_idx != -1) {
+                        // Add a label to the instruction right after the open scope call.
+                        // It is the start of a new basic block.
+                        const auto& save_inst = inst_list[curr_begin];
+                        AddLabel(index_to_pc[curr_begin] + save_inst.length);
+                        // Add a label to the close scope instruction.
+                        // There are 3 cases where we need to close a scope.
+                        // * Close scope instruction inside the block
+                        // * Close scope instruction at the end of the block (cbranch or endpgm)
+                        // * Normal instruction at the end of the block
+                        // If the instruction we want to close the scope at is at the end of the
+                        // block, we do not need to insert a new label.
+                        if (last_exec_idx != end_index - 1) {
+                            // Add the label after the last instruction affected by exec.
+                            const auto& last_exec_inst = inst_list[last_exec_idx];
+                            AddLabel(index_to_pc[last_exec_idx] + last_exec_inst.length);
+                        }
+                    }
+                    // Reset scope begin.
                     curr_begin = -1;
-                    continue;
                 }
-                // Add a label to the instruction right after the open scope call.
-                // It is the start of a new basic block.
-                const auto& save_inst = inst_list[curr_begin];
-                const Label label = index_to_pc[curr_begin] + save_inst.length;
-                AddLabel(label);
-                // Add a label to the close scope instruction.
-                // There are 3 cases where we need to close a scope.
-                // * Close scope instruction inside the block
-                // * Close scope instruction at the end of the block (cbranch or endpgm)
-                // * Normal instruction at the end of the block
-                // For the last case we must NOT add a label as that would cause
-                // the instruction to be separated into its own basic block.
-                if (is_close) {
-                    AddLabel(index_to_pc[index]);
-                }
-                // Reset scope begin.
-                curr_begin = -1;
             }
             // Mark a potential start of an exec scope.
             if (is_open_scope(inst)) {
                 curr_begin = index;
+                last_exec_idx = -1;
             }
         }
     }

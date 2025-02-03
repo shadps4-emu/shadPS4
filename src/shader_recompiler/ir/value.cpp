@@ -16,6 +16,8 @@ Value::Value(IR::VectorReg reg) noexcept : type{Type::VectorReg}, vreg{reg} {}
 
 Value::Value(IR::Attribute value) noexcept : type{Type::Attribute}, attribute{value} {}
 
+Value::Value(IR::Patch patch) noexcept : type{Type::Patch}, patch{patch} {}
+
 Value::Value(bool value) noexcept : type{Type::U1}, imm_u1{value} {}
 
 Value::Value(u8 value) noexcept : type{Type::U8}, imm_u8{value} {}

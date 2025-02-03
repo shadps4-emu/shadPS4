@@ -30,7 +30,7 @@ constexpr Type Opaque{Type::Opaque};
 constexpr Type ScalarReg{Type::ScalarReg};
 constexpr Type VectorReg{Type::VectorReg};
 constexpr Type Attribute{Type::Attribute};
-constexpr Type SystemValue{Type::SystemValue};
+constexpr Type Patch{Type::Patch};
 constexpr Type U1{Type::U1};
 constexpr Type U8{Type::U8};
 constexpr Type U16{Type::U16};
@@ -53,7 +53,7 @@ constexpr Type F64x3{Type::F64x3};
 constexpr Type F64x4{Type::F64x4};
 constexpr Type StringLiteral{Type::StringLiteral};
 
-constexpr OpcodeMeta META_TABLE[]{
+constexpr OpcodeMeta META_TABLE[] {
 #define OPCODE(name_token, type_token, ...)                                                        \
     {                                                                                              \
         .name{#name_token},                                                                        \

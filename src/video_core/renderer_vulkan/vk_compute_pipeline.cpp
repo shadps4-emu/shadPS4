@@ -13,10 +13,13 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 u64 compute_key_, const Shader::Info& info_,
+                                 ComputePipelineKey compute_key_, const Shader::Info& info_,
                                  vk::ShaderModule module)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, compute_key{compute_key_},
-      info{&info_} {
+    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
+    auto& info = stages[int(Shader::LogicalStage::Compute)];
+    info = &info_;
+    const auto debug_str = GetDebugString();
+
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
@@ -26,6 +29,14 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
 
+    if (info->has_emulated_shared_memory) {
+        bindings.push_back({
+            .binding = binding++,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        });
+    }
     if (info->has_readconst) {
         bindings.push_back({
             .binding = binding++,
@@ -56,7 +67,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     for (const auto& image : info->images) {
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
+            .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
                                                : vk::DescriptorType::eSampledImage,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
@@ -86,8 +97,9 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
+    const auto device = instance.GetDevice();
     auto [descriptor_set_result, descriptor_set] =
-        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+        device.createDescriptorSetLayoutUnique(desc_layout_ci);
     ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
                "Failed to create compute descriptor set layout: {}",
                vk::to_string(descriptor_set_result));
@@ -104,6 +116,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
+    SetObjectName(device, *pipeline_layout, "Compute PipelineLayout {}", debug_str);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
@@ -114,94 +127,9 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    SetObjectName(device, *pipeline, "Compute Pipeline {}", debug_str);
 }
 
 ComputePipeline::~ComputePipeline() = default;
-
-bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
-                                    VideoCore::TextureCache& texture_cache) const {
-    // Bind resource buffers and textures.
-    boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
-    BufferBarriers buffer_barriers;
-    Shader::PushData push_data{};
-    Shader::Backend::Bindings binding{};
-
-    info->PushUd(binding, push_data);
-
-    buffer_infos.clear();
-    buffer_views.clear();
-    image_infos.clear();
-
-    // Most of the time when a metadata is updated with a shader it gets cleared. It means
-    // we can skip the whole dispatch and update the tracked state instead. Also, it is not
-    // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
-    // will need its full emulation anyways. For cases of metadata read a warning will be logged.
-    const auto IsMetaUpdate = [&](const auto& desc) {
-        const VAddr address = desc.GetSharp(*info).base_address;
-        if (desc.is_written) {
-            if (texture_cache.TouchMeta(address, true)) {
-                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
-                return true;
-            }
-        } else {
-            if (texture_cache.IsMeta(address)) {
-                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
-            }
-        }
-        return false;
-    };
-
-    for (const auto& desc : info->buffers) {
-        if (desc.is_gds_buffer) {
-            continue;
-        }
-        if (IsMetaUpdate(desc)) {
-            return false;
-        }
-    }
-    for (const auto& desc : info->texture_buffers) {
-        if (IsMetaUpdate(desc)) {
-            return false;
-        }
-    }
-
-    BindBuffers(buffer_cache, texture_cache, *info, binding, push_data, set_writes,
-                buffer_barriers);
-
-    BindTextures(texture_cache, *info, binding, set_writes);
-
-    if (set_writes.empty()) {
-        return false;
-    }
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    if (!buffer_barriers.empty()) {
-        const auto dependencies = vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-        };
-        scheduler.EndRendering();
-        cmdbuf.pipelineBarrier2(dependencies);
-    }
-
-    cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(push_data),
-                         &push_data);
-
-    // Bind descriptor set.
-    if (uses_push_descriptors) {
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0,
-                                    set_writes);
-        return true;
-    }
-    const auto desc_set = desc_heap.Commit(*desc_layout);
-    for (auto& set_write : set_writes) {
-        set_write.dstSet = desc_set;
-    }
-    instance.GetDevice().updateDescriptorSets(set_writes, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, desc_set, {});
-
-    return true;
-}
 
 } // namespace Vulkan

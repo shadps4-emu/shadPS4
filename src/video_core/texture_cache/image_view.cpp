@@ -20,8 +20,6 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
         return vk::ImageViewType::e2D;
-    case AmdGpu::ImageType::Cube:
-        return vk::ImageViewType::eCube;
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageViewType::e2DArray;
     case AmdGpu::ImageType::Color3D:
@@ -31,44 +29,8 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     }
 }
 
-vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
-    switch (dst_sel) {
-    case 0:
-        return vk::ComponentSwizzle::eZero;
-    case 1:
-        return vk::ComponentSwizzle::eOne;
-    case 4:
-        return vk::ComponentSwizzle::eR;
-    case 5:
-        return vk::ComponentSwizzle::eG;
-    case 6:
-        return vk::ComponentSwizzle::eB;
-    case 7:
-        return vk::ComponentSwizzle::eA;
-    default:
-        UNREACHABLE();
-    }
-}
-
-bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
-    return (num_components == 1 && dst_sel == 0b001'000'000'100) ||
-           (num_components == 2 && dst_sel == 0b001'000'101'100) ||
-           (num_components == 3 && dst_sel == 0b001'110'101'100) ||
-           (num_components == 4 && dst_sel == 0b111'110'101'100);
-}
-
-vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
-    if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Unorm;
-    }
-    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
-        return vk::Format::eB8G8R8A8Srgb;
-    }
-    return format;
-}
-
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
-    : is_storage{desc.is_storage} {
+    : is_storage{desc.is_written} {
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
@@ -78,61 +40,24 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     if (desc.is_depth) {
         format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
     }
+
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
-    if (image.GetType() == AmdGpu::ImageType::Color2DMsaa ||
-        image.GetType() == AmdGpu::ImageType::Color2DMsaaArray) {
-        range.extent.levels = 1;
-    } else {
-        range.extent.levels = image.last_level - image.base_level + 1;
-    }
-    range.extent.layers = image.last_array - image.base_array + 1;
-    type = ConvertImageViewType(image.GetType());
-
-    // Adjust view type for partial cubemaps and arrays
-    if (image.IsPartialCubemap()) {
-        type = vk::ImageViewType::e2DArray;
-    }
-    if (type == vk::ImageViewType::eCube) {
-        if (desc.is_array) {
-            type = vk::ImageViewType::eCubeArray;
-        } else {
-            // Some games try to bind an array of cubemaps while shader reads only single one.
-            range.extent.layers = std::min(range.extent.layers, 6u);
-        }
-    }
-    if (type == vk::ImageViewType::e3D && range.extent.layers > 1) {
-        // Some games pass incorrect layer count for 3D textures so we need to fixup it.
-        range.extent.layers = 1;
-    }
+    range.extent.levels = image.NumViewLevels(desc.is_array);
+    range.extent.layers = image.NumViewLayers(desc.is_array);
+    type = ConvertImageViewType(image.GetViewType(desc.is_array));
 
     if (!is_storage) {
-        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
-    }
-    // Check for unfortunate case of storage images being swizzled
-    const u32 num_comps = AmdGpu::NumComponents(image.GetDataFmt());
-    const u32 dst_sel = image.DstSelect();
-    if (is_storage && !IsIdentityMapping(dst_sel, num_comps)) {
-        if (auto new_format = TrySwizzleFormat(format, dst_sel); new_format != format) {
-            format = new_format;
-            return;
-        }
-        LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}", num_comps,
-                  image.DstSelectName());
+        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
     }
 }
 
-ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
-                             bool is_vo_surface) noexcept {
-    const auto base_format =
-        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
+ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept {
     range.base.layer = col_buffer.view.slice_start;
     range.extent.layers = col_buffer.NumSlices() - range.base.layer;
-    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(
-        base_format, col_buffer.info.comp_swap.Value(), is_vo_surface);
+    type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+    format =
+        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.GetDataFmt(), col_buffer.GetNumberFmt());
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
@@ -143,24 +68,26 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
     is_storage = ctl.depth_write_enable;
     range.base.layer = view.slice_start;
     range.extent.layers = view.NumSlices() - range.base.layer;
+    type = range.extent.layers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
                      ImageId image_id_)
     : image_id{image_id_}, info{info_} {
-    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage};
+    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
-    // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
+    // When sampling D32/D16 texture from shader, the T# specifies R32/R16 format so adjust it.
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
     if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
-        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat)) {
+        Vulkan::LiverpoolToVK::IsFormatDepthCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }
-    if (image.aspect_mask & vk::ImageAspectFlagBits::eStencil && format == vk::Format::eR8Unorm) {
+    if (image.aspect_mask & vk::ImageAspectFlagBits::eStencil &&
+        Vulkan::LiverpoolToVK::IsFormatStencilCompatible(format)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
@@ -170,8 +97,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .image = image.image,
         .viewType = info.type,
         .format = instance.GetSupportedFormat(format, image.format_features),
-        .components =
-            instance.GetSupportedComponentSwizzle(format, info.mapping, image.format_features),
+        .components = info.mapping,
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
@@ -184,6 +110,16 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(view_result));
     image_view = std::move(view);
+
+    const auto view_aspect = aspect & vk::ImageAspectFlagBits::eDepth     ? "Depth"
+                             : aspect & vk::ImageAspectFlagBits::eStencil ? "Stencil"
+                                                                          : "Color";
+    Vulkan::SetObjectName(
+        instance.GetDevice(), *image_view, "ImageView {}x{}x{} {:#x}:{:#x} {}:{} {}:{} ({})",
+        image.info.size.width, image.info.size.height, image.info.size.depth,
+        image.info.guest_address, image.info.guest_size, info.range.base.level,
+        info.range.base.level + info.range.extent.levels - 1, info.range.base.layer,
+        info.range.base.layer + info.range.extent.layers - 1, view_aspect);
 }
 
 ImageView::~ImageView() = default;
