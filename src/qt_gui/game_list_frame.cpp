@@ -105,6 +105,7 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
 }
 
 void GameListFrame::PopulateGameList(bool isInitialPopulation) {
+    this->m_current_item = nullptr;
     // Do not show status column if it is not enabled
     this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setColumnHidden(6, !Config::GetLoadGameSizeEnabled());

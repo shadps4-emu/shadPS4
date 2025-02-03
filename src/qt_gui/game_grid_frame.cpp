@@ -82,6 +82,8 @@ void GameGridFrame::PlayBackgroundMusic(QString path) {
 }
 
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
+    this->crtRow = -1;
+    this->crtColumn = -1;
     QVector<GameInfo> m_games_;
     this->clearContents();
     if (fromSearch)

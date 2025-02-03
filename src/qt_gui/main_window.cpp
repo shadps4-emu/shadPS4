@@ -292,18 +292,22 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
-        // Connect background opacity changes to refresh both frames
-        connect(
-            settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this, [this](int opacity) {
-                Config::setBackgroundImageOpacity(opacity);
-                if (m_game_list_frame) {
-                    m_game_list_frame->SetListBackgroundImage(m_game_list_frame->GetCurrentItem());
-                }
-                if (m_game_grid_frame) {
-                    m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
-                                                              m_game_grid_frame->crtColumn);
-                }
-            });
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
 
         settingsDialog->exec();
     });
