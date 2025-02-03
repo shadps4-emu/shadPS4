@@ -89,6 +89,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
     if (!item) {
         return;
     }
+    m_current_item = item; // Store current item
     SetListBackgroundImage(item);
     PlayBackgroundMusic(item);
 }
@@ -387,4 +388,8 @@ QString GameListFrame::GetPlayTime(const std::string& serial) {
 
     file.close();
     return playTime;
+}
+
+QTableWidgetItem* GameListFrame::GetCurrentItem() {
+    return m_current_item;
 }

@@ -44,11 +44,12 @@ private:
     QList<QAction*> m_columnActs;
     GameInfoClass* game_inf_get = nullptr;
     bool ListSortedAsc = true;
+    QTableWidgetItem* m_current_item = nullptr;
 
 public:
     void PopulateGameList(bool isInitialPopulation = true);
     void ResizeIcons(int iconSize);
-
+    QTableWidgetItem* GetCurrentItem();
     QImage backgroundImage;
     GameListUtils m_game_list_utils;
     GuiContextMenus m_gui_context_menus;
