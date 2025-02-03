@@ -72,7 +72,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
 
     // Add list of available GPUs
-    ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
+    ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
     for (const auto& device : physical_devices) {
         ui->graphicsAdapterBox->addItem(device);
     }
