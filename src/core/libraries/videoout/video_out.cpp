@@ -63,6 +63,20 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutDeleteFlipEvent(Kernel::SceKernelEqueue eq, s32 handle) {
+    auto* port = driver->GetPort(handle);
+    if (port == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    if (eq == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+    }
+    eq->RemoveEvent(handle, Kernel::SceKernelEvent::Filter::VideoOut);
+    port->flip_events.erase(find(port->flip_events.begin(), port->flip_events.end(), eq));
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handle, void* udata) {
     LOG_INFO(Lib_VideoOut, "handle = {}", handle);
 
@@ -374,6 +388,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutColorSettingsSetGamma);
     LIB_FUNCTION("pv9CI5VC+R0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutAdjustColor);
+    LIB_FUNCTION("-Ozn0F1AFRg", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutDeleteFlipEvent);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);
