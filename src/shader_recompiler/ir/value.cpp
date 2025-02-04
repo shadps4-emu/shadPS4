@@ -71,6 +71,7 @@ bool Value::operator==(const Value& other) const {
     case Type::U8:
         return imm_u8 == other.imm_u8;
     case Type::U16:
+    case Type::F16:
         return imm_u16 == other.imm_u16;
     case Type::U32:
         return imm_u32 == other.imm_u32;
@@ -82,7 +83,6 @@ bool Value::operator==(const Value& other) const {
         return imm_f64 == other.imm_f64;
     case Type::StringLiteral:
         return std::string_view(string_literal) == std::string_view(other.string_literal);
-    case Type::F16:
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
@@ -131,6 +131,7 @@ std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) cons
     case Type::U8:
         return HashCombine(static_cast<u64>(v.imm_u8), h);
     case Type::U16:
+    case Type::F16:
         return HashCombine(static_cast<u64>(v.imm_u16), h);
     case Type::U32:
         return HashCombine(static_cast<u64>(v.imm_u32), h);
@@ -140,7 +141,7 @@ std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) cons
         return HashCombine(static_cast<u64>(v.imm_u64), h);
     case Type::F64:
         return HashCombine(static_cast<u64>(v.imm_f64), h);
-    case Type::F16:
+    case Type::StringLiteral:
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
