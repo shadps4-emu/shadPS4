@@ -38,17 +38,34 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
 
 void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                                          int previousColumn) {
-    crtRow = currentRow;
-    crtColumn = currentColumn;
-    columnCnt = this->columnCount();
-
-    auto itemID = (crtRow * columnCnt) + currentColumn;
-    if (itemID > m_game_info->m_games.count() - 1) {
+    // Early exit for invalid indices
+    if (currentRow < 0 || currentColumn < 0) {
         cellClicked = false;
         validCellSelected = false;
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
+
+    crtRow = currentRow;
+    crtColumn = currentColumn;
+    columnCnt = this->columnCount();
+
+    // Prevent integer overflow
+    if (columnCnt <= 0 || crtRow > (std::numeric_limits<int>::max() / columnCnt)) {
+        cellClicked = false;
+        validCellSelected = false;
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+
+    auto itemID = (crtRow * columnCnt) + currentColumn;
+    if (itemID < 0 || itemID > m_game_info->m_games.count() - 1) {
+        cellClicked = false;
+        validCellSelected = false;
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+
     cellClicked = true;
     validCellSelected = true;
     SetGridBackgroundImage(crtRow, crtColumn);
@@ -65,6 +82,8 @@ void GameGridFrame::PlayBackgroundMusic(QString path) {
 }
 
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
+    this->crtRow = -1;
+    this->crtColumn = -1;
     QVector<GameInfo> m_games_;
     this->clearContents();
     if (fromSearch)
@@ -136,43 +155,48 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
 }
 
 void GameGridFrame::SetGridBackgroundImage(int row, int column) {
-
     int itemID = (row * this->columnCount()) + column;
     QWidget* item = this->cellWidget(row, column);
-    if (item) {
-        QString pic1Path;
-        Common::FS::PathToQString(pic1Path, (*m_games_shared)[itemID].pic_path);
-        const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                     (*m_games_shared)[itemID].serial / "pic1.png";
-        QString blurredPic1PathQt;
-        Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
-
-        backgroundImage = QImage(blurredPic1PathQt);
-        if (backgroundImage.isNull()) {
-            QImage image(pic1Path);
-            backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
-
-            std::filesystem::path img_path =
-                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                (*m_games_shared)[itemID].serial;
-            std::filesystem::create_directories(img_path);
-            if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
-                // qDebug() << "Error: Unable to save image.";
-            }
-        }
-        RefreshGridBackgroundImage();
+    if (!item) {
+        // handle case where no item was clicked
+        return;
     }
+
+    // If background images are hidden, clear the background image
+    if (!Config::getShowBackgroundImage()) {
+        backgroundImage = QImage();
+        m_last_opacity = -1;         // Reset opacity tracking when disabled
+        m_current_game_path.clear(); // Reset current game path
+        RefreshGridBackgroundImage();
+        return;
+    }
+
+    const auto& game = (*m_games_shared)[itemID];
+    const int opacity = Config::getBackgroundImageOpacity();
+
+    // Recompute if opacity changed or we switched to a different game
+    if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
+        QImage original_image(QString::fromStdString(game.pic_path.string()));
+        if (!original_image.isNull()) {
+            backgroundImage = m_game_list_utils.ChangeImageOpacity(
+                original_image, original_image.rect(), opacity / 100.0f);
+            m_last_opacity = opacity;
+            m_current_game_path = game.pic_path;
+        }
+    }
+
+    RefreshGridBackgroundImage();
 }
 
 void GameGridFrame::RefreshGridBackgroundImage() {
-    if (!backgroundImage.isNull()) {
-        QPalette palette;
+    QPalette palette;
+    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
         palette.setBrush(QPalette::Base,
                          QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
-        QColor transparentColor = QColor(135, 206, 235, 40);
-        palette.setColor(QPalette::Highlight, transparentColor);
-        this->setPalette(palette);
     }
+    QColor transparentColor = QColor(135, 206, 235, 40);
+    palette.setColor(QPalette::Highlight, transparentColor);
+    this->setPalette(palette);
 }
 
 bool GameGridFrame::IsValidCellSelected() {

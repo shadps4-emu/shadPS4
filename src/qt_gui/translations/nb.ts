@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="nb">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1298,6 +1298,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Spillet kan fullføres med spillbar ytelse og uten store feil</translation>
 		</message>
+		<message>
+			<source>Click to go to issue</source>
+			<translation>Klikk for å gå til rapporten</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Sist oppdatert</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1423,6 +1431,45 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Ukjent</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Ingenting</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Starter opp</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Meny</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>I spill</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spillbar</translation>
+		</message>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Avbryt</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Laster...</translation>
 		</message>
 	</context>
 </TS>

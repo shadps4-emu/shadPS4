@@ -185,6 +185,7 @@ struct FragmentRuntimeInfo {
         AmdGpu::NumberConversion num_conversion;
         AmdGpu::CompMapping swizzle;
         AmdGpu::Liverpool::ShaderExportFormat export_format;
+        bool needs_unorm_fixup;
 
         auto operator<=>(const PsColorBuffer&) const noexcept = default;
     };
