@@ -758,6 +758,18 @@
 			<translation>Disable Trophy Pop-ups</translation>
 		</message>
 		<message>
+			<source>Background Image</source>
+			<translation>Background Image</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>Show Background Image</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>Opacity</translation>
+		</message>
+		<message>
 			<source>Play title music</source>
 			<translation>Play title music</translation>
 		</message>
@@ -852,6 +864,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Background Image:\nControl the opacity of the game background image.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>

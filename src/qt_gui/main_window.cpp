@@ -297,6 +297,23 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
+
         settingsDialog->exec();
     });
 

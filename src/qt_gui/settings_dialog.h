@@ -33,6 +33,7 @@ public:
 signals:
     void LanguageChanged(const std::string& locale);
     void CompatibilityChanged();
+    void BackgroundOpacityChanged(int opacity);
 
 private:
     void LoadValuesFromConfig();
