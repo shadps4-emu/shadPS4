@@ -16,6 +16,7 @@
 #include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/version.h"
+#include "control_settings.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
@@ -62,12 +63,16 @@ bool MainWindow::Init() {
         window_title = fmt::format("shadPS4 v{}", Common::VERSION);
     } else {
         std::string remote_url(Common::g_scm_remote_url);
-        if (remote_url == "https://github.com/shadps4-emu/shadPS4.git" ||
-            remote_url.length() == 0) {
+        std::string remote_host;
+        try {
+            remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
+        } catch (...) {
+            remote_host = "unknown";
+        }
+        if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
                                        Common::g_scm_desc);
         } else {
-            std::string remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
             window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::VERSION, remote_host,
                                        Common::g_scm_branch, Common::g_scm_desc);
         }
@@ -292,13 +297,30 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
+
         settingsDialog->exec();
     });
 
     // this is the editor for kbm keybinds
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
-        EditorDialog* editorWindow = new EditorDialog(this);
-        editorWindow->exec(); // Show the editor window modally
+        auto configWindow = new ControlSettings(m_game_info, this);
+        configWindow->exec();
     });
 
 #ifdef ENABLE_UPDATER

@@ -40,7 +40,22 @@ constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE = 0;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_VR = 7;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY = 8;
 
-enum class OrbisVideoOutEventId : s16 { Flip = 0, Vblank = 1, PreVblankStart = 2 };
+enum class OrbisVideoOutEventId : s16 {
+    Flip = 0,
+    Vblank = 1,
+    PreVblankStart = 2,
+    SetMode = 8,
+    Position = 12,
+};
+
+enum class OrbisVideoOutInternalEventId : s16 {
+    Flip = 0x6,
+    Vblank = 0x7,
+    SetMode = 0x51,
+    Position = 0x58,
+    PreVblankStart = 0x59,
+    SysVblank = 0x63,
+};
 
 enum class AspectRatioMode : s32 {
     Ratio16_9 = 0,

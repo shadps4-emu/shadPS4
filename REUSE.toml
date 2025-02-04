@@ -38,6 +38,7 @@ path = [
     "src/images/list_mode_icon.png",
     "src/images/pause_icon.png",
     "src/images/play_icon.png",
+    "src/images/ps4_controller.png",
     "src/images/refresh_icon.png",
     "src/images/settings_icon.png",
     "src/images/stop_icon.png",

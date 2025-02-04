@@ -330,6 +330,16 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
 
+        // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
+        // need a bias applied to round correctly; detect and set the flag for that here.
+        const auto needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk &&
+                                       (col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
+                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Snorm ||
+                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Srgb) &&
+                                       (col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8 ||
+                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
+                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
+
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
         key.color_buffers[remapped_cb] = {
@@ -337,6 +347,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             .num_conversion = col_buf.GetNumberConversion(),
             .swizzle = col_buf.Swizzle(),
             .export_format = regs.color_export_format.GetFormat(cb),
+            .needs_unorm_fixup = needs_unorm_fixup,
         };
     }
 

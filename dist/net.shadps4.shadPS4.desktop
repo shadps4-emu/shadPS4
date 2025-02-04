@@ -5,5 +5,5 @@ Terminal=false
 Type=Application
 Icon=net.shadps4.shadPS4
 Comment=PlayStation 4 emulator
-Categories=Game;
+Categories=Game;Emulator;
 StartupWMClass=shadps4;

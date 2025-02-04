@@ -89,6 +89,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
     if (!item) {
         return;
     }
+    m_current_item = item; // Store current item
     SetListBackgroundImage(item);
     PlayBackgroundMusic(item);
 }
@@ -104,6 +105,7 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
 }
 
 void GameListFrame::PopulateGameList(bool isInitialPopulation) {
+    this->m_current_item = nullptr;
     // Do not show status column if it is not enabled
     this->setColumnHidden(2, !Config::getCompatibilityEnabled());
     this->setColumnHidden(6, !Config::GetLoadGameSizeEnabled());
@@ -167,38 +169,41 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path;
-    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
-    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                 m_game_info->m_games[item->row()].serial / "pic1.png";
-    QString blurredPic1PathQt;
-    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
+    // If background images are hidden, clear the background image
+    if (!Config::getShowBackgroundImage()) {
+        backgroundImage = QImage();
+        m_last_opacity = -1;         // Reset opacity tracking when disabled
+        m_current_game_path.clear(); // Reset current game path
+        RefreshListBackgroundImage();
+        return;
+    }
 
-    backgroundImage = QImage(blurredPic1PathQt);
-    if (backgroundImage.isNull()) {
-        QImage image(pic1Path);
-        backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
+    const auto& game = m_game_info->m_games[item->row()];
+    const int opacity = Config::getBackgroundImageOpacity();
 
-        std::filesystem::path img_path =
-            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-            m_game_info->m_games[item->row()].serial;
-        std::filesystem::create_directories(img_path);
-        if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
-            // qDebug() << "Error: Unable to save image.";
+    // Recompute if opacity changed or we switched to a different game
+    if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
+        QImage original_image(QString::fromStdString(game.pic_path.string()));
+        if (!original_image.isNull()) {
+            backgroundImage = m_game_list_utils.ChangeImageOpacity(
+                original_image, original_image.rect(), opacity / 100.0f);
+            m_last_opacity = opacity;
+            m_current_game_path = game.pic_path;
         }
     }
+
     RefreshListBackgroundImage();
 }
 
 void GameListFrame::RefreshListBackgroundImage() {
-    if (!backgroundImage.isNull()) {
-        QPalette palette;
+    QPalette palette;
+    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
         palette.setBrush(QPalette::Base,
                          QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
-        QColor transparentColor = QColor(135, 206, 235, 40);
-        palette.setColor(QPalette::Highlight, transparentColor);
-        this->setPalette(palette);
     }
+    QColor transparentColor = QColor(135, 206, 235, 40);
+    palette.setColor(QPalette::Highlight, transparentColor);
+    this->setPalette(palette);
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {
@@ -391,4 +396,8 @@ QString GameListFrame::GetPlayTime(const std::string& serial) {
 
     file.close();
     return playTime;
+}
+
+QTableWidgetItem* GameListFrame::GetCurrentItem() {
+    return m_current_item;
 }
