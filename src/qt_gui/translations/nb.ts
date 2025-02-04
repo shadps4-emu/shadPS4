@@ -125,6 +125,14 @@
 			<translation>Kopier serienummer</translation>
 		</message>
 		<message>
+			<source>Copy Version</source>
+			<translation>Kopier versjon</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Kopier størrelse</translation>
+		</message>
+		<message>
 			<source>Copy All</source>
 			<translation>Kopier alt</translation>
 		</message>
@@ -765,6 +773,18 @@
 			<translation>Deaktiver trofé hurtigmeny</translation>
 		</message>
 		<message>
+			<source>Background Image</source>
+			<translation>Bakgrunnsbilde</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>Vis bakgrunnsbilde</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>Synlighet</translation>
+		</message>
+		<message>
 			<source>Play title music</source>
 			<translation>Spill tittelmusikk</translation>
 		</message>
@@ -859,6 +879,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Oppdatering:\nRelease: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNightly: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Bakgrunnsbilde:\nEndrer synligheten til spillets bakgrunnsbilde.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
