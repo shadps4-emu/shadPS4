@@ -729,6 +729,7 @@
 			<source>Guest Debug Markers</source>
 			<translation>Гостьові маркери налагодження</translation>
 		</message>
+
 		<message>
 			<source>Update</source>
 			<translation>Оновлення</translation>
