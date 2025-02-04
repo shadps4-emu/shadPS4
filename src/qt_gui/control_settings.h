@@ -14,6 +14,19 @@ public:
     explicit ControlSettings(std::shared_ptr<GameInfoClass> game_info_get,
                              QWidget* parent = nullptr);
     ~ControlSettings();
+
+private Q_SLOTS:
+    void SaveControllerConfig(bool CloseOnSave);
+    void SetDefault();
+
+private:
+    std::unique_ptr<Ui::ControlSettings> ui;
+    std::shared_ptr<GameInfoClass> m_game_info;
+
+    void AddBoxItems();
+    void SetUIValuestoMappings();
+    void GetGameTitle();
+
     const std::vector<std::string> ControllerInputs = {
         "cross",        "circle",    "square",      "triangle",    "l1",
         "r1",           "l2",        "r2",          "l3",
@@ -36,18 +49,4 @@ public:
 
     const QStringList StickOutputs = {"axis_left_x", "axis_left_y", "axis_right_x", "axis_right_y",
                                       "unmapped"};
-
-private Q_SLOTS:
-    void SaveControllerConfig(bool CloseOnSave);
-    void SetDefault();
-    void OnProfileChanged();
-    void KBMClicked();
-
-private:
-    std::unique_ptr<Ui::ControlSettings> ui;
-    std::shared_ptr<GameInfoClass> m_game_info;
-
-    void AddBoxItems();
-    void SetUIValuestoMappings();
-    void GetGameTitle();
 };

@@ -28,9 +28,14 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     });
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
-    connect(ui->KBMButton, &QPushButton::clicked, this, &ControlSettings::KBMClicked);
-    connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this,
-            &ControlSettings::OnProfileChanged);
+    connect(ui->KBMButton, &QPushButton::clicked, this, [this] {
+        auto KBMWindow = new EditorDialog(this);
+        KBMWindow->exec();
+    });
+    connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
+        GetGameTitle();
+        SetUIValuestoMappings();
+    });
 
     connect(ui->LeftDeadzoneSlider, &QSlider::valueChanged, this,
             [this](int value) { ui->LeftDeadzoneValue->setText(QString::number(value)); });
@@ -82,11 +87,9 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
 
     std::string config_id;
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        config_id = ("default");
-    } else {
-        config_id = (ui->ProfileComboBox->currentText().toStdString());
-    }
+    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+                    ? "default"
+                    : ui->ProfileComboBox->currentText().toStdString();
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
 
     int lineCount = 0;
@@ -225,22 +228,10 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     std::vector<std::string> save;
     bool CurrentLineEmpty = false, LastLineEmpty = false;
     for (auto const& line : lines) {
-        if (CurrentLineEmpty) {
-            LastLineEmpty = true;
-        } else {
-            LastLineEmpty = false;
-        }
-
-        if (line.empty()) {
-            CurrentLineEmpty = true;
-        } else {
-            CurrentLineEmpty = false;
-        }
-
-        if (CurrentLineEmpty && LastLineEmpty)
-            continue;
-
-        save.push_back(line);
+        LastLineEmpty = CurrentLineEmpty ? true : false;
+        CurrentLineEmpty = line.empty() ? true : false;
+        if (!CurrentLineEmpty || !LastLineEmpty)
+            save.push_back(line);
     }
 
     std::ofstream output_file(config_file);
@@ -324,11 +315,9 @@ void ControlSettings::AddBoxItems() {
 
 void ControlSettings::SetUIValuestoMappings() {
     std::string config_id;
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        config_id = ("default");
-    } else {
-        config_id = (ui->ProfileComboBox->currentText().toStdString());
-    }
+    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+                    ? "default"
+                    : ui->ProfileComboBox->currentText().toStdString();
 
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
     std::ifstream file(config_file);
@@ -344,19 +333,16 @@ void ControlSettings::SetUIValuestoMappings() {
         lineCount++;
 
         line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
-        if (line.empty()) {
+        if (line.empty())
             continue;
-        }
 
         std::size_t comment_pos = line.find('#');
-        if (comment_pos != std::string::npos) {
+        if (comment_pos != std::string::npos)
             line = line.substr(0, comment_pos);
-        }
 
         std::size_t equal_pos = line.find('=');
-        if (equal_pos == std::string::npos) {
+        if (equal_pos == std::string::npos)
             continue;
-        }
 
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
@@ -507,16 +493,6 @@ void ControlSettings::GetGameTitle() {
             }
         }
     }
-}
-
-void ControlSettings::OnProfileChanged() {
-    GetGameTitle();
-    SetUIValuestoMappings();
-}
-
-void ControlSettings::KBMClicked() {
-    auto KBMWindow = new EditorDialog(this);
-    KBMWindow->exec();
 }
 
 ControlSettings::~ControlSettings() {}
