@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="sv_SE">
 	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-         SPDX-License-Identifier: GPL-2.0-or-later --> 
+         SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
     <message>
