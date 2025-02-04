@@ -124,6 +124,15 @@
 			<source>Copy Serial</source>
 			<translation>Копіювати серійний номер</translation>
 		</message>
+		</message>
+		<message>
+			<source>Copy Version</source>
+			<translation>Копіювати версію</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Копіювати розмір</translation>
+		</message>
 		<message>
 			<source>Copy All</source>
 			<translation>Копіювати все</translation>
@@ -217,7 +226,7 @@
 		<name>MainWindow</name>
 		<message>
 			<source>Open/Add Elf Folder</source>
-			<translation>Відкрити/Додати папку Elf</translation>
+			<translation>Відкрити/Додати папку з виконуваними файлами</translation>
 		</message>
 		<message>
 			<source>Install Packages (PKG)</source>
@@ -297,7 +306,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Elf</translation>
+			<translation>Переглядач виконуваних файлів</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -417,7 +426,7 @@
 		</message>
 		<message>
 			<source>ELF files (*.bin *.elf *.oelf)</source>
-			<translation>Файл ELF (*.bin *.elf *.oelf)</translation>
+			<translation>Файли ELF (*.bin *.elf *.oelf)</translation>
 		</message>
 		<message>
 			<source>Game Boot</source>
@@ -614,7 +623,7 @@
 		</message>
 		<message>
 			<source>s</source>
-			<translation>с</translation>
+			<translation>сек</translation>
 		</message>
 		<message>
 			<source>Controller</source>
@@ -749,6 +758,18 @@
 			<translation>Вимкнути спливаючі вікна трофеїв</translation>
 		</message>
 		<message>
+			<source>Background Image</source>
+			<translation>Фонове зображення</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>Показувати фонове зображення</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>Непрозорість</translation>
+		</message>
+		<message>
 			<source>Play title music</source>
 			<translation>Програвати титульну музику</translation>
 		</message>
@@ -843,6 +864,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Оновлення:\nRelease: Офіційні версії, які випускаються щомісяця і можуть бути дуже старими, але вони більш надійні та перевірені.\nNightly: Версії для розробників, які мають усі найновіші функції та виправлення, але можуть містити помилки та є менш стабільними.</translation>
+		</message>
+		<message>
+				<source>GUIBackgroundImageGroupBox</source>
+				<translation>Фонове зображення:\nКерує непрозорістю фонового зображення гри.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -971,6 +996,14 @@
 		<message>
 			<source>guestMarkersCheckBox</source>
 			<translation>Гостьові маркери налагодження:\nВставляє налагоджувані маркери, які сама гра додала до командного буфера.\nЯкщо ця опція увімкнена, рекомендується також активувати діагностику збоїв.\nКорисно для програм на кшталт RenderDoc.</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Шлях до файлів збережень:\nПапка, де будуть зберігатися ігрові збереження.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Вибрати:\nВиберіть папку для ігрових збережень.</translation>
 		</message>
 	</context>
 	<context>
@@ -1244,15 +1277,15 @@
 		</message>
 		<message>
 			<source>h</source>
-			<translation>год.</translation>
+			<translation>год</translation>
 		</message>
 		<message>
 			<source>m</source>
-			<translation>хв.</translation>
+			<translation>хв</translation>
 		</message>
 		<message>
 			<source>s</source>
-			<translation>сек.</translation>
+			<translation>сек</translation>
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
@@ -1402,7 +1435,34 @@
 		</message>
 		<message>
 			<source>TB</source>
-			<translation>ГБ</translation>
+			<translation>ТБ</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Unknown</source>
+			<translation>Невідомо</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Не працює</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Запускається</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>У меню</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>У грі</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Іграбельно</translation>
 		</message>
 	</context>
 </TS>
