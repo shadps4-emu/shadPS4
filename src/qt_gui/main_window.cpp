@@ -16,6 +16,7 @@
 #include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/version.h"
+#include "control_settings.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
@@ -301,8 +302,8 @@ void MainWindow::CreateConnects() {
 
     // this is the editor for kbm keybinds
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
-        EditorDialog* editorWindow = new EditorDialog(this);
-        editorWindow->exec(); // Show the editor window modally
+        auto configWindow = new ControlSettings(m_game_info, this);
+        configWindow->exec();
     });
 
 #ifdef ENABLE_UPDATER

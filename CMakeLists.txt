@@ -897,6 +897,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/compatibility_info.cpp
            src/qt_gui/compatibility_info.h
+	   src/qt_gui/control_settings.cpp	   
+           src/qt_gui/control_settings.h
+           src/qt_gui/control_settings.ui
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
