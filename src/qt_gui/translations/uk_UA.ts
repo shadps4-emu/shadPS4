@@ -124,7 +124,6 @@
 			<source>Copy Serial</source>
 			<translation>Копіювати серійний номер</translation>
 		</message>
-		</message>
 		<message>
 			<source>Copy Version</source>
 			<translation>Копіювати версію</translation>
