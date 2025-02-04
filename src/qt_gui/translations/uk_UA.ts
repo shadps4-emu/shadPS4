@@ -102,15 +102,15 @@
 		</message>
 		<message>
 			<source>Open Game Folder</source>
-			<translation>Відкрити папку з грою</translation>
+			<translation>Відкрити папку гри</translation>
 		</message>
 		<message>
 			<source>Open Save Data Folder</source>
-			<translation>Відкрити Папку Збережених Даних</translation>
+			<translation>Відкрити папку збережень гри</translation>
 		</message>
 		<message>
 			<source>Open Log Folder</source>
-			<translation>Відкрити Папку Логів</translation>
+			<translation>Відкрити папку логів</translation>
 		</message>
 		<message>
 			<source>Copy info...</source>
@@ -118,7 +118,7 @@
 		</message>
 		<message>
 			<source>Copy Name</source>
-			<translation>Копіювати Ім’я</translation>
+			<translation>Копіювати назву гри</translation>
 		</message>
 		<message>
 			<source>Copy Serial</source>
@@ -130,7 +130,7 @@
 		</message>
 		<message>
 			<source>Delete...</source>
-			<translation>Видалення...</translation>
+			<translation>Видалити...</translation>
 		</message>
 		<message>
 			<source>Delete Game</source>
@@ -146,19 +146,19 @@
 		</message>
 		<message>
 			<source>Compatibility...</source>
-			<translation>Compatibility...</translation>
+			<translation>Сумісність...</translation>
 		</message>
 		<message>
 			<source>Update database</source>
-			<translation>Update database</translation>
+			<translation>Оновити базу даних</translation>
 		</message>
 		<message>
 			<source>View report</source>
-			<translation>View report</translation>
+			<translation>Переглянути звіт</translation>
 		</message>
 		<message>
 			<source>Submit a report</source>
-			<translation>Submit a report</translation>
+			<translation>Створити звіт</translation>
 		</message>
 		<message>
 			<source>Shortcut creation</source>
@@ -182,7 +182,7 @@
 		</message>
 		<message>
 			<source>Game</source>
-			<translation>Ігри</translation>
+			<translation>гри</translation>
 		</message>
 		<message>
 			<source>requiresEnableSeparateUpdateFolder_MSG</source>
@@ -206,11 +206,11 @@
 		</message>
 		<message>
 			<source>Delete %1</source>
-			<translation>Видалити %1</translation>
+			<translation>Видалення %1</translation>
 		</message>
 		<message>
 			<source>Are you sure you want to delete %1's %2 directory?</source>
-			<translation>Ви впевнені, що хочете видалити папку %1 з папки %2??</translation>
+			<translation>Ви впевнені, що хочете видалити %1 з папки %2?</translation>
 		</message>
 	</context>
 	<context>
@@ -229,7 +229,7 @@
 		</message>
 		<message>
 			<source>Check for Updates</source>
-			<translation>Перевити наявність оновлень</translation>
+			<translation>Перевірити наявність оновлень</translation>
 		</message>
 		<message>
 			<source>About shadPS4</source>
@@ -249,7 +249,7 @@
 		</message>
 		<message>
 			<source>Open shadPS4 Folder</source>
-			<translation>Open shadPS4 Folder</translation>
+			<translation>Відкрити папку shadPS4</translation>
 		</message>
 		<message>
 			<source>Exit</source>
@@ -301,11 +301,11 @@
 		</message>
 		<message>
 			<source>Game Install Directory</source>
-			<translation>Каталог встановлення гри</translation>
+			<translation>Каталоги встановлення ігор та оновлень</translation>
 		</message>
 		<message>
 			<source>Download Cheats/Patches</source>
-			<translation>Завантажити Чити або Патчі</translation>
+			<translation>Завантажити Чити/Патчі</translation>
 		</message>
 		<message>
 			<source>Dump Game List</source>
@@ -329,7 +329,7 @@
 		</message>
 		<message>
 			<source>Game List Icons</source>
-			<translation>Розмір значків списку игр</translation>
+			<translation>Розмір значків списку ігор</translation>
 		</message>
 		<message>
 			<source>Game List Mode</source>
@@ -385,7 +385,7 @@
 		</message>
 		<message>
 			<source>Download Cheats For All Installed Games</source>
-			<translation>Завантажити чити для всіх встановлених ігор</translation>
+			<translation>Завантажити чити для усіх встановлених ігор</translation>
 		</message>
 		<message>
 			<source>Download Patches For All Games</source>
@@ -397,7 +397,7 @@
 		</message>
 		<message>
 			<source>You have downloaded cheats for all the games you have installed.</source>
-			<translation>Ви завантажили чити для всіх встановлених ігор.</translation>
+			<translation>Ви завантажили чити для усіх встановлених ігор.</translation>
 		</message>
 		<message>
 			<source>Patches Downloaded Successfully!</source>
@@ -429,7 +429,7 @@
 		</message>
 		<message>
 			<source>PKG Extraction</source>
-			<translation>Видобуток PKG</translation>
+			<translation>Розпакування PKG</translation>
 		</message>
 		<message>
 			<source>Patch detected!</source>
@@ -449,7 +449,7 @@
 		</message>
 		<message>
 			<source>Game is installed: </source>
-			<translation>Гра встановлена: </translation>
+			<translation>Встановлена гра: </translation>
 		</message>
 		<message>
 			<source>Would you like to install Patch: </source>
@@ -461,7 +461,7 @@
 		</message>
 		<message>
 			<source>Would you like to install DLC: %1?</source>
-			<translation>Ви бажаєте встановити DLC: %1??</translation>
+			<translation>Ви бажаєте встановити DLC: %1?</translation>
 		</message>
 		<message>
 			<source>DLC already installed:</source>
@@ -481,11 +481,11 @@
 		</message>
 		<message>
 			<source>Extracting PKG %1/%2</source>
-			<translation>Вилучення PKG %1/%2</translation>
+			<translation>Витягування PKG %1/%2</translation>
 		</message>
 		<message>
 			<source>Extraction Finished</source>
-			<translation>Вилучення завершено</translation>
+			<translation>Розпакування завершено</translation>
 		</message>
 		<message>
 			<source>Game successfully installed at %1</source>
@@ -542,7 +542,7 @@
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
-			<translation>Режим Повноекранний</translation>
+			<translation>Режим повного екрану</translation>
 		</message>
 		<message>
 			<source>Enable Separate Update Folder</source>
@@ -554,7 +554,7 @@
 		</message>
 		<message> 
 			<source>Show Game Size In List</source>
-			<translation>Показати розмір гри в списку</translation>
+			<translation>Показати розмір гри у списку</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -574,11 +574,11 @@
 		</message>
 		<message>
 			<source>Trophy Key</source>
-			<translation>Trophy Key</translation>
+			<translation>Ключ трофеїв</translation>
 		</message>
 		<message>
 			<source>Trophy</source>
-			<translation>Trophy</translation>
+			<translation>Трофеї</translation>
 		</message>
 		<message>
 			<source>Logger</source>
@@ -614,7 +614,7 @@
 		</message>
 		<message>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>с</translation>
 		</message>
 		<message>
 			<source>Controller</source>
@@ -622,7 +622,7 @@
 		</message>
 		<message>
 			<source>Back Button Behavior</source>
-			<translation>Поведінка кнопки назад</translation>
+			<translation>Перепризначення кнопки назад</translation>
 		</message>
 		<message>
 			<source>Graphics</source>
@@ -678,7 +678,7 @@
 		</message>
 		<message>
 			<source>Remove</source>
-			<translation>Видалити</translation>
+			<translation>Вилучити</translation>
 		</message>
 		<message>
 			<source>Debug</source>
@@ -702,23 +702,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Увімкнути діагностику збоїв</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Збирати шейдери</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Копіювати буфери GPU</translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Хостові маркери налагодження</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Гостьові маркери налагодження</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -726,7 +726,7 @@
 		</message>
 		<message>
 			<source>Check for Updates at Startup</source>
-			<translation>Перевірка оновлень під час запуску</translation>
+			<translation>Перевіряти оновлення під час запуску</translation>
 		</message>
 		<message>
 			<source>Update Channel</source>
@@ -742,31 +742,31 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Титульна музика</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
-			<translation>Disable Trophy Pop-ups</translation>
+			<translation>Вимкнути спливаючі вікна трофеїв</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
-			<translation>Програвати заголовну музику</translation>
+			<translation>Програвати титульну музику</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database On Startup</source>
-			<translation>Update Compatibility Database On Startup</translation>
+			<translation>Оновлення даних ігрової сумісності під час запуску</translation>
 		</message>
 		<message>
 			<source>Game Compatibility</source>
-			<translation>Game Compatibility</translation>
+			<translation>Сумісність з іграми</translation>
 		</message>
 		<message>
 			<source>Display Compatibility Data</source>
-			<translation>Display Compatibility Data</translation>
+			<translation>Відображати данні ігрової сумістністі</translation>
 		</message>
 		<message>
 			<source>Update Compatibility Database</source>
-			<translation>Update Compatibility Database</translation>
+			<translation>Оновити данні ігрової сумістності</translation>
 		</message>
 		<message>
 			<source>Volume</source>
@@ -774,7 +774,7 @@
 		</message>
 		<message>
 			<source>Audio Backend</source>
-			<translation>Audio Backend</translation>
+			<translation>Аудіосистема</translation>
 		</message>
 		<message>
 			<source>Save</source>
@@ -826,11 +826,11 @@
 		</message>
 		<message>
 			<source>userName</source>
-			<translation>Ім'я користувача:\nВстановіть ім'я користувача акаунта PS4. Це може відображатися в деяких іграх.</translation>
+			<translation>Ім'я користувача:\nВстановіть ім'я користувача акаунта PS4. Воно може відображатися в деяких іграх.</translation>
 		</message>
 		<message>
 			<source>TrophyKey</source>
-			<translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+			<translation>Ключ трофеїв:\nКлюч для розшифровки трофеїв. Може бути отриманий зі зламаної консолі.\nПовинен містити лише шістнадцяткові символи.</translation>
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
@@ -846,15 +846,15 @@
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
-			<translation>Грати заголовну музику:\nВмикає відтворення спеціальної музики під час вибору гри в списку, якщо вона це підтримує.</translation>
+			<translation>Грати титульну музику:\nВмикає відтворення спеціальної музики під час вибору гри в списку, якщо вона це підтримує.</translation>
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+			<translation>Вимкнути спливаючі вікна трофеїв:\nВимикає сповіщення про ігрові трофеї. Прогрес трофея все ще можна відстежувати за допомогою Trophy Viewer (клацніть правою кнопкою миші на грі у головному вікні).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
-			<translation>Приховувати курсор:\nВиберіть, коли курсор зникне:\nНіколи: Ви завжди будете бачити мишу.\nПри бездіяльності: Встановіть час, через який курсор зникне в разі бездіяльності.\nЗавжди: Ви ніколи не будете бачити мишу.</translation>
+			<translation>Приховувати курсор:\nВиберіть, коли курсор зникатиме:\nНіколи: Курсор миші завжди буде видимий.\nПри бездіяльності: Встановіть час, через який курсор зникне в разі бездіяльності.\nЗавжди: Курсор миші завжди буде прихований.</translation>
 		</message>
 		<message>
 			<source>idleTimeoutGroupBox</source>
@@ -862,19 +862,19 @@
 		</message>
 		<message>
 			<source>backButtonBehaviorGroupBox</source>
-			<translation>Поведінка кнопки «Назад»:\nНалаштовує кнопку «Назад» контролера на емуляцію натискання на зазначену область на сенсорній панелі контролера PS4.</translation>
+			<translation>Перепризначення кнопки «Назад»:\nНалаштовує кнопку «Назад» контролера на емуляцію натискання на зазначену область на сенсорній панелі контролера PS4.</translation>
 		</message>
 		<message>
 			<source>enableCompatibilityCheckBox</source>
-			<translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable "Update Compatibility On Startup" to get up-to-date information.</translation>
+			<translation>Відображати данні ігрової сумістністі:\nВідображає інформацію про сумісність ігор у вигляді таблиці. Увімкніть "Оновлення даних ігрової сумісності під час запуску" для отримання актуальної інформації.</translation>
 		</message>
 		<message>
 			<source>checkCompatibilityOnStartupCheckBox</source>
-			<translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+			<translation>Оновлення даних ігрової сумісності під час запуску:\nАвтоматично оновлює базу даних ігрової сумісності під час запуску shadPS4.</translation>
 		</message>
 		<message>
 			<source>updateCompatibilityButton</source>
-			<translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+			<translation>Оновити данні ігрової сумістності:\nНегайно оновить базу даних ігрової сумісності.</translation>
 		</message>
 		<message>
 			<source>Never</source>
@@ -890,19 +890,19 @@
 		</message>
 		<message>
 			<source>Touchpad Left</source>
-			<translation>Тачпад ліворуч</translation>
+			<translation>Ліва сторона тачпаду</translation>
 		</message>
 		<message>
 			<source>Touchpad Right</source>
-			<translation>Тачпад праворуч</translation>
+			<translation>Права сторона тачпаду</translation>
 		</message>
 		<message>
 			<source>Touchpad Center</source>
-			<translation>Тачпад по центру </translation>
+			<translation>Середина тачпаду</translation>
 		</message>
 		<message>
 			<source>None</source>
-			<translation>Ні</translation>
+			<translation>Без змін</translation>
 		</message>
 		<message>
 			<source>graphicsAdapterGroupBox</source>
@@ -926,7 +926,7 @@
 		</message>
 		<message>
 			<source>gameFoldersBox</source>
-			<translation>Ігрові папки:\nСписок папок для перевірки встановлених ігор.</translation>
+			<translation>Ігрові папки:\nСписок папок, що скануватимуться для виявлення ігор.</translation>
 		</message>
 		<message>
 			<source>addFolderButton</source>
@@ -934,7 +934,7 @@
 		</message>
 		<message>
 			<source>removeFolderButton</source>
-			<translation>Видалити:\nВидалити папку зі списку.</translation>
+			<translation>Вилучити:\nВилучити папку зі списку.</translation>
 		</message>
 		<message>
 			<source>debugDump</source>
@@ -954,30 +954,30 @@
 		</message>
 	    <message>
 			<source>collectShaderCheckBox</source>
-			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+			<translation>Збирати шейдери:\nВам потрібно увімкнути цю опцію, щоб редагувати шейдери за допомогою меню налагодження (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+			<translation>Діагностика збоїв:\nСтворює .yaml файл з інформацією про стан Vulkan на момент збою.\nКорисно для налагодження помилок 'Device lost'. Якщо у вас увімкнено цей параметр, вам слід увімкнути маркери налагодження Хоста ТА Гостя.\nНе працює на графічних процесорах Intel.\nДля цього вам потрібно увімкнути шари валідації Vulkan і мати Vulkan SDK.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+			<translation>Копіювати буфери GPU:\nДозволяє обійти проблеми синхронізації, пов'язані з відправленням даних на GPU\nМоже як допомогти, так і не вплинути на збої типу PM4 (тип 0).</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Хостові маркери налагодження:\nДодає інформацію емулятора, наприклад маркери для конкретних команд AMDGPU у Vulkan, також присвоює ресурсам налагоджувані назви.\nЯкщо ця опція увімкнена, рекомендується також активувати діагностику збоїв.\nКорисно для програм на кшталт RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Гостьові маркери налагодження:\nВставляє налагоджувані маркери, які сама гра додала до командного буфера.\nЯкщо ця опція увімкнена, рекомендується також активувати діагностику збоїв.\nКорисно для програм на кшталт RenderDoc.</translation>
 		</message>
 	</context>
 	<context>
 		<name>CheatsPatches</name>
 		<message>
 			<source>Cheats / Patches for </source>
-			<translation>Cheats / Patches for </translation>
+			<translation>Чити та Патчі для </translation>
 		</message>
 		<message>
 			<source>defaultTextEdit_MSG</source>
@@ -1149,7 +1149,7 @@
 		</message>
 		<message>
 			<source>The game is in version: %1</source>
-			<translation>Гра у версії: %1</translation>
+			<translation>Версія гри: %1</translation>
 		</message>
 		<message>
 			<source>The downloaded patch only works on version: %1</source>
@@ -1189,7 +1189,7 @@
 		</message>
 		<message>
 			<source>Name:</source>
-			<translation>Ім'я:</translation>
+			<translation>Назва:</translation>
 		</message>
 		<message>
 			<source>Can't apply cheats before the game is started</source>
@@ -1212,7 +1212,7 @@
 		</message>
 		<message>
 			<source>Compatibility</source>
-			<translation>Compatibility</translation>
+			<translation>Сумісність</translation>
 		</message>
 		<message>
 			<source>Region</source>
@@ -1240,43 +1240,43 @@
 		</message>
 		<message>
 			<source>Never Played</source>
-			<translation>Never Played</translation>
+			<translation>Ніколи не запускалась</translation>
 		</message>
 		<message>
 			<source>h</source>
-			<translation>h</translation>
+			<translation>год.</translation>
 		</message>
 		<message>
 			<source>m</source>
-			<translation>m</translation>
+			<translation>хв.</translation>
 		</message>
 		<message>
 			<source>s</source>
-			<translation>s</translation>
+			<translation>сек.</translation>
 		</message>
 		<message>
 			<source>Compatibility is untested</source>
-			<translation>Compatibility is untested</translation>
+			<translation>Сумісність не перевірена</translation>
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Game does not initialize properly / crashes the emulator</translation>
+			<translation>Гра не ініціалізується належним чином або спричиняє збій емулятора.</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
-			<translation>Game boots, but only displays a blank screen</translation>
+			<translation>Гра запускається, але відображає лише чорний екран.</translation>
 		</message>
 		<message>
 			<source>Game displays an image but does not go past the menu</source>
-			<translation>Game displays an image but does not go past the menu</translation>
+			<translation>Гра відображає зображення, але не проходить далі меню.</translation>
 		</message>
 		<message>
 			<source>Game has game-breaking glitches or unplayable performance</source>
-			<translation>Game has game-breaking glitches or unplayable performance</translation>
+			<translation>У грі є критичні баги або погана продуктивність</translation>
 		</message>
 		<message>
 			<source>Game can be completed with playable performance and no major glitches</source>
-			<translation>Game can be completed with playable performance and no major glitches</translation>
+			<translation>Гру можна пройти з хорошою продуктивністю та без серйозних глюків.</translation>
 		</message>
 	</context>
 	<context>
@@ -1303,7 +1303,7 @@
 		</message>
 		<message>
 			<source>Invalid release data.</source>
-			<translation>Неприпустимі дані релізу.</translation>
+			<translation>Некоректні дані про випуск.</translation>
 		</message>
 		<message>
 			<source>No download URL found for the specified asset.</source>
@@ -1311,7 +1311,7 @@
 		</message>
 		<message>
 			<source>Your version is already up to date!</source>
-			<translation>Вашу версію вже оновлено!</translation>
+			<translation>У вас актуальна версія!</translation>
 		</message>
 		<message>
 			<source>Update Available</source>
@@ -1386,23 +1386,23 @@
 		<name>GameListUtils</name>
 		<message>
 			<source>B</source>
-			<translation>B</translation>
+			<translation>Б</translation>
 		</message>
 		<message>
 			<source>KB</source>
-			<translation>KB</translation>
+			<translation>КБ</translation>
 		</message>
 		<message>
 			<source>MB</source>
-			<translation>MB</translation>
+			<translation>MБ</translation>
 		</message>
 		<message>
 			<source>GB</source>
-			<translation>GB</translation>
+			<translation>ГБ</translation>
 		</message>
 		<message>
 			<source>TB</source>
-			<translation>TB</translation>
+			<translation>ГБ</translation>
 		</message>
 	</context>
 </TS>
