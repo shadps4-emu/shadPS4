@@ -209,10 +209,10 @@ void ParseInputConfig(const std::string game_id = "") {
     float mouse_speed = 1;
     float mouse_speed_offset = 0.125;
 
-    leftjoystick_deadzone = {1, 128};
-    rightjoystick_deadzone = {1, 128};
-    lefttrigger_deadzone = {1, 128};
-    righttrigger_deadzone = {1, 128};
+    leftjoystick_deadzone = {1, 127};
+    rightjoystick_deadzone = {1, 127};
+    lefttrigger_deadzone = {1, 127};
+    righttrigger_deadzone = {1, 127};
 
     int lineCount = 0;
 
