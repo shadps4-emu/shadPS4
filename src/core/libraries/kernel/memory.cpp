@@ -27,7 +27,7 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut) {
     if (searchStart < 0 || searchEnd < 0) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+        LOG_ERROR(Kernel_Vmm, "Invalid parameters!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (len <= 0 || !Common::Is16KBAligned(len)) {
