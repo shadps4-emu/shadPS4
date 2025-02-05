@@ -111,7 +111,7 @@ private:
         cb_descs;
     std::optional<std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc>> db_desc;
     boost::container::static_vector<vk::DescriptorImageInfo, 64> image_infos;
-    boost::container::static_vector<vk::BufferView, 8> buffer_views;
+    boost::container::static_vector<vk::BufferView, 16> buffer_views;
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<VideoCore::ImageId, 64> bound_images;
 
