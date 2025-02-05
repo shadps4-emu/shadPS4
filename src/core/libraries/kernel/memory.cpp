@@ -26,17 +26,20 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut) {
-    if (searchStart < 0 || searchEnd <= searchStart) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+    if (searchStart < 0 || searchEnd < 0) {
+        LOG_ERROR(Kernel_Vmm, "Invalid parameters!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = searchEnd - searchStart >= len;
-    if (len <= 0 || !Common::Is16KBAligned(len) || !is_in_range) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+    if (len <= 0 || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Length {:#x} is invalid!", len);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is16KBAligned(alignment)) {
-        LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+        LOG_ERROR(Kernel_Vmm, "Alignment {:#x} is invalid!", alignment);
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (memoryType > 10) {
+        LOG_ERROR(Kernel_Vmm, "Memory type {:#x} is invalid!", memoryType);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (physAddrOut == nullptr) {
@@ -44,8 +47,21 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (searchEnd <= searchStart || searchEnd < len || !is_in_range) {
+        LOG_ERROR(Kernel_Vmm,
+                  "Provided address range is too small!"
+                  " searchStart = {:#x}, searchEnd = {:#x}, length = {:#x}",
+                  searchStart, searchEnd, len);
+        return ORBIS_KERNEL_ERROR_EAGAIN;
+    }
+
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
+    if (phys_addr == -1) {
+        return ORBIS_KERNEL_ERROR_EAGAIN;
+    }
+
     *physAddrOut = static_cast<s64>(phys_addr);
 
     LOG_INFO(Kernel_Vmm,
