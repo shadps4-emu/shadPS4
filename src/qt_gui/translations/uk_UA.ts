@@ -54,6 +54,14 @@
 			<source>Select which directory you want to install to.</source>
 			<translation>Виберіть папку, до якої ви хочете встановити.</translation>
 		</message>
+		<message>
+			<source>Install All Queued to Selected Folder</source>
+			<translation>Встановити все з черги до вибраної папки</translation>
+		</message>
+		<message>
+			<source>Delete PKG File on Install</source>
+			<translation>Видалити файл PKG під час встановлення</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameInstallDialog</name>
@@ -105,6 +113,10 @@
 			<translation>Відкрити папку гри</translation>
 		</message>
 		<message>
+        	<source>Open Update Folder</source>
+        	<translation>Відкрити папку оновлень</translation>
+    	</message>
+		<message>
 			<source>Open Save Data Folder</source>
 			<translation>Відкрити папку збережень гри</translation>
 		</message>
@@ -148,6 +160,10 @@
 			<source>Delete Update</source>
 			<translation>Видалити оновлення</translation>
 		</message>
+		<message>
+        	<source>Delete Save Data</source>
+        	<translation>Видалити збереження</translation>
+    	</message>
 		<message>
 			<source>Delete DLC</source>
 			<translation>Видалити DLC</translation>
@@ -201,8 +217,20 @@
 			<translation>Ця гра не має оновлень для видалення!</translation>
 		</message>
 		<message>
+        	<source>This game has no update folder to open!</source>
+        	<translation>Ця гра не має папки оновленнь, щоб відкрити її!</translation>
+    	</message>
+		<message>
 			<source>Update</source>
 			<translation>Оновлення</translation>
+		</message>
+		<message>
+        	<source>This game has no save data to delete!</source>
+        	<translation>Ця гра не містить збережень, які можна видалити!</translation>
+    	</message>
+	    <message>
+        	<source>Save Data</source>
+        	<translation>Збереження</translation>
 		</message>
 		<message>
 			<source>This game has no DLC to delete!</source>
@@ -225,7 +253,7 @@
 		<name>MainWindow</name>
 		<message>
 			<source>Open/Add Elf Folder</source>
-			<translation>Відкрити/Додати папку з виконуваними файлами</translation>
+			<translation>Відкрити/Додати папку Elf</translation>
 		</message>
 		<message>
 			<source>Install Packages (PKG)</source>
@@ -305,7 +333,7 @@
 		</message>
 		<message>
 			<source>Elf Viewer</source>
-			<translation>Переглядач виконуваних файлів</translation>
+			<translation>Виконуваний файл</translation>
 		</message>
 		<message>
 			<source>Game Install Directory</source>
@@ -553,6 +581,14 @@
 			<translation>Режим повного екрану</translation>
 		</message>
 		<message>
+        	<source>Borderless</source>
+        	<translation>Без рамок</translation>
+   		</message>
+    	<message>
+        	<source>True</source>
+        	<translation>Повний екран</translation>
+    	</message>
+		<message>
 			<source>Enable Separate Update Folder</source>
 			<translation>Увімкнути окрему папку оновлень</translation>
 		</message>
@@ -637,7 +673,7 @@
 			<translation>Графіка</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Інтерфейс</translation>
 		</message>
 		<message>
@@ -742,6 +778,14 @@
 			<translation>Канал оновлення</translation>
 		</message>
 		<message>
+        	<source>Release</source>
+        	<translation>Релізний</translation>
+    	</message>
+    	<message>
+        	<source>Nightly</source>
+        	<translation>Тестовий</translation>
+		</message>
+		<message>
 			<source>Check for Updates</source>
 			<translation>Перевірити оновлення</translation>
 		</message>
@@ -813,6 +857,7 @@
 			<source>Close</source>
 			<translation>Закрити</translation>
 		</message>
+
 		<message>
 			<source>Point your mouse at an option to display its description.</source>
 			<translation>Наведіть курсор миші на опцію, щоб відобразити її опис.</translation>
@@ -863,11 +908,11 @@
 		</message>
 		<message>
 			<source>updaterGroupBox</source>
-			<translation>Оновлення:\nRelease: Офіційні версії, які випускаються щомісяця і можуть бути дуже старими, але вони більш надійні та перевірені.\nNightly: Версії для розробників, які мають усі найновіші функції та виправлення, але можуть містити помилки та є менш стабільними.</translation>
+			<translation>Оновлення:\nРелізний: Офіційні версії, які випускаються щомісяця і можуть бути дуже старими, але вони більш надійні та перевірені.\nТестовий: Версії для розробників, які мають усі найновіші функції та виправлення, але можуть містити помилки та є менш стабільними.</translation>
 		</message>
 		<message>
-				<source>GUIBackgroundImageGroupBox</source>
-				<translation>Фонове зображення:\nКерує непрозорістю фонового зображення гри.</translation>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Фонове зображення:\nКерує непрозорістю фонового зображення гри.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -875,7 +920,7 @@
 		</message>
 		<message>
 			<source>disableTrophycheckBox</source>
-			<translation>Вимкнути спливаючі вікна трофеїв:\nВимикає сповіщення про ігрові трофеї. Прогрес трофея все ще можна відстежувати за допомогою Trophy Viewer (клацніть правою кнопкою миші на грі у головному вікні).</translation>
+			<translation>Вимкнути спливаючі вікна трофеїв:\nВимикає сповіщення про ігрові трофеї. Прогрес трофея все ще можна відстежувати за допомогою "Перегляд трофеїв" (клацніть правою кнопкою миші на грі у головному вікні).</translation>
 		</message>
 		<message>
 			<source>hideCursorGroupBox</source>
