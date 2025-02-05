@@ -448,7 +448,6 @@ void ControllerOutput::ResetUpdate() {
     *new_param = 0; // bruh
 }
 void ControllerOutput::AddUpdate(InputEvent event) {
-    state_changed = true;
     if (button == KEY_TOGGLE) {
         if (event.active) {
             ToggleKeyInList(event.input);
@@ -465,24 +464,43 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         }
 
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
+        auto ApplyDeadzone = [](s8* value, std::pair<int, int> deadzone) {
+            if (std::abs(*value) <= deadzone.first || deadzone.first == deadzone.second) {
+                *value = 0;
+            } else {
+                *value = (*value >= 0 ? 1 : -1) *
+                         std::clamp((int)((128.0 * (std::abs(*value) - deadzone.first)) /
+                                          (float)(deadzone.second - deadzone.first)),
+                                    0, 128);
+            }
+        };
         switch (axis) {
+        case SDL_GAMEPAD_AXIS_LEFTX:
+        case SDL_GAMEPAD_AXIS_LEFTY:
+            ApplyDeadzone(&event.axis_value, leftjoystick_deadzone);
+            break;
+        case SDL_GAMEPAD_AXIS_RIGHTX:
+        case SDL_GAMEPAD_AXIS_RIGHTY:
+            ApplyDeadzone(&event.axis_value, rightjoystick_deadzone);
+            break;
         case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+            ApplyDeadzone(&event.axis_value, lefttrigger_deadzone);
+            break;
         case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
-            // if it's a button input, then we know the value to set, so the param is 0.
-            // if it's an analog input, then the param isn't 0
-            *new_param = (event.active ? event.axis_value : 0) + *new_param;
+            ApplyDeadzone(&event.axis_value, righttrigger_deadzone);
             break;
         default:
-            *new_param = (event.active ? event.axis_value : 0) + *new_param;
+            UNREACHABLE();
             break;
         }
+        *new_param = (event.active ? event.axis_value : 0) + *new_param;
     }
 }
 void ControllerOutput::FinalizeUpdate() {
+    state_changed = old_button_state != new_button_state || old_param != *new_param;
     if (!state_changed) {
-        // return;
+        return;
     }
-
     old_button_state = new_button_state;
     old_param = *new_param;
     float touchpad_x = 0;
@@ -512,36 +530,21 @@ void ControllerOutput::FinalizeUpdate() {
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID && positive_axis) {
         // avoid double-updating axes, but don't skip directional button bindings
         float multiplier = 1.0;
-        int deadzone = 0;
-        auto ApplyDeadzone = [](s16* value, std::pair<int, int> deadzone) {
-            if (std::abs(*value) <= deadzone.first || deadzone.first == deadzone.second) {
-                *value = 0;
-            } else {
-                *value = (*value >= 0 ? 1 : -1) *
-                         std::clamp((int)((128.0 * (std::abs(*value) - deadzone.first)) /
-                                          (float)(deadzone.second - deadzone.first)),
-                                    0, 128);
-            }
-        };
         Axis c_axis = GetAxisFromSDLAxis(axis);
         switch (c_axis) {
         case Axis::LeftX:
         case Axis::LeftY:
-            ApplyDeadzone(new_param, leftjoystick_deadzone);
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::RightX:
         case Axis::RightY:
-            ApplyDeadzone(new_param, rightjoystick_deadzone);
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::TriggerLeft:
-            ApplyDeadzone(new_param, lefttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
-            ApplyDeadzone(new_param, righttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
@@ -572,6 +575,10 @@ bool UpdatePressedKeys(InputEvent event) {
             pressed_keys.insert(it, {event, false});
             LOG_DEBUG(Input, "Added axis {} to the input list", event.input.sdl_id);
         } else {
+            // noise filter
+            if (std::abs(it->first.axis_value - event.axis_value) <= 1) {
+                return false;
+            }
             it->first.axis_value = event.axis_value;
         }
         return true;
