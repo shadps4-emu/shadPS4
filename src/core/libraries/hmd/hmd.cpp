@@ -734,23 +734,19 @@ s32 PS4_SYSV_ABI sceHmdReprojectionInitializeCapture() {
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffAlign() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x100;
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffSize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x100000;
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffAlign() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x100;
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffSize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x810;
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionSetCallback() {
