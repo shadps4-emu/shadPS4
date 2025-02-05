@@ -486,6 +486,10 @@ set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
              src/core/libraries/zlib/zlib_error.h
 )
 
+set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
+             src/core/libraries/hmd/hmd.h
+)
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
@@ -663,6 +667,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${IME_LIB}
          ${FIBER_LIB}
          ${VDEC_LIB}
+         ${VR_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
