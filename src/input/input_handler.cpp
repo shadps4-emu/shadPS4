@@ -464,7 +464,7 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         }
 
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
-        auto ApplyDeadzone = [](s16* value, std::pair<int, int> deadzone) {
+        auto ApplyDeadzone = [](s8* value, std::pair<int, int> deadzone) {
             if (std::abs(*value) <= deadzone.first || deadzone.first == deadzone.second) {
                 *value = 0;
             } else {
