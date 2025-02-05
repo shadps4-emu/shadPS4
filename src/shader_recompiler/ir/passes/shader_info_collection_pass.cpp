@@ -50,12 +50,6 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
-    case IR::Opcode::LoadBufferFormatF32:
-        info.has_texel_buffers = true;
-        break;
-    case IR::Opcode::StoreBufferFormatF32:
-        info.has_image_buffers = true;
-        break;
     case IR::Opcode::QuadShuffle:
         info.uses_group_quad = true;
         break;

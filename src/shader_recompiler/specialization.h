@@ -19,28 +19,28 @@ struct VsAttribSpecialization {
 };
 
 struct BufferSpecialization {
-    u16 stride : 14;
-    u16 is_storage : 1;
-    u16 swizzle_enable : 1;
-    u8 index_stride : 2 = 0;
-    u8 element_size : 2 = 0;
+    u32 stride : 14;
+    u32 is_storage : 1;
+    u32 is_formatted : 1;
+    u32 swizzle_enable : 1;
+    u32 data_format : 6;
+    u32 num_format : 4;
+    u32 index_stride : 2;
+    u32 element_size : 2;
     u32 size = 0;
+    AmdGpu::CompMapping dst_select{};
+    AmdGpu::NumberConversion num_conversion{};
 
     bool operator==(const BufferSpecialization& other) const {
         return stride == other.stride && is_storage == other.is_storage &&
-               swizzle_enable == other.swizzle_enable &&
+               is_formatted == other.is_formatted && swizzle_enable == other.swizzle_enable &&
+               (!is_formatted ||
+                (data_format == other.data_format && num_format == other.num_format &&
+                 dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
                (!swizzle_enable ||
                 (index_stride == other.index_stride && element_size == other.element_size)) &&
                (size >= other.is_storage || is_storage);
     }
-};
-
-struct TextureBufferSpecialization {
-    bool is_integer = false;
-    AmdGpu::CompMapping dst_select{};
-    AmdGpu::NumberConversion num_conversion{};
-
-    auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
 
 struct ImageSpecialization {
@@ -82,7 +82,6 @@ struct StageSpecialization {
     boost::container::small_vector<VsAttribSpecialization, 32> vs_attribs;
     std::bitset<MaxStageResources> bitset{};
     boost::container::small_vector<BufferSpecialization, 16> buffers;
-    boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     boost::container::small_vector<FMaskSpecialization, 8> fmasks;
     boost::container::small_vector<SamplerSpecialization, 16> samplers;
@@ -111,7 +110,14 @@ struct StageSpecialization {
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
                          spec.is_storage = desc.IsStorage(sharp);
+                         spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
+                         if (spec.is_formatted) {
+                             spec.data_format = static_cast<u32>(sharp.GetDataFmt());
+                             spec.num_format = static_cast<u32>(sharp.GetNumberFmt());
+                             spec.dst_select = sharp.DstSelect();
+                             spec.num_conversion = sharp.GetNumberConversion();
+                         }
                          if (spec.swizzle_enable) {
                              spec.index_stride = sharp.index_stride;
                              spec.element_size = sharp.element_size;
@@ -119,12 +125,6 @@ struct StageSpecialization {
                          if (!spec.is_storage) {
                              spec.size = sharp.GetSize();
                          }
-                     });
-        ForEachSharp(binding, tex_buffers, info->texture_buffers,
-                     [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
-                         spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         spec.dst_select = sharp.DstSelect();
-                         spec.num_conversion = sharp.GetNumberConversion();
                      });
         ForEachSharp(binding, images, info->images,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
@@ -214,11 +214,6 @@ struct StageSpecialization {
         }
         for (u32 i = 0; i < buffers.size(); i++) {
             if (other.bitset[binding++] && buffers[i] != other.buffers[i]) {
-                return false;
-            }
-        }
-        for (u32 i = 0; i < tex_buffers.size(); i++) {
-            if (other.bitset[binding++] && tex_buffers[i] != other.tex_buffers[i]) {
                 return false;
             }
         }

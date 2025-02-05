@@ -352,12 +352,9 @@ vk::ComponentMapping ComponentMapping(AmdGpu::CompMapping comp_mapping) {
     };
 }
 
-static constexpr vk::FormatFeatureFlags2 BufferRead =
-    vk::FormatFeatureFlagBits2::eUniformTexelBuffer | vk::FormatFeatureFlagBits2::eVertexBuffer;
-static constexpr vk::FormatFeatureFlags2 BufferWrite =
-    vk::FormatFeatureFlagBits2::eStorageTexelBuffer |
-    vk::FormatFeatureFlagBits2::eStorageReadWithoutFormat |
-    vk::FormatFeatureFlagBits2::eStorageWriteWithoutFormat;
+// Texel buffer feature flags are not needed as format is interpreted in-shader.
+static constexpr vk::FormatFeatureFlags2 BufferRead = vk::FormatFeatureFlagBits2::eVertexBuffer;
+static constexpr vk::FormatFeatureFlags2 BufferWrite = static_cast<vk::FormatFeatureFlags2>(0);
 static constexpr vk::FormatFeatureFlags2 ImageRead = vk::FormatFeatureFlagBits2::eTransferSrc |
                                                      vk::FormatFeatureFlagBits2::eTransferDst |
                                                      vk::FormatFeatureFlagBits2::eSampledImage;

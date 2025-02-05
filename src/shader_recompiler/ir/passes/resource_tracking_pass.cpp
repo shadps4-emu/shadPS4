@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-#include <boost/container/small_vector.hpp>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -37,10 +35,17 @@ bool IsBufferAtomic(const IR::Inst& inst) {
 
 bool IsBufferStore(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
+    case IR::Opcode::StoreBufferU8:
+    case IR::Opcode::StoreBufferU16:
     case IR::Opcode::StoreBufferU32:
     case IR::Opcode::StoreBufferU32x2:
     case IR::Opcode::StoreBufferU32x3:
     case IR::Opcode::StoreBufferU32x4:
+    case IR::Opcode::StoreBufferF32:
+    case IR::Opcode::StoreBufferF32x2:
+    case IR::Opcode::StoreBufferF32x3:
+    case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferFormatF32:
         return true;
     default:
         return IsBufferAtomic(inst);
@@ -49,10 +54,17 @@ bool IsBufferStore(const IR::Inst& inst) {
 
 bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::LoadBufferU16:
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::LoadBufferU32x2:
     case IR::Opcode::LoadBufferU32x3:
     case IR::Opcode::LoadBufferU32x4:
+    case IR::Opcode::LoadBufferF32:
+    case IR::Opcode::LoadBufferF32x2:
+    case IR::Opcode::LoadBufferF32x3:
+    case IR::Opcode::LoadBufferF32x4:
+    case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::ReadConstBuffer:
         return true;
     default:
@@ -63,34 +75,6 @@ bool IsBufferInstruction(const IR::Inst& inst) {
 bool IsDataRingInstruction(const IR::Inst& inst) {
     return inst.GetOpcode() == IR::Opcode::DataAppend ||
            inst.GetOpcode() == IR::Opcode::DataConsume;
-}
-
-bool IsTextureBufferInstruction(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
-           inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32;
-}
-
-bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
-    switch (num_format) {
-    case AmdGpu::NumberFormat::Float:
-        switch (data_format) {
-        case AmdGpu::DataFormat::Format16:
-        case AmdGpu::DataFormat::Format16_16:
-        case AmdGpu::DataFormat::Format16_16_16_16:
-            return true;
-        default:
-            return false;
-        }
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uint:
-    case AmdGpu::NumberFormat::Sint:
-    case AmdGpu::NumberFormat::SnormNz:
-    default:
-        return false;
-    }
 }
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
@@ -132,8 +116,7 @@ bool IsImageInstruction(const IR::Inst& inst) {
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
-        : info{info_}, buffer_resources{info_.buffers},
-          texture_buffer_resources{info_.texture_buffers}, image_resources{info_.images},
+        : info{info_}, buffer_resources{info_.buffers}, image_resources{info_.images},
           sampler_resources{info_.samplers}, fmask_resources(info_.fmasks) {}
 
     u32 Add(const BufferResource& desc) {
@@ -147,15 +130,7 @@ public:
         auto& buffer = buffer_resources[index];
         buffer.used_types |= desc.used_types;
         buffer.is_written |= desc.is_written;
-        return index;
-    }
-
-    u32 Add(const TextureBufferResource& desc) {
-        const u32 index{Add(texture_buffer_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
-        })};
-        auto& buffer = texture_buffer_resources[index];
-        buffer.is_written |= desc.is_written;
+        buffer.is_formatted |= desc.is_formatted;
         return index;
     }
 
@@ -196,7 +171,6 @@ private:
 
     const Info& info;
     BufferResourceList& buffer_resources;
-    TextureBufferResourceList& texture_buffer_resources;
     ImageResourceList& image_resources;
     SamplerResourceList& sampler_resources;
     FMaskResourceList& fmask_resources;
@@ -313,25 +287,12 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
             .sharp_idx = sharp,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
             .is_written = IsBufferStore(inst),
+            .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
+                            inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
         });
     }
 
     // Replace handle with binding index in buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(binding));
-}
-
-void PatchTextureBufferSharp(IR::Block& block, IR::Inst& inst, Info& info,
-                             Descriptors& descriptors) {
-    const IR::Inst* handle = inst.Arg(0).InstRecursive();
-    const IR::Inst* producer = handle->Arg(0).InstRecursive();
-    const auto sharp = TrackSharp(producer, info);
-    const s32 binding = descriptors.Add(TextureBufferResource{
-        .sharp_idx = sharp,
-        .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
-    });
-
-    // Replace handle with binding index in texture buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(binding));
 }
@@ -551,36 +512,6 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
-}
-
-void PatchTextureBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
-    const auto handle = inst.Arg(0);
-    const auto buffer_res = info.texture_buffers[handle.U32()];
-    const auto buffer = buffer_res.GetSharp(info);
-
-    // Only linear addressing with index is supported currently, since we cannot yet
-    // address with sub-texel granularity.
-    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-    ASSERT_MSG(!buffer.swizzle_enable && !inst_info.offset_enable && inst_info.inst_offset == 0,
-               "Unsupported texture buffer address mode.");
-
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    // Stride of 1 to get an index into formatted data. See above addressing limitations.
-    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, 1U));
-
-    if (inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32) {
-        const auto swizzled = ApplySwizzle(ir, inst.Arg(2), buffer.DstSelect().Inverse());
-        const auto converted =
-            ApplyWriteNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
-        inst.SetArg(2, converted);
-    } else if (inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32) {
-        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const auto texel = ir.LoadBufferFormat(inst.Arg(0), inst.Arg(1), inst_info);
-        const auto swizzled = ApplySwizzle(ir, texel, buffer.DstSelect());
-        const auto converted =
-            ApplyReadNumberConversionVec4(ir, swizzled, buffer.GetNumberConversion());
-        inst.ReplaceUsesWith(converted);
-    }
 }
 
 IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR::Value& x,
@@ -861,8 +792,6 @@ void ResourceTrackingPass(IR::Program& program) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferSharp(*block, inst, info, descriptors);
-            } else if (IsTextureBufferInstruction(inst)) {
-                PatchTextureBufferSharp(*block, inst, info, descriptors);
             } else if (IsImageInstruction(inst)) {
                 PatchImageSharp(*block, inst, info, descriptors);
             } else if (IsDataRingInstruction(inst)) {
@@ -876,8 +805,6 @@ void ResourceTrackingPass(IR::Program& program) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferArgs(*block, inst, info);
-            } else if (IsTextureBufferInstruction(inst)) {
-                PatchTextureBufferArgs(*block, inst, info);
             } else if (IsImageInstruction(inst)) {
                 PatchImageArgs(*block, inst, info);
             }

@@ -30,28 +30,25 @@ void Translator::ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR:
         static_cast<u32>(attribute) - static_cast<u32>(IR::Attribute::RenderTarget0);
     const auto color_buffer = runtime_info.fs_info.color_buffers[color_buffer_idx];
 
-    IR::Value unpacked_value;
-    bool is_integer = false;
+    AmdGpu::NumberFormat num_format;
     switch (color_buffer.export_format) {
     case AmdGpu::Liverpool::ShaderExportFormat::Zero:
         // No export
         return;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_FP16:
-        unpacked_value = ir.UnpackHalf2x16(value);
+        num_format = AmdGpu::NumberFormat::Float;
         break;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_UNORM16:
-        unpacked_value = ir.UnpackUnorm2x16(value);
+        num_format = AmdGpu::NumberFormat::Unorm;
         break;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_SNORM16:
-        unpacked_value = ir.UnpackSnorm2x16(value);
+        num_format = AmdGpu::NumberFormat::Snorm;
         break;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_UINT16:
-        unpacked_value = ir.UnpackUint2x16(value);
-        is_integer = true;
+        num_format = AmdGpu::NumberFormat::Uint;
         break;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_SINT16:
-        unpacked_value = ir.UnpackSint2x16(value);
-        is_integer = true;
+        num_format = AmdGpu::NumberFormat::Sint;
         break;
     default:
         UNREACHABLE_MSG("Unimplemented compressed MRT export format {}",
@@ -59,16 +56,15 @@ void Translator::ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR:
         break;
     }
 
-    const auto r = ir.CompositeExtract(unpacked_value, 0);
-    const auto g = ir.CompositeExtract(unpacked_value, 1);
-    const IR::F32 float_r = is_integer ? ir.BitCast<IR::F32>(IR::U32{r}) : IR::F32{r};
-    const IR::F32 float_g = is_integer ? ir.BitCast<IR::F32>(IR::U32{g}) : IR::F32{g};
+    const auto unpacked_value = ir.Unpack2x16(num_format, value);
+    const IR::F32 r = IR::F32{ir.CompositeExtract(unpacked_value, 0)};
+    const IR::F32 g = IR::F32{ir.CompositeExtract(unpacked_value, 1)};
 
     const auto swizzled_r = SwizzleMrtComponent(color_buffer, idx * 2);
     const auto swizzled_g = SwizzleMrtComponent(color_buffer, idx * 2 + 1);
 
-    ExportMrtValue(attribute, swizzled_r, float_r, color_buffer);
-    ExportMrtValue(attribute, swizzled_g, float_g, color_buffer);
+    ExportMrtValue(attribute, swizzled_r, r, color_buffer);
+    ExportMrtValue(attribute, swizzled_g, g, color_buffer);
 }
 
 void Translator::ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value) {
@@ -115,7 +111,7 @@ void Translator::ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U3
         ExportMrtCompressed(attribute, idx, value);
         return;
     }
-    const IR::Value unpacked_value = ir.UnpackHalf2x16(value);
+    const IR::Value unpacked_value = ir.Unpack2x16(AmdGpu::NumberFormat::Float, value);
     const IR::F32 r = IR::F32{ir.CompositeExtract(unpacked_value, 0)};
     const IR::F32 g = IR::F32{ir.CompositeExtract(unpacked_value, 1)};
     ir.SetAttribute(attribute, r, idx * 2);

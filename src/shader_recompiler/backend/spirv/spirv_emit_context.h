@@ -235,20 +235,9 @@ public:
         const VectorIds* data_types;
         Id pointer_type;
     };
-    struct TextureBufferDefinition {
-        Id id;
-        Id coord_offset;
-        Id coord_shift;
-        u32 binding;
-        Id image_type;
-        Id result_type;
-        bool is_integer = false;
-        bool is_storage = false;
-    };
 
     Bindings& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
-    boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
     BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
@@ -278,7 +267,6 @@ private:
     void DefineOutputs();
     void DefinePushDataBlock();
     void DefineBuffers();
-    void DefineTextureBuffers();
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
 

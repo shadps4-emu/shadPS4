@@ -74,7 +74,6 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineInterfaces();
     DefineSharedMemory();
     DefineBuffers();
-    DefineTextureBuffers();
     DefineImagesAndSamplers();
 }
 
@@ -204,19 +203,6 @@ void EmitContext::DefineBufferOffsets() {
         Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
-    }
-    for (TextureBufferDefinition& tex_buffer : texture_buffers) {
-        const u32 binding = tex_buffer.binding;
-        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-        const u32 comp = (binding & 0xf) >> 2;
-        const u32 offset = (binding & 0x3) << 3;
-        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                   push_data_block, ConstU32(half), ConstU32(comp))};
-        const Id value{OpLoad(U32[1], ptr)};
-        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
-        tex_buffer.coord_shift =
-            OpBitFieldUExtract(U32[1], value, ConstU32(offset + 6U), ConstU32(2U));
-        Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
     }
 }
 
@@ -671,32 +657,6 @@ void EmitContext::DefineBuffers() {
             .binding = binding.buffer++,
             .data_types = data_types,
             .pointer_type = pointer_type,
-        });
-        interfaces.push_back(id);
-    }
-}
-
-void EmitContext::DefineTextureBuffers() {
-    for (const auto& desc : info.texture_buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const auto nfmt = sharp.GetNumberFmt();
-        const bool is_integer = AmdGpu::IsInteger(nfmt);
-        const VectorIds& sampled_type{GetAttributeType(*this, nfmt)};
-        const u32 sampled = desc.is_written ? 2 : 1;
-        const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
-                                      sampled, spv::ImageFormat::Unknown)};
-        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
-        const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sharp_idx));
-        texture_buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .image_type = image_type,
-            .result_type = sampled_type[4],
-            .is_integer = is_integer,
-            .is_storage = desc.is_written,
         });
         interfaces.push_back(id);
     }
