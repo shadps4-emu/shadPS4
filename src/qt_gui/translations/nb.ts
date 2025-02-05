@@ -15,7 +15,7 @@
 		</message>
 		<message>
 			<source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-			<translation>shadPS4 er en eksperimentell åpen kildekode-etterligner for PlayStation 4.</translation>
+			<translation>shadPS4 er en eksperimentell åpen kildekode-emulator for PlayStation 4.</translation>
 		</message>
 		<message>
 			<source>This software should not be used to play games you have not legally obtained.</source>
@@ -123,6 +123,14 @@
 		<message>
 			<source>Copy Serial</source>
 			<translation>Kopier serienummer</translation>
+		</message>
+		<message>
+			<source>Copy Version</source>
+			<translation>Kopier versjon</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Kopier størrelse</translation>
 		</message>
 		<message>
 			<source>Copy All</source>
@@ -530,11 +538,11 @@
 		</message>
 		<message>
 			<source>Emulator Language</source>
-			<translation>Etterlignerspråk</translation>
+			<translation>Emulatorspråk</translation>
 		</message>
 		<message>
 			<source>Emulator</source>
-			<translation>Etterligner</translation>
+			<translation>Emulator</translation>
 		</message>
 		<message>
 			<source>Enable Fullscreen</source>
@@ -765,6 +773,18 @@
 			<translation>Deaktiver trofé hurtigmeny</translation>
 		</message>
 		<message>
+			<source>Background Image</source>
+			<translation>Bakgrunnsbilde</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>Vis bakgrunnsbilde</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>Synlighet</translation>
+		</message>
+		<message>
 			<source>Play title music</source>
 			<translation>Spill tittelmusikk</translation>
 		</message>
@@ -818,7 +838,7 @@
 		</message>
 		<message>
 			<source>emulatorLanguageGroupBox</source>
-			<translation>Etterlignerspråket:\nAngir språket for etterlignerens brukergrensesnitt.</translation>
+			<translation>Emulatorspråket:\nAngir språket for emulatorens brukergrensesnitt.</translation>
 		</message>
 		<message>
 			<source>fullscreenCheckBox</source>
@@ -834,11 +854,11 @@
 		</message>
 		<message>
 			<source>ps4proCheckBox</source>
-			<translation>Er PS4 Pro:\nFår etterligneren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter dette.</translation>
+			<translation>Er PS4 Pro:\nFår emulatoren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter dette.</translation>
 		</message>
 		<message>
 			<source>discordRPCCheckbox</source>
-			<translation>Aktiver Discord Rich Presence:\nViser etterlignerikonet og relevant informasjon på Discord-profilen din.</translation>
+			<translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevant informasjon på Discord-profilen din.</translation>
 		</message>
 		<message>
 			<source>userName</source>
@@ -850,7 +870,7 @@
 		</message>
 		<message>
 			<source>logTypeGroupBox</source>
-			<translation>Logg type:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for etterligneren.</translation>
+			<translation>Logg type:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for emulatoren.</translation>
 		</message>
 		<message>
 			<source>logFilter</source>
@@ -859,6 +879,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Oppdatering:\nRelease: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNightly: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Bakgrunnsbilde:\nEndrer synligheten til spillets bakgrunnsbilde.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -922,15 +946,15 @@
 		</message>
 		<message>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en etterligneren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å velge automatisk.</translation>
+			<translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å velge automatisk.</translation>
 		</message>
 		<message>
 			<source>resolutionLayout</source>
-			<translation>Bredde/Høyde:\nAngir størrelsen på etterlignerkvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
+			<translation>Bredde/Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
 		</message>
 		<message>
 			<source>heightDivider</source>
-			<translation>Vblank skillelinje:\nBildehastigheten som etterligneren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+			<translation>Vblank skillelinje:\nBildehastigheten som emulatoren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
 		</message>
 		<message>
 			<source>dumpShadersCheckBox</source>
@@ -958,15 +982,15 @@
 		</message>
 		<message>
 			<source>vkValidationCheckBox</source>
-			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
 		</message>
 		<message>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre etterlignerens atferd.</translation>
+			<translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
 		</message>
 		<message>
 			<source>rdocCheckBox</source>
-			<translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil etterligneren gi kompatibilitet med Renderdoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
+			<translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil emulatoren gi kompatibilitet med RenderDoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
@@ -982,7 +1006,7 @@
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Vertsfeilsøkingsmarkører:\nSetter inn etterligner-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
+			<translation>Vertsfeilsøkingsmarkører:\nSetter inn emulator-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
@@ -1280,7 +1304,7 @@
 		</message>
 		<message>
 			<source>Game does not initialize properly / crashes the emulator</source>
-			<translation>Spillet initialiseres ikke riktig / krasjer etterligneren</translation>
+			<translation>Spillet initialiseres ikke riktig / krasjer emulatoren</translation>
 		</message>
 		<message>
 			<source>Game boots, but only displays a blank screen</source>
