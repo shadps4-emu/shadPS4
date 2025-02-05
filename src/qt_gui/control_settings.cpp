@@ -220,10 +220,10 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     lines.push_back("# Range of deadzones: 1 (almost none) to 127 (max)");
 
     std::string deadzonevalue = std::to_string(ui->LeftDeadzoneSlider->value());
-    lines.push_back("analog_deadzone = leftjoystick, " + deadzonevalue);
+    lines.push_back("analog_deadzone = leftjoystick, " + deadzonevalue + ", 127");
 
     deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
-    lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue);
+    lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue + ", 127");
 
     std::vector<std::string> save;
     bool CurrentLineEmpty = false, LastLineEmpty = false;

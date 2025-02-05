@@ -11,6 +11,7 @@
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/hmd/hmd.h"
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
@@ -113,6 +114,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::WebBrowserDialog::RegisterlibSceWebBrowserDialog(sym);
     Libraries::NpParty::RegisterlibSceNpParty(sym);
     Libraries::Zlib::RegisterlibSceZlib(sym);
+    Libraries::Hmd::RegisterlibSceHmd(sym);
 }
 
 } // namespace Libraries

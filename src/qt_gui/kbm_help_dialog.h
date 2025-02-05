@@ -167,9 +167,10 @@ You can find these here, with detailed comments, examples and suggestions for mo
     You can make an input toggleable with this, for example: Let's say we want to be able to toggle l1 with t. You can then bind l1 to a key you won't use, like kpenter, then bind t to toggle that, so you will end up with this:
         l1 = kpenter;
         key_toggle = t, kpenter;
-'analog_deadzone' = <device>, <value>;
-    value goes from 1 to 127 (no deadzone to max deadzone)
-    devices: leftjoystick, rightjoystick, l2, r2
+'analog_deadzone' = <device>, <value>, <value>;
+    Values go from 1 to 127 (no deadzone to max deadzone), first is the inner, second is the outer deadzone
+    If you only want inner or outer deadzone, set the other to 1 or 127, respectively
+    Devices: leftjoystick, rightjoystick, l2, r2
 )";
     }
 };
