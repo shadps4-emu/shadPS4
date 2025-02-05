@@ -578,7 +578,7 @@
 		</message>
 		<message>
 			<source>Fullscreen Mode</source>
-			<translation>Режим повного екрану</translation>
+			<translation>Тип повноекранного режиму</translation>
 		</message>
 		<message>
         	<source>Borderless</source>
@@ -633,6 +633,14 @@
 			<translation>Тип логів</translation>
 		</message>
 		<message>
+        	<source>async</source>
+        	<translation>Асинхронний</translation>
+    	</message>
+    	<message>
+        	<source>sync</source>
+        	<translation>Синхронний</translation>
+    	</message>
+		<message>
 			<source>Log Filter</source>
 			<translation>Фільтр логів</translation>
 		</message>
@@ -668,6 +676,10 @@
 			<source>Back Button Behavior</source>
 			<translation>Перепризначення кнопки назад</translation>
 		</message>
+		<message>
+        	<source>Enable Motion Controls</source>
+        	<translation>Увімкнути керування рухом</translation>
+    	</message>
 		<message>
 			<source>Graphics</source>
 			<translation>Графіка</translation>
@@ -705,6 +717,10 @@
 			<translation>Увімкнути дамп шейдерів</translation>
 		</message>
 		<message>
+        	<source>Auto Select</source>
+        	<translation>Автовибір</translation>
+    	</message>
+		<message>
 			<source>Enable NULL GPU</source>
 			<translation>Увімкнути NULL GPU</translation>
 		</message>
@@ -724,6 +740,10 @@
 			<source>Remove</source>
 			<translation>Вилучити</translation>
 		</message>
+		<message>
+        	<source>Save Data Path</source>
+        	<translation>Шлях до файлів збережень</translation>
+    	</message>
 		<message>
 			<source>Debug</source>
 			<translation>Налагодження</translation>
@@ -857,7 +877,6 @@
 			<source>Close</source>
 			<translation>Закрити</translation>
 		</message>
-
 		<message>
 			<source>Point your mouse at an option to display its description.</source>
 			<translation>Наведіть курсор миші на опцію, щоб відобразити її опис.</translation>
@@ -976,7 +995,7 @@
 		</message>
 		<message>
 			<source>graphicsAdapterGroupBox</source>
-			<translation>Графічний пристрій:\nУ системах із кількома GPU виберіть з випадаючого списку GPU, який буде використовувати емулятор,\nабо виберіть "Auto Select", щоб визначити його автоматично.</translation>
+			<translation>Графічний пристрій:\nУ системах із кількома GPU виберіть з випадаючого списку GPU, який буде використовувати емулятор,\nабо виберіть "Автовибір", щоб визначити його автоматично.</translation>
 		</message>
 		<message>
 			<source>resolutionLayout</source>
@@ -1485,6 +1504,30 @@
 	</context>
 	<context>
 		<name>CompatibilityInfoClass</name>
+		<message>
+        	<source>Fetching compatibility data, please wait</source>
+        	<translation>Отримання даних про сумісність. Будь ласка, зачекайте</translation>
+    	</message>
+    	<message>
+        	<source>Cancel</source>
+        	<translation>Відмінити</translation>
+    	</message>
+    	<message>
+        	<source>Loading...</source>
+        	<translation>Завантаження...</translation>
+    	</message>
+    	<message>
+        	<source>Error</source>
+        	<translation>Помилка</translation>
+    	</message>
+    	<message>
+        	<source>Unable to update compatibility data! Try again later.</source>
+        	<translation>Не вдалося оновити дані про сумісність! Спробуйте ще раз пізніше.</translation>
+    	</message>
+    	<message>
+        	<source>Unable to open compatibility.json for writing.</source>
+        	<translation>Не вдалося відкрити файл compatibility.json для запису.</translation>
+    	</message>
 		<message>
 			<source>Unknown</source>
 			<translation>Невідомо</translation>
