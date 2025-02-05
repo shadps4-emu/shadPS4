@@ -1008,8 +1008,8 @@ axis_right_x = axis_right_x
 axis_right_y = axis_right_y
 
 # Range of deadzones: 1 (almost none) to 127 (max)
-analog_deadzone = leftjoystick, 2
-analog_deadzone = rightjoystick, 2
+analog_deadzone = leftjoystick, 2, 127
+analog_deadzone = rightjoystick, 2, 127
 )";
 }
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
