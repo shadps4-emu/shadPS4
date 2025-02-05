@@ -464,35 +464,6 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         }
 
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
-        auto ApplyDeadzone = [](s8* value, std::pair<int, int> deadzone) {
-            if (std::abs(*value) <= deadzone.first || deadzone.first == deadzone.second) {
-                *value = 0;
-            } else {
-                *value = (*value >= 0 ? 1 : -1) *
-                         std::clamp((int)((128.0 * (std::abs(*value) - deadzone.first)) /
-                                          (float)(deadzone.second - deadzone.first)),
-                                    0, 128);
-            }
-        };
-        switch (axis) {
-        case SDL_GAMEPAD_AXIS_LEFTX:
-        case SDL_GAMEPAD_AXIS_LEFTY:
-            ApplyDeadzone(&event.axis_value, leftjoystick_deadzone);
-            break;
-        case SDL_GAMEPAD_AXIS_RIGHTX:
-        case SDL_GAMEPAD_AXIS_RIGHTY:
-            ApplyDeadzone(&event.axis_value, rightjoystick_deadzone);
-            break;
-        case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
-            ApplyDeadzone(&event.axis_value, lefttrigger_deadzone);
-            break;
-        case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
-            ApplyDeadzone(&event.axis_value, righttrigger_deadzone);
-            break;
-        default:
-            UNREACHABLE();
-            break;
-        }
         *new_param = (event.active ? event.axis_value : 0) + *new_param;
     }
 }
@@ -529,22 +500,36 @@ void ControllerOutput::FinalizeUpdate() {
         }
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID && positive_axis) {
         // avoid double-updating axes, but don't skip directional button bindings
+        auto ApplyDeadzone = [](s16* value, std::pair<int, int> deadzone) {
+            if (std::abs(*value) <= deadzone.first || deadzone.first == deadzone.second) {
+                *value = 0;
+            } else {
+                *value = (*value >= 0 ? 1 : -1) *
+                         std::clamp((int)((128.0 * (std::abs(*value) - deadzone.first)) /
+                                          (float)(deadzone.second - deadzone.first)),
+                                    0, 128);
+            }
+        };
         float multiplier = 1.0;
         Axis c_axis = GetAxisFromSDLAxis(axis);
         switch (c_axis) {
         case Axis::LeftX:
         case Axis::LeftY:
+            ApplyDeadzone(new_param, leftjoystick_deadzone);
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::RightX:
         case Axis::RightY:
+            ApplyDeadzone(new_param, rightjoystick_deadzone);
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::TriggerLeft:
+            ApplyDeadzone(new_param, lefttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
+            ApplyDeadzone(new_param, righttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
