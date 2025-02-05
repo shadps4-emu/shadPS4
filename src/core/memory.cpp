@@ -54,9 +54,6 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
-    // TEMPORARY HACK FOR TESTING, REMOVE BEFORE READYING PR
-    s64 addrOut = 0;
-    ::Libraries::Kernel::sceKernelAllocateDirectMemory(0, ::Libraries::Kernel::sceKernelGetDirectMemorySize(), 0x400000, 0x40000, 0, &addrOut);
 }
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
