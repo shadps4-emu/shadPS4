@@ -16,6 +16,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 
     AddBoxItems();
     SetUIValuestoMappings();
+    ui->KBMButton->setFocus();
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -31,6 +32,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     connect(ui->KBMButton, &QPushButton::clicked, this, [this] {
         auto KBMWindow = new EditorDialog(this);
         KBMWindow->exec();
+        SetUIValuestoMappings();
     });
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
         GetGameTitle();
@@ -416,14 +418,24 @@ void ControlSettings::SetUIValuestoMappings() {
                 RStickYExists = true;
             } else if (input_string.contains("leftjoystick")) {
                 std::size_t comma_pos = line.find(',');
-                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                ui->LeftDeadzoneSlider->setValue(deadzonevalue);
-                ui->LeftDeadzoneValue->setText(QString::number(deadzonevalue));
+                if (comma_pos != std::string::npos) {
+                    int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
+                    ui->LeftDeadzoneSlider->setValue(deadzonevalue);
+                    ui->LeftDeadzoneValue->setText(QString::number(deadzonevalue));
+                } else {
+                    ui->LeftDeadzoneSlider->setValue(2);
+                    ui->LeftDeadzoneValue->setText("2");
+                }
             } else if (input_string.contains("rightjoystick")) {
                 std::size_t comma_pos = line.find(',');
-                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                ui->RightDeadzoneSlider->setValue(deadzonevalue);
-                ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
+                if (comma_pos != std::string::npos) {
+                    int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
+                    ui->RightDeadzoneSlider->setValue(deadzonevalue);
+                    ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
+                } else {
+                    ui->RightDeadzoneSlider->setValue(2);
+                    ui->RightDeadzoneValue->setText("2");
+                }
             }
         }
     }
