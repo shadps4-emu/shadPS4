@@ -185,9 +185,11 @@ void VideoOutDriver::Flip(const Request& req) {
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
         if (event != nullptr) {
-            event->TriggerEvent(u64(OrbisVideoOutEventId::Flip),
-                                Kernel::SceKernelEvent::Filter::VideoOut,
-                                reinterpret_cast<void*>(req.flip_arg));
+            event->TriggerEvent(
+                static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
+                Kernel::SceKernelEvent::Filter::VideoOut,
+                reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) |
+                                        (req.flip_arg << 16)));
         }
     }
 
@@ -323,7 +325,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Trigger flip events for the port.
         for (auto& event : main_port.vblank_events) {
             if (event != nullptr) {
-                event->TriggerEvent(u64(OrbisVideoOutEventId::Vblank),
+                event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
                                     Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
             }
         }

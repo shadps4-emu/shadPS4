@@ -117,7 +117,10 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
            dmem_area->second.GetEnd() <= search_end) {
         ++dmem_area;
     }
-    ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
+    if (!is_suitable()) {
+        LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        return -1;
+    }
 
     // Align free position
     PAddr free_addr = dmem_area->second.base;

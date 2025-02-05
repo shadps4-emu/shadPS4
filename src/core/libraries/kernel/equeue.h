@@ -9,6 +9,7 @@
 #include <vector>
 #include <boost/asio/steady_timer.hpp>
 
+#include "common/rdtsc.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -79,6 +80,25 @@ struct EqueueEvent {
         is_triggered = true;
         event.fflags++;
         event.data = reinterpret_cast<uintptr_t>(data);
+    }
+
+    void TriggerDisplay(void* data) {
+        is_triggered = true;
+        auto hint = reinterpret_cast<u64>(data);
+        if (hint != 0) {
+            auto hint_h = static_cast<u32>(hint >> 8) & 0xFFFFFF;
+            auto ident_h = static_cast<u32>(event.ident >> 40);
+            if ((static_cast<u32>(hint) & 0xFF) == event.ident && event.ident != 0xFE &&
+                ((hint_h ^ ident_h) & 0xFF) == 0) {
+                auto time = Common::FencedRDTSC();
+                auto mask = 0xF000;
+                if ((static_cast<u32>(event.data) & 0xF000) != 0xF000) {
+                    mask = (static_cast<u32>(event.data) + 0x1000) & 0xF000;
+                }
+                event.data = (mask | static_cast<u64>(static_cast<u32>(time) & 0xFFF) |
+                              (hint & 0xFFFFFFFFFFFF0000));
+            }
+        }
     }
 
     bool IsTriggered() const {

@@ -17,7 +17,11 @@ u32 SwizzleMrtComponent(const FragmentRuntimeInfo::PsColorBuffer& color_buffer, 
 
 void Translator::ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
                                 const FragmentRuntimeInfo::PsColorBuffer& color_buffer) {
-    const auto converted = ApplyWriteNumberConversion(ir, value, color_buffer.num_conversion);
+    auto converted = ApplyWriteNumberConversion(ir, value, color_buffer.num_conversion);
+    if (color_buffer.needs_unorm_fixup) {
+        // FIXME: Fix-up for GPUs where float-to-unorm rounding is off from expected.
+        converted = ir.FPSub(converted, ir.Imm32(1.f / 127500.f));
+    }
     ir.SetAttribute(attribute, converted, comp);
 }
 

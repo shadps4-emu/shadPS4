@@ -134,6 +134,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, WebBrowserDialog)                                                                     \
     SUB(Lib, NpParty)                                                                              \
     SUB(Lib, Zlib)                                                                                 \
+    SUB(Lib, Hmd)                                                                                  \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

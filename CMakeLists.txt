@@ -115,9 +115,20 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Default to origin if there's no upstream set or if the command failed
+# If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_BRANCH_RESULT OR GIT_REMOTE_NAME STREQUAL "")
-  set(GIT_REMOTE_NAME "origin")
+  execute_process(
+    COMMAND git config --get remote.pushDefault
+    OUTPUT_VARIABLE GIT_REMOTE_NAME
+    RESULT_VARIABLE GIT_PUSH_DEFAULT_RESULT
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  # If remote.pushDefault is not set or fails, default to origin
+  if (GIT_PUSH_DEFAULT_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+    set(GIT_REMOTE_NAME "origin")
+  endif()
 else()
   # Extract remote name if the output contains a remote/branch format
   string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
@@ -475,6 +486,10 @@ set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
              src/core/libraries/zlib/zlib_error.h
 )
 
+set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
+             src/core/libraries/hmd/hmd.h
+)
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
@@ -652,6 +667,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${IME_LIB}
          ${FIBER_LIB}
          ${VDEC_LIB}
+         ${VR_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
@@ -886,6 +902,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/compatibility_info.cpp
            src/qt_gui/compatibility_info.h
+	   src/qt_gui/control_settings.cpp	   
+           src/qt_gui/control_settings.h
+           src/qt_gui/control_settings.ui
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
