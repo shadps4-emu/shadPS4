@@ -982,7 +982,8 @@ void RegisterlibSceHmd(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("riPQfAdebHk", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternal3dAudioClose);
     LIB_FUNCTION("wHnZU1qtiqw", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternal3dAudioOpen);
     LIB_FUNCTION("NuEjeN8WCBA", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternal3dAudioSendData);
-    LIB_FUNCTION("QasPTUPWVZE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalAnotherScreenClose);
+    LIB_FUNCTION("QasPTUPWVZE", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalAnotherScreenClose);
     LIB_FUNCTION("Wr5KVtyVDG0", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalAnotherScreenGetAudioStatus);
     LIB_FUNCTION("whRxl6Hhrzg", "libSceHmd", 1, "libSceHmd", 1, 1,
@@ -1009,7 +1010,8 @@ void RegisterlibSceHmd(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalCrashReportReadData);
     LIB_FUNCTION("A2jWOLPzHHE", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalCrashReportReadDataSize);
-    LIB_FUNCTION("E9scVxt0DNg", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalCreateSharedMemory);
+    LIB_FUNCTION("E9scVxt0DNg", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalCreateSharedMemory);
     LIB_FUNCTION("6RclvsKxr3I", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalDfuCheckAfterPvt);
     LIB_FUNCTION("cE99PJR6b8w", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalDfuCheckPartialUpdateAvailable);
@@ -1036,15 +1038,18 @@ void RegisterlibSceHmd(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalGetDeviceInformationByHandle);
     LIB_FUNCTION("PPCqsD8B5uM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetDeviceStatus);
     LIB_FUNCTION("-u82z1UhOq4", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetEyeStatus);
-    LIB_FUNCTION("iINSFzCIaB8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetHmuOpticalParam);
+    LIB_FUNCTION("iINSFzCIaB8", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalGetHmuOpticalParam);
     LIB_FUNCTION("Csuvq2MMXHU", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetHmuPowerStatusForDebug);
-    LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetHmuSerialNumber);
+    LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalGetHmuSerialNumber);
     LIB_FUNCTION("9exeDpk7JU8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetIPD);
     LIB_FUNCTION("yNtYRsxZ6-A", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetIpdSettingEnableForSystemService);
     LIB_FUNCTION("EKn+IFVsz0M", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetPuBuildNumber);
-    LIB_FUNCTION("AxQ6HtktYfQ", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetPuPositionParam);
+    LIB_FUNCTION("AxQ6HtktYfQ", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalGetPuPositionParam);
     LIB_FUNCTION("ynKv9QCSbto", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetPuRevision);
     LIB_FUNCTION("3jcyx7XOm7A", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetPUSerialNumber);
     LIB_FUNCTION("+PDyXnclP5w", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetPUVersion);
@@ -1105,14 +1110,16 @@ void RegisterlibSceHmd(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hyATMTuQSoQ", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalSetDeviceConnection);
     LIB_FUNCTION("c4mSi64bXUw", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetForcedCrash);
-    LIB_FUNCTION("U9kPT4g1mFE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetHmuPowerControl);
+    LIB_FUNCTION("U9kPT4g1mFE", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalSetHmuPowerControl);
     LIB_FUNCTION("dX-MVpXIPwQ", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalSetHmuPowerControlForDebug);
     LIB_FUNCTION("4KIjvAf8PCA", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetIPD);
     LIB_FUNCTION("NbxTfUKO184", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalSetIpdSettingEnableForSystemService);
     LIB_FUNCTION("NnRKjf+hxW4", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetLedOn);
-    LIB_FUNCTION("4AP0X9qGhqw", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetM2LedBrightness);
+    LIB_FUNCTION("4AP0X9qGhqw", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalSetM2LedBrightness);
     LIB_FUNCTION("Mzzz2HPWM+8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetM2LedOn);
     LIB_FUNCTION("LkBkse9Pit0", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetPortConnection);
     LIB_FUNCTION("v243mvYg0Y0", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalSetPortStatus);
