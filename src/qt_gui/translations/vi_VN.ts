@@ -1294,6 +1294,10 @@
 			<translation>Lỗi mạng:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Trình cập nhật tự động cho phép tối đa 60 lần kiểm tra cập nhật mỗi giờ.\nBạn đã đạt đến giới hạn này. Vui lòng thử lại sau.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Không thể phân tích thông tin cập nhật.</translation>
 		</message>

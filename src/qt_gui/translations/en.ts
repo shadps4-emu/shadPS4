@@ -1327,6 +1327,10 @@
 			<translation>Network error:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Failed to parse update information.</translation>
 		</message>

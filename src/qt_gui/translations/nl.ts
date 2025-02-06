@@ -1294,6 +1294,10 @@
 			<translation>Netwerkfout:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>De automatische updater staat tot 60 updatecontroles per uur toe.\nJe hebt deze limiet bereikt. Probeer het later opnieuw.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Kon update-informatie niet parseren.</translation>
 		</message>
