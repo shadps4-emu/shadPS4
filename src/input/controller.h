@@ -60,7 +60,7 @@ inline int GetAxis(int min, int max, int value) {
     return std::clamp((255 * (value - min)) / (max - min), 0, 255);
 }
 
-constexpr u32 MAX_STATES = 64;
+constexpr u32 MAX_STATES = 32;
 
 class GameController {
 public:
