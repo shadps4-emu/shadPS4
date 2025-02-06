@@ -125,6 +125,14 @@
 			<translation>复制序列号</translation>
 		</message>
 		<message>
+			<source>Copy Version</source>
+			<translation>复制版本</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>复制大小</translation>		 
+		</message>
+		<message>
 			<source>Copy All</source>
 			<translation>复制全部</translation>
 		</message>
@@ -554,7 +562,7 @@
 		</message>
 		<message>
 			<source>Show Game Size In List</source>
-			<translation>显示游戏大小在列表中</translation>
+			<translation>在列表中显示游戏大小</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -743,11 +751,23 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>标题音乐</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
 			<translation>禁止弹出奖杯</translation>
+		</message>
+		<message>
+			<source>Background Image</source>
+			<translation>背景图片</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>显示背景图片</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>可见度</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -844,6 +864,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>背景图片：\n控制游戏背景图片的可见度。</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
