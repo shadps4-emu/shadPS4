@@ -202,10 +202,14 @@ void MainWindow::CreateDockWindows() {
 }
 
 void MainWindow::LoadGameLists() {
+    // Load compatibility database
+    if (Config::getCompatibilityEnabled())
+        m_compat_info->LoadCompatibilityFile();
+
     // Update compatibility database
-    if (Config::getCheckCompatibilityOnStartup()) {
+    if (Config::getCheckCompatibilityOnStartup())
         m_compat_info->UpdateCompatibilityDatabase(this);
-    }
+
     // Get game info from game folders.
     m_game_info->GetGameInfo(this);
     if (isTableList) {

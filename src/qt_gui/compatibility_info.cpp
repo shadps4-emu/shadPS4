@@ -19,109 +19,48 @@ CompatibilityInfoClass::CompatibilityInfoClass()
 CompatibilityInfoClass::~CompatibilityInfoClass() = default;
 
 void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool forced) {
-    if (!forced)
-        if (LoadCompatibilityFile())
-            return;
-
-    QNetworkReply* reply = FetchPage(1);
-    if (!WaitForReply(reply))
+    if (!forced && LoadCompatibilityFile())
         return;
+
+    QUrl url("https://github.com/DanielSvoboda/shadps4-game-compatibility/releases/latest/download/"
+             "compatibility_data.json");
+    QNetworkRequest request(url);
+    QNetworkReply* reply = m_network_manager->get(request);
 
     QProgressDialog dialog(tr("Fetching compatibility data, please wait"), tr("Cancel"), 0, 0,
                            parent);
     dialog.setWindowTitle(tr("Loading..."));
 
-    int remaining_pages = 0;
-    if (reply->hasRawHeader("link")) {
-        QRegularExpression last_page_re("(\\d+)(?=>; rel=\"last\")");
-        QRegularExpressionMatch last_page_match =
-            last_page_re.match(QString(reply->rawHeader("link")));
-        if (last_page_match.hasMatch()) {
-            remaining_pages = last_page_match.captured(0).toInt() - 1;
-        }
-    }
-
-    if (reply->error() != QNetworkReply::NoError) {
+    if (!WaitForReply(reply)) {
         reply->deleteLater();
         QMessageBox::critical(parent, tr("Error"),
-                              tr("Unable to update compatibility data! Try again later."));
-        // Try loading compatibility_file.json again
-        if (!forced)
-            LoadCompatibilityFile();
+                              tr("Tempo limite ao baixar os dados de compatibilidade."));
         return;
     }
 
-    ExtractCompatibilityInfo(reply->readAll());
-
-    QVector<QNetworkReply*> replies(remaining_pages);
-    QFutureWatcher<void> future_watcher;
-
-    for (int i = 0; i < remaining_pages; i++) {
-        replies[i] = FetchPage(i + 2);
+    if (reply->error() != QNetworkReply::NoError) {
+        QMessageBox::critical(parent, tr("Error"),
+                              tr("Unable to update compatibility data! Try again later.") +
+                                  reply->errorString());
+        reply->deleteLater();
+        return;
     }
 
-    future_watcher.setFuture(QtConcurrent::map(replies, WaitForReply));
-    connect(&future_watcher, &QFutureWatcher<void>::finished, [&]() {
-        for (int i = 0; i < remaining_pages; i++) {
-            if (replies[i]->bytesAvailable()) {
-                if (replies[i]->error() == QNetworkReply::NoError) {
-                    ExtractCompatibilityInfo(replies[i]->readAll());
-                }
-                replies[i]->deleteLater();
-            } else {
-                // This means the request timed out
-                return;
-            }
-        }
+    QFile compatibility_file(m_compatibility_filename);
+    if (!compatibility_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        QMessageBox::critical(parent, tr("Error"),
+                              tr("Unable to open compatibility.json for writing."));
+        reply->deleteLater();
+        return;
+    }
 
-        QFile compatibility_file(m_compatibility_filename);
+    // Writes the received data to the file.
+    QByteArray json_data = reply->readAll();
+    compatibility_file.write(json_data);
+    compatibility_file.close();
+    reply->deleteLater();
 
-        if (!compatibility_file.open(QIODevice::WriteOnly | QIODevice::Truncate |
-                                     QIODevice::Text)) {
-            QMessageBox::critical(parent, tr("Error"),
-                                  tr("Unable to open compatibility.json for writing."));
-            return;
-        }
-
-        QJsonDocument json_doc;
-        m_compatibility_database["version"] = COMPAT_DB_VERSION;
-
-        json_doc.setObject(m_compatibility_database);
-        compatibility_file.write(json_doc.toJson());
-        compatibility_file.close();
-
-        dialog.reset();
-    });
-    connect(&future_watcher, &QFutureWatcher<void>::canceled, [&]() {
-        // Cleanup if user cancels pulling data
-        for (int i = 0; i < remaining_pages; i++) {
-            if (!replies[i]->bytesAvailable()) {
-                replies[i]->deleteLater();
-            } else if (!replies[i]->isFinished()) {
-                replies[i]->abort();
-            }
-        }
-    });
-    connect(&dialog, &QProgressDialog::canceled, &future_watcher, &QFutureWatcher<void>::cancel);
-    dialog.setRange(0, remaining_pages);
-    connect(&future_watcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
-            &QProgressDialog::setValue);
-    dialog.exec();
-}
-
-QNetworkReply* CompatibilityInfoClass::FetchPage(int page_num) {
-    QUrl url = QUrl("https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/issues");
-    QUrlQuery query;
-    query.addQueryItem("per_page", QString("100"));
-    query.addQueryItem(
-        "tags", QString("status-ingame status-playable status-nothing status-boots status-menus"));
-    query.addQueryItem("page", QString::number(page_num));
-    url.setQuery(query);
-
-    QNetworkRequest request(url);
-    QNetworkReply* reply = m_network_manager->get(request);
-
-    return reply;
+    LoadCompatibilityFile();
 }
 
 bool CompatibilityInfoClass::WaitForReply(QNetworkReply* reply) {
@@ -192,14 +131,6 @@ bool CompatibilityInfoClass::LoadCompatibilityFile() {
     if (json_doc.isEmpty() || json_doc.isNull()) {
         return false;
     }
-
-    // Check database version
-    int version_number;
-    if (json_doc.object()["version"].isDouble()) {
-        if (json_doc.object()["version"].toInt() < COMPAT_DB_VERSION)
-            return false;
-    } else
-        return false;
 
     m_compatibility_database = json_doc.object();
     return true;
