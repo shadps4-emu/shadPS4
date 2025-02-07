@@ -109,12 +109,22 @@ public:
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
-    [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
-                                   BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] Value LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
+                                      BufferInstInfo info);
+    [[nodiscard]] Value LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
+                                      BufferInstInfo info);
     [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
-    void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
-                     BufferInstInfo info);
+    void StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+                       BufferInstInfo info);
+    void StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+                        BufferInstInfo info);
+    void StoreBufferU32(int num_dwords, const Value& handle, const Value& address,
+                        const Value& data, BufferInstInfo info);
+    void StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
+                        const Value& data, BufferInstInfo info);
     void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
                            BufferInstInfo info);
 
@@ -167,22 +177,19 @@ public:
 
     [[nodiscard]] U64 PackUint2x32(const Value& vector);
     [[nodiscard]] Value UnpackUint2x32(const U64& value);
-
     [[nodiscard]] F64 PackFloat2x32(const Value& vector);
 
-    [[nodiscard]] U32 PackFloat2x16(const Value& vector);
-    [[nodiscard]] Value UnpackFloat2x16(const U32& value);
+    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack2x16(AmdGpu::NumberFormat number_format, const U32& value);
 
-    [[nodiscard]] U32 PackHalf2x16(const Value& vector);
-    [[nodiscard]] Value UnpackHalf2x16(const U32& value);
-    [[nodiscard]] U32 PackUnorm2x16(const Value& vector);
-    [[nodiscard]] Value UnpackUnorm2x16(const U32& value);
-    [[nodiscard]] U32 PackSnorm2x16(const Value& vector);
-    [[nodiscard]] Value UnpackSnorm2x16(const U32& value);
-    [[nodiscard]] U32 PackUint2x16(const Value& value);
-    [[nodiscard]] Value UnpackUint2x16(const U32& value);
-    [[nodiscard]] U32 PackSint2x16(const Value& value);
-    [[nodiscard]] Value UnpackSint2x16(const U32& value);
+    [[nodiscard]] U32 Pack4x8(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack4x8(AmdGpu::NumberFormat number_format, const U32& value);
+
+    [[nodiscard]] U32 Pack10_11_11(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack10_11_11(AmdGpu::NumberFormat number_format, const U32& value);
+
+    [[nodiscard]] U32 Pack2_10_10_10(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack2_10_10_10(AmdGpu::NumberFormat number_format, const U32& value);
 
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);

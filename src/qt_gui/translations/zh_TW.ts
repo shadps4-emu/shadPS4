@@ -1294,6 +1294,10 @@
 			<translation>網路錯誤：</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>自動更新程式每小時最多允許 60 次更新檢查。\n您已達到此限制。請稍後再試。</translation>
+			</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>無法解析更新資訊。</translation>
 		</message>

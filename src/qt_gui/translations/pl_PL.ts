@@ -1294,6 +1294,10 @@
 			<translation>Błąd sieci:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Automatyczna aktualizacja umożliwia maksymalnie 60 sprawdzeń aktualizacji na godzinę.\nOsiągnąłeś ten limit. Spróbuj ponownie później.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Nie udało się sparsować informacji o aktualizacji.</translation>
 		</message>

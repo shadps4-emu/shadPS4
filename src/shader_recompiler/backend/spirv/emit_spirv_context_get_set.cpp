@@ -416,6 +416,20 @@ static Id EmitLoadBufferU32xN(EmitContext& ctx, u32 handle, Id address) {
     }
 }
 
+Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(3u))};
+    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
+    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
+    return ctx.OpBitFieldUExtract(ctx.U32[1], dword, bit_offset, ctx.ConstU32(8u));
+}
+
+Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(2u))};
+    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
+    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
+    return ctx.OpBitFieldUExtract(ctx.U32[1], dword, bit_offset, ctx.ConstU32(16u));
+}
+
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
     return EmitLoadBufferU32xN<1>(ctx, handle, address);
 }
@@ -432,18 +446,24 @@ Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
     return EmitLoadBufferU32xN<4>(ctx, handle, address);
 }
 
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return ctx.OpBitcast(ctx.F32[1], EmitLoadBufferU32(ctx, inst, handle, address));
+}
+
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return ctx.OpBitcast(ctx.F32[2], EmitLoadBufferU32x2(ctx, inst, handle, address));
+}
+
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return ctx.OpBitcast(ctx.F32[3], EmitLoadBufferU32x3(ctx, inst, handle, address));
+}
+
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return ctx.OpBitcast(ctx.F32[4], EmitLoadBufferU32x4(ctx, inst, handle, address));
+}
+
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    const auto& buffer = ctx.texture_buffers[handle];
-    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord =
-        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
-                   buffer.coord_offset);
-    Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
-                                 : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
-    if (buffer.is_integer) {
-        texel = ctx.OpBitcast(ctx.F32[4], texel);
-    }
-    return texel;
+    UNREACHABLE_MSG("SPIR-V instruction");
 }
 
 template <u32 N>
@@ -464,32 +484,56 @@ static void EmitStoreBufferU32xN(EmitContext& ctx, u32 handle, Id address, Id va
     }
 }
 
-void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+void EmitStoreBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
+    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(3u))};
+    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
+    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
+    const Id new_val{ctx.OpBitFieldInsert(ctx.U32[1], dword, value, bit_offset, ctx.ConstU32(8u))};
+    EmitStoreBufferU32xN<1>(ctx, handle, address, new_val);
+}
+
+void EmitStoreBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
+    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(2u))};
+    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
+    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
+    const Id new_val{ctx.OpBitFieldInsert(ctx.U32[1], dword, value, bit_offset, ctx.ConstU32(16u))};
+    EmitStoreBufferU32xN<1>(ctx, handle, address, new_val);
+}
+
+void EmitStoreBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
     EmitStoreBufferU32xN<1>(ctx, handle, address, value);
 }
 
-void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
     EmitStoreBufferU32xN<2>(ctx, handle, address, value);
 }
 
-void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
     EmitStoreBufferU32xN<3>(ctx, handle, address, value);
 }
 
-void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
     EmitStoreBufferU32xN<4>(ctx, handle, address, value);
 }
 
+void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[1], value));
+}
+
+void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32x2(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[2], value));
+}
+
+void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32x3(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[3], value));
+}
+
+void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32x4(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[4], value));
+}
+
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    const auto& buffer = ctx.texture_buffers[handle];
-    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord =
-        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
-                   buffer.coord_offset);
-    if (buffer.is_integer) {
-        value = ctx.OpBitcast(buffer.result_type, value);
-    }
-    ctx.OpImageWrite(tex_buffer, coord, value);
+    UNREACHABLE_MSG("SPIR-V instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

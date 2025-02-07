@@ -74,8 +74,8 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineInterfaces();
     DefineSharedMemory();
     DefineBuffers();
-    DefineTextureBuffers();
     DefineImagesAndSamplers();
+    DefineFunctions();
 }
 
 EmitContext::~EmitContext() = default;
@@ -204,19 +204,6 @@ void EmitContext::DefineBufferOffsets() {
         Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
-    }
-    for (TextureBufferDefinition& tex_buffer : texture_buffers) {
-        const u32 binding = tex_buffer.binding;
-        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-        const u32 comp = (binding & 0xf) >> 2;
-        const u32 offset = (binding & 0x3) << 3;
-        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                   push_data_block, ConstU32(half), ConstU32(comp))};
-        const Id value{OpLoad(U32[1], ptr)};
-        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
-        tex_buffer.coord_shift =
-            OpBitFieldUExtract(U32[1], value, ConstU32(offset + 6U), ConstU32(2U));
-        Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
     }
 }
 
@@ -676,32 +663,6 @@ void EmitContext::DefineBuffers() {
     }
 }
 
-void EmitContext::DefineTextureBuffers() {
-    for (const auto& desc : info.texture_buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const auto nfmt = sharp.GetNumberFmt();
-        const bool is_integer = AmdGpu::IsInteger(nfmt);
-        const VectorIds& sampled_type{GetAttributeType(*this, nfmt)};
-        const u32 sampled = desc.is_written ? 2 : 1;
-        const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
-                                      sampled, spv::ImageFormat::Unknown)};
-        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
-        const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sharp_idx));
-        texture_buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .image_type = image_type,
-            .result_type = sampled_type[4],
-            .is_integer = is_integer,
-            .is_storage = desc.is_written,
-        });
-        interfaces.push_back(id);
-    }
-}
-
 spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
@@ -890,6 +851,119 @@ void EmitContext::DefineSharedMemory() {
         info.has_emulated_shared_memory = true;
         info.shared_memory_size = shared_memory_size;
         interfaces.push_back(ssbo_id);
+    }
+}
+
+Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/util/format_r11g11b10f.h
+    const auto func_type{TypeFunction(U32[1], F32[1])};
+    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto value{OpFunctionParameter(F32[1])};
+    Name(func, name);
+    AddLabel();
+
+    const auto raw_value{OpBitcast(U32[1], value)};
+    const auto exponent{
+        OpBitcast(S32[1], OpBitFieldSExtract(U32[1], raw_value, ConstU32(23U), ConstU32(8U)))};
+    const auto sign{OpBitFieldUExtract(U32[1], raw_value, ConstU32(31U), ConstU32(1U))};
+
+    const auto is_zero{OpLogicalOr(U1[1], OpIEqual(U1[1], raw_value, ConstU32(0U)),
+                                   OpIEqual(U1[1], sign, ConstU32(1U)))};
+    const auto is_nan{OpIsNan(U1[1], value)};
+    const auto is_inf{OpIsInf(U1[1], value)};
+    const auto is_denorm{OpSLessThanEqual(U1[1], exponent, ConstS32(-15))};
+
+    const auto denorm_mantissa{OpConvertFToU(
+        U32[1],
+        OpRoundEven(F32[1], OpFMul(F32[1], value,
+                                   ConstF32(static_cast<float>(1 << (mantissa_bits + 14))))))};
+    const auto denorm_overflow{
+        OpINotEqual(U1[1], OpShiftRightLogical(U32[1], denorm_mantissa, ConstU32(mantissa_bits)),
+                    ConstU32(0U))};
+    const auto denorm{
+        OpSelect(U32[1], denorm_overflow, ConstU32(1U << mantissa_bits), denorm_mantissa)};
+
+    const auto norm_mantissa{OpConvertFToU(
+        U32[1],
+        OpRoundEven(F32[1],
+                    OpLdexp(F32[1], value,
+                            OpISub(S32[1], ConstS32(static_cast<int>(mantissa_bits)), exponent))))};
+    const auto norm_overflow{
+        OpUGreaterThanEqual(U1[1], norm_mantissa, ConstU32(2U << mantissa_bits))};
+    const auto norm_final_mantissa{OpBitwiseAnd(
+        U32[1],
+        OpSelect(U32[1], norm_overflow, OpShiftRightLogical(U32[1], norm_mantissa, ConstU32(1U)),
+                 norm_mantissa),
+        ConstU32((1U << mantissa_bits) - 1))};
+    const auto norm_final_exponent{OpBitcast(
+        U32[1],
+        OpIAdd(S32[1],
+               OpSelect(S32[1], norm_overflow, OpIAdd(S32[1], exponent, ConstS32(1)), exponent),
+               ConstS32(15)))};
+    const auto norm{OpBitFieldInsert(U32[1], norm_final_mantissa, norm_final_exponent,
+                                     ConstU32(mantissa_bits), ConstU32(5U))};
+
+    const auto result{OpSelect(U32[1], is_zero, ConstU32(0U),
+                               OpSelect(U32[1], is_nan, ConstU32(31u << mantissa_bits | 1U),
+                                        OpSelect(U32[1], is_inf, ConstU32(31U << mantissa_bits),
+                                                 OpSelect(U32[1], is_denorm, denorm, norm))))};
+
+    OpReturnValue(result);
+    OpFunctionEnd();
+    return func;
+}
+
+Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_view name) {
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/util/format_r11g11b10f.h
+    const auto func_type{TypeFunction(F32[1], U32[1])};
+    const auto func{OpFunction(F32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto value{OpFunctionParameter(U32[1])};
+    Name(func, name);
+    AddLabel();
+
+    const auto raw_mantissa{
+        OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
+    const auto mantissa{OpConvertUToF(F32[1], raw_mantissa)};
+    const auto exponent{OpBitcast(
+        S32[1], OpBitFieldSExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U)))};
+
+    const auto is_exp_neg_one{OpIEqual(U1[1], exponent, ConstS32(-1))};
+    const auto is_exp_zero{OpIEqual(U1[1], exponent, ConstS32(0))};
+
+    const auto is_zero{OpIEqual(U1[1], value, ConstU32(0u))};
+    const auto is_nan{
+        OpLogicalAnd(U1[1], is_exp_neg_one, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+    const auto is_inf{
+        OpLogicalAnd(U1[1], is_exp_neg_one, OpIEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+    const auto is_denorm{
+        OpLogicalAnd(U1[1], is_exp_zero, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+
+    const auto denorm{OpFMul(F32[1], mantissa, ConstF32(1.f / (1 << 20)))};
+    const auto norm{OpLdexp(
+        F32[1],
+        OpFAdd(F32[1],
+               OpFMul(F32[1], mantissa, ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
+               ConstF32(1.f)),
+        exponent)};
+
+    const auto result{OpSelect(F32[1], is_zero, ConstF32(0.f),
+                               OpSelect(F32[1], is_nan, ConstF32(NAN),
+                                        OpSelect(F32[1], is_inf, ConstF32(INFINITY),
+                                                 OpSelect(F32[1], is_denorm, denorm, norm))))};
+
+    OpReturnValue(result);
+    OpFunctionEnd();
+    return func;
+}
+
+void EmitContext::DefineFunctions() {
+    if (info.uses_pack_10_11_11) {
+        f32_to_uf11 = DefineFloat32ToUfloatM5(6, "f32_to_uf11");
+        f32_to_uf10 = DefineFloat32ToUfloatM5(5, "f32_to_uf10");
+    }
+    if (info.uses_unpack_10_11_11) {
+        uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
+        uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
 }
 

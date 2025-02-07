@@ -651,19 +651,19 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
 void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackUnorm2x16(vec_f32));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Unorm, vec_f32));
 }
 
 void Translator::V_CVT_PKNORM_I16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackSnorm2x16(vec_f32));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Snorm, vec_f32));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackHalf2x16(vec_f32));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Float, vec_f32));
 }
 
 // VOP1
@@ -1245,14 +1245,16 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
 
 void Translator::V_CVT_PK_U16_U32(const GcnInst& inst) {
     const IR::Value vec_u32 =
-        ir.CompositeConstruct(GetSrc<IR::U32>(inst.src[0]), GetSrc<IR::U32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackUint2x16(vec_u32));
+        ir.CompositeConstruct(ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[0])),
+                              ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[1])));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Uint, vec_u32));
 }
 
 void Translator::V_CVT_PK_I16_I32(const GcnInst& inst) {
     const IR::Value vec_u32 =
-        ir.CompositeConstruct(GetSrc<IR::U32>(inst.src[0]), GetSrc<IR::U32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackSint2x16(vec_u32));
+        ir.CompositeConstruct(ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[0])),
+                              ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[1])));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Sint, vec_u32));
 }
 
 void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {

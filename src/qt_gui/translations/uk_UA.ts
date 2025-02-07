@@ -1391,6 +1391,10 @@
 			<translation>Мережева помилка:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Автооновлення дозволяє до 60 перевірок оновлень на годину.\nВи досягли цього ліміту. Будь ласка, спробуйте пізніше.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Не вдалося розібрати інформацію про оновлення.</translation>
 		</message>

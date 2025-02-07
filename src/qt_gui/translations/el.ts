@@ -1294,6 +1294,10 @@
 			<translation>Σφάλμα δικτύου:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Ο Αυτόματος Ενημερωτής επιτρέπει έως και 60 ελέγχους ενημερώσεων ανά ώρα.\nΈχετε φτάσει αυτό το όριο. Παρακαλώ δοκιμάστε ξανά αργότερα.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Αποτυχία ανάλυσης πληροφοριών ενημέρωσης.</translation>
 		</message>

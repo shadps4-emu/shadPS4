@@ -29,8 +29,6 @@ using Shader::VsOutput;
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1024},
-    vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 128},
-    vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 128},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };

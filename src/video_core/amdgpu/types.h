@@ -298,6 +298,7 @@ inline NumberFormat RemapNumberFormat(const NumberFormat format, const DataForma
 
 inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizzle) {
     switch (format) {
+    case DataFormat::Format1_5_5_5:
     case DataFormat::Format11_11_10: {
         CompMapping result;
         result.r = swizzle.b;
@@ -314,12 +315,13 @@ inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizz
         result.a = swizzle.r;
         return result;
     }
-    case DataFormat::Format1_5_5_5: {
+    case DataFormat::Format4_4_4_4: {
+        // Remap to a more supported component order.
         CompMapping result;
-        result.r = swizzle.b;
-        result.g = swizzle.g;
-        result.b = swizzle.r;
-        result.a = swizzle.a;
+        result.r = swizzle.g;
+        result.g = swizzle.b;
+        result.b = swizzle.a;
+        result.a = swizzle.r;
         return result;
     }
     default:

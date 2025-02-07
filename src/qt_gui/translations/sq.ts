@@ -1294,6 +1294,10 @@
 			<translation>Gabim rrjeti:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Përditësuesi Automatik lejon deri në 60 kontrolle për përditësime në orë.\nJu keni arritur këtë kufi. Ju lutemi provoni përsëri më vonë.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Analizimi i informacionit të përditësimit deshtoi.</translation>
 		</message>

@@ -1445,6 +1445,10 @@
         <source>Network error:</source>
         <translation>Сетевая ошибка:</translation>
     </message>
+		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Автообновление позволяет выполнять до 60 проверок обновлений в час.\nВы достигли этого лимита. Пожалуйста, попробуйте позже.</translation>
+		</message>
     <message>
         <source>Failed to parse update information.</source>
         <translation>Не удалось разобрать информацию об обновлении.</translation>

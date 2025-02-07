@@ -1294,6 +1294,10 @@
 			<translation>Eroare de rețea:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Actualizatorul automat permite până la 60 de verificări de actualizare pe oră.\nAți atins această limită. Vă rugăm să încercați din nou mai târziu.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Nu s-au putut analiza informațiile de actualizare.</translation>
 		</message>

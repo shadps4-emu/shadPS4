@@ -120,8 +120,6 @@ private:
 
     using BufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
     boost::container::static_vector<BufferBindingInfo, 32> buffer_bindings;
-    using TexBufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
-    boost::container::static_vector<TexBufferBindingInfo, 32> texbuffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
     boost::container::static_vector<ImageBindingInfo, 64> image_bindings;
 };

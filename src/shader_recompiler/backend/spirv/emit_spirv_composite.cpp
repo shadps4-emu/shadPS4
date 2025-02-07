@@ -24,6 +24,10 @@ Id EmitCompositeConstructU32x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, I
     return EmitCompositeConstruct(ctx, inst, ctx.U32[4], e1, e2, e3, e4);
 }
 
+Id EmitCompositeConstructU32x2x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2) {
+    return EmitCompositeConstruct(ctx, inst, ctx.U32[4], e1, e2);
+}
+
 Id EmitCompositeExtractU32x2(EmitContext& ctx, Id composite, u32 index) {
     return ctx.OpCompositeExtract(ctx.U32[1], composite, index);
 }
@@ -122,6 +126,10 @@ Id EmitCompositeConstructF32x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, I
 
 Id EmitCompositeConstructF32x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3, Id e4) {
     return EmitCompositeConstruct(ctx, inst, ctx.F32[4], e1, e2, e3, e4);
+}
+
+Id EmitCompositeConstructF32x2x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2) {
+    return EmitCompositeConstruct(ctx, inst, ctx.F32[4], e1, e2);
 }
 
 Id EmitCompositeExtractF32x2(EmitContext& ctx, Id composite, u32 index) {

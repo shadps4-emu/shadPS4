@@ -271,6 +271,10 @@
         <source>Network error:</source>
         <translation>Nätverksfel:</translation>
     </message>
+		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har nått denna gräns. Försök igen senare.</translation>
+		</message>
     <message>
         <source>Failed to parse update information.</source>
         <translation>Misslyckades med att tolka uppdateringsinformationen.</translation>

@@ -1294,6 +1294,10 @@
 			<translation>Netsværksfejl:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Autoopdateren tillader op til 60 opdateringstjek i timen.\nDu har nået denne grænse. Prøv igen senere.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Kunne ikke analysere opdateringsoplysninger.</translation>
 		</message>
