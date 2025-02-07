@@ -48,6 +48,7 @@ struct BufferResource {
     bool is_instance_data{};
     u8 instance_attrib{};
     bool is_written{};
+    bool is_formatted{};
 
     [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer) const noexcept {
         return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
@@ -56,14 +57,6 @@ struct BufferResource {
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
 using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
-
-struct TextureBufferResource {
-    u32 sharp_idx;
-    bool is_written{};
-
-    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
-};
-using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
     u32 sharp_idx;
@@ -113,11 +106,6 @@ struct PushData {
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());
         buf_offsets[binding] = offset;
-    }
-
-    void AddTexelOffset(u32 binding, u32 multiplier, u32 texel_offset) {
-        ASSERT(texel_offset < 64 && multiplier < 16);
-        buf_offsets[binding] = texel_offset | ((std::bit_width(multiplier) - 1) << 6);
     }
 };
 static_assert(sizeof(PushData) <= 128,
@@ -175,7 +163,6 @@ struct Info {
     u32 uses_patches{};
 
     BufferResourceList buffers;
-    TextureBufferResourceList texture_buffers;
     ImageResourceList images;
     SamplerResourceList samplers;
     FMaskResourceList fmasks;
@@ -193,8 +180,6 @@ struct Info {
     u64 pgm_hash{};
     VAddr pgm_base;
     bool has_storage_images{};
-    bool has_image_buffers{};
-    bool has_texel_buffers{};
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
@@ -204,6 +189,8 @@ struct Info {
     bool uses_shared{};
     bool uses_fp16{};
     bool uses_fp64{};
+    bool uses_pack_10_11_11{};
+    bool uses_unpack_10_11_11{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
@@ -246,8 +233,7 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers =
-            buffers.size() + texture_buffers.size() + (has_readconst ? 1 : 0);
+        const auto total_buffers = buffers.size() + (has_readconst ? 1 : 0);
         bnd.buffer += total_buffers;
         bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
@@ -276,10 +262,6 @@ struct Info {
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
-}
-
-constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {

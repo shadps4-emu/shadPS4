@@ -235,20 +235,9 @@ public:
         const VectorIds* data_types;
         Id pointer_type;
     };
-    struct TextureBufferDefinition {
-        Id id;
-        Id coord_offset;
-        Id coord_shift;
-        u32 binding;
-        Id image_type;
-        Id result_type;
-        bool is_integer = false;
-        bool is_storage = false;
-    };
 
     Bindings& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
-    boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
     BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
@@ -271,6 +260,11 @@ public:
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
+    Id uf11_to_f32{};
+    Id f32_to_uf11{};
+    Id uf10_to_f32{};
+    Id f32_to_uf10{};
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
@@ -278,12 +272,15 @@ private:
     void DefineOutputs();
     void DefinePushDataBlock();
     void DefineBuffers();
-    void DefineTextureBuffers();
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
+    void DefineFunctions();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+
+    Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
+    Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
 };
 
 } // namespace Shader::Backend::SPIRV

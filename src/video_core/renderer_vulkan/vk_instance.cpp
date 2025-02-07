@@ -268,7 +268,6 @@ bool Instance::CreateDevice() {
         null_descriptor =
             feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor;
     }
-    maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
@@ -376,9 +375,6 @@ bool Instance::CreateDevice() {
             .maintenance4 = true,
         },
         // Other extensions
-        vk::PhysicalDeviceMaintenance5FeaturesKHR{
-            .maintenance5 = true,
-        },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
             .customBorderColorWithoutFormat = true,
@@ -413,9 +409,6 @@ bool Instance::CreateDevice() {
 
     if (!maintenance4) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
-    }
-    if (!maintenance5) {
-        device_chain.unlink<vk::PhysicalDeviceMaintenance5FeaturesKHR>();
     }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();

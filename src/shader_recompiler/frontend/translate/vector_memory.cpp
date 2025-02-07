@@ -208,7 +208,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, buffer_info);
+    const IR::Value value = ir.LoadBufferU32(num_dwords, handle, address, buffer_info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
         ir.SetVectorReg(dst_reg, IR::U32{value});
@@ -314,16 +314,18 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    ir.StoreBuffer(num_dwords, handle, address, value, buffer_info);
+    ir.StoreBufferU32(num_dwords, handle, address, value, buffer_info);
 }
 
 void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst) {
     const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
-    ASSERT_MSG(!mubuf.offen && mubuf.offset == 0, "Offsets for image buffers are not supported");
     const IR::Value address = [&] -> IR::Value {
-        if (mubuf.idxen) {
+        if (mubuf.idxen && mubuf.offen) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
+        }
+        if (mubuf.idxen || mubuf.offen) {
             return ir.GetVectorReg(vaddr);
         }
         return {};

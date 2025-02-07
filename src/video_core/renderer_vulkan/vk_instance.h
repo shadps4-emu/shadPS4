@@ -114,11 +114,6 @@ public:
         return null_descriptor;
     }
 
-    /// Returns true when VK_KHR_maintenance5 is supported.
-    bool IsMaintenance5Supported() const {
-        return maintenance5;
-    }
-
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
     bool IsFragmentShaderBarycentricSupported() const {
         return fragment_shader_barycentric;
@@ -209,11 +204,6 @@ public:
         return properties.limits.minStorageBufferOffsetAlignment;
     }
 
-    /// Returns the minimum required alignment for texel buffers
-    vk::DeviceSize TexelBufferMinAlignment() const {
-        return properties.limits.minTexelBufferOffsetAlignment;
-    }
-
     /// Returns the minimum alignemt required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;
@@ -227,11 +217,6 @@ public:
     /// Returns the maximum size of compute shared memory.
     u32 MaxComputeSharedMemorySize() const {
         return properties.limits.maxComputeSharedMemorySize;
-    }
-
-    /// Returns the maximum supported elements in a texel buffer
-    u32 MaxTexelBufferElements() const {
-        return properties.limits.maxTexelBufferElements;
     }
 
     /// Returns the maximum sampler LOD bias.
@@ -317,7 +302,6 @@ private:
     bool dynamic_color_write_mask{};
     bool vertex_input_dynamic_state{};
     bool null_descriptor{};
-    bool maintenance5{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool shader_stencil_export{};

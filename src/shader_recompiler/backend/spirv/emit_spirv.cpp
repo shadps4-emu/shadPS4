@@ -250,7 +250,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::Float64);
     }
     ctx.AddCapability(spv::Capability::Int64);
-    if (info.has_storage_images || info.has_image_buffers) {
+    if (info.has_storage_images) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
         ctx.AddCapability(spv::Capability::StorageImageReadWithoutFormat);
         ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
@@ -258,12 +258,6 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
             ctx.AddExtension("SPV_AMD_shader_image_load_store_lod");
             ctx.AddCapability(spv::Capability::ImageReadWriteLodAMD);
         }
-    }
-    if (info.has_texel_buffers) {
-        ctx.AddCapability(spv::Capability::SampledBuffer);
-    }
-    if (info.has_image_buffers) {
-        ctx.AddCapability(spv::Capability::ImageBuffer);
     }
     if (info.has_image_gather) {
         ctx.AddCapability(spv::Capability::ImageGatherExtended);

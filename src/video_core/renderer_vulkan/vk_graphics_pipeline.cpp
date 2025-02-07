@@ -375,15 +375,6 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .stageFlags = gp_stage_flags,
             });
         }
-        for (const auto& tex_buffer : stage->texture_buffers) {
-            bindings.push_back({
-                .binding = binding++,
-                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                        : vk::DescriptorType::eUniformTexelBuffer,
-                .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
-            });
-        }
         for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,

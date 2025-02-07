@@ -55,15 +55,6 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
     }
-    for (const auto& tex_buffer : info->texture_buffers) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                    : vk::DescriptorType::eUniformTexelBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
     for (const auto& image : info->images) {
         bindings.push_back({
             .binding = binding++,
