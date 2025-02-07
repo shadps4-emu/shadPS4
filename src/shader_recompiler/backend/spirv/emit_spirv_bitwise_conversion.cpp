@@ -28,17 +28,19 @@ static std::array<Id, sizeof...(Args)> ExtractBitFields(EmitContext& ctx, const 
 }
 
 template <typename... Args>
-static Id InsertBitFields(EmitContext& ctx, const std::vector<Id>& values, const Args... args) {
+static Id InsertBitFields(EmitContext& ctx, const std::initializer_list<Id> values,
+                          const Args... args) {
     Id result{};
-    u32 i = 0;
+    auto it = values.begin();
     (
         [&] {
-            if (i == 0) {
-                result = values[i++];
+            if (it == values.begin()) {
+                result = *it;
             } else {
-                result = ctx.OpBitFieldInsert(ctx.U32[1], result, values[i++],
-                                              ctx.ConstU32(args.offset), ctx.ConstU32(args.size));
+                result = ctx.OpBitFieldInsert(ctx.U32[1], result, *it, ctx.ConstU32(args.offset),
+                                              ctx.ConstU32(args.size));
             }
+            ++it;
         }(),
         ...);
     return result;
