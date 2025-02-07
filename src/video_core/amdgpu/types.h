@@ -322,6 +322,15 @@ inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizz
         result.a = swizzle.a;
         return result;
     }
+    case DataFormat::Format4_4_4_4: {
+        // Remap to a more supported component order.
+        CompMapping result;
+        result.r = swizzle.a;
+        result.g = swizzle.r;
+        result.b = swizzle.g;
+        result.a = swizzle.b;
+        return result;
+    }
     default:
         return swizzle;
     }
