@@ -34,7 +34,7 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
     if (!WaitForReply(reply)) {
         reply->deleteLater();
         QMessageBox::critical(parent, tr("Error"),
-                              tr("Tempo limite ao baixar os dados de compatibilidade."));
+                              tr("Timeout while downloading compatibility data."));
         return;
     }
 
