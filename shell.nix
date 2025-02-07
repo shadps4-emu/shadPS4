@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 with import (fetchTarball "https://github.com/nixos/nixpkgs/archive/cfd19cdc54680956dc1816ac577abba6b58b901c.tar.gz") { };
 
 pkgs.mkShell {
