@@ -6,6 +6,54 @@
 
 namespace Shader::Backend::SPIRV {
 
+struct R {
+    R(u32 a, u32 b) : offset(a), size(b) {}
+    u32 offset;
+    u32 size;
+};
+template <bool is_signed, typename... Args>
+static std::array<Id, sizeof...(Args)> ExtractBitFields(EmitContext& ctx, const Id value,
+                                                        const Args... args) {
+    const auto op_func =
+        is_signed ? &EmitContext::OpBitFieldSExtract : &EmitContext::OpBitFieldUExtract;
+    std::array<Id, sizeof...(Args)> result{};
+    u32 i = 0;
+    (
+        [&] {
+            result[i++] = (ctx.*op_func)(ctx.U32[1], value, ctx.ConstU32(args.offset),
+                                         ctx.ConstU32(args.size));
+        }(),
+        ...);
+    return result;
+}
+
+template <typename... Args>
+static Id InsertBitFields(EmitContext& ctx, const std::vector<Id>& values, const Args... args) {
+    Id result{};
+    u32 i = 0;
+    (
+        [&] {
+            if (i == 0) {
+                result = values[i++];
+            } else {
+                result = ctx.OpBitFieldInsert(ctx.U32[1], result, values[i++],
+                                              ctx.ConstU32(args.offset), ctx.ConstU32(args.size));
+            }
+        }(),
+        ...);
+    return result;
+}
+
+template <u32 num_components>
+static std::array<Id, num_components> ExtractComposite(EmitContext& ctx, const VectorIds type,
+                                                       const Id value) {
+    std::array<Id, num_components> result{};
+    for (u32 i = 0; i < num_components; i++) {
+        result[i] = ctx.OpCompositeExtract(type[1], value, i);
+    }
+    return result;
+}
+
 Id EmitBitCastU16F16(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.U16, value);
 }
@@ -59,20 +107,13 @@ Id EmitUnpackSnorm2x16(EmitContext& ctx, Id value) {
 }
 
 Id EmitPackUint2x16(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unpacked{ctx.OpBitcast(ctx.U32[2], value)};
-    const auto x{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0)};
-    const auto y{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1)};
-
-    const auto packed{ctx.OpBitFieldInsert(ctx.U32[1], x, y, ctx.ConstU32(16U), ctx.ConstU32(16U))};
-    return packed;
+    const auto [x, y] = ExtractComposite<2>(ctx, ctx.U32, unpacked);
+    return InsertBitFields(ctx, {x, y}, R(0, 16), R(16, 16));
 }
 
 Id EmitUnpackUint2x16(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(16U))};
-    const auto y{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(16U), ctx.ConstU32(16U))};
-
+    const auto [x, y] = ExtractBitFields<false>(ctx, value, R(0, 16), R(16, 16));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[2], x, y)};
     return ctx.OpBitcast(ctx.F32[2], unpacked);
 }
@@ -82,10 +123,7 @@ Id EmitPackSint2x16(EmitContext& ctx, Id value) {
 }
 
 Id EmitUnpackSint2x16(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(16U))};
-    const auto y{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(16U), ctx.ConstU32(16U))};
-
+    const auto [x, y] = ExtractBitFields<true>(ctx, value, R(0, 16), R(16, 16));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[2], x, y)};
     return ctx.OpBitcast(ctx.F32[2], unpacked);
 }
@@ -115,27 +153,14 @@ Id EmitUnpackSnorm4x8(EmitContext& ctx, Id value) {
 }
 
 Id EmitPackUint4x8(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unpacked{ctx.OpBitcast(ctx.U32[4], value)};
-    const auto x{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0)};
-    const auto y{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1)};
-    const auto z{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 2)};
-    const auto w{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 3)};
-
-    auto packed = x;
-    packed = ctx.OpBitFieldInsert(ctx.U32[1], packed, y, ctx.ConstU32(8U), ctx.ConstU32(8U));
-    packed = ctx.OpBitFieldInsert(ctx.U32[1], packed, z, ctx.ConstU32(16U), ctx.ConstU32(8U));
-    packed = ctx.OpBitFieldInsert(ctx.U32[1], packed, w, ctx.ConstU32(24U), ctx.ConstU32(8U));
-    return packed;
+    const auto [x, y, z, w] = ExtractComposite<4>(ctx, ctx.U32, unpacked);
+    return InsertBitFields(ctx, {x, y, z, w}, R(0, 8), R(8, 8), R(16, 8), R(24, 8));
 }
 
 Id EmitUnpackUint4x8(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(8U))};
-    const auto y{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(8U), ctx.ConstU32(8U))};
-    const auto z{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(16U), ctx.ConstU32(8U))};
-    const auto w{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(24U), ctx.ConstU32(8U))};
-
+    const auto [x, y, z, w] =
+        ExtractBitFields<false>(ctx, value, R(0, 8), R(8, 8), R(16, 8), R(24, 8));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[4], x, y, z, w)};
     return ctx.OpBitcast(ctx.F32[4], unpacked);
 }
@@ -145,47 +170,29 @@ Id EmitPackSint4x8(EmitContext& ctx, Id value) {
 }
 
 Id EmitUnpackSint4x8(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(8U))};
-    const auto y{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(8U), ctx.ConstU32(8U))};
-    const auto z{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(16U), ctx.ConstU32(8U))};
-    const auto w{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(24U), ctx.ConstU32(8U))};
-
+    const auto [x, y, z, w] =
+        ExtractBitFields<true>(ctx, value, R(0, 8), R(8, 8), R(16, 8), R(24, 8));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[4], x, y, z, w)};
     return ctx.OpBitcast(ctx.F32[4], unpacked);
 }
 
 Id EmitPackUfloat10_11_11(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpCompositeExtract(ctx.F32[1], value, 0)};
-    const auto y{ctx.OpCompositeExtract(ctx.F32[1], value, 1)};
-    const auto z{ctx.OpCompositeExtract(ctx.F32[1], value, 2)};
-
+    const auto [x, y, z] = ExtractComposite<3>(ctx, ctx.F32, value);
     const auto cvt_x{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf11, x)};
     const auto cvt_y{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf11, y)};
     const auto cvt_z{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf10, z)};
-
-    auto result = cvt_x;
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, cvt_y, ctx.ConstU32(11U), ctx.ConstU32(11U));
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, cvt_z, ctx.ConstU32(22U), ctx.ConstU32(10U));
-    return result;
+    return InsertBitFields(ctx, {cvt_x, cvt_y, cvt_z}, R(0, 11), R(11, 11), R(22, 10));
 }
 
 Id EmitUnpackUfloat10_11_11(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(11U))};
-    const auto y{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(11U), ctx.ConstU32(11U))};
-    const auto z{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(22U), ctx.ConstU32(10U))};
-
+    const auto [x, y, z] = ExtractBitFields<false>(ctx, value, R(0, 11), R(11, 11), R(22, 10));
     const auto cvt_x{ctx.OpFunctionCall(ctx.F32[1], ctx.uf11_to_f32, x)};
     const auto cvt_y{ctx.OpFunctionCall(ctx.F32[1], ctx.uf11_to_f32, y)};
     const auto cvt_z{ctx.OpFunctionCall(ctx.F32[1], ctx.uf10_to_f32, z)};
-
     return ctx.OpCompositeConstruct(ctx.F32[3], cvt_x, cvt_y, cvt_z);
 }
 
 Id EmitPackUnorm2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unorm_min{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(0.f), ctx.ConstF32(0.f),
                                                ctx.ConstF32(0.f), ctx.ConstF32(0.f))};
     const auto unorm_max{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(1.f), ctx.ConstF32(1.f),
@@ -200,7 +207,6 @@ Id EmitPackUnorm2_10_10_10(EmitContext& ctx, Id value) {
 }
 
 Id EmitUnpackUnorm2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unpacked{ctx.OpBitcast(ctx.U32[4], EmitUnpackUint2_10_10_10(ctx, value))};
     const auto as_float{ctx.OpConvertUToF(ctx.F32[4], unpacked)};
     const auto unorm_div{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(1023.f),
@@ -210,7 +216,6 @@ Id EmitUnpackUnorm2_10_10_10(EmitContext& ctx, Id value) {
 }
 
 Id EmitPackSnorm2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto snorm_min{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(-1.f), ctx.ConstF32(-1.f),
                                                ctx.ConstF32(-1.f), ctx.ConstF32(-1.f))};
     const auto snorm_max{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(1.f), ctx.ConstF32(1.f),
@@ -224,7 +229,6 @@ Id EmitPackSnorm2_10_10_10(EmitContext& ctx, Id value) {
 }
 
 Id EmitUnpackSnorm2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unpacked{ctx.OpBitcast(ctx.U32[4], EmitUnpackSint2_10_10_10(ctx, value))};
     const auto as_float{ctx.OpConvertSToF(ctx.F32[4], unpacked)};
     const auto snorm_div{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(511.f), ctx.ConstF32(511.f),
@@ -233,27 +237,14 @@ Id EmitUnpackSnorm2_10_10_10(EmitContext& ctx, Id value) {
 }
 
 Id EmitPackUint2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
     const auto unpacked{ctx.OpBitcast(ctx.U32[4], value)};
-    const auto x{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0)};
-    const auto y{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1)};
-    const auto z{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 2)};
-    const auto w{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 3)};
-
-    auto result = x;
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, y, ctx.ConstU32(10U), ctx.ConstU32(10U));
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, z, ctx.ConstU32(20U), ctx.ConstU32(10U));
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, w, ctx.ConstU32(30U), ctx.ConstU32(2U));
-    return result;
+    const auto [x, y, z, w] = ExtractComposite<4>(ctx, ctx.U32, unpacked);
+    return InsertBitFields(ctx, {x, y, z, w}, R(0, 10), R(10, 10), R(20, 10), R(30, 2));
 }
 
 Id EmitUnpackUint2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(10U))};
-    const auto y{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(10U), ctx.ConstU32(10U))};
-    const auto z{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(20U), ctx.ConstU32(10U))};
-    const auto w{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(30U), ctx.ConstU32(2U))};
-
+    const auto [x, y, z, w] =
+        ExtractBitFields<false>(ctx, value, R(0, 10), R(10, 10), R(20, 10), R(30, 2));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[4], x, y, z, w)};
     return ctx.OpBitcast(ctx.F32[4], unpacked);
 }
@@ -263,12 +254,8 @@ Id EmitPackSint2_10_10_10(EmitContext& ctx, Id value) {
 }
 
 Id EmitUnpackSint2_10_10_10(EmitContext& ctx, Id value) {
-    // No SPIR-V instruction for this, do it manually.
-    const auto x{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(10U))};
-    const auto y{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(10U), ctx.ConstU32(10U))};
-    const auto z{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(20U), ctx.ConstU32(10U))};
-    const auto w{ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.ConstU32(30U), ctx.ConstU32(2U))};
-
+    const auto [x, y, z, w] =
+        ExtractBitFields<true>(ctx, value, R(0, 10), R(10, 10), R(20, 10), R(30, 2));
     const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[4], x, y, z, w)};
     return ctx.OpBitcast(ctx.F32[4], unpacked);
 }
