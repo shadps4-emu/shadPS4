@@ -49,17 +49,19 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
     loop.exec();
 
     if (reply->error() != QNetworkReply::NoError) {
-        QMessageBox::critical(parent, tr("Error"),
-                              tr("Unable to update compatibility data! Try again later.") +
-                                  reply->errorString());
         reply->deleteLater();
+        QMessageBox::critical(parent, tr("Error"),
+                              tr("Unable to update compatibility data! Try again later."));
+        // Try loading compatibility_file.json again
+        if (!forced)
+            LoadCompatibilityFile();
         return;
     }
 
     QFile compatibility_file(m_compatibility_filename);
     if (!compatibility_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
         QMessageBox::critical(parent, tr("Error"),
-                              tr("Unable to open compatibility.json for writing."));
+                              tr("Unable to open compatibility_data.json for writing."));
         reply->deleteLater();
         return;
     }
