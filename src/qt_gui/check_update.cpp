@@ -67,8 +67,20 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, showMessage, updateChannel]() {
         if (reply->error() != QNetworkReply::NoError) {
-            QMessageBox::warning(this, tr("Error"),
-                                 QString(tr("Network error:") + "\n" + reply->errorString()));
+            if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 403) {
+                QString response = reply->readAll();
+                if (response.startsWith("{\"message\":\"API rate limit exceeded for")) {
+                    QMessageBox::warning(this, tr("Auto Updater"),
+                                         tr("Error_Github_limit_MSG").replace("\\n", "\n"));
+                } else {
+                    QMessageBox::warning(
+                        this, tr("Error"),
+                        QString(tr("Network error:") + "\n" + reply->errorString()));
+                }
+            } else {
+                QMessageBox::warning(this, tr("Error"),
+                                     QString(tr("Network error:") + "\n" + reply->errorString()));
+            }
             reply->deleteLater();
             return;
         }

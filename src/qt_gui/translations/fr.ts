@@ -1294,6 +1294,10 @@
 			<translation>Erreur réseau:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Le programme de mise à jour automatique permet jusqu'à 60 vérifications de mise à jour par heure.\nVous avez atteint cette limite. Veuillez réessayer plus tard.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Échec de l'analyse des informations de mise à jour.</translation>
 		</message>

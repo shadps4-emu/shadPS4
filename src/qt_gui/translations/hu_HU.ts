@@ -1294,6 +1294,10 @@
 			<translation>Hálózati hiba:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Az automatikus frissítő óránként legfeljebb 60 frissítésellenőrzést engedélyez.\nElérte ezt a korlátot. Kérjük, próbálja újra később.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>A frissítési információk elemzése sikertelen.</translation>
 		</message>

@@ -1294,6 +1294,10 @@
 			<translation>Kesalahan jaringan:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Pembaruan Otomatis memungkinkan hingga 60 pemeriksaan pembaruan per jam.\nAnda telah mencapai batas ini. Silakan coba lagi nanti.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Gagal memparse informasi pembaruan.</translation>
 		</message>

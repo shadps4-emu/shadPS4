@@ -1294,6 +1294,10 @@
 			<translation>Ağ hatası:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Otomatik Güncelleyici, saat başına en fazla 60 güncelleme kontrolüne izin verir.\nBu sınıra ulaştınız. Lütfen daha sonra tekrar deneyin.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Güncelleme bilgilerini ayrıştırma başarısız oldu.</translation>
 		</message>

@@ -1318,6 +1318,10 @@
 			<translation>Netzwerkfehler:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Der Auto-Updater erlaubt bis zu 60 Update-Überprüfungen pro Stunde.\nDu hast dieses Limit erreicht. Bitte versuche es später erneut.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Fehler beim Parsen der Aktualisierungsinformationen.</translation>
 		</message>

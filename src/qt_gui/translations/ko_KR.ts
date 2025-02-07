@@ -1294,6 +1294,10 @@
 			<translation>Network error:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>자동 업데이트는 시간당 최대 60회의 업데이트 확인을 허용합니다.\n이 제한에 도달했습니다. 나중에 다시 시도해 주세요.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Failed to parse update information.</translation>
 		</message>

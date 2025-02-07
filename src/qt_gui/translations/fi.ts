@@ -1294,6 +1294,10 @@
 			<translation>Verkkovirhe:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Automaattinen päivitys sallii enintään 60 päivitystarkistusta tunnissa.\nOlet saavuttanut tämän rajan. Yritä myöhemmin uudelleen.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Päivitystietojen jäsentäminen epäonnistui.</translation>
 		</message>

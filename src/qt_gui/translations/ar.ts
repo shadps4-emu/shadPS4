@@ -1294,6 +1294,10 @@
 			<translation>خطأ في الشبكة:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>يتيح التحديث التلقائي ما يصل إلى 60 عملية تحقق من التحديث في الساعة.\nلقد وصلت إلى هذا الحد. الرجاء المحاولة مرة أخرى لاحقًا.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>فشل في تحليل معلومات التحديث.</translation>
 		</message>

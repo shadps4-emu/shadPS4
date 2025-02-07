@@ -1294,6 +1294,10 @@
 			<translation>ネットワークエラー:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>自動アップデーターは1時間に最大60回の更新チェックを許可します。\nこの制限に達しました。後でもう一度お試しください。</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>アップデート情報の解析に失敗しました。</translation>
 		</message>

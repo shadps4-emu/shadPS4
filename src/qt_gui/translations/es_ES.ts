@@ -1310,6 +1310,10 @@
 			<translation>Error de red:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>El actualizador automático permite hasta 60 comprobaciones de actualización por hora.\nHas alcanzado este límite. Por favor, inténtalo de nuevo más tarde.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Error al analizar la información de actualización.</translation>
 		</message>

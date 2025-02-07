@@ -1294,6 +1294,10 @@
 			<translation>Tinklo klaida:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Automatinis atnaujinimas leidžia iki 60 atnaujinimų patikrinimų per valandą.\nJūs pasiekėte šią ribą. Bandykite dar kartą vėliau.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Nepavyko išanalizuoti atnaujinimo informacijos.</translation>
 		</message>

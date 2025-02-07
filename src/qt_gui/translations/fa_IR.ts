@@ -1294,6 +1294,10 @@
 			<translation>خطای شبکه:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>به‌روزرسانی خودکار حداکثر ۶۰ بررسی به‌روزرسانی در ساعت را مجاز می‌داند.\nشما به این محدودیت رسیده‌اید. لطفاً بعداً دوباره امتحان کنید.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>خطا در تجزیه اطلاعات بهروزرسانی.</translation>
 		</message>

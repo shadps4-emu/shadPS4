@@ -1346,6 +1346,10 @@
 			<translation>Nettverksfeil:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>Den automatiske oppdateringen tillater opptil 60 oppdateringssjekker per time.\nDu har nådd denne grensen. Prøv igjen senere.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Kunne ikke analysere oppdaterings-informasjonen.</translation>
 		</message>

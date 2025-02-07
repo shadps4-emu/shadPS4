@@ -1294,6 +1294,10 @@
 			<translation>Errore di rete:</translation>
 		</message>
 		<message>
+			<source>Error_Github_limit_MSG</source>
+			<translation>L'Aggiornamento Automatico consente fino a 60 controlli di aggiornamento all'ora.\nHai raggiunto questo limite. Riprova più tardi.</translation>
+		</message>
+		<message>
 			<source>Failed to parse update information.</source>
 			<translation>Impossibile analizzare le informazioni di aggiornamento.</translation>
 		</message>
