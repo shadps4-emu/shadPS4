@@ -37,6 +37,12 @@ sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declar
 sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel systemd-devel libevdev-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel vulkan-devel vulkan-validationlayers
 ```
 
+#### NixOS
+
+```
+nix-shell shell.nix
+```
+
 #### Other Linux distributions
 
 You can try one of two methods:
@@ -49,7 +55,7 @@ distrobox create --name archlinux --init --image archlinux:latest
 ```
 
 and install the dependencies on that container as cited above.
-This option is **highly recommended** for NixOS and distributions with immutable/atomic filesystems (example: Fedora Kinoite, SteamOS).
+This option is **highly recommended** for distributions with immutable/atomic filesystems (example: Fedora Kinoite, SteamOS).
 
 ### Cloning
 
