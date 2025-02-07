@@ -95,8 +95,7 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     // Create buffer object.
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
-        // When maintenance5 is not supported, use all flags since we can't add flags to views.
-        .usage = instance->IsMaintenance5Supported() ? flags : AllFlags,
+        .usage = flags,
     };
     VmaAllocationInfo alloc_info{};
     buffer.Create(buffer_ci, usage, &alloc_info);

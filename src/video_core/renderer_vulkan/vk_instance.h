@@ -114,11 +114,6 @@ public:
         return null_descriptor;
     }
 
-    /// Returns true when VK_KHR_maintenance5 is supported.
-    bool IsMaintenance5Supported() const {
-        return maintenance5;
-    }
-
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
     bool IsFragmentShaderBarycentricSupported() const {
         return fragment_shader_barycentric;
@@ -307,7 +302,6 @@ private:
     bool dynamic_color_write_mask{};
     bool vertex_input_dynamic_state{};
     bool null_descriptor{};
-    bool maintenance5{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool shader_stencil_export{};
