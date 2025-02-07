@@ -22,21 +22,31 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
     if (!forced && LoadCompatibilityFile())
         return;
 
-    QUrl url("https://github.com/DanielSvoboda/shadps4-game-compatibility/releases/latest/download/"
+    QUrl url("https://github.com/shadps4-emu/shadps4-game-compatibility/releases/latest/download/"
              "compatibility_data.json");
     QNetworkRequest request(url);
     QNetworkReply* reply = m_network_manager->get(request);
 
-    QProgressDialog dialog(tr("Fetching compatibility data, please wait"), tr("Cancel"), 0, 0,
+    QProgressDialog dialog(tr("Fetching compatibility data, please wait"), tr("Cancel"), 0, 100,
                            parent);
     dialog.setWindowTitle(tr("Loading..."));
+    dialog.setWindowModality(Qt::WindowModal);
+    dialog.setMinimumDuration(0);
+    dialog.setValue(0);
 
-    if (!WaitForReply(reply)) {
-        reply->deleteLater();
-        QMessageBox::critical(parent, tr("Error"),
-                              tr("Timeout while downloading compatibility data."));
-        return;
-    }
+    connect(reply, &QNetworkReply::downloadProgress,
+            [&dialog](qint64 bytesReceived, qint64 bytesTotal) {
+                if (bytesTotal > 0) {
+                    dialog.setMaximum(bytesTotal);
+                    dialog.setValue(bytesReceived);
+                }
+            });
+
+    connect(&dialog, &QProgressDialog::canceled, reply, &QNetworkReply::abort);
+
+    QEventLoop loop;
+    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
 
     if (reply->error() != QNetworkReply::NoError) {
         QMessageBox::critical(parent, tr("Error"),
@@ -63,27 +73,6 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
     LoadCompatibilityFile();
 }
 
-bool CompatibilityInfoClass::WaitForReply(QNetworkReply* reply) {
-    // Returns true if reply succeeded, false if reply timed out
-    QTimer timer;
-    timer.setSingleShot(true);
-
-    QEventLoop loop;
-    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
-    timer.start(5000);
-    loop.exec();
-
-    if (timer.isActive()) {
-        timer.stop();
-        return true;
-    } else {
-        disconnect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-        reply->abort();
-        return false;
-    }
-};
-
 CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::string& serial) {
     QString title_id = QString::fromStdString(serial);
     if (m_compatibility_database.contains(title_id)) {
@@ -99,7 +88,7 @@ CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::strin
                         QDateTime::fromString(compatibility_entry_obj["last_tested"].toString(),
                                               Qt::ISODate),
                         compatibility_entry_obj["url"].toString(),
-                        compatibility_entry_obj["issue_number"].toInt()};
+                        compatibility_entry_obj["issue_number"].toString()};
                     return compatibility_entry;
                 }
             }

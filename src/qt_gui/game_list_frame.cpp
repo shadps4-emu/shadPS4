@@ -77,8 +77,10 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
-        if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
-            QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
+        if (column == 2) {
+            auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+            QDesktopServices::openUrl(
+                QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         }
     });
 }

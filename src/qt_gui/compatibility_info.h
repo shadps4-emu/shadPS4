@@ -47,7 +47,7 @@ struct CompatibilityEntry {
     QString version;
     QDateTime last_tested;
     QString url;
-    int issue_number;
+    QString issue_number;
 };
 
 class CompatibilityInfoClass : public QObject {
@@ -80,7 +80,6 @@ public:
     CompatibilityEntry GetCompatibilityInfo(const std::string& serial);
     const QString GetCompatStatusString(const CompatibilityStatus status);
     void ExtractCompatibilityInfo(QByteArray response);
-    static bool WaitForReply(QNetworkReply* reply);
 
 private:
     QNetworkAccessManager* m_network_manager;
