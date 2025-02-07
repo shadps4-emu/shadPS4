@@ -131,8 +131,7 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eStencilOpEXT,
     };
 
-    if (instance.IsColorWriteEnableSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eColorWriteEnableEXT);
+    if (instance.IsDynamicColorWriteMaskSupported()) {
         dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
     }
     if (instance.IsVertexInputDynamicState()) {
@@ -241,7 +240,7 @@ GraphicsPipeline::GraphicsPipeline(
                                 ? LiverpoolToVK::BlendOp(control.alpha_func)
                                 : color_blend,
             .colorWriteMask =
-                instance.IsColorWriteEnableSupported()
+                instance.IsDynamicColorWriteMaskSupported()
                     ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
                     : key.write_masks[i],

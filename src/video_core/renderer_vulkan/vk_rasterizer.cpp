@@ -1062,14 +1062,8 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setBlendConstants(&regs.blend_constants.red);
 
-    if (instance.IsColorWriteEnableSupported()) {
-        const auto& write_masks = pipeline.GetWriteMasks();
-        std::array<vk::Bool32, Liverpool::NumColorBuffers> write_ens{};
-        std::transform(write_masks.cbegin(), write_masks.cend(), write_ens.begin(),
-                       [](auto in) { return in ? vk::True : vk::False; });
-
-        cmdbuf.setColorWriteEnableEXT(write_ens);
-        cmdbuf.setColorWriteMaskEXT(0, write_masks);
+    if (instance.IsDynamicColorWriteMaskSupported()) {
+        cmdbuf.setColorWriteMaskEXT(0, pipeline.GetWriteMasks());
     }
     if (regs.depth_control.depth_bounds_enable) {
         cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
