@@ -260,6 +260,11 @@ public:
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
+    Id uf11_to_f32{};
+    Id f32_to_uf11{};
+    Id uf10_to_f32{};
+    Id f32_to_uf10{};
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
@@ -269,9 +274,13 @@ private:
     void DefineBuffers();
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
+    void DefineFunctions();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+
+    Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
+    Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
 };
 
 } // namespace Shader::Backend::SPIRV

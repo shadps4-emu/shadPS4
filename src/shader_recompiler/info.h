@@ -189,6 +189,8 @@ struct Info {
     bool uses_shared{};
     bool uses_fp16{};
     bool uses_fp64{};
+    bool uses_pack_10_11_11{};
+    bool uses_unpack_10_11_11{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{}; // indicates that shader has unsupported instructions

@@ -435,28 +435,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (pipeline->IsCompute()) {
         const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
-        // Most of the time when a metadata is updated with a shader it gets cleared. It means
-        // we can skip the whole dispatch and update the tracked state instead. Also, it is not
-        // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
-        // will need its full emulation anyways. For cases of metadata read a warning will be
-        // logged.
-        const auto IsMetaUpdate = [&](const auto& desc) {
-            const auto sharp = desc.GetSharp(info);
-            const VAddr address = sharp.base_address;
-            if (desc.is_written) {
-                // Assume all slices were updates
-                if (texture_cache.ClearMeta(address)) {
-                    LOG_TRACE(Render_Vulkan, "Metadata update skipped");
-                    return true;
-                }
-            } else {
-                if (texture_cache.IsMeta(address)) {
-                    LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
-                }
-            }
-            return false;
-        };
-
         // Assume if a shader reads and writes metas at the same time, it is a copy shader.
         bool meta_read = false;
         for (const auto& desc : info.buffers) {
@@ -469,10 +447,26 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
             }
         }
 
+        // Most of the time when a metadata is updated with a shader it gets cleared. It means
+        // we can skip the whole dispatch and update the tracked state instead. Also, it is not
+        // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
+        // will need its full emulation anyways. For cases of metadata read a warning will be
+        // logged.
         if (!meta_read) {
             for (const auto& desc : info.buffers) {
-                if (IsMetaUpdate(desc)) {
-                    return false;
+                const auto sharp = desc.GetSharp(info);
+                const VAddr address = sharp.base_address;
+                if (desc.is_written) {
+                    // Assume all slices were updates
+                    if (texture_cache.ClearMeta(address)) {
+                        LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                        return false;
+                    }
+                } else {
+                    if (texture_cache.IsMeta(address)) {
+                        LOG_WARNING(Render_Vulkan,
+                                    "Unexpected metadata read by a CS shader (buffer)");
+                    }
                 }
             }
         }

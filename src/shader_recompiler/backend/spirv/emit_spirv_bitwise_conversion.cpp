@@ -155,117 +155,20 @@ Id EmitUnpackSint4x8(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.F32[4], unpacked);
 }
 
-Id Float32ToUfloatM5(EmitContext& ctx, Id value, u32 mantissa_bits) {
-    const auto raw_value{ctx.OpBitcast(ctx.U32[1], value)};
-    const auto raw_exponent{
-        ctx.OpBitFieldUExtract(ctx.U32[1], raw_value, ctx.ConstU32(23U), ctx.ConstU32(8U))};
-    const auto sign{
-        ctx.OpBitFieldUExtract(ctx.U32[1], raw_value, ctx.ConstU32(31U), ctx.ConstU32(1U))};
-
-    const auto exponent{
-        ctx.OpFSub(ctx.F32[1], ctx.OpConvertUToF(ctx.F32[1], raw_exponent), ctx.ConstF32(127.f))};
-
-    const auto is_zero{ctx.OpLogicalOr(ctx.U1[1],
-                                       ctx.OpIEqual(ctx.U1[1], raw_value, ctx.ConstU32(0U)),
-                                       ctx.OpIEqual(ctx.U1[1], sign, ctx.ConstU32(1U)))};
-    const auto is_nan{ctx.OpIsNan(ctx.U1[1], value)};
-    const auto is_inf{ctx.OpIsInf(ctx.U1[1], value)};
-    const auto is_denorm{ctx.OpFOrdLessThanEqual(ctx.U1[1], exponent, ctx.ConstF32(-15.f))};
-
-    const auto denorm_mantissa{ctx.OpConvertFToU(
-        ctx.U32[1],
-        ctx.OpRoundEven(ctx.F32[1],
-                        ctx.OpFMul(ctx.F32[1], value,
-                                   ctx.ConstF32(static_cast<float>(1 << (mantissa_bits + 14))))))};
-    const auto denorm_overflow{ctx.OpINotEqual(
-        ctx.U1[1],
-        ctx.OpShiftRightLogical(ctx.U32[1], denorm_mantissa, ctx.ConstU32(mantissa_bits)),
-        ctx.ConstU32(0U))};
-    const auto denorm{ctx.OpSelect(ctx.U32[1], denorm_overflow, ctx.ConstU32(1U << mantissa_bits),
-                                   denorm_mantissa)};
-
-    const auto norm_mantissa{ctx.OpConvertFToU(
-        ctx.U32[1],
-        ctx.OpRoundEven(
-            ctx.F32[1],
-            ctx.OpFMul(
-                ctx.F32[1], value,
-                ctx.OpExp2(ctx.F32[1],
-                           ctx.OpFSub(ctx.F32[1], ctx.ConstF32(static_cast<float>(mantissa_bits)),
-                                      exponent)))))};
-    const auto norm_overflow{
-        ctx.OpUGreaterThanEqual(ctx.U1[1], norm_mantissa, ctx.ConstU32(2U << mantissa_bits))};
-    const auto norm_final_mantissa{ctx.OpBitwiseAnd(
-        ctx.U32[1],
-        ctx.OpSelect(ctx.U32[1], norm_overflow,
-                     ctx.OpShiftRightLogical(ctx.U32[1], norm_mantissa, ctx.ConstU32(1U)),
-                     norm_mantissa),
-        ctx.ConstU32((1U << mantissa_bits) - 1))};
-    const auto norm_final_exponent{ctx.OpConvertFToU(
-        ctx.U32[1],
-        ctx.OpFAdd(ctx.F32[1],
-                   ctx.OpSelect(ctx.F32[1], norm_overflow,
-                                ctx.OpFAdd(ctx.F32[1], exponent, ctx.ConstF32(1.f)), exponent),
-                   ctx.ConstF32(15.f)))};
-    const auto norm{ctx.OpBitFieldInsert(ctx.U32[1], norm_final_mantissa, norm_final_exponent,
-                                         ctx.ConstU32(mantissa_bits), ctx.ConstU32(5U))};
-
-    return ctx.OpSelect(
-        ctx.U32[1], is_zero, ctx.ConstU32(0U),
-        ctx.OpSelect(ctx.U32[1], is_nan, ctx.ConstU32(31u << mantissa_bits | 1U),
-                     ctx.OpSelect(ctx.U32[1], is_inf, ctx.ConstU32(31U << mantissa_bits),
-                                  ctx.OpSelect(ctx.U32[1], is_denorm, denorm, norm))));
-}
-
 Id EmitPackUfloat10_11_11(EmitContext& ctx, Id value) {
     // No SPIR-V instruction for this, do it manually.
     const auto x{ctx.OpCompositeExtract(ctx.F32[1], value, 0)};
     const auto y{ctx.OpCompositeExtract(ctx.F32[1], value, 1)};
     const auto z{ctx.OpCompositeExtract(ctx.F32[1], value, 2)};
 
-    auto result = Float32ToUfloatM5(ctx, x, 6U);
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, Float32ToUfloatM5(ctx, y, 6U),
-                                  ctx.ConstU32(11U), ctx.ConstU32(11U));
-    result = ctx.OpBitFieldInsert(ctx.U32[1], result, Float32ToUfloatM5(ctx, z, 5U),
-                                  ctx.ConstU32(22U), ctx.ConstU32(10U));
+    const auto cvt_x{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf11, x)};
+    const auto cvt_y{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf11, y)};
+    const auto cvt_z{ctx.OpFunctionCall(ctx.U32[1], ctx.f32_to_uf10, z)};
+
+    auto result = cvt_x;
+    result = ctx.OpBitFieldInsert(ctx.U32[1], result, cvt_y, ctx.ConstU32(11U), ctx.ConstU32(11U));
+    result = ctx.OpBitFieldInsert(ctx.U32[1], result, cvt_z, ctx.ConstU32(22U), ctx.ConstU32(10U));
     return result;
-}
-
-Id UfloatM5ToFloat32(EmitContext& ctx, Id value, u32 mantissa_bits) {
-    const auto raw_mantissa{
-        ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(0U), ctx.ConstU32(mantissa_bits))};
-    const auto raw_exponent{
-        ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(mantissa_bits), ctx.ConstU32(5U))};
-
-    const auto is_exp_max{ctx.OpIEqual(ctx.U1[1], raw_exponent, ctx.ConstU32(31u))};
-    const auto is_exp_min{ctx.OpIEqual(ctx.U1[1], raw_exponent, ctx.ConstU32(0u))};
-
-    const auto is_zero{ctx.OpIEqual(ctx.U1[1], value, ctx.ConstU32(0u))};
-    const auto is_nan{ctx.OpLogicalAnd(ctx.U1[1], is_exp_max,
-                                       ctx.OpINotEqual(ctx.U1[1], raw_mantissa, ctx.ConstU32(0u)))};
-    const auto is_inf{ctx.OpLogicalAnd(ctx.U1[1], is_exp_max,
-                                       ctx.OpIEqual(ctx.U1[1], raw_mantissa, ctx.ConstU32(0u)))};
-    const auto is_denorm{ctx.OpLogicalAnd(
-        ctx.U1[1], is_exp_min, ctx.OpINotEqual(ctx.U1[1], raw_mantissa, ctx.ConstU32(0u)))};
-
-    const auto mantissa{ctx.OpConvertUToF(ctx.F32[1], raw_mantissa)};
-    const auto exponent{
-        ctx.OpFSub(ctx.F32[1], ctx.OpConvertUToF(ctx.F32[1], raw_exponent), ctx.ConstF32(15.f))};
-
-    const auto denorm{ctx.OpFMul(ctx.F32[1], mantissa, ctx.ConstF32(1.f / (1 << 20)))};
-    const auto norm{ctx.OpFMul(
-        ctx.F32[1],
-        ctx.OpFAdd(ctx.F32[1],
-                   ctx.OpFMul(ctx.F32[1], mantissa,
-                              ctx.ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
-                   ctx.ConstF32(1.f)),
-        ctx.OpExp2(ctx.F32[1], exponent))};
-
-    return ctx.OpSelect(
-        ctx.F32[1], is_zero, ctx.ConstF32(0.f),
-        ctx.OpSelect(ctx.F32[1], is_nan, ctx.ConstF32(NAN),
-                     ctx.OpSelect(ctx.F32[1], is_inf, ctx.ConstF32(INFINITY),
-                                  ctx.OpSelect(ctx.F32[1], is_denorm, denorm, norm))));
 }
 
 Id EmitUnpackUfloat10_11_11(EmitContext& ctx, Id value) {
@@ -274,8 +177,11 @@ Id EmitUnpackUfloat10_11_11(EmitContext& ctx, Id value) {
     const auto y{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(11U), ctx.ConstU32(11U))};
     const auto z{ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.ConstU32(22U), ctx.ConstU32(10U))};
 
-    return ctx.OpCompositeConstruct(ctx.F32[3], UfloatM5ToFloat32(ctx, x, 6U),
-                                    UfloatM5ToFloat32(ctx, y, 6U), UfloatM5ToFloat32(ctx, z, 5U));
+    const auto cvt_x{ctx.OpFunctionCall(ctx.F32[1], ctx.uf11_to_f32, x)};
+    const auto cvt_y{ctx.OpFunctionCall(ctx.F32[1], ctx.uf11_to_f32, y)};
+    const auto cvt_z{ctx.OpFunctionCall(ctx.F32[1], ctx.uf10_to_f32, z)};
+
+    return ctx.OpCompositeConstruct(ctx.F32[3], cvt_x, cvt_y, cvt_z);
 }
 
 Id EmitPackUnorm2_10_10_10(EmitContext& ctx, Id value) {
