@@ -1464,45 +1464,6 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
-			<source>Unknown</source>
-			<translation>Ukjent</translation>
-		</message>
-		<message>
-			<source>Nothing</source>
-			<translation>Ingenting</translation>
-		</message>
-		<message>
-			<source>Boots</source>
-			<translation>Starter opp</translation>
-		</message>
-		<message>
-			<source>Menus</source>
-			<translation>Meny</translation>
-		</message>
-		<message>
-			<source>Ingame</source>
-			<translation>I spill</translation>
-		</message>
-		<message>
-			<source>Playable</source>
-			<translation>Spillbar</translation>
-		</message>
-		<message>
-			<source>Fetching compatibility data, please wait</source>
-			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
-		</message>
-		<message>
-			<source>Cancel</source>
-			<translation>Avbryt</translation>
-		</message>
-		<message>
-			<source>Loading...</source>
-			<translation>Laster...</translation>
-		</message>
-	</context>
-	<context>
-		<name>CompatibilityInfoClass</name>
-		<message>
 			<source>Fetching compatibility data, please wait</source>
 			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
 		</message>
@@ -1528,7 +1489,7 @@
 		</message>
 		<message>
 			<source>Unknown</source>
-			<translation>Ukendt</translation>
+			<translation>Ukjent</translation>
 		</message>
 		<message>
 			<source>Nothing</source>
@@ -1536,7 +1497,7 @@
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>Støvler</translation>
+			<translation>Starter opp</translation>
 		</message>
 		<message>
 			<source>Menus</source>
@@ -1549,10 +1510,6 @@
 		<message>
 			<source>Playable</source>
 			<translation>Spillbar</translation>
-		</message>
-		<message>
-			<source>Unknown</source>
-			<translation>Ukendt</translation>
 		</message>
 	</context>
 </TS>

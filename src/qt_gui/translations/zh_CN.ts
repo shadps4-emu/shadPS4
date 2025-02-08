@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1453,33 +1453,6 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
-			<source>Unknown</source>
-			<translation>未知</translation>
-		</message>
-		<message>
-			<source>Nothing</source>
-			<translation>无法启动</translation>
-		</message>
-		<message>
-			<source>Boots</source>
-			<translation>可启动</translation>
-		</message>
-		<message>
-			<source>Menus</source>
-			<translation>可进入菜单</translation>
-		</message>
-		<message>
-			<source>Ingame</source>
-			<translation>可进入游戏内</translation>
-		</message>
-		<message>
-			<source>Playable</source>
-			<translation>可通关</translation>
-		</message>
-	</context>
-	<context>
-		<name>CompatibilityInfoClass</name>
-		<message>
 			<source>Fetching compatibility data, please wait</source>
 			<translation>正在获取兼容性数据，请稍等</translation>
 		</message>
@@ -1509,27 +1482,23 @@
 		</message>
 		<message>
 			<source>Nothing</source>
-			<translation>没有</translation>
+			<translation>无法启动</translation>
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>靴子</translation>
+			<translation>可启动</translation>
 		</message>
 		<message>
 			<source>Menus</source>
-			<translation>菜单</translation>
+			<translation>可进入菜单</translation>
 		</message>
 		<message>
 			<source>Ingame</source>
-			<translation>游戏内</translation>
+			<translation>可进入游戏内</translation>
 		</message>
 		<message>
 			<source>Playable</source>
-			<translation>可玩</translation>
-		</message>
-		<message>
-			<source>Unknown</source>
-			<translation>未知</translation>
+			<translation>可通关</translation>
 		</message>
 	</context>
 </TS>

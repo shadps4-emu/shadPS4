@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="sv_SE">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
@@ -362,57 +362,6 @@
     <message>
         <source>Failed to create the update script file</source>
         <translation>Misslyckades med att skapa uppdateringsskriptfil</translation>
-    </message>
-</context>
-<context>
-    <name>CompatibilityInfoClass</name>
-    <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Hämtar kompatibilitetsdata, vänta</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Avbryt</translation>
-    </message>
-    <message>
-        <source>Loading...</source>
-        <translation>Läser in...</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation>Fel</translation>
-    </message>
-    <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
-    </message>
-    <message>
-        <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>Okänt</translation>
-    </message>
-    <message>
-        <source>Nothing</source>
-        <translation>Ingenting</translation>
-    </message>
-    <message>
-        <source>Boots</source>
-        <translation>Startar upp</translation>
-    </message>
-    <message>
-        <source>Menus</source>
-        <translation>Menyer</translation>
-    </message>
-    <message>
-        <source>Ingame</source>
-        <translation>Problem</translation>
-    </message>
-    <message>
-        <source>Playable</source>
-        <translation>Spelbart</translation>
     </message>
 </context>
 <context>
@@ -1572,10 +1521,6 @@
         <source>browseButton</source>
         <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
     </message>
-    <message>
-        <source>GUI</source>
-        <translation>Gränssnitt</translation>
-    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
@@ -1596,7 +1541,7 @@
 	</message>
 	<message>
 		<source>Loading...</source>
-		<translation>Laddar...</translation>
+		<translation>Läser in...</translation>
 	</message>
 	<message>
 		<source>Error</source>
@@ -1604,11 +1549,11 @@
 	</message>
 	<message>
 		<source>Unable to update compatibility data! Try again later.</source>
-		<translation>Det går inte att uppdatera kompatibilitetsdata! Försök igen senare.</translation>
+		<translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
 	</message>
 	<message>
 		<source>Unable to open compatibility_data.json for writing.</source>
-		<translation>Kan inte öppna compatibility_data.json för skrivning.</translation>
+		<translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
 	</message>
 	<message>
 		<source>Unknown</source>
@@ -1616,11 +1561,11 @@
 	</message>
 	<message>
 		<source>Nothing</source>
-		<translation>Inget</translation>
+		<translation>Ingenting</translation>
 	</message>
 	<message>
 		<source>Boots</source>
-		<translation>Stövlar</translation>
+		<translation>Startar upp</translation>
 	</message>
 	<message>
 		<source>Menus</source>
@@ -1632,11 +1577,7 @@
 	</message>
 	<message>
 		<source>Playable</source>
-		<translation>Spelbar</translation>
-	</message>
-	<message>
-		<source>Unknown</source>
-		<translation>Okänt</translation>
+		<translation>Spelbart</translation>
 	</message>
 </context>
 </TS>
