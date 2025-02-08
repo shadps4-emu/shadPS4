@@ -637,7 +637,7 @@
 			<translation>图像</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>界面</translation>
 		</message>
 		<message>
@@ -1311,6 +1311,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>游戏能在可玩的性能下通关且没有重大 Bug</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>点击查看 GitHub 上的详细信息</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>最后更新</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1467,6 +1475,61 @@
 		<message>
 			<source>Playable</source>
 			<translation>可通关</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>正在获取兼容性数据，请稍等</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>取消</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>加载中...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>错误</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>无法更新兼容性数据！稍后再试。</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>无法打开 compatibility_data.json 进行写入。</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>未知</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>没有</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>靴子</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>菜单</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>游戏内</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>可玩</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>未知</translation>
 		</message>
 	</context>
 </TS>

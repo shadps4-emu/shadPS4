@@ -697,7 +697,7 @@
         <translation>Графика</translation>
     </message>
     <message>
-        <source>Gui</source>
+        <source>GUI</source>
         <translation>Интерфейс</translation>
     </message>
     <message>
@@ -1422,14 +1422,14 @@
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Игра может быть пройдена с хорошей производительностью и без серьезных сбоев</translation>
     </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation>Нажмите, чтобы перейти к проблеме</translation>
-    </message>
-    <message>
-        <source>Last updated</source>
-        <translation>Последнее обновление</translation>
-    </message>
+	<message>
+		<source>Click to see details on github</source>
+		<translation>Нажмите, чтобы увидеть детали на GitHub</translation>
+	</message>
+	<message>
+		<source>Last updated</source>
+		<translation>Последнее обновление</translation>
+	</message>
 </context>
 <context>
     <name>CheckUpdate</name>
@@ -1584,8 +1584,8 @@
         <translation>Не удалось обновить данные совместимости! Повторите попытку позже.</translation>
     </message>
     <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation>Не удалось открыть файл compatibility.json для записи.</translation>
+        <source>Unable to open compatibility_data.json for writing.</source>
+        <translation>Не удалось открыть файл compatibility_data.json для записи.</translation>
     </message>
     <message>
         <source>Unknown</source>
@@ -1611,5 +1611,60 @@
         <source>Playable</source>
         <translation>Играбельно</translation>
     </message>
+</context>
+<context>
+	<name>CompatibilityInfoClass</name>
+	<message>
+		<source>Fetching compatibility data, please wait</source>
+		<translation>Загрузка данных о совместимости, пожалуйста подождите</translation>
+	</message>
+	<message>
+		<source>Cancel</source>
+		<translation>Отменить</translation>
+	</message>
+	<message>
+		<source>Loading...</source>
+		<translation>Загрузка...</translation>
+	</message>
+	<message>
+		<source>Error</source>
+		<translation>Ошибка</translation>
+	</message>
+	<message>
+		<source>Unable to update compatibility data! Try again later.</source>
+		<translation>Не удалось обновить данные о совместимости! Попробуйте позже.</translation>
+	</message>
+	<message>
+		<source>Unable to open compatibility_data.json for writing.</source>
+		<translation>Не удается открыть compatibility_data.json для записи.</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Неизвестно</translation>
+	</message>
+	<message>
+		<source>Nothing</source>
+		<translation>Ничего</translation>
+	</message>
+	<message>
+		<source>Boots</source>
+		<translation>Ботинки</translation>
+	</message>
+	<message>
+		<source>Menus</source>
+		<translation>Меню</translation>
+	</message>
+	<message>
+		<source>Ingame</source>
+		<translation>В игре</translation>
+	</message>
+	<message>
+		<source>Playable</source>
+		<translation>Играбельно</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Неизвестно</translation>
+	</message>
 </context>
 </TS>

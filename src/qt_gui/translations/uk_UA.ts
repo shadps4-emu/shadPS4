@@ -1375,6 +1375,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Гру можна пройти з хорошою продуктивністю та без серйозних глюків.</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Натисніть, щоб переглянути деталі на GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Останнє оновлення</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1529,8 +1537,8 @@
         	<translation>Не вдалося оновити дані про сумісність! Спробуйте ще раз пізніше.</translation>
     	</message>
     	<message>
-        	<source>Unable to open compatibility.json for writing.</source>
-        	<translation>Не вдалося відкрити файл compatibility.json для запису.</translation>
+        	<source>Unable to open compatibility_data.json for writing.</source>
+        	<translation>Не вдалося відкрити файл compatibility_data.json для запису.</translation>
     	</message>
 		<message>
 			<source>Unknown</source>
@@ -1555,6 +1563,61 @@
 		<message>
 			<source>Playable</source>
 			<translation>Іграбельно</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Завантаження даних про сумісність, будь ласка, зачекайте</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Скасувати</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Завантаження...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Помилка</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Не вдалося оновити дані про сумісність! Спробуйте пізніше.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Не вдалося відкрити compatibility_data.json для запису.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Невідомо</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Нічого</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Чоботи</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Меню</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>У грі</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Іграбельно</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Невідомо</translation>
 		</message>
 	</context>
 </TS>

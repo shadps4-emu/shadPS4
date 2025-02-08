@@ -653,7 +653,7 @@
 			<translation>Grafik</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Benutzeroberfläche</translation>
 		</message>
 		<message>
@@ -1302,6 +1302,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Spiel kann mit spielbarer Leistung und keinen großen Störungen abgeschlossen werden</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Klicken Sie hier, um Details auf GitHub zu sehen</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Zuletzt aktualisiert</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1458,6 +1466,61 @@
 		<message>
 			<source>Playable</source>
 			<translation>Spielbar</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Lade Kompatibilitätsdaten, bitte warten</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Abbrechen</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Lädt...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Fehler</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Kompatibilitätsdaten konnten nicht aktualisiert werden! Versuchen Sie es später erneut.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Kann compatibility_data.json nicht zum Schreiben öffnen.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Unbekannt</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nichts</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Stiefel</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menüs</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Im Spiel</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spielbar</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Unbekannt</translation>
 		</message>
 	</context>
 </TS>

@@ -387,8 +387,8 @@
         <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
     </message>
     <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation>Kunde inte öppna compatibility.json för skrivning.</translation>
+        <source>Unable to open compatibility_data.json for writing.</source>
+        <translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
     </message>
     <message>
         <source>Unknown</source>
@@ -542,14 +542,14 @@
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Spelet kan spelas klart med spelbar prestanda och utan större problem</translation>
     </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation>Klicka för att gå till problem</translation>
-    </message>
-    <message>
-        <source>Last updated</source>
-        <translation>Senast uppdaterad</translation>
-    </message>
+	<message>
+		<source>Click to see details on github</source>
+		<translation>Klicka för att se detaljer på GitHub</translation>
+	</message>
+	<message>
+		<source>Last updated</source>
+		<translation>Senast uppdaterad</translation>
+	</message>
 </context>
 <context>
     <name>GameListUtils</name>
@@ -1181,7 +1181,7 @@
         <translation>Grafik</translation>
     </message>
     <message>
-        <source>Gui</source>
+        <source>GUI</source>
         <translation>Gränssnitt</translation>
     </message>
     <message>
@@ -1583,5 +1583,60 @@
         <source>Trophy Viewer</source>
         <translation>Trofé-visare</translation>
     </message>
+</context>
+<context>
+	<name>CompatibilityInfoClass</name>
+	<message>
+		<source>Fetching compatibility data, please wait</source>
+		<translation>Hämtar kompatibilitetsdata, vänligen vänta</translation>
+	</message>
+	<message>
+		<source>Cancel</source>
+		<translation>Avbryt</translation>
+	</message>
+	<message>
+		<source>Loading...</source>
+		<translation>Laddar...</translation>
+	</message>
+	<message>
+		<source>Error</source>
+		<translation>Fel</translation>
+	</message>
+	<message>
+		<source>Unable to update compatibility data! Try again later.</source>
+		<translation>Det går inte att uppdatera kompatibilitetsdata! Försök igen senare.</translation>
+	</message>
+	<message>
+		<source>Unable to open compatibility_data.json for writing.</source>
+		<translation>Kan inte öppna compatibility_data.json för skrivning.</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Okänt</translation>
+	</message>
+	<message>
+		<source>Nothing</source>
+		<translation>Inget</translation>
+	</message>
+	<message>
+		<source>Boots</source>
+		<translation>Stövlar</translation>
+	</message>
+	<message>
+		<source>Menus</source>
+		<translation>Menyer</translation>
+	</message>
+	<message>
+		<source>Ingame</source>
+		<translation>I spelet</translation>
+	</message>
+	<message>
+		<source>Playable</source>
+		<translation>Spelbar</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Okänt</translation>
+	</message>
 </context>
 </TS>

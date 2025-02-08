@@ -637,7 +637,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Gui</translation>
 		</message>
 		<message>
@@ -1311,6 +1311,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Click to see details on GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Last updated</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1445,6 +1453,30 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Fetching compatibility data, please wait</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Cancel</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Loading...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Error</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Unable to update compatibility data! Try again later.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Unable to open compatibility_data.json for writing.</translation>
+		</message>
+		<message>
 			<source>Unknown</source>
 			<translation>Unknown</translation>
 		</message>
@@ -1467,6 +1499,10 @@
 		<message>
 			<source>Playable</source>
 			<translation>Playable</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Unknown</translation>
 		</message>
 	</context>
 </TS>

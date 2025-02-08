@@ -629,7 +629,7 @@
 			<translation>Grafika</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Ndërfaqja</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Kliko për të parë detajet në GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Përditësimi i fundit</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,61 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Po merrni të dhënat e pajtueshmërisë, ju lutemi prisni</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Anulo</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Po ngarkohet...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Gabim</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Nuk mund të përditësohen të dhënat e pajtueshmërisë! Provoni përsëri më vonë.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Nuk mund të hapet compatibility_data.json për të shkruar.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Jo i njohur</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Asgjë</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Çizme</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menutë</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Në lojë</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>I luajtshëm</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Jo i njohur</translation>
 		</message>
 	</context>
 </TS>

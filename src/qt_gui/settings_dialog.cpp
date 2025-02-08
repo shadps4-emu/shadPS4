@@ -159,14 +159,18 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                 });
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-        connect(ui->enableCompatibilityCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+        connect(ui->enableCompatibilityCheckBox, &QCheckBox::stateChanged, this,
+                [this, m_compat_info](int state) {
 #else
         connect(ui->enableCompatibilityCheckBox, &QCheckBox::checkStateChanged, this,
-                [this](Qt::CheckState state) {
+                [this, m_compat_info](Qt::CheckState state) {
 #endif
-            Config::setCompatibilityEnabled(state);
-            emit CompatibilityChanged();
-        });
+                    Config::setCompatibilityEnabled(state);
+                    if (state) {
+                        m_compat_info->LoadCompatibilityFile();
+                    }
+                    emit CompatibilityChanged();
+                });
     }
 
     // Gui TAB

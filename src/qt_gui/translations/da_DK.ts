@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interface</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Klik for at se detaljer på GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Sidst opdateret</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,61 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Henter kompatibilitetsdata, vent venligst</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Annuller</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Indlæser...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Fejl</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Kan ikke opdatere kompatibilitetsdata! Prøv igen senere.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Kan ikke åbne compatibility_data.json til skrivning.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Ukendt</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Intet</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Støvler</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menuer</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>I spillet</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Spilbar</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Ukendt</translation>
 		</message>
 	</context>
 </TS>
