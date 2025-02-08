@@ -51,6 +51,7 @@ void SetUseUnifiedInputConfig(bool use);
 u32 getScreenWidth();
 u32 getScreenHeight();
 s32 getGpuId();
+bool allowHDR();
 
 bool debugDump();
 bool collectShadersForDebug();
