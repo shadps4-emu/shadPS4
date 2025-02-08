@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="fr">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1420,33 +1420,6 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
-			<source>Unknown</source>
-			<translation>Inconnu</translation>
-		</message>
-		<message>
-			<source>Nothing</source>
-			<translation>Rien</translation>
-		</message>
-		<message>
-			<source>Boots</source>
-			<translation>Démarre</translation>
-		</message>
-		<message>
-			<source>Menus</source>
-			<translation>Menu</translation>
-		</message>
-		<message>
-			<source>Ingame</source>
-			<translation>En jeu</translation>
-		</message>
-		<message>
-			<source>Playable</source>
-			<translation>Jouable</translation>
-		</message>
-	</context>
-	<context>
-		<name>CompatibilityInfoClass</name>
-		<message>
 			<source>Fetching compatibility data, please wait</source>
 			<translation>Récupération des données de compatibilité, veuillez patienter</translation>
 		</message>
@@ -1480,11 +1453,11 @@
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>Bottes</translation>
+			<translation>Démarre</translation>
 		</message>
 		<message>
 			<source>Menus</source>
-			<translation>Menus</translation>
+			<translation>Menu</translation>
 		</message>
 		<message>
 			<source>Ingame</source>
@@ -1493,10 +1466,6 @@
 		<message>
 			<source>Playable</source>
 			<translation>Jouable</translation>
-		</message>
-		<message>
-			<source>Unknown</source>
-			<translation>Inconnu</translation>
 		</message>
 	</context>
 </TS>

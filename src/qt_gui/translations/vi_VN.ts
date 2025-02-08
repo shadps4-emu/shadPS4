@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="vi_VN">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
              SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1466,10 +1466,6 @@
 		<message>
 			<source>Playable</source>
 			<translation>Có thể chơi</translation>
-		</message>
-		<message>
-			<source>Unknown</source>
-			<translation>Không xác định</translation>
 		</message>
 	</context>
 </TS>
