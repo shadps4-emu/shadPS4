@@ -214,6 +214,9 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     features = feature_chain.get().features;
+#ifdef __APPLE__
+    portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+#endif
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDeviceVulkan11Properties,
@@ -282,7 +285,7 @@ bool Instance::CreateDevice() {
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
-    add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+    portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
@@ -403,7 +406,7 @@ bool Instance::CreateDevice() {
             .legacyVertexAttributes = true,
         },
 #ifdef __APPLE__
-        feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
+        portability_features,
 #endif
     };
 

@@ -149,6 +149,16 @@ public:
         return features.tessellationShader;
     }
 
+    /// Returns true when tessellation isolines are supported by the device
+    bool IsTessellationIsolinesSupported() const {
+        return !portability_subset || portability_features.tessellationIsolines;
+    }
+
+    /// Returns true when tessellation point mode is supported by the device
+    bool IsTessellationPointModeSupported() const {
+        return !portability_subset || portability_features.tessellationPointMode;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -285,6 +295,7 @@ private:
     vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
+    vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -308,6 +319,7 @@ private:
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
     bool tooling_info{};
+    bool portability_subset{};
 };
 
 } // namespace Vulkan
