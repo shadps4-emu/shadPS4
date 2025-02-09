@@ -205,48 +205,57 @@ int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream) {
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerHaltWavefront() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerReadGds() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerReadSqIndirectRegister() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerResumeWavefront() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerResumeWavefrontCreation() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerSetAddressWatch() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerWriteGds() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebuggerWriteSqIndirectRegister() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
@@ -751,57 +760,68 @@ int PS4_SYSV_ABI sceGnmDrawOpaqueAuto() {
 
 bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
     LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return false;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuDebugger() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuDebugger() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuException() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuException() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForHDRScopes() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForHDRScopes() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForReplay() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForReplay() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForResourceRegistration() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForResourceRegistration() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0x80000000;
 }
 
 int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDriverTraceInProgress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+bool PS4_SYSV_ABI sceGnmDriverTraceInProgress() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return false;
 }
 
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_CAPTURE_RAZOR_NOT_LOADED;
 }
 
 int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload) {
@@ -813,7 +833,8 @@ int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload) {
 
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return ORBIS_GNM_ERROR_FAILURE; // not available in retail FW
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 void PS4_SYSV_ABI sceGnmFlushGarlic() {
@@ -836,8 +857,9 @@ int PS4_SYSV_ABI sceGnmGetCoredumpProtectionFaultTimestamp() {
 }
 
 int PS4_SYSV_ABI sceGnmGetDbgGcHandle() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmGetDebugTimestamp() {
@@ -856,7 +878,8 @@ int PS4_SYSV_ABI sceGnmGetEqTimeStamp() {
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuBlockStatus() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
@@ -867,12 +890,14 @@ u32 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuInfoStatus() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmGetLastWaitedAddress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
@@ -887,52 +912,62 @@ int PS4_SYSV_ABI sceGnmGetOffChipTessellationBufferSize() {
 }
 
 int PS4_SYSV_ABI sceGnmGetOwnerName() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetPhysicalCounterFromVirtualized() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
-int PS4_SYSV_ABI sceGnmGetProtectionFaultTimeStamp() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmGetProtectionFaultTimeStamp() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return 0;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceBaseAddressAndSizeInBytes() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceName() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceShaderGuid() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceType() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceUserData() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetShaderProgramBaseAddress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmGetShaderStatus() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
@@ -941,14 +976,14 @@ VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
     return tessellation_factors_ring_addr;
 }
 
-int PS4_SYSV_ABI sceGnmGpuPaDebugEnter() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmGpuPaDebugEnter() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
 }
 
-int PS4_SYSV_ABI sceGnmGpuPaDebugLeave() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmGpuPaDebugLeave() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
 }
 
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker() {
@@ -1039,7 +1074,8 @@ s32 PS4_SYSV_ABI sceGnmInsertSetMarker(u32* cmdbuf, u32 size, const char* marker
 }
 
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
@@ -1069,9 +1105,10 @@ int PS4_SYSV_ABI sceGnmIsCoredumpValid() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmIsUserPaEnabled() {
+bool PS4_SYSV_ABI sceGnmIsUserPaEnabled() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return 0; // PA Debug is always disabled in retail FW
+    // Not available in retail firmware
+    return false;
 }
 
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex() {
@@ -1136,50 +1173,58 @@ int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VA
 }
 
 int PS4_SYSV_ABI sceGnmPaDisableFlipCallbacks() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmPaEnableFlipCallbacks() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmPaHeartbeat() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmQueryResourceRegistrationUserMemoryRequirements() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmRaiseUserExceptionEvent() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmRegisterGdsResource() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
-int PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
 }
 
 s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
                                         size_t size, const char* name, int res_type,
                                         u64 user_data) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone() {
@@ -1215,43 +1260,51 @@ s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size) {
 }
 
 int PS4_SYSV_ABI sceGnmSdmaClose() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaConstFill() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaCopyLinear() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaCopyTiled() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaCopyWindow() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaFlush() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaGetMinCmdSize() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSdmaOpen() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 s32 PS4_SYSV_ABI sceGnmSetCsShader(u32* cmdbuf, u32 size, const u32* cs_regs) {
@@ -1638,23 +1691,27 @@ s32 PS4_SYSV_ABI sceGnmSetPsShader350(u32* cmdbuf, u32 size, const u32* ps_regs)
 }
 
 int PS4_SYSV_ABI sceGnmSetResourceRegistrationUserMemory() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSetResourceUserData() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSetSpiEnableSqCounters() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSetSpiEnableSqCountersForUnitInstance() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSetupMipStatsReport() {
@@ -1737,188 +1794,225 @@ int PS4_SYSV_ABI sceGnmSetWaveLimitMultipliers() {
 }
 
 int PS4_SYSV_ABI sceGnmSpmEndSpm() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmInit() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmInit2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetDelay() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetMuxRam() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetMuxRam2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetSelectCounter() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetSpmSelects() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmSetSpmSelects2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSpmStartSpm() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttFini() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttFinishTrace() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetBcInfo() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetGpuClocks() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetHiWater() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetStatus() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetTraceCounter() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetTraceWptr() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetWrapCounts() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetWrapCounts2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttGetWritebackLabels() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttInit() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSelectMode() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSelectTarget() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSelectTokens() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetCuPerfMask() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetDceEventWrite() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetHiWater() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetTraceBuffer2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetTraceBuffers() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetUserData() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSetUserdataTimer() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttStartTrace() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttStopTrace() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmSqttWaitForEvent() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf_idx, u32 flip_mode,
@@ -2165,18 +2259,21 @@ int PS4_SYSV_ABI sceGnmUnmapComputeQueue() {
 }
 
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmUnregisterOwnerAndResources() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmUnregisterResource() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 s32 PS4_SYSV_ABI sceGnmUpdateGsShader(u32* cmdbuf, u32 size, const u32* gs_regs) {
@@ -2343,82 +2440,98 @@ s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
 
 s32 PS4_SYSV_ABI sceGnmValidateCommandBuffers() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED; // not available in retail FW;
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics2() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateDispatchCommandBuffers() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateDrawCommandBuffers() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateGetDiagnosticInfo() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateGetDiagnostics() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidateGetVersion() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceGnmValidateOnSubmitEnabled() {
     LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return 0;
 }
 
+bool PS4_SYSV_ABI sceGnmValidateOnSubmitEnabled() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return false;
+}
+
 int PS4_SYSV_ABI sceGnmValidateResetState() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceGnmValidationRegisterMemoryCheckCallback() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED;
 }
 
 int PS4_SYSV_ABI sceRazorCaptureCommandBuffersOnlyImmediate() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_CAPTURE_FAILED_INTERNAL;
 }
 
 int PS4_SYSV_ABI sceRazorCaptureCommandBuffersOnlySinceLastFlip() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_CAPTURE_FAILED_INTERNAL;
 }
 
 int PS4_SYSV_ABI sceRazorCaptureImmediate() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_CAPTURE_FAILED_INTERNAL;
 }
 
 int PS4_SYSV_ABI sceRazorCaptureSinceLastFlip() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_CAPTURE_FAILED_INTERNAL;
 }
 
-int PS4_SYSV_ABI sceRazorIsLoaded() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+bool PS4_SYSV_ABI sceRazorIsLoaded() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return false;
 }
 
 int PS4_SYSV_ABI Func_063D065A2D6359C3() {
@@ -2587,13 +2700,15 @@ int PS4_SYSV_ABI Func_ECB4C6BA41FE3350() {
 }
 
 int PS4_SYSV_ABI sceGnmDebugModuleReset() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmDebugReset() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI Func_C4C328B7CF3B4171() {
@@ -2612,18 +2727,21 @@ int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize() {
 }
 
 int PS4_SYSV_ABI sceGnmFindResources() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmGetResourceRegistrationBuffers() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI sceGnmRegisterOwnerForSystem() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
+    return ORBIS_GNM_ERROR_FAILURE;
 }
 
 int PS4_SYSV_ABI Func_1C43886B16EE5530() {
