@@ -27,7 +27,6 @@ struct BufferSpecialization {
     u32 num_format : 4;
     u32 index_stride : 2;
     u32 element_size : 2;
-    u32 size = 0;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
 
@@ -38,8 +37,7 @@ struct BufferSpecialization {
                 (data_format == other.data_format && num_format == other.num_format &&
                  dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
                (!swizzle_enable ||
-                (index_stride == other.index_stride && element_size == other.element_size)) &&
-               (size >= other.is_storage || is_storage);
+                (index_stride == other.index_stride && element_size == other.element_size));
     }
 };
 
@@ -121,9 +119,6 @@ struct StageSpecialization {
                          if (spec.swizzle_enable) {
                              spec.index_stride = sharp.index_stride;
                              spec.element_size = sharp.element_size;
-                         }
-                         if (!spec.is_storage) {
-                             spec.size = sharp.GetSize();
                          }
                      });
         ForEachSharp(binding, images, info->images,
