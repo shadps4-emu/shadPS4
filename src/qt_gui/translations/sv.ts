@@ -999,7 +999,7 @@
     </message>
     <message>
         <source>File</source>
-        <translation>Fil</translation>
+        <translation>Arkiv</translation>
     </message>
     <message>
         <source>View</source>
