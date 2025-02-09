@@ -125,6 +125,14 @@
 			<translation>Kopjo Serikun</translation>
 		</message>
 		<message>
+			<source>Copy Version</source>
+			<translation>Kopjo Versionin</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>Kopjo Madhësinë</translation>		 
+	 	</message>
+		<message>
 			<source>Copy All</source>
 			<translation>Kopjo të Gjitha</translation>
 		</message>
@@ -702,23 +710,23 @@
 		</message>
 		<message>
 			<source>Enable Crash Diagnostics</source>
-			<translation>Enable Crash Diagnostics</translation>
+			<translation>Aktivizo Diagnozën e Rënies</translation>
 		</message>
 		<message>
 			<source>Collect Shaders</source>
-			<translation>Collect Shaders</translation>
+			<translation>Mblidh Shader-at</translation>
 		</message>
 		<message>
 			<source>Copy GPU Buffers</source>
-			<translation>Copy GPU Buffers</translation>
+			<translation>Kopjo buffer-ët e GPU-së</translation>
 		</message>
 		<message>
 			<source>Host Debug Markers</source>
-			<translation>Host Debug Markers</translation>
+			<translation>Shënjuesit e korrigjimit të host-it</translation>
 		</message>
 		<message>
 			<source>Guest Debug Markers</source>
-			<translation>Guest Debug Markers</translation>
+			<translation>Shënjuesit e korrigjimit të guest-it</translation>
 		</message>
 		<message>
 			<source>Update</source>
@@ -742,11 +750,23 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>Muzika e titullit</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
 			<translation>Çaktivizo njoftimet për Trofetë</translation>
+		</message>
+		<message>
+			<source>Background Image</source>
+			<translation>Imazhi i sfondit</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>Shfaq imazhin e sfondit</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>Tejdukshmëria</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -843,6 +863,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Imazhi i Sfondit:\nKontrollo tejdukshmërinë e imazhit të sfondit të lojës.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -954,23 +978,31 @@
 		</message>
 		<message>
 			<source>collectShaderCheckBox</source>
-			<translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+			<translation>Mblidh Shader-at:\nDuhet ta aktivizosh këtë për të redaktuar shader-at me menynë e korrigjimit (Ctrl + F10).</translation>
 		</message>
 		<message>
 			<source>crashDiagnosticsCheckBox</source>
-			<translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+			<translation>Diagnoza e rënies:\nKrijon një skedar .yaml me informacion rreth gjendjes së Vulkan-it në momentin e rënies.\nE dobishme për zgjidhjen e gabimeve 'Device lost'. Nëse e ke aktivizuar këtë, duhet të aktivizosh Shënjuesit e korrigjimit të host-it DHE të guest-it.\nNuk punon me GPU-t Intel.\nDuhet të kesh aktivizuar Shtresat e Vlefshmërisë Vulkan dhe Vulkan SDK që kjo të punojë.</translation>
 		</message>
 		<message>
 			<source>copyGPUBuffersCheckBox</source>
-			<translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+			<translation>Kopjo buffer-ët e GPU-së:\nShmang kushtet e garës (race conditions) që lidhen me dërgimet e GPU-së.\nMund të ndihmojë, ose jo, në rast rëniesh të llojit PM4 0.</translation>
 		</message>
 		<message>
 			<source>hostMarkersCheckBox</source>
-			<translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Shënjuesit e korrigjimit të host-it:\nShton informacion nga ana e emulatorit, si shënjues për komandat specifike AMDGPU rreth komandave Vulkan, si dhe jep burimeve emra korrigjimi.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
 		</message>
 		<message>
 			<source>guestMarkersCheckBox</source>
-			<translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+			<translation>Shënjuesit e korrigjimit të guest-it:\nShton çdo shënjues për korrigjim që loja vetë ka shtuar në buffer-in e komandave.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Shtegu i Ruajtjes së të Dhënave:\nDosja ku do të ruhen të dhënat e ruajtjes së lojës.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Shfleto:\nShfleto për të vendosur një dosje si shteg të ruajtjes së të dhënave.</translation>
 		</message>
 	</context>
 	<context>
@@ -1161,7 +1193,7 @@
 		</message>
 		<message>
 			<source>Incompatibility Notice</source>
-			<translation>Njoftim për papajtueshmëri</translation>
+			<translation>Njoftim për mospërputhje</translation>
 		</message>
 		<message>
 			<source>Failed to open file:</source>
@@ -1284,7 +1316,7 @@
 		</message>
 		<message>
 			<source>Last updated</source>
-			<translation>Përditësimi i fundit</translation>
+			<translation>Përditësuar për herë të fundit</translation>
 		</message>
 	</context>
 	<context>
@@ -1303,7 +1335,7 @@
 		</message>
 		<message>
 			<source>Error_Github_limit_MSG</source>
-			<translation>Përditësuesi Automatik lejon deri në 60 kontrolle për përditësime në orë.\nJu keni arritur këtë kufi. Ju lutemi provoni përsëri më vonë.</translation>
+			<translation>Përditësuesi Automatik lejon deri në 60 kontrolle për përditësime në orë.\nKe arritur këtë kufi. Të lutem provo përsëri më vonë.</translation>
 		</message>
 		<message>
 			<source>Failed to parse update information.</source>
@@ -1421,7 +1453,7 @@
 		<name>CompatibilityInfoClass</name>
 		<message>
 			<source>Fetching compatibility data, please wait</source>
-			<translation>Po merrni të dhënat e pajtueshmërisë, ju lutemi prisni</translation>
+			<translation>Duke marrë të dhënat e përputhshmërisë, të lutem prit</translation>
 		</message>
 		<message>
 			<source>Cancel</source>
@@ -1437,7 +1469,7 @@
 		</message>
 		<message>
 			<source>Unable to update compatibility data! Try again later.</source>
-			<translation>Nuk mund të përditësohen të dhënat e pajtueshmërisë! Provoni përsëri më vonë.</translation>
+			<translation>Nuk mund të përditësohen të dhënat e përputhshmërisë! Provo përsëri më vonë.</translation>
 		</message>
 		<message>
 			<source>Unable to open compatibility_data.json for writing.</source>
@@ -1445,7 +1477,7 @@
 		</message>
 		<message>
 			<source>Unknown</source>
-			<translation>Jo i njohur</translation>
+			<translation>E panjohur</translation>
 		</message>
 		<message>
 			<source>Nothing</source>
@@ -1453,11 +1485,11 @@
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>Çizme</translation>
+			<translation>Niset</translation>
 		</message>
 		<message>
 			<source>Menus</source>
-			<translation>Menutë</translation>
+			<translation>Meny</translation>
 		</message>
 		<message>
 			<source>Ingame</source>
@@ -1465,7 +1497,7 @@
 		</message>
 		<message>
 			<source>Playable</source>
-			<translation>I luajtshëm</translation>
+			<translation>E luajtshme</translation>
 		</message>
 	</context>
 </TS>
