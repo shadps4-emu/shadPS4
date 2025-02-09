@@ -347,7 +347,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
-    ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "General", "isHDRAllowed", false));
+    ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "General", "allowHDR", false));
     ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
