@@ -412,8 +412,10 @@ bool PipelineCache::RefreshGraphicsKey() {
         break;
     }
     case Liverpool::ShaderStageEnable::VgtStages::LsHs: {
-        if (!instance.IsTessellationSupported()) {
-            break;
+        if (!instance.IsTessellationSupported() ||
+            (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
+             !instance.IsTessellationIsolinesSupported())) {
+            return false;
         }
         if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;
