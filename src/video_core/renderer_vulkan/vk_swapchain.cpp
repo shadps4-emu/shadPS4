@@ -102,10 +102,17 @@ void Swapchain::SetHDR(bool hdr) {
     if (needs_hdr == hdr) {
         return;
     }
+
+    auto result = instance.GetDevice().waitIdle();
+    if (result != vk::Result::eSuccess) {
+        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on mode change: {}",
+                    vk::to_string(result));
+    }
+
     needs_hdr = hdr;
     Recreate(width, height);
-    ImGui::Core::OnSurfaceFormatChange(instance.GetDevice(),
-                                 needs_hdr ? SURFACE_FORMAT_HDR.format : surface_format.format);
+    ImGui::Core::OnSurfaceFormatChange(needs_hdr ? SURFACE_FORMAT_HDR.format
+                                                 : surface_format.format);
 }
 
 bool Swapchain::AcquireNextImage() {

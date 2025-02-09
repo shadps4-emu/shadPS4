@@ -391,7 +391,9 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
         auto& game_info = Common::ElfInfo::Instance();
         if (mode->colorimetry == OrbisVideoOutColorimetry::Bt2020PQ &&
             game_info.GetPSFAttributes().support_hdr) {
+            port->is_mode_changing = true;
             presenter->SetHDR(true);
+            port->is_mode_changing = false;
         } else {
             return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
         }

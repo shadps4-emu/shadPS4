@@ -18,7 +18,6 @@ struct Frame;
 namespace Libraries::VideoOut {
 
 struct VideoOutPort {
-    bool is_open = false;
     SceVideoOutResolutionStatus resolution;
     std::array<VideoOutBuffer, MaxDisplayBuffers> buffer_slots;
     std::array<u64, MaxDisplayBuffers> buffer_labels; // should be contiguous in memory
@@ -33,6 +32,8 @@ struct VideoOutPort {
     std::condition_variable vo_cv;
     std::condition_variable vblank_cv;
     int flip_rate = 0;
+    bool is_open = false;
+    bool is_mode_changing = false; // Used to prevent flip during mode change
 
     s32 FindFreeGroup() const {
         s32 index = 0;

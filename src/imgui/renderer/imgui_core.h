@@ -22,7 +22,7 @@ void Initialize(const Vulkan::Instance& instance, const Frontend::WindowSDL& win
 
 void OnResize();
 
-void OnSurfaceFormatChange(const vk::Device& device, vk::Format surface_format);
+void OnSurfaceFormatChange(vk::Format surface_format);
 
 void Shutdown(const vk::Device& device);
 
