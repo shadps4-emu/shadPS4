@@ -69,6 +69,7 @@ void setCollectShaderForDebug(bool enable);
 void setShowSplash(bool enable);
 void setAutoUpdate(bool enable);
 void setNullGpu(bool enable);
+void setAllowHDR(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);
 void setVblankDiv(u32 value);

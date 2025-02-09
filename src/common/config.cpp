@@ -341,6 +341,10 @@ void setNullGpu(bool enable) {
     isNullGpu = enable;
 }
 
+void setAllowHDR(bool enable) {
+    isHDRAllowed = enable;
+}
+
 void setCopyGPUCmdBuffers(bool enable) {
     shouldCopyGPUBuffers = enable;
 }
