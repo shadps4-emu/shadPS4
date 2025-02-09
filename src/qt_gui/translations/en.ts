@@ -727,8 +727,7 @@
 		<message>
 			<source>Guest Debug Markers</source>
 			<translation>Guest Debug Markers</translation>
-		</message>
-		
+		</message>		
 		<message>
 			<source>Update</source>
 			<translation>Update</translation>
