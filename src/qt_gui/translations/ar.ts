@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ar_AR">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>الرسومات</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>واجهة</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>انقر لرؤية التفاصيل على GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>آخر تحديث</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>جاري جلب بيانات التوافق، يرجى الانتظار</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>إلغاء</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>جاري التحميل...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>خطأ</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>تعذر تحديث بيانات التوافق! حاول مرة أخرى لاحقاً.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>تعذر فتح compatibility_data.json للكتابة.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>غير معروف</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>لا شيء</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>أحذية</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>قوائم</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>داخل اللعبة</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>قابل للعب</translation>
 		</message>
 	</context>
 </TS>

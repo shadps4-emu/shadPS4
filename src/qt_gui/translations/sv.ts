@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="sv_SE">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
@@ -365,57 +365,6 @@
     </message>
 </context>
 <context>
-    <name>CompatibilityInfoClass</name>
-    <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Hämtar kompatibilitetsdata, vänta</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Avbryt</translation>
-    </message>
-    <message>
-        <source>Loading...</source>
-        <translation>Läser in...</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation>Fel</translation>
-    </message>
-    <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
-    </message>
-    <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation>Kunde inte öppna compatibility.json för skrivning.</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>Okänt</translation>
-    </message>
-    <message>
-        <source>Nothing</source>
-        <translation>Ingenting</translation>
-    </message>
-    <message>
-        <source>Boots</source>
-        <translation>Startar upp</translation>
-    </message>
-    <message>
-        <source>Menus</source>
-        <translation>Menyer</translation>
-    </message>
-    <message>
-        <source>Ingame</source>
-        <translation>Problem</translation>
-    </message>
-    <message>
-        <source>Playable</source>
-        <translation>Spelbart</translation>
-    </message>
-</context>
-<context>
     <name>ElfViewer</name>
     <message>
         <source>Open Folder</source>
@@ -542,14 +491,14 @@
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Spelet kan spelas klart med spelbar prestanda och utan större problem</translation>
     </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation>Klicka för att gå till problem</translation>
-    </message>
-    <message>
-        <source>Last updated</source>
-        <translation>Senast uppdaterad</translation>
-    </message>
+	<message>
+		<source>Click to see details on github</source>
+		<translation>Klicka för att se detaljer på GitHub</translation>
+	</message>
+	<message>
+		<source>Last updated</source>
+		<translation>Senast uppdaterad</translation>
+	</message>
 </context>
 <context>
     <name>GameListUtils</name>
@@ -1181,7 +1130,7 @@
         <translation>Grafik</translation>
     </message>
     <message>
-        <source>Gui</source>
+        <source>GUI</source>
         <translation>Gränssnitt</translation>
     </message>
     <message>
@@ -1572,10 +1521,6 @@
         <source>browseButton</source>
         <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
     </message>
-    <message>
-        <source>GUI</source>
-        <translation>Gränssnitt</translation>
-    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
@@ -1583,5 +1528,56 @@
         <source>Trophy Viewer</source>
         <translation>Trofé-visare</translation>
     </message>
+</context>
+<context>
+	<name>CompatibilityInfoClass</name>
+	<message>
+		<source>Fetching compatibility data, please wait</source>
+		<translation>Hämtar kompatibilitetsdata, vänligen vänta</translation>
+	</message>
+	<message>
+		<source>Cancel</source>
+		<translation>Avbryt</translation>
+	</message>
+	<message>
+		<source>Loading...</source>
+		<translation>Läser in...</translation>
+	</message>
+	<message>
+		<source>Error</source>
+		<translation>Fel</translation>
+	</message>
+	<message>
+		<source>Unable to update compatibility data! Try again later.</source>
+		<translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
+	</message>
+	<message>
+		<source>Unable to open compatibility_data.json for writing.</source>
+		<translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Okänt</translation>
+	</message>
+	<message>
+		<source>Nothing</source>
+		<translation>Ingenting</translation>
+	</message>
+	<message>
+		<source>Boots</source>
+		<translation>Startar upp</translation>
+	</message>
+	<message>
+		<source>Menus</source>
+		<translation>Menyer</translation>
+	</message>
+	<message>
+		<source>Ingame</source>
+		<translation>I spelet</translation>
+	</message>
+	<message>
+		<source>Playable</source>
+		<translation>Spelbart</translation>
+	</message>
 </context>
 </TS>

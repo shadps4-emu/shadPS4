@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="id">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Antarmuka</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Klik untuk melihat detail di GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Terakhir diperbarui</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Memuat data kompatibilitas, harap tunggu</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Batal</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Memuat...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Kesalahan</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Tidak dapat memperbarui data kompatibilitas! Coba lagi nanti.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Tidak dapat membuka compatibility_data.json untuk menulis.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Tidak Dikenal</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Tidak ada</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Sepatu Bot</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menu</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Dalam Permainan</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Playable</translation>
 		</message>
 	</context>
 </TS>

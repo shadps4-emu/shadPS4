@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_TW">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
              SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>介面</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>點擊查看 GitHub 上的詳細資訊</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>最後更新</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>正在取得相容性資料，請稍候</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>取消</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>載入中...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>錯誤</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>無法更新相容性資料！請稍後再試。</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>無法開啟 compatibility_data.json 進行寫入。</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>未知</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>無</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>靴子</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>選單</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>遊戲內</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>可玩</translation>
 		</message>
 	</context>
 </TS>

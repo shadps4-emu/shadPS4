@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ro_RO">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interfață</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Faceți clic pentru a vedea detalii pe GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Ultima actualizare</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Se colectează datele de compatibilitate, vă rugăm să așteptați</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Anulează</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Se încarcă...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Eroare</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Nu se poate actualiza datele de compatibilitate! Încercați din nou mai târziu.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Nu se poate deschide compatibility_data.json pentru scriere.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Necunoscut</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nimic</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Botine</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Meniuri</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>În joc</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Jucabil</translation>
 		</message>
 	</context>
 </TS>

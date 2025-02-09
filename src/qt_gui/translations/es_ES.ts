@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="es_ES">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Gráficos</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interfaz</translation>
 		</message>
 		<message>
@@ -1294,6 +1294,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Haz clic para ver detalles en GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Última actualización</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1427,6 +1435,30 @@
 	</context>
 	<context>
 		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Obteniendo datos de compatibilidad, por favor espera</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Cancelar</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Cargando...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Error</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>¡No se pudo actualizar los datos de compatibilidad! Intenta de nuevo más tarde.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>No se pudo abrir compatibility_data.json para escribir.</translation>
+		</message>
 		<message>
 			<source>Unknown</source>
 			<translation>Desconocido</translation>

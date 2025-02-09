@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="hu_HU">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Grafika</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Felület</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Kattintson a részletek megtekintéséhez a GitHubon</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Utoljára frissítve</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Kompatibilitási adatok betöltése, kérem várjon</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Megszakítás</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Betöltés...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Hiba</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Nem sikerült frissíteni a kompatibilitási adatokat! Kérem próbálja újra később.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Nem sikerült megnyitni a compatibility_data.json fájlt írásra.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Ismeretlen</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Semmi</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Csizmák</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menük</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Játékban</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Játszható</translation>
 		</message>
 	</context>
 </TS>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -123,6 +123,14 @@
 		<message>
 			<source>Copy Serial</source>
 			<translation>复制序列号</translation>
+		</message>
+		<message>
+			<source>Copy Version</source>
+			<translation>复制版本</translation>
+		</message>
+		<message>
+			<source>Copy Size</source>
+			<translation>复制大小</translation>		 
 		</message>
 		<message>
 			<source>Copy All</source>
@@ -554,7 +562,7 @@
 		</message>
 		<message>
 			<source>Show Game Size In List</source>
-			<translation>显示游戏大小在列表中</translation>
+			<translation>在列表中显示游戏大小</translation>
 		</message>
 		<message>
 			<source>Show Splash</source>
@@ -629,7 +637,7 @@
 			<translation>图像</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>界面</translation>
 		</message>
 		<message>
@@ -743,11 +751,23 @@
 		</message>
 		<message>
 			<source>Title Music</source>
-			<translation>Title Music</translation>
+			<translation>标题音乐</translation>
 		</message>
 		<message>
 			<source>Disable Trophy Pop-ups</source>
 			<translation>禁止弹出奖杯</translation>
+		</message>
+		<message>
+			<source>Background Image</source>
+			<translation>背景图片</translation>
+		</message>
+		<message>
+			<source>Show Background Image</source>
+			<translation>显示背景图片</translation>
+		</message>
+		<message>
+			<source>Opacity</source>
+			<translation>可见度</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -844,6 +864,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>背景图片：\n控制游戏背景图片的可见度。</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -1287,6 +1311,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>游戏能在可玩的性能下通关且没有重大 Bug</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>点击查看 GitHub 上的详细信息</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>最后更新</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1420,6 +1452,30 @@
 	</context>
 	<context>
 		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>正在获取兼容性数据，请稍等</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>取消</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>加载中...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>错误</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>无法更新兼容性数据！稍后再试。</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>无法打开 compatibility_data.json 进行写入。</translation>
+		</message>
 		<message>
 			<source>Unknown</source>
 			<translation>未知</translation>

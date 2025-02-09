@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="fa_IR">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>گرافیک</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>رابط کاربری</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>بازی با عملکرد قابل قبول و بدون اشکالات عمده قابل بازی است.</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>برای مشاهده جزئیات در GitHub کلیک کنید</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>آخرین به‌روزرسانی</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>در حال بارگذاری داده‌های سازگاری، لطفاً صبر کنید</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>لغو</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>در حال بارگذاری...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>خطا</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>ناتوان از بروزرسانی داده‌های سازگاری! لطفاً بعداً دوباره تلاش کنید.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>امکان باز کردن compatibility_data.json برای نوشتن وجود ندارد.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>ناشناخته</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>هیچ چیز</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>چکمه‌ها</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>منوها</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>داخل بازی</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>قابل بازی</translation>
 		</message>
 	</context>
 </TS>

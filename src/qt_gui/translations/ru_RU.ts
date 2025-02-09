@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
@@ -697,7 +697,7 @@
         <translation>Графика</translation>
     </message>
     <message>
-        <source>Gui</source>
+        <source>GUI</source>
         <translation>Интерфейс</translation>
     </message>
     <message>
@@ -1065,10 +1065,6 @@
         <translation>Nightly</translation>
     </message>
     <message>
-        <source>GUI</source>
-        <translation>Интерфейс</translation>
-    </message>
-    <message>
         <source>Set the volume of the background music.</source>
         <translation>Установите громкость фоновой музыки.</translation>
     </message>
@@ -1422,14 +1418,14 @@
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Игра может быть пройдена с хорошей производительностью и без серьезных сбоев</translation>
     </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation>Нажмите, чтобы перейти к проблеме</translation>
-    </message>
-    <message>
-        <source>Last updated</source>
-        <translation>Последнее обновление</translation>
-    </message>
+	<message>
+		<source>Click to see details on github</source>
+		<translation>Нажмите, чтобы увидеть детали на GitHub</translation>
+	</message>
+	<message>
+		<source>Last updated</source>
+		<translation>Последнее обновление</translation>
+	</message>
 </context>
 <context>
     <name>CheckUpdate</name>
@@ -1562,54 +1558,54 @@
     </message>
 </context>
 <context>
-    <name>CompatibilityInfoClass</name>
-    <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Загрузка данных о совместимости, пожалуйста, подождите</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Отмена</translation>
-    </message>
-    <message>
-        <source>Loading...</source>
-        <translation>Загрузка...</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation>Ошибка</translation>
-    </message>
-    <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Не удалось обновить данные совместимости! Повторите попытку позже.</translation>
-    </message>
-    <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation>Не удалось открыть файл compatibility.json для записи.</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>Неизвестно</translation>
-    </message>
-    <message>
-        <source>Nothing</source>
-        <translation>Ничего</translation>
-    </message>
-    <message>
-        <source>Boots</source>
-        <translation>Запускается</translation>
-    </message>
-    <message>
-        <source>Menus</source>
-        <translation>В меню</translation>
-    </message>
-    <message>
-        <source>Ingame</source>
-        <translation>В игре</translation>
-    </message>
-    <message>
-        <source>Playable</source>
-        <translation>Играбельно</translation>
-    </message>
+	<name>CompatibilityInfoClass</name>
+	<message>
+		<source>Fetching compatibility data, please wait</source>
+		<translation>Загрузка данных о совместимости, пожалуйста, подождите</translation>
+	</message>
+	<message>
+		<source>Cancel</source>
+		<translation>Отмена</translation>
+	</message>
+	<message>
+		<source>Loading...</source>
+		<translation>Загрузка...</translation>
+	</message>
+	<message>
+		<source>Error</source>
+		<translation>Ошибка</translation>
+	</message>
+	<message>
+		<source>Unable to update compatibility data! Try again later.</source>
+		<translation>Не удалось обновить данные совместимости! Повторите попытку позже.</translation>
+	</message>
+	<message>
+		<source>Unable to open compatibility_data.json for writing.</source>
+		<translation>Не удалось открыть файл compatibility_data.json для записи.</translation>
+	</message>
+	<message>
+		<source>Unknown</source>
+		<translation>Неизвестно</translation>
+	</message>
+	<message>
+		<source>Nothing</source>
+		<translation>Ничего</translation>
+	</message>
+	<message>
+		<source>Boots</source>
+		<translation>Запускается</translation>
+	</message>
+	<message>
+		<source>Menus</source>
+		<translation>В меню</translation>
+	</message>
+	<message>
+		<source>Ingame</source>
+		<translation>В игре</translation>
+	</message>
+	<message>
+		<source>Playable</source>
+		<translation>Играбельно</translation>
+	</message>
 </context>
 </TS>

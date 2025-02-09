@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="vi_VN">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
              SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Giao diện</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Nhấp để xem chi tiết trên GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Cập nhật lần cuối</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Đang tải dữ liệu tương thích, vui lòng chờ</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Hủy bỏ</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Đang tải...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Lỗi</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Không thể cập nhật dữ liệu tương thích! Vui lòng thử lại sau.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Không thể mở compatibility_data.json để ghi.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Không xác định</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Không có gì</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Giày ủng</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menu</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Trong game</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Có thể chơi</translation>
 		</message>
 	</context>
 </TS>

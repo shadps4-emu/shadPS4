@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ko_KR">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>인터페이스</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>GitHub에서 세부 정보를 보려면 클릭하세요</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>마지막 업데이트</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>호환성 데이터를 가져오는 중, 잠시만 기다려 주세요</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>취소</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>로딩 중...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>오류</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>호환성 데이터를 업데이트할 수 없습니다! 나중에 다시 시도해 주세요.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>compatibility_data.json을 열어 쓸 수 없습니다.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>알 수 없음</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>없음</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>부츠</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>메뉴</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>게임 내</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>플레이 가능</translation>
 		</message>
 	</context>
 </TS>

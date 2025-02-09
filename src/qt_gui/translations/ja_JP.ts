@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="ja_JP">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>グラフィックス</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>インターフェース</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>パフォーマンスに問題はなく、大きな不具合なしでゲームをプレイすることができます</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>詳細を見るにはGitHubをクリックしてください</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>最終更新</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>互換性データを取得しています。少々お待ちください。</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>キャンセル</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>読み込み中...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>エラー</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>互換性データを更新できませんでした！後で再試行してください。</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>compatibility_data.jsonを開いて書き込むことができませんでした。</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>不明</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>何もない</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>ブーツ</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>メニュー</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>ゲーム内</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>プレイ可能</translation>
 		</message>
 	</context>
 </TS>

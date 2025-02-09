@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="de">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -653,7 +653,7 @@
 			<translation>Grafik</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Benutzeroberfläche</translation>
 		</message>
 		<message>
@@ -1302,6 +1302,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Spiel kann mit spielbarer Leistung und keinen großen Störungen abgeschlossen werden</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Klicken Sie hier, um Details auf GitHub zu sehen</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Zuletzt aktualisiert</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1436,6 +1444,30 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Lade Kompatibilitätsdaten, bitte warten</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Abbrechen</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Lädt...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Fehler</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Kompatibilitätsdaten konnten nicht aktualisiert werden! Versuchen Sie es später erneut.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Kann compatibility_data.json nicht zum Schreiben öffnen.</translation>
+		</message>
+		<message>
 			<source>Unknown</source>
 			<translation>Unbekannt</translation>
 		</message>
@@ -1445,7 +1477,7 @@
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>Startet</translation>		
+			<translation>Startet</translation>
 		</message>
 		<message>
 			<source>Menus</source>

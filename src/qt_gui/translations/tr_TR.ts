@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="tr_TR">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
              SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Grafikler</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Arayüz</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Oyun, oynanabilir performansla tamamlanabilir ve büyük aksaklık yok</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Detayları görmek için GitHub’a tıklayın</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Son güncelleme</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Uyumluluk verileri alınıyor, lütfen bekleyin</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>İptal</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Yükleniyor...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Hata</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Uyumluluk verileri güncellenemedi! Lütfen daha sonra tekrar deneyin.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>compatibility_data.json dosyasını yazmak için açamadık.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Bilinmeyen</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Hiçbir şey</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Botlar</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menüler</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Oyunda</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Oynanabilir</translation>
 		</message>
 	</context>
 </TS>

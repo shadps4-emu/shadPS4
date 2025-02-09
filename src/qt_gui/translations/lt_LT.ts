@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="it_LT">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interfeisa</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Spustelėkite, kad pamatytumėte detales GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Paskutinį kartą atnaujinta</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Naudojamos suderinamumo duomenis, prašome palaukti</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Atšaukti</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Kraunama...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Klaida</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Negalima atnaujinti suderinamumo duomenų! Bandykite vėliau.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Negalima atidaryti compatibility_data.json failo rašymui.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Nežinoma</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nėra</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Batai</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Meniu</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Žaidime</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Žaidžiamas</translation>
 		</message>
 	</context>
 </TS>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="uk_UA">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -1375,6 +1375,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Гру можна пройти з хорошою продуктивністю та без серйозних глюків.</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Натисніть, щоб переглянути деталі на GitHub</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Останнє оновлення</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1509,29 +1517,29 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
-        	<source>Fetching compatibility data, please wait</source>
-        	<translation>Отримання даних про сумісність. Будь ласка, зачекайте</translation>
-    	</message>
-    	<message>
-        	<source>Cancel</source>
-        	<translation>Відмінити</translation>
-    	</message>
-    	<message>
-        	<source>Loading...</source>
-        	<translation>Завантаження...</translation>
-    	</message>
-    	<message>
-        	<source>Error</source>
-        	<translation>Помилка</translation>
-    	</message>
-    	<message>
-        	<source>Unable to update compatibility data! Try again later.</source>
-        	<translation>Не вдалося оновити дані про сумісність! Спробуйте ще раз пізніше.</translation>
-    	</message>
-    	<message>
-        	<source>Unable to open compatibility.json for writing.</source>
-        	<translation>Не вдалося відкрити файл compatibility.json для запису.</translation>
-    	</message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Отримання даних про сумісність. Будь ласка, зачекайте</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Відмінити</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Завантаження...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Помилка</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Не вдалося оновити дані про сумісність! Спробуйте ще раз пізніше.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Не вдалося відкрити файл compatibility_data.json для запису.</translation>
+		</message>
 		<message>
 			<source>Unknown</source>
 			<translation>Невідомо</translation>

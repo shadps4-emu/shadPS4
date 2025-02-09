@@ -1323,8 +1323,8 @@
 			<translation>Spillet kan fullføres med spillbar ytelse og uten store feil</translation>
 		</message>
 		<message>
-			<source>Click to go to issue</source>
-			<translation>Klikk for å gå til rapporten</translation>
+			<source>Click to see details on github</source>
+			<translation>Klikk for å se detaljer på GitHub</translation>
 		</message>
 		<message>
 			<source>Last updated</source>
@@ -1464,6 +1464,30 @@
 	<context>
 		<name>CompatibilityInfoClass</name>
 		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Avbryt</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Laster...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Feil</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Kan ikke oppdatere kompatibilitetsdata! Prøv igjen senere.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Kan ikke åpne compatibility_data.json for skriving.</translation>
+		</message>
+		<message>
 			<source>Unknown</source>
 			<translation>Ukjent</translation>
 		</message>
@@ -1477,7 +1501,7 @@
 		</message>
 		<message>
 			<source>Menus</source>
-			<translation>Meny</translation>
+			<translation>Menyene</translation>
 		</message>
 		<message>
 			<source>Ingame</source>
@@ -1486,18 +1510,6 @@
 		<message>
 			<source>Playable</source>
 			<translation>Spillbar</translation>
-		</message>
-		<message>
-			<source>Fetching compatibility data, please wait</source>
-			<translation>Henter kompatibilitetsdata, vennligst vent</translation>
-		</message>
-		<message>
-			<source>Cancel</source>
-			<translation>Avbryt</translation>
-		</message>
-		<message>
-			<source>Loading...</source>
-			<translation>Laster...</translation>
 		</message>
 	</context>
 </TS>

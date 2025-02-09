@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="fi">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Grafiikka</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Rajapinta</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Pelillä on hyväksyttävä suorituskyky, eikä mitään suuria häiriöitä</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Napsauta nähdäksesi lisätiedot GitHubissa</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Viimeksi päivitetty</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Haetaan yhteensopivuustietoja, odota</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Peruuta</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Ladataan...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Virhe</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Yhteensopivuustietoja ei voitu päivittää! Yritä myöhemmin uudelleen.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Ei voitu avata compatibility_data.json-tiedostoa kirjoittamista varten.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Tuntematon</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Ei mitään</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Sahat</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Valikot</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Pelin aikana</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Pelattava</translation>
 		</message>
 	</context>
 </TS>

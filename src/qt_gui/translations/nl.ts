@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="nl">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Graphics</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interface</translation>
 		</message>
 		<message>
@@ -1278,6 +1278,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>Game can be completed with playable performance and no major glitches</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Klik om details op GitHub te bekijken</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Laatst bijgewerkt</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1407,6 +1415,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Compatibiliteitsgegevens ophalen, even geduld</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Annuleren</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Laden...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Fout</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Kan compatibiliteitsgegevens niet bijwerken! Probeer het later opnieuw.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Kan compatibility_data.json niet openen voor schrijven.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Onbekend</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Niets</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Laarsjes</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menu's</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>In het spel</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Speelbaar</translation>
 		</message>
 	</context>
 </TS>

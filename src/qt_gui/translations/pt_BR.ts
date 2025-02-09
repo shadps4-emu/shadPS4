@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="pt_BR">
-	<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
 	<context>
 		<name>AboutDialog</name>
@@ -629,7 +629,7 @@
 			<translation>Gráficos</translation>
 		</message>
 		<message>
-			<source>Gui</source>
+			<source>GUI</source>
 			<translation>Interface</translation>
 		</message>
 		<message>
@@ -1282,6 +1282,14 @@
 			<source>Game can be completed with playable performance and no major glitches</source>
 			<translation>O jogo pode ser concluído com desempenho jogável e sem grandes falhas</translation>
 		</message>
+		<message>
+			<source>Click to see details on github</source>
+			<translation>Clique para ver detalhes no github</translation>
+		</message>
+		<message>
+			<source>Last updated</source>
+			<translation>Última atualização</translation>
+		</message>
 	</context>
 	<context>
 		<name>CheckUpdate</name>
@@ -1411,6 +1419,57 @@
 		<message>
 			<source>TB</source>
 			<translation>TB</translation>
+		</message>
+	</context>
+	<context>
+		<name>CompatibilityInfoClass</name>
+		<message>
+			<source>Fetching compatibility data, please wait</source>
+			<translation>Obtendo dados de compatibilidade, por favor aguarde</translation>
+		</message>
+		<message>
+			<source>Cancel</source>
+			<translation>Cancelar</translation>
+		</message>
+		<message>
+			<source>Loading...</source>
+			<translation>Carregando...</translation>
+		</message>
+		<message>
+			<source>Error</source>
+			<translation>Erro</translation>
+		</message>
+		<message>
+			<source>Unable to update compatibility data! Try again later.</source>
+			<translation>Não foi possível atualizar os dados de compatibilidade! Tente novamente mais tarde.</translation>
+		</message>
+		<message>
+			<source>Unable to open compatibility_data.json for writing.</source>
+			<translation>Não foi possível abrir o compatibility_data.json para escrita.</translation>
+		</message>
+		<message>
+			<source>Unknown</source>
+			<translation>Desconhecido</translation>
+		</message>
+		<message>
+			<source>Nothing</source>
+			<translation>Nada</translation>
+		</message>
+		<message>
+			<source>Boots</source>
+			<translation>Boot</translation>
+		</message>
+		<message>
+			<source>Menus</source>
+			<translation>Menus</translation>
+		</message>
+		<message>
+			<source>Ingame</source>
+			<translation>Em jogo</translation>
+		</message>
+		<message>
+			<source>Playable</source>
+			<translation>Jogável</translation>
 		</message>
 	</context>
 </TS>
