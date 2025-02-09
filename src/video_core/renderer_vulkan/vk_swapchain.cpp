@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
@@ -12,8 +13,13 @@
 
 namespace Vulkan {
 
-Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window)
-    : instance{instance_}, surface{CreateSurface(instance.GetInstance(), window)} {
+static constexpr vk::SurfaceFormatKHR SURFACE_FORMAT_HDR = {
+    .format = vk::Format::eA2B10G10R10UnormPack32,
+    .colorSpace = vk::ColorSpaceKHR::eHdr10St2084EXT,
+};
+
+Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window_)
+    : instance{instance_}, window{window_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
 
     Create(window.GetWidth(), window.GetHeight());
@@ -57,11 +63,12 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const u32 queue_family_indices_count = exclusive ? 1u : 2u;
     const vk::SharingMode sharing_mode =
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
+    const auto format = needs_hdr ? SURFACE_FORMAT_HDR : surface_format;
     const vk::SwapchainCreateInfoKHR swapchain_info = {
         .surface = surface,
         .minImageCount = image_count,
-        .imageFormat = surface_format.format,
-        .imageColorSpace = surface_format.colorSpace,
+        .imageFormat = format.format,
+        .imageColorSpace = format.colorSpace,
         .imageExtent = extent,
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment |
@@ -86,8 +93,26 @@ void Swapchain::Create(u32 width_, u32 height_) {
 }
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
-    LOG_DEBUG(Render_Vulkan, "Recreate the swapchain: width={} height={}", width_, height_);
+    LOG_DEBUG(Render_Vulkan, "Recreate the swapchain: width={} height={} HDR={}", width_, height_,
+              needs_hdr);
     Create(width_, height_);
+}
+
+void Swapchain::SetHDR(bool hdr) {
+    if (needs_hdr == hdr) {
+        return;
+    }
+
+    auto result = instance.GetDevice().waitIdle();
+    if (result != vk::Result::eSuccess) {
+        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on mode change: {}",
+                    vk::to_string(result));
+    }
+
+    needs_hdr = hdr;
+    Recreate(width, height);
+    ImGui::Core::OnSurfaceFormatChange(needs_hdr ? SURFACE_FORMAT_HDR.format
+                                                 : surface_format.format);
 }
 
 bool Swapchain::AcquireNextImage() {
@@ -143,6 +168,16 @@ void Swapchain::FindPresentFormat() {
         instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
     ASSERT_MSG(formats_result == vk::Result::eSuccess, "Failed to query surface formats: {}",
                vk::to_string(formats_result));
+
+    // Check if the device supports HDR formats. Here we care of Rec.2020 PQ only as it is expected
+    // game output. Other variants as e.g. linear Rec.2020 will require additional color space
+    // rotation
+    supports_hdr =
+        std::find_if(formats.begin(), formats.end(), [](const vk::SurfaceFormatKHR& format) {
+            return format == SURFACE_FORMAT_HDR;
+        }) != formats.end();
+    // Also make sure that user allowed us to use HDR
+    supports_hdr &= Config::allowHDR();
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
@@ -262,7 +297,7 @@ void Swapchain::SetupImages() {
         auto [im_view_result, im_view] = device.createImageView(vk::ImageViewCreateInfo{
             .image = images[i],
             .viewType = vk::ImageViewType::e2D,
-            .format = surface_format.format,
+            .format = needs_hdr ? SURFACE_FORMAT_HDR.format : surface_format.format,
             .subresourceRange =
                 {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,

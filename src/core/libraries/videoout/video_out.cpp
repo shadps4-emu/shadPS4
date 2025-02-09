@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
@@ -315,6 +316,12 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
 s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
     s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
     pDeviceCapabilityInfo->capability = 0;
+    if (presenter->IsHDRSupported()) {
+        auto& game_info = Common::ElfInfo::Instance();
+        if (game_info.GetPSFAttributes().support_hdr) {
+            pDeviceCapabilityInfo->capability |= ORBIS_VIDEO_OUT_DEVICE_CAPABILITY_BT2020_PQ;
+        }
+    }
     return ORBIS_OK;
 }
 
@@ -349,6 +356,49 @@ s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettin
     }
 
     presenter->GetGammaRef() = settings->gamma;
+    return ORBIS_OK;
+}
+
+struct Mode {
+    u32 size;
+    u8 encoding;
+    u8 range;
+    u8 colorimetry;
+    u8 depth;
+    u64 refresh_rate;
+    u64 resolution;
+    u8 reserved[8];
+};
+
+void PS4_SYSV_ABI sceVideoOutModeSetAny_(Mode* mode, u32 size) {
+    std::memset(mode, 0xff, size);
+    mode->size = size;
+}
+
+s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const Mode* mode,
+                                                 const void* options, u32 size_mode,
+                                                 u32 size_options) {
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    if (reserved != 0) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+
+    if (mode->colorimetry != OrbisVideoOutColorimetry::Any) {
+        auto& game_info = Common::ElfInfo::Instance();
+        if (mode->colorimetry == OrbisVideoOutColorimetry::Bt2020PQ &&
+            game_info.GetPSFAttributes().support_hdr) {
+            port->is_mode_changing = true;
+            presenter->SetHDR(true);
+            port->is_mode_changing = false;
+        } else {
+            return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+        }
+    }
+
     return ORBIS_OK;
 }
 
@@ -390,6 +440,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutAdjustColor);
     LIB_FUNCTION("-Ozn0F1AFRg", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutDeleteFlipEvent);
+    LIB_FUNCTION("pjkDsgxli6c", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutModeSetAny_);
+    LIB_FUNCTION("N1bEoJ4SRw4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutConfigureOutputMode_);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);

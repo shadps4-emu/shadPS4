@@ -1265,4 +1265,20 @@ void Shutdown() {
     IM_DELETE(bd);
 }
 
+void OnSurfaceFormatChange(vk::Format surface_format) {
+    VkData* bd = GetBackendData();
+    const InitInfo& v = bd->init_info;
+    auto& pl_format = const_cast<vk::Format&>(
+        bd->init_info.pipeline_rendering_create_info.pColorAttachmentFormats[0]);
+    if (pl_format != surface_format) {
+        pl_format = surface_format;
+        if (bd->pipeline) {
+            v.device.destroyPipeline(bd->pipeline, v.allocator);
+            bd->pipeline = VK_NULL_HANDLE;
+            CreatePipeline(v.device, v.allocator, v.pipeline_cache, nullptr, &bd->pipeline,
+                           v.subpass);
+        }
+    }
+}
+
 } // namespace ImGui::Vulkan

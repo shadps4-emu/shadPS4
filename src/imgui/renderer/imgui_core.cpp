@@ -118,6 +118,10 @@ void OnResize() {
     Sdl::OnResize();
 }
 
+void OnSurfaceFormatChange(vk::Format surface_format) {
+    Vulkan::OnSurfaceFormatChange(surface_format);
+}
+
 void Shutdown(const vk::Device& device) {
     auto result = device.waitIdle();
     if (result != vk::Result::eSuccess) {

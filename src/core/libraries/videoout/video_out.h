@@ -40,6 +40,13 @@ constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE = 0;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_VR = 7;
 constexpr int SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY = 8;
 
+constexpr int ORBIS_VIDEO_OUT_DEVICE_CAPABILITY_BT2020_PQ = 0x80;
+
+enum OrbisVideoOutColorimetry : u8 {
+    Bt2020PQ = 12,
+    Any = 0xFF,
+};
+
 enum class OrbisVideoOutEventId : s16 {
     Flip = 0,
     Vblank = 1,
