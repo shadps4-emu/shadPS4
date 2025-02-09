@@ -21,11 +21,13 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 
+namespace Vulkan {
+extern size_t MaxUboSize;
+}
+
 namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
-static constexpr size_t MaxUboSize = 65536;
-static constexpr size_t MaxUboDwords = MaxUboSize >> 2;
 
 enum class TextureType : u32 {
     Color1D,
@@ -51,7 +53,7 @@ struct BufferResource {
     bool is_formatted{};
 
     [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer) const noexcept {
-        return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
+        return buffer.GetSize() > Vulkan::MaxUboSize || is_written || is_gds_buffer;
     }
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;

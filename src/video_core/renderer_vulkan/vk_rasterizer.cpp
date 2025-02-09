@@ -554,7 +554,6 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     }
 
     // Second pass to re-bind buffers that were updated after binding
-    auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
         const auto& [buffer_id, vsharp] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
@@ -566,6 +565,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {
+                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
                 buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
         } else {
