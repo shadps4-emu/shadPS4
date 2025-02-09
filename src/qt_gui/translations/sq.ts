@@ -766,7 +766,7 @@
 		</message>
 		<message>
 			<source>Opacity</source>
-			<translation>Patejdukshmëria</translation>
+			<translation>Tejdukshmëria</translation>
 		</message>
 		<message>
 			<source>Play title music</source>
@@ -863,6 +863,10 @@
 		<message>
 			<source>updaterGroupBox</source>
 			<translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+		</message>
+		<message>
+			<source>GUIBackgroundImageGroupBox</source>
+			<translation>Imazhi i Sfondit:\nKontrollo tejdukshmërinë e imazhit të sfondit të lojës.</translation>
 		</message>
 		<message>
 			<source>GUIMusicGroupBox</source>
@@ -991,6 +995,14 @@
 		<message>
 			<source>guestMarkersCheckBox</source>
 			<translation>Shënjuesit e korrigjimit të guest-it:\nShton çdo shënjues për korrigjim që loja vetë ka shtuar në buffer-in e komandave.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
+		</message>
+		<message>
+			<source>saveDataBox</source>
+			<translation>Shtegu i Ruajtjes së të Dhënave:\nDosja ku do të ruhen të dhënat e ruajtjes së lojës.</translation>
+		</message>
+		<message>
+			<source>browseButton</source>
+			<translation>Shfleto:\nShfleto për të vendosur një dosje si shteg të ruajtjes së të dhënave.</translation>
 		</message>
 	</context>
 	<context>
