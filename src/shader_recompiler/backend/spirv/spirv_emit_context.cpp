@@ -633,8 +633,9 @@ void EmitContext::DefineBuffers() {
 
     for (const auto& desc : info.buffers) {
         const auto sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(sharp);
-        const u32 array_size = sharp.NumDwords() != 0 ? sharp.NumDwords() : Vulkan::MaxUboSize >> 2;
+        const bool is_storage = desc.IsStorage(sharp, profile);
+        const u32 array_size =
+            sharp.NumDwords() != 0 ? sharp.NumDwords() : profile.max_ubo_size >> 2;
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
         const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)

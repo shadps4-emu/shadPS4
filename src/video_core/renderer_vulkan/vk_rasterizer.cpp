@@ -557,7 +557,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
         const auto& [buffer_id, vsharp] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
-        const bool is_storage = desc.IsStorage(vsharp);
+        const bool is_storage = desc.IsStorage(vsharp, pipeline_cache.GetProfile());
         if (!buffer_id) {
             if (desc.is_gds_buffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();

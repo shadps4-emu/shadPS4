@@ -87,8 +87,8 @@ struct StageSpecialization {
     boost::container::small_vector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
-    explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
-                                 const Profile& profile_, Backend::Bindings start_)
+    StageSpecialization(const Info& info_, RuntimeInfo runtime_info_, const Profile& profile_,
+                        Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         fetch_shader_data = Gcn::ParseFetchShader(info_);
         if (info_.stage == Stage::Vertex && fetch_shader_data &&
@@ -107,9 +107,9 @@ struct StageSpecialization {
             binding++;
         }
         ForEachSharp(binding, buffers, info->buffers,
-                     [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                     [profile_](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
-                         spec.is_storage = desc.IsStorage(sharp);
+                         spec.is_storage = desc.IsStorage(sharp, profile_);
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
                          if (spec.is_formatted) {

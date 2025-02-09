@@ -19,8 +19,6 @@
 
 namespace Vulkan {
 
-size_t MaxUboSize = 64_KB;
-
 namespace {
 
 std::vector<vk::PhysicalDevice> EnumeratePhysicalDevices(vk::UniqueInstance& instance) {
@@ -182,12 +180,6 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                         vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
         }
     }
-
-    // When binding a UBO, we calculate its size considering the offset in the larger buffer cache
-    // underlying resource. In some cases, it may produce sizes exceeding the system maximum
-    // allowed UBO range, so we need to reduce the threshold to prevent issues.
-    MaxUboSize =
-        properties.limits.maxUniformBufferRange - properties.limits.minUniformBufferOffsetAlignment;
 }
 
 Instance::~Instance() {

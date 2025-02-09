@@ -199,6 +199,11 @@ public:
         return properties.limits.minUniformBufferOffsetAlignment;
     }
 
+    ///  Returns the maximum size of uniform buffers.
+    vk::DeviceSize UniformMaxSize() const {
+        return properties.limits.maxUniformBufferRange;
+    }
+
     /// Returns the minimum required alignment for storage buffers
     vk::DeviceSize StorageMinAlignment() const {
         return properties.limits.minStorageBufferOffsetAlignment;
@@ -244,10 +249,12 @@ public:
         return features.shaderClipDistance;
     }
 
+    /// Returns the maximim viewport width.
     u32 GetMaxViewportWidth() const {
         return properties.limits.maxViewportDimensions[0];
     }
 
+    ///  Returns the maximum viewport height.
     u32 GetMaxViewportHeight() const {
         return properties.limits.maxViewportDimensions[1];
     }

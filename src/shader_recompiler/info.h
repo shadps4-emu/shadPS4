@@ -17,13 +17,10 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/params.h"
+#include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
-
-namespace Vulkan {
-extern size_t MaxUboSize;
-}
 
 namespace Shader {
 
@@ -52,8 +49,9 @@ struct BufferResource {
     bool is_written{};
     bool is_formatted{};
 
-    [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer) const noexcept {
-        return buffer.GetSize() > Vulkan::MaxUboSize || is_written || is_gds_buffer;
+    [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer,
+                                 const Profile& profile) const noexcept {
+        return buffer.GetSize() > profile.max_ubo_size || is_written || is_gds_buffer;
     }
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;

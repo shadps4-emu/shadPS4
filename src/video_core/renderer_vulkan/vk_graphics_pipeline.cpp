@@ -25,13 +25,13 @@ namespace Vulkan {
 using Shader::Backend::SPIRV::AuxShaderType;
 
 GraphicsPipeline::GraphicsPipeline(
-    const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
-    const GraphicsPipelineKey& key_, vk::PipelineCache pipeline_cache,
-    std::span<const Shader::Info*, MaxShaderStages> infos,
+    const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
+    const Shader::Profile& profile, const GraphicsPipelineKey& key_,
+    vk::PipelineCache pipeline_cache, std::span<const Shader::Info*, MaxShaderStages> infos,
     std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
     std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
     std::span<const vk::ShaderModule> modules)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_},
+    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache}, key{key_},
       fetch_shader{std::move(fetch_shader_)} {
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
@@ -369,8 +369,9 @@ void GraphicsPipeline::BuildDescSetLayout() {
             const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
-                                                          : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = buffer.IsStorage(sharp, profile)
+                                      ? vk::DescriptorType::eStorageBuffer
+                                      : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
                 .stageFlags = gp_stage_flags,
             });
