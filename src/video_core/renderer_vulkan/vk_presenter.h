@@ -47,7 +47,7 @@ class Rasterizer;
 class Presenter {
     struct PostProcessSettings {
         float gamma = 1.0f;
-        bool hdr = false;
+        u32 hdr = 0;
     };
 
 public:
@@ -113,7 +113,7 @@ public:
             return;
         }
         swapchain.SetHDR(enable);
-        pp_settings.hdr = enable;
+        pp_settings.hdr = enable ? 1 : 0;
     }
 
 private:

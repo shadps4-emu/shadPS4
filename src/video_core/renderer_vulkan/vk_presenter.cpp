@@ -916,7 +916,7 @@ Frame* Presenter::GetRenderFrame() {
 
     // Initialize default frame image
     if (frame->width == 0 || frame->height == 0 || frame->is_hdr != swapchain.GetHDR()) {
-        RecreateFrame(frame, 1920, 1080);
+        RecreateFrame(frame, Config::getScreenWidth(), Config::getScreenHeight());
     }
 
     return frame;
