@@ -27,7 +27,6 @@ struct BufferSpecialization {
     u32 num_format : 4;
     u32 index_stride : 2;
     u32 element_size : 2;
-    u32 size = 0;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
 
@@ -38,8 +37,7 @@ struct BufferSpecialization {
                 (data_format == other.data_format && num_format == other.num_format &&
                  dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
                (!swizzle_enable ||
-                (index_stride == other.index_stride && element_size == other.element_size)) &&
-               (size >= other.is_storage || is_storage);
+                (index_stride == other.index_stride && element_size == other.element_size));
     }
 };
 
@@ -87,8 +85,8 @@ struct StageSpecialization {
     boost::container::small_vector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
-    explicit StageSpecialization(const Info& info_, RuntimeInfo runtime_info_,
-                                 const Profile& profile_, Backend::Bindings start_)
+    StageSpecialization(const Info& info_, RuntimeInfo runtime_info_, const Profile& profile_,
+                        Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         fetch_shader_data = Gcn::ParseFetchShader(info_);
         if (info_.stage == Stage::Vertex && fetch_shader_data &&
@@ -107,9 +105,9 @@ struct StageSpecialization {
             binding++;
         }
         ForEachSharp(binding, buffers, info->buffers,
-                     [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                     [profile_](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
-                         spec.is_storage = desc.IsStorage(sharp);
+                         spec.is_storage = desc.IsStorage(sharp, profile_);
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
                          if (spec.is_formatted) {
@@ -121,9 +119,6 @@ struct StageSpecialization {
                          if (spec.swizzle_enable) {
                              spec.index_stride = sharp.index_stride;
                              spec.element_size = sharp.element_size;
-                         }
-                         if (!spec.is_storage) {
-                             spec.size = sharp.GetSize();
                          }
                      });
         ForEachSharp(binding, images, info->images,

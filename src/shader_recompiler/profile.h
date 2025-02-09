@@ -30,6 +30,7 @@ struct Profile {
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
     u64 min_ssbo_alignment{};
+    u64 max_ubo_size{};
     u32 max_viewport_width{};
     u32 max_viewport_height{};
     u32 max_shared_memory_size{};

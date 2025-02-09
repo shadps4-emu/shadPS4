@@ -14,8 +14,10 @@
 namespace Vulkan {
 
 Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
-                   vk::PipelineCache pipeline_cache, bool is_compute_ /*= false*/)
-    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, is_compute{is_compute_} {}
+                   const Shader::Profile& profile_, vk::PipelineCache pipeline_cache,
+                   bool is_compute_ /*= false*/)
+    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, profile{profile_},
+      is_compute{is_compute_} {}
 
 Pipeline::~Pipeline() = default;
 

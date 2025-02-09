@@ -11,11 +11,12 @@
 
 namespace Vulkan {
 
-ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
-                                 DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 ComputePipelineKey compute_key_, const Shader::Info& info_,
-                                 vk::ShaderModule module)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
+ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
+                                 DescriptorHeap& desc_heap, const Shader::Profile& profile,
+                                 vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key_,
+                                 const Shader::Info& info_, vk::ShaderModule module)
+    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache, true},
+      compute_key{compute_key_} {
     auto& info = stages[int(Shader::LogicalStage::Compute)];
     info = &info_;
     const auto debug_str = GetDebugString();
@@ -49,8 +50,8 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
-                                                      : vk::DescriptorType::eUniformBuffer,
+            .descriptorType = buffer.IsStorage(sharp, profile) ? vk::DescriptorType::eStorageBuffer
+                                                               : vk::DescriptorType::eUniformBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
