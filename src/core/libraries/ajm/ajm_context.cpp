@@ -141,7 +141,12 @@ int AjmContext::BatchStartBuffer(u8* p_batch, u32 batch_size, const int priority
     *out_batch_id = batch_id.value();
     batch_info->id = *out_batch_id;
 
-    batch_queue.EmplaceWait(batch_info);
+    if (!batch_info->jobs.empty()) {
+        batch_queue.EmplaceWait(batch_info);
+    } else {
+        // Empty batches are not submitted to the processor and are marked as finished
+        batch_info->finished.release();
+    }
 
     return ORBIS_OK;
 }
