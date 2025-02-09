@@ -254,10 +254,14 @@ private:
             gl_per_vertex = AddOutput(gl_per_vertex_type);
         }
         for (int i = 0; i < fs_info.num_inputs; i++) {
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
             outputs[i] = AddOutput(model == spv::ExecutionModel::TessellationControl
                                        ? TypeArray(vec4_id, Int(4))
                                        : vec4_id);
-            Decorate(outputs[i], spv::Decoration::Location, fs_info.inputs[i].param_index);
+            Decorate(outputs[i], spv::Decoration::Location, input.param_index);
         }
     }
 
@@ -273,8 +277,12 @@ private:
         gl_in = AddInput(gl_per_vertex_array);
         const Id float_arr{TypeArray(vec4_id, Int(32))};
         for (int i = 0; i < fs_info.num_inputs; i++) {
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
             inputs[i] = AddInput(float_arr);
-            Decorate(inputs[i], spv::Decoration::Location, fs_info.inputs[i].param_index);
+            Decorate(inputs[i], spv::Decoration::Location, input.param_index);
         }
     }
 

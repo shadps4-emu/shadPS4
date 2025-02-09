@@ -174,6 +174,10 @@ struct FragmentRuntimeInfo {
         bool is_flat;
         u8 default_value;
 
+        [[nodiscard]] bool IsDefault() const {
+            return is_default && !is_flat;
+        }
+
         auto operator<=>(const PsInput&) const noexcept = default;
     };
     AmdGpu::Liverpool::PsInput en_flags;
