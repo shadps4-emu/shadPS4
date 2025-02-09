@@ -271,10 +271,6 @@
         <source>Network error:</source>
         <translation>Nätverksfel:</translation>
     </message>
-		<message>
-			<source>Error_Github_limit_MSG</source>
-			<translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har nått denna gräns. Försök igen senare.</translation>
-		</message>
     <message>
         <source>Failed to parse update information.</source>
         <translation>Misslyckades med att tolka uppdateringsinformationen.</translation>
@@ -362,6 +358,192 @@
     <message>
         <source>Failed to create the update script file</source>
         <translation>Misslyckades med att skapa uppdateringsskriptfil</translation>
+    </message>
+    <message>
+        <source>Error_Github_limit_MSG</source>
+        <translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har uppnått denna gräns. Försök igen senare</translation>
+    </message>
+</context>
+<context>
+    <name>CompatibilityInfoClass</name>
+    <message>
+        <source>Fetching compatibility data, please wait</source>
+        <translation>Hämtar kompatibilitetsdata, vänta</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Loading...</source>
+        <translation>Läser in...</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Fel</translation>
+    </message>
+    <message>
+        <source>Unable to update compatibility data! Try again later.</source>
+        <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
+    </message>
+    <message>
+        <source>Unable to open compatibility.json for writing.</source>
+        <translation type="vanished">Kunde inte öppna compatibility.json för skrivning.</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Okänt</translation>
+    </message>
+    <message>
+        <source>Nothing</source>
+        <translation>Ingenting</translation>
+    </message>
+    <message>
+        <source>Boots</source>
+        <translation>Startar upp</translation>
+    </message>
+    <message>
+        <source>Menus</source>
+        <translation>Menyer</translation>
+    </message>
+    <message>
+        <source>Ingame</source>
+        <translation>Problem</translation>
+    </message>
+    <message>
+        <source>Playable</source>
+        <translation>Spelbart</translation>
+    </message>
+    <message>
+        <source>Unable to open compatibility_data.json for writing.</source>
+        <translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
+    </message>
+</context>
+<context>
+    <name>ControlSettings</name>
+    <message>
+        <source>Configure Controls</source>
+        <translation>Konfigurera kontroller</translation>
+    </message>
+    <message>
+        <source>Control Settings</source>
+        <translation>Kontrollerinställningar</translation>
+    </message>
+    <message>
+        <source>D-Pad</source>
+        <translation>Riktningsknappar</translation>
+    </message>
+    <message>
+        <source>Up</source>
+        <translation>Upp</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>Vänster</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>Höger</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Ner</translation>
+    </message>
+    <message>
+        <source>Left Stick Deadzone (def:2 max:127)</source>
+        <translation>Dödläge för vänster spak (standard:2 max:127)</translation>
+    </message>
+    <message>
+        <source>Left Deadzone</source>
+        <translation>Vänster dödläge</translation>
+    </message>
+    <message>
+        <source>Left Stick</source>
+        <translation>Vänster spak</translation>
+    </message>
+    <message>
+        <source>Config Selection</source>
+        <translation>Konfigurationsval</translation>
+    </message>
+    <message>
+        <source>Common Config</source>
+        <translation>Allmän konfiguration</translation>
+    </message>
+    <message>
+        <source>Use per-game configs</source>
+        <translation>Använd konfigurationer per spel</translation>
+    </message>
+    <message>
+        <source>L1 / LB</source>
+        <translation>L1 / LB</translation>
+    </message>
+    <message>
+        <source>L2 / LT</source>
+        <translation>L2 / LT</translation>
+    </message>
+    <message>
+        <source>KBM Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>KBM Editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Bakåt</translation>
+    </message>
+    <message>
+        <source>R1 / RB</source>
+        <translation>R1 / RB</translation>
+    </message>
+    <message>
+        <source>R2 / RT</source>
+        <translation>R2 / RT</translation>
+    </message>
+    <message>
+        <source>L3</source>
+        <translation>L3</translation>
+    </message>
+    <message>
+        <source>Options / Start</source>
+        <translation>Options / Start</translation>
+    </message>
+    <message>
+        <source>R3</source>
+        <translation>R3</translation>
+    </message>
+    <message>
+        <source>Face Buttons</source>
+        <translation>Handlingsknappar</translation>
+    </message>
+    <message>
+        <source>Triangle / Y</source>
+        <translation>Triangel / Y</translation>
+    </message>
+    <message>
+        <source>Square / X</source>
+        <translation>Fyrkant / X</translation>
+    </message>
+    <message>
+        <source>Circle / B</source>
+        <translation>Cirkel / B</translation>
+    </message>
+    <message>
+        <source>Cross / A</source>
+        <translation>Kryss / A</translation>
+    </message>
+    <message>
+        <source>Right Stick Deadzone (def:2, max:127)</source>
+        <translation>Dödläge för höger spak (standard:2, max:127)</translation>
+    </message>
+    <message>
+        <source>Right Deadzone</source>
+        <translation>Höger dödläge</translation>
+    </message>
+    <message>
+        <source>Right Stick</source>
+        <translation>Höger spak</translation>
     </message>
 </context>
 <context>
@@ -491,14 +673,18 @@
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Spelet kan spelas klart med spelbar prestanda och utan större problem</translation>
     </message>
-	<message>
-		<source>Click to see details on github</source>
-		<translation>Klicka för att se detaljer på GitHub</translation>
-	</message>
-	<message>
-		<source>Last updated</source>
-		<translation>Senast uppdaterad</translation>
-	</message>
+    <message>
+        <source>Click to go to issue</source>
+        <translation type="vanished">Klicka för att gå till problem</translation>
+    </message>
+    <message>
+        <source>Last updated</source>
+        <translation>Senast uppdaterad</translation>
+    </message>
+    <message>
+        <source>Click to see details on github</source>
+        <translation>Klicka för att se detaljer på Github</translation>
+    </message>
 </context>
 <context>
     <name>GameListUtils</name>
@@ -677,6 +863,14 @@
         <source>Save Data</source>
         <translation>Sparat data</translation>
     </message>
+    <message>
+        <source>Copy Version</source>
+        <translation>Kopiera version</translation>
+    </message>
+    <message>
+        <source>Copy Size</source>
+        <translation>Kopiera storlek</translation>
+    </message>
 </context>
 <context>
     <name>InstallDirSelect</name>
@@ -805,7 +999,7 @@
     </message>
     <message>
         <source>File</source>
-        <translation>Fil</translation>
+        <translation>Arkiv</translation>
     </message>
     <message>
         <source>View</source>
@@ -1063,7 +1257,7 @@
     </message>
     <message>
         <source>ps4proCheckBox</source>
-        <translation>Är PS4 Pro:\nGör att emulatorn agerar som en PS4 PRO, vilket kan aktivera speciella funktioner i spel som har stöd för det</translation>
+        <translation type="vanished">Är PS4 Pro:\nGör att emulatorn agerar som en PS4 PRO, vilket kan aktivera speciella funktioner i spel som har stöd för det</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
@@ -1130,8 +1324,8 @@
         <translation>Grafik</translation>
     </message>
     <message>
-        <source>GUI</source>
-        <translation>Gränssnitt</translation>
+        <source>Gui</source>
+        <translation type="vanished">Gränssnitt</translation>
     </message>
     <message>
         <source>User</source>
@@ -1521,6 +1715,30 @@
         <source>browseButton</source>
         <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
     </message>
+    <message>
+        <source>GUI</source>
+        <translation>Gränssnitt</translation>
+    </message>
+    <message>
+        <source>Background Image</source>
+        <translation>Bakgrundsbild</translation>
+    </message>
+    <message>
+        <source>Show Background Image</source>
+        <translation>Visa bakgrundsbild</translation>
+    </message>
+    <message>
+        <source>Opacity</source>
+        <translation>Opacitet</translation>
+    </message>
+    <message>
+        <source>Auto Select</source>
+        <translation>Välj automatiskt</translation>
+    </message>
+    <message>
+        <source>GUIBackgroundImageGroupBox</source>
+        <translation>Bakgrundsbild:\nKontrollerar opaciteten för spelets bakgrundsbild</translation>
+    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
@@ -1528,56 +1746,5 @@
         <source>Trophy Viewer</source>
         <translation>Trofé-visare</translation>
     </message>
-</context>
-<context>
-	<name>CompatibilityInfoClass</name>
-	<message>
-		<source>Fetching compatibility data, please wait</source>
-		<translation>Hämtar kompatibilitetsdata, vänligen vänta</translation>
-	</message>
-	<message>
-		<source>Cancel</source>
-		<translation>Avbryt</translation>
-	</message>
-	<message>
-		<source>Loading...</source>
-		<translation>Läser in...</translation>
-	</message>
-	<message>
-		<source>Error</source>
-		<translation>Fel</translation>
-	</message>
-	<message>
-		<source>Unable to update compatibility data! Try again later.</source>
-		<translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
-	</message>
-	<message>
-		<source>Unable to open compatibility_data.json for writing.</source>
-		<translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
-	</message>
-	<message>
-		<source>Unknown</source>
-		<translation>Okänt</translation>
-	</message>
-	<message>
-		<source>Nothing</source>
-		<translation>Ingenting</translation>
-	</message>
-	<message>
-		<source>Boots</source>
-		<translation>Startar upp</translation>
-	</message>
-	<message>
-		<source>Menus</source>
-		<translation>Menyer</translation>
-	</message>
-	<message>
-		<source>Ingame</source>
-		<translation>I spelet</translation>
-	</message>
-	<message>
-		<source>Playable</source>
-		<translation>Spelbart</translation>
-	</message>
 </context>
 </TS>
