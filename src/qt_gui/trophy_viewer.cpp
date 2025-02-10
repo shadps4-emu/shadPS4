@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QMessageBox>
 #include "common/path_util.h"
 #include "trophy_viewer.h"
 
@@ -29,8 +30,13 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     QDir dir(trophyDirQt);
     if (!dir.exists()) {
         std::filesystem::path path = Common::FS::PathFromQString(gameTrpPath_);
-        if (!trp.Extract(path, title.toStdString()))
+        if (!trp.Extract(path, title.toStdString())) {
+            QMessageBox::critical(this, "Trophy Data Extraction Error",
+                                  "Unable to extract Trophy data, please ensure you have "
+                                  "inputted a trophy key in the settings menu.");
+            QWidget::close();
             return;
+        }
     }
     QFileInfoList dirList = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
     if (dirList.isEmpty())
