@@ -212,29 +212,31 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                                  ":</b></td>"
                                  "<td>%3</td>"
                                  "<td>(%4)</td>"
-                                 "</tr></table></p>"
-                                 "<p>" +
-                                 tr("Do you want to update?") + "</p>")
+                                 "</tr></table></p>")
                              .arg(currentRev.left(7), currentDate, latestRev, latestDate);
 
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 
     // Setup bottom layout with action buttons
-    QHBoxLayout* bottomLayout = new QHBoxLayout();
     autoUpdateCheckBox = new QCheckBox(tr("Check for Updates at Startup"), this);
+    layout->addWidget(autoUpdateCheckBox);
+
+    QHBoxLayout* updatePromptLayout = new QHBoxLayout();
+    QLabel* updatePromptLabel = new QLabel(tr("Do you want to update?"), this);
+    updatePromptLayout->addWidget(updatePromptLabel);
+
     yesButton = new QPushButton(tr("Update"), this);
     noButton = new QPushButton(tr("No"), this);
     yesButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
     noButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
-    bottomLayout->addWidget(autoUpdateCheckBox);
 
     QSpacerItem* spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    bottomLayout->addItem(spacer);
+    updatePromptLayout->addItem(spacer);
+    updatePromptLayout->addWidget(yesButton);
+    updatePromptLayout->addWidget(noButton);
 
-    bottomLayout->addWidget(yesButton);
-    bottomLayout->addWidget(noButton);
-    layout->addLayout(bottomLayout);
+    layout->addLayout(updatePromptLayout);
 
     // Don't show changelog button if:
     // The current version is a pre-release and the version to be downloaded is a release.
@@ -262,6 +264,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                         textField->setVisible(true);
                         toggleButton->setText(tr("Hide Changelog"));
                         adjustSize();
+                        textField->setFixedWidth(textField->width() + 20);
                     } else {
                         textField->setVisible(false);
                         toggleButton->setText(tr("Show Changelog"));
