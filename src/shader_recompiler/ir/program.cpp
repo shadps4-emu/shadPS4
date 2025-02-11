@@ -6,13 +6,30 @@
 
 #include <fmt/format.h>
 
+#include "common/config.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
 
-std::string DumpProgram(const Program& program) {
+void DumpProgram(const Program& program, const Info& info) {
+    using namespace Common::FS;
+
+    if (!Config::dumpShaders()) {
+        return;
+    }
+
+    const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+    if (!std::filesystem::exists(dump_dir)) {
+        std::filesystem::create_directories(dump_dir);
+    }
+    const auto filename = fmt::format("{}_{:#018x}.irprogram.txt", info.stage, info.pgm_hash);
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write, FileType::TextFile};
+
+
     size_t index{0};
     std::map<const IR::Inst*, size_t> inst_to_index;
     std::map<const IR::Block*, size_t> block_to_index;
@@ -21,11 +38,11 @@ std::string DumpProgram(const Program& program) {
         block_to_index.emplace(block, index);
         ++index;
     }
-    std::string ret;
+
     for (const auto& block : program.blocks) {
-        ret += IR::DumpBlock(*block, block_to_index, inst_to_index, index) + '\n';
+        std::string s = IR::DumpBlock(*block, block_to_index, inst_to_index, index) + '\n';
+        file.WriteString(s);
     }
-    return ret;
 }
 
 } // namespace Shader::IR
