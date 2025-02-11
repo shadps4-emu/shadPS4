@@ -316,7 +316,7 @@ void EmitContext::DefineInputs() {
             const auto& input = runtime_info.fs_info.inputs[i];
             const u32 semantic = input.param_index;
             ASSERT(semantic < IR::NumParams);
-            if (input.is_default && !input.is_flat) {
+            if (input.IsDefault()) {
                 input_params[semantic] = {
                     MakeDefaultValue(*this, input.default_value), input_f32, F32[1], 4, false, true,
                 };
