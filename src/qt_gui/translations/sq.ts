@@ -737,6 +737,10 @@
 			<translation>Kontrollo për përditësime në nisje</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Shfaq gjithmonë regjistrin e ndryshimeve</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Kanali i përditësimit</translation>
 		</message>

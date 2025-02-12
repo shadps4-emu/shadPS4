@@ -729,6 +729,10 @@
 			<translation>Έλεγχος για ενημερώσεις κατά την εκκίνηση</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Πάντα εμφάνιση ιστορικού αλλαγών</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Κανάλι Ενημέρωσης</translation>
 		</message>

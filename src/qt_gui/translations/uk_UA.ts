@@ -794,6 +794,10 @@
 			<translation>Перевіряти оновлення під час запуску</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Завжди показувати журнал змін</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Канал оновлення</translation>
 		</message>

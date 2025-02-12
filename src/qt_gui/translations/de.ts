@@ -753,6 +753,10 @@
 			<translation>Beim Start nach Updates suchen</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Changelog immer anzeigen</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Update-Kanal</translation>
 		</message>

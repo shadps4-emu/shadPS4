@@ -729,6 +729,10 @@
 			<translation>Kiểm tra cập nhật khi khởi động</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Luôn hiển thị nhật ký thay đổi</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Kênh Cập Nhật</translation>
 		</message>

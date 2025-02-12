@@ -729,6 +729,10 @@
 			<translation>Başlangıçta güncellemeleri kontrol et</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Her zaman değişiklik günlüğünü göster</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Güncelleme Kanalı</translation>
 		</message>

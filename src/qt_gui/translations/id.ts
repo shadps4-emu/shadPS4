@@ -729,6 +729,10 @@
 			<translation>Periksa pembaruan saat mulai</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Selalu Tampilkan Riwayat Perubahan</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Saluran Pembaruan</translation>
 		</message>

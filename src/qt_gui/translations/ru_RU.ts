@@ -797,6 +797,10 @@
         <translation>Проверка при запуске</translation>
     </message>
     <message>
+        <source>Always Show Changelog</source>
+        <translation>Всегда показывать журнал изменений</translation>
+    </message>
+    <message>
         <source>Update Channel</source>
         <translation>Канал обновления</translation>
     </message>

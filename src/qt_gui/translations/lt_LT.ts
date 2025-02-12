@@ -729,6 +729,10 @@
 			<translation>Tikrinti naujinimus paleidus</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Visada rodyti pakeitimų žurnalą</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Atnaujinimo Kanalas</translation>
 		</message>

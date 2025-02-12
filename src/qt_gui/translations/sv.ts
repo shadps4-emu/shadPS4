@@ -1424,6 +1424,10 @@
         <translation>Leta efter uppdateringar vid uppstart</translation>
     </message>
     <message>
+        <source>Always Show Changelog</source>
+        <translation>Visa alltid ändringsloggen</translation>
+    </message>
+    <message>
         <source>Update Channel</source>
         <translation>Uppdateringskanal</translation>
     </message>

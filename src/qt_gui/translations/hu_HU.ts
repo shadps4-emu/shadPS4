@@ -729,6 +729,10 @@
 			<translation>Frissítések keresése indításkor</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Mindig mutasd a változásnaplót</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Frissítési Csatorna</translation>
 		</message>

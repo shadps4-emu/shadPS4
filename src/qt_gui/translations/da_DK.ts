@@ -729,6 +729,10 @@
 			<translation>Tjek for opdateringer ved start</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Vis altid changelog</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Opdateringskanal</translation>
 		</message>

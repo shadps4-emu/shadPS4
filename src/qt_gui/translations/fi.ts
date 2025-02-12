@@ -729,6 +729,10 @@
 			<translation>Tarkista Päivitykset Käynnistäessä</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Näytä aina muutoshistoria</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Päivityskanava</translation>
 		</message>

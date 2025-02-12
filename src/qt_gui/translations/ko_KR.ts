@@ -729,6 +729,10 @@
 			<translation>Check for Updates at Startup</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>항상 변경 사항 표시</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Update Channel</translation>
 		</message>

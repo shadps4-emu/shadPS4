@@ -741,6 +741,10 @@
 			<translation>Check for Updates at Startup</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Always Show Changelog</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Update Channel</translation>
 		</message>

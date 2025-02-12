@@ -729,6 +729,10 @@
 			<translation>Buscar actualizaciones al iniciar</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Mostrar siempre el registro de cambios</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Canal de Actualización</translation>
 		</message>
