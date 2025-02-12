@@ -435,7 +435,8 @@ void Translator::S_LSHL_B64(const GcnInst& inst) {
 void Translator::S_LSHR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result{ir.ShiftRightLogical(src0, src1)};
+    const IR::U32 shift_amt = ir.BitwiseAnd(src1, ir.Imm32(0x1F));
+    const IR::U32 result = ir.ShiftRightLogical(src0, shift_amt);
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
