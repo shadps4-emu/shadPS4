@@ -214,6 +214,9 @@ void ParseInputConfig(const std::string game_id = "") {
     lefttrigger_deadzone = {1, 127};
     righttrigger_deadzone = {1, 127};
 
+    Config::SetOverrideControllerColor(false);
+    Config::SetControllerCustomColor(0, 0, 255);
+
     int lineCount = 0;
 
     std::ifstream file(config_file);
@@ -253,6 +256,14 @@ void ParseInputConfig(const std::string game_id = "") {
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
         std::size_t comma_pos = input_string.find(',');
+
+        auto parseInt = [](const std::string& s) -> std::optional<int> {
+            try {
+                return std::stoi(s);
+            } catch (...) {
+                return std::nullopt;
+            }
+        };
 
         if (output_string == "mouse_to_joystick") {
             if (input_string == "left") {
@@ -307,14 +318,6 @@ void ParseInputConfig(const std::string game_id = "") {
                 continue;
             }
 
-            auto parseInt = [](const std::string& s) -> std::optional<int> {
-                try {
-                    return std::stoi(s);
-                } catch (...) {
-                    return std::nullopt;
-                }
-            };
-
             auto inner_deadzone = parseInt(inner_deadzone_str);
             auto outer_deadzone = parseInt(outer_deadzone_str);
 
@@ -340,6 +343,29 @@ void ParseInputConfig(const std::string game_id = "") {
                 LOG_WARNING(Input, "Invalid axis name at line {}: \"{}\", skipping line.",
                             lineCount, line);
             }
+            continue;
+        } else if (output_string == "override_controller_color") {
+            std::stringstream ss(input_string);
+            std::string enable, r_s, g_s, b_s;
+            std::optional<int> r, g, b;
+            if (!std::getline(ss, enable, ',') || !std::getline(ss, r_s, ',') ||
+                !std::getline(ss, g_s, ',') || !std::getline(ss, b_s)) {
+                LOG_WARNING(Input, "Malformed controller color config at line {}: \"{}\"",
+                            lineCount, line);
+                continue;
+            }
+            r = parseInt(r_s);
+            g = parseInt(g_s);
+            b = parseInt(b_s);
+            if (!r || !g || !b) {
+                LOG_WARNING(Input, "Invalid RGB values at line {}: \"{}\", skipping line.",
+                            lineCount, line);
+                continue;
+            }
+            Config::SetOverrideControllerColor(enable == "true");
+            Config::SetControllerCustomColor(*r, *g, *b);
+            LOG_DEBUG(Input, "Parsed color settings: {} {} {} {}",
+                      enable == "true" ? "override" : "no override", *r, *b, *g);
             continue;
         }
 

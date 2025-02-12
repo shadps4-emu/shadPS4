@@ -129,7 +129,8 @@ void SDLInputEngine::Init() {
         };
     }
     SDL_free(gamepads);
-    SetLightBarRGB(0, 0, 255);
+    int* rgb = Config::GetControllerCustomColor();
+    SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
 }
 
 void SDLInputEngine::SetLightBarRGB(u8 r, u8 g, u8 b) {
