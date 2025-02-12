@@ -111,10 +111,10 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.7.3
+        version: 6.8.2
         host: windows
         target: desktop
-        arch: win64_msvc2019_64
+        arch: win64_msvc2022_64
         archives: qtbase qttools
         modules: qtmultimedia
 
@@ -228,7 +228,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.7.3
+        version: 6.8.2
         host: mac
         target: desktop
         arch: clang_64
