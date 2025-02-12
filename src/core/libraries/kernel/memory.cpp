@@ -163,6 +163,11 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
                                                s64 directMemoryStart, u64 alignment,
                                                const char* name) {
+    LOG_INFO(Kernel_Vmm,
+             "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
+             "directMemoryStart = {:#x}, alignment = {:#x}, name = '{}'",
+             fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment, name);
+
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -181,17 +186,14 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    SCOPE_EXIT {
-        LOG_INFO(Kernel_Vmm,
-                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
-                 "directMemoryStart = {:#x}, "
-                 "alignment = {:#x}",
-                 in_addr, fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment);
-    };
 
     auto* memory = Core::Memory::Instance();
-    return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
-                             false, directMemoryStart, alignment);
+    const auto ret =
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "", false,
+                          directMemoryStart, alignment);
+
+    LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
+    return ret;
 }
 
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
