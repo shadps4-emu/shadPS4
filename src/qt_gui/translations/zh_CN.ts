@@ -728,7 +728,6 @@
 			<source>Guest Debug Markers</source>
 			<translation>Geust 调试标记</translation>
 		</message>
-	
 		<message>
 			<source>Update</source>
 			<translation>更新</translation>
@@ -736,6 +735,10 @@
 		<message>
 			<source>Check for Updates at Startup</source>
 			<translation>启动时检查更新</translation>
+		</message>
+		<message>
+			<source>Always Show Changelog</source>
+			<translation>始终显示变更日志</translation>
 		</message>
 		<message>
 			<source>Update Channel</source>

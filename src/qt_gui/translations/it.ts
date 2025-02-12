@@ -729,6 +729,10 @@
 			<translation>Verifica aggiornamenti all’avvio</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Mostra sempre il changelog</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Canale di Aggiornamento</translation>
 		</message>

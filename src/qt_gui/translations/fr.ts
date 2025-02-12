@@ -729,6 +729,10 @@
 			<translation>Vérif. maj au démarrage</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Afficher toujours le changelog</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Canal de Mise à Jour</translation>
 		</message>

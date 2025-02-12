@@ -137,9 +137,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
         connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
                 [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
+
+        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this,
+                [](int state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
 #else
         connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
                 [](Qt::CheckState state) { Config::setAutoUpdate(state == Qt::Checked); });
+
+        connect(ui->changelogCheckBox, &QCheckBox::checkStateChanged, this,
+                [](Qt::CheckState state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
 #endif
 
         connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
@@ -391,6 +397,8 @@ void SettingsDialog::LoadValuesFromConfig() {
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
+    ui->changelogCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "alwaysShowChangelog", false));
     std::string updateChannel = toml::find_or<std::string>(data, "General", "updateChannel", "");
     if (updateChannel != "Release" && updateChannel != "Nightly") {
         if (Common::isRelease) {
@@ -651,6 +659,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
+    Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
     Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());

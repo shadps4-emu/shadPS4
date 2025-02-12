@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -346,7 +346,7 @@
               <property name="title">
                <string>Update</string>
               </property>
-              <layout class="QVBoxLayout" name="UpdateLayout" stretch="0,0,0">
+              <layout class="QVBoxLayout" name="UpdateLayout" stretch="0,0,0,0">
                <property name="spacing">
                 <number>6</number>
                </property>
@@ -465,6 +465,13 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QCheckBox" name="changelogCheckBox">
+                 <property name="text">
+                  <string>Always Show Changelog</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -488,7 +495,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -937,7 +944,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1181,7 +1188,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1325,7 +1332,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1609,7 +1616,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1699,7 +1706,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>535</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">

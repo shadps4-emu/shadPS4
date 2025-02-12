@@ -729,6 +729,10 @@
 			<translation>起動時に更新確認</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>常に変更履歴を表示</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>アップデートチャネル</translation>
 		</message>

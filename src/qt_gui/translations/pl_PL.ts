@@ -729,6 +729,10 @@
 			<translation>Sprawdź aktualizacje przy starcie</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Zawsze pokazuj dziennik zmian</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Kanał Aktualizacji</translation>
 		</message>

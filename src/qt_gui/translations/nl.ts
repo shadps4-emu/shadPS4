@@ -729,6 +729,10 @@
 			<translation>Bij opstart op updates controleren</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Altijd changelog tonen</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Updatekanaal</translation>
 		</message>

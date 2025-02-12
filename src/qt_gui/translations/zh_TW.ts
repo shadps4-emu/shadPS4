@@ -729,6 +729,10 @@
 			<translation>啟動時檢查更新</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>始終顯示變更紀錄</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>更新頻道</translation>
 		</message>

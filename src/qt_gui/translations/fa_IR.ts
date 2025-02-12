@@ -729,6 +729,10 @@
 			<translation>بررسی به‌روزرسانی‌ها در زمان راه‌اندازی</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>نمایش دائم تاریخچه تغییرات</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>کانال به‌روزرسانی</translation>
 		</message>

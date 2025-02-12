@@ -729,6 +729,10 @@
 			<translation>Verifică actualizări la pornire</translation>
 		</message>
 		<message>
+			<source>Always Show Changelog</source>
+			<translation>Arată întotdeauna jurnalul modificărilor</translation>
+		</message>
+		<message>
 			<source>Update Channel</source>
 			<translation>Canal de Actualizare</translation>
 		</message>
