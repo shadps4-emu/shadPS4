@@ -1457,7 +1457,7 @@
 		</message>
 		<message>
 			<source>Boots</source>
-			<translation>Stivali</translation>
+			<translation>Si Avvia</translation>
 		</message>
 		<message>
 			<source>Menus</source>
