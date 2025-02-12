@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
     - uses: fsfe/reuse-action@v5
 
   clang-format:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         fetch-depth: 0
     - name: Install
@@ -45,7 +45,7 @@ jobs:
       shorthash: ${{ steps.vars.outputs.shorthash }}
       fullhash: ${{ steps.vars.outputs.fullhash }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
     - name: Get date and git hash
       id: vars
       run: |
@@ -60,12 +60,12 @@ jobs:
     runs-on: windows-2025
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4
+      uses: actions/cache@main
       env:
           cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
       with:
@@ -76,7 +76,7 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -95,7 +95,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
     - name: Upload Windows SDL artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@main
       with:
         name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{github.workspace}}/build/shadPS4.exe
@@ -104,7 +104,7 @@ jobs:
     runs-on: windows-2025
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -119,7 +119,7 @@ jobs:
         modules: qtmultimedia
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4
+      uses: actions/cache@main
       env:
           cache-name: ${{ runner.os }}-qt-ninja-cache-cmake-configuration
       with:
@@ -130,7 +130,7 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -156,7 +156,7 @@ jobs:
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
     - name: Upload Windows Qt artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@main
       with:
         name: shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: upload/
@@ -165,7 +165,7 @@ jobs:
     runs-on: macos-15
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -175,7 +175,7 @@ jobs:
         xcode-version: latest
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
       with: 
@@ -186,7 +186,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
@@ -207,7 +207,7 @@ jobs:
         mv ${{github.workspace}}/build/shadps4 upload
         cp ${{github.workspace}}/build/externals/MoltenVK/libMoltenVK.dylib upload
         tar cf shadps4-macos-sdl.tar.gz -C upload .
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@main
       with:
         name: shadps4-macos-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: shadps4-macos-sdl.tar.gz
@@ -216,7 +216,7 @@ jobs:
     runs-on: macos-15
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -236,7 +236,7 @@ jobs:
         modules: qtmultimedia
         
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
       with: 
@@ -247,7 +247,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{runner.os}}-qt-cache-cmake-build
       with:
@@ -268,7 +268,7 @@ jobs:
         mv ${{github.workspace}}/build/shadps4.app upload
         macdeployqt upload/shadps4.app
         tar cf shadps4-macos-qt.tar.gz -C upload .
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@main
       with:
         name: shadps4-macos-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: shadps4-macos-qt.tar.gz
@@ -277,7 +277,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -285,7 +285,7 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
       with: 
@@ -296,7 +296,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -313,7 +313,7 @@ jobs:
       run: |
         ls -la ${{ github.workspace }}/build/shadps4
     
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@main
       with:
         name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{ github.workspace }}/build/shadps4
@@ -324,7 +324,7 @@ jobs:
     - name: Package and Upload Linux SDL artifact
       run: |
         tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@main
       with:
         name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: Shadps4-sdl.AppImage
@@ -333,7 +333,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -341,7 +341,7 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
       with: 
@@ -352,7 +352,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -371,7 +371,7 @@ jobs:
     - name: Package and Upload Linux Qt artifact
       run: |
         tar cf shadps4-linux-qt.tar.gz -C ${{github.workspace}}/build shadps4
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@main
       with:
         name: shadps4-linux-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: Shadps4-qt.AppImage
@@ -380,7 +380,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -388,7 +388,7 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-configuration
       with: 
@@ -399,7 +399,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
@@ -416,7 +416,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@main
       with:
         submodules: recursive
 
@@ -424,7 +424,7 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
+      uses: actions/cache@main 
       env: 
           cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-configuration
       with: 
@@ -435,7 +435,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-build
       with:
@@ -454,7 +454,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@main
       with:
         path: ./artifacts
   
@@ -480,7 +480,7 @@ jobs:
 
     - name: Create Pre-Release on GitHub
       id: create_release
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@main
       with:
         token: ${{ secrets.SHADPS4_TOKEN_REPO }}
         name: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
