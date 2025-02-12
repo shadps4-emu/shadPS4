@@ -257,7 +257,6 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
         connect(toggleButton, &QPushButton::clicked,
                 [this, textField, toggleButton, currentRev, latestRev, downloadUrl, latestDate,
                  currentDate]() {
-                    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
                     if (!textField->isVisible()) {
                         requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
                                          currentDate);
@@ -273,7 +272,6 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                 });
 
         if (Config::alwaysShowChangelog()) {
-            QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
             requestChangelog(currentRev, latestRev, downloadUrl, latestDate, currentDate);
             textField->setVisible(true);
             toggleButton->setText(tr("Hide Changelog"));
