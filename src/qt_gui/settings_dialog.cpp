@@ -184,8 +184,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
-        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this,
-                [](int state) { Config::setShowBackgroundImage(state == Qt::Checked); });
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
+        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+#else
+        connect(ui->showBackgroundImageCheckBox, &QCheckBox::checkStateChanged, this,
+                [](Qt::CheckState state) {
+#endif
+            Config::setShowBackgroundImage(state == Qt::Checked);
+        });
     }
     // Input TAB
     {
