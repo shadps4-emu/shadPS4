@@ -813,22 +813,22 @@ void EmitContext::DefineSharedMemory() {
     if (!info.uses_shared) {
         return;
     }
+
     const u32 max_shared_memory_size = profile.max_shared_memory_size;
     u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     if (shared_memory_size == 0) {
         shared_memory_size = DefaultSharedMemSize;
     }
-
-    const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
-    const Id type{TypeArray(U32[1], ConstU32(num_elements))};
-
-    if (shared_memory_size <= max_shared_memory_size) {
+    if (info.stage == Stage::Compute && shared_memory_size <= max_shared_memory_size) {
+        const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
+        const Id type{TypeArray(U32[1], ConstU32(num_elements))};
         shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
         shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
         shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
         Name(shared_memory_u32, "shared_mem");
         interfaces.push_back(shared_memory_u32);
     } else {
+        const Id type{TypeRuntimeArray(U32[1])};
         shared_memory_u32_type = TypePointer(spv::StorageClass::StorageBuffer, type);
         shared_u32 = TypePointer(spv::StorageClass::StorageBuffer, U32[1]);
 
@@ -849,7 +849,6 @@ void EmitContext::DefineSharedMemory() {
         shared_memory_u32 = ssbo_id;
 
         info.has_emulated_shared_memory = true;
-        info.shared_memory_size = shared_memory_size;
         interfaces.push_back(ssbo_id);
     }
 }

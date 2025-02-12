@@ -357,6 +357,14 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
+        if (stage->has_emulated_shared_memory) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .descriptorCount = 1,
+                .stageFlags = gp_stage_flags,
+            });
+        }
         if (stage->has_readconst) {
             bindings.push_back({
                 .binding = binding++,

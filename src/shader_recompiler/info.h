@@ -196,7 +196,6 @@ struct Info {
     bool translation_failed{}; // indicates that shader has unsupported instructions
     bool has_emulated_shared_memory{};
     bool has_readconst{};
-    u32 shared_memory_size{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
@@ -233,7 +232,8 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers = buffers.size() + (has_readconst ? 1 : 0);
+        const auto total_buffers =
+            buffers.size() + (has_readconst ? 1 : 0) + (has_emulated_shared_memory ? 1 : 0);
         bnd.buffer += total_buffers;
         bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
