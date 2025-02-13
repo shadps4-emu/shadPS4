@@ -3,6 +3,7 @@ version = 1
 [[annotations]]
 path = [
     "REUSE.toml",
+    "crowdin.yml",
     "CMakeSettings.json",
     ".github/FUNDING.yml",
     ".github/shadps4.png",
