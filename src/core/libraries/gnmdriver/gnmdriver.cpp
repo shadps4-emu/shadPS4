@@ -2307,8 +2307,36 @@ s32 PS4_SYSV_ABI sceGnmUpdateGsShader(u32* cmdbuf, u32 size, const u32* gs_regs)
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmUpdateHsShader() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+int PS4_SYSV_ABI sceGnmUpdateHsShader(u32* cmdbuf, u32 size, const u32* hs_regs, u32 ls_hs_config) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (!cmdbuf || size <= 0x1c) {
+        return -1;
+    }
+
+    if (!hs_regs) {
+        LOG_ERROR(Lib_GnmDriver, "Null pointer passed as argument");
+        return -1;
+    }
+
+    if (hs_regs[1] != 0) {
+        LOG_ERROR(Lib_GnmDriver, "Invalid shader address");
+        return -1;
+    }
+
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x108u, hs_regs[0],
+                                     0u); // SPI_SHADER_PGM_LO_HS/SPI_SHADER_PGM_HI_HS
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x10au, hs_regs[2],
+                                     hs_regs[3]); // SPI_SHADER_PGM_RSRC1_HS/SPI_SHADER_PGM_RSRC1_LS
+    cmdbuf = WritePacket<PM4ItOpcode::Nop>(
+        cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e0286u, hs_regs[5],
+        hs_regs[6]); // VGT_HOS_MAX_TESS_LEVEL/VGT_HOS_MIN_TESS_LEVEL update
+    cmdbuf = WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e02dbu,
+                                           hs_regs[4]); // VGT_TF_PARAM update
+    cmdbuf = WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e02d6u,
+                                           ls_hs_config); // VGT_LS_HS_CONFIG update
+
+    WriteTrailingNop<11>(cmdbuf);
     return ORBIS_OK;
 }
 
