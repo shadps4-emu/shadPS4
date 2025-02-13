@@ -18,17 +18,8 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* pare
     treeWidget = new QTreeWidget(this);
     treeWidget->setColumnCount(9);
     QStringList headers;
-    headers << "Name"
-            << "Serial"
-            << "Installed"
-            << "Size"
-            << "Category"
-            << "Type"
-            << "App Ver"
-            << "FW"
-            << "Region"
-            << "Flags"
-            << "Path";
+    headers << tr("Name") << tr("Serial") << tr("Installed") << tr("Size") << tr("Category")
+            << tr("Type") << tr("App Ver") << tr("FW") << tr("Region") << tr("Flags") << tr("Path");
     treeWidget->setHeaderLabels(headers);
     treeWidget->header()->setDefaultAlignment(Qt::AlignCenter);
     treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -36,7 +27,7 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* pare
     this->setCentralWidget(treeWidget);
     QMenuBar* menuBar = new QMenuBar(this);
     menuBar->setContextMenuPolicy(Qt::PreventContextMenu);
-    QMenu* fileMenu = menuBar->addMenu(tr("&File"));
+    QMenu* fileMenu = menuBar->addMenu(tr("File"));
     QAction* openFolderAct = new QAction(tr("Open Folder"), this);
     fileMenu->addAction(openFolderAct);
     this->setMenuBar(menuBar);
@@ -114,15 +105,15 @@ void PKGViewer::ProcessPKGInfo() {
             return;
         }
         psf.Open(package.sfo);
-        QString title_name =
-            QString::fromStdString(std::string{psf.GetString("TITLE").value_or("Unknown")});
-        QString title_id =
-            QString::fromStdString(std::string{psf.GetString("TITLE_ID").value_or("Unknown")});
+        QString title_name = QString::fromStdString(
+            std::string{psf.GetString("TITLE").value_or(std::string{tr("Unknown").toStdString()})});
+        QString title_id = QString::fromStdString(std::string{
+            psf.GetString("TITLE_ID").value_or(std::string{tr("Unknown").toStdString()})});
         QString app_type = GameListUtils::GetAppType(psf.GetInteger("APP_TYPE").value_or(0));
-        QString app_version =
-            QString::fromStdString(std::string{psf.GetString("APP_VER").value_or("Unknown")});
-        QString title_category =
-            QString::fromStdString(std::string{psf.GetString("CATEGORY").value_or("Unknown")});
+        QString app_version = QString::fromStdString(std::string{
+            psf.GetString("APP_VER").value_or(std::string{tr("Unknown").toStdString()})});
+        QString title_category = QString::fromStdString(std::string{
+            psf.GetString("CATEGORY").value_or(std::string{tr("Unknown").toStdString()})});
         QString pkg_size = GameListUtils::FormatSize(package.GetPkgHeader().pkg_size);
         pkg_content_flag = package.GetPkgHeader().pkg_content_flags;
         QString flagss = "";
@@ -134,7 +125,7 @@ void PKGViewer::ProcessPKGInfo() {
             }
         }
 
-        QString fw_ = "Unknown";
+        QString fw_ = tr("Unknown");
         if (const auto fw_int_opt = psf.GetInteger("SYSTEM_VER"); fw_int_opt.has_value()) {
             const u32 fw_int = *fw_int_opt;
             if (fw_int == 0) {
@@ -221,6 +212,6 @@ void PKGViewer::ProcessPKGInfo() {
     // Update status bar.
     statusBar->clearMessage();
     int numPkgs = m_pkg_list.size();
-    QString statusMessage = QString::number(numPkgs) + " Package.";
+    QString statusMessage = QString::number(numPkgs) + " " + tr("Package");
     statusBar->showMessage(statusMessage);
 }

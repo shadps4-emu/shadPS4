@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="sv_SE">
-	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
-         SPDX-License-Identifier: GPL-2.0-or-later -->
+<TS version="2.1" language="da_DK">
 <context>
     <name>AboutDialog</name>
     <message>
         <source>About shadPS4</source>
-        <translation>Om shadPS4</translation>
+        <translation>About shadPS4</translation>
     </message>
     <message>
         <source>shadPS4</source>
@@ -15,26 +15,26 @@
     </message>
     <message>
         <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 är en experimentell emulator för PlayStation 4 baserad på öppen källkod.</translation>
+        <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
     </message>
     <message>
         <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>Denna programvara bör inte användas för att spela spel som du inte legalt äger.</translation>
+        <translation>This software should not be used to play games you have not legally obtained.</translation>
     </message>
 </context>
 <context>
     <name>CheatsPatches</name>
     <message>
         <source>Cheats / Patches for </source>
-        <translation>Fusk / Patchar för </translation>
+        <translation>Cheats / Patches for </translation>
     </message>
     <message>
         <source>defaultTextEdit_MSG</source>
-        <translation>Fusk/Patchar är experimentella.\nAnvänd med försiktighet.\n\nHämta fusk individuellt genom att välja förrådet och klicka på hämtningsknappen.\nUnder Patchar-fliken kan du hämta alla patchar på en gång, välj vilken du vill använda och spara ditt val.\n\nEftersom vi inte utvecklar fusk eller patchar,\nrapportera gärna problem till fuskets upphovsperson.\n\nSkapat ett nytt fusk? Besök:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        <translation>Cheats/Patches er eksperimentelle.\nBrug med forsigtighed.\n\nDownload cheats individuelt ved at vælge lageret og klikke på download-knappen.\nUnder fanen Patches kan du downloade alle patches på én gang, vælge hvilke du vil bruge og gemme valget.\n\nDa vi ikke udvikler cheats/patches,\nvenligst rapporter problemer til cheat-udvikleren.\n\nHar du lavet en ny cheat? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
         <source>No Image Available</source>
-        <translation>Ingen bild tillgänglig</translation>
+        <translation>Ingen billede tilgængelig</translation>
     </message>
     <message>
         <source>Serial: </source>
@@ -46,282 +46,278 @@
     </message>
     <message>
         <source>Size: </source>
-        <translation>Storlek: </translation>
+        <translation>Størrelse: </translation>
     </message>
     <message>
         <source>Select Cheat File:</source>
-        <translation>Välj fuskfil:</translation>
+        <translation>Vælg snyd-fil:</translation>
     </message>
     <message>
         <source>Repository:</source>
-        <translation>Förråd:</translation>
+        <translation>Repository:</translation>
     </message>
     <message>
         <source>Download Cheats</source>
-        <translation>Hämta fusk</translation>
+        <translation>Hent snyd</translation>
     </message>
     <message>
         <source>Delete File</source>
-        <translation>Ta bort fil</translation>
+        <translation>Slet fil</translation>
     </message>
     <message>
         <source>No files selected.</source>
-        <translation>Inga filer valda.</translation>
+        <translation>Ingen filer valgt.</translation>
     </message>
     <message>
         <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Du kan ta bort fusk som du inte vill ha efter de hämtats ner.</translation>
+        <translation>Du kan slette de snyd, du ikke ønsker, efter at have hentet dem.</translation>
     </message>
     <message>
         <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Vill du ta bort markerade filen?\n%1</translation>
+        <translation>Ønsker du at slette den valgte fil?\n%1</translation>
     </message>
     <message>
         <source>Select Patch File:</source>
-        <translation>Välj patchfil:</translation>
+        <translation>Vælg patch-fil:</translation>
     </message>
     <message>
         <source>Download Patches</source>
-        <translation>Hämta patchar</translation>
+        <translation>Hent patches</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Spara</translation>
+        <translation>Gem</translation>
     </message>
     <message>
         <source>Cheats</source>
-        <translation>Fusk</translation>
+        <translation>Snyd</translation>
     </message>
     <message>
         <source>Patches</source>
-        <translation>Patchar</translation>
+        <translation>Patches</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fel</translation>
+        <translation>Fejl</translation>
     </message>
     <message>
         <source>No patch selected.</source>
-        <translation>Ingen patch vald.</translation>
+        <translation>Ingen patch valgt.</translation>
     </message>
     <message>
         <source>Unable to open files.json for reading.</source>
-        <translation>Kunde inte öppna files.json för läsning.</translation>
+        <translation>Kan ikke åbne files.json til læsning.</translation>
     </message>
     <message>
         <source>No patch file found for the current serial.</source>
-        <translation>Ingen patchfil hittades för aktuella serienumret.</translation>
+        <translation>Ingen patch-fil fundet for det nuværende serienummer.</translation>
     </message>
     <message>
         <source>Unable to open the file for reading.</source>
-        <translation>Kunde inte öppna filen för läsning.</translation>
+        <translation>Kan ikke åbne filen til læsning.</translation>
     </message>
     <message>
         <source>Unable to open the file for writing.</source>
-        <translation>Kunde inte öppna filen för skrivning.</translation>
+        <translation>Kan ikke åbne filen til skrivning.</translation>
     </message>
     <message>
         <source>Failed to parse XML: </source>
-        <translation>Misslyckades med att tolka XML: </translation>
+        <translation>Kunne ikke analysere XML: </translation>
     </message>
     <message>
         <source>Success</source>
-        <translation>Lyckades</translation>
+        <translation>Succes</translation>
     </message>
     <message>
         <source>Options saved successfully.</source>
-        <translation>Inställningarna sparades.</translation>
+        <translation>Indstillinger gemt med succes.</translation>
     </message>
     <message>
         <source>Invalid Source</source>
-        <translation>Ogiltig källa</translation>
+        <translation>Ugyldig kilde</translation>
     </message>
     <message>
         <source>The selected source is invalid.</source>
-        <translation>Vald källa är ogiltig.</translation>
+        <translation>Den valgte kilde er ugyldig.</translation>
     </message>
     <message>
         <source>File Exists</source>
-        <translation>Filen finns</translation>
+        <translation>Fil findes</translation>
     </message>
     <message>
         <source>File already exists. Do you want to replace it?</source>
-        <translation>Filen finns redan. Vill du ersätta den?</translation>
+        <translation>Filen findes allerede. Vil du erstatte den?</translation>
     </message>
     <message>
         <source>Failed to save file:</source>
-        <translation>Misslyckades med att spara fil:</translation>
+        <translation>Kunne ikke gemme fil:</translation>
     </message>
     <message>
         <source>Failed to download file:</source>
-        <translation>Misslyckades med att hämta filen:</translation>
+        <translation>Kunne ikke hente fil:</translation>
     </message>
     <message>
         <source>Cheats Not Found</source>
-        <translation>Fusk hittades inte</translation>
+        <translation>Snyd ikke fundet</translation>
     </message>
     <message>
         <source>CheatsNotFound_MSG</source>
-        <translation>Inga fusk hittades för detta spel i denna version av det valda förrådet. Prova ett annat förråd eller en annan version av spelet</translation>
+        <translation>Ingen snyd fundet til dette spil i denne version af det valgte repository, prøv et andet repository eller en anden version af spillet.</translation>
     </message>
     <message>
         <source>Cheats Downloaded Successfully</source>
-        <translation>Fusk hämtades ner</translation>
+        <translation>Snyd hentet med succes</translation>
     </message>
     <message>
         <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Du har hämtat ner fusken för denna version av spelet från valt förråd. Du kan försöka att hämta från andra förråd, om de är tillgängliga så kan det vara möjligt att använda det genom att välja det genom att välja filen från listan</translation>
+        <translation>Du har succesfuldt hentet snyd for denne version af spillet fra det valgte repository. Du kan prøve at hente fra et andet repository, hvis det er tilgængeligt, vil det også være muligt at bruge det ved at vælge filen fra listen.</translation>
     </message>
     <message>
         <source>Failed to save:</source>
-        <translation>Misslyckades med att spara:</translation>
+        <translation>Kunne ikke gemme:</translation>
     </message>
     <message>
         <source>Failed to download:</source>
-        <translation>Misslyckades med att hämta:</translation>
+        <translation>Kunne ikke hente:</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Hämtning färdig</translation>
+        <translation>Download fuldført</translation>
     </message>
     <message>
         <source>DownloadComplete_MSG</source>
-        <translation>Patchhämtningen är färdig! Alla patchar tillgängliga för alla spel har hämtats och de behövs inte hämtas individuellt för varje spel som med fusk. Om patchen inte dyker upp kan det bero på att den inte finns för det specifika serienumret och versionen av spelet</translation>
+        <translation>Patcher hentet med succes! Alle patches til alle spil er blevet hentet, der er ikke behov for at hente dem individuelt for hvert spil, som det sker med snyd. Hvis opdateringen ikke vises, kan det være, at den ikke findes for den specifikke serie og version af spillet.</translation>
     </message>
     <message>
         <source>Failed to parse JSON data from HTML.</source>
-        <translation>Misslyckades med att tolka JSON-data från HTML.</translation>
+        <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
     </message>
     <message>
         <source>Failed to retrieve HTML page.</source>
-        <translation>Misslyckades med att hämta HTML-sida.</translation>
+        <translation>Kunne ikke hente HTML-side.</translation>
     </message>
     <message>
         <source>The game is in version: %1</source>
-        <translation>Spelet är i version: %1</translation>
+        <translation>Spillet er i version: %1</translation>
     </message>
     <message>
         <source>The downloaded patch only works on version: %1</source>
-        <translation>Hämtad patch fungerar endast på version: %1</translation>
+        <translation>Den downloadede patch fungerer kun på version: %1</translation>
     </message>
     <message>
         <source>You may need to update your game.</source>
-        <translation>Du kan behöva uppdatera ditt spel.</translation>
+        <translation>Du skal muligvis opdatere dit spil.</translation>
     </message>
     <message>
         <source>Incompatibility Notice</source>
-        <translation>Meddelande om inkompatibilitet</translation>
+        <translation>Uforenelighedsmeddelelse</translation>
     </message>
     <message>
         <source>Failed to open file:</source>
-        <translation>Misslyckades med att öppna filen:</translation>
+        <translation>Kunne ikke åbne fil:</translation>
     </message>
     <message>
         <source>XML ERROR:</source>
-        <translation>XML-FEL:</translation>
+        <translation>XML FEJL:</translation>
     </message>
     <message>
         <source>Failed to open files.json for writing</source>
-        <translation>Misslyckades med att öppna files.json för skrivning</translation>
+        <translation>Kunne ikke åbne files.json til skrivning</translation>
     </message>
     <message>
         <source>Author: </source>
-        <translation>Upphovsperson: </translation>
+        <translation>Forfatter: </translation>
     </message>
     <message>
         <source>Directory does not exist:</source>
-        <translation>Katalogen finns inte:</translation>
+        <translation>Mappe findes ikke:</translation>
     </message>
     <message>
         <source>Failed to open files.json for reading.</source>
-        <translation>Misslyckades med att öppna files.json för läsning.</translation>
+        <translation>Kunne ikke åbne files.json til læsning.</translation>
     </message>
     <message>
         <source>Name:</source>
-        <translation>Namn:</translation>
+        <translation>Navn:</translation>
     </message>
     <message>
         <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Kan inte tillämpa fusk innan spelet är startat</translation>
-    </message>
-    <message>
-        <source>Error:</source>
-        <translation>Fel:</translation>
-    </message>
-    <message>
-        <source>ERROR</source>
-        <translation>FEL</translation>
+        <translation>Kan ikke anvende snyd før spillet er startet.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Stäng</translation>
+        <translation type="unfinished">Luk</translation>
     </message>
 </context>
 <context>
     <name>CheckUpdate</name>
     <message>
         <source>Auto Updater</source>
-        <translation>Automatisk uppdatering</translation>
+        <translation>Automatisk opdatering</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fel</translation>
+        <translation>Fejl</translation>
     </message>
     <message>
         <source>Network error:</source>
-        <translation>Nätverksfel:</translation>
+        <translation>Netsværksfejl:</translation>
+    </message>
+    <message>
+        <source>Error_Github_limit_MSG</source>
+        <translation>Autoopdateren tillader op til 60 opdateringstjek i timen.\nDu har nået denne grænse. Prøv igen senere.</translation>
     </message>
     <message>
         <source>Failed to parse update information.</source>
-        <translation>Misslyckades med att tolka uppdateringsinformationen.</translation>
+        <translation>Kunne ikke analysere opdateringsoplysninger.</translation>
     </message>
     <message>
         <source>No pre-releases found.</source>
-        <translation>Inga förutgåva hittades.</translation>
+        <translation>Ingen forhåndsudgivelser fundet.</translation>
     </message>
     <message>
         <source>Invalid release data.</source>
-        <translation>Ogiltig release-data.</translation>
+        <translation>Ugyldige udgivelsesdata.</translation>
     </message>
     <message>
         <source>No download URL found for the specified asset.</source>
-        <translation>Ingen hämtnings-URL hittades för angiven tillgång.</translation>
+        <translation>Ingen download-URL fundet for den specificerede aktiver.</translation>
     </message>
     <message>
         <source>Your version is already up to date!</source>
-        <translation>Din version är redan den senaste!</translation>
+        <translation>Din version er allerede opdateret!</translation>
     </message>
     <message>
         <source>Update Available</source>
-        <translation>Uppdatering tillgänglig</translation>
+        <translation>Opdatering tilgængelig</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Uppdateringskanal</translation>
+        <translation>Opdateringskanal</translation>
     </message>
     <message>
         <source>Current Version</source>
-        <translation>Aktuell version</translation>
+        <translation>Nuværende version</translation>
     </message>
     <message>
         <source>Latest Version</source>
-        <translation>Senaste version</translation>
+        <translation>Nyeste version</translation>
     </message>
     <message>
         <source>Do you want to update?</source>
-        <translation>Vill du uppdatera?</translation>
+        <translation>Vil du opdatere?</translation>
     </message>
     <message>
         <source>Show Changelog</source>
-        <translation>Visa ändringslogg</translation>
+        <translation>Vis ændringslog</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Leta efter uppdateringar vid uppstart</translation>
+        <translation>Tjek for opdateringer ved start</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Uppdatera</translation>
+        <translation>Opdater</translation>
     </message>
     <message>
         <source>No</source>
@@ -329,157 +325,149 @@
     </message>
     <message>
         <source>Hide Changelog</source>
-        <translation>Dölj ändringslogg</translation>
+        <translation>Skjul ændringslog</translation>
     </message>
     <message>
         <source>Changes</source>
-        <translation>Ändringar</translation>
+        <translation>Ændringer</translation>
     </message>
     <message>
         <source>Network error occurred while trying to access the URL</source>
-        <translation>Nätverksfel inträffade vid försök att komma åt URL:en</translation>
+        <translation>Netsværksfejl opstod, mens der blev forsøgt at få adgang til URL&apos;en</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Hämtning färdig</translation>
+        <translation>Download fuldført</translation>
     </message>
     <message>
         <source>The update has been downloaded, press OK to install.</source>
-        <translation>Uppdateringen har hämtats. Tryck på Ok för att installera.</translation>
+        <translation>Opdateringen er blevet downloadet, tryk på OK for at installere.</translation>
     </message>
     <message>
         <source>Failed to save the update file at</source>
-        <translation>Misslyckades med att spara uppdateringsfilen i</translation>
+        <translation>Kunne ikke gemme opdateringsfilen på</translation>
     </message>
     <message>
         <source>Starting Update...</source>
-        <translation>Startar uppdatering...</translation>
+        <translation>Starter opdatering...</translation>
     </message>
     <message>
         <source>Failed to create the update script file</source>
-        <translation>Misslyckades med att skapa uppdateringsskriptfil</translation>
-    </message>
-    <message>
-        <source>Error_Github_limit_MSG</source>
-        <translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har uppnått denna gräns. Försök igen senare</translation>
+        <translation>Kunne ikke oprette opdateringsscriptfilen</translation>
     </message>
 </context>
 <context>
     <name>CompatibilityInfoClass</name>
     <message>
         <source>Fetching compatibility data, please wait</source>
-        <translation>Hämtar kompatibilitetsdata, vänta</translation>
+        <translation>Henter kompatibilitetsdata, vent venligst</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Avbryt</translation>
+        <translation>Annuller</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Läser in...</translation>
+        <translation>Indlæser...</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fel</translation>
+        <translation>Fejl</translation>
     </message>
     <message>
         <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
-    </message>
-    <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation type="vanished">Kunde inte öppna compatibility.json för skrivning.</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>Okänt</translation>
-    </message>
-    <message>
-        <source>Nothing</source>
-        <translation>Ingenting</translation>
-    </message>
-    <message>
-        <source>Boots</source>
-        <translation>Startar upp</translation>
-    </message>
-    <message>
-        <source>Menus</source>
-        <translation>Menyer</translation>
-    </message>
-    <message>
-        <source>Ingame</source>
-        <translation>Problem</translation>
-    </message>
-    <message>
-        <source>Playable</source>
-        <translation>Spelbart</translation>
+        <translation>Kan ikke opdatere kompatibilitetsdata! Prøv igen senere.</translation>
     </message>
     <message>
         <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Kunde inte öppna compatibility_data.json för skrivning.</translation>
+        <translation>Kan ikke åbne compatibility_data.json til skrivning.</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Ukendt</translation>
+    </message>
+    <message>
+        <source>Nothing</source>
+        <translation>Intet</translation>
+    </message>
+    <message>
+        <source>Boots</source>
+        <translation>Støvler</translation>
+    </message>
+    <message>
+        <source>Menus</source>
+        <translation>Menuer</translation>
+    </message>
+    <message>
+        <source>Ingame</source>
+        <translation>I spillet</translation>
+    </message>
+    <message>
+        <source>Playable</source>
+        <translation>Spilbar</translation>
     </message>
 </context>
 <context>
     <name>ControlSettings</name>
     <message>
         <source>Configure Controls</source>
-        <translation>Konfigurera kontroller</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Control Settings</source>
-        <translation>Kontrollerinställningar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>D-Pad</source>
-        <translation>Riktningsknappar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Up</source>
-        <translation>Upp</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Left</source>
-        <translation>Vänster</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Right</source>
-        <translation>Höger</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Down</source>
-        <translation>Ner</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Left Stick Deadzone (def:2 max:127)</source>
-        <translation>Dödläge för vänster spak (standard:2 max:127)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Left Deadzone</source>
-        <translation>Vänster dödläge</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Left Stick</source>
-        <translation>Vänster spak</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Config Selection</source>
-        <translation>Konfigurationsval</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Common Config</source>
-        <translation>Allmän konfiguration</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Use per-game configs</source>
-        <translation>Använd konfigurationer per spel</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>L1 / LB</source>
-        <translation>L1 / LB</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>L2 / LT</source>
-        <translation>L2 / LT</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>KBM Controls</source>
@@ -491,104 +479,104 @@
     </message>
     <message>
         <source>Back</source>
-        <translation>Bakåt</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>R1 / RB</source>
-        <translation>R1 / RB</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>R2 / RT</source>
-        <translation>R2 / RT</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>L3</source>
-        <translation>L3</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Options / Start</source>
-        <translation>Options / Start</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>R3</source>
-        <translation>R3</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Face Buttons</source>
-        <translation>Handlingsknappar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Triangle / Y</source>
-        <translation>Triangel / Y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Square / X</source>
-        <translation>Fyrkant / X</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Circle / B</source>
-        <translation>Cirkel / B</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cross / A</source>
-        <translation>Kryss / A</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Right Stick Deadzone (def:2, max:127)</source>
-        <translation>Dödläge för höger spak (standard:2, max:127)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Right Deadzone</source>
-        <translation>Höger dödläge</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Right Stick</source>
-        <translation>Höger spak</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ElfViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Öppna mapp</translation>
+        <translation>Open Folder</translation>
     </message>
 </context>
 <context>
     <name>GameInfoClass</name>
     <message>
         <source>Loading game list, please wait :3</source>
-        <translation>Läser in spellistan, vänta :3</translation>
+        <translation>Loading game list, please wait :3</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Avbryt</translation>
+        <translation>Cancel</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Läser in...</translation>
+        <translation>Loading...</translation>
     </message>
 </context>
 <context>
     <name>GameInstallDialog</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Välj katalog</translation>
+        <translation>shadPS4 - Choose directory</translation>
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation>Katalog att installera spel till</translation>
+        <translation>Directory to install games</translation>
     </message>
     <message>
         <source>Browse</source>
-        <translation>Bläddra</translation>
+        <translation>Browse</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fel</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <source>Directory to install DLC</source>
-        <translation>Katalog för att installera DLC</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -599,15 +587,15 @@
     </message>
     <message>
         <source>Name</source>
-        <translation>Namn</translation>
+        <translation>Navn</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation>Serienummer</translation>
+        <translation>Seriel</translation>
     </message>
     <message>
         <source>Compatibility</source>
-        <translation>Kompatibilitet</translation>
+        <translation>Compatibility</translation>
     </message>
     <message>
         <source>Region</source>
@@ -619,7 +607,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation>Storlek</translation>
+        <translation>Størrelse</translation>
     </message>
     <message>
         <source>Version</source>
@@ -627,15 +615,15 @@
     </message>
     <message>
         <source>Path</source>
-        <translation>Sökväg</translation>
+        <translation>Sti</translation>
     </message>
     <message>
         <source>Play Time</source>
-        <translation>Speltid</translation>
+        <translation>Spilletid</translation>
     </message>
     <message>
         <source>Never Played</source>
-        <translation>Aldrig spelat</translation>
+        <translation>Never Played</translation>
     </message>
     <message>
         <source>h</source>
@@ -651,39 +639,35 @@
     </message>
     <message>
         <source>Compatibility is untested</source>
-        <translation>Kompatibilitet är otestat</translation>
+        <translation>Compatibility is untested</translation>
     </message>
     <message>
         <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Spelet initierar inte korrekt / kraschar emulatorn</translation>
+        <translation>Game does not initialize properly / crashes the emulator</translation>
     </message>
     <message>
         <source>Game boots, but only displays a blank screen</source>
-        <translation>Spelet startar men visar endast en blank skärm</translation>
+        <translation>Game boots, but only displays a blank screen</translation>
     </message>
     <message>
         <source>Game displays an image but does not go past the menu</source>
-        <translation>Spelet visar en bild men kommer inte förbi menyn</translation>
+        <translation>Game displays an image but does not go past the menu</translation>
     </message>
     <message>
         <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Spelet har allvarliga problem eller ospelbar prestanda</translation>
+        <translation>Game has game-breaking glitches or unplayable performance</translation>
     </message>
     <message>
         <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Spelet kan spelas klart med spelbar prestanda och utan större problem</translation>
-    </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation type="vanished">Klicka för att gå till problem</translation>
-    </message>
-    <message>
-        <source>Last updated</source>
-        <translation>Senast uppdaterad</translation>
+        <translation>Game can be completed with playable performance and no major glitches</translation>
     </message>
     <message>
         <source>Click to see details on github</source>
-        <translation>Klicka för att se detaljer på Github</translation>
+        <translation>Klik for at se detaljer på GitHub</translation>
+    </message>
+    <message>
+        <source>Last updated</source>
+        <translation>Sidst opdateret</translation>
     </message>
 </context>
 <context>
@@ -713,119 +697,119 @@
     <name>GuiContextMenus</name>
     <message>
         <source>Create Shortcut</source>
-        <translation>Skapa genväg</translation>
+        <translation>Create Shortcut</translation>
     </message>
     <message>
         <source>Cheats / Patches</source>
-        <translation>Fusk / Patchar</translation>
+        <translation>Trick / Patches</translation>
     </message>
     <message>
         <source>SFO Viewer</source>
-        <translation>SFO-visare</translation>
+        <translation>SFO Viewer</translation>
     </message>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trofé-visare</translation>
+        <translation>Trophy Viewer</translation>
     </message>
     <message>
         <source>Open Folder...</source>
-        <translation>Öppna mapp...</translation>
+        <translation>Åbn Mappe...</translation>
     </message>
     <message>
         <source>Open Game Folder</source>
-        <translation>Öppna spelmapp</translation>
+        <translation>Åbn Spilmappe</translation>
     </message>
     <message>
         <source>Open Save Data Folder</source>
-        <translation>Öppna mapp för sparat data</translation>
+        <translation>Åbn Gem Data Mappe</translation>
     </message>
     <message>
         <source>Open Log Folder</source>
-        <translation>Öppna loggmapp</translation>
+        <translation>Åbn Log Mappe</translation>
     </message>
     <message>
         <source>Copy info...</source>
-        <translation>Kopiera till...</translation>
+        <translation>Copy info...</translation>
     </message>
     <message>
         <source>Copy Name</source>
-        <translation>Kopiera namn</translation>
+        <translation>Copy Name</translation>
     </message>
     <message>
         <source>Copy Serial</source>
-        <translation>Kopiera serienummer</translation>
+        <translation>Copy Serial</translation>
     </message>
     <message>
         <source>Copy All</source>
-        <translation>Kopiera alla</translation>
+        <translation>Copy All</translation>
     </message>
     <message>
         <source>Delete...</source>
-        <translation>Ta bort...</translation>
+        <translation>Delete...</translation>
     </message>
     <message>
         <source>Delete Game</source>
-        <translation>Ta bort spel</translation>
+        <translation>Delete Game</translation>
     </message>
     <message>
         <source>Delete Update</source>
-        <translation>Ta bort uppdatering</translation>
+        <translation>Delete Update</translation>
     </message>
     <message>
         <source>Delete DLC</source>
-        <translation>Ta bort DLC</translation>
+        <translation>Delete DLC</translation>
     </message>
     <message>
         <source>Compatibility...</source>
-        <translation>Kompatibilitet...</translation>
+        <translation>Compatibility...</translation>
     </message>
     <message>
         <source>Update database</source>
-        <translation>Uppdatera databasen</translation>
+        <translation>Update database</translation>
     </message>
     <message>
         <source>View report</source>
-        <translation>Visa rapport</translation>
+        <translation>View report</translation>
     </message>
     <message>
         <source>Submit a report</source>
-        <translation>Skicka en rapport</translation>
+        <translation>Submit a report</translation>
     </message>
     <message>
         <source>Shortcut creation</source>
-        <translation>Skapa genväg</translation>
+        <translation>Shortcut creation</translation>
     </message>
     <message>
         <source>Shortcut created successfully!</source>
-        <translation>Genvägen skapades!</translation>
+        <translation>Shortcut created successfully!</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fel</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <source>Error creating shortcut!</source>
-        <translation>Fel vid skapandet av genväg!</translation>
+        <translation>Error creating shortcut!</translation>
     </message>
     <message>
         <source>Install PKG</source>
-        <translation>Installera PKG</translation>
+        <translation>Install PKG</translation>
     </message>
     <message>
         <source>Game</source>
-        <translation>Spel</translation>
+        <translation>Game</translation>
     </message>
     <message>
         <source>This game has no update to delete!</source>
-        <translation>Detta spel har ingen uppdatering att ta bort!</translation>
+        <translation>This game has no update to delete!</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Uppdatera</translation>
+        <translation>Update</translation>
     </message>
     <message>
         <source>This game has no DLC to delete!</source>
-        <translation>Detta spel har inga DLC att ta bort!</translation>
+        <translation>This game has no DLC to delete!</translation>
     </message>
     <message>
         <source>DLC</source>
@@ -833,261 +817,261 @@
     </message>
     <message>
         <source>Delete %1</source>
-        <translation>Ta bort %1</translation>
+        <translation>Delete %1</translation>
     </message>
     <message>
         <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Är du säker på att du vill ta bort %1s %2-katalog?</translation>
-    </message>
-    <message>
-        <source>Failed to convert icon.</source>
-        <translation>Misslyckades med att konvertera ikon.</translation>
+        <translation>Are you sure you want to delete %1&apos;s %2 directory?</translation>
     </message>
     <message>
         <source>Open Update Folder</source>
-        <translation>Öppna uppdateringsmapp</translation>
-    </message>
-    <message>
-        <source>Delete Save Data</source>
-        <translation>Ta bort sparat data</translation>
-    </message>
-    <message>
-        <source>This game has no update folder to open!</source>
-        <translation>Detta spel har ingen uppdateringsmapp att öppna!</translation>
-    </message>
-    <message>
-        <source>This game has no save data to delete!</source>
-        <translation>Detta spel har inget sparat data att ta bort!</translation>
-    </message>
-    <message>
-        <source>Save Data</source>
-        <translation>Sparat data</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy Version</source>
-        <translation>Kopiera version</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy Size</source>
-        <translation>Kopiera storlek</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete Save Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This game has no update folder to open!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to convert icon.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This game has no save data to delete!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save Data</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>InstallDirSelect</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Välj katalog</translation>
+        <translation>shadPS4 - Choose directory</translation>
     </message>
     <message>
         <source>Select which directory you want to install to.</source>
-        <translation>Välj vilken katalog som du vill installera till.</translation>
+        <translation>Select which directory you want to install to.</translation>
     </message>
     <message>
         <source>Install All Queued to Selected Folder</source>
-        <translation>Installera alla köade till markerad mapp</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Delete PKG File on Install</source>
-        <translation>Ta bort PKG-fil efter installation</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
         <source>Open/Add Elf Folder</source>
-        <translation>Öppna/Lägg till Elf-mapp</translation>
+        <translation>Open/Add Elf Folder</translation>
     </message>
     <message>
         <source>Install Packages (PKG)</source>
-        <translation>Installera paket (PKG)</translation>
+        <translation>Install Packages (PKG)</translation>
     </message>
     <message>
         <source>Boot Game</source>
-        <translation>Starta spel</translation>
+        <translation>Boot Game</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Leta efter uppdateringar</translation>
+        <translation>Tjek for opdateringer</translation>
     </message>
     <message>
         <source>About shadPS4</source>
-        <translation>Om shadPS4</translation>
+        <translation>About shadPS4</translation>
     </message>
     <message>
         <source>Configure...</source>
-        <translation>Konfigurera...</translation>
+        <translation>Configure...</translation>
     </message>
     <message>
         <source>Install application from a .pkg file</source>
-        <translation>Installera program från en .pkg-fil</translation>
+        <translation>Install application from a .pkg file</translation>
     </message>
     <message>
         <source>Recent Games</source>
-        <translation>Senaste spel</translation>
+        <translation>Recent Games</translation>
     </message>
     <message>
         <source>Open shadPS4 Folder</source>
-        <translation>Öppna shadPS4-mapp</translation>
+        <translation>Open shadPS4 Folder</translation>
     </message>
     <message>
         <source>Exit</source>
-        <translation>Avsluta</translation>
+        <translation>Exit</translation>
     </message>
     <message>
         <source>Exit shadPS4</source>
-        <translation>Avsluta shadPS4</translation>
+        <translation>Exit shadPS4</translation>
     </message>
     <message>
         <source>Exit the application.</source>
-        <translation>Avsluta programmet.</translation>
+        <translation>Exit the application.</translation>
     </message>
     <message>
         <source>Show Game List</source>
-        <translation>Visa spellista</translation>
+        <translation>Show Game List</translation>
     </message>
     <message>
         <source>Game List Refresh</source>
-        <translation>Uppdatera spellista</translation>
+        <translation>Game List Refresh</translation>
     </message>
     <message>
         <source>Tiny</source>
-        <translation>Mycket små</translation>
+        <translation>Tiny</translation>
     </message>
     <message>
         <source>Small</source>
-        <translation>Små</translation>
+        <translation>Small</translation>
     </message>
     <message>
         <source>Medium</source>
-        <translation>Medelstora</translation>
+        <translation>Medium</translation>
     </message>
     <message>
         <source>Large</source>
-        <translation>Stora</translation>
+        <translation>Large</translation>
     </message>
     <message>
         <source>List View</source>
-        <translation>Listvy</translation>
+        <translation>List View</translation>
     </message>
     <message>
         <source>Grid View</source>
-        <translation>Rutnätsvy</translation>
+        <translation>Grid View</translation>
     </message>
     <message>
         <source>Elf Viewer</source>
-        <translation>Elf-visare</translation>
+        <translation>Elf Viewer</translation>
     </message>
     <message>
         <source>Game Install Directory</source>
-        <translation>Installationskatalog för spel</translation>
+        <translation>Game Install Directory</translation>
     </message>
     <message>
         <source>Download Cheats/Patches</source>
-        <translation>Hämta fusk/patchar</translation>
+        <translation>Download Tricks / Patches</translation>
     </message>
     <message>
         <source>Dump Game List</source>
-        <translation>Dumpa spellista</translation>
+        <translation>Dump Game List</translation>
     </message>
     <message>
         <source>PKG Viewer</source>
-        <translation>PKG-visare</translation>
+        <translation>PKG Viewer</translation>
     </message>
     <message>
         <source>Search...</source>
-        <translation>Sök...</translation>
+        <translation>Search...</translation>
     </message>
     <message>
         <source>File</source>
-        <translation>Arkiv</translation>
+        <translation>File</translation>
     </message>
     <message>
         <source>View</source>
-        <translation>Visa</translation>
+        <translation>View</translation>
     </message>
     <message>
         <source>Game List Icons</source>
-        <translation>Ikoner för spellista</translation>
+        <translation>Game List Icons</translation>
     </message>
     <message>
         <source>Game List Mode</source>
-        <translation>Läge för spellista</translation>
+        <translation>Game List Mode</translation>
     </message>
     <message>
         <source>Settings</source>
-        <translation>Inställningar</translation>
+        <translation>Settings</translation>
     </message>
     <message>
         <source>Utils</source>
-        <translation>Verktyg</translation>
+        <translation>Utils</translation>
     </message>
     <message>
         <source>Themes</source>
-        <translation>Teman</translation>
+        <translation>Themes</translation>
     </message>
     <message>
         <source>Help</source>
-        <translation>Hjälp</translation>
+        <translation>Hjælp</translation>
     </message>
     <message>
         <source>Dark</source>
-        <translation>Mörkt</translation>
+        <translation>Dark</translation>
     </message>
     <message>
         <source>Light</source>
-        <translation>Ljust</translation>
+        <translation>Light</translation>
     </message>
     <message>
         <source>Green</source>
-        <translation>Grönt</translation>
+        <translation>Green</translation>
     </message>
     <message>
         <source>Blue</source>
-        <translation>Blått</translation>
+        <translation>Blue</translation>
     </message>
     <message>
         <source>Violet</source>
-        <translation>Lila</translation>
+        <translation>Violet</translation>
     </message>
     <message>
         <source>toolBar</source>
-        <translation>Verktygsrad</translation>
+        <translation>toolBar</translation>
     </message>
     <message>
         <source>Game List</source>
-        <translation>Spellista</translation>
+        <translation>Spiloversigt</translation>
     </message>
     <message>
         <source> * Unsupported Vulkan Version</source>
-        <translation> * Vulkan-versionen stöds inte</translation>
+        <translation> * Ikke understøttet Vulkan-version</translation>
     </message>
     <message>
         <source>Download Cheats For All Installed Games</source>
-        <translation>Hämta fusk för alla installerade spel</translation>
+        <translation>Hent snyd til alle installerede spil</translation>
     </message>
     <message>
         <source>Download Patches For All Games</source>
-        <translation>Hämta patchar för alla spel</translation>
+        <translation>Hent patches til alle spil</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Hämtning färdig</translation>
+        <translation>Download fuldført</translation>
     </message>
     <message>
         <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Du har hämtat fusk till alla spelen som du har installerade.</translation>
+        <translation>Du har hentet snyd til alle de spil, du har installeret.</translation>
     </message>
     <message>
         <source>Patches Downloaded Successfully!</source>
-        <translation>Patchar hämtades ner!</translation>
+        <translation>Patcher hentet med succes!</translation>
     </message>
     <message>
         <source>All Patches available for all games have been downloaded.</source>
-        <translation>Alla patchar tillgängliga för alla spel har hämtats ner.</translation>
+        <translation>Alle patches til alle spil er blevet hentet.</translation>
     </message>
     <message>
         <source>Games: </source>
-        <translation>Spel: </translation>
+        <translation>Spil: </translation>
     </message>
     <message>
         <source>ELF files (*.bin *.elf *.oelf)</source>
@@ -1095,125 +1079,177 @@
     </message>
     <message>
         <source>Game Boot</source>
-        <translation>Starta spel</translation>
+        <translation>Spil-boot</translation>
     </message>
     <message>
         <source>Only one file can be selected!</source>
-        <translation>Endast en fil kan väljas!</translation>
+        <translation>Kun én fil kan vælges!</translation>
     </message>
     <message>
         <source>PKG Extraction</source>
-        <translation>PKG-extrahering</translation>
+        <translation>PKG-udtrækning</translation>
     </message>
     <message>
         <source>Patch detected!</source>
-        <translation>Patch upptäcktes!</translation>
+        <translation>Opdatering detekteret!</translation>
     </message>
     <message>
         <source>PKG and Game versions match: </source>
-        <translation>PKG och spelversioner matchar: </translation>
+        <translation>PKG og spilversioner matcher: </translation>
     </message>
     <message>
         <source>Would you like to overwrite?</source>
-        <translation>Vill du skriva över?</translation>
+        <translation>Vil du overskrive?</translation>
     </message>
     <message>
         <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG-versionen %1 är äldre än installerad version: </translation>
+        <translation>PKG Version %1 er ældre end den installerede version: </translation>
     </message>
     <message>
         <source>Game is installed: </source>
-        <translation>Spelet är installerat: </translation>
+        <translation>Spillet er installeret: </translation>
     </message>
     <message>
         <source>Would you like to install Patch: </source>
-        <translation>Vill du installera patch: </translation>
+        <translation>Vil du installere opdateringen: </translation>
     </message>
     <message>
         <source>DLC Installation</source>
-        <translation>DLC-installation</translation>
+        <translation>DLC Installation</translation>
     </message>
     <message>
         <source>Would you like to install DLC: %1?</source>
-        <translation>Vill du installera DLC: %1?</translation>
+        <translation>Vil du installere DLC: %1?</translation>
     </message>
     <message>
         <source>DLC already installed:</source>
-        <translation>DLC redan installerat:</translation>
+        <translation>DLC allerede installeret:</translation>
     </message>
     <message>
         <source>Game already installed</source>
-        <translation>Spelet redan installerat</translation>
+        <translation>Spillet er allerede installeret</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation>PKG-FEL</translation>
+        <translation>PKG FEJL</translation>
     </message>
     <message>
         <source>Extracting PKG %1/%2</source>
-        <translation>Extraherar PKG %1/%2</translation>
+        <translation>Udvinding af PKG %1/%2</translation>
     </message>
     <message>
         <source>Extraction Finished</source>
-        <translation>Extrahering färdig</translation>
+        <translation>Udvinding afsluttet</translation>
     </message>
     <message>
         <source>Game successfully installed at %1</source>
-        <translation>Spelet installerades i %1</translation>
+        <translation>Spillet blev installeret succesfuldt på %1</translation>
     </message>
     <message>
         <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Filen verkar inte vara en giltig PKG-fil</translation>
+        <translation>Filen ser ikke ud til at være en gyldig PKG-fil</translation>
     </message>
     <message>
         <source>Run Game</source>
-        <translation>Kör spel</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Eboot.bin file not found</source>
-        <translation>Filen eboot.bin hittades inte</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>PKG File (*.PKG *.pkg)</source>
-        <translation>PKG-fil (*.PKG *.pkg)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>PKG is a patch or DLC, please install the game first!</source>
-        <translation>PKG är en patch eller DLC. Installera spelet först!</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Game is already running!</source>
-        <translation>Spelet är redan igång!</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>shadPS4</source>
-        <translation>shadPS4</translation>
+        <translation type="unfinished">shadPS4</translation>
     </message>
 </context>
 <context>
     <name>PKGViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Öppna mapp</translation>
+        <translation>Open Folder</translation>
     </message>
     <message>
-        <source>&amp;File</source>
-        <translation>&amp;Arkiv</translation>
+        <source>Name</source>
+        <translation type="unfinished">Navn</translation>
+    </message>
+    <message>
+        <source>Serial</source>
+        <translation type="unfinished">Seriel</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation type="unfinished">Størrelse</translation>
+    </message>
+    <message>
+        <source>Category</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>App Ver</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FW</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Region</source>
+        <translation type="unfinished">Region</translation>
+    </message>
+    <message>
+        <source>Flags</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">Sti</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation type="unfinished">File</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation>PKG-FEL</translation>
+        <translation type="unfinished">PKG FEJL</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation type="unfinished">Ukendt</translation>
+    </message>
+    <message>
+        <source>Package</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>SettingsDialog</name>
     <message>
         <source>Settings</source>
-        <translation>Inställningar</translation>
+        <translation>Settings</translation>
     </message>
     <message>
         <source>General</source>
-        <translation>Allmänt</translation>
+        <translation>General</translation>
     </message>
     <message>
         <source>System</source>
@@ -1221,11 +1257,11 @@
     </message>
     <message>
         <source>Console Language</source>
-        <translation>Konsollspråk</translation>
+        <translation>Console Language</translation>
     </message>
     <message>
         <source>Emulator Language</source>
-        <translation>Emulatorspråk</translation>
+        <translation>Emulator Language</translation>
     </message>
     <message>
         <source>Emulator</source>
@@ -1233,79 +1269,75 @@
     </message>
     <message>
         <source>Enable Fullscreen</source>
-        <translation>Aktivera helskärm</translation>
+        <translation>Enable Fullscreen</translation>
     </message>
     <message>
         <source>Fullscreen Mode</source>
-        <translation>Helskärmsläge</translation>
+        <translation>Fuldskærmstilstand</translation>
     </message>
     <message>
         <source>Enable Separate Update Folder</source>
-        <translation>Aktivera separat uppdateringsmapp</translation>
+        <translation>Enable Separate Update Folder</translation>
     </message>
     <message>
         <source>Default tab when opening settings</source>
-        <translation>Standardflik när inställningar öppnas</translation>
+        <translation>Standardfaneblad ved åbning af indstillinger</translation>
     </message>
     <message>
         <source>Show Game Size In List</source>
-        <translation>Visa spelstorlek i listan</translation>
+        <translation>Vis vis spilstørrelse i listen</translation>
     </message>
     <message>
         <source>Show Splash</source>
-        <translation>Visa startskärm</translation>
-    </message>
-    <message>
-        <source>ps4proCheckBox</source>
-        <translation type="vanished">Är PS4 Pro:\nGör att emulatorn agerar som en PS4 PRO, vilket kan aktivera speciella funktioner i spel som har stöd för det</translation>
+        <translation>Show Splash</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
-        <translation>Aktivera Discord Rich Presence</translation>
+        <translation>Aktiver Discord Rich Presence</translation>
     </message>
     <message>
         <source>Username</source>
-        <translation>Användarnamn</translation>
+        <translation>Username</translation>
     </message>
     <message>
         <source>Trophy Key</source>
-        <translation>Trofényckel</translation>
+        <translation>Trophy Key</translation>
     </message>
     <message>
         <source>Trophy</source>
-        <translation>Troféer</translation>
+        <translation>Trophy</translation>
     </message>
     <message>
         <source>Logger</source>
-        <translation>Loggning</translation>
+        <translation>Logger</translation>
     </message>
     <message>
         <source>Log Type</source>
-        <translation>Loggtyp</translation>
+        <translation>Log Type</translation>
     </message>
     <message>
         <source>Log Filter</source>
-        <translation>Loggfilter</translation>
+        <translation>Log Filter</translation>
     </message>
     <message>
         <source>Open Log Location</source>
-        <translation>Öppna loggplats</translation>
+        <translation>Åbn logplacering</translation>
     </message>
     <message>
         <source>Input</source>
-        <translation>Inmatning</translation>
+        <translation>Indtastning</translation>
     </message>
     <message>
         <source>Cursor</source>
-        <translation>Muspekare</translation>
+        <translation>Markør</translation>
     </message>
     <message>
         <source>Hide Cursor</source>
-        <translation>Dölj muspekare</translation>
+        <translation>Skjul markør</translation>
     </message>
     <message>
         <source>Hide Cursor Idle Timeout</source>
-        <translation>Dölj muspekare vid overksam</translation>
+        <translation>Timeout for skjul markør ved inaktivitet</translation>
     </message>
     <message>
         <source>s</source>
@@ -1313,35 +1345,35 @@
     </message>
     <message>
         <source>Controller</source>
-        <translation>Handkontroller</translation>
+        <translation>Controller</translation>
     </message>
     <message>
         <source>Back Button Behavior</source>
-        <translation>Beteende för bakåtknapp</translation>
+        <translation>Tilbageknap adfærd</translation>
     </message>
     <message>
         <source>Graphics</source>
-        <translation>Grafik</translation>
+        <translation>Graphics</translation>
     </message>
     <message>
-        <source>Gui</source>
-        <translation type="vanished">Gränssnitt</translation>
+        <source>GUI</source>
+        <translation>Interface</translation>
     </message>
     <message>
         <source>User</source>
-        <translation>Användare</translation>
+        <translation>Bruger</translation>
     </message>
     <message>
         <source>Graphics Device</source>
-        <translation>Grafikenhet</translation>
+        <translation>Graphics Device</translation>
     </message>
     <message>
         <source>Width</source>
-        <translation>Bredd</translation>
+        <translation>Width</translation>
     </message>
     <message>
         <source>Height</source>
-        <translation>Höjd</translation>
+        <translation>Height</translation>
     </message>
     <message>
         <source>Vblank Divider</source>
@@ -1349,223 +1381,223 @@
     </message>
     <message>
         <source>Advanced</source>
-        <translation>Avancerat</translation>
+        <translation>Advanced</translation>
     </message>
     <message>
         <source>Enable Shaders Dumping</source>
-        <translation>Aktivera Shaders Dumping</translation>
+        <translation>Enable Shaders Dumping</translation>
     </message>
     <message>
         <source>Enable NULL GPU</source>
-        <translation>Aktivera NULL GPU</translation>
+        <translation>Enable NULL GPU</translation>
     </message>
     <message>
         <source>Paths</source>
-        <translation>Sökvägar</translation>
+        <translation>Stier</translation>
     </message>
     <message>
         <source>Game Folders</source>
-        <translation>Spelmappar</translation>
+        <translation>Spilmapper</translation>
     </message>
     <message>
         <source>Add...</source>
-        <translation>Lägg till...</translation>
+        <translation>Tilføj...</translation>
     </message>
     <message>
         <source>Remove</source>
-        <translation>Ta bort</translation>
+        <translation>Fjern</translation>
     </message>
     <message>
         <source>Debug</source>
-        <translation>Felsök</translation>
+        <translation>Debug</translation>
     </message>
     <message>
         <source>Enable Debug Dumping</source>
-        <translation>Aktivera felsökningsdumpning</translation>
+        <translation>Enable Debug Dumping</translation>
     </message>
     <message>
         <source>Enable Vulkan Validation Layers</source>
-        <translation>Aktivera Vulkan Validation Layers</translation>
+        <translation>Enable Vulkan Validation Layers</translation>
     </message>
     <message>
         <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Aktivera Vulkan Synchronization Validation</translation>
+        <translation>Enable Vulkan Synchronization Validation</translation>
     </message>
     <message>
         <source>Enable RenderDoc Debugging</source>
-        <translation>Aktivera RenderDoc-felsökning</translation>
+        <translation>Enable RenderDoc Debugging</translation>
     </message>
     <message>
         <source>Enable Crash Diagnostics</source>
-        <translation>Aktivera kraschdiagnostik</translation>
+        <translation>Enable Crash Diagnostics</translation>
     </message>
     <message>
         <source>Collect Shaders</source>
-        <translation>Samla shaders</translation>
+        <translation>Collect Shaders</translation>
     </message>
     <message>
         <source>Copy GPU Buffers</source>
-        <translation>Kopiera GPU-buffertar</translation>
+        <translation>Copy GPU Buffers</translation>
     </message>
     <message>
         <source>Host Debug Markers</source>
-        <translation>Felsökningsmarkörer för värd</translation>
+        <translation>Host Debug Markers</translation>
     </message>
     <message>
         <source>Guest Debug Markers</source>
-        <translation>Felsökningsmarkörer för gäst</translation>
+        <translation>Guest Debug Markers</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Uppdatera</translation>
+        <translation>Opdatering</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Leta efter uppdateringar vid uppstart</translation>
+        <translation>Tjek for opdateringer ved start</translation>
     </message>
     <message>
         <source>Always Show Changelog</source>
-        <translation>Visa alltid ändringsloggen</translation>
+        <translation>Vis altid changelog</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Uppdateringskanal</translation>
+        <translation>Opdateringskanal</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Leta efter uppdateringar</translation>
+        <translation>Tjek for opdateringer</translation>
     </message>
     <message>
         <source>GUI Settings</source>
-        <translation>Gränssnittsinställningar</translation>
+        <translation>GUI-Indstillinger</translation>
     </message>
     <message>
         <source>Title Music</source>
-        <translation>Titelmusik</translation>
+        <translation>Title Music</translation>
     </message>
     <message>
         <source>Disable Trophy Pop-ups</source>
-        <translation>Inaktivera popup för troféer</translation>
+        <translation>Disable Trophy Pop-ups</translation>
     </message>
     <message>
         <source>Play title music</source>
-        <translation>Spela titelmusik</translation>
+        <translation>Afspil titelsang</translation>
     </message>
     <message>
         <source>Update Compatibility Database On Startup</source>
-        <translation>Uppdatera databas vid uppstart</translation>
+        <translation>Update Compatibility Database On Startup</translation>
     </message>
     <message>
         <source>Game Compatibility</source>
-        <translation>Spelkompatibilitet</translation>
+        <translation>Game Compatibility</translation>
     </message>
     <message>
         <source>Display Compatibility Data</source>
-        <translation>Visa kompatibilitetsdata</translation>
+        <translation>Display Compatibility Data</translation>
     </message>
     <message>
         <source>Update Compatibility Database</source>
-        <translation>Uppdatera kompatibilitetsdatabasen</translation>
+        <translation>Update Compatibility Database</translation>
     </message>
     <message>
         <source>Volume</source>
-        <translation>Volym</translation>
+        <translation>Lydstyrke</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Spara</translation>
+        <translation>Gem</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Verkställ</translation>
+        <translation>Anvend</translation>
     </message>
     <message>
         <source>Restore Defaults</source>
-        <translation>Återställ till standard</translation>
+        <translation>Gendan standardindstillinger</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Stäng</translation>
+        <translation>Luk</translation>
     </message>
     <message>
         <source>Point your mouse at an option to display its description.</source>
-        <translation>Flytta muspekaren till ett alternativ för att visa dess beskrivning.</translation>
+        <translation>Peg musen over et valg for at vise dets beskrivelse.</translation>
     </message>
     <message>
         <source>consoleLanguageGroupBox</source>
-        <translation>Konsollspråk:\nStäller in språket som PS4-spelet använder.\nDet rekommenderas att ställa in detta till ett språk som spelet har stöd för, vilket kan skilja sig mellan regioner</translation>
+        <translation>Konsolsprog:\nIndstiller sproget, som PS4-spillet bruger.\nDet anbefales at indstille dette til et sprog, som spillet understøtter, hvilket kan variere efter region.</translation>
     </message>
     <message>
         <source>emulatorLanguageGroupBox</source>
-        <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt</translation>
+        <translation>Emulatorsprog:\nIndstiller sproget i emulatorens brugergrænseflade.</translation>
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Aktivera helskärm:\nStäller automatiskt in spelfönstret till helskämsläget.\nDetta kan växlas genom att trycka på F11-tangenten</translation>
+        <translation>Aktiver fuld skærm:\nSætter automatisk spilvinduet i fuld skærm.\nDette kan skiftes ved at trykke på F11-tasten.</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
-        <translation>Aktivera separat uppdateringsmapp:\nAktiverar installation av speluppdateringar i en separat mapp för enkel hantering.\nDetta kan skapas manuellt genom att lägga till uppackad uppdatering till spelmappen med namnet &quot;CUSA00000-UPDATE&quot; där CUSA ID matchar spelets id</translation>
+        <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
         <source>showSplashCheckBox</source>
-        <translation>Visa startskärm:\nVisar spelets startskärm (en speciell bild) när spelet startas</translation>
+        <translation>Vis startskærm:\nViser en startskærm (speciel grafik) under opstarten.</translation>
     </message>
     <message>
         <source>discordRPCCheckbox</source>
-        <translation>Aktivera Discord Rich Presence:\nVisar emulatorikonen och relevant information på din Discord-profil</translation>
+        <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevante oplysninger på din Discord-profil.</translation>
     </message>
     <message>
         <source>userName</source>
-        <translation>Användarnamn:\nStäller in PS4ans användarkonto, som kan visas av vissa spel</translation>
+        <translation>Brugernavn:\nIndstiller PS4-kontoens navn, som kan blive vist i nogle spil.</translation>
     </message>
     <message>
         <source>TrophyKey</source>
-        <translation>Trofényckel:\nNyckel som används för att avkryptera troféer. Måste hämtas från din konsoll (jailbroken).\nMåste innehålla endast hex-tecken</translation>
+        <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
         <source>logTypeGroupBox</source>
-        <translation>Loggtyp:\nStäller in huruvida synkronisering av utdata för loggfönstret för prestanda. Kan ha inverkan på emulationen</translation>
+        <translation>Logtype:\nIndstiller, om logvinduets output vil blive synkroniseret for at øge ydeevnen. Dette kan påvirke emulatorens ydeevne negativt.</translation>
     </message>
     <message>
         <source>logFilter</source>
-        <translation>Loggfilter:\nFiltrera loggen till att endast skriva ut specifik information.\nExempel: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNivåer: Trace, Debug, Info, Warning, Error, Critical - i den ordningen, en specifik nivå som tystar alla nivåer före den i listan och loggar allting efter den</translation>
+        <translation>Logfilter:\nFiltrerer loggen for kun at udskrive bestemte oplysninger.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveaus: Trace, Debug, Info, Warning, Error, Critical - i rækkefølge, et valgt niveau skjuler alle forudgående niveauer og viser alle efterfølgende niveauer.</translation>
     </message>
     <message>
         <source>updaterGroupBox</source>
-        <translation>Uppdatering:\nRelease: Officiella versioner som släpps varje månad som kan vara mycket utdaterade, men är mer pålitliga och testade.\nNightly: Utvecklingsversioner som har de senaste funktionerna och fixarna, men kan innehålla fel och är mindre stabila</translation>
+        <translation>Opdatering:\nRelease: Officielle builds, der frigives månedligt, som kan være meget ældre, men mere stabile og testet.\nNightly: Udviklerbuilds med de nyeste funktioner og rettelser, men som kan indeholde fejl og være mindre stabile.</translation>
     </message>
     <message>
         <source>GUIMusicGroupBox</source>
-        <translation>Spela upp titelmusik:\nOm ett spel har stöd för det kan speciell musik spelas upp från spelet i gränssnittet</translation>
+        <translation>Titelsmusikafspilning:\nHvis spillet understøtter det, aktiver speciel musik, når spillet vælges i brugergrænsefladen.</translation>
     </message>
     <message>
         <source>disableTrophycheckBox</source>
-        <translation>Inaktivera popup för troféer:\nInaktivera troféeaviseringar i spel. Troféförlopp kan fortfarande följas med Troféevisaren (högerklicka på spelet i huvudfönstret)</translation>
+        <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
         <source>hideCursorGroupBox</source>
-        <translation>Dölj pekare:\nVälj när muspekaren ska försvinna:\nAldrig: Du kommer alltid se muspekaren.\nOverksam: Ställ in en tid för när den ska försvinna efter den inte använts.\nAlltid: du kommer aldrig se muspekaren</translation>
+        <translation>Skjul Cursor:\nVælg hvornår cursoren skal forsvinde:\nAldrig: Du vil altid se musen.\nInaktiv: Indstil en tid for, hvornår den skal forsvinde efter at være inaktiv.\nAltid: du vil aldrig se musen.</translation>
     </message>
     <message>
         <source>idleTimeoutGroupBox</source>
-        <translation>Dölj pekare vid overksam:\nLängden (sekunder) efter vilken som muspekaren som har varit overksam döljer sig själv</translation>
+        <translation>Indstil en tid for, at musen skal forsvinde efter at være inaktiv.</translation>
     </message>
     <message>
         <source>backButtonBehaviorGroupBox</source>
-        <translation>Beteende för bakåtknapp:\nStäller in handkontrollerns bakåtknapp för att emulera ett tryck på angivna positionen på PS4ns touchpad</translation>
+        <translation>Tilbageknap Adfærd:\nIndstiller controllerens tilbageknap til at efterligne tryk på den angivne position på PS4 berøringsflade.</translation>
     </message>
     <message>
         <source>enableCompatibilityCheckBox</source>
-        <translation>Visa kompatibilitetsdata:\nVisar information om spelkompatibilitet i tabellvyn. Aktivera &quot;Uppdatera kompatibilitet vid uppstart&quot; för att få uppdaterad information</translation>
+        <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
         <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Uppdatera kompatibilitet vid uppstart:\nUppdatera automatiskt kompatibilitetsdatabasen när shadPS4 startar</translation>
+        <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
         <source>updateCompatibilityButton</source>
-        <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt</translation>
+        <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
         <source>Never</source>
@@ -1573,23 +1605,23 @@
     </message>
     <message>
         <source>Idle</source>
-        <translation>Overksam</translation>
+        <translation>Inaktiv</translation>
     </message>
     <message>
         <source>Always</source>
-        <translation>Alltid</translation>
+        <translation>Altid</translation>
     </message>
     <message>
         <source>Touchpad Left</source>
-        <translation>Touchpad vänster</translation>
+        <translation>Berøringsplade Venstre</translation>
     </message>
     <message>
         <source>Touchpad Right</source>
-        <translation>Touchpad höger</translation>
+        <translation>Berøringsplade Højre</translation>
     </message>
     <message>
         <source>Touchpad Center</source>
-        <translation>Touchpad mitten</translation>
+        <translation>Berøringsplade Center</translation>
     </message>
     <message>
         <source>None</source>
@@ -1597,158 +1629,162 @@
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Grafikenhet:\nFör system med flera GPUer kan du välja den GPU som emulatorn ska använda från rullgardinsmenyn,\neller välja &quot;Auto Select&quot; för att automatiskt bestämma det</translation>
+        <translation>Grafikadapter:\nPå systemer med flere GPU&apos;er skal du vælge den GPU, emulatoren vil bruge fra en rullemenu,\neller vælge &quot;Auto Select&quot; for at vælge den automatisk.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
-        <translation>Bredd/Höjd:\nStäller in storleken för emulatorfönstret vid uppstart, som kan storleksändras under spelning.\nDetta är inte det samma som spelupplösningen</translation>
+        <translation>Skærmopløsning:\nIndstiller emulatorvinduets størrelse under afspilning, som kan ændres under afspilning.\nDette er forskelligt fra selve spillets opløsning.</translation>
     </message>
     <message>
         <source>heightDivider</source>
-        <translation>Vblank Divider:\nBildfrekvensen som emulatorn uppdaterar vid multipliceras med detta tal. Ändra detta kan ha inverkan på saker, såsom ökad spelhastighet eller göra sönder kritisk spelfunktionalitet, som inte förväntar sig denna ändring</translation>
+        <translation>Opdateringshastighedsdeler:\nMultiplicerer den frekvens, som emulatoren opdaterer billedet med, med dette tal. Ændring af dette kan have negative effekter, såsom hurtigere spil eller ødelagte funktioner!</translation>
     </message>
     <message>
         <source>dumpShadersCheckBox</source>
-        <translation>Aktivera Shaders Dumping:\nFör teknisk felsökning, sparar spelets shaders till en mapp när de renderas</translation>
+        <translation>Aktiver dumping af Shaders:\nTil teknisk fejlfinding gemmer det spillets shaders i en mappe under afspilning.</translation>
     </message>
     <message>
         <source>nullGpuCheckBox</source>
-        <translation>Aktivera Null GPU:\nFör teknisk felsökning, inaktiverar spelrenderingen som om det inte fanns något grafikkort</translation>
+        <translation>Aktiver virtuel GPU:\nTil teknisk fejlfinding deaktiverer det spilvisning, som om der ikke var et grafikkort.</translation>
     </message>
     <message>
         <source>gameFoldersBox</source>
-        <translation>Spelmappar:\nListan över mappar att leta i efter installerade spel</translation>
+        <translation>Spilmappen:\nListen over mapper til at tjekke for installerede spil.</translation>
     </message>
     <message>
         <source>addFolderButton</source>
-        <translation>Aktivera separat uppdateringsmapp:\nAktiverar installation av speluppdateringar till en separat mapp för enkel hantering.\nDetta kan manuellt skapas genom att lägga till den uppackade uppdateringen till spelmappen med namnet &quot;CUSA00000-UPDATE&quot; där CUSA ID matchar spelets id</translation>
+        <translation>Tilføj:\nTilføj en mappe til listen.</translation>
     </message>
     <message>
         <source>removeFolderButton</source>
-        <translation>Ta bort:\nTa bort en mapp från listan</translation>
+        <translation>Fjern:\nFjern en mappe fra listen.</translation>
     </message>
     <message>
         <source>debugDump</source>
-        <translation>Aktivera felsökningsdumpning:\nSparar import och export av symboler och fil-header-information för aktuellt körande PS4-program till en katalog</translation>
+        <translation>Aktiver debugging-dump:\nGemmer import/export-symboler og headeroplysninger for det aktuelle PS4-program til en mappe.</translation>
     </message>
     <message>
         <source>vkValidationCheckBox</source>
-        <translation>Aktivera Vulkan Validation Layers:\nAktiverar ett system som validerar tillståndet för Vulkan renderer och loggar information om dess interna tillstånd.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen</translation>
+        <translation>Aktiver Vulkan-valideringslag:\nAktiverer et system, der validerer Vulkan-driverens tilstand og logger oplysninger om dens interne tilstand. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
     </message>
     <message>
         <source>vkSyncValidationCheckBox</source>
-        <translation>Aktivera Vulkan Synchronization Validation:\nAktiverar ett system som validerar timing för Vulkan rendering tasks.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen</translation>
+        <translation>Aktiver Vulkan-synkroniseringsvalidering:\nAktiverer et system, der validerer tidspunktet for Vulkan&apos;s renderingsopgaver. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
     </message>
     <message>
         <source>rdocCheckBox</source>
-        <translation>Aktivera RenderDoc-felsökning:\nOm aktiverad kommer emulatorn att tillhandahålla kompatibilitet med Renderdoc för att tillåta fångst och analys för aktuell renderad bildruta</translation>
+        <translation>Aktiver RenderDoc-fejlfinding:\nHvis aktiveret, giver det emulatoren mulighed for kompatibilitet med Renderdoc til at fange og analysere det aktuelle gengivne billede.</translation>
     </message>
     <message>
         <source>collectShaderCheckBox</source>
-        <translation>Samla shaders:\nDu behöver aktivera detta för att redigera shaders med felsökningsmenyn (Ctrl + F10)</translation>
+        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
         <source>crashDiagnosticsCheckBox</source>
-        <translation>Krashdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-tillståndet vid tid för kraschen.\nAnvändbart för felsökning av &apos;Device lost&apos;-fel. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för Värd OCH Gäst.\nFungerar inte på Intel GPUer.\nDu behöver aktivera Vulkan Validation Layers och Vulkan SDK för att detta ska fungera</translation>
+        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
         <source>copyGPUBuffersCheckBox</source>
-        <translation>Kopiera GPU-buffertar:\nGör att man kan komma runt race conditions som involverar GPU submits.\nKan eller kan inte hjälpa med PM4 type 0-kraschar</translation>
+        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
         <source>hostMarkersCheckBox</source>
-        <translation>Felsökningsmarkörer för värd:\nInfogar informationsliknande markörer i emulatorn för specifika AMDGPU-kommandon runt Vulkan-kommandon, så väl som ger resurser felsökningsnamn.\nOm du har detta aktiverat bör du aktivera Kraschdiagnostik.\nAnvändbart för  program som RenderDoc</translation>
+        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
         <source>guestMarkersCheckBox</source>
-        <translation>Felsökningsmarkörer för gäst:\nInfogar felsökningsmarkörer som själva spelet har lagt till i kommandobufferten.\nOm du har aktiverat detta bör du aktivera Kraschdiagnostik.\nAnvändbart för program som RenderDoc</translation>
-    </message>
-    <message>
-        <source>Release</source>
-        <translation>Release</translation>
-    </message>
-    <message>
-        <source>Nightly</source>
-        <translation>Nightly</translation>
-    </message>
-    <message>
-        <source>Set the volume of the background music.</source>
-        <translation>Ställ in volymen för bakgrundsmusiken.</translation>
-    </message>
-    <message>
-        <source>async</source>
-        <translation>asynk</translation>
-    </message>
-    <message>
-        <source>sync</source>
-        <translation>synk</translation>
-    </message>
-    <message>
-        <source>Directory to install games</source>
-        <translation>Katalog att installera spel till</translation>
+        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
         <source>Borderless</source>
-        <translation>Fönster utan kanter</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>True</source>
-        <translation>Sant</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable Motion Controls</source>
-        <translation>Aktivera rörelsekontroller</translation>
+        <source>Enable HDR</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Save Data Path</source>
-        <translation>Sökväg för sparat data</translation>
+        <source>Release</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation>Bläddra</translation>
-    </message>
-    <message>
-        <source>Directory to save data</source>
-        <translation>Katalog för sparat data</translation>
-    </message>
-    <message>
-        <source>saveDataBox</source>
-        <translation>Sökväg för sparat data:\nSökvägen där spelets sparade data kommer att sparas</translation>
-    </message>
-    <message>
-        <source>browseButton</source>
-        <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
-    </message>
-    <message>
-        <source>GUI</source>
-        <translation>Gränssnitt</translation>
+        <source>Nightly</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Background Image</source>
-        <translation>Bakgrundsbild</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Show Background Image</source>
-        <translation>Visa bakgrundsbild</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Opacity</source>
-        <translation>Opacitet</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set the volume of the background music.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Motion Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save Data Path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation type="unfinished">Browse</translation>
+    </message>
+    <message>
+        <source>async</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sync</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Auto Select</source>
-        <translation>Välj automatiskt</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Directory to install games</source>
+        <translation type="unfinished">Directory to install games</translation>
+    </message>
+    <message>
+        <source>Directory to save data</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>GUIBackgroundImageGroupBox</source>
-        <translation>Bakgrundsbild:\nKontrollerar opaciteten för spelets bakgrundsbild</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>enableHDRCheckBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>saveDataBox</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>browseButton</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>TrophyViewer</name>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trofé-visare</translation>
+        <translation>Trophy Viewer</translation>
     </message>
 </context>
 </TS>

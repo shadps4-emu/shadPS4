@@ -568,7 +568,7 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
                             } else {
                                 QMessageBox::warning(this, tr("Error"),
                                                      QString(tr("Failed to download file:") +
-                                                             "%1\n\n" + tr("Error:") + "%2")
+                                                             "%1\n\n" + tr("Error") + ":%2")
                                                          .arg(fileUrl)
                                                          .arg(fileReply->errorString()));
                             }
@@ -644,7 +644,7 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
                             } else {
                                 QMessageBox::warning(this, tr("Error"),
                                                      QString(tr("Failed to download file:") +
-                                                             "%1\n\n" + tr("Error:") + "%2")
+                                                             "%1\n\n" + tr("Error") + ":%2")
                                                          .arg(fileUrl)
                                                          .arg(fileReply->errorString()));
                             }
@@ -843,7 +843,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
     foreach (const QString& xmlFile, xmlFiles) {
         QFile file(dir.filePath(xmlFile));
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QMessageBox::warning(this, tr("ERROR"),
+            QMessageBox::warning(this, tr("Error"),
                                  QString(tr("Failed to open file:") + "\n%1").arg(xmlFile));
             continue;
         }
@@ -871,7 +871,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
         }
 
         if (xmlReader.hasError()) {
-            QMessageBox::warning(this, tr("ERROR"),
+            QMessageBox::warning(this, tr("Error"),
                                  QString(tr("XML ERROR:") + "\n%1").arg(xmlReader.errorString()));
         }
 
@@ -926,7 +926,7 @@ void CheatsPatches::createFilesJson(const QString& repository) {
     foreach (const QString& xmlFile, xmlFiles) {
         QFile file(dir.filePath(xmlFile));
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QMessageBox::warning(this, tr("ERROR"),
+            QMessageBox::warning(this, tr("Error"),
                                  QString(tr("Failed to open file:") + "\n%1").arg(xmlFile));
             continue;
         }
@@ -944,7 +944,7 @@ void CheatsPatches::createFilesJson(const QString& repository) {
         }
 
         if (xmlReader.hasError()) {
-            QMessageBox::warning(this, tr("ERROR"),
+            QMessageBox::warning(this, tr("Error"),
                                  QString(tr("XML ERROR:") + "\n%1").arg(xmlReader.errorString()));
         }
         filesObject[xmlFile] = titleIdsArray;
@@ -952,7 +952,7 @@ void CheatsPatches::createFilesJson(const QString& repository) {
 
     QFile jsonFile(dir.absolutePath() + "/files.json");
     if (!jsonFile.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, tr("ERROR"), tr("Failed to open files.json for writing"));
+        QMessageBox::warning(this, tr("Error"), tr("Failed to open files.json for writing"));
         return;
     }
 
@@ -1155,7 +1155,7 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
     QString fullPath = dir.filePath(folderPath);
 
     if (!dir.exists(fullPath)) {
-        QMessageBox::warning(this, tr("ERROR"),
+        QMessageBox::warning(this, tr("Error"),
                              QString(tr("Directory does not exist:") + "\n%1").arg(fullPath));
         return;
     }
@@ -1165,7 +1165,7 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
 
     QFile jsonFile(filesJsonPath);
     if (!jsonFile.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, tr("ERROR"), tr("Failed to open files.json for reading."));
+        QMessageBox::warning(this, tr("Error"), tr("Failed to open files.json for reading."));
         return;
     }
 
@@ -1189,7 +1189,7 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
 
             if (!xmlFile.open(QIODevice::ReadOnly)) {
                 QMessageBox::warning(
-                    this, tr("ERROR"),
+                    this, tr("Error"),
                     QString(tr("Failed to open file:") + "\n%1").arg(xmlFile.fileName()));
                 continue;
             }
