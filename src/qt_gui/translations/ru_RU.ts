@@ -1585,8 +1585,7 @@
     </message>
     <message>
       <source>GUIBackgroundImageGroupBox</source>
-      <translation>Фоновое изображение:
-Контролируйте прозрачность фоновое изображение игры.</translation>
+      <translation>Фоновое изображение:\nКонтролируйте прозрачность фоновое изображение игры.</translation>
     </message>
     <message>
       <source>GUIMusicGroupBox</source>
@@ -1670,9 +1669,7 @@
     </message>
     <message>
       <source>enableHDRCheckBox</source>
-      <translation>Включить HDR:
-Включает HDR в играх, которые его поддерживают.
-Ваш монитор должен поддерживать цветовое пространство BT2020 PQ и формат swapchain RGB10A2.</translation>
+      <translation>Включить HDR:\nВключает HDR в играх, которые его поддерживают.\nВаш монитор должен поддерживать цветовое пространство BT2020 PQ и формат swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>gameFoldersBox</source>
