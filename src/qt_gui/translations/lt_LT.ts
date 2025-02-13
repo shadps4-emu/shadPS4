@@ -2,1789 +2,1789 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="it_LT">
-<context>
+<TS version="2.1" language="lt_LT" sourcelanguage="en">
+  <context>
     <name>AboutDialog</name>
     <message>
-        <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+      <source>About shadPS4</source>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation>shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
     <message>
-        <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
+      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
     </message>
     <message>
-        <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>This software should not be used to play games you have not legally obtained.</translation>
+      <source>This software should not be used to play games you have not legally obtained.</source>
+      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheatsPatches</name>
     <message>
-        <source>Cheats / Patches for </source>
-        <translation>Cheats / Patches for </translation>
+      <source>Cheats / Patches for </source>
+      <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-        <source>defaultTextEdit_MSG</source>
-        <translation>Cheats/Patches yra eksperimentiniai.\nNaudokite atsargiai.\n\nAtsisiųskite cheats atskirai pasirinkdami saugyklą ir paspausdami atsisiuntimo mygtuką.\nPatches skirtuke galite atsisiųsti visus patch’us vienu metu, pasirinkti, kuriuos norite naudoti, ir išsaugoti pasirinkimą.\n\nKadangi mes nekurime Cheats/Patches,\npraneškite problemas cheat autoriui.\n\nSukūrėte naują cheat? Apsilankykite:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>defaultTextEdit_MSG</source>
+      <translation>Cheats/Patches yra eksperimentiniai.\nNaudokite atsargiai.\n\nAtsisiųskite cheats atskirai pasirinkdami saugyklą ir paspausdami atsisiuntimo mygtuką.\nPatches skirtuke galite atsisiųsti visus patch’us vienu metu, pasirinkti, kuriuos norite naudoti, ir išsaugoti pasirinkimą.\n\nKadangi mes nekurime Cheats/Patches,\npraneškite problemas cheat autoriui.\n\nSukūrėte naują cheat? Apsilankykite:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
-        <source>No Image Available</source>
-        <translation>Nuotrauka neprieinama</translation>
+      <source>No Image Available</source>
+      <translation>Nuotrauka neprieinama</translation>
     </message>
     <message>
-        <source>Serial: </source>
-        <translation>Seriinis numeris: </translation>
+      <source>Serial: </source>
+      <translation>Seriinis numeris: </translation>
     </message>
     <message>
-        <source>Version: </source>
-        <translation>Versija: </translation>
+      <source>Version: </source>
+      <translation>Versija: </translation>
     </message>
     <message>
-        <source>Size: </source>
-        <translation>Dydis: </translation>
+      <source>Size: </source>
+      <translation>Dydis: </translation>
     </message>
     <message>
-        <source>Select Cheat File:</source>
-        <translation>Pasirinkite sukčiavimo failą:</translation>
+      <source>Select Cheat File:</source>
+      <translation>Pasirinkite sukčiavimo failą:</translation>
     </message>
     <message>
-        <source>Repository:</source>
-        <translation>Saugykla:</translation>
+      <source>Repository:</source>
+      <translation>Saugykla:</translation>
     </message>
     <message>
-        <source>Download Cheats</source>
-        <translation>Atsisiųsti sukčiavimus</translation>
+      <source>Download Cheats</source>
+      <translation>Atsisiųsti sukčiavimus</translation>
     </message>
     <message>
-        <source>Delete File</source>
-        <translation>Pašalinti failą</translation>
+      <source>Delete File</source>
+      <translation>Pašalinti failą</translation>
     </message>
     <message>
-        <source>No files selected.</source>
-        <translation>Failai nepasirinkti.</translation>
+      <source>No files selected.</source>
+      <translation>Failai nepasirinkti.</translation>
     </message>
     <message>
-        <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Galite pašalinti sukčiavimus, kurių nenorite, juos atsisiuntę.</translation>
+      <source>You can delete the cheats you don&apos;t want after downloading them.</source>
+      <translation>Galite pašalinti sukčiavimus, kurių nenorite, juos atsisiuntę.</translation>
     </message>
     <message>
-        <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Ar norite ištrinti pasirinktą failą?\n%1</translation>
+      <source>Do you want to delete the selected file?\n%1</source>
+      <translation>Ar norite ištrinti pasirinktą failą?\n%1</translation>
     </message>
     <message>
-        <source>Select Patch File:</source>
-        <translation>Pasirinkite pataisos failą:</translation>
+      <source>Select Patch File:</source>
+      <translation>Pasirinkite pataisos failą:</translation>
     </message>
     <message>
-        <source>Download Patches</source>
-        <translation>Atsisiųsti pataisas</translation>
+      <source>Download Patches</source>
+      <translation>Atsisiųsti pataisas</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Įrašyti</translation>
+      <source>Save</source>
+      <translation>Įrašyti</translation>
     </message>
     <message>
-        <source>Cheats</source>
-        <translation>Sukčiavimai</translation>
+      <source>Cheats</source>
+      <translation>Sukčiavimai</translation>
     </message>
     <message>
-        <source>Patches</source>
-        <translation>Pataisos</translation>
+      <source>Patches</source>
+      <translation>Pataisos</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Klaida</translation>
+      <source>Error</source>
+      <translation>Klaida</translation>
     </message>
     <message>
-        <source>No patch selected.</source>
-        <translation>Nieko nepataisyta.</translation>
+      <source>No patch selected.</source>
+      <translation>Nieko nepataisyta.</translation>
     </message>
     <message>
-        <source>Unable to open files.json for reading.</source>
-        <translation>Neįmanoma atidaryti files.json skaitymui.</translation>
+      <source>Unable to open files.json for reading.</source>
+      <translation>Neįmanoma atidaryti files.json skaitymui.</translation>
     </message>
     <message>
-        <source>No patch file found for the current serial.</source>
-        <translation>Nepavyko rasti pataisos failo dabartiniam serijiniam numeriui.</translation>
+      <source>No patch file found for the current serial.</source>
+      <translation>Nepavyko rasti pataisos failo dabartiniam serijiniam numeriui.</translation>
     </message>
     <message>
-        <source>Unable to open the file for reading.</source>
-        <translation>Neįmanoma atidaryti failo skaitymui.</translation>
+      <source>Unable to open the file for reading.</source>
+      <translation>Neįmanoma atidaryti failo skaitymui.</translation>
     </message>
     <message>
-        <source>Unable to open the file for writing.</source>
-        <translation>Neįmanoma atidaryti failo rašymui.</translation>
+      <source>Unable to open the file for writing.</source>
+      <translation>Neįmanoma atidaryti failo rašymui.</translation>
     </message>
     <message>
-        <source>Failed to parse XML: </source>
-        <translation>Nepavyko išanalizuoti XML: </translation>
+      <source>Failed to parse XML: </source>
+      <translation>Nepavyko išanalizuoti XML: </translation>
     </message>
     <message>
-        <source>Success</source>
-        <translation>Sėkmė</translation>
+      <source>Success</source>
+      <translation>Sėkmė</translation>
     </message>
     <message>
-        <source>Options saved successfully.</source>
-        <translation>Nustatymai sėkmingai išsaugoti.</translation>
+      <source>Options saved successfully.</source>
+      <translation>Nustatymai sėkmingai išsaugoti.</translation>
     </message>
     <message>
-        <source>Invalid Source</source>
-        <translation>Netinkamas šaltinis</translation>
+      <source>Invalid Source</source>
+      <translation>Netinkamas šaltinis</translation>
     </message>
     <message>
-        <source>The selected source is invalid.</source>
-        <translation>Pasirinktas šaltinis yra netinkamas.</translation>
+      <source>The selected source is invalid.</source>
+      <translation>Pasirinktas šaltinis yra netinkamas.</translation>
     </message>
     <message>
-        <source>File Exists</source>
-        <translation>Failas egzistuoja</translation>
+      <source>File Exists</source>
+      <translation>Failas egzistuoja</translation>
     </message>
     <message>
-        <source>File already exists. Do you want to replace it?</source>
-        <translation>Failas jau egzistuoja. Ar norite jį pakeisti?</translation>
+      <source>File already exists. Do you want to replace it?</source>
+      <translation>Failas jau egzistuoja. Ar norite jį pakeisti?</translation>
     </message>
     <message>
-        <source>Failed to save file:</source>
-        <translation>Nepavyko išsaugoti failo:</translation>
+      <source>Failed to save file:</source>
+      <translation>Nepavyko išsaugoti failo:</translation>
     </message>
     <message>
-        <source>Failed to download file:</source>
-        <translation>Nepavyko atsisiųsti failo:</translation>
+      <source>Failed to download file:</source>
+      <translation>Nepavyko atsisiųsti failo:</translation>
     </message>
     <message>
-        <source>Cheats Not Found</source>
-        <translation>Sukčiavimai nerasti</translation>
+      <source>Cheats Not Found</source>
+      <translation>Sukčiavimai nerasti</translation>
     </message>
     <message>
-        <source>CheatsNotFound_MSG</source>
-        <translation>Nerasta sukčiavimų šiam žaidimui šioje pasirinktos saugyklos versijoje,bandykite kitą saugyklą arba skirtingą žaidimo versiją.</translation>
+      <source>CheatsNotFound_MSG</source>
+      <translation>Nerasta sukčiavimų šiam žaidimui šioje pasirinktos saugyklos versijoje,bandykite kitą saugyklą arba skirtingą žaidimo versiją.</translation>
     </message>
     <message>
-        <source>Cheats Downloaded Successfully</source>
-        <translation>Sukčiavimai sėkmingai atsisiųsti</translation>
+      <source>Cheats Downloaded Successfully</source>
+      <translation>Sukčiavimai sėkmingai atsisiųsti</translation>
     </message>
     <message>
-        <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Sėkmingai atsisiuntėte sukčiavimus šios žaidimo versijos iš pasirinktos saugyklos. Galite pabandyti atsisiųsti iš kitos saugyklos, jei ji yra prieinama, taip pat bus galima ją naudoti pasirinkus failą iš sąrašo.</translation>
+      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <translation>Sėkmingai atsisiuntėte sukčiavimus šios žaidimo versijos iš pasirinktos saugyklos. Galite pabandyti atsisiųsti iš kitos saugyklos, jei ji yra prieinama, taip pat bus galima ją naudoti pasirinkus failą iš sąrašo.</translation>
     </message>
     <message>
-        <source>Failed to save:</source>
-        <translation>Nepavyko išsaugoti:</translation>
+      <source>Failed to save:</source>
+      <translation>Nepavyko išsaugoti:</translation>
     </message>
     <message>
-        <source>Failed to download:</source>
-        <translation>Nepavyko atsisiųsti:</translation>
+      <source>Failed to download:</source>
+      <translation>Nepavyko atsisiųsti:</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Atsisiuntimas baigtas</translation>
+      <source>Download Complete</source>
+      <translation>Atsisiuntimas baigtas</translation>
     </message>
     <message>
-        <source>DownloadComplete_MSG</source>
-        <translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais. Jei pleistras nepasirodo, gali būti, kad jo nėra tam tikram žaidimo serijos numeriui ir versijai.</translation>
+      <source>DownloadComplete_MSG</source>
+      <translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais. Jei pleistras nepasirodo, gali būti, kad jo nėra tam tikram žaidimo serijos numeriui ir versijai.</translation>
     </message>
     <message>
-        <source>Failed to parse JSON data from HTML.</source>
-        <translation>Nepavyko išanalizuoti JSON duomenų iš HTML.</translation>
+      <source>Failed to parse JSON data from HTML.</source>
+      <translation>Nepavyko išanalizuoti JSON duomenų iš HTML.</translation>
     </message>
     <message>
-        <source>Failed to retrieve HTML page.</source>
-        <translation>Nepavyko gauti HTML puslapio.</translation>
+      <source>Failed to retrieve HTML page.</source>
+      <translation>Nepavyko gauti HTML puslapio.</translation>
     </message>
     <message>
-        <source>The game is in version: %1</source>
-        <translation>Žaidimas yra versijoje: %1</translation>
+      <source>The game is in version: %1</source>
+      <translation>Žaidimas yra versijoje: %1</translation>
     </message>
     <message>
-        <source>The downloaded patch only works on version: %1</source>
-        <translation>Parsisiųstas pataisas veikia tik versijoje: %1</translation>
+      <source>The downloaded patch only works on version: %1</source>
+      <translation>Parsisiųstas pataisas veikia tik versijoje: %1</translation>
     </message>
     <message>
-        <source>You may need to update your game.</source>
-        <translation>Gali tekti atnaujinti savo žaidimą.</translation>
+      <source>You may need to update your game.</source>
+      <translation>Gali tekti atnaujinti savo žaidimą.</translation>
     </message>
     <message>
-        <source>Incompatibility Notice</source>
-        <translation>Suderinamumo pranešimas</translation>
+      <source>Incompatibility Notice</source>
+      <translation>Suderinamumo pranešimas</translation>
     </message>
     <message>
-        <source>Failed to open file:</source>
-        <translation>Nepavyko atidaryti failo:</translation>
+      <source>Failed to open file:</source>
+      <translation>Nepavyko atidaryti failo:</translation>
     </message>
     <message>
-        <source>XML ERROR:</source>
-        <translation>XML KLAIDA:</translation>
+      <source>XML ERROR:</source>
+      <translation>XML KLAIDA:</translation>
     </message>
     <message>
-        <source>Failed to open files.json for writing</source>
-        <translation>Nepavyko atidaryti files.json rašymui</translation>
+      <source>Failed to open files.json for writing</source>
+      <translation>Nepavyko atidaryti files.json rašymui</translation>
     </message>
     <message>
-        <source>Author: </source>
-        <translation>Autorius: </translation>
+      <source>Author: </source>
+      <translation>Autorius: </translation>
     </message>
     <message>
-        <source>Directory does not exist:</source>
-        <translation>Katalogas neegzistuoja:</translation>
+      <source>Directory does not exist:</source>
+      <translation>Katalogas neegzistuoja:</translation>
     </message>
     <message>
-        <source>Failed to open files.json for reading.</source>
-        <translation>Nepavyko atidaryti files.json skaitymui.</translation>
+      <source>Failed to open files.json for reading.</source>
+      <translation>Nepavyko atidaryti files.json skaitymui.</translation>
     </message>
     <message>
-        <source>Name:</source>
-        <translation>Pavadinimas:</translation>
+      <source>Name:</source>
+      <translation>Pavadinimas:</translation>
     </message>
     <message>
-        <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Negalima taikyti sukčiavimų prieš pradedant žaidimą.</translation>
+      <source>Can&apos;t apply cheats before the game is started</source>
+      <translation>Negalima taikyti sukčiavimų prieš pradedant žaidimą.</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation type="unfinished">Uždaryti</translation>
+      <source>Close</source>
+      <translation>Uždaryti</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheckUpdate</name>
     <message>
-        <source>Auto Updater</source>
-        <translation>Automatinis atnaujinimas</translation>
+      <source>Auto Updater</source>
+      <translation>Automatinis atnaujinimas</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Klaida</translation>
+      <source>Error</source>
+      <translation>Klaida</translation>
     </message>
     <message>
-        <source>Network error:</source>
-        <translation>Tinklo klaida:</translation>
+      <source>Network error:</source>
+      <translation>Tinklo klaida:</translation>
     </message>
     <message>
-        <source>Error_Github_limit_MSG</source>
-        <translation>Automatinis atnaujinimas leidžia iki 60 atnaujinimų patikrinimų per valandą.\nJūs pasiekėte šią ribą. Bandykite dar kartą vėliau.</translation>
+      <source>Error_Github_limit_MSG</source>
+      <translation>Automatinis atnaujinimas leidžia iki 60 atnaujinimų patikrinimų per valandą.\nJūs pasiekėte šią ribą. Bandykite dar kartą vėliau.</translation>
     </message>
     <message>
-        <source>Failed to parse update information.</source>
-        <translation>Nepavyko išanalizuoti atnaujinimo informacijos.</translation>
+      <source>Failed to parse update information.</source>
+      <translation>Nepavyko išanalizuoti atnaujinimo informacijos.</translation>
     </message>
     <message>
-        <source>No pre-releases found.</source>
-        <translation>Išankstinių leidimų nerasta.</translation>
+      <source>No pre-releases found.</source>
+      <translation>Išankstinių leidimų nerasta.</translation>
     </message>
     <message>
-        <source>Invalid release data.</source>
-        <translation>Neteisingi leidimo duomenys.</translation>
+      <source>Invalid release data.</source>
+      <translation>Neteisingi leidimo duomenys.</translation>
     </message>
     <message>
-        <source>No download URL found for the specified asset.</source>
-        <translation>Nerasta atsisiuntimo URL nurodytam turtui.</translation>
+      <source>No download URL found for the specified asset.</source>
+      <translation>Nerasta atsisiuntimo URL nurodytam turtui.</translation>
     </message>
     <message>
-        <source>Your version is already up to date!</source>
-        <translation>Jūsų versija jau atnaujinta!</translation>
+      <source>Your version is already up to date!</source>
+      <translation>Jūsų versija jau atnaujinta!</translation>
     </message>
     <message>
-        <source>Update Available</source>
-        <translation>Prieinama atnaujinimas</translation>
+      <source>Update Available</source>
+      <translation>Prieinama atnaujinimas</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Atnaujinimo Kanalas</translation>
+      <source>Update Channel</source>
+      <translation>Atnaujinimo Kanalas</translation>
     </message>
     <message>
-        <source>Current Version</source>
-        <translation>Esama versija</translation>
+      <source>Current Version</source>
+      <translation>Esama versija</translation>
     </message>
     <message>
-        <source>Latest Version</source>
-        <translation>Paskutinė versija</translation>
+      <source>Latest Version</source>
+      <translation>Paskutinė versija</translation>
     </message>
     <message>
-        <source>Do you want to update?</source>
-        <translation>Ar norite atnaujinti?</translation>
+      <source>Do you want to update?</source>
+      <translation>Ar norite atnaujinti?</translation>
     </message>
     <message>
-        <source>Show Changelog</source>
-        <translation>Rodyti pakeitimų sąrašą</translation>
+      <source>Show Changelog</source>
+      <translation>Rodyti pakeitimų sąrašą</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Tikrinti naujinimus paleidus</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Tikrinti naujinimus paleidus</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Atnaujinti</translation>
+      <source>Update</source>
+      <translation>Atnaujinti</translation>
     </message>
     <message>
-        <source>No</source>
-        <translation>Ne</translation>
+      <source>No</source>
+      <translation>Ne</translation>
     </message>
     <message>
-        <source>Hide Changelog</source>
-        <translation>Slėpti pakeitimų sąrašą</translation>
+      <source>Hide Changelog</source>
+      <translation>Slėpti pakeitimų sąrašą</translation>
     </message>
     <message>
-        <source>Changes</source>
-        <translation>Pokyčiai</translation>
+      <source>Changes</source>
+      <translation>Pokyčiai</translation>
     </message>
     <message>
-        <source>Network error occurred while trying to access the URL</source>
-        <translation>Tinklo klaida bandant pasiekti URL</translation>
+      <source>Network error occurred while trying to access the URL</source>
+      <translation>Tinklo klaida bandant pasiekti URL</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Atsisiuntimas baigtas</translation>
+      <source>Download Complete</source>
+      <translation>Atsisiuntimas baigtas</translation>
     </message>
     <message>
-        <source>The update has been downloaded, press OK to install.</source>
-        <translation>Atnaujinimas buvo atsisiųstas, paspauskite OK, kad įdiegtumėte.</translation>
+      <source>The update has been downloaded, press OK to install.</source>
+      <translation>Atnaujinimas buvo atsisiųstas, paspauskite OK, kad įdiegtumėte.</translation>
     </message>
     <message>
-        <source>Failed to save the update file at</source>
-        <translation>Nepavyko išsaugoti atnaujinimo failo</translation>
+      <source>Failed to save the update file at</source>
+      <translation>Nepavyko išsaugoti atnaujinimo failo</translation>
     </message>
     <message>
-        <source>Starting Update...</source>
-        <translation>Pradedama atnaujinimas...</translation>
+      <source>Starting Update...</source>
+      <translation>Pradedama atnaujinimas...</translation>
     </message>
     <message>
-        <source>Failed to create the update script file</source>
-        <translation>Nepavyko sukurti atnaujinimo scenarijaus failo</translation>
+      <source>Failed to create the update script file</source>
+      <translation>Nepavyko sukurti atnaujinimo scenarijaus failo</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CompatibilityInfoClass</name>
     <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Naudojamos suderinamumo duomenis, prašome palaukti</translation>
+      <source>Fetching compatibility data, please wait</source>
+      <translation>Naudojamos suderinamumo duomenis, prašome palaukti</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Atšaukti</translation>
+      <source>Cancel</source>
+      <translation>Atšaukti</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Kraunama...</translation>
+      <source>Loading...</source>
+      <translation>Kraunama...</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Klaida</translation>
+      <source>Error</source>
+      <translation>Klaida</translation>
     </message>
     <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Negalima atnaujinti suderinamumo duomenų! Bandykite vėliau.</translation>
+      <source>Unable to update compatibility data! Try again later.</source>
+      <translation>Negalima atnaujinti suderinamumo duomenų! Bandykite vėliau.</translation>
     </message>
     <message>
-        <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Negalima atidaryti compatibility_data.json failo rašymui.</translation>
+      <source>Unable to open compatibility_data.json for writing.</source>
+      <translation>Negalima atidaryti compatibility_data.json failo rašymui.</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation>Nežinoma</translation>
+      <source>Unknown</source>
+      <translation>Nežinoma</translation>
     </message>
     <message>
-        <source>Nothing</source>
-        <translation>Nėra</translation>
+      <source>Nothing</source>
+      <translation>Nėra</translation>
     </message>
     <message>
-        <source>Boots</source>
-        <translation>Batai</translation>
+      <source>Boots</source>
+      <translation>Batai</translation>
     </message>
     <message>
-        <source>Menus</source>
-        <translation>Meniu</translation>
+      <source>Menus</source>
+      <translation>Meniu</translation>
     </message>
     <message>
-        <source>Ingame</source>
-        <translation>Žaidime</translation>
+      <source>Ingame</source>
+      <translation>Žaidime</translation>
     </message>
     <message>
-        <source>Playable</source>
-        <translation>Žaidžiamas</translation>
+      <source>Playable</source>
+      <translation>Žaidžiamas</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ControlSettings</name>
     <message>
-        <source>Configure Controls</source>
-        <translation type="unfinished"></translation>
+      <source>Configure Controls</source>
+      <translation type="unfinished">Configure Controls</translation>
     </message>
     <message>
-        <source>Control Settings</source>
-        <translation type="unfinished"></translation>
+      <source>Control Settings</source>
+      <translation type="unfinished">Control Settings</translation>
     </message>
     <message>
-        <source>D-Pad</source>
-        <translation type="unfinished"></translation>
+      <source>D-Pad</source>
+      <translation type="unfinished">D-Pad</translation>
     </message>
     <message>
-        <source>Up</source>
-        <translation type="unfinished"></translation>
+      <source>Up</source>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
-        <source>Left</source>
-        <translation type="unfinished"></translation>
+      <source>Left</source>
+      <translation type="unfinished">Left</translation>
     </message>
     <message>
-        <source>Right</source>
-        <translation type="unfinished"></translation>
+      <source>Right</source>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
-        <source>Down</source>
-        <translation type="unfinished"></translation>
+      <source>Down</source>
+      <translation type="unfinished">Down</translation>
     </message>
     <message>
-        <source>Left Stick Deadzone (def:2 max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick Deadzone (def:2 max:127)</source>
+      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
     </message>
     <message>
-        <source>Left Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Left Deadzone</source>
+      <translation type="unfinished">Left Deadzone</translation>
     </message>
     <message>
-        <source>Left Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick</source>
+      <translation type="unfinished">Left Stick</translation>
     </message>
     <message>
-        <source>Config Selection</source>
-        <translation type="unfinished"></translation>
+      <source>Config Selection</source>
+      <translation type="unfinished">Config Selection</translation>
     </message>
     <message>
-        <source>Common Config</source>
-        <translation type="unfinished"></translation>
+      <source>Common Config</source>
+      <translation type="unfinished">Common Config</translation>
     </message>
     <message>
-        <source>Use per-game configs</source>
-        <translation type="unfinished"></translation>
+      <source>Use per-game configs</source>
+      <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
-        <source>L1 / LB</source>
-        <translation type="unfinished"></translation>
+      <source>L1 / LB</source>
+      <translation type="unfinished">L1 / LB</translation>
     </message>
     <message>
-        <source>L2 / LT</source>
-        <translation type="unfinished"></translation>
+      <source>L2 / LT</source>
+      <translation type="unfinished">L2 / LT</translation>
     </message>
     <message>
-        <source>KBM Controls</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Controls</source>
+      <translation type="unfinished">KBM Controls</translation>
     </message>
     <message>
-        <source>KBM Editor</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Editor</source>
+      <translation type="unfinished">KBM Editor</translation>
     </message>
     <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
+      <source>Back</source>
+      <translation type="unfinished">Back</translation>
     </message>
     <message>
-        <source>R1 / RB</source>
-        <translation type="unfinished"></translation>
+      <source>R1 / RB</source>
+      <translation type="unfinished">R1 / RB</translation>
     </message>
     <message>
-        <source>R2 / RT</source>
-        <translation type="unfinished"></translation>
+      <source>R2 / RT</source>
+      <translation type="unfinished">R2 / RT</translation>
     </message>
     <message>
-        <source>L3</source>
-        <translation type="unfinished"></translation>
+      <source>L3</source>
+      <translation type="unfinished">L3</translation>
     </message>
     <message>
-        <source>Options / Start</source>
-        <translation type="unfinished"></translation>
+      <source>Options / Start</source>
+      <translation type="unfinished">Options / Start</translation>
     </message>
     <message>
-        <source>R3</source>
-        <translation type="unfinished"></translation>
+      <source>R3</source>
+      <translation type="unfinished">R3</translation>
     </message>
     <message>
-        <source>Face Buttons</source>
-        <translation type="unfinished"></translation>
+      <source>Face Buttons</source>
+      <translation type="unfinished">Face Buttons</translation>
     </message>
     <message>
-        <source>Triangle / Y</source>
-        <translation type="unfinished"></translation>
+      <source>Triangle / Y</source>
+      <translation type="unfinished">Triangle / Y</translation>
     </message>
     <message>
-        <source>Square / X</source>
-        <translation type="unfinished"></translation>
+      <source>Square / X</source>
+      <translation type="unfinished">Square / X</translation>
     </message>
     <message>
-        <source>Circle / B</source>
-        <translation type="unfinished"></translation>
+      <source>Circle / B</source>
+      <translation type="unfinished">Circle / B</translation>
     </message>
     <message>
-        <source>Cross / A</source>
-        <translation type="unfinished"></translation>
+      <source>Cross / A</source>
+      <translation type="unfinished">Cross / A</translation>
     </message>
     <message>
-        <source>Right Stick Deadzone (def:2, max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick Deadzone (def:2, max:127)</source>
+      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
     </message>
     <message>
-        <source>Right Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Right Deadzone</source>
+      <translation type="unfinished">Right Deadzone</translation>
     </message>
     <message>
-        <source>Right Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick</source>
+      <translation type="unfinished">Right Stick</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ElfViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Open Folder</translation>
+      <source>Open Folder</source>
+      <translation type="unfinished">Open Folder</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInfoClass</name>
     <message>
-        <source>Loading game list, please wait :3</source>
-        <translation>Loading game list, please wait :3</translation>
+      <source>Loading game list, please wait :3</source>
+      <translation type="unfinished">Loading game list, please wait :3</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Cancel</translation>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Loading...</translation>
+      <source>Loading...</source>
+      <translation type="unfinished">Loading...</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInstallDialog</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation type="unfinished">shadPS4 - Choose directory</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation>Directory to install games</translation>
+      <source>Directory to install games</source>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation>Browse</translation>
+      <source>Browse</source>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Error</translation>
+      <source>Error</source>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
-        <source>Directory to install DLC</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install DLC</source>
+      <translation type="unfinished">Directory to install DLC</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListFrame</name>
     <message>
-        <source>Icon</source>
-        <translation>Ikona</translation>
+      <source>Icon</source>
+      <translation>Ikona</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation>Vardas</translation>
+      <source>Name</source>
+      <translation>Vardas</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation>Serijinis numeris</translation>
+      <source>Serial</source>
+      <translation>Serijinis numeris</translation>
     </message>
     <message>
-        <source>Compatibility</source>
-        <translation>Compatibility</translation>
+      <source>Compatibility</source>
+      <translation type="unfinished">Compatibility</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation>Regionas</translation>
+      <source>Region</source>
+      <translation>Regionas</translation>
     </message>
     <message>
-        <source>Firmware</source>
-        <translation>Firmvare</translation>
+      <source>Firmware</source>
+      <translation>Firmvare</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation>Dydis</translation>
+      <source>Size</source>
+      <translation>Dydis</translation>
     </message>
     <message>
-        <source>Version</source>
-        <translation>Versija</translation>
+      <source>Version</source>
+      <translation>Versija</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation>Kelias</translation>
+      <source>Path</source>
+      <translation>Kelias</translation>
     </message>
     <message>
-        <source>Play Time</source>
-        <translation>Žaidimo laikas</translation>
+      <source>Play Time</source>
+      <translation>Žaidimo laikas</translation>
     </message>
     <message>
-        <source>Never Played</source>
-        <translation>Never Played</translation>
+      <source>Never Played</source>
+      <translation type="unfinished">Never Played</translation>
     </message>
     <message>
-        <source>h</source>
-        <translation>h</translation>
+      <source>h</source>
+      <translation type="unfinished">h</translation>
     </message>
     <message>
-        <source>m</source>
-        <translation>m</translation>
+      <source>m</source>
+      <translation type="unfinished">m</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Compatibility is untested</source>
-        <translation>Compatibility is untested</translation>
+      <source>Compatibility is untested</source>
+      <translation type="unfinished">Compatibility is untested</translation>
     </message>
     <message>
-        <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Game does not initialize properly / crashes the emulator</translation>
+      <source>Game does not initialize properly / crashes the emulator</source>
+      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
     </message>
     <message>
-        <source>Game boots, but only displays a blank screen</source>
-        <translation>Game boots, but only displays a blank screen</translation>
+      <source>Game boots, but only displays a blank screen</source>
+      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
     </message>
     <message>
-        <source>Game displays an image but does not go past the menu</source>
-        <translation>Game displays an image but does not go past the menu</translation>
+      <source>Game displays an image but does not go past the menu</source>
+      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
     </message>
     <message>
-        <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Game has game-breaking glitches or unplayable performance</translation>
+      <source>Game has game-breaking glitches or unplayable performance</source>
+      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
     </message>
     <message>
-        <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Game can be completed with playable performance and no major glitches</translation>
+      <source>Game can be completed with playable performance and no major glitches</source>
+      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
     </message>
     <message>
-        <source>Click to see details on github</source>
-        <translation>Spustelėkite, kad pamatytumėte detales GitHub</translation>
+      <source>Click to see details on github</source>
+      <translation>Spustelėkite, kad pamatytumėte detales GitHub</translation>
     </message>
     <message>
-        <source>Last updated</source>
-        <translation>Paskutinį kartą atnaujinta</translation>
+      <source>Last updated</source>
+      <translation>Paskutinį kartą atnaujinta</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListUtils</name>
     <message>
-        <source>B</source>
-        <translation>B</translation>
+      <source>B</source>
+      <translation type="unfinished">B</translation>
     </message>
     <message>
-        <source>KB</source>
-        <translation>KB</translation>
+      <source>KB</source>
+      <translation type="unfinished">KB</translation>
     </message>
     <message>
-        <source>MB</source>
-        <translation>MB</translation>
+      <source>MB</source>
+      <translation type="unfinished">MB</translation>
     </message>
     <message>
-        <source>GB</source>
-        <translation>GB</translation>
+      <source>GB</source>
+      <translation type="unfinished">GB</translation>
     </message>
     <message>
-        <source>TB</source>
-        <translation>TB</translation>
+      <source>TB</source>
+      <translation type="unfinished">TB</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GuiContextMenus</name>
     <message>
-        <source>Create Shortcut</source>
-        <translation>Create Shortcut</translation>
+      <source>Create Shortcut</source>
+      <translation type="unfinished">Create Shortcut</translation>
     </message>
     <message>
-        <source>SFO Viewer</source>
-        <translation>SFO Viewer</translation>
+      <source>Cheats / Patches</source>
+      <translation type="unfinished">Cheats / Patches</translation>
     </message>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+      <source>SFO Viewer</source>
+      <translation type="unfinished">SFO Viewer</translation>
     </message>
     <message>
-        <source>Open Folder...</source>
-        <translation>Atidaryti Katalogą...</translation>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
     <message>
-        <source>Open Game Folder</source>
-        <translation>Atidaryti Žaidimo Katalogą</translation>
+      <source>Open Folder...</source>
+      <translation>Atidaryti Katalogą...</translation>
     </message>
     <message>
-        <source>Open Save Data Folder</source>
-        <translation>Atidaryti Išsaugotų Duomenų Katalogą</translation>
+      <source>Open Game Folder</source>
+      <translation>Atidaryti Žaidimo Katalogą</translation>
     </message>
     <message>
-        <source>Open Log Folder</source>
-        <translation>Atidaryti Žurnalų Katalogą</translation>
+      <source>Open Save Data Folder</source>
+      <translation>Atidaryti Išsaugotų Duomenų Katalogą</translation>
     </message>
     <message>
-        <source>Copy info...</source>
-        <translation>Copy info...</translation>
+      <source>Open Log Folder</source>
+      <translation>Atidaryti Žurnalų Katalogą</translation>
     </message>
     <message>
-        <source>Copy Name</source>
-        <translation>Copy Name</translation>
+      <source>Copy info...</source>
+      <translation type="unfinished">Copy info...</translation>
     </message>
     <message>
-        <source>Copy Serial</source>
-        <translation>Copy Serial</translation>
+      <source>Copy Name</source>
+      <translation type="unfinished">Copy Name</translation>
     </message>
     <message>
-        <source>Copy All</source>
-        <translation>Copy All</translation>
+      <source>Copy Serial</source>
+      <translation type="unfinished">Copy Serial</translation>
     </message>
     <message>
-        <source>Delete...</source>
-        <translation>Delete...</translation>
+      <source>Copy Version</source>
+      <translation type="unfinished">Copy Version</translation>
     </message>
     <message>
-        <source>Delete Game</source>
-        <translation>Delete Game</translation>
+      <source>Copy Size</source>
+      <translation type="unfinished">Copy Size</translation>
     </message>
     <message>
-        <source>Delete Update</source>
-        <translation>Delete Update</translation>
+      <source>Copy All</source>
+      <translation type="unfinished">Copy All</translation>
     </message>
     <message>
-        <source>Delete DLC</source>
-        <translation>Delete DLC</translation>
+      <source>Delete...</source>
+      <translation type="unfinished">Delete...</translation>
     </message>
     <message>
-        <source>Compatibility...</source>
-        <translation>Compatibility...</translation>
+      <source>Delete Game</source>
+      <translation type="unfinished">Delete Game</translation>
     </message>
     <message>
-        <source>Update database</source>
-        <translation>Update database</translation>
+      <source>Delete Update</source>
+      <translation type="unfinished">Delete Update</translation>
     </message>
     <message>
-        <source>View report</source>
-        <translation>View report</translation>
+      <source>Delete DLC</source>
+      <translation type="unfinished">Delete DLC</translation>
     </message>
     <message>
-        <source>Submit a report</source>
-        <translation>Submit a report</translation>
+      <source>Compatibility...</source>
+      <translation type="unfinished">Compatibility...</translation>
     </message>
     <message>
-        <source>Shortcut creation</source>
-        <translation>Shortcut creation</translation>
+      <source>Update database</source>
+      <translation type="unfinished">Update database</translation>
     </message>
     <message>
-        <source>Shortcut created successfully!</source>
-        <translation>Shortcut created successfully!</translation>
+      <source>View report</source>
+      <translation type="unfinished">View report</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Error</translation>
+      <source>Submit a report</source>
+      <translation type="unfinished">Submit a report</translation>
     </message>
     <message>
-        <source>Error creating shortcut!</source>
-        <translation>Error creating shortcut!</translation>
+      <source>Shortcut creation</source>
+      <translation type="unfinished">Shortcut creation</translation>
     </message>
     <message>
-        <source>Install PKG</source>
-        <translation>Install PKG</translation>
+      <source>Shortcut created successfully!</source>
+      <translation type="unfinished">Shortcut created successfully!</translation>
     </message>
     <message>
-        <source>Game</source>
-        <translation>Game</translation>
+      <source>Error</source>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
-        <source>This game has no update to delete!</source>
-        <translation>This game has no update to delete!</translation>
+      <source>Error creating shortcut!</source>
+      <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Update</translation>
+      <source>Install PKG</source>
+      <translation type="unfinished">Install PKG</translation>
     </message>
     <message>
-        <source>This game has no DLC to delete!</source>
-        <translation>This game has no DLC to delete!</translation>
+      <source>Game</source>
+      <translation type="unfinished">Game</translation>
     </message>
     <message>
-        <source>DLC</source>
-        <translation>DLC</translation>
+      <source>This game has no update to delete!</source>
+      <translation type="unfinished">This game has no update to delete!</translation>
     </message>
     <message>
-        <source>Delete %1</source>
-        <translation>Delete %1</translation>
+      <source>Update</source>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <source>This game has no DLC to delete!</source>
+      <translation type="unfinished">This game has no DLC to delete!</translation>
     </message>
     <message>
-        <source>Open Update Folder</source>
-        <translation type="unfinished"></translation>
+      <source>DLC</source>
+      <translation type="unfinished">DLC</translation>
     </message>
     <message>
-        <source>Cheats / Patches</source>
-        <translation type="unfinished"></translation>
+      <source>Delete %1</source>
+      <translation type="unfinished">Delete %1</translation>
     </message>
     <message>
-        <source>Copy Version</source>
-        <translation type="unfinished"></translation>
+      <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
+      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
     </message>
     <message>
-        <source>Copy Size</source>
-        <translation type="unfinished"></translation>
+      <source>Open Update Folder</source>
+      <translation type="unfinished">Open Update Folder</translation>
     </message>
     <message>
-        <source>Delete Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Delete Save Data</source>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
-        <source>This game has no update folder to open!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no update folder to open!</source>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
-        <source>Failed to convert icon.</source>
-        <translation type="unfinished"></translation>
+      <source>Failed to convert icon.</source>
+      <translation type="unfinished">Failed to convert icon.</translation>
     </message>
     <message>
-        <source>This game has no save data to delete!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no save data to delete!</source>
+      <translation type="unfinished">This game has no save data to delete!</translation>
     </message>
     <message>
-        <source>Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data</source>
+      <translation type="unfinished">Save Data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation type="unfinished">shadPS4 - Choose directory</translation>
     </message>
     <message>
-        <source>Select which directory you want to install to.</source>
-        <translation>Select which directory you want to install to.</translation>
+      <source>Select which directory you want to install to.</source>
+      <translation type="unfinished">Select which directory you want to install to.</translation>
     </message>
     <message>
-        <source>Install All Queued to Selected Folder</source>
-        <translation type="unfinished"></translation>
+      <source>Install All Queued to Selected Folder</source>
+      <translation type="unfinished">Install All Queued to Selected Folder</translation>
     </message>
     <message>
-        <source>Delete PKG File on Install</source>
-        <translation type="unfinished"></translation>
+      <source>Delete PKG File on Install</source>
+      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>MainWindow</name>
     <message>
-        <source>Open/Add Elf Folder</source>
-        <translation>Open/Add Elf Folder</translation>
+      <source>Open/Add Elf Folder</source>
+      <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
-        <source>Install Packages (PKG)</source>
-        <translation>Install Packages (PKG)</translation>
+      <source>Install Packages (PKG)</source>
+      <translation type="unfinished">Install Packages (PKG)</translation>
     </message>
     <message>
-        <source>Boot Game</source>
-        <translation>Boot Game</translation>
+      <source>Boot Game</source>
+      <translation type="unfinished">Boot Game</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Patikrinti atnaujinimus</translation>
+      <source>Check for Updates</source>
+      <translation>Patikrinti atnaujinimus</translation>
     </message>
     <message>
-        <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+      <source>About shadPS4</source>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
-        <source>Configure...</source>
-        <translation>Configure...</translation>
+      <source>Configure...</source>
+      <translation type="unfinished">Configure...</translation>
     </message>
     <message>
-        <source>Install application from a .pkg file</source>
-        <translation>Install application from a .pkg file</translation>
+      <source>Install application from a .pkg file</source>
+      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
-        <source>Recent Games</source>
-        <translation>Recent Games</translation>
+      <source>Recent Games</source>
+      <translation type="unfinished">Recent Games</translation>
     </message>
     <message>
-        <source>Open shadPS4 Folder</source>
-        <translation>Open shadPS4 Folder</translation>
+      <source>Open shadPS4 Folder</source>
+      <translation type="unfinished">Open shadPS4 Folder</translation>
     </message>
     <message>
-        <source>Exit</source>
-        <translation>Exit</translation>
+      <source>Exit</source>
+      <translation type="unfinished">Exit</translation>
     </message>
     <message>
-        <source>Exit shadPS4</source>
-        <translation>Exit shadPS4</translation>
+      <source>Exit shadPS4</source>
+      <translation type="unfinished">Exit shadPS4</translation>
     </message>
     <message>
-        <source>Exit the application.</source>
-        <translation>Exit the application.</translation>
+      <source>Exit the application.</source>
+      <translation type="unfinished">Exit the application.</translation>
     </message>
     <message>
-        <source>Show Game List</source>
-        <translation>Show Game List</translation>
+      <source>Show Game List</source>
+      <translation type="unfinished">Show Game List</translation>
     </message>
     <message>
-        <source>Game List Refresh</source>
-        <translation>Game List Refresh</translation>
+      <source>Game List Refresh</source>
+      <translation type="unfinished">Game List Refresh</translation>
     </message>
     <message>
-        <source>Tiny</source>
-        <translation>Tiny</translation>
+      <source>Tiny</source>
+      <translation type="unfinished">Tiny</translation>
     </message>
     <message>
-        <source>Small</source>
-        <translation>Small</translation>
+      <source>Small</source>
+      <translation type="unfinished">Small</translation>
     </message>
     <message>
-        <source>Medium</source>
-        <translation>Medium</translation>
+      <source>Medium</source>
+      <translation type="unfinished">Medium</translation>
     </message>
     <message>
-        <source>Large</source>
-        <translation>Large</translation>
+      <source>Large</source>
+      <translation type="unfinished">Large</translation>
     </message>
     <message>
-        <source>List View</source>
-        <translation>List View</translation>
+      <source>List View</source>
+      <translation type="unfinished">List View</translation>
     </message>
     <message>
-        <source>Grid View</source>
-        <translation>Grid View</translation>
+      <source>Grid View</source>
+      <translation type="unfinished">Grid View</translation>
     </message>
     <message>
-        <source>Elf Viewer</source>
-        <translation>Elf Viewer</translation>
+      <source>Elf Viewer</source>
+      <translation type="unfinished">Elf Viewer</translation>
     </message>
     <message>
-        <source>Game Install Directory</source>
-        <translation>Game Install Directory</translation>
+      <source>Game Install Directory</source>
+      <translation type="unfinished">Game Install Directory</translation>
     </message>
     <message>
-        <source>Download Cheats/Patches</source>
-        <translation>Atsisiųsti Apgaules / Pleistrus</translation>
+      <source>Download Cheats/Patches</source>
+      <translation>Atsisiųsti Apgaules / Pleistrus</translation>
     </message>
     <message>
-        <source>Dump Game List</source>
-        <translation>Dump Game List</translation>
+      <source>Dump Game List</source>
+      <translation type="unfinished">Dump Game List</translation>
     </message>
     <message>
-        <source>PKG Viewer</source>
-        <translation>PKG Viewer</translation>
+      <source>PKG Viewer</source>
+      <translation type="unfinished">PKG Viewer</translation>
     </message>
     <message>
-        <source>Search...</source>
-        <translation>Search...</translation>
+      <source>Search...</source>
+      <translation type="unfinished">Search...</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation>File</translation>
+      <source>File</source>
+      <translation type="unfinished">File</translation>
     </message>
     <message>
-        <source>View</source>
-        <translation>View</translation>
+      <source>View</source>
+      <translation type="unfinished">View</translation>
     </message>
     <message>
-        <source>Game List Icons</source>
-        <translation>Game List Icons</translation>
+      <source>Game List Icons</source>
+      <translation type="unfinished">Game List Icons</translation>
     </message>
     <message>
-        <source>Game List Mode</source>
-        <translation>Game List Mode</translation>
+      <source>Game List Mode</source>
+      <translation type="unfinished">Game List Mode</translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation>Settings</translation>
+      <source>Settings</source>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
-        <source>Utils</source>
-        <translation>Utils</translation>
+      <source>Utils</source>
+      <translation type="unfinished">Utils</translation>
     </message>
     <message>
-        <source>Themes</source>
-        <translation>Themes</translation>
+      <source>Themes</source>
+      <translation type="unfinished">Themes</translation>
     </message>
     <message>
-        <source>Help</source>
-        <translation>Pagalba</translation>
+      <source>Help</source>
+      <translation>Pagalba</translation>
     </message>
     <message>
-        <source>Dark</source>
-        <translation>Dark</translation>
+      <source>Dark</source>
+      <translation type="unfinished">Dark</translation>
     </message>
     <message>
-        <source>Light</source>
-        <translation>Light</translation>
+      <source>Light</source>
+      <translation type="unfinished">Light</translation>
     </message>
     <message>
-        <source>Green</source>
-        <translation>Green</translation>
+      <source>Green</source>
+      <translation type="unfinished">Green</translation>
     </message>
     <message>
-        <source>Blue</source>
-        <translation>Blue</translation>
+      <source>Blue</source>
+      <translation type="unfinished">Blue</translation>
     </message>
     <message>
-        <source>Violet</source>
-        <translation>Violet</translation>
+      <source>Violet</source>
+      <translation type="unfinished">Violet</translation>
     </message>
     <message>
-        <source>toolBar</source>
-        <translation>toolBar</translation>
+      <source>toolBar</source>
+      <translation type="unfinished">toolBar</translation>
     </message>
     <message>
-        <source>Game List</source>
-        <translation>Žaidimų sąrašas</translation>
+      <source>Game List</source>
+      <translation>Žaidimų sąrašas</translation>
     </message>
     <message>
-        <source> * Unsupported Vulkan Version</source>
-        <translation> * Nepalaikoma Vulkan versija</translation>
+      <source> * Unsupported Vulkan Version</source>
+      <translation> * Nepalaikoma Vulkan versija</translation>
     </message>
     <message>
-        <source>Download Cheats For All Installed Games</source>
-        <translation>Atsisiųsti sukčiavimus visiems įdiegtiems žaidimams</translation>
+      <source>Download Cheats For All Installed Games</source>
+      <translation>Atsisiųsti sukčiavimus visiems įdiegtiems žaidimams</translation>
     </message>
     <message>
-        <source>Download Patches For All Games</source>
-        <translation>Atsisiųsti pataisas visiems žaidimams</translation>
+      <source>Download Patches For All Games</source>
+      <translation>Atsisiųsti pataisas visiems žaidimams</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Atsisiuntimas baigtas</translation>
+      <source>Download Complete</source>
+      <translation>Atsisiuntimas baigtas</translation>
     </message>
     <message>
-        <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Jūs atsisiuntėte sukčiavimus visiems jūsų įdiegtiesiems žaidimams.</translation>
+      <source>You have downloaded cheats for all the games you have installed.</source>
+      <translation>Jūs atsisiuntėte sukčiavimus visiems jūsų įdiegtiesiems žaidimams.</translation>
     </message>
     <message>
-        <source>Patches Downloaded Successfully!</source>
-        <translation>Pataisos sėkmingai atsisiųstos!</translation>
+      <source>Patches Downloaded Successfully!</source>
+      <translation>Pataisos sėkmingai atsisiųstos!</translation>
     </message>
     <message>
-        <source>All Patches available for all games have been downloaded.</source>
-        <translation>Visos pataisos visiems žaidimams buvo atsisiųstos.</translation>
+      <source>All Patches available for all games have been downloaded.</source>
+      <translation>Visos pataisos visiems žaidimams buvo atsisiųstos.</translation>
     </message>
     <message>
-        <source>Games: </source>
-        <translation>Žaidimai: </translation>
+      <source>Games: </source>
+      <translation>Žaidimai: </translation>
     </message>
     <message>
-        <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>ELF failai (*.bin *.elf *.oelf)</translation>
+      <source>ELF files (*.bin *.elf *.oelf)</source>
+      <translation>ELF failai (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
-        <source>Game Boot</source>
-        <translation>Žaidimo paleidimas</translation>
+      <source>Game Boot</source>
+      <translation>Žaidimo paleidimas</translation>
     </message>
     <message>
-        <source>Only one file can be selected!</source>
-        <translation>Galite pasirinkti tik vieną failą!</translation>
+      <source>Only one file can be selected!</source>
+      <translation>Galite pasirinkti tik vieną failą!</translation>
     </message>
     <message>
-        <source>PKG Extraction</source>
-        <translation>PKG ištraukimas</translation>
+      <source>PKG Extraction</source>
+      <translation>PKG ištraukimas</translation>
     </message>
     <message>
-        <source>Patch detected!</source>
-        <translation>Rasta atnaujinimą!</translation>
+      <source>Patch detected!</source>
+      <translation>Rasta atnaujinimą!</translation>
     </message>
     <message>
-        <source>PKG and Game versions match: </source>
-        <translation>PKG ir žaidimo versijos sutampa: </translation>
+      <source>PKG and Game versions match: </source>
+      <translation>PKG ir žaidimo versijos sutampa: </translation>
     </message>
     <message>
-        <source>Would you like to overwrite?</source>
-        <translation>Ar norite perrašyti?</translation>
+      <source>Would you like to overwrite?</source>
+      <translation>Ar norite perrašyti?</translation>
     </message>
     <message>
-        <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG versija %1 yra senesnė nei įdiegta versija: </translation>
+      <source>PKG Version %1 is older than installed version: </source>
+      <translation>PKG versija %1 yra senesnė nei įdiegta versija: </translation>
     </message>
     <message>
-        <source>Game is installed: </source>
-        <translation>Žaidimas įdiegtas: </translation>
+      <source>Game is installed: </source>
+      <translation>Žaidimas įdiegtas: </translation>
     </message>
     <message>
-        <source>Would you like to install Patch: </source>
-        <translation>Ar norite įdiegti atnaujinimą: </translation>
+      <source>Would you like to install Patch: </source>
+      <translation>Ar norite įdiegti atnaujinimą: </translation>
     </message>
     <message>
-        <source>DLC Installation</source>
-        <translation>DLC diegimas</translation>
+      <source>DLC Installation</source>
+      <translation>DLC diegimas</translation>
     </message>
     <message>
-        <source>Would you like to install DLC: %1?</source>
-        <translation>Ar norite įdiegti DLC: %1?</translation>
+      <source>Would you like to install DLC: %1?</source>
+      <translation>Ar norite įdiegti DLC: %1?</translation>
     </message>
     <message>
-        <source>DLC already installed:</source>
-        <translation>DLC jau įdiegtas:</translation>
+      <source>DLC already installed:</source>
+      <translation>DLC jau įdiegtas:</translation>
     </message>
     <message>
-        <source>Game already installed</source>
-        <translation>Žaidimas jau įdiegtas</translation>
+      <source>Game already installed</source>
+      <translation>Žaidimas jau įdiegtas</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation>PKG KLAIDA</translation>
+      <source>PKG ERROR</source>
+      <translation>PKG KLAIDA</translation>
     </message>
     <message>
-        <source>Extracting PKG %1/%2</source>
-        <translation>Ekstrakcinis PKG %1/%2</translation>
+      <source>Extracting PKG %1/%2</source>
+      <translation>Ekstrakcinis PKG %1/%2</translation>
     </message>
     <message>
-        <source>Extraction Finished</source>
-        <translation>Ekstrakcija baigta</translation>
+      <source>Extraction Finished</source>
+      <translation>Ekstrakcija baigta</translation>
     </message>
     <message>
-        <source>Game successfully installed at %1</source>
-        <translation>Žaidimas sėkmingai įdiegtas %1</translation>
+      <source>Game successfully installed at %1</source>
+      <translation>Žaidimas sėkmingai įdiegtas %1</translation>
     </message>
     <message>
-        <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Failas atrodo, kad nėra galiojantis PKG failas</translation>
+      <source>File doesn&apos;t appear to be a valid PKG file</source>
+      <translation>Failas atrodo, kad nėra galiojantis PKG failas</translation>
     </message>
     <message>
-        <source>Run Game</source>
-        <translation type="unfinished"></translation>
+      <source>Run Game</source>
+      <translation type="unfinished">Run Game</translation>
     </message>
     <message>
-        <source>Eboot.bin file not found</source>
-        <translation type="unfinished"></translation>
+      <source>Eboot.bin file not found</source>
+      <translation type="unfinished">Eboot.bin file not found</translation>
     </message>
     <message>
-        <source>PKG File (*.PKG *.pkg)</source>
-        <translation type="unfinished"></translation>
+      <source>PKG File (*.PKG *.pkg)</source>
+      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
     </message>
     <message>
-        <source>PKG is a patch or DLC, please install the game first!</source>
-        <translation type="unfinished"></translation>
+      <source>PKG is a patch or DLC, please install the game first!</source>
+      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
-        <source>Game is already running!</source>
-        <translation type="unfinished"></translation>
+      <source>Game is already running!</source>
+      <translation type="unfinished">Game is already running!</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation type="unfinished">shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PKGViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Open Folder</translation>
+      <source>Open Folder</source>
+      <translation type="unfinished">Open Folder</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation type="unfinished">Vardas</translation>
+      <source>PKG ERROR</source>
+      <translation>PKG KLAIDA</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation type="unfinished">Serijinis numeris</translation>
+      <source>Name</source>
+      <translation>Vardas</translation>
     </message>
     <message>
-        <source>Installed</source>
-        <translation type="unfinished"></translation>
+      <source>Serial</source>
+      <translation>Serijinis numeris</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation type="unfinished">Dydis</translation>
+      <source>Installed</source>
+      <translation type="unfinished">Installed</translation>
     </message>
     <message>
-        <source>Category</source>
-        <translation type="unfinished"></translation>
+      <source>Size</source>
+      <translation>Dydis</translation>
     </message>
     <message>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
+      <source>Category</source>
+      <translation type="unfinished">Category</translation>
     </message>
     <message>
-        <source>App Ver</source>
-        <translation type="unfinished"></translation>
+      <source>Type</source>
+      <translation type="unfinished">Type</translation>
     </message>
     <message>
-        <source>FW</source>
-        <translation type="unfinished"></translation>
+      <source>App Ver</source>
+      <translation type="unfinished">App Ver</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation type="unfinished">Regionas</translation>
+      <source>FW</source>
+      <translation type="unfinished">FW</translation>
     </message>
     <message>
-        <source>Flags</source>
-        <translation type="unfinished"></translation>
+      <source>Region</source>
+      <translation>Regionas</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation type="unfinished">Kelias</translation>
+      <source>Flags</source>
+      <translation type="unfinished">Flags</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation type="unfinished">File</translation>
+      <source>Path</source>
+      <translation>Kelias</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation type="unfinished">PKG KLAIDA</translation>
+      <source>File</source>
+      <translation type="unfinished">File</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation type="unfinished">Nežinoma</translation>
+      <source>Unknown</source>
+      <translation>Nežinoma</translation>
     </message>
     <message>
-        <source>Package</source>
-        <translation type="unfinished"></translation>
+      <source>Package</source>
+      <translation type="unfinished">Package</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>SettingsDialog</name>
     <message>
-        <source>Settings</source>
-        <translation>Settings</translation>
+      <source>Settings</source>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
-        <source>General</source>
-        <translation>General</translation>
+      <source>General</source>
+      <translation type="unfinished">General</translation>
     </message>
     <message>
-        <source>System</source>
-        <translation>System</translation>
+      <source>System</source>
+      <translation type="unfinished">System</translation>
     </message>
     <message>
-        <source>Console Language</source>
-        <translation>Console Language</translation>
+      <source>Console Language</source>
+      <translation type="unfinished">Console Language</translation>
     </message>
     <message>
-        <source>Emulator Language</source>
-        <translation>Emulator Language</translation>
+      <source>Emulator Language</source>
+      <translation type="unfinished">Emulator Language</translation>
     </message>
     <message>
-        <source>Emulator</source>
-        <translation>Emulator</translation>
+      <source>Emulator</source>
+      <translation type="unfinished">Emulator</translation>
     </message>
     <message>
-        <source>Enable Fullscreen</source>
-        <translation>Enable Fullscreen</translation>
+      <source>Enable Fullscreen</source>
+      <translation type="unfinished">Enable Fullscreen</translation>
     </message>
     <message>
-        <source>Fullscreen Mode</source>
-        <translation>Viso ekranas</translation>
+      <source>Fullscreen Mode</source>
+      <translation>Viso ekranas</translation>
     </message>
     <message>
-        <source>Enable Separate Update Folder</source>
-        <translation>Enable Separate Update Folder</translation>
+      <source>Enable Separate Update Folder</source>
+      <translation type="unfinished">Enable Separate Update Folder</translation>
     </message>
     <message>
-        <source>Default tab when opening settings</source>
-        <translation>Numatytoji kortelė atidarius nustatymus</translation>
+      <source>Default tab when opening settings</source>
+      <translation>Numatytoji kortelė atidarius nustatymus</translation>
     </message>
     <message>
-        <source>Show Game Size In List</source>
-        <translation>Rodyti žaidimo dydį sąraše</translation>
+      <source>Show Game Size In List</source>
+      <translation>Rodyti žaidimo dydį sąraše</translation>
     </message>
     <message>
-        <source>Show Splash</source>
-        <translation>Show Splash</translation>
+      <source>Show Splash</source>
+      <translation type="unfinished">Show Splash</translation>
     </message>
     <message>
-        <source>Enable Discord Rich Presence</source>
-        <translation>Įjungti Discord Rich Presence</translation>
+      <source>Enable Discord Rich Presence</source>
+      <translation>Įjungti Discord Rich Presence</translation>
     </message>
     <message>
-        <source>Username</source>
-        <translation>Username</translation>
+      <source>Username</source>
+      <translation type="unfinished">Username</translation>
     </message>
     <message>
-        <source>Trophy Key</source>
-        <translation>Trophy Key</translation>
+      <source>Trophy Key</source>
+      <translation type="unfinished">Trophy Key</translation>
     </message>
     <message>
-        <source>Trophy</source>
-        <translation>Trophy</translation>
+      <source>Trophy</source>
+      <translation type="unfinished">Trophy</translation>
     </message>
     <message>
-        <source>Logger</source>
-        <translation>Logger</translation>
+      <source>Logger</source>
+      <translation type="unfinished">Logger</translation>
     </message>
     <message>
-        <source>Log Type</source>
-        <translation>Log Type</translation>
+      <source>Log Type</source>
+      <translation type="unfinished">Log Type</translation>
     </message>
     <message>
-        <source>Log Filter</source>
-        <translation>Log Filter</translation>
+      <source>Log Filter</source>
+      <translation type="unfinished">Log Filter</translation>
     </message>
     <message>
-        <source>Open Log Location</source>
-        <translation>Atidaryti žurnalo vietą</translation>
+      <source>Open Log Location</source>
+      <translation>Atidaryti žurnalo vietą</translation>
     </message>
     <message>
-        <source>Input</source>
-        <translation>Įvestis</translation>
+      <source>Input</source>
+      <translation>Įvestis</translation>
     </message>
     <message>
-        <source>Cursor</source>
-        <translation>Žymeklis</translation>
+      <source>Cursor</source>
+      <translation>Žymeklis</translation>
     </message>
     <message>
-        <source>Hide Cursor</source>
-        <translation>Slėpti žymeklį</translation>
+      <source>Hide Cursor</source>
+      <translation>Slėpti žymeklį</translation>
     </message>
     <message>
-        <source>Hide Cursor Idle Timeout</source>
-        <translation>Žymeklio paslėpimo neveikimo laikas</translation>
+      <source>Hide Cursor Idle Timeout</source>
+      <translation>Žymeklio paslėpimo neveikimo laikas</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Controller</source>
-        <translation>Valdiklis</translation>
+      <source>Controller</source>
+      <translation>Valdiklis</translation>
     </message>
     <message>
-        <source>Back Button Behavior</source>
-        <translation>Atgal mygtuko elgsena</translation>
+      <source>Back Button Behavior</source>
+      <translation>Atgal mygtuko elgsena</translation>
     </message>
     <message>
-        <source>Graphics</source>
-        <translation>Graphics</translation>
+      <source>Graphics</source>
+      <translation type="unfinished">Graphics</translation>
     </message>
     <message>
-        <source>GUI</source>
-        <translation>Interfeisa</translation>
+      <source>GUI</source>
+      <translation>Interfeisa</translation>
     </message>
     <message>
-        <source>User</source>
-        <translation>Naudotojas</translation>
+      <source>User</source>
+      <translation>Naudotojas</translation>
     </message>
     <message>
-        <source>Graphics Device</source>
-        <translation>Graphics Device</translation>
+      <source>Graphics Device</source>
+      <translation type="unfinished">Graphics Device</translation>
     </message>
     <message>
-        <source>Width</source>
-        <translation>Width</translation>
+      <source>Width</source>
+      <translation type="unfinished">Width</translation>
     </message>
     <message>
-        <source>Height</source>
-        <translation>Height</translation>
+      <source>Height</source>
+      <translation type="unfinished">Height</translation>
     </message>
     <message>
-        <source>Vblank Divider</source>
-        <translation>Vblank Divider</translation>
+      <source>Vblank Divider</source>
+      <translation type="unfinished">Vblank Divider</translation>
     </message>
     <message>
-        <source>Advanced</source>
-        <translation>Advanced</translation>
+      <source>Advanced</source>
+      <translation type="unfinished">Advanced</translation>
     </message>
     <message>
-        <source>Enable Shaders Dumping</source>
-        <translation>Enable Shaders Dumping</translation>
+      <source>Enable Shaders Dumping</source>
+      <translation type="unfinished">Enable Shaders Dumping</translation>
     </message>
     <message>
-        <source>Enable NULL GPU</source>
-        <translation>Enable NULL GPU</translation>
+      <source>Enable NULL GPU</source>
+      <translation type="unfinished">Enable NULL GPU</translation>
     </message>
     <message>
-        <source>Paths</source>
-        <translation>Keliai</translation>
+      <source>Enable HDR</source>
+      <translation type="unfinished">Enable HDR</translation>
     </message>
     <message>
-        <source>Game Folders</source>
-        <translation>Žaidimų aplankai</translation>
+      <source>Paths</source>
+      <translation>Keliai</translation>
     </message>
     <message>
-        <source>Add...</source>
-        <translation>Pridėti...</translation>
+      <source>Game Folders</source>
+      <translation>Žaidimų aplankai</translation>
     </message>
     <message>
-        <source>Remove</source>
-        <translation>Pašalinti</translation>
+      <source>Add...</source>
+      <translation>Pridėti...</translation>
     </message>
     <message>
-        <source>Debug</source>
-        <translation>Debug</translation>
+      <source>Remove</source>
+      <translation>Pašalinti</translation>
     </message>
     <message>
-        <source>Enable Debug Dumping</source>
-        <translation>Enable Debug Dumping</translation>
+      <source>Debug</source>
+      <translation type="unfinished">Debug</translation>
     </message>
     <message>
-        <source>Enable Vulkan Validation Layers</source>
-        <translation>Enable Vulkan Validation Layers</translation>
+      <source>Enable Debug Dumping</source>
+      <translation type="unfinished">Enable Debug Dumping</translation>
     </message>
     <message>
-        <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Enable Vulkan Synchronization Validation</translation>
+      <source>Enable Vulkan Validation Layers</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers</translation>
     </message>
     <message>
-        <source>Enable RenderDoc Debugging</source>
-        <translation>Enable RenderDoc Debugging</translation>
+      <source>Enable Vulkan Synchronization Validation</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation</translation>
     </message>
     <message>
-        <source>Enable Crash Diagnostics</source>
-        <translation>Enable Crash Diagnostics</translation>
+      <source>Enable RenderDoc Debugging</source>
+      <translation type="unfinished">Enable RenderDoc Debugging</translation>
     </message>
     <message>
-        <source>Collect Shaders</source>
-        <translation>Collect Shaders</translation>
+      <source>Enable Crash Diagnostics</source>
+      <translation type="unfinished">Enable Crash Diagnostics</translation>
     </message>
     <message>
-        <source>Copy GPU Buffers</source>
-        <translation>Copy GPU Buffers</translation>
+      <source>Collect Shaders</source>
+      <translation type="unfinished">Collect Shaders</translation>
     </message>
     <message>
-        <source>Host Debug Markers</source>
-        <translation>Host Debug Markers</translation>
+      <source>Copy GPU Buffers</source>
+      <translation type="unfinished">Copy GPU Buffers</translation>
     </message>
     <message>
-        <source>Guest Debug Markers</source>
-        <translation>Guest Debug Markers</translation>
+      <source>Host Debug Markers</source>
+      <translation type="unfinished">Host Debug Markers</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Atnaujinimas</translation>
+      <source>Guest Debug Markers</source>
+      <translation type="unfinished">Guest Debug Markers</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Tikrinti naujinimus paleidus</translation>
+      <source>Update</source>
+      <translation>Atnaujinimas</translation>
     </message>
     <message>
-        <source>Always Show Changelog</source>
-        <translation>Visada rodyti pakeitimų žurnalą</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Tikrinti naujinimus paleidus</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Atnaujinimo Kanalas</translation>
+      <source>Always Show Changelog</source>
+      <translation>Visada rodyti pakeitimų žurnalą</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Patikrinkite atnaujinimus</translation>
+      <source>Update Channel</source>
+      <translation>Atnaujinimo Kanalas</translation>
     </message>
     <message>
-        <source>GUI Settings</source>
-        <translation>GUI Nustatymai</translation>
+      <source>Check for Updates</source>
+      <translation>Patikrinkite atnaujinimus</translation>
     </message>
     <message>
-        <source>Title Music</source>
-        <translation>Title Music</translation>
+      <source>GUI Settings</source>
+      <translation>GUI Nustatymai</translation>
     </message>
     <message>
-        <source>Disable Trophy Pop-ups</source>
-        <translation>Disable Trophy Pop-ups</translation>
+      <source>Title Music</source>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
-        <source>Play title music</source>
-        <translation>Groti antraštės muziką</translation>
+      <source>Disable Trophy Pop-ups</source>
+      <translation type="unfinished">Disable Trophy Pop-ups</translation>
     </message>
     <message>
-        <source>Update Compatibility Database On Startup</source>
-        <translation>Update Compatibility Database On Startup</translation>
+      <source>Background Image</source>
+      <translation type="unfinished">Background Image</translation>
     </message>
     <message>
-        <source>Game Compatibility</source>
-        <translation>Game Compatibility</translation>
+      <source>Show Background Image</source>
+      <translation type="unfinished">Show Background Image</translation>
     </message>
     <message>
-        <source>Display Compatibility Data</source>
-        <translation>Display Compatibility Data</translation>
+      <source>Opacity</source>
+      <translation type="unfinished">Opacity</translation>
     </message>
     <message>
-        <source>Update Compatibility Database</source>
-        <translation>Update Compatibility Database</translation>
+      <source>Play title music</source>
+      <translation>Groti antraštės muziką</translation>
     </message>
     <message>
-        <source>Volume</source>
-        <translation>Garsumas</translation>
+      <source>Update Compatibility Database On Startup</source>
+      <translation type="unfinished">Update Compatibility Database On Startup</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Įrašyti</translation>
+      <source>Game Compatibility</source>
+      <translation type="unfinished">Game Compatibility</translation>
     </message>
     <message>
-        <source>Apply</source>
-        <translation>Taikyti</translation>
+      <source>Display Compatibility Data</source>
+      <translation type="unfinished">Display Compatibility Data</translation>
     </message>
     <message>
-        <source>Restore Defaults</source>
-        <translation>Atkurti numatytuosius nustatymus</translation>
+      <source>Update Compatibility Database</source>
+      <translation type="unfinished">Update Compatibility Database</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation>Uždaryti</translation>
+      <source>Volume</source>
+      <translation>Garsumas</translation>
     </message>
     <message>
-        <source>Point your mouse at an option to display its description.</source>
-        <translation>Žymeklį nukreipkite ant pasirinkimo, kad pamatytumėte jo aprašymą.</translation>
+      <source>Save</source>
+      <translation>Įrašyti</translation>
     </message>
     <message>
-        <source>consoleLanguageGroupBox</source>
-        <translation>Konsole kalba:\nNustato kalbą, kurią naudoja PS4 žaidimai.\nRekomenduojama nustatyti kalbą, kurią palaiko žaidimas, priklausomai nuo regiono.</translation>
+      <source>Apply</source>
+      <translation>Taikyti</translation>
     </message>
     <message>
-        <source>emulatorLanguageGroupBox</source>
-        <translation>Emuliatoriaus kalba:\nNustato emuliatoriaus vartotojo sąsajos kalbą.</translation>
+      <source>Restore Defaults</source>
+      <translation>Atkurti numatytuosius nustatymus</translation>
     </message>
     <message>
-        <source>fullscreenCheckBox</source>
-        <translation>Įjungti visą ekraną:\nAutomatiškai perjungia žaidimo langą į viso ekrano režimą.\nTai galima išjungti paspaudus F11 klavišą.</translation>
+      <source>Close</source>
+      <translation>Uždaryti</translation>
     </message>
     <message>
-        <source>separateUpdatesCheckBox</source>
-        <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+      <source>Point your mouse at an option to display its description.</source>
+      <translation>Žymeklį nukreipkite ant pasirinkimo, kad pamatytumėte jo aprašymą.</translation>
     </message>
     <message>
-        <source>showSplashCheckBox</source>
-        <translation>Rodyti paleidimo ekraną:\nPaleidimo metu rodo žaidimo paleidimo ekraną (ypatingą vaizdą).</translation>
+      <source>consoleLanguageGroupBox</source>
+      <translation>Konsole kalba:\nNustato kalbą, kurią naudoja PS4 žaidimai.\nRekomenduojama nustatyti kalbą, kurią palaiko žaidimas, priklausomai nuo regiono.</translation>
     </message>
     <message>
-        <source>discordRPCCheckbox</source>
-        <translation>Įjungti Discord Rich Presence:\nRodo emuliatoriaus ikoną ir susijusią informaciją jūsų Discord profilyje.</translation>
+      <source>emulatorLanguageGroupBox</source>
+      <translation>Emuliatoriaus kalba:\nNustato emuliatoriaus vartotojo sąsajos kalbą.</translation>
     </message>
     <message>
-        <source>userName</source>
-        <translation>Vartotojo vardas:\nNustato PS4 paskyros vartotojo vardą, kuris gali būti rodomas kai kuriuose žaidimuose.</translation>
+      <source>fullscreenCheckBox</source>
+      <translation>Įjungti visą ekraną:\nAutomatiškai perjungia žaidimo langą į viso ekrano režimą.\nTai galima išjungti paspaudus F11 klavišą.</translation>
     </message>
     <message>
-        <source>TrophyKey</source>
-        <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <source>separateUpdatesCheckBox</source>
+      <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-        <source>logTypeGroupBox</source>
-        <translation>Žurnalo tipas:\nNustato, ar sinchronizuoti žurnalo lango išvestį našumui. Tai gali turėti neigiamą poveikį emuliacijai.</translation>
+      <source>showSplashCheckBox</source>
+      <translation>Rodyti paleidimo ekraną:\nPaleidimo metu rodo žaidimo paleidimo ekraną (ypatingą vaizdą).</translation>
     </message>
     <message>
-        <source>logFilter</source>
-        <translation>Žurnalo filtras:\nFiltruojamas žurnalas, kad būtų spausdinama tik konkreti informacija.\nPavyzdžiai: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Lygiai: Trace, Debug, Info, Warning, Error, Critical - šia tvarka, konkretus lygis nutildo visus ankstesnius lygius sąraše ir registruoja visus vėlesnius.</translation>
+      <source>discordRPCCheckbox</source>
+      <translation>Įjungti Discord Rich Presence:\nRodo emuliatoriaus ikoną ir susijusią informaciją jūsų Discord profilyje.</translation>
     </message>
     <message>
-        <source>updaterGroupBox</source>
-        <translation>Atnaujinti:\nRelease: Oficialios versijos, išleidžiamos kiekvieną mėnesį, kurios gali būti labai pasenusios, tačiau yra patikimos ir išbandytos.\nNightly: Vystymo versijos, kuriose yra visos naujausios funkcijos ir taisymai, tačiau gali turėti klaidų ir būti mažiau stabilios.</translation>
+      <source>userName</source>
+      <translation>Vartotojo vardas:\nNustato PS4 paskyros vartotojo vardą, kuris gali būti rodomas kai kuriuose žaidimuose.</translation>
     </message>
     <message>
-        <source>GUIMusicGroupBox</source>
-        <translation>Groti antraščių muziką:\nJei žaidimas tai palaiko, įjungia specialios muzikos grojimą, kai pasirinkite žaidimą GUI.</translation>
+      <source>TrophyKey</source>
+      <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-        <source>disableTrophycheckBox</source>
-        <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <source>logTypeGroupBox</source>
+      <translation>Žurnalo tipas:\nNustato, ar sinchronizuoti žurnalo lango išvestį našumui. Tai gali turėti neigiamą poveikį emuliacijai.</translation>
     </message>
     <message>
-        <source>hideCursorGroupBox</source>
-        <translation>Slėpti žymeklį:\nPasirinkite, kada žymeklis dings:\nNiekuomet: Visada matysite pelę.\nNeaktyvus: Nustatykite laiką, po kurio ji dings, kai bus neaktyvi.\nVisada: niekada nematysite pelės.</translation>
+      <source>logFilter</source>
+      <translation>Žurnalo filtras:\nFiltruojamas žurnalas, kad būtų spausdinama tik konkreti informacija.\nPavyzdžiai: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Lygiai: Trace, Debug, Info, Warning, Error, Critical - šia tvarka, konkretus lygis nutildo visus ankstesnius lygius sąraše ir registruoja visus vėlesnius.</translation>
     </message>
     <message>
-        <source>idleTimeoutGroupBox</source>
-        <translation>Nustatykite laiką, po kurio pelė dings, kai bus neaktyvi.</translation>
+      <source>updaterGroupBox</source>
+      <translation>Atnaujinti:\nRelease: Oficialios versijos, išleidžiamos kiekvieną mėnesį, kurios gali būti labai pasenusios, tačiau yra patikimos ir išbandytos.\nNightly: Vystymo versijos, kuriose yra visos naujausios funkcijos ir taisymai, tačiau gali turėti klaidų ir būti mažiau stabilios.</translation>
     </message>
     <message>
-        <source>backButtonBehaviorGroupBox</source>
-        <translation>Atgal mygtuko elgesys:\nNustato valdiklio atgal mygtuką imituoti paspaudimą nurodytoje vietoje PS4 jutiklinėje plokštėje.</translation>
+      <source>GUIBackgroundImageGroupBox</source>
+      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
     </message>
     <message>
-        <source>enableCompatibilityCheckBox</source>
-        <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <source>GUIMusicGroupBox</source>
+      <translation>Groti antraščių muziką:\nJei žaidimas tai palaiko, įjungia specialios muzikos grojimą, kai pasirinkite žaidimą GUI.</translation>
     </message>
     <message>
-        <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <source>disableTrophycheckBox</source>
+      <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-        <source>updateCompatibilityButton</source>
-        <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <source>hideCursorGroupBox</source>
+      <translation>Slėpti žymeklį:\nPasirinkite, kada žymeklis dings:\nNiekuomet: Visada matysite pelę.\nNeaktyvus: Nustatykite laiką, po kurio ji dings, kai bus neaktyvi.\nVisada: niekada nematysite pelės.</translation>
     </message>
     <message>
-        <source>Never</source>
-        <translation>Niekada</translation>
+      <source>idleTimeoutGroupBox</source>
+      <translation>Nustatykite laiką, po kurio pelė dings, kai bus neaktyvi.</translation>
     </message>
     <message>
-        <source>Idle</source>
-        <translation>Neaktyvus</translation>
+      <source>backButtonBehaviorGroupBox</source>
+      <translation>Atgal mygtuko elgesys:\nNustato valdiklio atgal mygtuką imituoti paspaudimą nurodytoje vietoje PS4 jutiklinėje plokštėje.</translation>
     </message>
     <message>
-        <source>Always</source>
-        <translation>Visada</translation>
+      <source>enableCompatibilityCheckBox</source>
+      <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-        <source>Touchpad Left</source>
-        <translation>Jutiklinis Paviršius Kairėje</translation>
+      <source>checkCompatibilityOnStartupCheckBox</source>
+      <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-        <source>Touchpad Right</source>
-        <translation>Jutiklinis Paviršius Dešinėje</translation>
+      <source>updateCompatibilityButton</source>
+      <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
-        <source>Touchpad Center</source>
-        <translation>Jutiklinis Paviršius Centre</translation>
+      <source>Never</source>
+      <translation>Niekada</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Nieko</translation>
+      <source>Idle</source>
+      <translation>Neaktyvus</translation>
     </message>
     <message>
-        <source>graphicsAdapterGroupBox</source>
-        <translation>Grafikos įrenginys:\nDaugiagrafikėse sistemose pasirinkite GPU, kurį emuliatorius naudos iš išskleidžiamojo sąrašo,\n arba pasirinkite &quot;Auto Select&quot;, kad jis būtų nustatytas automatiškai.</translation>
+      <source>Always</source>
+      <translation>Visada</translation>
     </message>
     <message>
-        <source>resolutionLayout</source>
-        <translation>Plotis/Aukštis:\nNustato emuliatoriaus lango dydį paleidimo metu, kurį galima keisti žaidimo metu.\nTai skiriasi nuo žaidimo rezoliucijos.</translation>
+      <source>Touchpad Left</source>
+      <translation>Jutiklinis Paviršius Kairėje</translation>
     </message>
     <message>
-        <source>heightDivider</source>
-        <translation>Vblank daliklis:\nKadrų dažnis, kuriuo emuliatorius atnaujinamas, dauginamas iš šio skaičiaus. Pakeitus tai gali turėti neigiamą poveikį, pvz., padidinti žaidimo greitį arba sukelti kritinių žaidimo funkcijų sugadinimą, kurios to nesitikėjo!</translation>
+      <source>Touchpad Right</source>
+      <translation>Jutiklinis Paviršius Dešinėje</translation>
     </message>
     <message>
-        <source>dumpShadersCheckBox</source>
-        <translation>Įjungti šešėlių išmetimą:\nTechninio derinimo tikslais saugo žaidimo šešėlius į aplanką juos renderuojant.</translation>
+      <source>Touchpad Center</source>
+      <translation>Jutiklinis Paviršius Centre</translation>
     </message>
     <message>
-        <source>nullGpuCheckBox</source>
-        <translation>Įjungti tuščią GPU:\nTechninio derinimo tikslais išjungia žaidimo renderiavimą, tarsi nebūtų grafikos plokštės.</translation>
+      <source>None</source>
+      <translation>Nieko</translation>
     </message>
     <message>
-        <source>gameFoldersBox</source>
-        <translation>Žaidimų aplankai:\nAplankų sąrašas, kurį reikia patikrinti, ar yra įdiegtų žaidimų.</translation>
+      <source>graphicsAdapterGroupBox</source>
+      <translation>Grafikos įrenginys:\nDaugiagrafikėse sistemose pasirinkite GPU, kurį emuliatorius naudos iš išskleidžiamojo sąrašo,\n arba pasirinkite &quot;Auto Select&quot;, kad jis būtų nustatytas automatiškai.</translation>
     </message>
     <message>
-        <source>addFolderButton</source>
-        <translation>Pridėti:\nPridėti aplanką į sąrašą.</translation>
+      <source>resolutionLayout</source>
+      <translation>Plotis/Aukštis:\nNustato emuliatoriaus lango dydį paleidimo metu, kurį galima keisti žaidimo metu.\nTai skiriasi nuo žaidimo rezoliucijos.</translation>
     </message>
     <message>
-        <source>removeFolderButton</source>
-        <translation>Pašalinti:\nPašalinti aplanką iš sąrašo.</translation>
+      <source>heightDivider</source>
+      <translation>Vblank daliklis:\nKadrų dažnis, kuriuo emuliatorius atnaujinamas, dauginamas iš šio skaičiaus. Pakeitus tai gali turėti neigiamą poveikį, pvz., padidinti žaidimo greitį arba sukelti kritinių žaidimo funkcijų sugadinimą, kurios to nesitikėjo!</translation>
     </message>
     <message>
-        <source>debugDump</source>
-        <translation>Įjungti derinimo išmetimą:\nIšsaugo importo ir eksporto simbolius bei failo antraštės informaciją apie šiuo metu vykdomą PS4 programą į katalogą.</translation>
+      <source>dumpShadersCheckBox</source>
+      <translation>Įjungti šešėlių išmetimą:\nTechninio derinimo tikslais saugo žaidimo šešėlius į aplanką juos renderuojant.</translation>
     </message>
     <message>
-        <source>vkValidationCheckBox</source>
-        <translation>Įjungti Vulkan patvirtinimo sluoksnius:\nĮjungia sistemą, kuri patvirtina Vulkan renderio būseną ir registruoja informaciją apie jo vidinę būseną. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
+      <source>nullGpuCheckBox</source>
+      <translation>Įjungti tuščią GPU:\nTechninio derinimo tikslais išjungia žaidimo renderiavimą, tarsi nebūtų grafikos plokštės.</translation>
     </message>
     <message>
-        <source>vkSyncValidationCheckBox</source>
-        <translation>Įjungti Vulkan sinchronizacijos patvirtinimą:\nĮjungia sistemą, kuri patvirtina Vulkan renderavimo užduočių laiką. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
+      <source>enableHDRCheckBox</source>
+      <translation type="unfinished">enableHDRCheckBox</translation>
     </message>
     <message>
-        <source>rdocCheckBox</source>
-        <translation>Įjungti RenderDoc derinimą:\nJei įjungta, emuliatorius suteiks suderinamumą su Renderdoc, kad būtų galima užfiksuoti ir analizuoti šiuo metu renderuojamą kadrą.</translation>
+      <source>gameFoldersBox</source>
+      <translation>Žaidimų aplankai:\nAplankų sąrašas, kurį reikia patikrinti, ar yra įdiegtų žaidimų.</translation>
     </message>
     <message>
-        <source>collectShaderCheckBox</source>
-        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <source>addFolderButton</source>
+      <translation>Pridėti:\nPridėti aplanką į sąrašą.</translation>
     </message>
     <message>
-        <source>crashDiagnosticsCheckBox</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <source>removeFolderButton</source>
+      <translation>Pašalinti:\nPašalinti aplanką iš sąrašo.</translation>
     </message>
     <message>
-        <source>copyGPUBuffersCheckBox</source>
-        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <source>debugDump</source>
+      <translation>Įjungti derinimo išmetimą:\nIšsaugo importo ir eksporto simbolius bei failo antraštės informaciją apie šiuo metu vykdomą PS4 programą į katalogą.</translation>
     </message>
     <message>
-        <source>hostMarkersCheckBox</source>
-        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkValidationCheckBox</source>
+      <translation>Įjungti Vulkan patvirtinimo sluoksnius:\nĮjungia sistemą, kuri patvirtina Vulkan renderio būseną ir registruoja informaciją apie jo vidinę būseną. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
     </message>
     <message>
-        <source>guestMarkersCheckBox</source>
-        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkSyncValidationCheckBox</source>
+      <translation>Įjungti Vulkan sinchronizacijos patvirtinimą:\nĮjungia sistemą, kuri patvirtina Vulkan renderavimo užduočių laiką. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
     </message>
     <message>
-        <source>Borderless</source>
-        <translation type="unfinished"></translation>
+      <source>rdocCheckBox</source>
+      <translation>Įjungti RenderDoc derinimą:\nJei įjungta, emuliatorius suteiks suderinamumą su Renderdoc, kad būtų galima užfiksuoti ir analizuoti šiuo metu renderuojamą kadrą.</translation>
     </message>
     <message>
-        <source>True</source>
-        <translation type="unfinished"></translation>
+      <source>collectShaderCheckBox</source>
+      <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-        <source>Enable HDR</source>
-        <translation type="unfinished"></translation>
+      <source>crashDiagnosticsCheckBox</source>
+      <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-        <source>Release</source>
-        <translation type="unfinished"></translation>
+      <source>copyGPUBuffersCheckBox</source>
+      <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-        <source>Nightly</source>
-        <translation type="unfinished"></translation>
+      <source>hostMarkersCheckBox</source>
+      <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>guestMarkersCheckBox</source>
+      <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Show Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>saveDataBox</source>
+      <translation type="unfinished">saveDataBox</translation>
     </message>
     <message>
-        <source>Opacity</source>
-        <translation type="unfinished"></translation>
+      <source>browseButton</source>
+      <translation type="unfinished">browseButton</translation>
     </message>
     <message>
-        <source>Set the volume of the background music.</source>
-        <translation type="unfinished"></translation>
+      <source>Borderless</source>
+      <translation type="unfinished">Borderless</translation>
     </message>
     <message>
-        <source>Enable Motion Controls</source>
-        <translation type="unfinished"></translation>
+      <source>True</source>
+      <translation type="unfinished">True</translation>
     </message>
     <message>
-        <source>Save Data Path</source>
-        <translation type="unfinished"></translation>
+      <source>Release</source>
+      <translation type="unfinished">Release</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation type="unfinished">Browse</translation>
+      <source>Nightly</source>
+      <translation type="unfinished">Nightly</translation>
     </message>
     <message>
-        <source>async</source>
-        <translation type="unfinished"></translation>
+      <source>Set the volume of the background music.</source>
+      <translation type="unfinished">Set the volume of the background music.</translation>
     </message>
     <message>
-        <source>sync</source>
-        <translation type="unfinished"></translation>
+      <source>Enable Motion Controls</source>
+      <translation type="unfinished">Enable Motion Controls</translation>
     </message>
     <message>
-        <source>Auto Select</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data Path</source>
+      <translation type="unfinished">Save Data Path</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation type="unfinished">Directory to install games</translation>
+      <source>Browse</source>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
-        <source>Directory to save data</source>
-        <translation type="unfinished"></translation>
+      <source>async</source>
+      <translation type="unfinished">async</translation>
     </message>
     <message>
-        <source>GUIBackgroundImageGroupBox</source>
-        <translation type="unfinished"></translation>
+      <source>sync</source>
+      <translation type="unfinished">sync</translation>
     </message>
     <message>
-        <source>enableHDRCheckBox</source>
-        <translation type="unfinished"></translation>
+      <source>Auto Select</source>
+      <translation type="unfinished">Auto Select</translation>
     </message>
     <message>
-        <source>saveDataBox</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install games</source>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
-        <source>browseButton</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to save data</source>
+      <translation type="unfinished">Directory to save data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>TrophyViewer</name>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
-</context>
+  </context>
 </TS>
