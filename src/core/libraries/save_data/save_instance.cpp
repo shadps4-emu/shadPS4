@@ -24,17 +24,17 @@ namespace fs = std::filesystem;
 // clang-format off
 static const std::unordered_map<std::string, std::string> default_title = {
     {"ja_JP", "セーブデータ"},
-    {"en", "Saved Data"},
-    {"fr", "Données sauvegardées"},
+    {"en_US", "Saved Data"},
+    {"fr_FR", "Données sauvegardées"},
     {"es_ES", "Datos guardados"},
-    {"de", "Gespeicherte Daten"},
-    {"it", "Dati salvati"},
-    {"nl", "Opgeslagen data"},
+    {"de_DE", "Gespeicherte Daten"},
+    {"it_IT", "Dati salvati"},
+    {"nl_NL", "Opgeslagen data"},
     {"pt_PT", "Dados guardados"},
-    {"ru", "Сохраненные данные"},
+    {"ru_RU", "Сохраненные данные"},
     {"ko_KR", "저장 데이터"},
     {"zh_CN", "保存数据"},
-    {"fi", "Tallennetut tiedot"},
+    {"fi_FI", "Tallennetut tiedot"},
     {"sv_SE", "Sparade data"},
     {"da_DK", "Gemte data"},
     {"no_NO", "Lagrede data"},
@@ -73,7 +73,7 @@ void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
                                         std::string game_serial) {
     std::string locale = Config::getEmulatorLanguage();
     if (!default_title.contains(locale)) {
-        locale = "en";
+        locale = "en_US";
     }
 
 #define P(type, key, ...) param_sfo.Add##type(std::string{key}, __VA_ARGS__)
