@@ -317,6 +317,8 @@ private:
 
     void LogMissingOpcode(const GcnInst& inst);
 
+    IR::VectorReg GetScratchVgpr(u32 offset);
+
 private:
     IR::IREmitter ir;
     Info& info;

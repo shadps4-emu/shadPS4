@@ -176,6 +176,12 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     const IR::VectorReg data0{inst.src[1].code};
     const IR::VectorReg data1{inst.src[2].code};
+    if (info.stage == Stage::Fragment) {
+        const u64 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+        ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0, "Unexpected shared memory offset alignment: {}", offset);
+        ir.SetVectorReg(GetScratchVgpr(offset), ir.GetVectorReg(data0));
+        return;
+    }
     if (is_pair) {
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
@@ -223,6 +229,12 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
                          const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     IR::VectorReg dst_reg{inst.dst[0].code};
+    if (info.stage == Stage::Fragment) {
+        const u64 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+        ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0, "Unexpected shared memory offset alignment: {}", offset);
+        ir.SetVectorReg(dst_reg, ir.GetVectorReg(GetScratchVgpr(offset)));
+        return;
+    }
     if (is_pair) {
         // Pair loads are either 32 or 64-bit
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
