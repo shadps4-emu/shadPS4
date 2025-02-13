@@ -20,7 +20,7 @@ void FlattenExtendedUserdataPass(IR::Program& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);
 void LowerBufferFormatToRaw(IR::Program& program);
-void LowerSharedMemToRegisters(IR::Program& program);
+void LowerSharedMemToRegisters(IR::Program& program, const RuntimeInfo& runtime_info);
 void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
                            Stage stage);
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info);

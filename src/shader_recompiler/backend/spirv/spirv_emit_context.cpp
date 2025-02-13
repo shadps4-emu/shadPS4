@@ -813,6 +813,8 @@ void EmitContext::DefineSharedMemory() {
     if (!info.uses_shared) {
         return;
     }
+    ASSERT(info.stage == Stage::Compute);
+
     const u32 max_shared_memory_size = profile.max_shared_memory_size;
     u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     if (shared_memory_size == 0) {
