@@ -19,7 +19,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>Este software não deve ser usado para jogar jogos piratas.</translation>
+      <translation>Este programa não deve ser usado para jogar jogos piratas.</translation>
     </message>
   </context>
   <context>
@@ -142,7 +142,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Arquivo Existe</translation>
+      <translation>Arquivo já Existe</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download Completo</translation>
+      <translation>Download Concluído</translation>
     </message>
     <message>
       <source>DownloadComplete_MSG</source>
@@ -253,7 +253,7 @@
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>Atualizador automático</translation>
+      <translation>Atualização Automática</translation>
     </message>
     <message>
       <source>Error</source>
@@ -273,11 +273,11 @@
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation>Nenhuma pre-release encontrada.</translation>
+      <translation>Nenhum Pre-Release encontrado.</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation>Dados da release inválidos.</translation>
+      <translation>Dados do release inválidos.</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
@@ -297,11 +297,11 @@
     </message>
     <message>
       <source>Current Version</source>
-      <translation>Versão atual</translation>
+      <translation>Versão Atual</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>Última versão</translation>
+      <translation>Última Versão</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
@@ -309,7 +309,7 @@
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation>Mostrar Changelog</translation>
+      <translation>Mostrar Mudanças</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
@@ -325,7 +325,7 @@
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>Ocultar Changelog</translation>
+      <translation>Ocultar Mudanças</translation>
     </message>
     <message>
       <source>Changes</source>
@@ -349,7 +349,7 @@
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Iniciando atualização...</translation>
+      <translation>Iniciando Atualização...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>Configurar Seletiva</translation>
+      <translation>Seleção de Configuração</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -471,11 +471,11 @@
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation>Controles KBM</translation>
+      <translation>Controles T/M</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation>Editor KBM</translation>
+      <translation>Editor T/M</translation>
     </message>
     <message>
       <source>Back</source>
@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation>Opções / Start</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>Botões Face</translation>
+      <translation>Botões de Face</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -560,11 +560,11 @@
     <name>GameInstallDialog</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Escolha o diretório</translation>
+      <translation>shadPS4 - Escolha de diretório</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Diretório para instalar jogos</translation>
+      <translation>Diretório onde os jogos serão instalados</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -583,7 +583,7 @@
     <name>GameListFrame</name>
     <message>
       <source>Icon</source>
-      <translation>Icone</translation>
+      <translation>Ícone</translation>
     </message>
     <message>
       <source>Name</source>
@@ -721,7 +721,7 @@
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Abrir Pasta de Save</translation>
+      <translation>Abrir Pasta de Dados Salvos</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
@@ -817,11 +817,11 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>Este jogo não tem DLC para excluir!</translation>
+      <translation>Este jogo não tem DLC para deletar!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -833,27 +833,27 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Abrir Pasta da Atualização</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Excluir Dados Salvos</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Este jogo não tem atualização para deletar!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Falha ao converter o ícone.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Este jogo não tem dados salvos para deletar!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Dados Salvos</translation>
     </message>
   </context>
   <context>
@@ -868,11 +868,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Instalar Todas da Fila para a Pasta Selecionada</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Deletar PKG após instalação</translation>
     </message>
   </context>
   <context>
@@ -891,7 +891,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verificar atualizações</translation>
+      <translation>Verificar Atualizações</translation>
     </message>
     <message>
       <source>About shadPS4</source>
@@ -1123,7 +1123,7 @@
     </message>
     <message>
       <source>DLC already installed:</source>
-      <translation>DLC já instalada:</translation>
+      <translation>DLC já está instalado:</translation>
     </message>
     <message>
       <source>Game already installed</source>
@@ -1151,27 +1151,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Executar Jogo</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Arquivo Eboot.bin não encontrado</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>Arquivo PKG (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>O PKG é um patch ou DLC, por favor instale o jogo primeiro!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>O jogo já está executando!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1190,11 +1190,11 @@
     </message>
     <message>
       <source>Serial</source>
-      <translation type="unfinished">Serial</translation>
+      <translation>Serial</translation>
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Instalado</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1202,19 +1202,19 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Categoria</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Tipo</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>App Ver</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FW</translation>
     </message>
     <message>
       <source>Region</source>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Flags</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Pacote</translation>
     </message>
   </context>
   <context>
@@ -1277,7 +1277,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>Habilitar pasta de atualização separada</translation>
+      <translation>Habilitar Pasta de Atualização Separada</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1321,7 +1321,7 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Abrir local do registro</translation>
+      <translation>Abrir Local do Registro</translation>
     </message>
     <message>
       <source>Input</source>
@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Cursor</source>
-      <translation type="unfinished">Cursor</translation>
+      <translation>Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
@@ -1341,7 +1341,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Comportamento do botão Voltar</translation>
+      <translation>Comportamento do Botão Voltar</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1393,7 +1393,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Habilitar HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1461,7 +1461,7 @@
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Sempre Mostrar o Changelog</translation>
+      <translation>Sempre Mostrar o Histórico de Mudanças</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1469,7 +1469,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verificar atualizações</translation>
+      <translation>Verificar Atualizações</translation>
     </message>
     <message>
       <source>GUI Settings</source>
@@ -1485,15 +1485,15 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Imagem de Fundo</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Exibir Imagem de Fundo</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Transparência</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1517,7 +1517,7 @@
     </message>
     <message>
       <source>Volume</source>
-      <translation type="unfinished">Volume</translation>
+      <translation>Volume</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1541,11 +1541,11 @@
     </message>
     <message>
       <source>consoleLanguageGroupBox</source>
-      <translation>Idioma do console:\nDefine o idioma usado pelo jogo no PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
+      <translation>Idioma do Console:\nDefine o idioma usado pelo jogo no PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
     </message>
     <message>
       <source>emulatorLanguageGroupBox</source>
-      <translation>Idioma do emulador:\nDefine o idioma da interface do emulador.</translation>
+      <translation>Idioma do Emulador:\nDefine o idioma da interface do emulador.</translation>
     </message>
     <message>
       <source>fullscreenCheckBox</source>
@@ -1557,7 +1557,7 @@
     </message>
     <message>
       <source>showSplashCheckBox</source>
-      <translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
+      <translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) antes de iniciar o jogo.</translation>
     </message>
     <message>
       <source>discordRPCCheckbox</source>
@@ -1569,7 +1569,7 @@
     </message>
     <message>
       <source>TrophyKey</source>
-      <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Chave do Troféu:\nChave usada para descriptografar troféus. Deve ser obtida do seu console desbloqueado.\nDeve conter apenas caracteres hexadecimais.</translation>
     </message>
     <message>
       <source>logTypeGroupBox</source>
@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <translation>Imagem de Fundo:\nControle a Transparência da imagem de plano de fundo do jogo no menu.</translation>
     </message>
     <message>
       <source>GUIMusicGroupBox</source>
@@ -1649,7 +1649,7 @@
     </message>
     <message>
       <source>graphicsAdapterGroupBox</source>
-      <translation>Placa de Vídeo:\nEm sistemas com múltiplas GPUs, escolha qual GPU o emulador usará da lista suspensa,\nou escolha &quot;Auto Select&quot; para que ele determine automaticamente.</translation>
+      <translation>Placa de Vídeo:\nEm sistemas com múltiplas GPUs, escolha qual GPU o emulador usará da lista suspensa,\nou escolha &quot;Seleção automática&quot; para que ele determine automaticamente.</translation>
     </message>
     <message>
       <source>resolutionLayout</source>
@@ -1669,7 +1669,7 @@
     </message>
     <message>
       <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <translation>Habilitar HDR:\nHabilita HDR em jogos que o suportam.\nSeu monitor deve ter suporte para o espaço de cor BT2020 PQ e o formato swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>gameFoldersBox</source>
@@ -1721,39 +1721,39 @@
     </message>
     <message>
       <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <translation>Caminho para salvar os dados:\nA pasta onde os dados salvos do jogo serão salvos.</translation>
     </message>
     <message>
       <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <translation>Procurar:\nProcure uma pasta para definir como caminho para salvar os dados.</translation>
     </message>
     <message>
       <source>Borderless</source>
-      <translation type="unfinished">Borderless</translation>
+      <translation>Janela sem Bordas</translation>
     </message>
     <message>
       <source>True</source>
-      <translation type="unfinished">True</translation>
+      <translation>Tela Cheia</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Release</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Defina o volume da música de fundo.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Habilitar Controles de Movimento</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Caminho Dados Salvos </translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1761,15 +1761,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>assíncrono</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>sincronizar</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Seleção Automática</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1777,7 +1777,7 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Diretório para salvar dados</translation>
     </message>
   </context>
   <context>
