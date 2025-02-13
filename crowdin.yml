@@ -1,0 +1,3 @@
+files:
+  - source: /src/qt_gui/translations/en_US.ts
+    translation: /%original_path%/%locale_with_underscore%.ts
