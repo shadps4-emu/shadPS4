@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -230,7 +230,7 @@
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>Klasör mevcut değil:</translation>
+      <translation>Dizin mevcut değil:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
@@ -411,11 +411,11 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Kontrolleri Yapılandır</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
+      <translation>Kontrol Ayarları</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -447,7 +447,7 @@
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Sol Analog</translation>
     </message>
     <message>
       <source>Config Selection</source>
@@ -455,7 +455,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Genel Yapılandırma</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -463,11 +463,11 @@
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>KBM Controls</source>
@@ -479,15 +479,15 @@
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Geri</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
@@ -515,11 +515,11 @@
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Daire / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Çarpı / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -531,7 +531,7 @@
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Sağ Analog</translation>
     </message>
   </context>
   <context>
@@ -564,7 +564,7 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Oyunların yükleneceği klasör</translation>
+      <translation>Oyunların yükleneceği dizin</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -576,7 +576,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>İndirilebilir içeriğin yükleneceği dizin</translation>
     </message>
   </context>
   <context>
@@ -674,11 +674,11 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
@@ -753,11 +753,11 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>Sil...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>Oyunu Sil</translation>
     </message>
     <message>
       <source>Delete Update</source>
@@ -765,7 +765,7 @@
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation type="unfinished">Delete DLC</translation>
+      <translation>İndirilebilir İçeriği Sil</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -773,15 +773,15 @@
     </message>
     <message>
       <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
+      <translation>Veri tabanını güncelle</translation>
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>Raporu görüntüle</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
+      <translation>Rapor gönder</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
@@ -813,7 +813,7 @@
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>Güncelleme</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
@@ -821,7 +821,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>İndirilebilir İçerik</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -833,7 +833,7 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Güncelleme Klasörünü Aç</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
@@ -868,7 +868,7 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Tüm Kuyruktakileri Seçili Klasöre Yükle</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>shadPS4 Klasörünü Aç</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -963,7 +963,7 @@
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation>Oyun Kurulum Klasörü</translation>
+      <translation>Oyun Kurulum Dizini</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
@@ -995,7 +995,7 @@
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>Oyun Listesi Modu</translation>
+      <translation>Oyun Listesi Görünümü</translation>
     </message>
     <message>
       <source>Settings</source>
@@ -1155,11 +1155,11 @@
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Eboot.bin dosyası bulunamadı</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>PKG Dosyası (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
@@ -1167,7 +1167,7 @@
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Oyun zaten çalışıyor!</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -1202,7 +1202,7 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategori</translation>
     </message>
     <message>
       <source>Type</source>
@@ -1341,7 +1341,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>sn</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1473,11 +1473,11 @@
     </message>
     <message>
       <source>GUI Settings</source>
-      <translation>GUI Ayarları</translation>
+      <translation>Arayüz Ayarları</translation>
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>Oyun Müziği</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups</source>
@@ -1485,19 +1485,19 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Arka Plan Resmi</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Arka Plan Resmini Göster</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Görünürlük</translation>
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Başlık müziğini çal</translation>
+      <translation>Oyun müziğini çal</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1729,7 +1729,7 @@
     </message>
     <message>
       <source>Borderless</source>
-      <translation type="unfinished">Borderless</translation>
+      <translation>Çerçevesiz</translation>
     </message>
     <message>
       <source>True</source>
@@ -1737,7 +1737,7 @@
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Kararlı</translation>
     </message>
     <message>
       <source>Nightly</source>
@@ -1745,7 +1745,7 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Arka plan müziğinin ses seviyesini ayarlayın.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
@@ -1753,7 +1753,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Kayıt Verileri Yolu</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1761,11 +1761,11 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asenkronize</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>senkronize</translation>
     </message>
     <message>
       <source>Auto Select</source>
@@ -1773,11 +1773,11 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Oyunların yükleneceği klasör</translation>
+      <translation>Oyunların yükleneceği dizin</translation>
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Kayıt verilerinin tutulacağı dizin</translation>
     </message>
   </context>
   <context>
