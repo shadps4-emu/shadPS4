@@ -1753,7 +1753,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation>Caminho Dados Salvos </translation>
+      <translation>Caminho dos Dados Salvos</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1765,7 +1765,7 @@
     </message>
     <message>
       <source>sync</source>
-      <translation>sincronizar</translation>
+      <translation>síncrono</translation>
     </message>
     <message>
       <source>Auto Select</source>
