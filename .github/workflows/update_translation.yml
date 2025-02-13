@@ -13,9 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set execution permissions for the script
+        run: chmod +x ./.github/workflows/scripts/update_translation.sh
+
       - name: Update Base Translation
         run: ./.github/workflows/scripts/update_translation.sh
-      
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
