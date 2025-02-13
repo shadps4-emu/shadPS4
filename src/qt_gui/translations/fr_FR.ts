@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -42,7 +42,7 @@
     </message>
     <message>
       <source>Version: </source>
-      <translation type="unfinished">Version: </translation>
+      <translation>Version: </translation>
     </message>
     <message>
       <source>Size: </source>
@@ -90,7 +90,7 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>Cheats</translation>
     </message>
     <message>
       <source>Patches</source>
@@ -411,55 +411,55 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Configurer les commandes</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
+      <translation>Paramètres de contrôle</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Croix directionnelle</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Haut</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Gauche</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Droite</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Bas</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Stick gauche Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Deadzone gauche</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Joystick gauche</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Sélection de la configuration</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Configuration Commune</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Utiliser les configurations par jeu</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -491,11 +491,11 @@
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -507,31 +507,31 @@
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Triangle / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Carré / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Rond / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Croix / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Joystick gauche Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Deadzone droit</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Joystick droit</translation>
     </message>
   </context>
   <context>
@@ -576,7 +576,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Répertoire d'installation des DLC</translation>
     </message>
   </context>
   <context>
@@ -603,7 +603,7 @@
     </message>
     <message>
       <source>Firmware</source>
-      <translation type="unfinished">Firmware</translation>
+      <translation>Firmware</translation>
     </message>
     <message>
       <source>Size</source>
@@ -611,7 +611,7 @@
     </message>
     <message>
       <source>Version</source>
-      <translation type="unfinished">Version</translation>
+      <translation>Version</translation>
     </message>
     <message>
       <source>Path</source>
@@ -627,15 +627,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -674,23 +674,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>Ko</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>Mo</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>Go</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>To</translation>
     </message>
   </context>
   <context>
@@ -741,11 +741,11 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>Copier la version</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>Copier la taille</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -821,7 +821,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -833,11 +833,11 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Ouvrir le dossier de mise à jour</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Supprimer les données de sauvegarde</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
@@ -849,11 +849,11 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Ce jeu n'a pas de mise à jour à supprimer!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Enregistrer les données</translation>
     </message>
   </context>
   <context>
