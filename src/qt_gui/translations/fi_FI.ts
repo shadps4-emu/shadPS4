@@ -2,1789 +2,1789 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="fi">
-<context>
+<TS version="2.1" language="fi_FI" sourcelanguage="en">
+  <context>
     <name>AboutDialog</name>
     <message>
-        <source>About shadPS4</source>
-        <translation>Tietoa shadPS4:sta</translation>
+      <source>About shadPS4</source>
+      <translation>Tietoa shadPS4:sta</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation>shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
     <message>
-        <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 on kokeellinen avoimen lähdekoodin PlayStation 4 emulaattori.</translation>
+      <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
+      <translation>shadPS4 on kokeellinen avoimen lähdekoodin PlayStation 4 emulaattori.</translation>
     </message>
     <message>
-        <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>Tätä ohjelmistoa ei saa käyttää pelien pelaamiseen, joita et ole hankkinut laillisesti.</translation>
+      <source>This software should not be used to play games you have not legally obtained.</source>
+      <translation>Tätä ohjelmistoa ei saa käyttää pelien pelaamiseen, joita et ole hankkinut laillisesti.</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheatsPatches</name>
     <message>
-        <source>Cheats / Patches for </source>
-        <translation>Huijaukset / Paikkaukset pelille </translation>
+      <source>Cheats / Patches for </source>
+      <translation>Huijaukset / Paikkaukset pelille </translation>
     </message>
     <message>
-        <source>defaultTextEdit_MSG</source>
-        <translation>Huijaukset/Paikkaukset ovat kokeellisia.\nKäytä varoen.\n\nLataa huijaukset yksitellen valitsemalla repositorion ja napsauttamalla latauspainiketta.\nPaikkaukset-välilehdessä voit ladata kaikki paikkaukset kerralla, valita, mitä haluat käyttää ja tallentaa valinnan.\n\nKoska me emme kehitä Huijauksia/Paikkauksia,\nole hyvä ja ilmoita ongelmista huijauksen tekijälle.\n\nLoitko uuden huijauksen? Käy osoitteessa:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>defaultTextEdit_MSG</source>
+      <translation>Huijaukset/Paikkaukset ovat kokeellisia.\nKäytä varoen.\n\nLataa huijaukset yksitellen valitsemalla repositorion ja napsauttamalla latauspainiketta.\nPaikkaukset-välilehdessä voit ladata kaikki paikkaukset kerralla, valita, mitä haluat käyttää ja tallentaa valinnan.\n\nKoska me emme kehitä Huijauksia/Paikkauksia,\nole hyvä ja ilmoita ongelmista huijauksen tekijälle.\n\nLoitko uuden huijauksen? Käy osoitteessa:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
-        <source>No Image Available</source>
-        <translation>Kuvaa ei saatavilla</translation>
+      <source>No Image Available</source>
+      <translation>Kuvaa ei saatavilla</translation>
     </message>
     <message>
-        <source>Serial: </source>
-        <translation>Sarjanumero: </translation>
+      <source>Serial: </source>
+      <translation>Sarjanumero: </translation>
     </message>
     <message>
-        <source>Version: </source>
-        <translation>Versio: </translation>
+      <source>Version: </source>
+      <translation>Versio: </translation>
     </message>
     <message>
-        <source>Size: </source>
-        <translation>Koko: </translation>
+      <source>Size: </source>
+      <translation>Koko: </translation>
     </message>
     <message>
-        <source>Select Cheat File:</source>
-        <translation>Valitse Huijaustiedosto:</translation>
+      <source>Select Cheat File:</source>
+      <translation>Valitse Huijaustiedosto:</translation>
     </message>
     <message>
-        <source>Repository:</source>
-        <translation>Repositorio:</translation>
+      <source>Repository:</source>
+      <translation>Repositorio:</translation>
     </message>
     <message>
-        <source>Download Cheats</source>
-        <translation>Lataa Huijaukset</translation>
+      <source>Download Cheats</source>
+      <translation>Lataa Huijaukset</translation>
     </message>
     <message>
-        <source>Delete File</source>
-        <translation>Poista Tiedosto</translation>
+      <source>Delete File</source>
+      <translation>Poista Tiedosto</translation>
     </message>
     <message>
-        <source>No files selected.</source>
-        <translation>Tiedostoja ei ole valittuna.</translation>
+      <source>No files selected.</source>
+      <translation>Tiedostoja ei ole valittuna.</translation>
     </message>
     <message>
-        <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Voit poistaa ei-toivomasi huijaukset lataamisen jälkeen.</translation>
+      <source>You can delete the cheats you don&apos;t want after downloading them.</source>
+      <translation>Voit poistaa ei-toivomasi huijaukset lataamisen jälkeen.</translation>
     </message>
     <message>
-        <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Haluatko poistaa valitun tiedoston?\n%1</translation>
+      <source>Do you want to delete the selected file?\n%1</source>
+      <translation>Haluatko poistaa valitun tiedoston?\n%1</translation>
     </message>
     <message>
-        <source>Select Patch File:</source>
-        <translation>Valitse Paikkaustiedosto:</translation>
+      <source>Select Patch File:</source>
+      <translation>Valitse Paikkaustiedosto:</translation>
     </message>
     <message>
-        <source>Download Patches</source>
-        <translation>Lataa Paikkaukset</translation>
+      <source>Download Patches</source>
+      <translation>Lataa Paikkaukset</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Tallenna</translation>
+      <source>Save</source>
+      <translation>Tallenna</translation>
     </message>
     <message>
-        <source>Cheats</source>
-        <translation>Huijaukset</translation>
+      <source>Cheats</source>
+      <translation>Huijaukset</translation>
     </message>
     <message>
-        <source>Patches</source>
-        <translation>Paikkaukset</translation>
+      <source>Patches</source>
+      <translation>Paikkaukset</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Virhe</translation>
+      <source>Error</source>
+      <translation>Virhe</translation>
     </message>
     <message>
-        <source>No patch selected.</source>
-        <translation>Paikkausta ei ole valittuna.</translation>
+      <source>No patch selected.</source>
+      <translation>Paikkausta ei ole valittuna.</translation>
     </message>
     <message>
-        <source>Unable to open files.json for reading.</source>
-        <translation>Tiedostoa files.json ei voitu avata lukemista varten.</translation>
+      <source>Unable to open files.json for reading.</source>
+      <translation>Tiedostoa files.json ei voitu avata lukemista varten.</translation>
     </message>
     <message>
-        <source>No patch file found for the current serial.</source>
-        <translation>Nykyiselle sarjanumerolle ei löytynyt paikkaustiedostoa.</translation>
+      <source>No patch file found for the current serial.</source>
+      <translation>Nykyiselle sarjanumerolle ei löytynyt paikkaustiedostoa.</translation>
     </message>
     <message>
-        <source>Unable to open the file for reading.</source>
-        <translation>Tiedostoa ei voitu avata lukemista varten.</translation>
+      <source>Unable to open the file for reading.</source>
+      <translation>Tiedostoa ei voitu avata lukemista varten.</translation>
     </message>
     <message>
-        <source>Unable to open the file for writing.</source>
-        <translation>Tiedostoa ei voitu avata kirjoittamista varten.</translation>
+      <source>Unable to open the file for writing.</source>
+      <translation>Tiedostoa ei voitu avata kirjoittamista varten.</translation>
     </message>
     <message>
-        <source>Failed to parse XML: </source>
-        <translation>XML:n jäsentäminen epäonnistui: </translation>
+      <source>Failed to parse XML: </source>
+      <translation>XML:n jäsentäminen epäonnistui: </translation>
     </message>
     <message>
-        <source>Success</source>
-        <translation>Onnistuminen</translation>
+      <source>Success</source>
+      <translation>Onnistuminen</translation>
     </message>
     <message>
-        <source>Options saved successfully.</source>
-        <translation>Vaihtoehdot tallennettu onnistuneesti.</translation>
+      <source>Options saved successfully.</source>
+      <translation>Vaihtoehdot tallennettu onnistuneesti.</translation>
     </message>
     <message>
-        <source>Invalid Source</source>
-        <translation>Virheellinen Lähde</translation>
+      <source>Invalid Source</source>
+      <translation>Virheellinen Lähde</translation>
     </message>
     <message>
-        <source>The selected source is invalid.</source>
-        <translation>Valittu lähde on virheellinen.</translation>
+      <source>The selected source is invalid.</source>
+      <translation>Valittu lähde on virheellinen.</translation>
     </message>
     <message>
-        <source>File Exists</source>
-        <translation>Olemassaoleva Tiedosto</translation>
+      <source>File Exists</source>
+      <translation>Olemassaoleva Tiedosto</translation>
     </message>
     <message>
-        <source>File already exists. Do you want to replace it?</source>
-        <translation>Tiedosto on jo olemassa. Haluatko korvata sen?</translation>
+      <source>File already exists. Do you want to replace it?</source>
+      <translation>Tiedosto on jo olemassa. Haluatko korvata sen?</translation>
     </message>
     <message>
-        <source>Failed to save file:</source>
-        <translation>Tiedoston tallentaminen epäonnistui:</translation>
+      <source>Failed to save file:</source>
+      <translation>Tiedoston tallentaminen epäonnistui:</translation>
     </message>
     <message>
-        <source>Failed to download file:</source>
-        <translation>Tiedoston lataaminen epäonnistui:</translation>
+      <source>Failed to download file:</source>
+      <translation>Tiedoston lataaminen epäonnistui:</translation>
     </message>
     <message>
-        <source>Cheats Not Found</source>
-        <translation>Huijauksia Ei Löytynyt</translation>
+      <source>Cheats Not Found</source>
+      <translation>Huijauksia Ei Löytynyt</translation>
     </message>
     <message>
-        <source>CheatsNotFound_MSG</source>
-        <translation>Huijauksia ei löytynyt tälle pelin versiolle valitusta repositoriosta. Kokeile toista repositoriota tai eri versiota pelistä.</translation>
+      <source>CheatsNotFound_MSG</source>
+      <translation>Huijauksia ei löytynyt tälle pelin versiolle valitusta repositoriosta. Kokeile toista repositoriota tai eri versiota pelistä.</translation>
     </message>
     <message>
-        <source>Cheats Downloaded Successfully</source>
-        <translation>Huijaukset Ladattu Onnistuneesti</translation>
+      <source>Cheats Downloaded Successfully</source>
+      <translation>Huijaukset Ladattu Onnistuneesti</translation>
     </message>
     <message>
-        <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Olet ladannut huijaukset onnistuneesti valitusta repositoriosta tälle pelin versiolle. Voit yrittää ladata toisesta repositoriosta. Jos se on saatavilla, voit myös käyttää sitä valitsemalla tiedoston listasta.</translation>
+      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <translation>Olet ladannut huijaukset onnistuneesti valitusta repositoriosta tälle pelin versiolle. Voit yrittää ladata toisesta repositoriosta. Jos se on saatavilla, voit myös käyttää sitä valitsemalla tiedoston listasta.</translation>
     </message>
     <message>
-        <source>Failed to save:</source>
-        <translation>Tallentaminen epäonnistui:</translation>
+      <source>Failed to save:</source>
+      <translation>Tallentaminen epäonnistui:</translation>
     </message>
     <message>
-        <source>Failed to download:</source>
-        <translation>Lataus epäonnistui:</translation>
+      <source>Failed to download:</source>
+      <translation>Lataus epäonnistui:</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Lataus valmis</translation>
+      <source>Download Complete</source>
+      <translation>Lataus valmis</translation>
     </message>
     <message>
-        <source>DownloadComplete_MSG</source>
-        <translation>Paikkaukset ladattu onnistuneesti! Kaikki saatavilla olevat paikkaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille, kuten huijausten kohdalla. Jos paikkausta ei näy, saattaa olla, että sitä ei ole saatavilla kyseiselle sarjanumerolle ja peliversiolle.</translation>
+      <source>DownloadComplete_MSG</source>
+      <translation>Paikkaukset ladattu onnistuneesti! Kaikki saatavilla olevat paikkaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille, kuten huijausten kohdalla. Jos paikkausta ei näy, saattaa olla, että sitä ei ole saatavilla kyseiselle sarjanumerolle ja peliversiolle.</translation>
     </message>
     <message>
-        <source>Failed to parse JSON data from HTML.</source>
-        <translation>JSON-tietojen jäsentäminen HTML:stä epäonnistui.</translation>
+      <source>Failed to parse JSON data from HTML.</source>
+      <translation>JSON-tietojen jäsentäminen HTML:stä epäonnistui.</translation>
     </message>
     <message>
-        <source>Failed to retrieve HTML page.</source>
-        <translation>HTML-sivun hakeminen epäonnistui.</translation>
+      <source>Failed to retrieve HTML page.</source>
+      <translation>HTML-sivun hakeminen epäonnistui.</translation>
     </message>
     <message>
-        <source>The game is in version: %1</source>
-        <translation>Peli on versiossa: %1</translation>
+      <source>The game is in version: %1</source>
+      <translation>Peli on versiossa: %1</translation>
     </message>
     <message>
-        <source>The downloaded patch only works on version: %1</source>
-        <translation>Ladattu paikkaus toimii vain versiossa: %1</translation>
+      <source>The downloaded patch only works on version: %1</source>
+      <translation>Ladattu paikkaus toimii vain versiossa: %1</translation>
     </message>
     <message>
-        <source>You may need to update your game.</source>
-        <translation>Sinun on ehkä päivitettävä pelisi.</translation>
+      <source>You may need to update your game.</source>
+      <translation>Sinun on ehkä päivitettävä pelisi.</translation>
     </message>
     <message>
-        <source>Incompatibility Notice</source>
-        <translation>Yhteensopivuusilmoitus</translation>
+      <source>Incompatibility Notice</source>
+      <translation>Yhteensopivuusilmoitus</translation>
     </message>
     <message>
-        <source>Failed to open file:</source>
-        <translation>Tiedoston avaaminen epäonnistui:</translation>
+      <source>Failed to open file:</source>
+      <translation>Tiedoston avaaminen epäonnistui:</translation>
     </message>
     <message>
-        <source>XML ERROR:</source>
-        <translation>XML VIRHE:</translation>
+      <source>XML ERROR:</source>
+      <translation>XML VIRHE:</translation>
     </message>
     <message>
-        <source>Failed to open files.json for writing</source>
-        <translation>Tiedostoa files.json ei voitu avata kirjoittamista varten</translation>
+      <source>Failed to open files.json for writing</source>
+      <translation>Tiedostoa files.json ei voitu avata kirjoittamista varten</translation>
     </message>
     <message>
-        <source>Author: </source>
-        <translation>Tekijä: </translation>
+      <source>Author: </source>
+      <translation>Tekijä: </translation>
     </message>
     <message>
-        <source>Directory does not exist:</source>
-        <translation>Hakemistoa ei ole olemassa:</translation>
+      <source>Directory does not exist:</source>
+      <translation>Hakemistoa ei ole olemassa:</translation>
     </message>
     <message>
-        <source>Failed to open files.json for reading.</source>
-        <translation>Tiedostoa files.json ei voitu avata lukemista varten.</translation>
+      <source>Failed to open files.json for reading.</source>
+      <translation>Tiedostoa files.json ei voitu avata lukemista varten.</translation>
     </message>
     <message>
-        <source>Name:</source>
-        <translation>Nimi:</translation>
+      <source>Name:</source>
+      <translation>Nimi:</translation>
     </message>
     <message>
-        <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Huijauksia ei voi käyttää ennen kuin peli on käynnissä.</translation>
+      <source>Can&apos;t apply cheats before the game is started</source>
+      <translation>Huijauksia ei voi käyttää ennen kuin peli on käynnissä.</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation type="unfinished">Sulje</translation>
+      <source>Close</source>
+      <translation>Sulje</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheckUpdate</name>
     <message>
-        <source>Auto Updater</source>
-        <translation>Automaattinen Päivitys</translation>
+      <source>Auto Updater</source>
+      <translation>Automaattinen Päivitys</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Virhe</translation>
+      <source>Error</source>
+      <translation>Virhe</translation>
     </message>
     <message>
-        <source>Network error:</source>
-        <translation>Verkkovirhe:</translation>
+      <source>Network error:</source>
+      <translation>Verkkovirhe:</translation>
     </message>
     <message>
-        <source>Error_Github_limit_MSG</source>
-        <translation>Automaattinen päivitys sallii enintään 60 päivitystarkistusta tunnissa.\nOlet saavuttanut tämän rajan. Yritä myöhemmin uudelleen.</translation>
+      <source>Error_Github_limit_MSG</source>
+      <translation>Automaattinen päivitys sallii enintään 60 päivitystarkistusta tunnissa.\nOlet saavuttanut tämän rajan. Yritä myöhemmin uudelleen.</translation>
     </message>
     <message>
-        <source>Failed to parse update information.</source>
-        <translation>Päivitystietojen jäsentäminen epäonnistui.</translation>
+      <source>Failed to parse update information.</source>
+      <translation>Päivitystietojen jäsentäminen epäonnistui.</translation>
     </message>
     <message>
-        <source>No pre-releases found.</source>
-        <translation>Ennakkojulkaisuja ei löytynyt.</translation>
+      <source>No pre-releases found.</source>
+      <translation>Ennakkojulkaisuja ei löytynyt.</translation>
     </message>
     <message>
-        <source>Invalid release data.</source>
-        <translation>Virheelliset julkaisutiedot.</translation>
+      <source>Invalid release data.</source>
+      <translation>Virheelliset julkaisutiedot.</translation>
     </message>
     <message>
-        <source>No download URL found for the specified asset.</source>
-        <translation>Lataus-URL:ia ei löytynyt määritetylle omaisuudelle.</translation>
+      <source>No download URL found for the specified asset.</source>
+      <translation>Lataus-URL:ia ei löytynyt määritetylle omaisuudelle.</translation>
     </message>
     <message>
-        <source>Your version is already up to date!</source>
-        <translation>Versiosi on jo ajan tasalla!</translation>
+      <source>Your version is already up to date!</source>
+      <translation>Versiosi on jo ajan tasalla!</translation>
     </message>
     <message>
-        <source>Update Available</source>
-        <translation>Päivitys Saatavilla</translation>
+      <source>Update Available</source>
+      <translation>Päivitys Saatavilla</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Päivityskanava</translation>
+      <source>Update Channel</source>
+      <translation>Päivityskanava</translation>
     </message>
     <message>
-        <source>Current Version</source>
-        <translation>Nykyinen Versio</translation>
+      <source>Current Version</source>
+      <translation>Nykyinen Versio</translation>
     </message>
     <message>
-        <source>Latest Version</source>
-        <translation>Uusin Versio</translation>
+      <source>Latest Version</source>
+      <translation>Uusin Versio</translation>
     </message>
     <message>
-        <source>Do you want to update?</source>
-        <translation>Haluatko päivittää?</translation>
+      <source>Do you want to update?</source>
+      <translation>Haluatko päivittää?</translation>
     </message>
     <message>
-        <source>Show Changelog</source>
-        <translation>Näytä Muutoshistoria</translation>
+      <source>Show Changelog</source>
+      <translation>Näytä Muutoshistoria</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Tarkista Päivitykset Käynnistettäessä</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Tarkista Päivitykset Käynnistettäessä</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Päivitä</translation>
+      <source>Update</source>
+      <translation>Päivitä</translation>
     </message>
     <message>
-        <source>No</source>
-        <translation>Ei</translation>
+      <source>No</source>
+      <translation>Ei</translation>
     </message>
     <message>
-        <source>Hide Changelog</source>
-        <translation>Piilota Muutoshistoria</translation>
+      <source>Hide Changelog</source>
+      <translation>Piilota Muutoshistoria</translation>
     </message>
     <message>
-        <source>Changes</source>
-        <translation>Muutokset</translation>
+      <source>Changes</source>
+      <translation>Muutokset</translation>
     </message>
     <message>
-        <source>Network error occurred while trying to access the URL</source>
-        <translation>URL-osoitteeseen yhdistettäessä tapahtui verkkovirhe</translation>
+      <source>Network error occurred while trying to access the URL</source>
+      <translation>URL-osoitteeseen yhdistettäessä tapahtui verkkovirhe</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Lataus Valmis</translation>
+      <source>Download Complete</source>
+      <translation>Lataus Valmis</translation>
     </message>
     <message>
-        <source>The update has been downloaded, press OK to install.</source>
-        <translation>Päivitys on ladattu, paina OK asentaaksesi.</translation>
+      <source>The update has been downloaded, press OK to install.</source>
+      <translation>Päivitys on ladattu, paina OK asentaaksesi.</translation>
     </message>
     <message>
-        <source>Failed to save the update file at</source>
-        <translation>Päivitystiedoston tallentaminen epäonnistui sijaintiin</translation>
+      <source>Failed to save the update file at</source>
+      <translation>Päivitystiedoston tallentaminen epäonnistui sijaintiin</translation>
     </message>
     <message>
-        <source>Starting Update...</source>
-        <translation>Aloitetaan päivitystä...</translation>
+      <source>Starting Update...</source>
+      <translation>Aloitetaan päivitystä...</translation>
     </message>
     <message>
-        <source>Failed to create the update script file</source>
-        <translation>Päivitysskripttitiedoston luominen epäonnistui</translation>
+      <source>Failed to create the update script file</source>
+      <translation>Päivitysskripttitiedoston luominen epäonnistui</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CompatibilityInfoClass</name>
     <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Haetaan yhteensopivuustietoja, odota</translation>
+      <source>Fetching compatibility data, please wait</source>
+      <translation>Haetaan yhteensopivuustietoja, odota</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
+      <source>Cancel</source>
+      <translation>Peruuta</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Ladataan...</translation>
+      <source>Loading...</source>
+      <translation>Ladataan...</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Virhe</translation>
+      <source>Error</source>
+      <translation>Virhe</translation>
     </message>
     <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Yhteensopivuustietoja ei voitu päivittää! Yritä myöhemmin uudelleen.</translation>
+      <source>Unable to update compatibility data! Try again later.</source>
+      <translation>Yhteensopivuustietoja ei voitu päivittää! Yritä myöhemmin uudelleen.</translation>
     </message>
     <message>
-        <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Ei voitu avata compatibility_data.json-tiedostoa kirjoittamista varten.</translation>
+      <source>Unable to open compatibility_data.json for writing.</source>
+      <translation>Ei voitu avata compatibility_data.json-tiedostoa kirjoittamista varten.</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation>Tuntematon</translation>
+      <source>Unknown</source>
+      <translation>Tuntematon</translation>
     </message>
     <message>
-        <source>Nothing</source>
-        <translation>Ei mitään</translation>
+      <source>Nothing</source>
+      <translation>Ei mitään</translation>
     </message>
     <message>
-        <source>Boots</source>
-        <translation>Sahat</translation>
+      <source>Boots</source>
+      <translation>Sahat</translation>
     </message>
     <message>
-        <source>Menus</source>
-        <translation>Valikot</translation>
+      <source>Menus</source>
+      <translation>Valikot</translation>
     </message>
     <message>
-        <source>Ingame</source>
-        <translation>Pelin aikana</translation>
+      <source>Ingame</source>
+      <translation>Pelin aikana</translation>
     </message>
     <message>
-        <source>Playable</source>
-        <translation>Pelattava</translation>
+      <source>Playable</source>
+      <translation>Pelattava</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ControlSettings</name>
     <message>
-        <source>Configure Controls</source>
-        <translation type="unfinished"></translation>
+      <source>Configure Controls</source>
+      <translation type="unfinished">Configure Controls</translation>
     </message>
     <message>
-        <source>Control Settings</source>
-        <translation type="unfinished"></translation>
+      <source>Control Settings</source>
+      <translation type="unfinished">Control Settings</translation>
     </message>
     <message>
-        <source>D-Pad</source>
-        <translation type="unfinished"></translation>
+      <source>D-Pad</source>
+      <translation type="unfinished">D-Pad</translation>
     </message>
     <message>
-        <source>Up</source>
-        <translation type="unfinished"></translation>
+      <source>Up</source>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
-        <source>Left</source>
-        <translation type="unfinished"></translation>
+      <source>Left</source>
+      <translation type="unfinished">Left</translation>
     </message>
     <message>
-        <source>Right</source>
-        <translation type="unfinished"></translation>
+      <source>Right</source>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
-        <source>Down</source>
-        <translation type="unfinished"></translation>
+      <source>Down</source>
+      <translation type="unfinished">Down</translation>
     </message>
     <message>
-        <source>Left Stick Deadzone (def:2 max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick Deadzone (def:2 max:127)</source>
+      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
     </message>
     <message>
-        <source>Left Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Left Deadzone</source>
+      <translation type="unfinished">Left Deadzone</translation>
     </message>
     <message>
-        <source>Left Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick</source>
+      <translation type="unfinished">Left Stick</translation>
     </message>
     <message>
-        <source>Config Selection</source>
-        <translation type="unfinished"></translation>
+      <source>Config Selection</source>
+      <translation type="unfinished">Config Selection</translation>
     </message>
     <message>
-        <source>Common Config</source>
-        <translation type="unfinished"></translation>
+      <source>Common Config</source>
+      <translation type="unfinished">Common Config</translation>
     </message>
     <message>
-        <source>Use per-game configs</source>
-        <translation type="unfinished"></translation>
+      <source>Use per-game configs</source>
+      <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
-        <source>L1 / LB</source>
-        <translation type="unfinished"></translation>
+      <source>L1 / LB</source>
+      <translation type="unfinished">L1 / LB</translation>
     </message>
     <message>
-        <source>L2 / LT</source>
-        <translation type="unfinished"></translation>
+      <source>L2 / LT</source>
+      <translation type="unfinished">L2 / LT</translation>
     </message>
     <message>
-        <source>KBM Controls</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Controls</source>
+      <translation type="unfinished">KBM Controls</translation>
     </message>
     <message>
-        <source>KBM Editor</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Editor</source>
+      <translation type="unfinished">KBM Editor</translation>
     </message>
     <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
+      <source>Back</source>
+      <translation type="unfinished">Back</translation>
     </message>
     <message>
-        <source>R1 / RB</source>
-        <translation type="unfinished"></translation>
+      <source>R1 / RB</source>
+      <translation type="unfinished">R1 / RB</translation>
     </message>
     <message>
-        <source>R2 / RT</source>
-        <translation type="unfinished"></translation>
+      <source>R2 / RT</source>
+      <translation type="unfinished">R2 / RT</translation>
     </message>
     <message>
-        <source>L3</source>
-        <translation type="unfinished"></translation>
+      <source>L3</source>
+      <translation type="unfinished">L3</translation>
     </message>
     <message>
-        <source>Options / Start</source>
-        <translation type="unfinished"></translation>
+      <source>Options / Start</source>
+      <translation type="unfinished">Options / Start</translation>
     </message>
     <message>
-        <source>R3</source>
-        <translation type="unfinished"></translation>
+      <source>R3</source>
+      <translation type="unfinished">R3</translation>
     </message>
     <message>
-        <source>Face Buttons</source>
-        <translation type="unfinished"></translation>
+      <source>Face Buttons</source>
+      <translation type="unfinished">Face Buttons</translation>
     </message>
     <message>
-        <source>Triangle / Y</source>
-        <translation type="unfinished"></translation>
+      <source>Triangle / Y</source>
+      <translation type="unfinished">Triangle / Y</translation>
     </message>
     <message>
-        <source>Square / X</source>
-        <translation type="unfinished"></translation>
+      <source>Square / X</source>
+      <translation type="unfinished">Square / X</translation>
     </message>
     <message>
-        <source>Circle / B</source>
-        <translation type="unfinished"></translation>
+      <source>Circle / B</source>
+      <translation type="unfinished">Circle / B</translation>
     </message>
     <message>
-        <source>Cross / A</source>
-        <translation type="unfinished"></translation>
+      <source>Cross / A</source>
+      <translation type="unfinished">Cross / A</translation>
     </message>
     <message>
-        <source>Right Stick Deadzone (def:2, max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick Deadzone (def:2, max:127)</source>
+      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
     </message>
     <message>
-        <source>Right Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Right Deadzone</source>
+      <translation type="unfinished">Right Deadzone</translation>
     </message>
     <message>
-        <source>Right Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick</source>
+      <translation type="unfinished">Right Stick</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ElfViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Avaa Hakemisto</translation>
+      <source>Open Folder</source>
+      <translation>Avaa Hakemisto</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInfoClass</name>
     <message>
-        <source>Loading game list, please wait :3</source>
-        <translation>Ole hyvä ja odota, ladataan pelilistaa :3</translation>
+      <source>Loading game list, please wait :3</source>
+      <translation>Ole hyvä ja odota, ladataan pelilistaa :3</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
+      <source>Cancel</source>
+      <translation>Peruuta</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Ladataan...</translation>
+      <source>Loading...</source>
+      <translation>Ladataan...</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInstallDialog</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Valitse hakemisto</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation>shadPS4 - Valitse hakemisto</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation>Pelien asennushakemisto</translation>
+      <source>Directory to install games</source>
+      <translation>Pelien asennushakemisto</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation>Selaa</translation>
+      <source>Browse</source>
+      <translation>Selaa</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Virhe</translation>
+      <source>Error</source>
+      <translation>Virhe</translation>
     </message>
     <message>
-        <source>Directory to install DLC</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install DLC</source>
+      <translation type="unfinished">Directory to install DLC</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListFrame</name>
     <message>
-        <source>Icon</source>
-        <translation>Ikoni</translation>
+      <source>Icon</source>
+      <translation>Ikoni</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation>Nimi</translation>
+      <source>Name</source>
+      <translation>Nimi</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation>Sarjanumero</translation>
+      <source>Serial</source>
+      <translation>Sarjanumero</translation>
     </message>
     <message>
-        <source>Compatibility</source>
-        <translation>Compatibility</translation>
+      <source>Compatibility</source>
+      <translation type="unfinished">Compatibility</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation>Alue</translation>
+      <source>Region</source>
+      <translation>Alue</translation>
     </message>
     <message>
-        <source>Firmware</source>
-        <translation>Ohjelmisto</translation>
+      <source>Firmware</source>
+      <translation>Ohjelmisto</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation>Koko</translation>
+      <source>Size</source>
+      <translation>Koko</translation>
     </message>
     <message>
-        <source>Version</source>
-        <translation>Versio</translation>
+      <source>Version</source>
+      <translation>Versio</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation>Polku</translation>
+      <source>Path</source>
+      <translation>Polku</translation>
     </message>
     <message>
-        <source>Play Time</source>
-        <translation>Peliaika</translation>
+      <source>Play Time</source>
+      <translation>Peliaika</translation>
     </message>
     <message>
-        <source>Never Played</source>
-        <translation>Pelaamaton</translation>
+      <source>Never Played</source>
+      <translation>Pelaamaton</translation>
     </message>
     <message>
-        <source>h</source>
-        <translation>h</translation>
+      <source>h</source>
+      <translation type="unfinished">h</translation>
     </message>
     <message>
-        <source>m</source>
-        <translation>m</translation>
+      <source>m</source>
+      <translation type="unfinished">m</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Compatibility is untested</source>
-        <translation>Yhteensopivuutta ei ole testattu</translation>
+      <source>Compatibility is untested</source>
+      <translation>Yhteensopivuutta ei ole testattu</translation>
     </message>
     <message>
-        <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Peli ei alustaudu kunnolla / kaataa emulaattorin</translation>
+      <source>Game does not initialize properly / crashes the emulator</source>
+      <translation>Peli ei alustaudu kunnolla / kaataa emulaattorin</translation>
     </message>
     <message>
-        <source>Game boots, but only displays a blank screen</source>
-        <translation>Peli käynnistyy, mutta näyttää vain tyhjän ruudun</translation>
+      <source>Game boots, but only displays a blank screen</source>
+      <translation>Peli käynnistyy, mutta näyttää vain tyhjän ruudun</translation>
     </message>
     <message>
-        <source>Game displays an image but does not go past the menu</source>
-        <translation>Peli näyttää kuvan mutta ei mene valikosta eteenpäin</translation>
+      <source>Game displays an image but does not go past the menu</source>
+      <translation>Peli näyttää kuvan mutta ei mene valikosta eteenpäin</translation>
     </message>
     <message>
-        <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Pelissä on pelikokemusta rikkovia häiriöitä tai kelvoton suorituskyky</translation>
+      <source>Game has game-breaking glitches or unplayable performance</source>
+      <translation>Pelissä on pelikokemusta rikkovia häiriöitä tai kelvoton suorituskyky</translation>
     </message>
     <message>
-        <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Pelillä on hyväksyttävä suorituskyky, eikä mitään suuria häiriöitä</translation>
+      <source>Game can be completed with playable performance and no major glitches</source>
+      <translation>Pelillä on hyväksyttävä suorituskyky, eikä mitään suuria häiriöitä</translation>
     </message>
     <message>
-        <source>Click to see details on github</source>
-        <translation>Napsauta nähdäksesi lisätiedot GitHubissa</translation>
+      <source>Click to see details on github</source>
+      <translation>Napsauta nähdäksesi lisätiedot GitHubissa</translation>
     </message>
     <message>
-        <source>Last updated</source>
-        <translation>Viimeksi päivitetty</translation>
+      <source>Last updated</source>
+      <translation>Viimeksi päivitetty</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListUtils</name>
     <message>
-        <source>B</source>
-        <translation>B</translation>
+      <source>B</source>
+      <translation type="unfinished">B</translation>
     </message>
     <message>
-        <source>KB</source>
-        <translation>KB</translation>
+      <source>KB</source>
+      <translation type="unfinished">KB</translation>
     </message>
     <message>
-        <source>MB</source>
-        <translation>MB</translation>
+      <source>MB</source>
+      <translation type="unfinished">MB</translation>
     </message>
     <message>
-        <source>GB</source>
-        <translation>GB</translation>
+      <source>GB</source>
+      <translation type="unfinished">GB</translation>
     </message>
     <message>
-        <source>TB</source>
-        <translation>TB</translation>
+      <source>TB</source>
+      <translation type="unfinished">TB</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GuiContextMenus</name>
     <message>
-        <source>Create Shortcut</source>
-        <translation>Luo Pikakuvake</translation>
+      <source>Create Shortcut</source>
+      <translation>Luo Pikakuvake</translation>
     </message>
     <message>
-        <source>Cheats / Patches</source>
-        <translation>Huijaukset / Korjaukset</translation>
+      <source>Cheats / Patches</source>
+      <translation>Huijaukset / Korjaukset</translation>
     </message>
     <message>
-        <source>SFO Viewer</source>
-        <translation>SFO Selain</translation>
+      <source>SFO Viewer</source>
+      <translation>SFO Selain</translation>
     </message>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Trophy Selain</translation>
+      <source>Trophy Viewer</source>
+      <translation>Trophy Selain</translation>
     </message>
     <message>
-        <source>Open Folder...</source>
-        <translation>Avaa Hakemisto...</translation>
+      <source>Open Folder...</source>
+      <translation>Avaa Hakemisto...</translation>
     </message>
     <message>
-        <source>Open Game Folder</source>
-        <translation>Avaa Pelihakemisto</translation>
+      <source>Open Game Folder</source>
+      <translation>Avaa Pelihakemisto</translation>
     </message>
     <message>
-        <source>Open Save Data Folder</source>
-        <translation>Avaa Tallennustiedostohakemisto</translation>
+      <source>Open Save Data Folder</source>
+      <translation>Avaa Tallennustiedostohakemisto</translation>
     </message>
     <message>
-        <source>Open Log Folder</source>
-        <translation>Avaa Lokihakemisto</translation>
+      <source>Open Log Folder</source>
+      <translation>Avaa Lokihakemisto</translation>
     </message>
     <message>
-        <source>Copy info...</source>
-        <translation>Kopioi tietoja...</translation>
+      <source>Copy info...</source>
+      <translation>Kopioi tietoja...</translation>
     </message>
     <message>
-        <source>Copy Name</source>
-        <translation>Kopioi Nimi</translation>
+      <source>Copy Name</source>
+      <translation>Kopioi Nimi</translation>
     </message>
     <message>
-        <source>Copy Serial</source>
-        <translation>Kopioi Sarjanumero</translation>
+      <source>Copy Serial</source>
+      <translation>Kopioi Sarjanumero</translation>
     </message>
     <message>
-        <source>Copy All</source>
-        <translation>Kopioi kaikki</translation>
+      <source>Copy Version</source>
+      <translation type="unfinished">Copy Version</translation>
     </message>
     <message>
-        <source>Delete...</source>
-        <translation>Poista...</translation>
+      <source>Copy Size</source>
+      <translation type="unfinished">Copy Size</translation>
     </message>
     <message>
-        <source>Delete Game</source>
-        <translation>Poista Peli</translation>
+      <source>Copy All</source>
+      <translation>Kopioi kaikki</translation>
     </message>
     <message>
-        <source>Delete Update</source>
-        <translation>Poista Päivitys</translation>
+      <source>Delete...</source>
+      <translation>Poista...</translation>
     </message>
     <message>
-        <source>Delete DLC</source>
-        <translation>Poista Lisäsisältö</translation>
+      <source>Delete Game</source>
+      <translation>Poista Peli</translation>
     </message>
     <message>
-        <source>Compatibility...</source>
-        <translation>Yhteensopivuus...</translation>
+      <source>Delete Update</source>
+      <translation>Poista Päivitys</translation>
     </message>
     <message>
-        <source>Update database</source>
-        <translation>Päivitä tietokanta</translation>
+      <source>Delete DLC</source>
+      <translation>Poista Lisäsisältö</translation>
     </message>
     <message>
-        <source>View report</source>
-        <translation>Näytä raportti</translation>
+      <source>Compatibility...</source>
+      <translation>Yhteensopivuus...</translation>
     </message>
     <message>
-        <source>Submit a report</source>
-        <translation>Tee raportti</translation>
+      <source>Update database</source>
+      <translation>Päivitä tietokanta</translation>
     </message>
     <message>
-        <source>Shortcut creation</source>
-        <translation>Pikakuvakkeen luonti</translation>
+      <source>View report</source>
+      <translation>Näytä raportti</translation>
     </message>
     <message>
-        <source>Shortcut created successfully!</source>
-        <translation>Pikakuvake luotu onnistuneesti!</translation>
+      <source>Submit a report</source>
+      <translation>Tee raportti</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Virhe</translation>
+      <source>Shortcut creation</source>
+      <translation>Pikakuvakkeen luonti</translation>
     </message>
     <message>
-        <source>Error creating shortcut!</source>
-        <translation>Virhe pikakuvakkeen luonnissa!</translation>
+      <source>Shortcut created successfully!</source>
+      <translation>Pikakuvake luotu onnistuneesti!</translation>
     </message>
     <message>
-        <source>Install PKG</source>
-        <translation>Asenna PKG</translation>
+      <source>Error</source>
+      <translation>Virhe</translation>
     </message>
     <message>
-        <source>Game</source>
-        <translation>Peli</translation>
+      <source>Error creating shortcut!</source>
+      <translation>Virhe pikakuvakkeen luonnissa!</translation>
     </message>
     <message>
-        <source>This game has no update to delete!</source>
-        <translation>Tällä pelillä ei ole poistettavaa päivitystä!</translation>
+      <source>Install PKG</source>
+      <translation>Asenna PKG</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Päivitä</translation>
+      <source>Game</source>
+      <translation>Peli</translation>
     </message>
     <message>
-        <source>This game has no DLC to delete!</source>
-        <translation>Tällä pelillä ei ole poistettavaa lisäsisältöä!</translation>
+      <source>This game has no update to delete!</source>
+      <translation>Tällä pelillä ei ole poistettavaa päivitystä!</translation>
     </message>
     <message>
-        <source>DLC</source>
-        <translation>Lisäsisältö</translation>
+      <source>Update</source>
+      <translation>Päivitä</translation>
     </message>
     <message>
-        <source>Delete %1</source>
-        <translation>Poista %1</translation>
+      <source>This game has no DLC to delete!</source>
+      <translation>Tällä pelillä ei ole poistettavaa lisäsisältöä!</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Haluatko varmasti poistaa %1n %2hakemiston?</translation>
+      <source>DLC</source>
+      <translation>Lisäsisältö</translation>
     </message>
     <message>
-        <source>Open Update Folder</source>
-        <translation type="unfinished"></translation>
+      <source>Delete %1</source>
+      <translation>Poista %1</translation>
     </message>
     <message>
-        <source>Copy Version</source>
-        <translation type="unfinished"></translation>
+      <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
+      <translation>Haluatko varmasti poistaa %1n %2hakemiston?</translation>
     </message>
     <message>
-        <source>Copy Size</source>
-        <translation type="unfinished"></translation>
+      <source>Open Update Folder</source>
+      <translation type="unfinished">Open Update Folder</translation>
     </message>
     <message>
-        <source>Delete Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Delete Save Data</source>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
-        <source>This game has no update folder to open!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no update folder to open!</source>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
-        <source>Failed to convert icon.</source>
-        <translation type="unfinished"></translation>
+      <source>Failed to convert icon.</source>
+      <translation type="unfinished">Failed to convert icon.</translation>
     </message>
     <message>
-        <source>This game has no save data to delete!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no save data to delete!</source>
+      <translation type="unfinished">This game has no save data to delete!</translation>
     </message>
     <message>
-        <source>Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data</source>
+      <translation type="unfinished">Save Data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Valitse hakemisto</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation>shadPS4 - Valitse hakemisto</translation>
     </message>
     <message>
-        <source>Select which directory you want to install to.</source>
-        <translation>Valitse, mihin hakemistoon haluat asentaa.</translation>
+      <source>Select which directory you want to install to.</source>
+      <translation>Valitse, mihin hakemistoon haluat asentaa.</translation>
     </message>
     <message>
-        <source>Install All Queued to Selected Folder</source>
-        <translation type="unfinished"></translation>
+      <source>Install All Queued to Selected Folder</source>
+      <translation type="unfinished">Install All Queued to Selected Folder</translation>
     </message>
     <message>
-        <source>Delete PKG File on Install</source>
-        <translation type="unfinished"></translation>
+      <source>Delete PKG File on Install</source>
+      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>MainWindow</name>
     <message>
-        <source>Open/Add Elf Folder</source>
-        <translation>Avaa/Lisää Elf Hakemisto</translation>
+      <source>Open/Add Elf Folder</source>
+      <translation>Avaa/Lisää Elf Hakemisto</translation>
     </message>
     <message>
-        <source>Install Packages (PKG)</source>
-        <translation>Asenna Paketteja (PKG)</translation>
+      <source>Install Packages (PKG)</source>
+      <translation>Asenna Paketteja (PKG)</translation>
     </message>
     <message>
-        <source>Boot Game</source>
-        <translation>Käynnistä Peli</translation>
+      <source>Boot Game</source>
+      <translation>Käynnistä Peli</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Tarkista Päivitykset</translation>
+      <source>Check for Updates</source>
+      <translation>Tarkista Päivitykset</translation>
     </message>
     <message>
-        <source>About shadPS4</source>
-        <translation>Tietoa shadPS4:sta</translation>
+      <source>About shadPS4</source>
+      <translation>Tietoa shadPS4:sta</translation>
     </message>
     <message>
-        <source>Configure...</source>
-        <translation>Asetukset...</translation>
+      <source>Configure...</source>
+      <translation>Asetukset...</translation>
     </message>
     <message>
-        <source>Install application from a .pkg file</source>
-        <translation>Asenna sovellus .pkg tiedostosta</translation>
+      <source>Install application from a .pkg file</source>
+      <translation>Asenna sovellus .pkg tiedostosta</translation>
     </message>
     <message>
-        <source>Recent Games</source>
-        <translation>Viimeisimmät Pelit</translation>
+      <source>Recent Games</source>
+      <translation>Viimeisimmät Pelit</translation>
     </message>
     <message>
-        <source>Open shadPS4 Folder</source>
-        <translation>Open shadPS4 Folder</translation>
+      <source>Open shadPS4 Folder</source>
+      <translation type="unfinished">Open shadPS4 Folder</translation>
     </message>
     <message>
-        <source>Exit</source>
-        <translation>Sulje</translation>
+      <source>Exit</source>
+      <translation>Sulje</translation>
     </message>
     <message>
-        <source>Exit shadPS4</source>
-        <translation>Sulje shadPS4</translation>
+      <source>Exit shadPS4</source>
+      <translation>Sulje shadPS4</translation>
     </message>
     <message>
-        <source>Exit the application.</source>
-        <translation>Sulje sovellus.</translation>
+      <source>Exit the application.</source>
+      <translation>Sulje sovellus.</translation>
     </message>
     <message>
-        <source>Show Game List</source>
-        <translation>Avaa pelilista</translation>
+      <source>Show Game List</source>
+      <translation>Avaa pelilista</translation>
     </message>
     <message>
-        <source>Game List Refresh</source>
-        <translation>Päivitä pelilista</translation>
+      <source>Game List Refresh</source>
+      <translation>Päivitä pelilista</translation>
     </message>
     <message>
-        <source>Tiny</source>
-        <translation>Hyvin pieni</translation>
+      <source>Tiny</source>
+      <translation>Hyvin pieni</translation>
     </message>
     <message>
-        <source>Small</source>
-        <translation>Pieni</translation>
+      <source>Small</source>
+      <translation>Pieni</translation>
     </message>
     <message>
-        <source>Medium</source>
-        <translation>Keskikokoinen</translation>
+      <source>Medium</source>
+      <translation>Keskikokoinen</translation>
     </message>
     <message>
-        <source>Large</source>
-        <translation>Suuri</translation>
+      <source>Large</source>
+      <translation>Suuri</translation>
     </message>
     <message>
-        <source>List View</source>
-        <translation>Listanäkymä</translation>
+      <source>List View</source>
+      <translation>Listanäkymä</translation>
     </message>
     <message>
-        <source>Grid View</source>
-        <translation>Ruudukkonäkymä</translation>
+      <source>Grid View</source>
+      <translation>Ruudukkonäkymä</translation>
     </message>
     <message>
-        <source>Elf Viewer</source>
-        <translation>Elf Selain</translation>
+      <source>Elf Viewer</source>
+      <translation>Elf Selain</translation>
     </message>
     <message>
-        <source>Game Install Directory</source>
-        <translation>Peliasennushakemisto</translation>
+      <source>Game Install Directory</source>
+      <translation>Peliasennushakemisto</translation>
     </message>
     <message>
-        <source>Download Cheats/Patches</source>
-        <translation>Lataa Huijaukset / Korjaukset</translation>
+      <source>Download Cheats/Patches</source>
+      <translation>Lataa Huijaukset / Korjaukset</translation>
     </message>
     <message>
-        <source>Dump Game List</source>
-        <translation>Kirjoita Pelilista Tiedostoon</translation>
+      <source>Dump Game List</source>
+      <translation>Kirjoita Pelilista Tiedostoon</translation>
     </message>
     <message>
-        <source>PKG Viewer</source>
-        <translation>PKG Selain</translation>
+      <source>PKG Viewer</source>
+      <translation>PKG Selain</translation>
     </message>
     <message>
-        <source>Search...</source>
-        <translation>Hae...</translation>
+      <source>Search...</source>
+      <translation>Hae...</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation>Tiedosto</translation>
+      <source>File</source>
+      <translation>Tiedosto</translation>
     </message>
     <message>
-        <source>View</source>
-        <translation>Näkymä</translation>
+      <source>View</source>
+      <translation>Näkymä</translation>
     </message>
     <message>
-        <source>Game List Icons</source>
-        <translation>Pelilistan Ikonit</translation>
+      <source>Game List Icons</source>
+      <translation>Pelilistan Ikonit</translation>
     </message>
     <message>
-        <source>Game List Mode</source>
-        <translation>Pelilistamuoto</translation>
+      <source>Game List Mode</source>
+      <translation>Pelilistamuoto</translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation>Asetukset</translation>
+      <source>Settings</source>
+      <translation>Asetukset</translation>
     </message>
     <message>
-        <source>Utils</source>
-        <translation>Työkalut</translation>
+      <source>Utils</source>
+      <translation>Työkalut</translation>
     </message>
     <message>
-        <source>Themes</source>
-        <translation>Teemat</translation>
+      <source>Themes</source>
+      <translation>Teemat</translation>
     </message>
     <message>
-        <source>Help</source>
-        <translation>Apua</translation>
+      <source>Help</source>
+      <translation>Apua</translation>
     </message>
     <message>
-        <source>Dark</source>
-        <translation>Tumma</translation>
+      <source>Dark</source>
+      <translation>Tumma</translation>
     </message>
     <message>
-        <source>Light</source>
-        <translation>Vaalea</translation>
+      <source>Light</source>
+      <translation>Vaalea</translation>
     </message>
     <message>
-        <source>Green</source>
-        <translation>Vihreä</translation>
+      <source>Green</source>
+      <translation>Vihreä</translation>
     </message>
     <message>
-        <source>Blue</source>
-        <translation>Sininen</translation>
+      <source>Blue</source>
+      <translation>Sininen</translation>
     </message>
     <message>
-        <source>Violet</source>
-        <translation>Violetti</translation>
+      <source>Violet</source>
+      <translation>Violetti</translation>
     </message>
     <message>
-        <source>toolBar</source>
-        <translation>Työkalupalkki</translation>
+      <source>toolBar</source>
+      <translation>Työkalupalkki</translation>
     </message>
     <message>
-        <source>Game List</source>
-        <translation>Pelilista</translation>
+      <source>Game List</source>
+      <translation>Pelilista</translation>
     </message>
     <message>
-        <source> * Unsupported Vulkan Version</source>
-        <translation> * Ei Tuettu Vulkan-versio</translation>
+      <source> * Unsupported Vulkan Version</source>
+      <translation> * Ei Tuettu Vulkan-versio</translation>
     </message>
     <message>
-        <source>Download Cheats For All Installed Games</source>
-        <translation>Lataa Huijaukset Kaikille Asennetuille Peleille</translation>
+      <source>Download Cheats For All Installed Games</source>
+      <translation>Lataa Huijaukset Kaikille Asennetuille Peleille</translation>
     </message>
     <message>
-        <source>Download Patches For All Games</source>
-        <translation>Lataa Paikkaukset Kaikille Peleille</translation>
+      <source>Download Patches For All Games</source>
+      <translation>Lataa Paikkaukset Kaikille Peleille</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Lataus Valmis</translation>
+      <source>Download Complete</source>
+      <translation>Lataus Valmis</translation>
     </message>
     <message>
-        <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Olet ladannut huijaukset kaikkiin asennettuihin peleihin.</translation>
+      <source>You have downloaded cheats for all the games you have installed.</source>
+      <translation>Olet ladannut huijaukset kaikkiin asennettuihin peleihin.</translation>
     </message>
     <message>
-        <source>Patches Downloaded Successfully!</source>
-        <translation>Paikkaukset Ladattu Onnistuneesti!</translation>
+      <source>Patches Downloaded Successfully!</source>
+      <translation>Paikkaukset Ladattu Onnistuneesti!</translation>
     </message>
     <message>
-        <source>All Patches available for all games have been downloaded.</source>
-        <translation>Kaikki saatavilla olevat Paikkaukset kaikille peleille on ladattu.</translation>
+      <source>All Patches available for all games have been downloaded.</source>
+      <translation>Kaikki saatavilla olevat Paikkaukset kaikille peleille on ladattu.</translation>
     </message>
     <message>
-        <source>Games: </source>
-        <translation>Pelit: </translation>
+      <source>Games: </source>
+      <translation>Pelit: </translation>
     </message>
     <message>
-        <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>ELF-tiedostot (*.bin *.elf *.oelf)</translation>
+      <source>ELF files (*.bin *.elf *.oelf)</source>
+      <translation>ELF-tiedostot (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
-        <source>Game Boot</source>
-        <translation>Pelin Käynnistys</translation>
+      <source>Game Boot</source>
+      <translation>Pelin Käynnistys</translation>
     </message>
     <message>
-        <source>Only one file can be selected!</source>
-        <translation>Vain yksi tiedosto voi olla valittuna!</translation>
+      <source>Only one file can be selected!</source>
+      <translation>Vain yksi tiedosto voi olla valittuna!</translation>
     </message>
     <message>
-        <source>PKG Extraction</source>
-        <translation>PKG:n purku</translation>
+      <source>PKG Extraction</source>
+      <translation>PKG:n purku</translation>
     </message>
     <message>
-        <source>Patch detected!</source>
-        <translation>Päivitys havaittu!</translation>
+      <source>Patch detected!</source>
+      <translation>Päivitys havaittu!</translation>
     </message>
     <message>
-        <source>PKG and Game versions match: </source>
-        <translation>PKG- ja peliversiot vastaavat: </translation>
+      <source>PKG and Game versions match: </source>
+      <translation>PKG- ja peliversiot vastaavat: </translation>
     </message>
     <message>
-        <source>Would you like to overwrite?</source>
-        <translation>Haluatko korvata?</translation>
+      <source>Would you like to overwrite?</source>
+      <translation>Haluatko korvata?</translation>
     </message>
     <message>
-        <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG-versio %1 on vanhempi kuin asennettu versio: </translation>
+      <source>PKG Version %1 is older than installed version: </source>
+      <translation>PKG-versio %1 on vanhempi kuin asennettu versio: </translation>
     </message>
     <message>
-        <source>Game is installed: </source>
-        <translation>Peli on asennettu: </translation>
+      <source>Game is installed: </source>
+      <translation>Peli on asennettu: </translation>
     </message>
     <message>
-        <source>Would you like to install Patch: </source>
-        <translation>Haluatko asentaa päivityksen: </translation>
+      <source>Would you like to install Patch: </source>
+      <translation>Haluatko asentaa päivityksen: </translation>
     </message>
     <message>
-        <source>DLC Installation</source>
-        <translation>Lisäsisällön asennus</translation>
+      <source>DLC Installation</source>
+      <translation>Lisäsisällön asennus</translation>
     </message>
     <message>
-        <source>Would you like to install DLC: %1?</source>
-        <translation>Haluatko asentaa lisäsisällön: %1?</translation>
+      <source>Would you like to install DLC: %1?</source>
+      <translation>Haluatko asentaa lisäsisällön: %1?</translation>
     </message>
     <message>
-        <source>DLC already installed:</source>
-        <translation>Lisäsisältö on jo asennettu:</translation>
+      <source>DLC already installed:</source>
+      <translation>Lisäsisältö on jo asennettu:</translation>
     </message>
     <message>
-        <source>Game already installed</source>
-        <translation>Peli on jo asennettu</translation>
+      <source>Game already installed</source>
+      <translation>Peli on jo asennettu</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation>PKG VIRHE</translation>
+      <source>PKG ERROR</source>
+      <translation>PKG VIRHE</translation>
     </message>
     <message>
-        <source>Extracting PKG %1/%2</source>
-        <translation>Purkaminen PKG %1/%2</translation>
+      <source>Extracting PKG %1/%2</source>
+      <translation>Purkaminen PKG %1/%2</translation>
     </message>
     <message>
-        <source>Extraction Finished</source>
-        <translation>Purku valmis</translation>
+      <source>Extraction Finished</source>
+      <translation>Purku valmis</translation>
     </message>
     <message>
-        <source>Game successfully installed at %1</source>
-        <translation>Peli asennettu onnistuneesti kohtaan %1</translation>
+      <source>Game successfully installed at %1</source>
+      <translation>Peli asennettu onnistuneesti kohtaan %1</translation>
     </message>
     <message>
-        <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Tiedosto ei vaikuta olevan kelvollinen PKG-tiedosto</translation>
+      <source>File doesn&apos;t appear to be a valid PKG file</source>
+      <translation>Tiedosto ei vaikuta olevan kelvollinen PKG-tiedosto</translation>
     </message>
     <message>
-        <source>Run Game</source>
-        <translation type="unfinished"></translation>
+      <source>Run Game</source>
+      <translation type="unfinished">Run Game</translation>
     </message>
     <message>
-        <source>Eboot.bin file not found</source>
-        <translation type="unfinished"></translation>
+      <source>Eboot.bin file not found</source>
+      <translation type="unfinished">Eboot.bin file not found</translation>
     </message>
     <message>
-        <source>PKG File (*.PKG *.pkg)</source>
-        <translation type="unfinished"></translation>
+      <source>PKG File (*.PKG *.pkg)</source>
+      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
     </message>
     <message>
-        <source>PKG is a patch or DLC, please install the game first!</source>
-        <translation type="unfinished"></translation>
+      <source>PKG is a patch or DLC, please install the game first!</source>
+      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
-        <source>Game is already running!</source>
-        <translation type="unfinished"></translation>
+      <source>Game is already running!</source>
+      <translation type="unfinished">Game is already running!</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation type="unfinished">shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PKGViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Avaa Hakemisto</translation>
+      <source>Open Folder</source>
+      <translation>Avaa Hakemisto</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation type="unfinished">Nimi</translation>
+      <source>PKG ERROR</source>
+      <translation>PKG VIRHE</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation type="unfinished">Sarjanumero</translation>
+      <source>Name</source>
+      <translation>Nimi</translation>
     </message>
     <message>
-        <source>Installed</source>
-        <translation type="unfinished"></translation>
+      <source>Serial</source>
+      <translation>Sarjanumero</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation type="unfinished">Koko</translation>
+      <source>Installed</source>
+      <translation type="unfinished">Installed</translation>
     </message>
     <message>
-        <source>Category</source>
-        <translation type="unfinished"></translation>
+      <source>Size</source>
+      <translation>Koko</translation>
     </message>
     <message>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
+      <source>Category</source>
+      <translation type="unfinished">Category</translation>
     </message>
     <message>
-        <source>App Ver</source>
-        <translation type="unfinished"></translation>
+      <source>Type</source>
+      <translation type="unfinished">Type</translation>
     </message>
     <message>
-        <source>FW</source>
-        <translation type="unfinished"></translation>
+      <source>App Ver</source>
+      <translation type="unfinished">App Ver</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation type="unfinished">Alue</translation>
+      <source>FW</source>
+      <translation type="unfinished">FW</translation>
     </message>
     <message>
-        <source>Flags</source>
-        <translation type="unfinished"></translation>
+      <source>Region</source>
+      <translation>Alue</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation type="unfinished">Polku</translation>
+      <source>Flags</source>
+      <translation type="unfinished">Flags</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation type="unfinished">Tiedosto</translation>
+      <source>Path</source>
+      <translation>Polku</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation type="unfinished">PKG VIRHE</translation>
+      <source>File</source>
+      <translation>Tiedosto</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation type="unfinished">Tuntematon</translation>
+      <source>Unknown</source>
+      <translation>Tuntematon</translation>
     </message>
     <message>
-        <source>Package</source>
-        <translation type="unfinished"></translation>
+      <source>Package</source>
+      <translation type="unfinished">Package</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>SettingsDialog</name>
     <message>
-        <source>Settings</source>
-        <translation>Asetukset</translation>
+      <source>Settings</source>
+      <translation>Asetukset</translation>
     </message>
     <message>
-        <source>General</source>
-        <translation>Yleinen</translation>
+      <source>General</source>
+      <translation>Yleinen</translation>
     </message>
     <message>
-        <source>System</source>
-        <translation>Järjestelmä</translation>
+      <source>System</source>
+      <translation>Järjestelmä</translation>
     </message>
     <message>
-        <source>Console Language</source>
-        <translation>Konsolin Kieli</translation>
+      <source>Console Language</source>
+      <translation>Konsolin Kieli</translation>
     </message>
     <message>
-        <source>Emulator Language</source>
-        <translation>Emulaattorin Kieli</translation>
+      <source>Emulator Language</source>
+      <translation>Emulaattorin Kieli</translation>
     </message>
     <message>
-        <source>Emulator</source>
-        <translation>Emulaattori</translation>
+      <source>Emulator</source>
+      <translation>Emulaattori</translation>
     </message>
     <message>
-        <source>Enable Fullscreen</source>
-        <translation>Ota Käyttöön Koko Ruudun Tila</translation>
+      <source>Enable Fullscreen</source>
+      <translation>Ota Käyttöön Koko Ruudun Tila</translation>
     </message>
     <message>
-        <source>Fullscreen Mode</source>
-        <translation>Koko näytön tila</translation>
+      <source>Fullscreen Mode</source>
+      <translation>Koko näytön tila</translation>
     </message>
     <message>
-        <source>Enable Separate Update Folder</source>
-        <translation>Ota Käyttöön Erillinen Päivityshakemisto</translation>
+      <source>Enable Separate Update Folder</source>
+      <translation>Ota Käyttöön Erillinen Päivityshakemisto</translation>
     </message>
     <message>
-        <source>Default tab when opening settings</source>
-        <translation>Oletusvälilehti avattaessa asetuksia</translation>
+      <source>Default tab when opening settings</source>
+      <translation>Oletusvälilehti avattaessa asetuksia</translation>
     </message>
     <message>
-        <source>Show Game Size In List</source>
-        <translation>Näytä pelin koko luettelossa</translation>
+      <source>Show Game Size In List</source>
+      <translation>Näytä pelin koko luettelossa</translation>
     </message>
     <message>
-        <source>Show Splash</source>
-        <translation>Näytä Aloitusnäyttö</translation>
+      <source>Show Splash</source>
+      <translation>Näytä Aloitusnäyttö</translation>
     </message>
     <message>
-        <source>Enable Discord Rich Presence</source>
-        <translation>Ota käyttöön Discord Rich Presence</translation>
+      <source>Enable Discord Rich Presence</source>
+      <translation>Ota käyttöön Discord Rich Presence</translation>
     </message>
     <message>
-        <source>Username</source>
-        <translation>Käyttäjänimi</translation>
+      <source>Username</source>
+      <translation>Käyttäjänimi</translation>
     </message>
     <message>
-        <source>Trophy Key</source>
-        <translation>Trophy Avain</translation>
+      <source>Trophy Key</source>
+      <translation>Trophy Avain</translation>
     </message>
     <message>
-        <source>Trophy</source>
-        <translation>Trophy</translation>
+      <source>Trophy</source>
+      <translation type="unfinished">Trophy</translation>
     </message>
     <message>
-        <source>Logger</source>
-        <translation>Lokinkerääjä</translation>
+      <source>Logger</source>
+      <translation>Lokinkerääjä</translation>
     </message>
     <message>
-        <source>Log Type</source>
-        <translation>Lokin Tyyppi</translation>
+      <source>Log Type</source>
+      <translation>Lokin Tyyppi</translation>
     </message>
     <message>
-        <source>Log Filter</source>
-        <translation>Lokisuodatin</translation>
+      <source>Log Filter</source>
+      <translation>Lokisuodatin</translation>
     </message>
     <message>
-        <source>Open Log Location</source>
-        <translation>Avaa lokin sijainti</translation>
+      <source>Open Log Location</source>
+      <translation>Avaa lokin sijainti</translation>
     </message>
     <message>
-        <source>Input</source>
-        <translation>Syöttö</translation>
+      <source>Input</source>
+      <translation>Syöttö</translation>
     </message>
     <message>
-        <source>Cursor</source>
-        <translation>Kursori</translation>
+      <source>Cursor</source>
+      <translation>Kursori</translation>
     </message>
     <message>
-        <source>Hide Cursor</source>
-        <translation>Piilota Kursori</translation>
+      <source>Hide Cursor</source>
+      <translation>Piilota Kursori</translation>
     </message>
     <message>
-        <source>Hide Cursor Idle Timeout</source>
-        <translation>Inaktiivisuuden Aikaraja Kursorin Piilottamiseen</translation>
+      <source>Hide Cursor Idle Timeout</source>
+      <translation>Inaktiivisuuden Aikaraja Kursorin Piilottamiseen</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Controller</source>
-        <translation>Ohjain</translation>
+      <source>Controller</source>
+      <translation>Ohjain</translation>
     </message>
     <message>
-        <source>Back Button Behavior</source>
-        <translation>Takaisin-painikkeen Käyttäytyminen</translation>
+      <source>Back Button Behavior</source>
+      <translation>Takaisin-painikkeen Käyttäytyminen</translation>
     </message>
     <message>
-        <source>Graphics</source>
-        <translation>Grafiikka</translation>
+      <source>Graphics</source>
+      <translation>Grafiikka</translation>
     </message>
     <message>
-        <source>GUI</source>
-        <translation>Rajapinta</translation>
+      <source>GUI</source>
+      <translation>Rajapinta</translation>
     </message>
     <message>
-        <source>User</source>
-        <translation>Käyttäjä</translation>
+      <source>User</source>
+      <translation>Käyttäjä</translation>
     </message>
     <message>
-        <source>Graphics Device</source>
-        <translation>Näytönohjain</translation>
+      <source>Graphics Device</source>
+      <translation>Näytönohjain</translation>
     </message>
     <message>
-        <source>Width</source>
-        <translation>Leveys</translation>
+      <source>Width</source>
+      <translation>Leveys</translation>
     </message>
     <message>
-        <source>Height</source>
-        <translation>Korkeus</translation>
+      <source>Height</source>
+      <translation>Korkeus</translation>
     </message>
     <message>
-        <source>Vblank Divider</source>
-        <translation>Vblank jakaja</translation>
+      <source>Vblank Divider</source>
+      <translation>Vblank jakaja</translation>
     </message>
     <message>
-        <source>Advanced</source>
-        <translation>Lisäasetukset</translation>
+      <source>Advanced</source>
+      <translation>Lisäasetukset</translation>
     </message>
     <message>
-        <source>Enable Shaders Dumping</source>
-        <translation>Ota Käyttöön Varjostinvedokset</translation>
+      <source>Enable Shaders Dumping</source>
+      <translation>Ota Käyttöön Varjostinvedokset</translation>
     </message>
     <message>
-        <source>Enable NULL GPU</source>
-        <translation>Ota Käyttöön NULL GPU</translation>
+      <source>Enable NULL GPU</source>
+      <translation>Ota Käyttöön NULL GPU</translation>
     </message>
     <message>
-        <source>Paths</source>
-        <translation>Polut</translation>
+      <source>Enable HDR</source>
+      <translation type="unfinished">Enable HDR</translation>
     </message>
     <message>
-        <source>Game Folders</source>
-        <translation>Pelihakemistot</translation>
+      <source>Paths</source>
+      <translation>Polut</translation>
     </message>
     <message>
-        <source>Add...</source>
-        <translation>Lisää...</translation>
+      <source>Game Folders</source>
+      <translation>Pelihakemistot</translation>
     </message>
     <message>
-        <source>Remove</source>
-        <translation>Poista</translation>
+      <source>Add...</source>
+      <translation>Lisää...</translation>
     </message>
     <message>
-        <source>Debug</source>
-        <translation>Virheenkorjaus</translation>
+      <source>Remove</source>
+      <translation>Poista</translation>
     </message>
     <message>
-        <source>Enable Debug Dumping</source>
-        <translation>Ota Käyttöön Virheenkorjausvedokset</translation>
+      <source>Debug</source>
+      <translation>Virheenkorjaus</translation>
     </message>
     <message>
-        <source>Enable Vulkan Validation Layers</source>
-        <translation>Ota Käyttöön Vulkan-validointikerrokset</translation>
+      <source>Enable Debug Dumping</source>
+      <translation>Ota Käyttöön Virheenkorjausvedokset</translation>
     </message>
     <message>
-        <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Ota Käyttöön Vulkan-synkronointivalidointi</translation>
+      <source>Enable Vulkan Validation Layers</source>
+      <translation>Ota Käyttöön Vulkan-validointikerrokset</translation>
     </message>
     <message>
-        <source>Enable RenderDoc Debugging</source>
-        <translation>Ota Käyttöön RenderDoc Virheenkorjaus</translation>
+      <source>Enable Vulkan Synchronization Validation</source>
+      <translation>Ota Käyttöön Vulkan-synkronointivalidointi</translation>
     </message>
     <message>
-        <source>Enable Crash Diagnostics</source>
-        <translation>Enable Crash Diagnostics</translation>
+      <source>Enable RenderDoc Debugging</source>
+      <translation>Ota Käyttöön RenderDoc Virheenkorjaus</translation>
     </message>
     <message>
-        <source>Collect Shaders</source>
-        <translation>Collect Shaders</translation>
+      <source>Enable Crash Diagnostics</source>
+      <translation type="unfinished">Enable Crash Diagnostics</translation>
     </message>
     <message>
-        <source>Copy GPU Buffers</source>
-        <translation>Copy GPU Buffers</translation>
+      <source>Collect Shaders</source>
+      <translation type="unfinished">Collect Shaders</translation>
     </message>
     <message>
-        <source>Host Debug Markers</source>
-        <translation>Host Debug Markers</translation>
+      <source>Copy GPU Buffers</source>
+      <translation type="unfinished">Copy GPU Buffers</translation>
     </message>
     <message>
-        <source>Guest Debug Markers</source>
-        <translation>Guest Debug Markers</translation>
+      <source>Host Debug Markers</source>
+      <translation type="unfinished">Host Debug Markers</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Päivitys</translation>
+      <source>Guest Debug Markers</source>
+      <translation type="unfinished">Guest Debug Markers</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Tarkista Päivitykset Käynnistäessä</translation>
+      <source>Update</source>
+      <translation>Päivitys</translation>
     </message>
     <message>
-        <source>Always Show Changelog</source>
-        <translation>Näytä aina muutoshistoria</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Tarkista Päivitykset Käynnistäessä</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Päivityskanava</translation>
+      <source>Always Show Changelog</source>
+      <translation>Näytä aina muutoshistoria</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Tarkista Päivitykset</translation>
+      <source>Update Channel</source>
+      <translation>Päivityskanava</translation>
     </message>
     <message>
-        <source>GUI Settings</source>
-        <translation>GUI-asetukset</translation>
+      <source>Check for Updates</source>
+      <translation>Tarkista Päivitykset</translation>
     </message>
     <message>
-        <source>Title Music</source>
-        <translation>Title Music</translation>
+      <source>GUI Settings</source>
+      <translation>GUI-asetukset</translation>
     </message>
     <message>
-        <source>Disable Trophy Pop-ups</source>
-        <translation>Poista Trophy Pop-upit Käytöstä</translation>
+      <source>Title Music</source>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
-        <source>Play title music</source>
-        <translation>Soita Otsikkomusiikkia</translation>
+      <source>Disable Trophy Pop-ups</source>
+      <translation>Poista Trophy Pop-upit Käytöstä</translation>
     </message>
     <message>
-        <source>Update Compatibility Database On Startup</source>
-        <translation>Päivitä Yhteensopivuustietokanta Käynnistäessä</translation>
+      <source>Background Image</source>
+      <translation type="unfinished">Background Image</translation>
     </message>
     <message>
-        <source>Game Compatibility</source>
-        <translation>Peliyhteensopivuus</translation>
+      <source>Show Background Image</source>
+      <translation type="unfinished">Show Background Image</translation>
     </message>
     <message>
-        <source>Display Compatibility Data</source>
-        <translation>Näytä Yhteensopivuustiedot</translation>
+      <source>Opacity</source>
+      <translation type="unfinished">Opacity</translation>
     </message>
     <message>
-        <source>Update Compatibility Database</source>
-        <translation>Päivitä Yhteensopivuustietokanta</translation>
+      <source>Play title music</source>
+      <translation>Soita Otsikkomusiikkia</translation>
     </message>
     <message>
-        <source>Volume</source>
-        <translation>Äänenvoimakkuus</translation>
+      <source>Update Compatibility Database On Startup</source>
+      <translation>Päivitä Yhteensopivuustietokanta Käynnistäessä</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Tallenna</translation>
+      <source>Game Compatibility</source>
+      <translation>Peliyhteensopivuus</translation>
     </message>
     <message>
-        <source>Apply</source>
-        <translation>Ota käyttöön</translation>
+      <source>Display Compatibility Data</source>
+      <translation>Näytä Yhteensopivuustiedot</translation>
     </message>
     <message>
-        <source>Restore Defaults</source>
-        <translation>Palauta Oletukset</translation>
+      <source>Update Compatibility Database</source>
+      <translation>Päivitä Yhteensopivuustietokanta</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation>Sulje</translation>
+      <source>Volume</source>
+      <translation>Äänenvoimakkuus</translation>
     </message>
     <message>
-        <source>Point your mouse at an option to display its description.</source>
-        <translation>Siirrä hiiri vaihtoehdon päälle näyttääksesi sen kuvauksen.</translation>
+      <source>Save</source>
+      <translation>Tallenna</translation>
     </message>
     <message>
-        <source>consoleLanguageGroupBox</source>
-        <translation>Konsolin Kieli:\nAseta PS4-pelin käyttämä kieli.\nOn suositeltavaa asettaa tämä kieleksi, jota peli tukee, mikä vaihtelee alueittain.</translation>
+      <source>Apply</source>
+      <translation>Ota käyttöön</translation>
     </message>
     <message>
-        <source>emulatorLanguageGroupBox</source>
-        <translation>Emulaattorin Kieli:\nAsettaa emulaattorin käyttöliittymän kielen.</translation>
+      <source>Restore Defaults</source>
+      <translation>Palauta Oletukset</translation>
     </message>
     <message>
-        <source>fullscreenCheckBox</source>
-        <translation>Ota Koko Näytön Tila Käyttöön:\nAvaa pelin ikkunan automaattisesti koko näytön tilassa.\nTilaa voi vaihtaa painamalla F11-näppäintä.</translation>
+      <source>Close</source>
+      <translation>Sulje</translation>
     </message>
     <message>
-        <source>separateUpdatesCheckBox</source>
-        <translation>Ota Käyttöön Erillinen Päivityskansio:\nOttaa käyttöön päivitysten asennuksen erilliseen kansioon helpottamaan niiden hallintaa.\nTämä on tehtävissä manuaalisesti lisäämällä puretun päivityksen pelikansioon &quot;CUSA00000-UPDATE&quot; nimellä, missä CUSA ID vastaa pelin ID:tä.</translation>
+      <source>Point your mouse at an option to display its description.</source>
+      <translation>Siirrä hiiri vaihtoehdon päälle näyttääksesi sen kuvauksen.</translation>
     </message>
     <message>
-        <source>showSplashCheckBox</source>
-        <translation>Näytä Aloitusnäyttö:\nNäyttää pelin aloitusnäytön (erityinen kuva) pelin käynnistyessä.</translation>
+      <source>consoleLanguageGroupBox</source>
+      <translation>Konsolin Kieli:\nAseta PS4-pelin käyttämä kieli.\nOn suositeltavaa asettaa tämä kieleksi, jota peli tukee, mikä vaihtelee alueittain.</translation>
     </message>
     <message>
-        <source>discordRPCCheckbox</source>
-        <translation>Ota käyttöön Discord Rich Presence:\nNäyttää emulaattorin kuvakkeen ja asiaankuuluvat tiedot Discord-profiilissasi.</translation>
+      <source>emulatorLanguageGroupBox</source>
+      <translation>Emulaattorin Kieli:\nAsettaa emulaattorin käyttöliittymän kielen.</translation>
     </message>
     <message>
-        <source>userName</source>
-        <translation>Käyttäjänimi:\nAsettaa PS4-tilin käyttäjänimen, joka voi näkyä joissain peleissä.</translation>
+      <source>fullscreenCheckBox</source>
+      <translation>Ota Koko Näytön Tila Käyttöön:\nAvaa pelin ikkunan automaattisesti koko näytön tilassa.\nTilaa voi vaihtaa painamalla F11-näppäintä.</translation>
     </message>
     <message>
-        <source>TrophyKey</source>
-        <translation>Trophy Avain:\nThrophyjen dekryptoinnissa käytetty avain. Pitää hankkia jailbreakatusta konsolista.\nSaa sisältää vain hex-merkkejä.</translation>
+      <source>separateUpdatesCheckBox</source>
+      <translation>Ota Käyttöön Erillinen Päivityskansio:\nOttaa käyttöön päivitysten asennuksen erilliseen kansioon helpottamaan niiden hallintaa.\nTämä on tehtävissä manuaalisesti lisäämällä puretun päivityksen pelikansioon &quot;CUSA00000-UPDATE&quot; nimellä, missä CUSA ID vastaa pelin ID:tä.</translation>
     </message>
     <message>
-        <source>logTypeGroupBox</source>
-        <translation>Lokityyppi:\nAsettaa, synkronoidaanko loki-ikkunan ulostulo suorituskyvyn vuoksi. Tämä voi vaikuttaa haitallisesti emulointiin.</translation>
+      <source>showSplashCheckBox</source>
+      <translation>Näytä Aloitusnäyttö:\nNäyttää pelin aloitusnäytön (erityinen kuva) pelin käynnistyessä.</translation>
     </message>
     <message>
-        <source>logFilter</source>
-        <translation>Lokisuodatin:\nSuodattaa lokia tulostamaan vain määrättyä tietoa.\nEsimerkkejä: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nTasot: Trace, Debug, Info, Warning, Error, Critical - tässä järjestyksessä. Valittu taso vaientaa kaikki edeltävät tasot luettelossa ja kirjaa kaikki tasot sen jälkeen.</translation>
+      <source>discordRPCCheckbox</source>
+      <translation>Ota käyttöön Discord Rich Presence:\nNäyttää emulaattorin kuvakkeen ja asiaankuuluvat tiedot Discord-profiilissasi.</translation>
     </message>
     <message>
-        <source>updaterGroupBox</source>
-        <translation>Päivitys:\nRelease: Viralliset versiot, jotka julkaistaan kuukausittain ja saattavat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nNightly: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne saattavat sisältää virheitä ja ovat vähemmän vakaita.</translation>
+      <source>userName</source>
+      <translation>Käyttäjänimi:\nAsettaa PS4-tilin käyttäjänimen, joka voi näkyä joissain peleissä.</translation>
     </message>
     <message>
-        <source>GUIMusicGroupBox</source>
-        <translation>Soita Otsikkomusiikkia:\nJos peli tukee sitä, ota käyttöön erityisen musiikin soittaminen pelin valinnan yhteydessä käyttöliittymässä.</translation>
+      <source>TrophyKey</source>
+      <translation>Trophy Avain:\nThrophyjen dekryptoinnissa käytetty avain. Pitää hankkia jailbreakatusta konsolista.\nSaa sisältää vain hex-merkkejä.</translation>
     </message>
     <message>
-        <source>disableTrophycheckBox</source>
-        <translation>Poista Trophy Pop-upit Käytöstä:\nPoista trophy ilmoitukset pelin aikana. Trophyjen edistystä voi silti seurata Trophy Selainta käyttämällä (klikkaa peliä hiiren oikealla emulaattorin pääikkunassa).</translation>
+      <source>logTypeGroupBox</source>
+      <translation>Lokityyppi:\nAsettaa, synkronoidaanko loki-ikkunan ulostulo suorituskyvyn vuoksi. Tämä voi vaikuttaa haitallisesti emulointiin.</translation>
     </message>
     <message>
-        <source>hideCursorGroupBox</source>
-        <translation>Piilota kursori:\nValitse, milloin kursori häviää:\nEi koskaan: Näet hiiren aina.\nInaktiivinen: Aseta aika, jolloin se häviää oltuaan aktiivinen.\nAina: et koskaan näe hiirtä.</translation>
+      <source>logFilter</source>
+      <translation>Lokisuodatin:\nSuodattaa lokia tulostamaan vain määrättyä tietoa.\nEsimerkkejä: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nTasot: Trace, Debug, Info, Warning, Error, Critical - tässä järjestyksessä. Valittu taso vaientaa kaikki edeltävät tasot luettelossa ja kirjaa kaikki tasot sen jälkeen.</translation>
     </message>
     <message>
-        <source>idleTimeoutGroupBox</source>
-        <translation>Aseta aika, milloin hiiri häviää oltuaan aktiivinen.</translation>
+      <source>updaterGroupBox</source>
+      <translation>Päivitys:\nRelease: Viralliset versiot, jotka julkaistaan kuukausittain ja saattavat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nNightly: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne saattavat sisältää virheitä ja ovat vähemmän vakaita.</translation>
     </message>
     <message>
-        <source>backButtonBehaviorGroupBox</source>
-        <translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
+      <source>GUIBackgroundImageGroupBox</source>
+      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
     </message>
     <message>
-        <source>enableCompatibilityCheckBox</source>
-        <translation>Näytä Yhteensopivuustiedot:\nNäyttää pelien yhteensopivuustiedot listanäkymässä. Ota käyttöön &quot;Päivitä Yhteensopivuustietokanta Käynnistäessä&quot; saadaksesi ajantasaista tietoa.</translation>
+      <source>GUIMusicGroupBox</source>
+      <translation>Soita Otsikkomusiikkia:\nJos peli tukee sitä, ota käyttöön erityisen musiikin soittaminen pelin valinnan yhteydessä käyttöliittymässä.</translation>
     </message>
     <message>
-        <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Päivitä Yhteensopivuustiedot Käynnistäessä:\nPäivitä yhteensopivuustiedot automaattisesti shadPS4:n käynnistyessä.</translation>
+      <source>disableTrophycheckBox</source>
+      <translation>Poista Trophy Pop-upit Käytöstä:\nPoista trophy ilmoitukset pelin aikana. Trophyjen edistystä voi silti seurata Trophy Selainta käyttämällä (klikkaa peliä hiiren oikealla emulaattorin pääikkunassa).</translation>
     </message>
     <message>
-        <source>updateCompatibilityButton</source>
-        <translation>Päivitä Yhteensopivuustietokanta:\nPäivitää yhteensopivuustietokannan heti.</translation>
+      <source>hideCursorGroupBox</source>
+      <translation>Piilota kursori:\nValitse, milloin kursori häviää:\nEi koskaan: Näet hiiren aina.\nInaktiivinen: Aseta aika, jolloin se häviää oltuaan aktiivinen.\nAina: et koskaan näe hiirtä.</translation>
     </message>
     <message>
-        <source>Never</source>
-        <translation>Ei koskaan</translation>
+      <source>idleTimeoutGroupBox</source>
+      <translation>Aseta aika, milloin hiiri häviää oltuaan aktiivinen.</translation>
     </message>
     <message>
-        <source>Idle</source>
-        <translation>Inaktiivinen</translation>
+      <source>backButtonBehaviorGroupBox</source>
+      <translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
     </message>
     <message>
-        <source>Always</source>
-        <translation>Aina</translation>
+      <source>enableCompatibilityCheckBox</source>
+      <translation>Näytä Yhteensopivuustiedot:\nNäyttää pelien yhteensopivuustiedot listanäkymässä. Ota käyttöön &quot;Päivitä Yhteensopivuustietokanta Käynnistäessä&quot; saadaksesi ajantasaista tietoa.</translation>
     </message>
     <message>
-        <source>Touchpad Left</source>
-        <translation>Kosketuslevyn Vasen Puoli</translation>
+      <source>checkCompatibilityOnStartupCheckBox</source>
+      <translation>Päivitä Yhteensopivuustiedot Käynnistäessä:\nPäivitä yhteensopivuustiedot automaattisesti shadPS4:n käynnistyessä.</translation>
     </message>
     <message>
-        <source>Touchpad Right</source>
-        <translation>Kosketuslevyn Oikea Puoli</translation>
+      <source>updateCompatibilityButton</source>
+      <translation>Päivitä Yhteensopivuustietokanta:\nPäivitää yhteensopivuustietokannan heti.</translation>
     </message>
     <message>
-        <source>Touchpad Center</source>
-        <translation>Kosketuslevyn Keskikohta</translation>
+      <source>Never</source>
+      <translation>Ei koskaan</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Ei mitään</translation>
+      <source>Idle</source>
+      <translation>Inaktiivinen</translation>
     </message>
     <message>
-        <source>graphicsAdapterGroupBox</source>
-        <translation>Näytönohjain:\nUseamman näytönohjaimen järjestelmissä, valitse pudotusvalikosta, mitä näytönohjainta emulaattori käyttää,\n tai valitse &quot;Auto Select&quot; automaattiseen määritykseen.</translation>
+      <source>Always</source>
+      <translation>Aina</translation>
     </message>
     <message>
-        <source>resolutionLayout</source>
-        <translation>Leveys/Korkeus:\nAsettaa käynnistetyn emulaattori-ikkunan koon, jota voidaan muuttaa pelin aikana.\nTämä on eri, kuin pelin sisäinen resoluutio.</translation>
+      <source>Touchpad Left</source>
+      <translation>Kosketuslevyn Vasen Puoli</translation>
     </message>
     <message>
-        <source>heightDivider</source>
-        <translation>Vblank Jakaja:\nEmulaattorin virkistystaajuus kerrotaan tällä numerolla. Tämän muuttaminen voi vaikuttaa haitallisesti, kuten lisätä pelin nopeutta tai rikkoa kriittisiä pelitoimintoja, jotka eivät odota tämän muuttuvan!</translation>
+      <source>Touchpad Right</source>
+      <translation>Kosketuslevyn Oikea Puoli</translation>
     </message>
     <message>
-        <source>dumpShadersCheckBox</source>
-        <translation>Ota Käyttöön Varjostinvedokset:\nTeknistä vianetsintää varten. Pelin varjostimia tallennetaan hakemistoon niiden renderöityessä.</translation>
+      <source>Touchpad Center</source>
+      <translation>Kosketuslevyn Keskikohta</translation>
     </message>
     <message>
-        <source>nullGpuCheckBox</source>
-        <translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten. Pelin renderöinti estetään, ikään kuin näytönohjainta ei olisi.</translation>
+      <source>None</source>
+      <translation>Ei mitään</translation>
     </message>
     <message>
-        <source>gameFoldersBox</source>
-        <translation>Pelihakemistot:\nLista hakemistoista, joista pelejä haetaan.</translation>
+      <source>graphicsAdapterGroupBox</source>
+      <translation>Näytönohjain:\nUseamman näytönohjaimen järjestelmissä, valitse pudotusvalikosta, mitä näytönohjainta emulaattori käyttää,\n tai valitse &quot;Auto Select&quot; automaattiseen määritykseen.</translation>
     </message>
     <message>
-        <source>addFolderButton</source>
-        <translation>Lisää:\nLisää hakemisto listalle.</translation>
+      <source>resolutionLayout</source>
+      <translation>Leveys/Korkeus:\nAsettaa käynnistetyn emulaattori-ikkunan koon, jota voidaan muuttaa pelin aikana.\nTämä on eri, kuin pelin sisäinen resoluutio.</translation>
     </message>
     <message>
-        <source>removeFolderButton</source>
-        <translation>Poista:\nPoista hakemisto listalta.</translation>
+      <source>heightDivider</source>
+      <translation>Vblank Jakaja:\nEmulaattorin virkistystaajuus kerrotaan tällä numerolla. Tämän muuttaminen voi vaikuttaa haitallisesti, kuten lisätä pelin nopeutta tai rikkoa kriittisiä pelitoimintoja, jotka eivät odota tämän muuttuvan!</translation>
     </message>
     <message>
-        <source>debugDump</source>
-        <translation>Ota Käyttöön Virheenkorjausvedokset:\nTallentaa käynnissä olevan PS4-ohjelman tuonti- ja vientisymbolit ja tiedosto-otsikkotiedot hakemistoon.</translation>
+      <source>dumpShadersCheckBox</source>
+      <translation>Ota Käyttöön Varjostinvedokset:\nTeknistä vianetsintää varten. Pelin varjostimia tallennetaan hakemistoon niiden renderöityessä.</translation>
     </message>
     <message>
-        <source>vkValidationCheckBox</source>
-        <translation>Ota Käyttöön Vulkan-validointikerrokset:\nAktivoi järjestelmä, joka validoi Vulkan-renderöijän tilan ja kirjaa tietoa sen sisäisestä tilasta. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
+      <source>nullGpuCheckBox</source>
+      <translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten. Pelin renderöinti estetään, ikään kuin näytönohjainta ei olisi.</translation>
     </message>
     <message>
-        <source>vkSyncValidationCheckBox</source>
-        <translation>Ota Käyttöön Vulkan-synkronointivalidointi:\nAktivoi järjestelmä, joka validoi Vulkan-renderöinnin tehtävien aikataulutuksen. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
+      <source>enableHDRCheckBox</source>
+      <translation type="unfinished">enableHDRCheckBox</translation>
     </message>
     <message>
-        <source>rdocCheckBox</source>
-        <translation>Ota Käyttöön RenderDoc Virheenkorjaus:\nJos käytössä, emulaattori tarjoaa Renderdoc-yhteensopivuuden, mikä mahdollistaa renderöidyn kehyksen tallennuksen ja analysoinnin.</translation>
+      <source>gameFoldersBox</source>
+      <translation>Pelihakemistot:\nLista hakemistoista, joista pelejä haetaan.</translation>
     </message>
     <message>
-        <source>collectShaderCheckBox</source>
-        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <source>addFolderButton</source>
+      <translation>Lisää:\nLisää hakemisto listalle.</translation>
     </message>
     <message>
-        <source>crashDiagnosticsCheckBox</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <source>removeFolderButton</source>
+      <translation>Poista:\nPoista hakemisto listalta.</translation>
     </message>
     <message>
-        <source>copyGPUBuffersCheckBox</source>
-        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <source>debugDump</source>
+      <translation>Ota Käyttöön Virheenkorjausvedokset:\nTallentaa käynnissä olevan PS4-ohjelman tuonti- ja vientisymbolit ja tiedosto-otsikkotiedot hakemistoon.</translation>
     </message>
     <message>
-        <source>hostMarkersCheckBox</source>
-        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkValidationCheckBox</source>
+      <translation>Ota Käyttöön Vulkan-validointikerrokset:\nAktivoi järjestelmä, joka validoi Vulkan-renderöijän tilan ja kirjaa tietoa sen sisäisestä tilasta. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
     </message>
     <message>
-        <source>guestMarkersCheckBox</source>
-        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkSyncValidationCheckBox</source>
+      <translation>Ota Käyttöön Vulkan-synkronointivalidointi:\nAktivoi järjestelmä, joka validoi Vulkan-renderöinnin tehtävien aikataulutuksen. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
     </message>
     <message>
-        <source>Borderless</source>
-        <translation type="unfinished"></translation>
+      <source>rdocCheckBox</source>
+      <translation>Ota Käyttöön RenderDoc Virheenkorjaus:\nJos käytössä, emulaattori tarjoaa Renderdoc-yhteensopivuuden, mikä mahdollistaa renderöidyn kehyksen tallennuksen ja analysoinnin.</translation>
     </message>
     <message>
-        <source>True</source>
-        <translation type="unfinished"></translation>
+      <source>collectShaderCheckBox</source>
+      <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-        <source>Enable HDR</source>
-        <translation type="unfinished"></translation>
+      <source>crashDiagnosticsCheckBox</source>
+      <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-        <source>Release</source>
-        <translation type="unfinished"></translation>
+      <source>copyGPUBuffersCheckBox</source>
+      <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-        <source>Nightly</source>
-        <translation type="unfinished"></translation>
+      <source>hostMarkersCheckBox</source>
+      <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>guestMarkersCheckBox</source>
+      <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Show Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>saveDataBox</source>
+      <translation type="unfinished">saveDataBox</translation>
     </message>
     <message>
-        <source>Opacity</source>
-        <translation type="unfinished"></translation>
+      <source>browseButton</source>
+      <translation type="unfinished">browseButton</translation>
     </message>
     <message>
-        <source>Set the volume of the background music.</source>
-        <translation type="unfinished"></translation>
+      <source>Borderless</source>
+      <translation type="unfinished">Borderless</translation>
     </message>
     <message>
-        <source>Enable Motion Controls</source>
-        <translation type="unfinished"></translation>
+      <source>True</source>
+      <translation type="unfinished">True</translation>
     </message>
     <message>
-        <source>Save Data Path</source>
-        <translation type="unfinished"></translation>
+      <source>Release</source>
+      <translation type="unfinished">Release</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation type="unfinished">Selaa</translation>
+      <source>Nightly</source>
+      <translation type="unfinished">Nightly</translation>
     </message>
     <message>
-        <source>async</source>
-        <translation type="unfinished"></translation>
+      <source>Set the volume of the background music.</source>
+      <translation type="unfinished">Set the volume of the background music.</translation>
     </message>
     <message>
-        <source>sync</source>
-        <translation type="unfinished"></translation>
+      <source>Enable Motion Controls</source>
+      <translation type="unfinished">Enable Motion Controls</translation>
     </message>
     <message>
-        <source>Auto Select</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data Path</source>
+      <translation type="unfinished">Save Data Path</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation type="unfinished">Pelien asennushakemisto</translation>
+      <source>Browse</source>
+      <translation>Selaa</translation>
     </message>
     <message>
-        <source>Directory to save data</source>
-        <translation type="unfinished"></translation>
+      <source>async</source>
+      <translation type="unfinished">async</translation>
     </message>
     <message>
-        <source>GUIBackgroundImageGroupBox</source>
-        <translation type="unfinished"></translation>
+      <source>sync</source>
+      <translation type="unfinished">sync</translation>
     </message>
     <message>
-        <source>enableHDRCheckBox</source>
-        <translation type="unfinished"></translation>
+      <source>Auto Select</source>
+      <translation type="unfinished">Auto Select</translation>
     </message>
     <message>
-        <source>saveDataBox</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install games</source>
+      <translation>Pelien asennushakemisto</translation>
     </message>
     <message>
-        <source>browseButton</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to save data</source>
+      <translation type="unfinished">Directory to save data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>TrophyViewer</name>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Trophy Selain</translation>
+      <source>Trophy Viewer</source>
+      <translation>Trophy Selain</translation>
     </message>
-</context>
+  </context>
 </TS>
