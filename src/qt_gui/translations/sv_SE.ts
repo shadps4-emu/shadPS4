@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
 <TS version="2.1" language="sv_SE">
-	<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
-         SPDX-License-Identifier: GPL-2.0-or-later -->
 <context>
     <name>AboutDialog</name>
     <message>
@@ -245,14 +245,6 @@
         <translation>Kan inte tillämpa fusk innan spelet är startat</translation>
     </message>
     <message>
-        <source>Error:</source>
-        <translation>Fel:</translation>
-    </message>
-    <message>
-        <source>ERROR</source>
-        <translation>FEL</translation>
-    </message>
-    <message>
         <source>Close</source>
         <translation>Stäng</translation>
     </message>
@@ -385,10 +377,6 @@
     <message>
         <source>Unable to update compatibility data! Try again later.</source>
         <translation>Kunde inte uppdatera kompatibilitetsdata! Försök igen senare.</translation>
-    </message>
-    <message>
-        <source>Unable to open compatibility.json for writing.</source>
-        <translation type="vanished">Kunde inte öppna compatibility.json för skrivning.</translation>
     </message>
     <message>
         <source>Unknown</source>
@@ -672,10 +660,6 @@
     <message>
         <source>Game can be completed with playable performance and no major glitches</source>
         <translation>Spelet kan spelas klart med spelbar prestanda och utan större problem</translation>
-    </message>
-    <message>
-        <source>Click to go to issue</source>
-        <translation type="vanished">Klicka för att gå till problem</translation>
     </message>
     <message>
         <source>Last updated</source>
@@ -1197,12 +1181,64 @@
         <translation>Öppna mapp</translation>
     </message>
     <message>
-        <source>&amp;File</source>
-        <translation>&amp;Arkiv</translation>
-    </message>
-    <message>
         <source>PKG ERROR</source>
         <translation>PKG-FEL</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">Namn</translation>
+    </message>
+    <message>
+        <source>Serial</source>
+        <translation type="unfinished">Serienummer</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation type="unfinished">Storlek</translation>
+    </message>
+    <message>
+        <source>Category</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>App Ver</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FW</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Region</source>
+        <translation type="unfinished">Region</translation>
+    </message>
+    <message>
+        <source>Flags</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">Sökväg</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation type="unfinished">Arkiv</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation type="unfinished">Okänt</translation>
+    </message>
+    <message>
+        <source>Package</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1254,10 +1290,6 @@
     <message>
         <source>Show Splash</source>
         <translation>Visa startskärm</translation>
-    </message>
-    <message>
-        <source>ps4proCheckBox</source>
-        <translation type="vanished">Är PS4 Pro:\nGör att emulatorn agerar som en PS4 PRO, vilket kan aktivera speciella funktioner i spel som har stöd för det</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
@@ -1322,10 +1354,6 @@
     <message>
         <source>Graphics</source>
         <translation>Grafik</translation>
-    </message>
-    <message>
-        <source>Gui</source>
-        <translation type="vanished">Gränssnitt</translation>
     </message>
     <message>
         <source>User</source>
@@ -1742,6 +1770,14 @@
     <message>
         <source>GUIBackgroundImageGroupBox</source>
         <translation>Bakgrundsbild:\nKontrollerar opaciteten för spelets bakgrundsbild</translation>
+    </message>
+    <message>
+        <source>Enable HDR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>enableHDRCheckBox</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

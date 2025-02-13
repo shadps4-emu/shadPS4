@@ -233,7 +233,8 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers = buffers.size() + (has_readconst ? 1 : 0);
+        const auto total_buffers =
+            buffers.size() + (has_readconst ? 1 : 0) + (has_emulated_shared_memory ? 1 : 0);
         bnd.buffer += total_buffers;
         bnd.unified += total_buffers + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();

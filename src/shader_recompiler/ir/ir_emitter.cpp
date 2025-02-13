@@ -308,8 +308,6 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
         return Inst(Opcode::LoadSharedU64, offset);
-    case 128:
-        return Inst(Opcode::LoadSharedU128, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
@@ -322,9 +320,6 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
         break;
     case 64:
         Inst(Opcode::WriteSharedU64, offset, value);
-        break;
-    case 128:
-        Inst(Opcode::WriteSharedU128, offset, value);
         break;
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);

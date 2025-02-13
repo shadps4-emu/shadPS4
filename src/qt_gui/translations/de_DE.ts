@@ -2,12 +2,12 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="da_DK">
+<TS version="2.1" language="de">
 <context>
     <name>AboutDialog</name>
     <message>
         <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+        <translation>Über shadPS4</translation>
     </message>
     <message>
         <source>shadPS4</source>
@@ -15,30 +15,30 @@
     </message>
     <message>
         <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+        <translation>shadPS4 ist ein experimenteller Open-Source-Emulator für die Playstation 4.</translation>
     </message>
     <message>
         <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>This software should not be used to play games you have not legally obtained.</translation>
+        <translation>Diese Software soll nicht dazu benutzt werden illegal kopierte Spiele zu spielen.</translation>
     </message>
 </context>
 <context>
     <name>CheatsPatches</name>
     <message>
         <source>Cheats / Patches for </source>
-        <translation>Cheats / Patches for </translation>
+        <translation>Cheats / Patches für </translation>
     </message>
     <message>
         <source>defaultTextEdit_MSG</source>
-        <translation>Cheats/Patches er eksperimentelle.\nBrug med forsigtighed.\n\nDownload cheats individuelt ved at vælge lageret og klikke på download-knappen.\nUnder fanen Patches kan du downloade alle patches på én gang, vælge hvilke du vil bruge og gemme valget.\n\nDa vi ikke udvikler cheats/patches,\nvenligst rapporter problemer til cheat-udvikleren.\n\nHar du lavet en ny cheat? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        <translation>Cheats/Patches sind experimentell.\nVerwende sie mit Vorsicht.\n\nLade Cheats einzeln herunter, indem du das Repository auswählst und auf die Download-Schaltfläche klickst.\nAuf der Registerkarte Patches kannst du alle Patches auf einmal herunterladen, auswählen, welche du verwenden möchtest, und die Auswahl speichern.\n\nDa wir die Cheats/Patches nicht entwickeln,\nbitte melde Probleme an den Cheat-Autor.\n\nHast du einen neuen Cheat erstellt? Besuche:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
         <source>No Image Available</source>
-        <translation>Ingen billede tilgængelig</translation>
+        <translation>Kein Bild verfügbar</translation>
     </message>
     <message>
         <source>Serial: </source>
-        <translation>Serienummer: </translation>
+        <translation>Seriennummer: </translation>
     </message>
     <message>
         <source>Version: </source>
@@ -46,11 +46,11 @@
     </message>
     <message>
         <source>Size: </source>
-        <translation>Størrelse: </translation>
+        <translation>Größe: </translation>
     </message>
     <message>
         <source>Select Cheat File:</source>
-        <translation>Vælg snyd-fil:</translation>
+        <translation>Cheat-Datei auswählen:</translation>
     </message>
     <message>
         <source>Repository:</source>
@@ -58,39 +58,39 @@
     </message>
     <message>
         <source>Download Cheats</source>
-        <translation>Hent snyd</translation>
+        <translation>Cheats herunterladen</translation>
     </message>
     <message>
         <source>Delete File</source>
-        <translation>Slet fil</translation>
+        <translation>Datei löschen</translation>
     </message>
     <message>
         <source>No files selected.</source>
-        <translation>Ingen filer valgt.</translation>
+        <translation>Keine Dateien ausgewählt.</translation>
     </message>
     <message>
         <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Du kan slette de snyd, du ikke ønsker, efter at have hentet dem.</translation>
+        <translation>Du kannst die Cheats, die du nicht möchtest, nach dem Herunterladen löschen.</translation>
     </message>
     <message>
         <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Ønsker du at slette den valgte fil?\n%1</translation>
+        <translation>Willst du die ausgewählte Datei löschen?\n%1</translation>
     </message>
     <message>
         <source>Select Patch File:</source>
-        <translation>Vælg patch-fil:</translation>
+        <translation>Patch-Datei auswählen:</translation>
     </message>
     <message>
         <source>Download Patches</source>
-        <translation>Hent patches</translation>
+        <translation>Patches herunterladen</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Speichern</translation>
     </message>
     <message>
         <source>Cheats</source>
-        <translation>Snyd</translation>
+        <translation>Cheats</translation>
     </message>
     <message>
         <source>Patches</source>
@@ -98,313 +98,313 @@
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <source>No patch selected.</source>
-        <translation>Ingen patch valgt.</translation>
+        <translation>Kein Patch ausgewählt.</translation>
     </message>
     <message>
         <source>Unable to open files.json for reading.</source>
-        <translation>Kan ikke åbne files.json til læsning.</translation>
+        <translation>Kann files.json nicht zum Lesen öffnen.</translation>
     </message>
     <message>
         <source>No patch file found for the current serial.</source>
-        <translation>Ingen patch-fil fundet for det nuværende serienummer.</translation>
+        <translation>Keine Patch-Datei für die aktuelle Seriennummer gefunden.</translation>
     </message>
     <message>
         <source>Unable to open the file for reading.</source>
-        <translation>Kan ikke åbne filen til læsning.</translation>
+        <translation>Kann die Datei nicht zum Lesen öffnen.</translation>
     </message>
     <message>
         <source>Unable to open the file for writing.</source>
-        <translation>Kan ikke åbne filen til skrivning.</translation>
+        <translation>Kann die Datei nicht zum Schreiben öffnen.</translation>
     </message>
     <message>
         <source>Failed to parse XML: </source>
-        <translation>Kunne ikke analysere XML: </translation>
+        <translation>Fehler beim Parsen von XML: </translation>
     </message>
     <message>
         <source>Success</source>
-        <translation>Succes</translation>
+        <translation>Erfolg</translation>
     </message>
     <message>
         <source>Options saved successfully.</source>
-        <translation>Indstillinger gemt med succes.</translation>
+        <translation>Optionen erfolgreich gespeichert.</translation>
     </message>
     <message>
         <source>Invalid Source</source>
-        <translation>Ugyldig kilde</translation>
+        <translation>Ungültige Quelle</translation>
     </message>
     <message>
         <source>The selected source is invalid.</source>
-        <translation>Den valgte kilde er ugyldig.</translation>
+        <translation>Die ausgewählte Quelle ist ungültig.</translation>
     </message>
     <message>
         <source>File Exists</source>
-        <translation>Fil findes</translation>
+        <translation>Datei existiert</translation>
     </message>
     <message>
         <source>File already exists. Do you want to replace it?</source>
-        <translation>Filen findes allerede. Vil du erstatte den?</translation>
+        <translation>Datei existiert bereits. Möchtest du sie ersetzen?</translation>
     </message>
     <message>
         <source>Failed to save file:</source>
-        <translation>Kunne ikke gemme fil:</translation>
+        <translation>Fehler beim Speichern der Datei:</translation>
     </message>
     <message>
         <source>Failed to download file:</source>
-        <translation>Kunne ikke hente fil:</translation>
+        <translation>Fehler beim Herunterladen der Datei:</translation>
     </message>
     <message>
         <source>Cheats Not Found</source>
-        <translation>Snyd ikke fundet</translation>
+        <translation>Cheats nicht gefunden</translation>
     </message>
     <message>
         <source>CheatsNotFound_MSG</source>
-        <translation>Ingen snyd fundet til dette spil i denne version af det valgte repository, prøv et andet repository eller en anden version af spillet.</translation>
+        <translation>Keine Cheats für dieses Spiel in dieser Version des gewählten Repositories gefunden. Versuche es mit einem anderen Repository oder einer anderen Version des Spiels.</translation>
     </message>
     <message>
         <source>Cheats Downloaded Successfully</source>
-        <translation>Snyd hentet med succes</translation>
+        <translation>Cheats erfolgreich heruntergeladen</translation>
     </message>
     <message>
         <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Du har succesfuldt hentet snyd for denne version af spillet fra det valgte repository. Du kan prøve at hente fra et andet repository, hvis det er tilgængeligt, vil det også være muligt at bruge det ved at vælge filen fra listen.</translation>
+        <translation>Du hast erfolgreich Cheats für diese Version des Spiels aus dem gewählten Repository heruntergeladen. Du kannst auch versuchen, Cheats von einem anderen Repository herunterzuladen. Wenn verfügbar, kannst du sie auswählen, indem du die Datei aus der Liste auswählst.</translation>
     </message>
     <message>
         <source>Failed to save:</source>
-        <translation>Kunne ikke gemme:</translation>
+        <translation>Speichern fehlgeschlagen:</translation>
     </message>
     <message>
         <source>Failed to download:</source>
-        <translation>Kunne ikke hente:</translation>
+        <translation>Herunterladen fehlgeschlagen:</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Download abgeschlossen</translation>
     </message>
     <message>
         <source>DownloadComplete_MSG</source>
-        <translation>Patcher hentet med succes! Alle patches til alle spil er blevet hentet, der er ikke behov for at hente dem individuelt for hvert spil, som det sker med snyd. Hvis opdateringen ikke vises, kan det være, at den ikke findes for den specifikke serie og version af spillet.</translation>
+        <translation>Patches erfolgreich heruntergeladen! Alle Patches für alle Spiele wurden heruntergeladen, es ist nicht notwendig, sie einzeln für jedes Spiel herunterzuladen, wie es bei Cheats der Fall ist. Wenn der Patch nicht angezeigt wird, könnte es sein, dass er für die spezifische Seriennummer und Version des Spiels nicht existiert.</translation>
     </message>
     <message>
         <source>Failed to parse JSON data from HTML.</source>
-        <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
+        <translation>Fehler beim Parsen der JSON-Daten aus HTML.</translation>
     </message>
     <message>
         <source>Failed to retrieve HTML page.</source>
-        <translation>Kunne ikke hente HTML-side.</translation>
+        <translation>Fehler beim Abrufen der HTML-Seite.</translation>
     </message>
     <message>
         <source>The game is in version: %1</source>
-        <translation>Spillet er i version: %1</translation>
+        <translation>Das Spiel ist in der Version: %1</translation>
     </message>
     <message>
         <source>The downloaded patch only works on version: %1</source>
-        <translation>Den downloadede patch fungerer kun på version: %1</translation>
+        <translation>Der heruntergeladene Patch funktioniert nur in der Version: %1</translation>
     </message>
     <message>
         <source>You may need to update your game.</source>
-        <translation>Du skal muligvis opdatere dit spil.</translation>
+        <translation>Sie müssen möglicherweise Ihr Spiel aktualisieren.</translation>
     </message>
     <message>
         <source>Incompatibility Notice</source>
-        <translation>Uforenelighedsmeddelelse</translation>
+        <translation>Inkompatibilitätsbenachrichtigung</translation>
     </message>
     <message>
         <source>Failed to open file:</source>
-        <translation>Kunne ikke åbne fil:</translation>
+        <translation>Öffnung der Datei fehlgeschlagen:</translation>
     </message>
     <message>
         <source>XML ERROR:</source>
-        <translation>XML FEJL:</translation>
+        <translation>XML-Fehler:</translation>
     </message>
     <message>
         <source>Failed to open files.json for writing</source>
-        <translation>Kunne ikke åbne files.json til skrivning</translation>
+        <translation>Kann files.json nicht zum Schreiben öffnen</translation>
     </message>
     <message>
         <source>Author: </source>
-        <translation>Forfatter: </translation>
+        <translation>Autor: </translation>
     </message>
     <message>
         <source>Directory does not exist:</source>
-        <translation>Mappe findes ikke:</translation>
+        <translation>Verzeichnis existiert nicht:</translation>
     </message>
     <message>
         <source>Failed to open files.json for reading.</source>
-        <translation>Kunne ikke åbne files.json til læsning.</translation>
+        <translation>Kann files.json nicht zum Lesen öffnen.</translation>
     </message>
     <message>
         <source>Name:</source>
-        <translation>Navn:</translation>
+        <translation>Name:</translation>
     </message>
     <message>
         <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Kan ikke anvende snyd før spillet er startet.</translation>
+        <translation>Kann keine Cheats anwenden, bevor das Spiel gestartet ist.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Luk</translation>
+        <translation type="unfinished">Schließen</translation>
     </message>
 </context>
 <context>
     <name>CheckUpdate</name>
     <message>
         <source>Auto Updater</source>
-        <translation>Automatisk opdatering</translation>
+        <translation>Automatischer Aktualisierer</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <source>Network error:</source>
-        <translation>Netsværksfejl:</translation>
+        <translation>Netzwerkfehler:</translation>
     </message>
     <message>
         <source>Error_Github_limit_MSG</source>
-        <translation>Autoopdateren tillader op til 60 opdateringstjek i timen.\nDu har nået denne grænse. Prøv igen senere.</translation>
+        <translation>Der Auto-Updater erlaubt bis zu 60 Update-Überprüfungen pro Stunde.\nDu hast dieses Limit erreicht. Bitte versuche es später erneut.</translation>
     </message>
     <message>
         <source>Failed to parse update information.</source>
-        <translation>Kunne ikke analysere opdateringsoplysninger.</translation>
+        <translation>Fehler beim Parsen der Aktualisierungsinformationen.</translation>
     </message>
     <message>
         <source>No pre-releases found.</source>
-        <translation>Ingen forhåndsudgivelser fundet.</translation>
+        <translation>Keine Vorabveröffentlichungen gefunden.</translation>
     </message>
     <message>
         <source>Invalid release data.</source>
-        <translation>Ugyldige udgivelsesdata.</translation>
+        <translation>Ungültige Versionsdaten.</translation>
     </message>
     <message>
         <source>No download URL found for the specified asset.</source>
-        <translation>Ingen download-URL fundet for den specificerede aktiver.</translation>
+        <translation>Keine Download-URL für das angegebene Asset gefunden.</translation>
     </message>
     <message>
         <source>Your version is already up to date!</source>
-        <translation>Din version er allerede opdateret!</translation>
+        <translation>Ihre Version ist bereits aktuell!</translation>
     </message>
     <message>
         <source>Update Available</source>
-        <translation>Opdatering tilgængelig</translation>
+        <translation>Aktualisierung verfügbar</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Update-Kanal</translation>
     </message>
     <message>
         <source>Current Version</source>
-        <translation>Nuværende version</translation>
+        <translation>Aktuelle Version</translation>
     </message>
     <message>
         <source>Latest Version</source>
-        <translation>Nyeste version</translation>
+        <translation>Neueste Version</translation>
     </message>
     <message>
         <source>Do you want to update?</source>
-        <translation>Vil du opdatere?</translation>
+        <translation>Möchten Sie aktualisieren?</translation>
     </message>
     <message>
         <source>Show Changelog</source>
-        <translation>Vis ændringslog</translation>
+        <translation>Änderungsprotokoll anzeigen</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Beim Start nach Updates suchen</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdater</translation>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>No</source>
-        <translation>Nej</translation>
+        <translation>Nein</translation>
     </message>
     <message>
         <source>Hide Changelog</source>
-        <translation>Skjul ændringslog</translation>
+        <translation>Änderungsprotokoll ausblenden</translation>
     </message>
     <message>
         <source>Changes</source>
-        <translation>Ændringer</translation>
+        <translation>Änderungen</translation>
     </message>
     <message>
         <source>Network error occurred while trying to access the URL</source>
-        <translation>Netsværksfejl opstod, mens der blev forsøgt at få adgang til URL&apos;en</translation>
+        <translation>Beim Zugriff auf die URL ist ein Netzwerkfehler aufgetreten</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Download abgeschlossen</translation>
     </message>
     <message>
         <source>The update has been downloaded, press OK to install.</source>
-        <translation>Opdateringen er blevet downloadet, tryk på OK for at installere.</translation>
+        <translation>Die Aktualisierung wurde heruntergeladen, drücken Sie OK, um zu installieren.</translation>
     </message>
     <message>
         <source>Failed to save the update file at</source>
-        <translation>Kunne ikke gemme opdateringsfilen på</translation>
+        <translation>Fehler beim Speichern der Aktualisierungsdatei in</translation>
     </message>
     <message>
         <source>Starting Update...</source>
-        <translation>Starter opdatering...</translation>
+        <translation>Aktualisierung wird gestartet...</translation>
     </message>
     <message>
         <source>Failed to create the update script file</source>
-        <translation>Kunne ikke oprette opdateringsscriptfilen</translation>
+        <translation>Fehler beim Erstellen der Aktualisierungs-Skriptdatei</translation>
     </message>
 </context>
 <context>
     <name>CompatibilityInfoClass</name>
     <message>
         <source>Fetching compatibility data, please wait</source>
-        <translation>Henter kompatibilitetsdata, vent venligst</translation>
+        <translation>Lade Kompatibilitätsdaten, bitte warten</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Annuller</translation>
+        <translation>Abbrechen</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Indlæser...</translation>
+        <translation>Lädt...</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kan ikke opdatere kompatibilitetsdata! Prøv igen senere.</translation>
+        <translation>Kompatibilitätsdaten konnten nicht aktualisiert werden! Versuchen Sie es später erneut.</translation>
     </message>
     <message>
         <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Kan ikke åbne compatibility_data.json til skrivning.</translation>
+        <translation>Kann compatibility_data.json nicht zum Schreiben öffnen.</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation>Ukendt</translation>
+        <translation>Unbekannt</translation>
     </message>
     <message>
         <source>Nothing</source>
-        <translation>Intet</translation>
+        <translation>Nichts</translation>
     </message>
     <message>
         <source>Boots</source>
-        <translation>Støvler</translation>
+        <translation>Startet</translation>
     </message>
     <message>
         <source>Menus</source>
-        <translation>Menuer</translation>
+        <translation>Menüs</translation>
     </message>
     <message>
         <source>Ingame</source>
-        <translation>I spillet</translation>
+        <translation>ImSpiel</translation>
     </message>
     <message>
         <source>Playable</source>
-        <translation>Spilbar</translation>
+        <translation>Spielbar</translation>
     </message>
 </context>
 <context>
@@ -538,41 +538,41 @@
     <name>ElfViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Open Folder</translation>
+        <translation>Ordner öffnen</translation>
     </message>
 </context>
 <context>
     <name>GameInfoClass</name>
     <message>
         <source>Loading game list, please wait :3</source>
-        <translation>Loading game list, please wait :3</translation>
+        <translation>Lade Spielliste, bitte warten :3</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancel</translation>
+        <translation>Abbrechen</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Loading...</translation>
+        <translation>Lade...</translation>
     </message>
 </context>
 <context>
     <name>GameInstallDialog</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+        <translation>shadPS4 - Wähle Ordner</translation>
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation>Directory to install games</translation>
+        <translation>Installationsverzeichnis für Spiele</translation>
     </message>
     <message>
         <source>Browse</source>
-        <translation>Browse</translation>
+        <translation>Durchsuchen</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Error</translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <source>Directory to install DLC</source>
@@ -583,19 +583,19 @@
     <name>GameListFrame</name>
     <message>
         <source>Icon</source>
-        <translation>Ikon</translation>
+        <translation>Symbol</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Navn</translation>
+        <translation>Name</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation>Seriel</translation>
+        <translation>Seriennummer</translation>
     </message>
     <message>
         <source>Compatibility</source>
-        <translation>Compatibility</translation>
+        <translation>Kompatibilität</translation>
     </message>
     <message>
         <source>Region</source>
@@ -607,7 +607,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation>Størrelse</translation>
+        <translation>Größe</translation>
     </message>
     <message>
         <source>Version</source>
@@ -615,15 +615,15 @@
     </message>
     <message>
         <source>Path</source>
-        <translation>Sti</translation>
+        <translation>Pfad</translation>
     </message>
     <message>
         <source>Play Time</source>
-        <translation>Spilletid</translation>
+        <translation>Spielzeit</translation>
     </message>
     <message>
         <source>Never Played</source>
-        <translation>Never Played</translation>
+        <translation>Niemals gespielt</translation>
     </message>
     <message>
         <source>h</source>
@@ -639,35 +639,35 @@
     </message>
     <message>
         <source>Compatibility is untested</source>
-        <translation>Compatibility is untested</translation>
+        <translation>Kompatibilität wurde noch nicht getested</translation>
     </message>
     <message>
         <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Game does not initialize properly / crashes the emulator</translation>
+        <translation>Das Spiel wird nicht richtig initialisiert / stürzt den Emulator ab</translation>
     </message>
     <message>
         <source>Game boots, but only displays a blank screen</source>
-        <translation>Game boots, but only displays a blank screen</translation>
+        <translation>Spiel startet, aber zeigt nur einen blanken Bildschirm</translation>
     </message>
     <message>
         <source>Game displays an image but does not go past the menu</source>
-        <translation>Game displays an image but does not go past the menu</translation>
+        <translation>Spiel zeigt ein Bild aber geht nicht über das Menü hinaus</translation>
     </message>
     <message>
         <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Game has game-breaking glitches or unplayable performance</translation>
+        <translation>Spiel hat spiel-brechende Störungen oder unspielbare Leistung</translation>
     </message>
     <message>
         <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Game can be completed with playable performance and no major glitches</translation>
+        <translation>Spiel kann mit spielbarer Leistung und keinen großen Störungen abgeschlossen werden</translation>
     </message>
     <message>
         <source>Click to see details on github</source>
-        <translation>Klik for at se detaljer på GitHub</translation>
+        <translation>Klicken Sie hier, um Details auf GitHub zu sehen</translation>
     </message>
     <message>
         <source>Last updated</source>
-        <translation>Sidst opdateret</translation>
+        <translation>Zuletzt aktualisiert</translation>
     </message>
 </context>
 <context>
@@ -697,119 +697,135 @@
     <name>GuiContextMenus</name>
     <message>
         <source>Create Shortcut</source>
-        <translation>Create Shortcut</translation>
+        <translation>Verknüpfung erstellen</translation>
     </message>
     <message>
         <source>Cheats / Patches</source>
-        <translation>Trick / Patches</translation>
+        <translation>Cheats / Patches</translation>
     </message>
     <message>
         <source>SFO Viewer</source>
-        <translation>SFO Viewer</translation>
+        <translation>SFO anzeigen</translation>
     </message>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+        <translation>Trophäen anzeigen</translation>
     </message>
     <message>
         <source>Open Folder...</source>
-        <translation>Åbn Mappe...</translation>
+        <translation>Ordner öffnen...</translation>
     </message>
     <message>
         <source>Open Game Folder</source>
-        <translation>Åbn Spilmappe</translation>
+        <translation>Spielordner öffnen</translation>
+    </message>
+    <message>
+        <source>Open Update Folder</source>
+        <translation>Öffne Update-Ordner</translation>
     </message>
     <message>
         <source>Open Save Data Folder</source>
-        <translation>Åbn Gem Data Mappe</translation>
+        <translation>Speicherordner öffnen</translation>
     </message>
     <message>
         <source>Open Log Folder</source>
-        <translation>Åbn Log Mappe</translation>
+        <translation>Protokollordner öffnen</translation>
     </message>
     <message>
         <source>Copy info...</source>
-        <translation>Copy info...</translation>
+        <translation>Infos kopieren...</translation>
     </message>
     <message>
         <source>Copy Name</source>
-        <translation>Copy Name</translation>
+        <translation>Namen kopieren</translation>
     </message>
     <message>
         <source>Copy Serial</source>
-        <translation>Copy Serial</translation>
+        <translation>Seriennummer kopieren</translation>
+    </message>
+    <message>
+        <source>Copy Version</source>
+        <translation>Version kopieren</translation>
+    </message>
+    <message>
+        <source>Copy Size</source>
+        <translation>Größe kopieren</translation>
     </message>
     <message>
         <source>Copy All</source>
-        <translation>Copy All</translation>
+        <translation>Alles kopieren</translation>
     </message>
     <message>
         <source>Delete...</source>
-        <translation>Delete...</translation>
+        <translation>Löschen...</translation>
     </message>
     <message>
         <source>Delete Game</source>
-        <translation>Delete Game</translation>
+        <translation>Lösche Spiel</translation>
     </message>
     <message>
         <source>Delete Update</source>
-        <translation>Delete Update</translation>
+        <translation>Lösche Aktualisierung</translation>
+    </message>
+    <message>
+        <source>Delete Save Data</source>
+        <translation>Lösche Speicherdaten</translation>
     </message>
     <message>
         <source>Delete DLC</source>
-        <translation>Delete DLC</translation>
+        <translation>Lösche DLC</translation>
     </message>
     <message>
         <source>Compatibility...</source>
-        <translation>Compatibility...</translation>
+        <translation>Kompatibilität...</translation>
     </message>
     <message>
         <source>Update database</source>
-        <translation>Update database</translation>
+        <translation>Aktualisiere Datenbank</translation>
     </message>
     <message>
         <source>View report</source>
-        <translation>View report</translation>
+        <translation>Bericht ansehen</translation>
     </message>
     <message>
         <source>Submit a report</source>
-        <translation>Submit a report</translation>
+        <translation>Einen Bericht einreichen</translation>
     </message>
     <message>
         <source>Shortcut creation</source>
-        <translation>Shortcut creation</translation>
+        <translation>Verknüpfungserstellung</translation>
     </message>
     <message>
         <source>Shortcut created successfully!</source>
-        <translation>Shortcut created successfully!</translation>
+        <translation>Verknüpfung erfolgreich erstellt!</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Error</translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <source>Error creating shortcut!</source>
-        <translation>Error creating shortcut!</translation>
+        <translation>Fehler beim Erstellen der Verknüpfung!</translation>
     </message>
     <message>
         <source>Install PKG</source>
-        <translation>Install PKG</translation>
+        <translation>PKG installieren</translation>
     </message>
     <message>
         <source>Game</source>
-        <translation>Game</translation>
+        <translation>Spiel</translation>
     </message>
     <message>
         <source>This game has no update to delete!</source>
-        <translation>This game has no update to delete!</translation>
+        <translation>Dieses Spiel hat keine Aktualisierung zum löschen!</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Update</translation>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>This game has no DLC to delete!</source>
-        <translation>This game has no DLC to delete!</translation>
+        <translation>Dieses Spiel hat kein DLC zum aktualisieren!</translation>
     </message>
     <message>
         <source>DLC</source>
@@ -817,27 +833,11 @@
     </message>
     <message>
         <source>Delete %1</source>
-        <translation>Delete %1</translation>
+        <translation>Lösche %1</translation>
     </message>
     <message>
         <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Are you sure you want to delete %1&apos;s %2 directory?</translation>
-    </message>
-    <message>
-        <source>Open Update Folder</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Copy Version</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Copy Size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Delete Save Data</source>
-        <translation type="unfinished"></translation>
+        <translation>Sind Sie sicher dass Sie %1 %2 Ordner löschen wollen?</translation>
     </message>
     <message>
         <source>This game has no update folder to open!</source>
@@ -860,11 +860,11 @@
     <name>InstallDirSelect</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+        <translation>shadPS4 - Wähle Ordner</translation>
     </message>
     <message>
         <source>Select which directory you want to install to.</source>
-        <translation>Select which directory you want to install to.</translation>
+        <translation>Wählen Sie das Verzeichnis aus, in das Sie installieren möchten.</translation>
     </message>
     <message>
         <source>Install All Queued to Selected Folder</source>
@@ -879,275 +879,275 @@
     <name>MainWindow</name>
     <message>
         <source>Open/Add Elf Folder</source>
-        <translation>Open/Add Elf Folder</translation>
+        <translation>Elf-Ordner öffnen/hinzufügen</translation>
     </message>
     <message>
         <source>Install Packages (PKG)</source>
-        <translation>Install Packages (PKG)</translation>
+        <translation>Pakete installieren (PKG)</translation>
     </message>
     <message>
         <source>Boot Game</source>
-        <translation>Boot Game</translation>
+        <translation>Spiel starten</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Nach Updates suchen</translation>
     </message>
     <message>
         <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+        <translation>Über shadPS4</translation>
     </message>
     <message>
         <source>Configure...</source>
-        <translation>Configure...</translation>
+        <translation>Konfigurieren...</translation>
     </message>
     <message>
         <source>Install application from a .pkg file</source>
-        <translation>Install application from a .pkg file</translation>
+        <translation>Installiere Anwendung aus .pkg-Datei</translation>
     </message>
     <message>
         <source>Recent Games</source>
-        <translation>Recent Games</translation>
+        <translation>Zuletzt gespielt</translation>
     </message>
     <message>
         <source>Open shadPS4 Folder</source>
-        <translation>Open shadPS4 Folder</translation>
+        <translation>Öffne shadPS4 Ordner</translation>
     </message>
     <message>
         <source>Exit</source>
-        <translation>Exit</translation>
+        <translation>Beenden</translation>
     </message>
     <message>
         <source>Exit shadPS4</source>
-        <translation>Exit shadPS4</translation>
+        <translation>shadPS4 beenden</translation>
     </message>
     <message>
         <source>Exit the application.</source>
-        <translation>Exit the application.</translation>
+        <translation>Die Anwendung beenden.</translation>
     </message>
     <message>
         <source>Show Game List</source>
-        <translation>Show Game List</translation>
+        <translation>Spielliste anzeigen</translation>
     </message>
     <message>
         <source>Game List Refresh</source>
-        <translation>Game List Refresh</translation>
+        <translation>Spielliste aktualisieren</translation>
     </message>
     <message>
         <source>Tiny</source>
-        <translation>Tiny</translation>
+        <translation>Winzig</translation>
     </message>
     <message>
         <source>Small</source>
-        <translation>Small</translation>
+        <translation>Klein</translation>
     </message>
     <message>
         <source>Medium</source>
-        <translation>Medium</translation>
+        <translation>Mittel</translation>
     </message>
     <message>
         <source>Large</source>
-        <translation>Large</translation>
+        <translation>Groß</translation>
     </message>
     <message>
         <source>List View</source>
-        <translation>List View</translation>
+        <translation>Listenansicht</translation>
     </message>
     <message>
         <source>Grid View</source>
-        <translation>Grid View</translation>
+        <translation>Gitteransicht</translation>
     </message>
     <message>
         <source>Elf Viewer</source>
-        <translation>Elf Viewer</translation>
+        <translation>Elf-Ansicht</translation>
     </message>
     <message>
         <source>Game Install Directory</source>
-        <translation>Game Install Directory</translation>
+        <translation>Installationsverzeichnis für Spiele</translation>
     </message>
     <message>
         <source>Download Cheats/Patches</source>
-        <translation>Download Tricks / Patches</translation>
+        <translation>Cheats/Patches herunterladen</translation>
     </message>
     <message>
         <source>Dump Game List</source>
-        <translation>Dump Game List</translation>
+        <translation>Spielliste ausgeben</translation>
     </message>
     <message>
         <source>PKG Viewer</source>
-        <translation>PKG Viewer</translation>
+        <translation>PKG-Anschauer</translation>
     </message>
     <message>
         <source>Search...</source>
-        <translation>Search...</translation>
+        <translation>Suchen...</translation>
     </message>
     <message>
         <source>File</source>
-        <translation>File</translation>
+        <translation>Datei</translation>
     </message>
     <message>
         <source>View</source>
-        <translation>View</translation>
+        <translation>Ansicht</translation>
     </message>
     <message>
         <source>Game List Icons</source>
-        <translation>Game List Icons</translation>
+        <translation>Spiellisten-Symbole</translation>
     </message>
     <message>
         <source>Game List Mode</source>
-        <translation>Game List Mode</translation>
+        <translation>Spiellisten-Modus</translation>
     </message>
     <message>
         <source>Settings</source>
-        <translation>Settings</translation>
+        <translation>Einstellungen</translation>
     </message>
     <message>
         <source>Utils</source>
-        <translation>Utils</translation>
+        <translation>Werkzeuge</translation>
     </message>
     <message>
         <source>Themes</source>
-        <translation>Themes</translation>
+        <translation>Stile</translation>
     </message>
     <message>
         <source>Help</source>
-        <translation>Hjælp</translation>
+        <translation>Hilfe</translation>
     </message>
     <message>
         <source>Dark</source>
-        <translation>Dark</translation>
+        <translation>Dunkel</translation>
     </message>
     <message>
         <source>Light</source>
-        <translation>Light</translation>
+        <translation>Hell</translation>
     </message>
     <message>
         <source>Green</source>
-        <translation>Green</translation>
+        <translation>Grün</translation>
     </message>
     <message>
         <source>Blue</source>
-        <translation>Blue</translation>
+        <translation>Blau</translation>
     </message>
     <message>
         <source>Violet</source>
-        <translation>Violet</translation>
+        <translation>Violett</translation>
     </message>
     <message>
         <source>toolBar</source>
-        <translation>toolBar</translation>
+        <translation>Werkzeugleiste</translation>
     </message>
     <message>
         <source>Game List</source>
-        <translation>Spiloversigt</translation>
+        <translation>Spieleliste</translation>
     </message>
     <message>
         <source> * Unsupported Vulkan Version</source>
-        <translation> * Ikke understøttet Vulkan-version</translation>
+        <translation> * Nicht unterstützte Vulkan-Version</translation>
     </message>
     <message>
         <source>Download Cheats For All Installed Games</source>
-        <translation>Hent snyd til alle installerede spil</translation>
+        <translation>Cheats für alle installierten Spiele herunterladen</translation>
     </message>
     <message>
         <source>Download Patches For All Games</source>
-        <translation>Hent patches til alle spil</translation>
+        <translation>Patches für alle Spiele herunterladen</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Download abgeschlossen</translation>
     </message>
     <message>
         <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Du har hentet snyd til alle de spil, du har installeret.</translation>
+        <translation>Sie haben Cheats für alle installierten Spiele heruntergeladen.</translation>
     </message>
     <message>
         <source>Patches Downloaded Successfully!</source>
-        <translation>Patcher hentet med succes!</translation>
+        <translation>Patches erfolgreich heruntergeladen!</translation>
     </message>
     <message>
         <source>All Patches available for all games have been downloaded.</source>
-        <translation>Alle patches til alle spil er blevet hentet.</translation>
+        <translation>Alle Patches für alle Spiele wurden heruntergeladen.</translation>
     </message>
     <message>
         <source>Games: </source>
-        <translation>Spil: </translation>
+        <translation>Spiele: </translation>
     </message>
     <message>
         <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>ELF-filer (*.bin *.elf *.oelf)</translation>
+        <translation>ELF-Dateien (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
         <source>Game Boot</source>
-        <translation>Spil-boot</translation>
+        <translation>Spiel-Start</translation>
     </message>
     <message>
         <source>Only one file can be selected!</source>
-        <translation>Kun én fil kan vælges!</translation>
+        <translation>Es kann nur eine Datei ausgewählt werden!</translation>
     </message>
     <message>
         <source>PKG Extraction</source>
-        <translation>PKG-udtrækning</translation>
+        <translation>PKG-Extraktion</translation>
     </message>
     <message>
         <source>Patch detected!</source>
-        <translation>Opdatering detekteret!</translation>
+        <translation>Patch erkannt!</translation>
     </message>
     <message>
         <source>PKG and Game versions match: </source>
-        <translation>PKG og spilversioner matcher: </translation>
+        <translation>PKG- und Spielversionen stimmen überein: </translation>
     </message>
     <message>
         <source>Would you like to overwrite?</source>
-        <translation>Vil du overskrive?</translation>
+        <translation>Willst du überschreiben?</translation>
     </message>
     <message>
         <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG Version %1 er ældre end den installerede version: </translation>
+        <translation>PKG-Version %1 ist älter als die installierte Version: </translation>
     </message>
     <message>
         <source>Game is installed: </source>
-        <translation>Spillet er installeret: </translation>
+        <translation>Spiel ist installiert: </translation>
     </message>
     <message>
         <source>Would you like to install Patch: </source>
-        <translation>Vil du installere opdateringen: </translation>
+        <translation>Willst du den Patch installieren: </translation>
     </message>
     <message>
         <source>DLC Installation</source>
-        <translation>DLC Installation</translation>
+        <translation>DLC-Installation</translation>
     </message>
     <message>
         <source>Would you like to install DLC: %1?</source>
-        <translation>Vil du installere DLC: %1?</translation>
+        <translation>Willst du das DLC installieren: %1?</translation>
     </message>
     <message>
         <source>DLC already installed:</source>
-        <translation>DLC allerede installeret:</translation>
+        <translation>DLC bereits installiert:</translation>
     </message>
     <message>
         <source>Game already installed</source>
-        <translation>Spillet er allerede installeret</translation>
+        <translation>Spiel bereits installiert</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation>PKG FEJL</translation>
+        <translation>PKG-FEHLER</translation>
     </message>
     <message>
         <source>Extracting PKG %1/%2</source>
-        <translation>Udvinding af PKG %1/%2</translation>
+        <translation>Extrahiere PKG %1/%2</translation>
     </message>
     <message>
         <source>Extraction Finished</source>
-        <translation>Udvinding afsluttet</translation>
+        <translation>Extraktion abgeschlossen</translation>
     </message>
     <message>
         <source>Game successfully installed at %1</source>
-        <translation>Spillet blev installeret succesfuldt på %1</translation>
+        <translation>Spiel erfolgreich installiert auf %1</translation>
     </message>
     <message>
         <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Filen ser ikke ud til at være en gyldig PKG-fil</translation>
+        <translation>Die Datei scheint keine gültige PKG-Datei zu sein</translation>
     </message>
     <message>
         <source>Run Game</source>
@@ -1178,15 +1178,15 @@
     <name>PKGViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Open Folder</translation>
+        <translation>Ordner öffnen</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation type="unfinished">Navn</translation>
+        <translation type="unfinished">Name</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation type="unfinished">Seriel</translation>
+        <translation type="unfinished">Seriennummer</translation>
     </message>
     <message>
         <source>Installed</source>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation type="unfinished">Størrelse</translation>
+        <translation type="unfinished">Größe</translation>
     </message>
     <message>
         <source>Category</source>
@@ -1222,19 +1222,19 @@
     </message>
     <message>
         <source>Path</source>
-        <translation type="unfinished">Sti</translation>
+        <translation type="unfinished">Pfad</translation>
     </message>
     <message>
         <source>File</source>
-        <translation type="unfinished">File</translation>
+        <translation type="unfinished">Datei</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation type="unfinished">PKG FEJL</translation>
+        <translation type="unfinished">PKG-FEHLER</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation type="unfinished">Ukendt</translation>
+        <translation type="unfinished">Unbekannt</translation>
     </message>
     <message>
         <source>Package</source>
@@ -1244,12 +1244,16 @@
 <context>
     <name>SettingsDialog</name>
     <message>
+        <source>Save Data Path</source>
+        <translation>Speicherdaten-Pfad</translation>
+    </message>
+    <message>
         <source>Settings</source>
-        <translation>Settings</translation>
+        <translation>Einstellungen</translation>
     </message>
     <message>
         <source>General</source>
-        <translation>General</translation>
+        <translation>Allgemein</translation>
     </message>
     <message>
         <source>System</source>
@@ -1257,11 +1261,11 @@
     </message>
     <message>
         <source>Console Language</source>
-        <translation>Console Language</translation>
+        <translation>Konsolensprache</translation>
     </message>
     <message>
         <source>Emulator Language</source>
-        <translation>Emulator Language</translation>
+        <translation>Emulatorsprache</translation>
     </message>
     <message>
         <source>Emulator</source>
@@ -1269,43 +1273,43 @@
     </message>
     <message>
         <source>Enable Fullscreen</source>
-        <translation>Enable Fullscreen</translation>
+        <translation>Vollbild aktivieren</translation>
     </message>
     <message>
         <source>Fullscreen Mode</source>
-        <translation>Fuldskærmstilstand</translation>
+        <translation>Vollbildmodus</translation>
     </message>
     <message>
         <source>Enable Separate Update Folder</source>
-        <translation>Enable Separate Update Folder</translation>
+        <translation>Separaten Update-Ordner aktivieren</translation>
     </message>
     <message>
         <source>Default tab when opening settings</source>
-        <translation>Standardfaneblad ved åbning af indstillinger</translation>
+        <translation>Standardregisterkarte beim Öffnen der Einstellungen</translation>
     </message>
     <message>
         <source>Show Game Size In List</source>
-        <translation>Vis vis spilstørrelse i listen</translation>
+        <translation>Zeige Spielgröße in der Liste</translation>
     </message>
     <message>
         <source>Show Splash</source>
-        <translation>Show Splash</translation>
+        <translation>Startbildschirm anzeigen</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
-        <translation>Aktiver Discord Rich Presence</translation>
+        <translation>Discord Rich Presence aktivieren</translation>
     </message>
     <message>
         <source>Username</source>
-        <translation>Username</translation>
+        <translation>Benutzername</translation>
     </message>
     <message>
         <source>Trophy Key</source>
-        <translation>Trophy Key</translation>
+        <translation>Trophäenschlüssel</translation>
     </message>
     <message>
         <source>Trophy</source>
-        <translation>Trophy</translation>
+        <translation>Trophäe</translation>
     </message>
     <message>
         <source>Logger</source>
@@ -1313,31 +1317,35 @@
     </message>
     <message>
         <source>Log Type</source>
-        <translation>Log Type</translation>
+        <translation>Logtyp</translation>
     </message>
     <message>
         <source>Log Filter</source>
-        <translation>Log Filter</translation>
+        <translation>Log-Filter</translation>
     </message>
     <message>
         <source>Open Log Location</source>
-        <translation>Åbn logplacering</translation>
+        <translation>Protokollspeicherort öffnen</translation>
     </message>
     <message>
         <source>Input</source>
-        <translation>Indtastning</translation>
+        <translation>Eingabe</translation>
+    </message>
+    <message>
+        <source>Enable Motion Controls</source>
+        <translation>Aktiviere Bewegungssteuerung</translation>
     </message>
     <message>
         <source>Cursor</source>
-        <translation>Markør</translation>
+        <translation>Cursor</translation>
     </message>
     <message>
         <source>Hide Cursor</source>
-        <translation>Skjul markør</translation>
+        <translation>Cursor ausblenden</translation>
     </message>
     <message>
         <source>Hide Cursor Idle Timeout</source>
-        <translation>Timeout for skjul markør ved inaktivitet</translation>
+        <translation>Inaktivitätszeitüberschreitung zum Ausblenden des Cursors</translation>
     </message>
     <message>
         <source>s</source>
@@ -1349,63 +1357,63 @@
     </message>
     <message>
         <source>Back Button Behavior</source>
-        <translation>Tilbageknap adfærd</translation>
+        <translation>Verhalten der Zurück-Taste</translation>
     </message>
     <message>
         <source>Graphics</source>
-        <translation>Graphics</translation>
+        <translation>Grafik</translation>
     </message>
     <message>
         <source>GUI</source>
-        <translation>Interface</translation>
+        <translation>Benutzeroberfläche</translation>
     </message>
     <message>
         <source>User</source>
-        <translation>Bruger</translation>
+        <translation>Benutzer</translation>
     </message>
     <message>
         <source>Graphics Device</source>
-        <translation>Graphics Device</translation>
+        <translation>Grafikgerät</translation>
     </message>
     <message>
         <source>Width</source>
-        <translation>Width</translation>
+        <translation>Breite</translation>
     </message>
     <message>
         <source>Height</source>
-        <translation>Height</translation>
+        <translation>Höhe</translation>
     </message>
     <message>
         <source>Vblank Divider</source>
-        <translation>Vblank Divider</translation>
+        <translation>Vblank-Teiler</translation>
     </message>
     <message>
         <source>Advanced</source>
-        <translation>Advanced</translation>
+        <translation>Erweitert</translation>
     </message>
     <message>
         <source>Enable Shaders Dumping</source>
-        <translation>Enable Shaders Dumping</translation>
+        <translation>Shader-Dumping aktivieren</translation>
     </message>
     <message>
         <source>Enable NULL GPU</source>
-        <translation>Enable NULL GPU</translation>
+        <translation>NULL GPU aktivieren</translation>
     </message>
     <message>
         <source>Paths</source>
-        <translation>Stier</translation>
+        <translation>Pfad</translation>
     </message>
     <message>
         <source>Game Folders</source>
-        <translation>Spilmapper</translation>
+        <translation>Spieleordner</translation>
     </message>
     <message>
         <source>Add...</source>
-        <translation>Tilføj...</translation>
+        <translation>Hinzufügen...</translation>
     </message>
     <message>
         <source>Remove</source>
-        <translation>Fjern</translation>
+        <translation>Entfernen</translation>
     </message>
     <message>
         <source>Debug</source>
@@ -1413,287 +1421,287 @@
     </message>
     <message>
         <source>Enable Debug Dumping</source>
-        <translation>Enable Debug Dumping</translation>
+        <translation>Debug-Dumping aktivieren</translation>
     </message>
     <message>
         <source>Enable Vulkan Validation Layers</source>
-        <translation>Enable Vulkan Validation Layers</translation>
+        <translation>Vulkan Validations-Ebenen aktivieren</translation>
     </message>
     <message>
         <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Enable Vulkan Synchronization Validation</translation>
+        <translation>Vulkan Synchronisations-Validierung aktivieren</translation>
     </message>
     <message>
         <source>Enable RenderDoc Debugging</source>
-        <translation>Enable RenderDoc Debugging</translation>
+        <translation>RenderDoc-Debugging aktivieren</translation>
     </message>
     <message>
         <source>Enable Crash Diagnostics</source>
-        <translation>Enable Crash Diagnostics</translation>
+        <translation>Absturz-Diagnostik aktivieren</translation>
     </message>
     <message>
         <source>Collect Shaders</source>
-        <translation>Collect Shaders</translation>
+        <translation>Sammle Shader</translation>
     </message>
     <message>
         <source>Copy GPU Buffers</source>
-        <translation>Copy GPU Buffers</translation>
+        <translation>Kopiere GPU Puffer</translation>
     </message>
     <message>
         <source>Host Debug Markers</source>
-        <translation>Host Debug Markers</translation>
+        <translation>Host-Debug-Markierer</translation>
     </message>
     <message>
         <source>Guest Debug Markers</source>
-        <translation>Guest Debug Markers</translation>
+        <translation>Guest-Debug-Markierer</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdatering</translation>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Beim Start nach Updates suchen</translation>
     </message>
     <message>
         <source>Always Show Changelog</source>
-        <translation>Vis altid changelog</translation>
+        <translation>Changelog immer anzeigen</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Update-Kanal</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Nach Updates suchen</translation>
     </message>
     <message>
         <source>GUI Settings</source>
-        <translation>GUI-Indstillinger</translation>
+        <translation>GUI-Einstellungen</translation>
     </message>
     <message>
         <source>Title Music</source>
-        <translation>Title Music</translation>
+        <translation>Titelmusik</translation>
     </message>
     <message>
         <source>Disable Trophy Pop-ups</source>
-        <translation>Disable Trophy Pop-ups</translation>
+        <translation>Deaktiviere Trophäen Pop-ups</translation>
     </message>
     <message>
         <source>Play title music</source>
-        <translation>Afspil titelsang</translation>
+        <translation>Titelmusik abspielen</translation>
     </message>
     <message>
         <source>Update Compatibility Database On Startup</source>
-        <translation>Update Compatibility Database On Startup</translation>
+        <translation>Aktualisiere Kompatibilitätsdatenbank beim Start</translation>
     </message>
     <message>
         <source>Game Compatibility</source>
-        <translation>Game Compatibility</translation>
+        <translation>Spielkompatibilität</translation>
     </message>
     <message>
         <source>Display Compatibility Data</source>
-        <translation>Display Compatibility Data</translation>
+        <translation>Zeige Kompatibilitätsdaten</translation>
     </message>
     <message>
         <source>Update Compatibility Database</source>
-        <translation>Update Compatibility Database</translation>
+        <translation>Aktualisiere Kompatibilitätsdatenbank</translation>
     </message>
     <message>
         <source>Volume</source>
-        <translation>Lydstyrke</translation>
+        <translation>Lautstärke</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Speichern</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Anvend</translation>
+        <translation>Übernehmen</translation>
     </message>
     <message>
         <source>Restore Defaults</source>
-        <translation>Gendan standardindstillinger</translation>
+        <translation>Werkseinstellungen wiederherstellen</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Luk</translation>
+        <translation>Schließen</translation>
     </message>
     <message>
         <source>Point your mouse at an option to display its description.</source>
-        <translation>Peg musen over et valg for at vise dets beskrivelse.</translation>
+        <translation>Bewege die Maus über eine Option, um deren Beschreibung anzuzeigen.</translation>
     </message>
     <message>
         <source>consoleLanguageGroupBox</source>
-        <translation>Konsolsprog:\nIndstiller sproget, som PS4-spillet bruger.\nDet anbefales at indstille dette til et sprog, som spillet understøtter, hvilket kan variere efter region.</translation>
+        <translation>Konsolensprache:\nLegt die Sprache fest, die das PS4-Spiel verwendet.\nEs wird empfohlen, diese auf eine vom Spiel unterstützte Sprache einzustellen, die je nach Region unterschiedlich sein kann.</translation>
     </message>
     <message>
         <source>emulatorLanguageGroupBox</source>
-        <translation>Emulatorsprog:\nIndstiller sproget i emulatorens brugergrænseflade.</translation>
+        <translation>Emulatorsprache:\nLegt die Sprache der Emulator-Benutzeroberfläche fest.</translation>
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Aktiver fuld skærm:\nSætter automatisk spilvinduet i fuld skærm.\nDette kan skiftes ved at trykke på F11-tasten.</translation>
+        <translation>Vollbildmodus aktivieren:\nSchaltet das Spielfenster automatisch in den Vollbildmodus.\nKann durch Drücken der F11-Taste umgeschaltet werden.</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
-        <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+        <translation>Separaten Update-Ordner aktivieren:\nErmöglicht die Installation von Spielaktualiserungen in einem separaten Ordner zur einfachen Verwaltung.</translation>
     </message>
     <message>
         <source>showSplashCheckBox</source>
-        <translation>Vis startskærm:\nViser en startskærm (speciel grafik) under opstarten.</translation>
+        <translation>Startbildschirm anzeigen:\nZeigt beim Start einen speziellen Bildschirm (Splash) des Spiels an.</translation>
     </message>
     <message>
         <source>discordRPCCheckbox</source>
-        <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevante oplysninger på din Discord-profil.</translation>
+        <translation>Discord Rich Presence aktivieren:\nZeigt das Emulator-Icon und relevante Informationen in deinem Discord-Profil an.</translation>
     </message>
     <message>
         <source>userName</source>
-        <translation>Brugernavn:\nIndstiller PS4-kontoens navn, som kan blive vist i nogle spil.</translation>
+        <translation>Benutzername:\nLegt den Namen des PS4-Kontos fest, der in einigen Spielen angezeigt werden kann.</translation>
     </message>
     <message>
         <source>TrophyKey</source>
-        <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+        <translation>Trophäenschlüssel:\nSchlüssel zum Entschlüsseln von Trophäen. Muss von Ihrer gejailbreakten Konsole abgerufen werden.\nDarf nur Hex-Zeichen enthalten.</translation>
     </message>
     <message>
         <source>logTypeGroupBox</source>
-        <translation>Logtype:\nIndstiller, om logvinduets output vil blive synkroniseret for at øge ydeevnen. Dette kan påvirke emulatorens ydeevne negativt.</translation>
+        <translation>Protokolltyp:\nLegt fest, ob die Ausgabe des Protokollfensters synchronisiert wird, um die Leistung zu verbessern. Dies kann sich negativ auf die Emulation auswirken.</translation>
     </message>
     <message>
         <source>logFilter</source>
-        <translation>Logfilter:\nFiltrerer loggen for kun at udskrive bestemte oplysninger.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveaus: Trace, Debug, Info, Warning, Error, Critical - i rækkefølge, et valgt niveau skjuler alle forudgående niveauer og viser alle efterfølgende niveauer.</translation>
+        <translation>Protokollfilter:\nFiltert das Protokoll so, dass nur bestimmte Informationen ausgegeben werden.\nBeispiele: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Ebenen: Trace, Debug, Info, Warning, Error, Critical - in dieser Reihenfolge, ein ausgewähltes Level blendet alle vorherigen Ebenen aus und zeigt alle nachfolgenden an.</translation>
     </message>
     <message>
         <source>updaterGroupBox</source>
-        <translation>Opdatering:\nRelease: Officielle builds, der frigives månedligt, som kan være meget ældre, men mere stabile og testet.\nNightly: Udviklerbuilds med de nyeste funktioner og rettelser, men som kan indeholde fejl og være mindre stabile.</translation>
+        <translation>Update:\nRelease: Offizielle Builds, die monatlich veröffentlicht werden, können viel älter sein, aber stabiler und getestet.\nNightly: Entwickler-Builds, die die neuesten Funktionen und Fehlerbehebungen enthalten, aber Fehler enthalten und weniger stabil sein können.</translation>
     </message>
     <message>
         <source>GUIMusicGroupBox</source>
-        <translation>Titelsmusikafspilning:\nHvis spillet understøtter det, aktiver speciel musik, når spillet vælges i brugergrænsefladen.</translation>
+        <translation>Wiedergabe der Titelmusik:\nWenn das Spiel dies unterstützt, wird beim Auswählen des Spiels in der Benutzeroberfläche spezielle Musik abgespielt.</translation>
     </message>
     <message>
         <source>disableTrophycheckBox</source>
-        <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+        <translation>Trophäen-Popups deaktivieren:\nDeaktivieren Sie Trophäenbenachrichtigungen im Spiel. Der Trophäenfortschritt kann weiterhin mit dem Trophäen-Viewer verfolgt werden (klicken Sie mit der rechten Maustaste auf das Spiel im Hauptfenster)..</translation>
     </message>
     <message>
         <source>hideCursorGroupBox</source>
-        <translation>Skjul Cursor:\nVælg hvornår cursoren skal forsvinde:\nAldrig: Du vil altid se musen.\nInaktiv: Indstil en tid for, hvornår den skal forsvinde efter at være inaktiv.\nAltid: du vil aldrig se musen.</translation>
+        <translation>Maus ausblenden:\nWählen Sie, wann der Cursor verschwinden soll:\nNie: Sie sehen die Maus immer.\nInaktiv: Legen Sie eine Zeit fest, nach der sie nach Inaktivität verschwindet.\nImmer: Sie sehen die Maus niemals.</translation>
     </message>
     <message>
         <source>idleTimeoutGroupBox</source>
-        <translation>Indstil en tid for, at musen skal forsvinde efter at være inaktiv.</translation>
+        <translation>Stellen Sie eine Zeit ein, nach der die Maus nach Inaktivität verschwinden soll.</translation>
     </message>
     <message>
         <source>backButtonBehaviorGroupBox</source>
-        <translation>Tilbageknap Adfærd:\nIndstiller controllerens tilbageknap til at efterligne tryk på den angivne position på PS4 berøringsflade.</translation>
+        <translation>Zurück-Button Verhalten:\nStellt die Zurück-Taste des Controllers so ein, dass sie das Antippen der angegebenen Position auf dem PS4-Touchpad emuliert.</translation>
     </message>
     <message>
         <source>enableCompatibilityCheckBox</source>
-        <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+        <translation>Kompatibilitätsdaten anzeigen:\nZeigt Spielkompatibilitätsinformationen in Tabellenansicht an. Aktivieren Sie „Aktualisiere Kompatibilitätsdatenbank beim Start“, um aktuelle Informationen zu erhalten.</translation>
     </message>
     <message>
         <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+        <translation>Kompatibilität beim Start aktualisieren:\nAktualisiert die Kompatibilitätsdatenbank automatisch, wenn shadPS4 startet.</translation>
     </message>
     <message>
         <source>updateCompatibilityButton</source>
-        <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+        <translation>Aktualisiere Kompatibilitätsdatenbank:\nAktualisiere sofort die Kompatibilitätsdatenbank.</translation>
     </message>
     <message>
         <source>Never</source>
-        <translation>Aldrig</translation>
+        <translation>Niemals</translation>
     </message>
     <message>
         <source>Idle</source>
-        <translation>Inaktiv</translation>
+        <translation>Im Leerlauf</translation>
     </message>
     <message>
         <source>Always</source>
-        <translation>Altid</translation>
+        <translation>Immer</translation>
     </message>
     <message>
         <source>Touchpad Left</source>
-        <translation>Berøringsplade Venstre</translation>
+        <translation>Touchpad Links</translation>
     </message>
     <message>
         <source>Touchpad Right</source>
-        <translation>Berøringsplade Højre</translation>
+        <translation>Touchpad Rechts</translation>
     </message>
     <message>
         <source>Touchpad Center</source>
-        <translation>Berøringsplade Center</translation>
+        <translation>Touchpad Mitte</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ingen</translation>
+        <translation>Keine</translation>
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Grafikadapter:\nPå systemer med flere GPU&apos;er skal du vælge den GPU, emulatoren vil bruge fra en rullemenu,\neller vælge &quot;Auto Select&quot; for at vælge den automatisk.</translation>
+        <translation>Grafikkarte:\nAuf Systemen mit mehreren GPUs wählen Sie aus einem Dropdown-Menü die GPU aus, die der Emulator verwenden wird,\noder wählen Sie &quot;Auto Select&quot;, um sie automatisch auszuwählen.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
-        <translation>Skærmopløsning:\nIndstiller emulatorvinduets størrelse under afspilning, som kan ændres under afspilning.\nDette er forskelligt fra selve spillets opløsning.</translation>
+        <translation>Auflösung:\nLegt die Größe des Emulator-Fensters während der Wiedergabe fest, die während der Wiedergabe geändert werden kann.\nDies unterscheidet sich von der tatsächlichen Spielauflösung.</translation>
     </message>
     <message>
         <source>heightDivider</source>
-        <translation>Opdateringshastighedsdeler:\nMultiplicerer den frekvens, som emulatoren opdaterer billedet med, med dette tal. Ændring af dette kan have negative effekter, såsom hurtigere spil eller ødelagte funktioner!</translation>
+        <translation>Framerate-Teiler:\nMultipliziert die Bildrate, mit der der Emulator aktualisiert wird, mit diesem Wert. Dies kann sich negativ auswirken, wie z.B. beschleunigtes Gameplay oder Funktionsstörungen!</translation>
     </message>
     <message>
         <source>dumpShadersCheckBox</source>
-        <translation>Aktiver dumping af Shaders:\nTil teknisk fejlfinding gemmer det spillets shaders i en mappe under afspilning.</translation>
+        <translation>Shader-Dumping aktivieren:\nZum technischen Debuggen speichert es die Shaders des Spiels in einem Ordner während der Wiedergabe.</translation>
     </message>
     <message>
         <source>nullGpuCheckBox</source>
-        <translation>Aktiver virtuel GPU:\nTil teknisk fejlfinding deaktiverer det spilvisning, som om der ikke var et grafikkort.</translation>
+        <translation>Virtuelle GPU aktivieren:\nFür das technische Debugging deaktiviert es die Spielanzeige, als ob keine Grafikkarte vorhanden wäre.</translation>
     </message>
     <message>
         <source>gameFoldersBox</source>
-        <translation>Spilmappen:\nListen over mapper til at tjekke for installerede spil.</translation>
+        <translation>Spieleordner:\nDie Liste der Ordner, in denen nach installierten Spielen gesucht wird.</translation>
     </message>
     <message>
         <source>addFolderButton</source>
-        <translation>Tilføj:\nTilføj en mappe til listen.</translation>
+        <translation>Hinzufügen:\nFügen Sie einen Ordner zur Liste hinzu.</translation>
     </message>
     <message>
         <source>removeFolderButton</source>
-        <translation>Fjern:\nFjern en mappe fra listen.</translation>
+        <translation>Entfernen:\nEntfernen Sie einen Ordner aus der Liste.</translation>
     </message>
     <message>
         <source>debugDump</source>
-        <translation>Aktiver debugging-dump:\nGemmer import/export-symboler og headeroplysninger for det aktuelle PS4-program til en mappe.</translation>
+        <translation>Debug-Dump aktivieren:\nSpeichert Import-/Exportsymbole und Headerinformationen des aktuellen PS4-Programms in einem Verzeichnis.</translation>
     </message>
     <message>
         <source>vkValidationCheckBox</source>
-        <translation>Aktiver Vulkan-valideringslag:\nAktiverer et system, der validerer Vulkan-driverens tilstand og logger oplysninger om dens interne tilstand. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Vulkan-Validierungsebenen aktivieren:\nAktiviert ein System, das den Zustand des Vulkan-Treibers validiert und Informationen über dessen internen Zustand protokolliert. Dies verringert die Leistung und kann möglicherweise das Verhalten der Emulation ändern.</translation>
     </message>
     <message>
         <source>vkSyncValidationCheckBox</source>
-        <translation>Aktiver Vulkan-synkroniseringsvalidering:\nAktiverer et system, der validerer tidspunktet for Vulkan&apos;s renderingsopgaver. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Vulkan-Synchronisationsvalidierung aktivieren:\nAktiviert ein System, das die Zeitplanung der Rendering-Aufgaben von Vulkan validiert. Dies wird die Leistung verringern und kann möglicherweise das Verhalten der Emulation ändern.</translation>
     </message>
     <message>
         <source>rdocCheckBox</source>
-        <translation>Aktiver RenderDoc-fejlfinding:\nHvis aktiveret, giver det emulatoren mulighed for kompatibilitet med Renderdoc til at fange og analysere det aktuelle gengivne billede.</translation>
+        <translation>RenderDoc-Debugging aktivieren:\nWenn aktiviert, bietet der Emulator Kompatibilität mit Renderdoc zur Erfassung und Analyse des aktuell gerenderten Frames.</translation>
     </message>
     <message>
         <source>collectShaderCheckBox</source>
-        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+        <translation>Shader sammeln:\nSie müssen diese Option aktivieren, um Shader mit dem Debug-Menü (Strg + F10) bearbeiten zu können.</translation>
     </message>
     <message>
         <source>crashDiagnosticsCheckBox</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+        <translation>Absturzdiagnose:\nErstellt eine .yaml-Datei mit Informationen über den Vulkan-Status zum Zeitpunkt des Absturzes.\nNützlich zum Debuggen von „Gerät verloren“-Fehlern. Wenn Sie dies aktiviert haben, sollten Sie Host- UND Gast-Debug-Markierungen aktivieren.\nFunktioniert nicht auf Intel-GPUs.\nDamit dies funktioniert, müssen Vulkan Validationsschichten aktiviert und das Vulkan SDK installiert sein.</translation>
     </message>
     <message>
         <source>copyGPUBuffersCheckBox</source>
-        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+        <translation>GPU-Puffer kopieren:\nUmgeht Race-Bedingungen mit GPU-Übermittlungen.\nKann bei PM4-Abstürzen vom Typ 0 hilfreich sein oder auch nicht.</translation>
     </message>
     <message>
         <source>hostMarkersCheckBox</source>
-        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+        <translation>Host-Debug-Marker:\nFügt emulatorseitige Informationen wie Marker für bestimmte AMDGPU-Befehle rund um Vulkan-Befehle ein und gibt Ressourcen-Debug-Namen an.\nWenn Sie dies aktiviert haben, sollten Sie die Absturzdiagnose aktivieren.\nNützlich für Programme wie RenderDoc.</translation>
     </message>
     <message>
         <source>guestMarkersCheckBox</source>
-        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+        <translation>Gast-Debug-Markierer:\nFügt alle Debug-Markierer, die das Spiel selbst hinzugefügt hat, in den Befehlspuffer ein.\nWenn Sie dies aktiviert haben, sollten Sie die Absturzdiagnose aktivieren.\nNützlich für Programme wie RenderDoc.</translation>
     </message>
     <message>
         <source>Borderless</source>
@@ -1732,16 +1740,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable Motion Controls</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save Data Path</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Browse</source>
-        <translation type="unfinished">Browse</translation>
+        <translation type="unfinished">Durchsuchen</translation>
     </message>
     <message>
         <source>async</source>
@@ -1757,7 +1757,7 @@
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation type="unfinished">Directory to install games</translation>
+        <translation type="unfinished">Installationsverzeichnis für Spiele</translation>
     </message>
     <message>
         <source>Directory to save data</source>
@@ -1784,7 +1784,7 @@
     <name>TrophyViewer</name>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+        <translation>Trophäenansicht</translation>
     </message>
 </context>
 </TS>
