@@ -348,9 +348,9 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.color_buffers[remapped_cb] = {
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
-            .swizzle = col_buf.Swizzle(),
             .export_format = regs.color_export_format.GetFormat(cb),
             .needs_unorm_fixup = needs_unorm_fixup,
+            .swizzle = col_buf.Swizzle(),
         };
     }
 

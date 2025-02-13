@@ -183,7 +183,7 @@ enum class NumberFormat : u32 {
     Ubscaled = 13,
 };
 
-enum class CompSwizzle : u32 {
+enum class CompSwizzle : u8 {
     Zero = 0,
     One = 1,
     Red = 4,
@@ -193,10 +193,10 @@ enum class CompSwizzle : u32 {
 };
 
 enum class NumberConversion : u32 {
-    None,
-    UintToUscaled,
-    SintToSscaled,
-    UnormToUbnorm,
+    None = 0,
+    UintToUscaled = 1,
+    SintToSscaled = 2,
+    UnormToUbnorm = 3,
 };
 
 struct CompMapping {
