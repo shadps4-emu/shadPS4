@@ -535,6 +535,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             .descriptorType = vk::DescriptorType::eStorageBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
+        ++binding.buffer;
     }
 
     // Bind the flattened user data buffer as a UBO so it's accessible to the shader
