@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>defaultTextEdit_MSG</source>
-      <translation>I trucchi e le patch sono sperimentali.\nUtilizzali con cautela.\n\nScarica i trucchi singolarmente selezionando l&apos;archivio e cliccando sul pulsante di download.\nNella scheda Patch, puoi scaricare tutte le patch in una volta sola, scegliere quali vuoi utilizzare e salvare la tua selezione.\n\nPoiché non sviluppiamo i trucchi e le patch,\nper favore segnala i problemi all&apos;autore dei trucchi.\n\nHai creato un nuovo trucco? Visita:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <translation>I trucchi e le patch sono funzionalità sperimentali.\nUtilizzali con cautela.\n\nScarica i trucchi singolarmente selezionando un&apos;archivio e cliccando sul pulsante di download.\nNella scheda Patch, puoi scaricare tutte le patch in una volta sola, scegliere quali vuoi utilizzare e salvare la tua selezione.\n\nPoiché non sviluppiamo i trucchi e le patch,\nper favore segnala i problemi allo&apos;sviluppatore dei trucchi.\n\nHai creato dei trucchi e vuoi condividerli? Visita:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -162,7 +162,7 @@
     </message>
     <message>
       <source>CheatsNotFound_MSG</source>
-      <translation>Non sono stati trovati trucchi per questa versione del gioco nell&apos;archivio selezionato, prova un altro archivio o una versione diversa del gioco.</translation>
+      <translation>Non sono stati trovati trucchi nell&apos;archivio selezionato, prova un altro archivio, oppure ad utilizzare un altra versione del gioco.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
@@ -186,7 +186,7 @@
     </message>
     <message>
       <source>DownloadComplete_MSG</source>
-      <translation>Patch scaricata con successo! Vengono scaricate tutte le patch disponibili per tutti i giochi, non è necessario scaricarle singolarmente per ogni gioco come nel caso dei trucchi. Se la patch non appare, potrebbe essere che non esista per il numero di serie e la versione specifica del gioco.</translation>
+      <translation>Patch scaricata con successo! Al contrario dei trucchi, le patch vengono scaricate per tutti i giochi nella tua libreria. Alcuni giochi potrebbero non avere patch.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
