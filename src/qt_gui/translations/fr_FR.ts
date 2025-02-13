@@ -411,11 +411,11 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>Configurer les commandes</translation>
+      <translation>Configurer les Commandes</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation>Paramètres de contrôle</translation>
+      <translation>Paramètres de Contrôle</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -439,11 +439,11 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>Stick gauche Deadzone (def:2 max:127)</translation>
+      <translation>Stick Gauche Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>Deadzone gauche</translation>
+      <translation>Deadzone Gauche</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>Sélection de la configuration</translation>
+      <translation>Sélection de la Configuration</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -463,31 +463,31 @@
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
+      <translation>Commandes KBM</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
+      <translation>Éditeur KBM</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Retour</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
@@ -499,7 +499,7 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -523,15 +523,15 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation>Joystick gauche Deadzone (def:2 max:127)</translation>
+      <translation>Joystick Gauche Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation>Deadzone droit</translation>
+      <translation>Deadzone Droit</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation>Joystick droit</translation>
+      <translation>Joystick Droit</translation>
     </message>
   </context>
   <context>
@@ -741,11 +741,11 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation>Copier la version</translation>
+      <translation>Copier la Version</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>Copier la taille</translation>
+      <translation>Copier la Taille</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -833,19 +833,19 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation>Ouvrir le dossier de mise à jour</translation>
+      <translation>Ouvrir le Dossier de Mise à Jour</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>Supprimer les données de sauvegarde</translation>
+      <translation>Supprimer les Données de Sauvegarde</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Ce jeu n'a pas de dossier de mise à jour à ouvrir!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Échec de la conversion de l'icône.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
@@ -853,7 +853,7 @@
     </message>
     <message>
       <source>Save Data</source>
-      <translation>Enregistrer les données</translation>
+      <translation>Enregistrer les Données</translation>
     </message>
   </context>
   <context>
@@ -868,11 +868,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Installer toute la file d’attente dans le dossier sélectionné</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Supprimer le fichier PKG à l'installation</translation>
     </message>
   </context>
   <context>
@@ -1031,7 +1031,7 @@
     </message>
     <message>
       <source>Violet</source>
-      <translation type="unfinished">Violet</translation>
+      <translation>Violet</translation>
     </message>
     <message>
       <source>toolBar</source>
@@ -1151,27 +1151,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Lancer le jeu</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Fichier Eboot.bin introuvable</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>Fichier PKG (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG est un patch ou DLC, veuillez d'abord installer le jeu !</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Le jeu est déjà en cours !</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Installé</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1202,19 +1202,19 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Catégorie</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Type</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>App Ver</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FW</translation>
     </message>
     <message>
       <source>Region</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Package</translation>
     </message>
   </context>
   <context>
@@ -1341,7 +1341,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1393,7 +1393,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Activer HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1485,15 +1485,15 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Image d'arrière-plan</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Afficher l'image d'arrière-plan</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Transparence</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1517,7 +1517,7 @@
     </message>
     <message>
       <source>Volume</source>
-      <translation type="unfinished">Volume</translation>
+      <translation>Volume</translation>
     </message>
     <message>
       <source>Save</source>
