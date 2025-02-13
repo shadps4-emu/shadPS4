@@ -2,7 +2,7 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="da_DK">
+<TS version="2.1" language="el">
 <context>
     <name>AboutDialog</name>
     <message>
@@ -30,67 +30,67 @@
     </message>
     <message>
         <source>defaultTextEdit_MSG</source>
-        <translation>Cheats/Patches er eksperimentelle.\nBrug med forsigtighed.\n\nDownload cheats individuelt ved at vælge lageret og klikke på download-knappen.\nUnder fanen Patches kan du downloade alle patches på én gang, vælge hvilke du vil bruge og gemme valget.\n\nDa vi ikke udvikler cheats/patches,\nvenligst rapporter problemer til cheat-udvikleren.\n\nHar du lavet en ny cheat? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        <translation>Οι cheats/patches είναι πειραματικά.\nΧρησιμοποιήστε τα με προσοχή.\n\nΚατεβάστε τους cheats μεμονωμένα επιλέγοντας το αποθετήριο και κάνοντας κλικ στο κουμπί λήψης.\nΣτην καρτέλα Patches, μπορείτε να κατεβάσετε όλα τα patches ταυτόχρονα, να επιλέξετε ποια θέλετε να χρησιμοποιήσετε και να αποθηκεύσετε την επιλογή.\n\nΔεδομένου ότι δεν αναπτύσσουμε τους cheats/patches,\nπαρακαλώ αναφέρετε προβλήματα στον δημιουργό του cheat.\n\nΔημιουργήσατε ένα νέο cheat; Επισκεφθείτε:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
         <source>No Image Available</source>
-        <translation>Ingen billede tilgængelig</translation>
+        <translation>Δεν διατίθεται εικόνα</translation>
     </message>
     <message>
         <source>Serial: </source>
-        <translation>Serienummer: </translation>
+        <translation>Σειριακός αριθμός: </translation>
     </message>
     <message>
         <source>Version: </source>
-        <translation>Version: </translation>
+        <translation>Έκδοση: </translation>
     </message>
     <message>
         <source>Size: </source>
-        <translation>Størrelse: </translation>
+        <translation>Μέγεθος: </translation>
     </message>
     <message>
         <source>Select Cheat File:</source>
-        <translation>Vælg snyd-fil:</translation>
+        <translation>Επιλέξτε αρχείο Cheat:</translation>
     </message>
     <message>
         <source>Repository:</source>
-        <translation>Repository:</translation>
+        <translation>Αποθετήριο:</translation>
     </message>
     <message>
         <source>Download Cheats</source>
-        <translation>Hent snyd</translation>
+        <translation>Λήψη Cheats</translation>
     </message>
     <message>
         <source>Delete File</source>
-        <translation>Slet fil</translation>
+        <translation>Διαγραφή αρχείου</translation>
     </message>
     <message>
         <source>No files selected.</source>
-        <translation>Ingen filer valgt.</translation>
+        <translation>Δεν έχουν επιλεγεί αρχεία.</translation>
     </message>
     <message>
         <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Du kan slette de snyd, du ikke ønsker, efter at have hentet dem.</translation>
+        <translation>Μπορείτε να διαγράψετε τα cheats που δεν θέλετε μετά τη λήψη τους.</translation>
     </message>
     <message>
         <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Ønsker du at slette den valgte fil?\n%1</translation>
+        <translation>Θέλετε να διαγράψετε το επιλεγμένο αρχείο;\n%1</translation>
     </message>
     <message>
         <source>Select Patch File:</source>
-        <translation>Vælg patch-fil:</translation>
+        <translation>Επιλέξτε αρχείο Patch:</translation>
     </message>
     <message>
         <source>Download Patches</source>
-        <translation>Hent patches</translation>
+        <translation>Λήψη Patches</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Αποθήκευση</translation>
     </message>
     <message>
         <source>Cheats</source>
-        <translation>Snyd</translation>
+        <translation>Cheats</translation>
     </message>
     <message>
         <source>Patches</source>
@@ -98,313 +98,313 @@
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Σφάλμα</translation>
     </message>
     <message>
         <source>No patch selected.</source>
-        <translation>Ingen patch valgt.</translation>
+        <translation>Δεν έχει επιλεγεί κανένα patch.</translation>
     </message>
     <message>
         <source>Unable to open files.json for reading.</source>
-        <translation>Kan ikke åbne files.json til læsning.</translation>
+        <translation>Αδυναμία ανοίγματος του files.json για ανάγνωση.</translation>
     </message>
     <message>
         <source>No patch file found for the current serial.</source>
-        <translation>Ingen patch-fil fundet for det nuværende serienummer.</translation>
+        <translation>Δεν βρέθηκε αρχείο patch για τον τρέχοντα σειριακό αριθμό.</translation>
     </message>
     <message>
         <source>Unable to open the file for reading.</source>
-        <translation>Kan ikke åbne filen til læsning.</translation>
+        <translation>Αδυναμία ανοίγματος του αρχείου για ανάγνωση.</translation>
     </message>
     <message>
         <source>Unable to open the file for writing.</source>
-        <translation>Kan ikke åbne filen til skrivning.</translation>
+        <translation>Αδυναμία ανοίγματος του αρχείου για εγγραφή.</translation>
     </message>
     <message>
         <source>Failed to parse XML: </source>
-        <translation>Kunne ikke analysere XML: </translation>
+        <translation>Αποτυχία ανάλυσης XML: </translation>
     </message>
     <message>
         <source>Success</source>
-        <translation>Succes</translation>
+        <translation>Επιτυχία</translation>
     </message>
     <message>
         <source>Options saved successfully.</source>
-        <translation>Indstillinger gemt med succes.</translation>
+        <translation>Οι ρυθμίσεις αποθηκεύτηκαν επιτυχώς.</translation>
     </message>
     <message>
         <source>Invalid Source</source>
-        <translation>Ugyldig kilde</translation>
+        <translation>Μη έγκυρη Πηγή</translation>
     </message>
     <message>
         <source>The selected source is invalid.</source>
-        <translation>Den valgte kilde er ugyldig.</translation>
+        <translation>Η επιλεγμένη πηγή είναι μη έγκυρη.</translation>
     </message>
     <message>
         <source>File Exists</source>
-        <translation>Fil findes</translation>
+        <translation>Η αρχείο υπάρχει</translation>
     </message>
     <message>
         <source>File already exists. Do you want to replace it?</source>
-        <translation>Filen findes allerede. Vil du erstatte den?</translation>
+        <translation>Η αρχείο υπάρχει ήδη. Θέλετε να την αντικαταστήσετε;</translation>
     </message>
     <message>
         <source>Failed to save file:</source>
-        <translation>Kunne ikke gemme fil:</translation>
+        <translation>Αποτυχία αποθήκευσης αρχείου:</translation>
     </message>
     <message>
         <source>Failed to download file:</source>
-        <translation>Kunne ikke hente fil:</translation>
+        <translation>Αποτυχία λήψης αρχείου:</translation>
     </message>
     <message>
         <source>Cheats Not Found</source>
-        <translation>Snyd ikke fundet</translation>
+        <translation>Δεν βρέθηκαν Cheats</translation>
     </message>
     <message>
         <source>CheatsNotFound_MSG</source>
-        <translation>Ingen snyd fundet til dette spil i denne version af det valgte repository, prøv et andet repository eller en anden version af spillet.</translation>
+        <translation>Δεν βρέθηκαν cheats για αυτό το παιχνίδι στην τρέχουσα έκδοση του επιλεγμένου αποθετηρίου. Δοκιμάστε να κατεβάσετε από άλλο αποθετήριο ή άλλη έκδοση του παιχνιδιού.</translation>
     </message>
     <message>
         <source>Cheats Downloaded Successfully</source>
-        <translation>Snyd hentet med succes</translation>
+        <translation>Cheats κατεβάστηκαν επιτυχώς</translation>
     </message>
     <message>
         <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Du har succesfuldt hentet snyd for denne version af spillet fra det valgte repository. Du kan prøve at hente fra et andet repository, hvis det er tilgængeligt, vil det også være muligt at bruge det ved at vælge filen fra listen.</translation>
+        <translation>Κατεβάσατε επιτυχώς cheats για αυτή την έκδοση του παιχνιδιού από το επιλεγμένο αποθετήριο. Μπορείτε να δοκιμάσετε να κατεβάσετε από άλλο αποθετήριο. Αν είναι διαθέσιμο, μπορείτε να το επιλέξετε επιλέγοντας το αρχείο από τη λίστα.</translation>
     </message>
     <message>
         <source>Failed to save:</source>
-        <translation>Kunne ikke gemme:</translation>
+        <translation>Αποτυχία αποθήκευσης:</translation>
     </message>
     <message>
         <source>Failed to download:</source>
-        <translation>Kunne ikke hente:</translation>
+        <translation>Αποτυχία λήψης:</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Η λήψη ολοκληρώθηκε</translation>
     </message>
     <message>
         <source>DownloadComplete_MSG</source>
-        <translation>Patcher hentet med succes! Alle patches til alle spil er blevet hentet, der er ikke behov for at hente dem individuelt for hvert spil, som det sker med snyd. Hvis opdateringen ikke vises, kan det være, at den ikke findes for den specifikke serie og version af spillet.</translation>
+        <translation>Τα Patches κατεβάστηκαν επιτυχώς! Όλα τα Patches για όλα τα παιχνίδια έχουν κατέβει, δεν είναι απαραίτητο να τα κατεβάσετε ένα-ένα για κάθε παιχνίδι, όπως με τα Cheats. Εάν η ενημέρωση δεν εμφανίζεται, μπορεί να μην υπάρχει για τον συγκεκριμένο σειριακό αριθμό και έκδοση του παιχνιδιού.</translation>
     </message>
     <message>
         <source>Failed to parse JSON data from HTML.</source>
-        <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
+        <translation>Αποτυχία ανάλυσης δεδομένων JSON από HTML.</translation>
     </message>
     <message>
         <source>Failed to retrieve HTML page.</source>
-        <translation>Kunne ikke hente HTML-side.</translation>
+        <translation>Αποτυχία ανάκτησης σελίδας HTML.</translation>
     </message>
     <message>
         <source>The game is in version: %1</source>
-        <translation>Spillet er i version: %1</translation>
+        <translation>Το παιχνίδι είναι στην έκδοση: %1</translation>
     </message>
     <message>
         <source>The downloaded patch only works on version: %1</source>
-        <translation>Den downloadede patch fungerer kun på version: %1</translation>
+        <translation>Η ληφθείσα ενημέρωση λειτουργεί μόνο στην έκδοση: %1</translation>
     </message>
     <message>
         <source>You may need to update your game.</source>
-        <translation>Du skal muligvis opdatere dit spil.</translation>
+        <translation>Μπορεί να χρειαστεί να ενημερώσετε το παιχνίδι σας.</translation>
     </message>
     <message>
         <source>Incompatibility Notice</source>
-        <translation>Uforenelighedsmeddelelse</translation>
+        <translation>Ειδοποίηση ασυμβατότητας</translation>
     </message>
     <message>
         <source>Failed to open file:</source>
-        <translation>Kunne ikke åbne fil:</translation>
+        <translation>Αποτυχία ανοίγματος αρχείου:</translation>
     </message>
     <message>
         <source>XML ERROR:</source>
-        <translation>XML FEJL:</translation>
+        <translation>ΣΦΑΛΜΑ XML:</translation>
     </message>
     <message>
         <source>Failed to open files.json for writing</source>
-        <translation>Kunne ikke åbne files.json til skrivning</translation>
+        <translation>Αποτυχία ανοίγματος του files.json για εγγραφή</translation>
     </message>
     <message>
         <source>Author: </source>
-        <translation>Forfatter: </translation>
+        <translation>Συγγραφέας: </translation>
     </message>
     <message>
         <source>Directory does not exist:</source>
-        <translation>Mappe findes ikke:</translation>
+        <translation>Ο φάκελος δεν υπάρχει:</translation>
     </message>
     <message>
         <source>Failed to open files.json for reading.</source>
-        <translation>Kunne ikke åbne files.json til læsning.</translation>
+        <translation>Αποτυχία ανοίγματος του files.json για ανάγνωση.</translation>
     </message>
     <message>
         <source>Name:</source>
-        <translation>Navn:</translation>
+        <translation>Όνομα:</translation>
     </message>
     <message>
         <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Kan ikke anvende snyd før spillet er startet.</translation>
+        <translation>Δεν μπορείτε να εφαρμόσετε cheats πριν ξεκινήσει το παιχνίδι.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Luk</translation>
+        <translation type="unfinished">Κλείσιμο</translation>
     </message>
 </context>
 <context>
     <name>CheckUpdate</name>
     <message>
         <source>Auto Updater</source>
-        <translation>Automatisk opdatering</translation>
+        <translation>Αυτόματος Ενημερωτής</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Σφάλμα</translation>
     </message>
     <message>
         <source>Network error:</source>
-        <translation>Netsværksfejl:</translation>
+        <translation>Σφάλμα δικτύου:</translation>
     </message>
     <message>
         <source>Error_Github_limit_MSG</source>
-        <translation>Autoopdateren tillader op til 60 opdateringstjek i timen.\nDu har nået denne grænse. Prøv igen senere.</translation>
+        <translation>Ο Αυτόματος Ενημερωτής επιτρέπει έως και 60 ελέγχους ενημερώσεων ανά ώρα.\nΈχετε φτάσει αυτό το όριο. Παρακαλώ δοκιμάστε ξανά αργότερα.</translation>
     </message>
     <message>
         <source>Failed to parse update information.</source>
-        <translation>Kunne ikke analysere opdateringsoplysninger.</translation>
+        <translation>Αποτυχία ανάλυσης πληροφοριών ενημέρωσης.</translation>
     </message>
     <message>
         <source>No pre-releases found.</source>
-        <translation>Ingen forhåndsudgivelser fundet.</translation>
+        <translation>Δεν βρέθηκαν προ-κυκλοφορίες.</translation>
     </message>
     <message>
         <source>Invalid release data.</source>
-        <translation>Ugyldige udgivelsesdata.</translation>
+        <translation>Μη έγκυρα δεδομένα έκδοσης.</translation>
     </message>
     <message>
         <source>No download URL found for the specified asset.</source>
-        <translation>Ingen download-URL fundet for den specificerede aktiver.</translation>
+        <translation>Δεν βρέθηκε URL λήψης για το συγκεκριμένο στοιχείο.</translation>
     </message>
     <message>
         <source>Your version is already up to date!</source>
-        <translation>Din version er allerede opdateret!</translation>
+        <translation>Η έκδοσή σας είναι ήδη ενημερωμένη!</translation>
     </message>
     <message>
         <source>Update Available</source>
-        <translation>Opdatering tilgængelig</translation>
+        <translation>Διαθέσιμη Ενημέρωση</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Κανάλι Ενημέρωσης</translation>
     </message>
     <message>
         <source>Current Version</source>
-        <translation>Nuværende version</translation>
+        <translation>Τρέχουσα Έκδοση</translation>
     </message>
     <message>
         <source>Latest Version</source>
-        <translation>Nyeste version</translation>
+        <translation>Τελευταία Έκδοση</translation>
     </message>
     <message>
         <source>Do you want to update?</source>
-        <translation>Vil du opdatere?</translation>
+        <translation>Θέλετε να ενημερώσετε;</translation>
     </message>
     <message>
         <source>Show Changelog</source>
-        <translation>Vis ændringslog</translation>
+        <translation>Εμφάνιση Ιστορικού Αλλαγών</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Έλεγχος για ενημερώσεις κατά την εκκίνηση</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdater</translation>
+        <translation>Ενημέρωση</translation>
     </message>
     <message>
         <source>No</source>
-        <translation>Nej</translation>
+        <translation>Όχι</translation>
     </message>
     <message>
         <source>Hide Changelog</source>
-        <translation>Skjul ændringslog</translation>
+        <translation>Απόκρυψη Ιστορικού Αλλαγών</translation>
     </message>
     <message>
         <source>Changes</source>
-        <translation>Ændringer</translation>
+        <translation>Αλλαγές</translation>
     </message>
     <message>
         <source>Network error occurred while trying to access the URL</source>
-        <translation>Netsværksfejl opstod, mens der blev forsøgt at få adgang til URL&apos;en</translation>
+        <translation>Σφάλμα δικτύου κατά την προσπάθεια πρόσβασης στη διεύθυνση URL</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Λήψη ολοκληρώθηκε</translation>
     </message>
     <message>
         <source>The update has been downloaded, press OK to install.</source>
-        <translation>Opdateringen er blevet downloadet, tryk på OK for at installere.</translation>
+        <translation>Η ενημέρωση έχει ληφθεί, πατήστε OK για να εγκαταστήσετε.</translation>
     </message>
     <message>
         <source>Failed to save the update file at</source>
-        <translation>Kunne ikke gemme opdateringsfilen på</translation>
+        <translation>Αποτυχία αποθήκευσης του αρχείου ενημέρωσης στο</translation>
     </message>
     <message>
         <source>Starting Update...</source>
-        <translation>Starter opdatering...</translation>
+        <translation>Εκκίνηση Ενημέρωσης...</translation>
     </message>
     <message>
         <source>Failed to create the update script file</source>
-        <translation>Kunne ikke oprette opdateringsscriptfilen</translation>
+        <translation>Αποτυχία δημιουργίας του αρχείου σεναρίου ενημέρωσης</translation>
     </message>
 </context>
 <context>
     <name>CompatibilityInfoClass</name>
     <message>
         <source>Fetching compatibility data, please wait</source>
-        <translation>Henter kompatibilitetsdata, vent venligst</translation>
+        <translation>Φόρτωση δεδομένων συμβατότητας, παρακαλώ περιμένετε</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Annuller</translation>
+        <translation>Ακύρωση</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Indlæser...</translation>
+        <translation>Φόρτωση...</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Σφάλμα</translation>
     </message>
     <message>
         <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kan ikke opdatere kompatibilitetsdata! Prøv igen senere.</translation>
+        <translation>Δεν ήταν δυνατή η ενημέρωση των δεδομένων συμβατότητας! Προσπαθήστε αργότερα.</translation>
     </message>
     <message>
         <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Kan ikke åbne compatibility_data.json til skrivning.</translation>
+        <translation>Αδύνατο να ανοίξετε το compatibility_data.json για εγγραφή.</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation>Ukendt</translation>
+        <translation>Άγνωστο</translation>
     </message>
     <message>
         <source>Nothing</source>
-        <translation>Intet</translation>
+        <translation>Τίποτα</translation>
     </message>
     <message>
         <source>Boots</source>
-        <translation>Støvler</translation>
+        <translation>Μπότες</translation>
     </message>
     <message>
         <source>Menus</source>
-        <translation>Menuer</translation>
+        <translation>Μενού</translation>
     </message>
     <message>
         <source>Ingame</source>
-        <translation>I spillet</translation>
+        <translation>Εντός παιχνιδιού</translation>
     </message>
     <message>
         <source>Playable</source>
-        <translation>Spilbar</translation>
+        <translation>Παιχνιδεύσιμο</translation>
     </message>
 </context>
 <context>
@@ -583,15 +583,15 @@
     <name>GameListFrame</name>
     <message>
         <source>Icon</source>
-        <translation>Ikon</translation>
+        <translation>Εικονίδιο</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Navn</translation>
+        <translation>Όνομα</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation>Seriel</translation>
+        <translation>Σειριακός αριθμός</translation>
     </message>
     <message>
         <source>Compatibility</source>
@@ -599,27 +599,27 @@
     </message>
     <message>
         <source>Region</source>
-        <translation>Region</translation>
+        <translation>Περιοχή</translation>
     </message>
     <message>
         <source>Firmware</source>
-        <translation>Firmware</translation>
+        <translation>Λογισμικό</translation>
     </message>
     <message>
         <source>Size</source>
-        <translation>Størrelse</translation>
+        <translation>Μέγεθος</translation>
     </message>
     <message>
         <source>Version</source>
-        <translation>Version</translation>
+        <translation>Έκδοση</translation>
     </message>
     <message>
         <source>Path</source>
-        <translation>Sti</translation>
+        <translation>Διαδρομή</translation>
     </message>
     <message>
         <source>Play Time</source>
-        <translation>Spilletid</translation>
+        <translation>Χρόνος παιχνιδιού</translation>
     </message>
     <message>
         <source>Never Played</source>
@@ -663,11 +663,11 @@
     </message>
     <message>
         <source>Click to see details on github</source>
-        <translation>Klik for at se detaljer på GitHub</translation>
+        <translation>Κάντε κλικ για να δείτε λεπτομέρειες στο GitHub</translation>
     </message>
     <message>
         <source>Last updated</source>
-        <translation>Sidst opdateret</translation>
+        <translation>Τελευταία ενημέρωση</translation>
     </message>
 </context>
 <context>
@@ -701,7 +701,7 @@
     </message>
     <message>
         <source>Cheats / Patches</source>
-        <translation>Trick / Patches</translation>
+        <translation>Kodikí / Enimeróseis</translation>
     </message>
     <message>
         <source>SFO Viewer</source>
@@ -713,19 +713,19 @@
     </message>
     <message>
         <source>Open Folder...</source>
-        <translation>Åbn Mappe...</translation>
+        <translation>Άνοιγμα Φακέλου...</translation>
     </message>
     <message>
         <source>Open Game Folder</source>
-        <translation>Åbn Spilmappe</translation>
+        <translation>Άνοιγμα Φακέλου Παιχνιδιού</translation>
     </message>
     <message>
         <source>Open Save Data Folder</source>
-        <translation>Åbn Gem Data Mappe</translation>
+        <translation>Άνοιγμα Φακέλου Αποθηκευμένων Δεδομένων</translation>
     </message>
     <message>
         <source>Open Log Folder</source>
-        <translation>Åbn Log Mappe</translation>
+        <translation>Άνοιγμα Φακέλου Καταγραφής</translation>
     </message>
     <message>
         <source>Copy info...</source>
@@ -891,7 +891,7 @@
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Έλεγχος για ενημερώσεις</translation>
     </message>
     <message>
         <source>About shadPS4</source>
@@ -967,7 +967,7 @@
     </message>
     <message>
         <source>Download Cheats/Patches</source>
-        <translation>Download Tricks / Patches</translation>
+        <translation>Κατεβάστε Κωδικούς / Ενημερώσεις</translation>
     </message>
     <message>
         <source>Dump Game List</source>
@@ -1011,7 +1011,7 @@
     </message>
     <message>
         <source>Help</source>
-        <translation>Hjælp</translation>
+        <translation>Βοήθεια</translation>
     </message>
     <message>
         <source>Dark</source>
@@ -1039,115 +1039,115 @@
     </message>
     <message>
         <source>Game List</source>
-        <translation>Spiloversigt</translation>
+        <translation>Λίστα παιχνιδιών</translation>
     </message>
     <message>
         <source> * Unsupported Vulkan Version</source>
-        <translation> * Ikke understøttet Vulkan-version</translation>
+        <translation> * Μη υποστηριζόμενη έκδοση Vulkan</translation>
     </message>
     <message>
         <source>Download Cheats For All Installed Games</source>
-        <translation>Hent snyd til alle installerede spil</translation>
+        <translation>Λήψη Cheats για όλα τα εγκατεστημένα παιχνίδια</translation>
     </message>
     <message>
         <source>Download Patches For All Games</source>
-        <translation>Hent patches til alle spil</translation>
+        <translation>Λήψη Patches για όλα τα παιχνίδια</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Η λήψη ολοκληρώθηκε</translation>
     </message>
     <message>
         <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Du har hentet snyd til alle de spil, du har installeret.</translation>
+        <translation>Έχετε κατεβάσει cheats για όλα τα εγκατεστημένα παιχνίδια.</translation>
     </message>
     <message>
         <source>Patches Downloaded Successfully!</source>
-        <translation>Patcher hentet med succes!</translation>
+        <translation>Τα Patches κατέβηκαν επιτυχώς!</translation>
     </message>
     <message>
         <source>All Patches available for all games have been downloaded.</source>
-        <translation>Alle patches til alle spil er blevet hentet.</translation>
+        <translation>Όλα τα διαθέσιμα Patches για όλα τα παιχνίδια έχουν κατέβει.</translation>
     </message>
     <message>
         <source>Games: </source>
-        <translation>Spil: </translation>
+        <translation>Παιχνίδια: </translation>
     </message>
     <message>
         <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>ELF-filer (*.bin *.elf *.oelf)</translation>
+        <translation>Αρχεία ELF (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
         <source>Game Boot</source>
-        <translation>Spil-boot</translation>
+        <translation>Εκκίνηση παιχνιδιού</translation>
     </message>
     <message>
         <source>Only one file can be selected!</source>
-        <translation>Kun én fil kan vælges!</translation>
+        <translation>Μπορεί να επιλεγεί μόνο ένα αρχείο!</translation>
     </message>
     <message>
         <source>PKG Extraction</source>
-        <translation>PKG-udtrækning</translation>
+        <translation>Εξαγωγή PKG</translation>
     </message>
     <message>
         <source>Patch detected!</source>
-        <translation>Opdatering detekteret!</translation>
+        <translation>Αναγνώριση ενημέρωσης!</translation>
     </message>
     <message>
         <source>PKG and Game versions match: </source>
-        <translation>PKG og spilversioner matcher: </translation>
+        <translation>Οι εκδόσεις PKG και παιχνιδιού ταιριάζουν: </translation>
     </message>
     <message>
         <source>Would you like to overwrite?</source>
-        <translation>Vil du overskrive?</translation>
+        <translation>Θέλετε να αντικαταστήσετε;</translation>
     </message>
     <message>
         <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG Version %1 er ældre end den installerede version: </translation>
+        <translation>Η έκδοση PKG %1 είναι παλαιότερη από την εγκατεστημένη έκδοση: </translation>
     </message>
     <message>
         <source>Game is installed: </source>
-        <translation>Spillet er installeret: </translation>
+        <translation>Το παιχνίδι είναι εγκατεστημένο: </translation>
     </message>
     <message>
         <source>Would you like to install Patch: </source>
-        <translation>Vil du installere opdateringen: </translation>
+        <translation>Θέλετε να εγκαταστήσετε την ενημέρωση: </translation>
     </message>
     <message>
         <source>DLC Installation</source>
-        <translation>DLC Installation</translation>
+        <translation>Εγκατάσταση DLC</translation>
     </message>
     <message>
         <source>Would you like to install DLC: %1?</source>
-        <translation>Vil du installere DLC: %1?</translation>
+        <translation>Θέλετε να εγκαταστήσετε το DLC: %1;</translation>
     </message>
     <message>
         <source>DLC already installed:</source>
-        <translation>DLC allerede installeret:</translation>
+        <translation>DLC ήδη εγκατεστημένο:</translation>
     </message>
     <message>
         <source>Game already installed</source>
-        <translation>Spillet er allerede installeret</translation>
+        <translation>Παιχνίδι ήδη εγκατεστημένο</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation>PKG FEJL</translation>
+        <translation>ΣΦΑΛΜΑ PKG</translation>
     </message>
     <message>
         <source>Extracting PKG %1/%2</source>
-        <translation>Udvinding af PKG %1/%2</translation>
+        <translation>Εξαγωγή PKG %1/%2</translation>
     </message>
     <message>
         <source>Extraction Finished</source>
-        <translation>Udvinding afsluttet</translation>
+        <translation>Η εξαγωγή ολοκληρώθηκε</translation>
     </message>
     <message>
         <source>Game successfully installed at %1</source>
-        <translation>Spillet blev installeret succesfuldt på %1</translation>
+        <translation>Το παιχνίδι εγκαταστάθηκε επιτυχώς στο %1</translation>
     </message>
     <message>
         <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Filen ser ikke ud til at være en gyldig PKG-fil</translation>
+        <translation>Η αρχείο δεν φαίνεται να είναι έγκυρο αρχείο PKG</translation>
     </message>
     <message>
         <source>Run Game</source>
@@ -1182,11 +1182,11 @@
     </message>
     <message>
         <source>Name</source>
-        <translation type="unfinished">Navn</translation>
+        <translation type="unfinished">Όνομα</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation type="unfinished">Seriel</translation>
+        <translation type="unfinished">Σειριακός αριθμός</translation>
     </message>
     <message>
         <source>Installed</source>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation type="unfinished">Størrelse</translation>
+        <translation type="unfinished">Μέγεθος</translation>
     </message>
     <message>
         <source>Category</source>
@@ -1214,7 +1214,7 @@
     </message>
     <message>
         <source>Region</source>
-        <translation type="unfinished">Region</translation>
+        <translation type="unfinished">Περιοχή</translation>
     </message>
     <message>
         <source>Flags</source>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
         <source>Path</source>
-        <translation type="unfinished">Sti</translation>
+        <translation type="unfinished">Διαδρομή</translation>
     </message>
     <message>
         <source>File</source>
@@ -1230,11 +1230,11 @@
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation type="unfinished">PKG FEJL</translation>
+        <translation type="unfinished">ΣΦΑΛΜΑ PKG</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation type="unfinished">Ukendt</translation>
+        <translation type="unfinished">Άγνωστο</translation>
     </message>
     <message>
         <source>Package</source>
@@ -1273,7 +1273,7 @@
     </message>
     <message>
         <source>Fullscreen Mode</source>
-        <translation>Fuldskærmstilstand</translation>
+        <translation>Λειτουργία Πλήρους Οθόνης</translation>
     </message>
     <message>
         <source>Enable Separate Update Folder</source>
@@ -1281,11 +1281,11 @@
     </message>
     <message>
         <source>Default tab when opening settings</source>
-        <translation>Standardfaneblad ved åbning af indstillinger</translation>
+        <translation>Προεπιλεγμένη καρτέλα κατά την ανοίγμα των ρυθμίσεων</translation>
     </message>
     <message>
         <source>Show Game Size In List</source>
-        <translation>Vis vis spilstørrelse i listen</translation>
+        <translation>Εμφάνιση Μεγέθους Παιχνιδιού στη Λίστα</translation>
     </message>
     <message>
         <source>Show Splash</source>
@@ -1293,7 +1293,7 @@
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
-        <translation>Aktiver Discord Rich Presence</translation>
+        <translation>Ενεργοποίηση Discord Rich Presence</translation>
     </message>
     <message>
         <source>Username</source>
@@ -1321,23 +1321,23 @@
     </message>
     <message>
         <source>Open Log Location</source>
-        <translation>Åbn logplacering</translation>
+        <translation>Άνοιγμα τοποθεσίας αρχείου καταγραφής</translation>
     </message>
     <message>
         <source>Input</source>
-        <translation>Indtastning</translation>
+        <translation>Είσοδος</translation>
     </message>
     <message>
         <source>Cursor</source>
-        <translation>Markør</translation>
+        <translation>Δείκτης</translation>
     </message>
     <message>
         <source>Hide Cursor</source>
-        <translation>Skjul markør</translation>
+        <translation>Απόκρυψη δείκτη</translation>
     </message>
     <message>
         <source>Hide Cursor Idle Timeout</source>
-        <translation>Timeout for skjul markør ved inaktivitet</translation>
+        <translation>Χρόνος αδράνειας απόκρυψης δείκτη</translation>
     </message>
     <message>
         <source>s</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
         <source>Back Button Behavior</source>
-        <translation>Tilbageknap adfærd</translation>
+        <translation>Συμπεριφορά κουμπιού επιστροφής</translation>
     </message>
     <message>
         <source>Graphics</source>
@@ -1357,11 +1357,11 @@
     </message>
     <message>
         <source>GUI</source>
-        <translation>Interface</translation>
+        <translation>Διεπαφή</translation>
     </message>
     <message>
         <source>User</source>
-        <translation>Bruger</translation>
+        <translation>Χρήστης</translation>
     </message>
     <message>
         <source>Graphics Device</source>
@@ -1393,19 +1393,19 @@
     </message>
     <message>
         <source>Paths</source>
-        <translation>Stier</translation>
+        <translation>Διαδρομές</translation>
     </message>
     <message>
         <source>Game Folders</source>
-        <translation>Spilmapper</translation>
+        <translation>Φάκελοι παιχνιδιών</translation>
     </message>
     <message>
         <source>Add...</source>
-        <translation>Tilføj...</translation>
+        <translation>Προσθήκη...</translation>
     </message>
     <message>
         <source>Remove</source>
-        <translation>Fjern</translation>
+        <translation>Αφαίρεση</translation>
     </message>
     <message>
         <source>Debug</source>
@@ -1449,27 +1449,27 @@
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdatering</translation>
+        <translation>Ενημέρωση</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Έλεγχος για ενημερώσεις κατά την εκκίνηση</translation>
     </message>
     <message>
         <source>Always Show Changelog</source>
-        <translation>Vis altid changelog</translation>
+        <translation>Πάντα εμφάνιση ιστορικού αλλαγών</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Κανάλι Ενημέρωσης</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Έλεγχος για ενημερώσεις</translation>
     </message>
     <message>
         <source>GUI Settings</source>
-        <translation>GUI-Indstillinger</translation>
+        <translation>Ρυθμίσεις GUI</translation>
     </message>
     <message>
         <source>Title Music</source>
@@ -1481,7 +1481,7 @@
     </message>
     <message>
         <source>Play title music</source>
-        <translation>Afspil titelsang</translation>
+        <translation>Αναπαραγωγή μουσικής τίτλου</translation>
     </message>
     <message>
         <source>Update Compatibility Database On Startup</source>
@@ -1501,39 +1501,39 @@
     </message>
     <message>
         <source>Volume</source>
-        <translation>Lydstyrke</translation>
+        <translation>ένταση</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Αποθήκευση</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Anvend</translation>
+        <translation>Εφαρμογή</translation>
     </message>
     <message>
         <source>Restore Defaults</source>
-        <translation>Gendan standardindstillinger</translation>
+        <translation>Επαναφορά Προεπιλογών</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Luk</translation>
+        <translation>Κλείσιμο</translation>
     </message>
     <message>
         <source>Point your mouse at an option to display its description.</source>
-        <translation>Peg musen over et valg for at vise dets beskrivelse.</translation>
+        <translation>Τοποθετήστε το ποντίκι σας πάνω σε μια επιλογή για να εμφανίσετε την περιγραφή της.</translation>
     </message>
     <message>
         <source>consoleLanguageGroupBox</source>
-        <translation>Konsolsprog:\nIndstiller sproget, som PS4-spillet bruger.\nDet anbefales at indstille dette til et sprog, som spillet understøtter, hvilket kan variere efter region.</translation>
+        <translation>Γλώσσα Κονσόλας:\nΡυθμίζει τη γλώσσα που θα χρησιμοποιήσει το παιχνίδι PS4.\nΣυνιστάται να επιλέξετε μία από τις γλώσσες που υποστηρίζονται από το παιχνίδι, η οποία ενδέχεται να διαφέρει ανάλογα με την περιοχή.</translation>
     </message>
     <message>
         <source>emulatorLanguageGroupBox</source>
-        <translation>Emulatorsprog:\nIndstiller sproget i emulatorens brugergrænseflade.</translation>
+        <translation>Γλώσσα Εξομοιωτή:\nΡυθμίζει τη γλώσσα του γραφικού περιβάλλοντος του εξομοιωτή.</translation>
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Aktiver fuld skærm:\nSætter automatisk spilvinduet i fuld skærm.\nDette kan skiftes ved at trykke på F11-tasten.</translation>
+        <translation>Ενεργοποίηση Πλήρους Οθόνης:\nΑυτόματα μετατρέπει το παράθυρο του παιχνιδιού σε λειτουργία πλήρους οθόνης.\nΜπορεί να ενεργοποιηθεί/απενεργοποιηθεί πατώντας το πλήκτρο F11.</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
@@ -1541,15 +1541,15 @@
     </message>
     <message>
         <source>showSplashCheckBox</source>
-        <translation>Vis startskærm:\nViser en startskærm (speciel grafik) under opstarten.</translation>
+        <translation>Εμφάνιση Splash Screen:\nΕμφανίζει ειδική γραφική οθόνη κατά την εκκίνηση.</translation>
     </message>
     <message>
         <source>discordRPCCheckbox</source>
-        <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevante oplysninger på din Discord-profil.</translation>
+        <translation>Ενεργοποίηση Discord Rich Presence:\nΕμφανίζει το εικονίδιο του emulator και σχετικές πληροφορίες στο προφίλ σας στο Discord.</translation>
     </message>
     <message>
         <source>userName</source>
-        <translation>Brugernavn:\nIndstiller PS4-kontoens navn, som kan blive vist i nogle spil.</translation>
+        <translation>Όνομα Χρήστη:\nΟρίζει το όνομα του λογαριασμού PS4, το οποίο μπορεί να εμφανιστεί σε ορισμένα παιχνίδια.</translation>
     </message>
     <message>
         <source>TrophyKey</source>
@@ -1557,19 +1557,19 @@
     </message>
     <message>
         <source>logTypeGroupBox</source>
-        <translation>Logtype:\nIndstiller, om logvinduets output vil blive synkroniseret for at øge ydeevnen. Dette kan påvirke emulatorens ydeevne negativt.</translation>
+        <translation>Τύπος Καταγραφής:\nΚαθορίζει αν η έξοδος του παραθύρου καταγραφής θα συγχρονιστεί για αύξηση της απόδοσης. Αυτό μπορεί να επηρεάσει αρνητικά τις επιδόσεις του εξομοιωτή.</translation>
     </message>
     <message>
         <source>logFilter</source>
-        <translation>Logfilter:\nFiltrerer loggen for kun at udskrive bestemte oplysninger.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveaus: Trace, Debug, Info, Warning, Error, Critical - i rækkefølge, et valgt niveau skjuler alle forudgående niveauer og viser alle efterfølgende niveauer.</translation>
+        <translation>Φίλτρο Καταγραφής:\nΦιλτράρει τις καταγραφές ώστε να εκτυπώνονται μόνο συγκεκριμένες πληροφορίες.\nΠαραδείγματα: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Επίπεδα: Trace, Debug, Info, Warning, Error, Critical - με τη σειρά αυτή, κάθε επίπεδο που επιλέγεται αποκλείει τα προηγούμενα και εμφανίζει τα επόμενα επίπεδα.</translation>
     </message>
     <message>
         <source>updaterGroupBox</source>
-        <translation>Opdatering:\nRelease: Officielle builds, der frigives månedligt, som kan være meget ældre, men mere stabile og testet.\nNightly: Udviklerbuilds med de nyeste funktioner og rettelser, men som kan indeholde fejl og være mindre stabile.</translation>
+        <translation>Ενημερώσεις:\nRelease: Επίσημες εκδόσεις που κυκλοφορούν μηνιαίως, είναι παλαιότερες αλλά πιο σταθερές και δοκιμασμένες.\nNightly: Εκδόσεις προγραμματιστών με νέες δυνατότητες και διορθώσεις, αλλά μπορεί να περιέχουν σφάλματα και να είναι λιγότερο σταθερές.</translation>
     </message>
     <message>
         <source>GUIMusicGroupBox</source>
-        <translation>Titelsmusikafspilning:\nHvis spillet understøtter det, aktiver speciel musik, når spillet vælges i brugergrænsefladen.</translation>
+        <translation>Αναπαραγωγή Μουσικής Τίτλων:\nΕάν το παιχνίδι το υποστηρίζει, ενεργοποιεί ειδική μουσική κατά την επιλογή του παιχνιδιού από τη διεπαφή χρήστη.</translation>
     </message>
     <message>
         <source>disableTrophycheckBox</source>
@@ -1577,15 +1577,15 @@
     </message>
     <message>
         <source>hideCursorGroupBox</source>
-        <translation>Skjul Cursor:\nVælg hvornår cursoren skal forsvinde:\nAldrig: Du vil altid se musen.\nInaktiv: Indstil en tid for, hvornår den skal forsvinde efter at være inaktiv.\nAltid: du vil aldrig se musen.</translation>
+        <translation>Απόκρυψη Κέρσορα:\nΕπιλέξτε πότε θα εξαφανιστεί ο κέρσορας:\nΠοτέ: θα βλέπετε πάντα το ποντίκι.\nΑδρανές: ορίστε έναν χρόνο για να εξαφανιστεί μετά από αδράνεια.\nΠάντα: δεν θα δείτε ποτέ το ποντίκι.</translation>
     </message>
     <message>
         <source>idleTimeoutGroupBox</source>
-        <translation>Indstil en tid for, at musen skal forsvinde efter at være inaktiv.</translation>
+        <translation>Ορίστε έναν χρόνο για να εξαφανιστεί το ποντίκι μετά από αδράνεια.</translation>
     </message>
     <message>
         <source>backButtonBehaviorGroupBox</source>
-        <translation>Tilbageknap Adfærd:\nIndstiller controllerens tilbageknap til at efterligne tryk på den angivne position på PS4 berøringsflade.</translation>
+        <translation>Συμπεριφορά Κουμπιού Επιστροφής:\nΟρίζει το κουμπί επιστροφής του ελεγκτή να προσομοιώνει το πάτημα της καθορισμένης θέσης στην οθόνη αφής PS4.</translation>
     </message>
     <message>
         <source>enableCompatibilityCheckBox</source>
@@ -1601,79 +1601,79 @@
     </message>
     <message>
         <source>Never</source>
-        <translation>Aldrig</translation>
+        <translation>Ποτέ</translation>
     </message>
     <message>
         <source>Idle</source>
-        <translation>Inaktiv</translation>
+        <translation>Αδρανής</translation>
     </message>
     <message>
         <source>Always</source>
-        <translation>Altid</translation>
+        <translation>Πάντα</translation>
     </message>
     <message>
         <source>Touchpad Left</source>
-        <translation>Berøringsplade Venstre</translation>
+        <translation>Touchpad Αριστερά</translation>
     </message>
     <message>
         <source>Touchpad Right</source>
-        <translation>Berøringsplade Højre</translation>
+        <translation>Touchpad Δεξιά</translation>
     </message>
     <message>
         <source>Touchpad Center</source>
-        <translation>Berøringsplade Center</translation>
+        <translation>Κέντρο Touchpad</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ingen</translation>
+        <translation>Κανένα</translation>
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Grafikadapter:\nPå systemer med flere GPU&apos;er skal du vælge den GPU, emulatoren vil bruge fra en rullemenu,\neller vælge &quot;Auto Select&quot; for at vælge den automatisk.</translation>
+        <translation>Προσαρμογέας Γραφικών:\nΣε συστήματα με πολλές GPU, επιλέξτε από το μενού την GPU που θα χρησιμοποιήσει ο εξομοιωτής,\nή επιλέξτε &quot;Auto Select&quot; για αυτόματη επιλογή.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
-        <translation>Skærmopløsning:\nIndstiller emulatorvinduets størrelse under afspilning, som kan ændres under afspilning.\nDette er forskelligt fra selve spillets opløsning.</translation>
+        <translation>Ανάλυση Οθόνης:\nΚαθορίζει το μέγεθος του παραθύρου του εξομοιωτή κατά την αναπαραγωγή, το οποίο μπορεί να αλλάξει κατά τη διάρκεια του παιχνιδιού.\nΑυτό είναι διαφορετικό από την ανάλυση του ίδιου του παιχνιδιού.</translation>
     </message>
     <message>
         <source>heightDivider</source>
-        <translation>Opdateringshastighedsdeler:\nMultiplicerer den frekvens, som emulatoren opdaterer billedet med, med dette tal. Ændring af dette kan have negative effekter, såsom hurtigere spil eller ødelagte funktioner!</translation>
+        <translation>Διαιρέτης Συχνότητας Ανανέωσης:\nΠολλαπλασιάζει τον ρυθμό με τον οποίο ο εξομοιωτής ενημερώνει την εικόνα με αυτόν τον αριθμό. Η αλλαγή αυτής της ρύθμισης μπορεί να έχει αρνητικές επιπτώσεις, όπως ταχύτερο παιχνίδι ή σπασμένες λειτουργίες!</translation>
     </message>
     <message>
         <source>dumpShadersCheckBox</source>
-        <translation>Aktiver dumping af Shaders:\nTil teknisk fejlfinding gemmer det spillets shaders i en mappe under afspilning.</translation>
+        <translation>Ενεργοποίηση Καταγραφής Σκιάσεων (Shaders):\nΓια τεχνικό εντοπισμό σφαλμάτων, αποθηκεύει τις σκιάσεις του παιχνιδιού σε φάκελο κατά τη διάρκεια της αναπαραγωγής.</translation>
     </message>
     <message>
         <source>nullGpuCheckBox</source>
-        <translation>Aktiver virtuel GPU:\nTil teknisk fejlfinding deaktiverer det spilvisning, som om der ikke var et grafikkort.</translation>
+        <translation>Ενεργοποίηση Εικονικής GPU:\nΓια τεχνικό εντοπισμό σφαλμάτων, απενεργοποιεί την εμφάνιση του παιχνιδιού σαν να μην υπάρχει κάρτα γραφικών.</translation>
     </message>
     <message>
         <source>gameFoldersBox</source>
-        <translation>Spilmappen:\nListen over mapper til at tjekke for installerede spil.</translation>
+        <translation>Φάκελοι Παιχνιδιών:\nΗ λίστα των φακέλων για έλεγχο των εγκατεστημένων παιχνιδιών.</translation>
     </message>
     <message>
         <source>addFolderButton</source>
-        <translation>Tilføj:\nTilføj en mappe til listen.</translation>
+        <translation>Προσθήκη:\nΠροσθέστε έναν φάκελο στη λίστα.</translation>
     </message>
     <message>
         <source>removeFolderButton</source>
-        <translation>Fjern:\nFjern en mappe fra listen.</translation>
+        <translation>Αφαίρεση:\nΑφαιρέστε έναν φάκελο από τη λίστα.</translation>
     </message>
     <message>
         <source>debugDump</source>
-        <translation>Aktiver debugging-dump:\nGemmer import/export-symboler og headeroplysninger for det aktuelle PS4-program til en mappe.</translation>
+        <translation>Ενεργοποίηση Καταγραφής Αποσφαλμάτωσης:\nΑποθηκεύει τα σύμβολα εισαγωγής/εξαγωγής και τις κεφαλίδες πληροφοριών του τρέχοντος προγράμματος PS4 σε έναν φάκελο.</translation>
     </message>
     <message>
         <source>vkValidationCheckBox</source>
-        <translation>Aktiver Vulkan-valideringslag:\nAktiverer et system, der validerer Vulkan-driverens tilstand og logger oplysninger om dens interne tilstand. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Ενεργοποίηση Επικύρωσης Vulkan:\nΕνεργοποιεί ένα σύστημα που επικυρώνει την κατάσταση του προγράμματος οδήγησης Vulkan και καταγράφει πληροφορίες για την εσωτερική του κατάσταση. Αυτό θα μειώσει την απόδοση και ενδέχεται να αλλάξει τη συμπεριφορά του εξομοιωτή.</translation>
     </message>
     <message>
         <source>vkSyncValidationCheckBox</source>
-        <translation>Aktiver Vulkan-synkroniseringsvalidering:\nAktiverer et system, der validerer tidspunktet for Vulkan&apos;s renderingsopgaver. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Ενεργοποίηση Επικύρωσης Συγχρονισμού Vulkan:\nΕνεργοποιεί ένα σύστημα που επικυρώνει τον συγχρονισμό των εργασιών απόδοσης του Vulkan. Αυτό θα μειώσει την απόδοση και ενδέχεται να αλλάξει τη συμπεριφορά του εξομοιωτή.</translation>
     </message>
     <message>
         <source>rdocCheckBox</source>
-        <translation>Aktiver RenderDoc-fejlfinding:\nHvis aktiveret, giver det emulatoren mulighed for kompatibilitet med Renderdoc til at fange og analysere det aktuelle gengivne billede.</translation>
+        <translation>Ενεργοποίηση Καταγραφής RenderDoc:\nΌταν είναι ενεργοποιημένο, ο εξομοιωτής είναι συμβατός με το RenderDoc για τη λήψη και ανάλυση του τρέχοντος καρέ.</translation>
     </message>
     <message>
         <source>collectShaderCheckBox</source>

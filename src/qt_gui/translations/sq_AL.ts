@@ -2,12 +2,12 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="da_DK">
+<TS version="2.1" language="sq">
 <context>
     <name>AboutDialog</name>
     <message>
         <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+        <translation>Rreth shadPS4</translation>
     </message>
     <message>
         <source>shadPS4</source>
@@ -15,396 +15,396 @@
     </message>
     <message>
         <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+        <translation>shadPS4 është një emulator eksperimental me burim të hapur për PlayStation 4.</translation>
     </message>
     <message>
         <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>This software should not be used to play games you have not legally obtained.</translation>
+        <translation>Ky program nuk duhet përdorur për të luajtur lojëra që nuk ke marrë ligjërisht.</translation>
     </message>
 </context>
 <context>
     <name>CheatsPatches</name>
     <message>
         <source>Cheats / Patches for </source>
-        <translation>Cheats / Patches for </translation>
+        <translation>Mashtrime / Arna për </translation>
     </message>
     <message>
         <source>defaultTextEdit_MSG</source>
-        <translation>Cheats/Patches er eksperimentelle.\nBrug med forsigtighed.\n\nDownload cheats individuelt ved at vælge lageret og klikke på download-knappen.\nUnder fanen Patches kan du downloade alle patches på én gang, vælge hvilke du vil bruge og gemme valget.\n\nDa vi ikke udvikler cheats/patches,\nvenligst rapporter problemer til cheat-udvikleren.\n\nHar du lavet en ny cheat? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        <translation>Mashtrimet/Arnat janë eksperimentale.\nPërdori me kujdes.\n\nShkarko mashtrimet individualisht duke zgjedhur depon dhe duke klikuar butonin e shkarkimit.\nNë skedën Arna, mund t&apos;i shkarkosh të gjitha arnat menjëherë, të zgjidhësh cilat dëshiron të përdorësh dhe të ruash zgjedhjen tënde.\n\nMeqenëse ne nuk zhvillojmë Mashtrimet/Arnat,\ntë lutem raporto problemet te autori i mashtrimit.\n\nKe krijuar një mashtrim të ri? Vizito:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
         <source>No Image Available</source>
-        <translation>Ingen billede tilgængelig</translation>
+        <translation>Nuk ofrohet asnjë imazh</translation>
     </message>
     <message>
         <source>Serial: </source>
-        <translation>Serienummer: </translation>
+        <translation>Seriku: </translation>
     </message>
     <message>
         <source>Version: </source>
-        <translation>Version: </translation>
+        <translation>Versioni: </translation>
     </message>
     <message>
         <source>Size: </source>
-        <translation>Størrelse: </translation>
+        <translation>Madhësia: </translation>
     </message>
     <message>
         <source>Select Cheat File:</source>
-        <translation>Vælg snyd-fil:</translation>
+        <translation>Përzgjidh Skedarin e Mashtrimit:</translation>
     </message>
     <message>
         <source>Repository:</source>
-        <translation>Repository:</translation>
+        <translation>Depo:</translation>
     </message>
     <message>
         <source>Download Cheats</source>
-        <translation>Hent snyd</translation>
+        <translation>Shkarko Mashtrimet</translation>
     </message>
     <message>
         <source>Delete File</source>
-        <translation>Slet fil</translation>
+        <translation>Fshi Skedarin</translation>
     </message>
     <message>
         <source>No files selected.</source>
-        <translation>Ingen filer valgt.</translation>
+        <translation>Nuk u zgjodh asnjë skedar.</translation>
     </message>
     <message>
         <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation>Du kan slette de snyd, du ikke ønsker, efter at have hentet dem.</translation>
+        <translation>Mund t&apos;i fshish mashtrimet që nuk dëshiron pasi t&apos;i kesh shkarkuar.</translation>
     </message>
     <message>
         <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Ønsker du at slette den valgte fil?\n%1</translation>
+        <translation>Dëshiron të fshish skedarin e përzgjedhur?\n%1</translation>
     </message>
     <message>
         <source>Select Patch File:</source>
-        <translation>Vælg patch-fil:</translation>
+        <translation>Përzgjidh Skedarin e Arnës:</translation>
     </message>
     <message>
         <source>Download Patches</source>
-        <translation>Hent patches</translation>
+        <translation>Shkarko Arnat</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Ruaj</translation>
     </message>
     <message>
         <source>Cheats</source>
-        <translation>Snyd</translation>
+        <translation>Mashtrime</translation>
     </message>
     <message>
         <source>Patches</source>
-        <translation>Patches</translation>
+        <translation>Arna</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Gabim</translation>
     </message>
     <message>
         <source>No patch selected.</source>
-        <translation>Ingen patch valgt.</translation>
+        <translation>Asnjë arnë e përzgjedhur.</translation>
     </message>
     <message>
         <source>Unable to open files.json for reading.</source>
-        <translation>Kan ikke åbne files.json til læsning.</translation>
+        <translation>files.json nuk mund të hapet për lexim.</translation>
     </message>
     <message>
         <source>No patch file found for the current serial.</source>
-        <translation>Ingen patch-fil fundet for det nuværende serienummer.</translation>
+        <translation>Nuk u gjet asnjë skedar patch për serikun aktual.</translation>
     </message>
     <message>
         <source>Unable to open the file for reading.</source>
-        <translation>Kan ikke åbne filen til læsning.</translation>
+        <translation>Skedari nuk mund të hapet për lexim.</translation>
     </message>
     <message>
         <source>Unable to open the file for writing.</source>
-        <translation>Kan ikke åbne filen til skrivning.</translation>
+        <translation>Skedari nuk mund të hapet për shkrim.</translation>
     </message>
     <message>
         <source>Failed to parse XML: </source>
-        <translation>Kunne ikke analysere XML: </translation>
+        <translation>Analiza e XML-së dështoi: </translation>
     </message>
     <message>
         <source>Success</source>
-        <translation>Succes</translation>
+        <translation>Sukses</translation>
     </message>
     <message>
         <source>Options saved successfully.</source>
-        <translation>Indstillinger gemt med succes.</translation>
+        <translation>Rregullimet u ruajtën me sukses.</translation>
     </message>
     <message>
         <source>Invalid Source</source>
-        <translation>Ugyldig kilde</translation>
+        <translation>Burim i pavlefshëm</translation>
     </message>
     <message>
         <source>The selected source is invalid.</source>
-        <translation>Den valgte kilde er ugyldig.</translation>
+        <translation>Burimi i përzgjedhur është i pavlefshëm.</translation>
     </message>
     <message>
         <source>File Exists</source>
-        <translation>Fil findes</translation>
+        <translation>Skedari Ekziston</translation>
     </message>
     <message>
         <source>File already exists. Do you want to replace it?</source>
-        <translation>Filen findes allerede. Vil du erstatte den?</translation>
+        <translation>Skedari ekziston tashmë. Dëshiron ta zëvendësosh?</translation>
     </message>
     <message>
         <source>Failed to save file:</source>
-        <translation>Kunne ikke gemme fil:</translation>
+        <translation>Ruajtja e skedarit dështoi:</translation>
     </message>
     <message>
         <source>Failed to download file:</source>
-        <translation>Kunne ikke hente fil:</translation>
+        <translation>Shkarkimi i skedarit dështoi:</translation>
     </message>
     <message>
         <source>Cheats Not Found</source>
-        <translation>Snyd ikke fundet</translation>
+        <translation>Mashtrimet nuk u gjetën</translation>
     </message>
     <message>
         <source>CheatsNotFound_MSG</source>
-        <translation>Ingen snyd fundet til dette spil i denne version af det valgte repository, prøv et andet repository eller en anden version af spillet.</translation>
+        <translation>Nuk u gjetën mashtrime për këtë lojë në këtë version të depove të përzgjedhura, provo një depo tjetër ose një version tjetër të lojës.</translation>
     </message>
     <message>
         <source>Cheats Downloaded Successfully</source>
-        <translation>Snyd hentet med succes</translation>
+        <translation>Mashtrimet u shkarkuan me sukses</translation>
     </message>
     <message>
         <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Du har succesfuldt hentet snyd for denne version af spillet fra det valgte repository. Du kan prøve at hente fra et andet repository, hvis det er tilgængeligt, vil det også være muligt at bruge det ved at vælge filen fra listen.</translation>
+        <translation>Ke shkarkuar me sukses mashtrimet për këtë version të lojës nga depoja e përzgjedhur. Mund të provosh të shkarkosh nga një depo tjetër, nëse ofrohet do të jetë e mundur gjithashtu ta përdorësh duke përzgjedhur skedarin nga lista.</translation>
     </message>
     <message>
         <source>Failed to save:</source>
-        <translation>Kunne ikke gemme:</translation>
+        <translation>Ruajtja dështoi:</translation>
     </message>
     <message>
         <source>Failed to download:</source>
-        <translation>Kunne ikke hente:</translation>
+        <translation>Shkarkimi dështoi:</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Shkarkimi përfundoi</translation>
     </message>
     <message>
         <source>DownloadComplete_MSG</source>
-        <translation>Patcher hentet med succes! Alle patches til alle spil er blevet hentet, der er ikke behov for at hente dem individuelt for hvert spil, som det sker med snyd. Hvis opdateringen ikke vises, kan det være, at den ikke findes for den specifikke serie og version af spillet.</translation>
+        <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t&apos;i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse arna nuk shfaqet, mund të mos ekzistojë për numrin e serikut dhe versionin specifik të lojës.</translation>
     </message>
     <message>
         <source>Failed to parse JSON data from HTML.</source>
-        <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
+        <translation>Analiza e të dhënave JSON nga HTML dështoi.</translation>
     </message>
     <message>
         <source>Failed to retrieve HTML page.</source>
-        <translation>Kunne ikke hente HTML-side.</translation>
+        <translation>Gjetja e faqes HTML dështoi.</translation>
     </message>
     <message>
         <source>The game is in version: %1</source>
-        <translation>Spillet er i version: %1</translation>
+        <translation>Loja është në versionin: %1</translation>
     </message>
     <message>
         <source>The downloaded patch only works on version: %1</source>
-        <translation>Den downloadede patch fungerer kun på version: %1</translation>
+        <translation>Arna e shkarkuar funksionon vetëm në versionin: %1</translation>
     </message>
     <message>
         <source>You may need to update your game.</source>
-        <translation>Du skal muligvis opdatere dit spil.</translation>
+        <translation>Mund të duhet të përditësosh lojën tënde.</translation>
     </message>
     <message>
         <source>Incompatibility Notice</source>
-        <translation>Uforenelighedsmeddelelse</translation>
+        <translation>Njoftim për mospërputhje</translation>
     </message>
     <message>
         <source>Failed to open file:</source>
-        <translation>Kunne ikke åbne fil:</translation>
+        <translation>Hapja e skedarit dështoi:</translation>
     </message>
     <message>
         <source>XML ERROR:</source>
-        <translation>XML FEJL:</translation>
+        <translation>GABIM XML:</translation>
     </message>
     <message>
         <source>Failed to open files.json for writing</source>
-        <translation>Kunne ikke åbne files.json til skrivning</translation>
+        <translation>Hapja e files.json për shkrim dështoi</translation>
     </message>
     <message>
         <source>Author: </source>
-        <translation>Forfatter: </translation>
+        <translation>Autori: </translation>
     </message>
     <message>
         <source>Directory does not exist:</source>
-        <translation>Mappe findes ikke:</translation>
+        <translation>Dosja nuk ekziston:</translation>
     </message>
     <message>
         <source>Failed to open files.json for reading.</source>
-        <translation>Kunne ikke åbne files.json til læsning.</translation>
+        <translation>Hapja e files.json për lexim dështoi.</translation>
     </message>
     <message>
         <source>Name:</source>
-        <translation>Navn:</translation>
+        <translation>Emri:</translation>
     </message>
     <message>
         <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Kan ikke anvende snyd før spillet er startet.</translation>
+        <translation>Nuk mund të zbatohen mashtrime para fillimit të lojës.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Luk</translation>
+        <translation type="unfinished">Mbyll</translation>
     </message>
 </context>
 <context>
     <name>CheckUpdate</name>
     <message>
         <source>Auto Updater</source>
-        <translation>Automatisk opdatering</translation>
+        <translation>Përditësues automatik</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Gabim</translation>
     </message>
     <message>
         <source>Network error:</source>
-        <translation>Netsværksfejl:</translation>
+        <translation>Gabim rrjeti:</translation>
     </message>
     <message>
         <source>Error_Github_limit_MSG</source>
-        <translation>Autoopdateren tillader op til 60 opdateringstjek i timen.\nDu har nået denne grænse. Prøv igen senere.</translation>
+        <translation>Përditësuesi Automatik lejon deri në 60 kontrolle për përditësime në orë.\nKe arritur këtë kufi. Të lutem provo përsëri më vonë.</translation>
     </message>
     <message>
         <source>Failed to parse update information.</source>
-        <translation>Kunne ikke analysere opdateringsoplysninger.</translation>
+        <translation>Analizimi i informacionit të përditësimit deshtoi.</translation>
     </message>
     <message>
         <source>No pre-releases found.</source>
-        <translation>Ingen forhåndsudgivelser fundet.</translation>
+        <translation>Nuk u gjetën botime paraprake.</translation>
     </message>
     <message>
         <source>Invalid release data.</source>
-        <translation>Ugyldige udgivelsesdata.</translation>
+        <translation>Të dhënat e lëshimit janë të pavlefshme.</translation>
     </message>
     <message>
         <source>No download URL found for the specified asset.</source>
-        <translation>Ingen download-URL fundet for den specificerede aktiver.</translation>
+        <translation>Nuk u gjet URL-ja e shkarkimit për burimin e specifikuar.</translation>
     </message>
     <message>
         <source>Your version is already up to date!</source>
-        <translation>Din version er allerede opdateret!</translation>
+        <translation>Versioni jotë është i përditësuar tashmë!</translation>
     </message>
     <message>
         <source>Update Available</source>
-        <translation>Opdatering tilgængelig</translation>
+        <translation>Ofrohet një përditësim</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Kanali i përditësimit</translation>
     </message>
     <message>
         <source>Current Version</source>
-        <translation>Nuværende version</translation>
+        <translation>Versioni i tanishëm</translation>
     </message>
     <message>
         <source>Latest Version</source>
-        <translation>Nyeste version</translation>
+        <translation>Versioni më i fundit</translation>
     </message>
     <message>
         <source>Do you want to update?</source>
-        <translation>Vil du opdatere?</translation>
+        <translation>Do të përditësosh?</translation>
     </message>
     <message>
         <source>Show Changelog</source>
-        <translation>Vis ændringslog</translation>
+        <translation>Trego ndryshimet</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Kontrollo për përditësime në nisje</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdater</translation>
+        <translation>Përditëso</translation>
     </message>
     <message>
         <source>No</source>
-        <translation>Nej</translation>
+        <translation>Jo</translation>
     </message>
     <message>
         <source>Hide Changelog</source>
-        <translation>Skjul ændringslog</translation>
+        <translation>Fshih ndryshimet</translation>
     </message>
     <message>
         <source>Changes</source>
-        <translation>Ændringer</translation>
+        <translation>Ndryshimet</translation>
     </message>
     <message>
         <source>Network error occurred while trying to access the URL</source>
-        <translation>Netsværksfejl opstod, mens der blev forsøgt at få adgang til URL&apos;en</translation>
+        <translation>Ka ndodhur një gabim rrjeti gjatë përpjekjes për të qasur në URL-në</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Shkarkimi përfundoi</translation>
     </message>
     <message>
         <source>The update has been downloaded, press OK to install.</source>
-        <translation>Opdateringen er blevet downloadet, tryk på OK for at installere.</translation>
+        <translation>Përditësimi është shkarkuar, shtyp OK për ta instaluar.</translation>
     </message>
     <message>
         <source>Failed to save the update file at</source>
-        <translation>Kunne ikke gemme opdateringsfilen på</translation>
+        <translation>Dështoi ruajtja e skedarit të përditësimit në</translation>
     </message>
     <message>
         <source>Starting Update...</source>
-        <translation>Starter opdatering...</translation>
+        <translation>Po fillon përditësimi...</translation>
     </message>
     <message>
         <source>Failed to create the update script file</source>
-        <translation>Kunne ikke oprette opdateringsscriptfilen</translation>
+        <translation>Krijimi i skedarit skript të përditësimit dështoi</translation>
     </message>
 </context>
 <context>
     <name>CompatibilityInfoClass</name>
     <message>
         <source>Fetching compatibility data, please wait</source>
-        <translation>Henter kompatibilitetsdata, vent venligst</translation>
+        <translation>Duke marrë të dhënat e përputhshmërisë, të lutem prit</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Annuller</translation>
+        <translation>Anulo</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Indlæser...</translation>
+        <translation>Po ngarkohet...</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Fejl</translation>
+        <translation>Gabim</translation>
     </message>
     <message>
         <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Kan ikke opdatere kompatibilitetsdata! Prøv igen senere.</translation>
+        <translation>Nuk mund të përditësohen të dhënat e përputhshmërisë! Provo përsëri më vonë.</translation>
     </message>
     <message>
         <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Kan ikke åbne compatibility_data.json til skrivning.</translation>
+        <translation>Nuk mund të hapet compatibility_data.json për të shkruar.</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation>Ukendt</translation>
+        <translation>E panjohur</translation>
     </message>
     <message>
         <source>Nothing</source>
-        <translation>Intet</translation>
+        <translation>Asgjë</translation>
     </message>
     <message>
         <source>Boots</source>
-        <translation>Støvler</translation>
+        <translation>Niset</translation>
     </message>
     <message>
         <source>Menus</source>
-        <translation>Menuer</translation>
+        <translation>Meny</translation>
     </message>
     <message>
         <source>Ingame</source>
-        <translation>I spillet</translation>
+        <translation>Në lojë</translation>
     </message>
     <message>
         <source>Playable</source>
-        <translation>Spilbar</translation>
+        <translation>E luajtshme</translation>
     </message>
 </context>
 <context>
@@ -538,41 +538,41 @@
     <name>ElfViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Open Folder</translation>
+        <translation>Hap Dosjen</translation>
     </message>
 </context>
 <context>
     <name>GameInfoClass</name>
     <message>
         <source>Loading game list, please wait :3</source>
-        <translation>Loading game list, please wait :3</translation>
+        <translation>Po ngarkohet lista e lojërave, të lutem prit :3</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancel</translation>
+        <translation>Anulo</translation>
     </message>
     <message>
         <source>Loading...</source>
-        <translation>Loading...</translation>
+        <translation>Duke ngarkuar...</translation>
     </message>
 </context>
 <context>
     <name>GameInstallDialog</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+        <translation>shadPS4 - Përzgjidh dosjen</translation>
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation>Directory to install games</translation>
+        <translation>Dosja ku do instalohen lojërat</translation>
     </message>
     <message>
         <source>Browse</source>
-        <translation>Browse</translation>
+        <translation>Shfleto</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Error</translation>
+        <translation>Gabim</translation>
     </message>
     <message>
         <source>Directory to install DLC</source>
@@ -583,51 +583,51 @@
     <name>GameListFrame</name>
     <message>
         <source>Icon</source>
-        <translation>Ikon</translation>
+        <translation>Ikona</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Navn</translation>
+        <translation>Emri</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation>Seriel</translation>
+        <translation>Seriku</translation>
     </message>
     <message>
         <source>Compatibility</source>
-        <translation>Compatibility</translation>
+        <translation>Përputhshmëria</translation>
     </message>
     <message>
         <source>Region</source>
-        <translation>Region</translation>
+        <translation>Rajoni</translation>
     </message>
     <message>
         <source>Firmware</source>
-        <translation>Firmware</translation>
+        <translation>Firmueri</translation>
     </message>
     <message>
         <source>Size</source>
-        <translation>Størrelse</translation>
+        <translation>Madhësia</translation>
     </message>
     <message>
         <source>Version</source>
-        <translation>Version</translation>
+        <translation>Versioni</translation>
     </message>
     <message>
         <source>Path</source>
-        <translation>Sti</translation>
+        <translation>Shtegu</translation>
     </message>
     <message>
         <source>Play Time</source>
-        <translation>Spilletid</translation>
+        <translation>Koha e luajtjes</translation>
     </message>
     <message>
         <source>Never Played</source>
-        <translation>Never Played</translation>
+        <translation>Nuk është luajtur kurrë</translation>
     </message>
     <message>
         <source>h</source>
-        <translation>h</translation>
+        <translation>o</translation>
     </message>
     <message>
         <source>m</source>
@@ -639,35 +639,35 @@
     </message>
     <message>
         <source>Compatibility is untested</source>
-        <translation>Compatibility is untested</translation>
+        <translation>Përputhshmëria nuk është e testuar</translation>
     </message>
     <message>
         <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Game does not initialize properly / crashes the emulator</translation>
+        <translation>Loja nuk niset siç duhet / rrëzon emulatorin</translation>
     </message>
     <message>
         <source>Game boots, but only displays a blank screen</source>
-        <translation>Game boots, but only displays a blank screen</translation>
+        <translation>Loja niset, por shfaq vetëm një ekran të zbrazët</translation>
     </message>
     <message>
         <source>Game displays an image but does not go past the menu</source>
-        <translation>Game displays an image but does not go past the menu</translation>
+        <translation>Loja shfaq një imazh, por nuk kalon përtej menysë</translation>
     </message>
     <message>
         <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Game has game-breaking glitches or unplayable performance</translation>
+        <translation>Loja ka probleme kritike ose performancë të papërshtatshme për lojë</translation>
     </message>
     <message>
         <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Game can be completed with playable performance and no major glitches</translation>
+        <translation>Loja mund të përfundohet me performancë të luajtshme dhe pa probleme të mëdha</translation>
     </message>
     <message>
         <source>Click to see details on github</source>
-        <translation>Klik for at se detaljer på GitHub</translation>
+        <translation>Kliko për të parë detajet në GitHub</translation>
     </message>
     <message>
         <source>Last updated</source>
-        <translation>Sidst opdateret</translation>
+        <translation>Përditësuar për herë të fundit</translation>
     </message>
 </context>
 <context>
@@ -697,119 +697,127 @@
     <name>GuiContextMenus</name>
     <message>
         <source>Create Shortcut</source>
-        <translation>Create Shortcut</translation>
+        <translation>Krijo Shkurtore</translation>
     </message>
     <message>
         <source>Cheats / Patches</source>
-        <translation>Trick / Patches</translation>
+        <translation>Mashtrime / Arna</translation>
     </message>
     <message>
         <source>SFO Viewer</source>
-        <translation>SFO Viewer</translation>
+        <translation>Shikuesi i SFO</translation>
     </message>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+        <translation>Shikuesi i Trofeve</translation>
     </message>
     <message>
         <source>Open Folder...</source>
-        <translation>Åbn Mappe...</translation>
+        <translation>Hap Dosjen...</translation>
     </message>
     <message>
         <source>Open Game Folder</source>
-        <translation>Åbn Spilmappe</translation>
+        <translation>Hap Dosjen e Lojës</translation>
     </message>
     <message>
         <source>Open Save Data Folder</source>
-        <translation>Åbn Gem Data Mappe</translation>
+        <translation>Hap Dosjen e të Dhënave të Ruajtura</translation>
     </message>
     <message>
         <source>Open Log Folder</source>
-        <translation>Åbn Log Mappe</translation>
+        <translation>Hap Dosjen e Ditarit</translation>
     </message>
     <message>
         <source>Copy info...</source>
-        <translation>Copy info...</translation>
+        <translation>Kopjo informacionin...</translation>
     </message>
     <message>
         <source>Copy Name</source>
-        <translation>Copy Name</translation>
+        <translation>Kopjo Emrin</translation>
     </message>
     <message>
         <source>Copy Serial</source>
-        <translation>Copy Serial</translation>
+        <translation>Kopjo Serikun</translation>
+    </message>
+    <message>
+        <source>Copy Version</source>
+        <translation>Kopjo Versionin</translation>
+    </message>
+    <message>
+        <source>Copy Size</source>
+        <translation>Kopjo Madhësinë</translation>
     </message>
     <message>
         <source>Copy All</source>
-        <translation>Copy All</translation>
+        <translation>Kopjo të Gjitha</translation>
     </message>
     <message>
         <source>Delete...</source>
-        <translation>Delete...</translation>
+        <translation>Fshi...</translation>
     </message>
     <message>
         <source>Delete Game</source>
-        <translation>Delete Game</translation>
+        <translation>Fshi lojën</translation>
     </message>
     <message>
         <source>Delete Update</source>
-        <translation>Delete Update</translation>
+        <translation>Fshi përditësimin</translation>
     </message>
     <message>
         <source>Delete DLC</source>
-        <translation>Delete DLC</translation>
+        <translation>Fshi DLC-në</translation>
     </message>
     <message>
         <source>Compatibility...</source>
-        <translation>Compatibility...</translation>
+        <translation>Përputhshmëria...</translation>
     </message>
     <message>
         <source>Update database</source>
-        <translation>Update database</translation>
+        <translation>Përditëso bazën e të dhënave</translation>
     </message>
     <message>
         <source>View report</source>
-        <translation>View report</translation>
+        <translation>Shiko raportin</translation>
     </message>
     <message>
         <source>Submit a report</source>
-        <translation>Submit a report</translation>
+        <translation>Paraqit një raport</translation>
     </message>
     <message>
         <source>Shortcut creation</source>
-        <translation>Shortcut creation</translation>
+        <translation>Krijimi i shkurtores</translation>
     </message>
     <message>
         <source>Shortcut created successfully!</source>
-        <translation>Shortcut created successfully!</translation>
+        <translation>Shkurtorja u krijua me sukses!</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Error</translation>
+        <translation>Gabim</translation>
     </message>
     <message>
         <source>Error creating shortcut!</source>
-        <translation>Error creating shortcut!</translation>
+        <translation>Gabim në krijimin e shkurtores!</translation>
     </message>
     <message>
         <source>Install PKG</source>
-        <translation>Install PKG</translation>
+        <translation>Instalo PKG</translation>
     </message>
     <message>
         <source>Game</source>
-        <translation>Game</translation>
+        <translation>Loja</translation>
     </message>
     <message>
         <source>This game has no update to delete!</source>
-        <translation>This game has no update to delete!</translation>
+        <translation>Kjo lojë nuk ka përditësim për të fshirë!</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Update</translation>
+        <translation>Përditësim</translation>
     </message>
     <message>
         <source>This game has no DLC to delete!</source>
-        <translation>This game has no DLC to delete!</translation>
+        <translation>Kjo lojë nuk ka DLC për të fshirë!</translation>
     </message>
     <message>
         <source>DLC</source>
@@ -817,22 +825,14 @@
     </message>
     <message>
         <source>Delete %1</source>
-        <translation>Delete %1</translation>
+        <translation>Fshi %1</translation>
     </message>
     <message>
         <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Are you sure you want to delete %1&apos;s %2 directory?</translation>
+        <translation>Je i sigurt që do të fsish dosjen %2 të %1?</translation>
     </message>
     <message>
         <source>Open Update Folder</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Copy Version</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Copy Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -860,11 +860,11 @@
     <name>InstallDirSelect</name>
     <message>
         <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
+        <translation>shadPS4 - Përzgjidh dosjen</translation>
     </message>
     <message>
         <source>Select which directory you want to install to.</source>
-        <translation>Select which directory you want to install to.</translation>
+        <translation>Përzgjidh në cilën dosje do që të instalosh.</translation>
     </message>
     <message>
         <source>Install All Queued to Selected Folder</source>
@@ -879,275 +879,275 @@
     <name>MainWindow</name>
     <message>
         <source>Open/Add Elf Folder</source>
-        <translation>Open/Add Elf Folder</translation>
+        <translation>Hap/Shto Dosje ELF</translation>
     </message>
     <message>
         <source>Install Packages (PKG)</source>
-        <translation>Install Packages (PKG)</translation>
+        <translation>Instalo Paketat (PKG)</translation>
     </message>
     <message>
         <source>Boot Game</source>
-        <translation>Boot Game</translation>
+        <translation>Nis Lojën</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Kontrollo për përditësime</translation>
     </message>
     <message>
         <source>About shadPS4</source>
-        <translation>About shadPS4</translation>
+        <translation>Rreth shadPS4</translation>
     </message>
     <message>
         <source>Configure...</source>
-        <translation>Configure...</translation>
+        <translation>Konfiguro...</translation>
     </message>
     <message>
         <source>Install application from a .pkg file</source>
-        <translation>Install application from a .pkg file</translation>
+        <translation>Instalo aplikacionin nga një skedar .pkg</translation>
     </message>
     <message>
         <source>Recent Games</source>
-        <translation>Recent Games</translation>
+        <translation>Lojërat e fundit</translation>
     </message>
     <message>
         <source>Open shadPS4 Folder</source>
-        <translation>Open shadPS4 Folder</translation>
+        <translation>Hap dosjen e shadPS4</translation>
     </message>
     <message>
         <source>Exit</source>
-        <translation>Exit</translation>
+        <translation>Dil</translation>
     </message>
     <message>
         <source>Exit shadPS4</source>
-        <translation>Exit shadPS4</translation>
+        <translation>Dil nga shadPS4</translation>
     </message>
     <message>
         <source>Exit the application.</source>
-        <translation>Exit the application.</translation>
+        <translation>Dil nga aplikacioni.</translation>
     </message>
     <message>
         <source>Show Game List</source>
-        <translation>Show Game List</translation>
+        <translation>Shfaq Listën e Lojërave</translation>
     </message>
     <message>
         <source>Game List Refresh</source>
-        <translation>Game List Refresh</translation>
+        <translation>Rifresko Listën e Lojërave</translation>
     </message>
     <message>
         <source>Tiny</source>
-        <translation>Tiny</translation>
+        <translation>Të vockla</translation>
     </message>
     <message>
         <source>Small</source>
-        <translation>Small</translation>
+        <translation>Të vogla</translation>
     </message>
     <message>
         <source>Medium</source>
-        <translation>Medium</translation>
+        <translation>Të mesme</translation>
     </message>
     <message>
         <source>Large</source>
-        <translation>Large</translation>
+        <translation>Të mëdha</translation>
     </message>
     <message>
         <source>List View</source>
-        <translation>List View</translation>
+        <translation>Pamja me List</translation>
     </message>
     <message>
         <source>Grid View</source>
-        <translation>Grid View</translation>
+        <translation>Pamja me Rrjetë</translation>
     </message>
     <message>
         <source>Elf Viewer</source>
-        <translation>Elf Viewer</translation>
+        <translation>Shikuesi i ELF</translation>
     </message>
     <message>
         <source>Game Install Directory</source>
-        <translation>Game Install Directory</translation>
+        <translation>Dosja e Instalimit të Lojës</translation>
     </message>
     <message>
         <source>Download Cheats/Patches</source>
-        <translation>Download Tricks / Patches</translation>
+        <translation>Shkarko Mashtrime/Arna</translation>
     </message>
     <message>
         <source>Dump Game List</source>
-        <translation>Dump Game List</translation>
+        <translation>Zbraz Listën e Lojërave</translation>
     </message>
     <message>
         <source>PKG Viewer</source>
-        <translation>PKG Viewer</translation>
+        <translation>Shikuesi i PKG</translation>
     </message>
     <message>
         <source>Search...</source>
-        <translation>Search...</translation>
+        <translation>Kërko...</translation>
     </message>
     <message>
         <source>File</source>
-        <translation>File</translation>
+        <translation>Skedari</translation>
     </message>
     <message>
         <source>View</source>
-        <translation>View</translation>
+        <translation>Pamja</translation>
     </message>
     <message>
         <source>Game List Icons</source>
-        <translation>Game List Icons</translation>
+        <translation>Ikonat e Listës së Lojërave</translation>
     </message>
     <message>
         <source>Game List Mode</source>
-        <translation>Game List Mode</translation>
+        <translation>Mënyra e Listës së Lojërave</translation>
     </message>
     <message>
         <source>Settings</source>
-        <translation>Settings</translation>
+        <translation>Cilësimet</translation>
     </message>
     <message>
         <source>Utils</source>
-        <translation>Utils</translation>
+        <translation>Shërbimet</translation>
     </message>
     <message>
         <source>Themes</source>
-        <translation>Themes</translation>
+        <translation>Motivet</translation>
     </message>
     <message>
         <source>Help</source>
-        <translation>Hjælp</translation>
+        <translation>Ndihmë</translation>
     </message>
     <message>
         <source>Dark</source>
-        <translation>Dark</translation>
+        <translation>E errët</translation>
     </message>
     <message>
         <source>Light</source>
-        <translation>Light</translation>
+        <translation>E çelët</translation>
     </message>
     <message>
         <source>Green</source>
-        <translation>Green</translation>
+        <translation>E gjelbër</translation>
     </message>
     <message>
         <source>Blue</source>
-        <translation>Blue</translation>
+        <translation>E kaltër</translation>
     </message>
     <message>
         <source>Violet</source>
-        <translation>Violet</translation>
+        <translation>Vjollcë</translation>
     </message>
     <message>
         <source>toolBar</source>
-        <translation>toolBar</translation>
+        <translation>Shiriti i veglave</translation>
     </message>
     <message>
         <source>Game List</source>
-        <translation>Spiloversigt</translation>
+        <translation>Lista e lojërave</translation>
     </message>
     <message>
         <source> * Unsupported Vulkan Version</source>
-        <translation> * Ikke understøttet Vulkan-version</translation>
+        <translation> * Version i pambështetur i Vulkan</translation>
     </message>
     <message>
         <source>Download Cheats For All Installed Games</source>
-        <translation>Hent snyd til alle installerede spil</translation>
+        <translation>Shkarko mashtrime për të gjitha lojërat e instaluara</translation>
     </message>
     <message>
         <source>Download Patches For All Games</source>
-        <translation>Hent patches til alle spil</translation>
+        <translation>Shkarko arna për të gjitha lojërat e instaluara</translation>
     </message>
     <message>
         <source>Download Complete</source>
-        <translation>Download fuldført</translation>
+        <translation>Shkarkimi përfundoi</translation>
     </message>
     <message>
         <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Du har hentet snyd til alle de spil, du har installeret.</translation>
+        <translation>Ke shkarkuar mashtrimet për të gjitha lojërat që ke instaluar.</translation>
     </message>
     <message>
         <source>Patches Downloaded Successfully!</source>
-        <translation>Patcher hentet med succes!</translation>
+        <translation>Arnat u shkarkuan me sukses!</translation>
     </message>
     <message>
         <source>All Patches available for all games have been downloaded.</source>
-        <translation>Alle patches til alle spil er blevet hentet.</translation>
+        <translation>Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar.</translation>
     </message>
     <message>
         <source>Games: </source>
-        <translation>Spil: </translation>
+        <translation>Lojërat: </translation>
     </message>
     <message>
         <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>ELF-filer (*.bin *.elf *.oelf)</translation>
+        <translation>Skedarë ELF (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
         <source>Game Boot</source>
-        <translation>Spil-boot</translation>
+        <translation>Nis Lojën</translation>
     </message>
     <message>
         <source>Only one file can be selected!</source>
-        <translation>Kun én fil kan vælges!</translation>
+        <translation>Mund të përzgjidhet vetëm një skedar!</translation>
     </message>
     <message>
         <source>PKG Extraction</source>
-        <translation>PKG-udtrækning</translation>
+        <translation>Nxjerrja e PKG-së</translation>
     </message>
     <message>
         <source>Patch detected!</source>
-        <translation>Opdatering detekteret!</translation>
+        <translation>U zbulua një arnë!</translation>
     </message>
     <message>
         <source>PKG and Game versions match: </source>
-        <translation>PKG og spilversioner matcher: </translation>
+        <translation>PKG-ja dhe versioni i Lojës përputhen: </translation>
     </message>
     <message>
         <source>Would you like to overwrite?</source>
-        <translation>Vil du overskrive?</translation>
+        <translation>Dëshiron të mbishkruash?</translation>
     </message>
     <message>
         <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG Version %1 er ældre end den installerede version: </translation>
+        <translation>Versioni %1 i PKG-së është më i vjetër se versioni i instaluar: </translation>
     </message>
     <message>
         <source>Game is installed: </source>
-        <translation>Spillet er installeret: </translation>
+        <translation>Loja është instaluar: </translation>
     </message>
     <message>
         <source>Would you like to install Patch: </source>
-        <translation>Vil du installere opdateringen: </translation>
+        <translation>Dëshiron të instalosh Arnën: </translation>
     </message>
     <message>
         <source>DLC Installation</source>
-        <translation>DLC Installation</translation>
+        <translation>Instalimi i DLC-ve</translation>
     </message>
     <message>
         <source>Would you like to install DLC: %1?</source>
-        <translation>Vil du installere DLC: %1?</translation>
+        <translation>Dëshiron të instalosh DLC-në: %1?</translation>
     </message>
     <message>
         <source>DLC already installed:</source>
-        <translation>DLC allerede installeret:</translation>
+        <translation>DLC-ja është instaluar tashmë:</translation>
     </message>
     <message>
         <source>Game already installed</source>
-        <translation>Spillet er allerede installeret</translation>
+        <translation>Loja është instaluar tashmë</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation>PKG FEJL</translation>
+        <translation>GABIM PKG</translation>
     </message>
     <message>
         <source>Extracting PKG %1/%2</source>
-        <translation>Udvinding af PKG %1/%2</translation>
+        <translation>Po nxirret PKG-ja %1/%2</translation>
     </message>
     <message>
         <source>Extraction Finished</source>
-        <translation>Udvinding afsluttet</translation>
+        <translation>Nxjerrja Përfundoi</translation>
     </message>
     <message>
         <source>Game successfully installed at %1</source>
-        <translation>Spillet blev installeret succesfuldt på %1</translation>
+        <translation>Loja u instalua me sukses në %1</translation>
     </message>
     <message>
         <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Filen ser ikke ud til at være en gyldig PKG-fil</translation>
+        <translation>Skedari nuk duket si skedar PKG i vlefshëm</translation>
     </message>
     <message>
         <source>Run Game</source>
@@ -1178,15 +1178,15 @@
     <name>PKGViewer</name>
     <message>
         <source>Open Folder</source>
-        <translation>Open Folder</translation>
+        <translation>Hap Dosjen</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation type="unfinished">Navn</translation>
+        <translation type="unfinished">Emri</translation>
     </message>
     <message>
         <source>Serial</source>
-        <translation type="unfinished">Seriel</translation>
+        <translation type="unfinished">Seriku</translation>
     </message>
     <message>
         <source>Installed</source>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation type="unfinished">Størrelse</translation>
+        <translation type="unfinished">Madhësia</translation>
     </message>
     <message>
         <source>Category</source>
@@ -1214,7 +1214,7 @@
     </message>
     <message>
         <source>Region</source>
-        <translation type="unfinished">Region</translation>
+        <translation type="unfinished">Rajoni</translation>
     </message>
     <message>
         <source>Flags</source>
@@ -1222,19 +1222,19 @@
     </message>
     <message>
         <source>Path</source>
-        <translation type="unfinished">Sti</translation>
+        <translation type="unfinished">Shtegu</translation>
     </message>
     <message>
         <source>File</source>
-        <translation type="unfinished">File</translation>
+        <translation type="unfinished">Skedari</translation>
     </message>
     <message>
         <source>PKG ERROR</source>
-        <translation type="unfinished">PKG FEJL</translation>
+        <translation type="unfinished">GABIM PKG</translation>
     </message>
     <message>
         <source>Unknown</source>
-        <translation type="unfinished">Ukendt</translation>
+        <translation type="unfinished">E panjohur</translation>
     </message>
     <message>
         <source>Package</source>
@@ -1245,99 +1245,99 @@
     <name>SettingsDialog</name>
     <message>
         <source>Settings</source>
-        <translation>Settings</translation>
+        <translation>Cilësimet</translation>
     </message>
     <message>
         <source>General</source>
-        <translation>General</translation>
+        <translation>Të përgjithshme</translation>
     </message>
     <message>
         <source>System</source>
-        <translation>System</translation>
+        <translation>Sistemi</translation>
     </message>
     <message>
         <source>Console Language</source>
-        <translation>Console Language</translation>
+        <translation>Gjuha e Konsolës</translation>
     </message>
     <message>
         <source>Emulator Language</source>
-        <translation>Emulator Language</translation>
+        <translation>Gjuha e emulatorit</translation>
     </message>
     <message>
         <source>Emulator</source>
-        <translation>Emulator</translation>
+        <translation>Emulatori</translation>
     </message>
     <message>
         <source>Enable Fullscreen</source>
-        <translation>Enable Fullscreen</translation>
+        <translation>Aktivizo Ekranin e plotë</translation>
     </message>
     <message>
         <source>Fullscreen Mode</source>
-        <translation>Fuldskærmstilstand</translation>
+        <translation>Mënyra me ekran të plotë</translation>
     </message>
     <message>
         <source>Enable Separate Update Folder</source>
-        <translation>Enable Separate Update Folder</translation>
+        <translation>Aktivizo dosjen e ndarë të përditësimit</translation>
     </message>
     <message>
         <source>Default tab when opening settings</source>
-        <translation>Standardfaneblad ved åbning af indstillinger</translation>
+        <translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
     </message>
     <message>
         <source>Show Game Size In List</source>
-        <translation>Vis vis spilstørrelse i listen</translation>
+        <translation>Shfaq madhësinë e lojës në listë</translation>
     </message>
     <message>
         <source>Show Splash</source>
-        <translation>Show Splash</translation>
+        <translation>Shfaq Pamjen e nisjes</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
-        <translation>Aktiver Discord Rich Presence</translation>
+        <translation>Aktivizo Discord Rich Presence</translation>
     </message>
     <message>
         <source>Username</source>
-        <translation>Username</translation>
+        <translation>Përdoruesi</translation>
     </message>
     <message>
         <source>Trophy Key</source>
-        <translation>Trophy Key</translation>
+        <translation>Çelësi i Trofeve</translation>
     </message>
     <message>
         <source>Trophy</source>
-        <translation>Trophy</translation>
+        <translation>Trofeu</translation>
     </message>
     <message>
         <source>Logger</source>
-        <translation>Logger</translation>
+        <translation>Regjistruesi i ditarit</translation>
     </message>
     <message>
         <source>Log Type</source>
-        <translation>Log Type</translation>
+        <translation>Lloji i Ditarit</translation>
     </message>
     <message>
         <source>Log Filter</source>
-        <translation>Log Filter</translation>
+        <translation>Filtri i Ditarit</translation>
     </message>
     <message>
         <source>Open Log Location</source>
-        <translation>Åbn logplacering</translation>
+        <translation>Hap vendndodhjen e Ditarit</translation>
     </message>
     <message>
         <source>Input</source>
-        <translation>Indtastning</translation>
+        <translation>Hyrja</translation>
     </message>
     <message>
         <source>Cursor</source>
-        <translation>Markør</translation>
+        <translation>Kursori</translation>
     </message>
     <message>
         <source>Hide Cursor</source>
-        <translation>Skjul markør</translation>
+        <translation>Fshih kursorin</translation>
     </message>
     <message>
         <source>Hide Cursor Idle Timeout</source>
-        <translation>Timeout for skjul markør ved inaktivitet</translation>
+        <translation>Koha për fshehjen e kursorit joaktiv</translation>
     </message>
     <message>
         <source>s</source>
@@ -1345,355 +1345,379 @@
     </message>
     <message>
         <source>Controller</source>
-        <translation>Controller</translation>
+        <translation>Dorezë</translation>
     </message>
     <message>
         <source>Back Button Behavior</source>
-        <translation>Tilbageknap adfærd</translation>
+        <translation>Sjellja e butonit mbrapa</translation>
     </message>
     <message>
         <source>Graphics</source>
-        <translation>Graphics</translation>
+        <translation>Grafika</translation>
     </message>
     <message>
         <source>GUI</source>
-        <translation>Interface</translation>
+        <translation>Ndërfaqja</translation>
     </message>
     <message>
         <source>User</source>
-        <translation>Bruger</translation>
+        <translation>Përdoruesi</translation>
     </message>
     <message>
         <source>Graphics Device</source>
-        <translation>Graphics Device</translation>
+        <translation>Pajisja e Grafikës</translation>
     </message>
     <message>
         <source>Width</source>
-        <translation>Width</translation>
+        <translation>Gjerësia</translation>
     </message>
     <message>
         <source>Height</source>
-        <translation>Height</translation>
+        <translation>Lartësia</translation>
     </message>
     <message>
         <source>Vblank Divider</source>
-        <translation>Vblank Divider</translation>
+        <translation>Ndarës Vblank</translation>
     </message>
     <message>
         <source>Advanced</source>
-        <translation>Advanced</translation>
+        <translation>Të përparuara</translation>
     </message>
     <message>
         <source>Enable Shaders Dumping</source>
-        <translation>Enable Shaders Dumping</translation>
+        <translation>Aktivizo Zbrazjen e Shaders-ave</translation>
     </message>
     <message>
         <source>Enable NULL GPU</source>
-        <translation>Enable NULL GPU</translation>
+        <translation>Aktivizo GPU-në NULL</translation>
     </message>
     <message>
         <source>Paths</source>
-        <translation>Stier</translation>
+        <translation>Shtigjet</translation>
     </message>
     <message>
         <source>Game Folders</source>
-        <translation>Spilmapper</translation>
+        <translation>Dosjet e lojës</translation>
     </message>
     <message>
         <source>Add...</source>
-        <translation>Tilføj...</translation>
+        <translation>Shto...</translation>
     </message>
     <message>
         <source>Remove</source>
-        <translation>Fjern</translation>
+        <translation>Hiq</translation>
     </message>
     <message>
         <source>Debug</source>
-        <translation>Debug</translation>
+        <translation>Korrigjim</translation>
     </message>
     <message>
         <source>Enable Debug Dumping</source>
-        <translation>Enable Debug Dumping</translation>
+        <translation>Aktivizo Zbrazjen për Korrigjim</translation>
     </message>
     <message>
         <source>Enable Vulkan Validation Layers</source>
-        <translation>Enable Vulkan Validation Layers</translation>
+        <translation>Aktivizo Shtresat e Vlefshmërisë Vulkan</translation>
     </message>
     <message>
         <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Enable Vulkan Synchronization Validation</translation>
+        <translation>Aktivizo Vërtetimin e Sinkronizimit Vulkan</translation>
     </message>
     <message>
         <source>Enable RenderDoc Debugging</source>
-        <translation>Enable RenderDoc Debugging</translation>
+        <translation>Aktivizo Korrigjimin RenderDoc</translation>
     </message>
     <message>
         <source>Enable Crash Diagnostics</source>
-        <translation>Enable Crash Diagnostics</translation>
+        <translation>Aktivizo Diagnozën e Rënies</translation>
     </message>
     <message>
         <source>Collect Shaders</source>
-        <translation>Collect Shaders</translation>
+        <translation>Mblidh Shader-at</translation>
     </message>
     <message>
         <source>Copy GPU Buffers</source>
-        <translation>Copy GPU Buffers</translation>
+        <translation>Kopjo buffer-ët e GPU-së</translation>
     </message>
     <message>
         <source>Host Debug Markers</source>
-        <translation>Host Debug Markers</translation>
+        <translation>Shënjuesit e korrigjimit të host-it</translation>
     </message>
     <message>
         <source>Guest Debug Markers</source>
-        <translation>Guest Debug Markers</translation>
+        <translation>Shënjuesit e korrigjimit të guest-it</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Opdatering</translation>
+        <translation>Përditëso</translation>
     </message>
     <message>
         <source>Check for Updates at Startup</source>
-        <translation>Tjek for opdateringer ved start</translation>
+        <translation>Kontrollo për përditësime në nisje</translation>
     </message>
     <message>
         <source>Always Show Changelog</source>
-        <translation>Vis altid changelog</translation>
+        <translation>Shfaq gjithmonë regjistrin e ndryshimeve</translation>
     </message>
     <message>
         <source>Update Channel</source>
-        <translation>Opdateringskanal</translation>
+        <translation>Kanali i përditësimit</translation>
     </message>
     <message>
         <source>Check for Updates</source>
-        <translation>Tjek for opdateringer</translation>
+        <translation>Kontrollo për përditësime</translation>
     </message>
     <message>
         <source>GUI Settings</source>
-        <translation>GUI-Indstillinger</translation>
+        <translation>Cilësimet e GUI-së</translation>
     </message>
     <message>
         <source>Title Music</source>
-        <translation>Title Music</translation>
+        <translation>Muzika e titullit</translation>
     </message>
     <message>
         <source>Disable Trophy Pop-ups</source>
-        <translation>Disable Trophy Pop-ups</translation>
+        <translation>Çaktivizo njoftimet për Trofetë</translation>
+    </message>
+    <message>
+        <source>Background Image</source>
+        <translation>Imazhi i sfondit</translation>
+    </message>
+    <message>
+        <source>Show Background Image</source>
+        <translation>Shfaq imazhin e sfondit</translation>
+    </message>
+    <message>
+        <source>Opacity</source>
+        <translation>Tejdukshmëria</translation>
     </message>
     <message>
         <source>Play title music</source>
-        <translation>Afspil titelsang</translation>
+        <translation>Luaj muzikën e titullit</translation>
     </message>
     <message>
         <source>Update Compatibility Database On Startup</source>
-        <translation>Update Compatibility Database On Startup</translation>
+        <translation>Përditëso bazën e të dhënave të përputhshmërisë gjatë nisjes</translation>
     </message>
     <message>
         <source>Game Compatibility</source>
-        <translation>Game Compatibility</translation>
+        <translation>Përputhshmëria e lojës</translation>
     </message>
     <message>
         <source>Display Compatibility Data</source>
-        <translation>Display Compatibility Data</translation>
+        <translation>Shfaq të dhënat e përputhshmërisë</translation>
     </message>
     <message>
         <source>Update Compatibility Database</source>
-        <translation>Update Compatibility Database</translation>
+        <translation>Përditëso bazën e të dhënave të përputhshmërisë</translation>
     </message>
     <message>
         <source>Volume</source>
-        <translation>Lydstyrke</translation>
+        <translation>Vëllimi i zërit</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation>Ruaj</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Anvend</translation>
+        <translation>Zbato</translation>
     </message>
     <message>
         <source>Restore Defaults</source>
-        <translation>Gendan standardindstillinger</translation>
+        <translation>Rikthe paracaktimet</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Luk</translation>
+        <translation>Mbyll</translation>
     </message>
     <message>
         <source>Point your mouse at an option to display its description.</source>
-        <translation>Peg musen over et valg for at vise dets beskrivelse.</translation>
+        <translation>Vendos miun mbi një rregullim për të shfaqur përshkrimin e tij.</translation>
     </message>
     <message>
         <source>consoleLanguageGroupBox</source>
-        <translation>Konsolsprog:\nIndstiller sproget, som PS4-spillet bruger.\nDet anbefales at indstille dette til et sprog, som spillet understøtter, hvilket kan variere efter region.</translation>
+        <translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nKëshillohet të caktosh një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
     </message>
     <message>
         <source>emulatorLanguageGroupBox</source>
-        <translation>Emulatorsprog:\nIndstiller sproget i emulatorens brugergrænseflade.</translation>
+        <translation>Gjuha e emulatorit:\nPërcakton gjuhën e ndërfaqes së përdoruesit të emulatorit.</translation>
     </message>
     <message>
         <source>fullscreenCheckBox</source>
-        <translation>Aktiver fuld skærm:\nSætter automatisk spilvinduet i fuld skærm.\nDette kan skiftes ved at trykke på F11-tasten.</translation>
+        <translation>Aktivizo ekranin e plotë:\nVendos automatikisht dritaren e lojës në mënyrën e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur tastin F11.</translation>
     </message>
     <message>
         <source>separateUpdatesCheckBox</source>
-        <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+        <translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.\nKjo mund të krijohet manualisht duke shtuar përditësimin e shpaketuar në dosjen e lojës me emrin &quot;CUSA00000-UPDATE&quot; ku ID-ja CUSA përputhet me ID-në e lojës.</translation>
     </message>
     <message>
         <source>showSplashCheckBox</source>
-        <translation>Vis startskærm:\nViser en startskærm (speciel grafik) under opstarten.</translation>
+        <translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një pamje e veçantë) gjatë fillimit të lojës.</translation>
     </message>
     <message>
         <source>discordRPCCheckbox</source>
-        <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevante oplysninger på din Discord-profil.</translation>
+        <translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tënd në Discord.</translation>
     </message>
     <message>
         <source>userName</source>
-        <translation>Brugernavn:\nIndstiller PS4-kontoens navn, som kan blive vist i nogle spil.</translation>
+        <translation>Përdoruesi:\nPërcakton emrin e përdoruesit të llogarisë PS4, i cili mund të shfaqet nga disa lojra.</translation>
     </message>
     <message>
         <source>TrophyKey</source>
-        <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+        <translation>Çelësi i Trofeve:\nÇelësi përdoret për të deshifruar trofetë. Duhet të merret nga konsola jote me jailbreak.\nDuhet të përmbajë vetëm karaktere hex.</translation>
     </message>
     <message>
         <source>logTypeGroupBox</source>
-        <translation>Logtype:\nIndstiller, om logvinduets output vil blive synkroniseret for at øge ydeevnen. Dette kan påvirke emulatorens ydeevne negativt.</translation>
+        <translation>Lloji i ditarit:\nPërcakton nëse të sinkronizohet dalja e dritares së ditarit për performancë. Mund të ketë efekte të këqija në emulim.</translation>
     </message>
     <message>
         <source>logFilter</source>
-        <translation>Logfilter:\nFiltrerer loggen for kun at udskrive bestemte oplysninger.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveaus: Trace, Debug, Info, Warning, Error, Critical - i rækkefølge, et valgt niveau skjuler alle forudgående niveauer og viser alle efterfølgende niveauer.</translation>
+        <translation>Filtri i ditarit:\nFiltron ditarin për të shfaqur vetëm informacione specifike.\nShembuj: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
     </message>
     <message>
         <source>updaterGroupBox</source>
-        <translation>Opdatering:\nRelease: Officielle builds, der frigives månedligt, som kan være meget ældre, men mere stabile og testet.\nNightly: Udviklerbuilds med de nyeste funktioner og rettelser, men som kan indeholde fejl og være mindre stabile.</translation>
+        <translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+    </message>
+    <message>
+        <source>GUIBackgroundImageGroupBox</source>
+        <translation>Imazhi i Sfondit:\nKontrollo tejdukshmërinë e imazhit të sfondit të lojës.</translation>
     </message>
     <message>
         <source>GUIMusicGroupBox</source>
-        <translation>Titelsmusikafspilning:\nHvis spillet understøtter det, aktiver speciel musik, når spillet vælges i brugergrænsefladen.</translation>
+        <translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në ndërfaqe.</translation>
     </message>
     <message>
         <source>disableTrophycheckBox</source>
-        <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+        <translation>Çaktivizo njoftimet për Trofetë:\nÇaktivizo njoftimet për trofetë gjatë lojës. Përparimi i trofeve mund të ndiqet duke përdorur Shikuesin e Trofeve (kliko me të djathtën mbi lojën në dritaren kryesore).</translation>
     </message>
     <message>
         <source>hideCursorGroupBox</source>
-        <translation>Skjul Cursor:\nVælg hvornår cursoren skal forsvinde:\nAldrig: Du vil altid se musen.\nInaktiv: Indstil en tid for, hvornår den skal forsvinde efter at være inaktiv.\nAltid: du vil aldrig se musen.</translation>
+        <translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nJoaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
     </message>
     <message>
         <source>idleTimeoutGroupBox</source>
-        <translation>Indstil en tid for, at musen skal forsvinde efter at være inaktiv.</translation>
+        <translation>Koha për fshehjen e kursorit joaktiv:\nKohëzgjatja (në sekonda) pas së cilës kursori që nuk ka qënë në veprim fshihet.</translation>
     </message>
     <message>
         <source>backButtonBehaviorGroupBox</source>
-        <translation>Tilbageknap Adfærd:\nIndstiller controllerens tilbageknap til at efterligne tryk på den angivne position på PS4 berøringsflade.</translation>
+        <translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni mprapa.</translation>
     </message>
     <message>
         <source>enableCompatibilityCheckBox</source>
-        <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+        <translation>Shfaq të dhënat e përputhshmërisë:\nShfaq informacionin e përputhshmërisë së lojës në formë tabele. Aktivizo &apos;Përditëso përputhshmërinë gjatë nisjes&apos; për të marrë informacion të përditësuar.</translation>
     </message>
     <message>
         <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+        <translation>Përditëso përputhshmërinë gjatë nisjes:\nPërditëson automatikisht bazën e të dhënave të përputhshmërisë kur shadPS4 niset.</translation>
     </message>
     <message>
         <source>updateCompatibilityButton</source>
-        <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+        <translation>Përditëso bazën e të dhënave të përputhshmërisë:\nPërditëso menjëherë bazën e të dhënave të përputhshmërisë.</translation>
     </message>
     <message>
         <source>Never</source>
-        <translation>Aldrig</translation>
+        <translation>Kurrë</translation>
     </message>
     <message>
         <source>Idle</source>
-        <translation>Inaktiv</translation>
+        <translation>Joaktiv</translation>
     </message>
     <message>
         <source>Always</source>
-        <translation>Altid</translation>
+        <translation>Gjithmonë</translation>
     </message>
     <message>
         <source>Touchpad Left</source>
-        <translation>Berøringsplade Venstre</translation>
+        <translation>Tastiera prekëse majtas</translation>
     </message>
     <message>
         <source>Touchpad Right</source>
-        <translation>Berøringsplade Højre</translation>
+        <translation>Tastiera prekëse djathtas</translation>
     </message>
     <message>
         <source>Touchpad Center</source>
-        <translation>Berøringsplade Center</translation>
+        <translation>Tastiera prekëse në qendër</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ingen</translation>
+        <translation>Asnjë</translation>
     </message>
     <message>
         <source>graphicsAdapterGroupBox</source>
-        <translation>Grafikadapter:\nPå systemer med flere GPU&apos;er skal du vælge den GPU, emulatoren vil bruge fra en rullemenu,\neller vælge &quot;Auto Select&quot; for at vælge den automatisk.</translation>
+        <translation>Pajisja grafike:\nNë sistemet me GPU të shumëfishta, zgjidh GPU-në që do të përdorë emulatori nga lista rënëse,\nose zgjidh &quot;Auto Select&quot; për ta përcaktuar automatikisht.</translation>
     </message>
     <message>
         <source>resolutionLayout</source>
-        <translation>Skærmopløsning:\nIndstiller emulatorvinduets størrelse under afspilning, som kan ændres under afspilning.\nDette er forskelligt fra selve spillets opløsning.</translation>
+        <translation>Gjerësia/Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
     </message>
     <message>
         <source>heightDivider</source>
-        <translation>Opdateringshastighedsdeler:\nMultiplicerer den frekvens, som emulatoren opdaterer billedet med, med dette tal. Ændring af dette kan have negative effekter, såsom hurtigere spil eller ødelagte funktioner!</translation>
+        <translation>Ndarësi Vblank:\nFrekuenca pamore me të cilën rifreskohet emulatori shumëzohet me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose prishja e punimit thelbësor të lojës që nuk e pret këtë ndryshim!</translation>
     </message>
     <message>
         <source>dumpShadersCheckBox</source>
-        <translation>Aktiver dumping af Shaders:\nTil teknisk fejlfinding gemmer det spillets shaders i en mappe under afspilning.</translation>
+        <translation>Aktivizo zbrazjen e shaders-ave:\nPër qëllime të korrigjimit teknik, ruan shaders-at e lojës në një dosje ndërsa ato pasqyrohen.</translation>
     </message>
     <message>
         <source>nullGpuCheckBox</source>
-        <translation>Aktiver virtuel GPU:\nTil teknisk fejlfinding deaktiverer det spilvisning, som om der ikke var et grafikkort.</translation>
+        <translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
     </message>
     <message>
         <source>gameFoldersBox</source>
-        <translation>Spilmappen:\nListen over mapper til at tjekke for installerede spil.</translation>
+        <translation>Dosjet e lojërave:\nLista e dosjeve për të kontrolluar lojërat e instaluara.</translation>
     </message>
     <message>
         <source>addFolderButton</source>
-        <translation>Tilføj:\nTilføj en mappe til listen.</translation>
+        <translation>Shto:\nShto një dosje në listë.</translation>
     </message>
     <message>
         <source>removeFolderButton</source>
-        <translation>Fjern:\nFjern en mappe fra listen.</translation>
+        <translation>Hiq:\nHiq një dosje nga lista.</translation>
     </message>
     <message>
         <source>debugDump</source>
-        <translation>Aktiver debugging-dump:\nGemmer import/export-symboler og headeroplysninger for det aktuelle PS4-program til en mappe.</translation>
+        <translation>Aktivizo zbrazjen për korrigjim:\nRuan simbolet e importit dhe eksportit dhe informacionin e kreut të skedarit për aplikacionin PS4 që po ekzekutohet në një dosje.</translation>
     </message>
     <message>
         <source>vkValidationCheckBox</source>
-        <translation>Aktiver Vulkan-valideringslag:\nAktiverer et system, der validerer Vulkan-driverens tilstand og logger oplysninger om dens interne tilstand. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Aktivizo shtresat e vlefshmërisë Vulkan:\nAktivizon një sistem që vërteton gjendjen e pasqyruesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
     </message>
     <message>
         <source>vkSyncValidationCheckBox</source>
-        <translation>Aktiver Vulkan-synkroniseringsvalidering:\nAktiverer et system, der validerer tidspunktet for Vulkan&apos;s renderingsopgaver. Dette vil reducere ydeevnen og kan muligvis ændre emulatorens adfærd.</translation>
+        <translation>Aktivizo vërtetimin e sinkronizimit Vulkan:\nAktivizon një sistem që vërteton kohën e detyrave të pasqyrimit Vulkan. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
     </message>
     <message>
         <source>rdocCheckBox</source>
-        <translation>Aktiver RenderDoc-fejlfinding:\nHvis aktiveret, giver det emulatoren mulighed for kompatibilitet med Renderdoc til at fange og analysere det aktuelle gengivne billede.</translation>
+        <translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
     </message>
     <message>
         <source>collectShaderCheckBox</source>
-        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+        <translation>Mblidh Shader-at:\nDuhet ta aktivizosh këtë për të redaktuar shader-at me menynë e korrigjimit (Ctrl + F10).</translation>
     </message>
     <message>
         <source>crashDiagnosticsCheckBox</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+        <translation>Diagnoza e rënies:\nKrijon një skedar .yaml me informacion rreth gjendjes së Vulkan-it në momentin e rënies.\nE dobishme për zgjidhjen e gabimeve &apos;Device lost&apos;. Nëse e ke aktivizuar këtë, duhet të aktivizosh Shënjuesit e korrigjimit të host-it DHE të guest-it.\nNuk punon me GPU-t Intel.\nDuhet të kesh aktivizuar Shtresat e Vlefshmërisë Vulkan dhe Vulkan SDK që kjo të punojë.</translation>
     </message>
     <message>
         <source>copyGPUBuffersCheckBox</source>
-        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+        <translation>Kopjo buffer-ët e GPU-së:\nShmang kushtet e garës (race conditions) që lidhen me dërgimet e GPU-së.\nMund të ndihmojë, ose jo, në rast rëniesh të llojit PM4 0.</translation>
     </message>
     <message>
         <source>hostMarkersCheckBox</source>
-        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+        <translation>Shënjuesit e korrigjimit të host-it:\nShton informacion nga ana e emulatorit, si shënjues për komandat specifike AMDGPU rreth komandave Vulkan, si dhe jep burimeve emra korrigjimi.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
     </message>
     <message>
         <source>guestMarkersCheckBox</source>
-        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+        <translation>Shënjuesit e korrigjimit të guest-it:\nShton çdo shënjues për korrigjim që loja vetë ka shtuar në buffer-in e komandave.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
+    </message>
+    <message>
+        <source>saveDataBox</source>
+        <translation>Shtegu i Ruajtjes së të Dhënave:\nDosja ku do të ruhen të dhënat e ruajtjes së lojës.</translation>
+    </message>
+    <message>
+        <source>browseButton</source>
+        <translation>Shfleto:\nShfleto për të vendosur një dosje si shteg të ruajtjes së të dhënave.</translation>
     </message>
     <message>
         <source>Borderless</source>
@@ -1716,18 +1740,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Background Image</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Show Background Image</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Opacity</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Set the volume of the background music.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1741,7 +1753,7 @@
     </message>
     <message>
         <source>Browse</source>
-        <translation type="unfinished">Browse</translation>
+        <translation type="unfinished">Shfleto</translation>
     </message>
     <message>
         <source>async</source>
@@ -1757,26 +1769,14 @@
     </message>
     <message>
         <source>Directory to install games</source>
-        <translation type="unfinished">Directory to install games</translation>
+        <translation type="unfinished">Dosja ku do instalohen lojërat</translation>
     </message>
     <message>
         <source>Directory to save data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GUIBackgroundImageGroupBox</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>enableHDRCheckBox</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>saveDataBox</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>browseButton</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1784,7 +1784,7 @@
     <name>TrophyViewer</name>
     <message>
         <source>Trophy Viewer</source>
-        <translation>Trophy Viewer</translation>
+        <translation>Shikuesi i Trofeve</translation>
     </message>
 </context>
 </TS>
