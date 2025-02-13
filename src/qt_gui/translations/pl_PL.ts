@@ -2,1789 +2,1789 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="pl_PL">
-<context>
+<TS version="2.1" language="pl_PL" sourcelanguage="en">
+  <context>
     <name>AboutDialog</name>
     <message>
-        <source>About shadPS4</source>
-        <translation>O programie</translation>
+      <source>About shadPS4</source>
+      <translation>O programie</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation>shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
     <message>
-        <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-        <translation>shadPS4 to eksperymentalny otwartoźródłowy emulator konsoli PlayStation 4.</translation>
+      <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
+      <translation>shadPS4 to eksperymentalny otwartoźródłowy emulator konsoli PlayStation 4.</translation>
     </message>
     <message>
-        <source>This software should not be used to play games you have not legally obtained.</source>
-        <translation>To oprogramowanie nie służy do grania w gry pochodzące z nielegalnego źródła.</translation>
+      <source>This software should not be used to play games you have not legally obtained.</source>
+      <translation>To oprogramowanie nie służy do grania w gry pochodzące z nielegalnego źródła.</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheatsPatches</name>
     <message>
-        <source>Cheats / Patches for </source>
-        <translation>Kody / Łatki dla </translation>
+      <source>Cheats / Patches for </source>
+      <translation>Kody / Łatki dla </translation>
     </message>
     <message>
-        <source>defaultTextEdit_MSG</source>
-        <translation>Cheaty/Patche są eksperymentalne.\nUżywaj ich ostrożnie.\n\nPobierz cheaty pojedynczo, wybierając repozytorium i klikając przycisk pobierania.\nNa zakładce Patches możesz pobrać wszystkie patche jednocześnie, wybrać, które chcesz używać, i zapisać wybór.\n\nPonieważ nie rozwijamy Cheats/Patches,\nproszę zgłosić problemy do autora cheatu.\n\nStworzyłeś nowy cheat? Odwiedź:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>defaultTextEdit_MSG</source>
+      <translation>Cheaty/Patche są eksperymentalne.\nUżywaj ich ostrożnie.\n\nPobierz cheaty pojedynczo, wybierając repozytorium i klikając przycisk pobierania.\nNa zakładce Patches możesz pobrać wszystkie patche jednocześnie, wybrać, które chcesz używać, i zapisać wybór.\n\nPonieważ nie rozwijamy Cheats/Patches,\nproszę zgłosić problemy do autora cheatu.\n\nStworzyłeś nowy cheat? Odwiedź:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
     </message>
     <message>
-        <source>No Image Available</source>
-        <translation>Brak dostępnego obrazu</translation>
+      <source>No Image Available</source>
+      <translation>Brak dostępnego obrazu</translation>
     </message>
     <message>
-        <source>Serial: </source>
-        <translation>Numer seryjny: </translation>
+      <source>Serial: </source>
+      <translation>Numer seryjny: </translation>
     </message>
     <message>
-        <source>Version: </source>
-        <translation>Wersja: </translation>
+      <source>Version: </source>
+      <translation>Wersja: </translation>
     </message>
     <message>
-        <source>Size: </source>
-        <translation>Rozmiar: </translation>
+      <source>Size: </source>
+      <translation>Rozmiar: </translation>
     </message>
     <message>
-        <source>Select Cheat File:</source>
-        <translation>Wybierz plik kodu:</translation>
+      <source>Select Cheat File:</source>
+      <translation>Wybierz plik kodu:</translation>
     </message>
     <message>
-        <source>Repository:</source>
-        <translation>Repozytorium:</translation>
+      <source>Repository:</source>
+      <translation>Repozytorium:</translation>
     </message>
     <message>
-        <source>Download Cheats</source>
-        <translation>Pobierz kody</translation>
+      <source>Download Cheats</source>
+      <translation>Pobierz kody</translation>
     </message>
     <message>
-        <source>Do you want to delete the selected file?\n%1</source>
-        <translation>Czy chcesz usunąć wybrany plik?\n%1</translation>
+      <source>Delete File</source>
+      <translation type="unfinished">Delete File</translation>
     </message>
     <message>
-        <source>Select Patch File:</source>
-        <translation>Wybierz plik poprawki:</translation>
+      <source>No files selected.</source>
+      <translation type="unfinished">No files selected.</translation>
     </message>
     <message>
-        <source>Download Patches</source>
-        <translation>Pobierz poprawki</translation>
+      <source>You can delete the cheats you don&apos;t want after downloading them.</source>
+      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Zapisz</translation>
+      <source>Do you want to delete the selected file?\n%1</source>
+      <translation>Czy chcesz usunąć wybrany plik?\n%1</translation>
     </message>
     <message>
-        <source>Cheats</source>
-        <translation>Kody</translation>
+      <source>Select Patch File:</source>
+      <translation>Wybierz plik poprawki:</translation>
     </message>
     <message>
-        <source>Patches</source>
-        <translation>Poprawki</translation>
+      <source>Download Patches</source>
+      <translation>Pobierz poprawki</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Błąd</translation>
+      <source>Save</source>
+      <translation>Zapisz</translation>
     </message>
     <message>
-        <source>No patch selected.</source>
-        <translation>Nie wybrano poprawki.</translation>
+      <source>Cheats</source>
+      <translation>Kody</translation>
     </message>
     <message>
-        <source>Unable to open files.json for reading.</source>
-        <translation>Nie można otworzyć pliku files.json do odczytu.</translation>
+      <source>Patches</source>
+      <translation>Poprawki</translation>
     </message>
     <message>
-        <source>No patch file found for the current serial.</source>
-        <translation>Nie znaleziono pliku poprawki dla bieżącego numeru seryjnego.</translation>
+      <source>Error</source>
+      <translation>Błąd</translation>
     </message>
     <message>
-        <source>Unable to open the file for reading.</source>
-        <translation>Nie można otworzyć pliku do odczytu.</translation>
+      <source>No patch selected.</source>
+      <translation>Nie wybrano poprawki.</translation>
     </message>
     <message>
-        <source>Unable to open the file for writing.</source>
-        <translation>Nie można otworzyć pliku do zapisu.</translation>
+      <source>Unable to open files.json for reading.</source>
+      <translation>Nie można otworzyć pliku files.json do odczytu.</translation>
     </message>
     <message>
-        <source>Failed to parse XML: </source>
-        <translation>Nie udało się przeanalizować XML: </translation>
+      <source>No patch file found for the current serial.</source>
+      <translation>Nie znaleziono pliku poprawki dla bieżącego numeru seryjnego.</translation>
     </message>
     <message>
-        <source>Success</source>
-        <translation>Sukces</translation>
+      <source>Unable to open the file for reading.</source>
+      <translation>Nie można otworzyć pliku do odczytu.</translation>
     </message>
     <message>
-        <source>Options saved successfully.</source>
-        <translation>Opcje zostały pomyślnie zapisane.</translation>
+      <source>Unable to open the file for writing.</source>
+      <translation>Nie można otworzyć pliku do zapisu.</translation>
     </message>
     <message>
-        <source>Invalid Source</source>
-        <translation>Nieprawidłowe źródło</translation>
+      <source>Failed to parse XML: </source>
+      <translation>Nie udało się przeanalizować XML: </translation>
     </message>
     <message>
-        <source>The selected source is invalid.</source>
-        <translation>Wybrane źródło jest nieprawidłowe.</translation>
+      <source>Success</source>
+      <translation>Sukces</translation>
     </message>
     <message>
-        <source>File Exists</source>
-        <translation>Plik istnieje</translation>
+      <source>Options saved successfully.</source>
+      <translation>Opcje zostały pomyślnie zapisane.</translation>
     </message>
     <message>
-        <source>File already exists. Do you want to replace it?</source>
-        <translation>Plik już istnieje. Czy chcesz go zastąpić?</translation>
+      <source>Invalid Source</source>
+      <translation>Nieprawidłowe źródło</translation>
     </message>
     <message>
-        <source>Failed to save file:</source>
-        <translation>Nie udało się zapisać pliku:</translation>
+      <source>The selected source is invalid.</source>
+      <translation>Wybrane źródło jest nieprawidłowe.</translation>
     </message>
     <message>
-        <source>Failed to download file:</source>
-        <translation>Nie udało się pobrać pliku:</translation>
+      <source>File Exists</source>
+      <translation>Plik istnieje</translation>
     </message>
     <message>
-        <source>Cheats Not Found</source>
-        <translation>Nie znaleziono kodów</translation>
+      <source>File already exists. Do you want to replace it?</source>
+      <translation>Plik już istnieje. Czy chcesz go zastąpić?</translation>
     </message>
     <message>
-        <source>CheatsNotFound_MSG</source>
-        <translation>Nie znaleziono kodów do tej gry w tej wersji wybranego repozytorium. Spróbuj innego repozytorium lub innej wersji gry.</translation>
+      <source>Failed to save file:</source>
+      <translation>Nie udało się zapisać pliku:</translation>
     </message>
     <message>
-        <source>Cheats Downloaded Successfully</source>
-        <translation>Kody pobrane pomyślnie</translation>
+      <source>Failed to download file:</source>
+      <translation>Nie udało się pobrać pliku:</translation>
     </message>
     <message>
-        <source>CheatsDownloadedSuccessfully_MSG</source>
-        <translation>Pomyślnie pobrano kody dla tej wersji gry z wybranego repozytorium. Możesz spróbować pobrać z innego repozytorium. Jeśli jest dostępne, możesz również użyć go, wybierając plik z listy.</translation>
+      <source>Cheats Not Found</source>
+      <translation>Nie znaleziono kodów</translation>
     </message>
     <message>
-        <source>Failed to save:</source>
-        <translation>Nie udało się zapisać:</translation>
+      <source>CheatsNotFound_MSG</source>
+      <translation>Nie znaleziono kodów do tej gry w tej wersji wybranego repozytorium. Spróbuj innego repozytorium lub innej wersji gry.</translation>
     </message>
     <message>
-        <source>Failed to download:</source>
-        <translation>Nie udało się pobrać:</translation>
+      <source>Cheats Downloaded Successfully</source>
+      <translation>Kody pobrane pomyślnie</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Pobieranie zakończone</translation>
+      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <translation>Pomyślnie pobrano kody dla tej wersji gry z wybranego repozytorium. Możesz spróbować pobrać z innego repozytorium. Jeśli jest dostępne, możesz również użyć go, wybierając plik z listy.</translation>
     </message>
     <message>
-        <source>DownloadComplete_MSG</source>
-        <translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody. Jeśli poprawka się nie pojawia, możliwe, że nie istnieje dla konkretnego numeru seryjnego i wersji gry.</translation>
+      <source>Failed to save:</source>
+      <translation>Nie udało się zapisać:</translation>
     </message>
     <message>
-        <source>Failed to parse JSON data from HTML.</source>
-        <translation>Nie udało się przeanalizować danych JSON z HTML.</translation>
+      <source>Failed to download:</source>
+      <translation>Nie udało się pobrać:</translation>
     </message>
     <message>
-        <source>Failed to retrieve HTML page.</source>
-        <translation>Nie udało się pobrać strony HTML.</translation>
+      <source>Download Complete</source>
+      <translation>Pobieranie zakończone</translation>
     </message>
     <message>
-        <source>The game is in version: %1</source>
-        <translation>Gra jest w wersji: %1</translation>
+      <source>DownloadComplete_MSG</source>
+      <translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody. Jeśli poprawka się nie pojawia, możliwe, że nie istnieje dla konkretnego numeru seryjnego i wersji gry.</translation>
     </message>
     <message>
-        <source>The downloaded patch only works on version: %1</source>
-        <translation>Pobrana łatka działa tylko w wersji: %1</translation>
+      <source>Failed to parse JSON data from HTML.</source>
+      <translation>Nie udało się przeanalizować danych JSON z HTML.</translation>
     </message>
     <message>
-        <source>You may need to update your game.</source>
-        <translation>Możesz potrzebować zaktualizować swoją grę.</translation>
+      <source>Failed to retrieve HTML page.</source>
+      <translation>Nie udało się pobrać strony HTML.</translation>
     </message>
     <message>
-        <source>Incompatibility Notice</source>
-        <translation>Powiadomienie o niezgodności</translation>
+      <source>The game is in version: %1</source>
+      <translation>Gra jest w wersji: %1</translation>
     </message>
     <message>
-        <source>Failed to open file:</source>
-        <translation>Nie udało się otworzyć pliku:</translation>
+      <source>The downloaded patch only works on version: %1</source>
+      <translation>Pobrana łatka działa tylko w wersji: %1</translation>
     </message>
     <message>
-        <source>XML ERROR:</source>
-        <translation>BŁĄD XML:</translation>
+      <source>You may need to update your game.</source>
+      <translation>Możesz potrzebować zaktualizować swoją grę.</translation>
     </message>
     <message>
-        <source>Failed to open files.json for writing</source>
-        <translation>Nie udało się otworzyć pliku files.json do zapisu</translation>
+      <source>Incompatibility Notice</source>
+      <translation>Powiadomienie o niezgodności</translation>
     </message>
     <message>
-        <source>Author: </source>
-        <translation>Autor: </translation>
+      <source>Failed to open file:</source>
+      <translation>Nie udało się otworzyć pliku:</translation>
     </message>
     <message>
-        <source>Directory does not exist:</source>
-        <translation>Katalog nie istnieje:</translation>
+      <source>XML ERROR:</source>
+      <translation>BŁĄD XML:</translation>
     </message>
     <message>
-        <source>Can&apos;t apply cheats before the game is started</source>
-        <translation>Nie można zastosować kodów przed uruchomieniem gry.</translation>
+      <source>Failed to open files.json for writing</source>
+      <translation>Nie udało się otworzyć pliku files.json do zapisu</translation>
     </message>
     <message>
-        <source>Delete File</source>
-        <translation type="unfinished"></translation>
+      <source>Author: </source>
+      <translation>Autor: </translation>
     </message>
     <message>
-        <source>No files selected.</source>
-        <translation type="unfinished"></translation>
+      <source>Directory does not exist:</source>
+      <translation>Katalog nie istnieje:</translation>
     </message>
     <message>
-        <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-        <translation type="unfinished"></translation>
+      <source>Failed to open files.json for reading.</source>
+      <translation type="unfinished">Failed to open files.json for reading.</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation type="unfinished">Zamknij</translation>
+      <source>Name:</source>
+      <translation type="unfinished">Name:</translation>
     </message>
     <message>
-        <source>Failed to open files.json for reading.</source>
-        <translation type="unfinished"></translation>
+      <source>Can&apos;t apply cheats before the game is started</source>
+      <translation>Nie można zastosować kodów przed uruchomieniem gry.</translation>
     </message>
     <message>
-        <source>Name:</source>
-        <translation type="unfinished"></translation>
+      <source>Close</source>
+      <translation>Zamknij</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CheckUpdate</name>
     <message>
-        <source>Auto Updater</source>
-        <translation>Automatyczne aktualizacje</translation>
+      <source>Auto Updater</source>
+      <translation>Automatyczne aktualizacje</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Błąd</translation>
+      <source>Error</source>
+      <translation>Błąd</translation>
     </message>
     <message>
-        <source>Network error:</source>
-        <translation>Błąd sieci:</translation>
+      <source>Network error:</source>
+      <translation>Błąd sieci:</translation>
     </message>
     <message>
-        <source>Error_Github_limit_MSG</source>
-        <translation>Automatyczna aktualizacja umożliwia maksymalnie 60 sprawdzeń aktualizacji na godzinę.\nOsiągnąłeś ten limit. Spróbuj ponownie później.</translation>
+      <source>Error_Github_limit_MSG</source>
+      <translation>Automatyczna aktualizacja umożliwia maksymalnie 60 sprawdzeń aktualizacji na godzinę.\nOsiągnąłeś ten limit. Spróbuj ponownie później.</translation>
     </message>
     <message>
-        <source>Failed to parse update information.</source>
-        <translation>Nie udało się sparsować informacji o aktualizacji.</translation>
+      <source>Failed to parse update information.</source>
+      <translation>Nie udało się sparsować informacji o aktualizacji.</translation>
     </message>
     <message>
-        <source>No pre-releases found.</source>
-        <translation>Nie znaleziono wersji przedpremierowych.</translation>
+      <source>No pre-releases found.</source>
+      <translation>Nie znaleziono wersji przedpremierowych.</translation>
     </message>
     <message>
-        <source>Invalid release data.</source>
-        <translation>Nieprawidłowe dane wydania.</translation>
+      <source>Invalid release data.</source>
+      <translation>Nieprawidłowe dane wydania.</translation>
     </message>
     <message>
-        <source>No download URL found for the specified asset.</source>
-        <translation>Nie znaleziono adresu URL do pobrania dla określonego zasobu.</translation>
+      <source>No download URL found for the specified asset.</source>
+      <translation>Nie znaleziono adresu URL do pobrania dla określonego zasobu.</translation>
     </message>
     <message>
-        <source>Your version is already up to date!</source>
-        <translation>Twoja wersja jest już aktualna!</translation>
+      <source>Your version is already up to date!</source>
+      <translation>Twoja wersja jest już aktualna!</translation>
     </message>
     <message>
-        <source>Update Available</source>
-        <translation>Dostępna aktualizacja</translation>
+      <source>Update Available</source>
+      <translation>Dostępna aktualizacja</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Kanał Aktualizacji</translation>
+      <source>Update Channel</source>
+      <translation>Kanał Aktualizacji</translation>
     </message>
     <message>
-        <source>Current Version</source>
-        <translation>Aktualna wersja</translation>
+      <source>Current Version</source>
+      <translation>Aktualna wersja</translation>
     </message>
     <message>
-        <source>Latest Version</source>
-        <translation>Ostatnia wersja</translation>
+      <source>Latest Version</source>
+      <translation>Ostatnia wersja</translation>
     </message>
     <message>
-        <source>Do you want to update?</source>
-        <translation>Czy chcesz zaktualizować?</translation>
+      <source>Do you want to update?</source>
+      <translation>Czy chcesz zaktualizować?</translation>
     </message>
     <message>
-        <source>Show Changelog</source>
-        <translation>Pokaż zmiany</translation>
+      <source>Show Changelog</source>
+      <translation>Pokaż zmiany</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Sprawdź aktualizacje przy starcie</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Sprawdź aktualizacje przy starcie</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Aktualizuj</translation>
+      <source>Update</source>
+      <translation>Aktualizuj</translation>
     </message>
     <message>
-        <source>No</source>
-        <translation>Nie</translation>
+      <source>No</source>
+      <translation>Nie</translation>
     </message>
     <message>
-        <source>Hide Changelog</source>
-        <translation>Ukryj zmiany</translation>
+      <source>Hide Changelog</source>
+      <translation>Ukryj zmiany</translation>
     </message>
     <message>
-        <source>Changes</source>
-        <translation>Zmiany</translation>
+      <source>Changes</source>
+      <translation>Zmiany</translation>
     </message>
     <message>
-        <source>Network error occurred while trying to access the URL</source>
-        <translation>Błąd sieci wystąpił podczas próby uzyskania dostępu do URL</translation>
+      <source>Network error occurred while trying to access the URL</source>
+      <translation>Błąd sieci wystąpił podczas próby uzyskania dostępu do URL</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Pobieranie zakończone</translation>
+      <source>Download Complete</source>
+      <translation>Pobieranie zakończone</translation>
     </message>
     <message>
-        <source>The update has been downloaded, press OK to install.</source>
-        <translation>Aktualizacja została pobrana, naciśnij OK, aby zainstalować.</translation>
+      <source>The update has been downloaded, press OK to install.</source>
+      <translation>Aktualizacja została pobrana, naciśnij OK, aby zainstalować.</translation>
     </message>
     <message>
-        <source>Failed to save the update file at</source>
-        <translation>Nie udało się zapisać pliku aktualizacji w</translation>
+      <source>Failed to save the update file at</source>
+      <translation>Nie udało się zapisać pliku aktualizacji w</translation>
     </message>
     <message>
-        <source>Starting Update...</source>
-        <translation>Rozpoczynanie aktualizacji...</translation>
+      <source>Starting Update...</source>
+      <translation>Rozpoczynanie aktualizacji...</translation>
     </message>
     <message>
-        <source>Failed to create the update script file</source>
-        <translation>Nie udało się utworzyć pliku skryptu aktualizacji</translation>
+      <source>Failed to create the update script file</source>
+      <translation>Nie udało się utworzyć pliku skryptu aktualizacji</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>CompatibilityInfoClass</name>
     <message>
-        <source>Fetching compatibility data, please wait</source>
-        <translation>Pobieranie danych o kompatybilności, proszę czekać</translation>
+      <source>Fetching compatibility data, please wait</source>
+      <translation>Pobieranie danych o kompatybilności, proszę czekać</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Anuluj</translation>
+      <source>Cancel</source>
+      <translation>Anuluj</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Ładowanie...</translation>
+      <source>Loading...</source>
+      <translation>Ładowanie...</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Błąd</translation>
+      <source>Error</source>
+      <translation>Błąd</translation>
     </message>
     <message>
-        <source>Unable to update compatibility data! Try again later.</source>
-        <translation>Nie można zaktualizować danych o kompatybilności! Spróbuj ponownie później.</translation>
+      <source>Unable to update compatibility data! Try again later.</source>
+      <translation>Nie można zaktualizować danych o kompatybilności! Spróbuj ponownie później.</translation>
     </message>
     <message>
-        <source>Unable to open compatibility_data.json for writing.</source>
-        <translation>Nie można otworzyć pliku compatibility_data.json do zapisu.</translation>
+      <source>Unable to open compatibility_data.json for writing.</source>
+      <translation>Nie można otworzyć pliku compatibility_data.json do zapisu.</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation>Nieznany</translation>
+      <source>Unknown</source>
+      <translation>Nieznany</translation>
     </message>
     <message>
-        <source>Nothing</source>
-        <translation>Nic</translation>
+      <source>Nothing</source>
+      <translation>Nic</translation>
     </message>
     <message>
-        <source>Boots</source>
-        <translation>Buty</translation>
+      <source>Boots</source>
+      <translation>Buty</translation>
     </message>
     <message>
-        <source>Menus</source>
-        <translation>Menu</translation>
+      <source>Menus</source>
+      <translation>Menu</translation>
     </message>
     <message>
-        <source>Ingame</source>
-        <translation>W grze</translation>
+      <source>Ingame</source>
+      <translation>W grze</translation>
     </message>
     <message>
-        <source>Playable</source>
-        <translation>Do grania</translation>
+      <source>Playable</source>
+      <translation>Do grania</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ControlSettings</name>
     <message>
-        <source>Configure Controls</source>
-        <translation type="unfinished"></translation>
+      <source>Configure Controls</source>
+      <translation type="unfinished">Configure Controls</translation>
     </message>
     <message>
-        <source>Control Settings</source>
-        <translation type="unfinished"></translation>
+      <source>Control Settings</source>
+      <translation type="unfinished">Control Settings</translation>
     </message>
     <message>
-        <source>D-Pad</source>
-        <translation type="unfinished"></translation>
+      <source>D-Pad</source>
+      <translation type="unfinished">D-Pad</translation>
     </message>
     <message>
-        <source>Up</source>
-        <translation type="unfinished"></translation>
+      <source>Up</source>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
-        <source>Left</source>
-        <translation type="unfinished"></translation>
+      <source>Left</source>
+      <translation type="unfinished">Left</translation>
     </message>
     <message>
-        <source>Right</source>
-        <translation type="unfinished"></translation>
+      <source>Right</source>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
-        <source>Down</source>
-        <translation type="unfinished"></translation>
+      <source>Down</source>
+      <translation type="unfinished">Down</translation>
     </message>
     <message>
-        <source>Left Stick Deadzone (def:2 max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick Deadzone (def:2 max:127)</source>
+      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
     </message>
     <message>
-        <source>Left Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Left Deadzone</source>
+      <translation type="unfinished">Left Deadzone</translation>
     </message>
     <message>
-        <source>Left Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Left Stick</source>
+      <translation type="unfinished">Left Stick</translation>
     </message>
     <message>
-        <source>Config Selection</source>
-        <translation type="unfinished"></translation>
+      <source>Config Selection</source>
+      <translation type="unfinished">Config Selection</translation>
     </message>
     <message>
-        <source>Common Config</source>
-        <translation type="unfinished"></translation>
+      <source>Common Config</source>
+      <translation type="unfinished">Common Config</translation>
     </message>
     <message>
-        <source>Use per-game configs</source>
-        <translation type="unfinished"></translation>
+      <source>Use per-game configs</source>
+      <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
-        <source>L1 / LB</source>
-        <translation type="unfinished"></translation>
+      <source>L1 / LB</source>
+      <translation type="unfinished">L1 / LB</translation>
     </message>
     <message>
-        <source>L2 / LT</source>
-        <translation type="unfinished"></translation>
+      <source>L2 / LT</source>
+      <translation type="unfinished">L2 / LT</translation>
     </message>
     <message>
-        <source>KBM Controls</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Controls</source>
+      <translation type="unfinished">KBM Controls</translation>
     </message>
     <message>
-        <source>KBM Editor</source>
-        <translation type="unfinished"></translation>
+      <source>KBM Editor</source>
+      <translation type="unfinished">KBM Editor</translation>
     </message>
     <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
+      <source>Back</source>
+      <translation type="unfinished">Back</translation>
     </message>
     <message>
-        <source>R1 / RB</source>
-        <translation type="unfinished"></translation>
+      <source>R1 / RB</source>
+      <translation type="unfinished">R1 / RB</translation>
     </message>
     <message>
-        <source>R2 / RT</source>
-        <translation type="unfinished"></translation>
+      <source>R2 / RT</source>
+      <translation type="unfinished">R2 / RT</translation>
     </message>
     <message>
-        <source>L3</source>
-        <translation type="unfinished"></translation>
+      <source>L3</source>
+      <translation type="unfinished">L3</translation>
     </message>
     <message>
-        <source>Options / Start</source>
-        <translation type="unfinished"></translation>
+      <source>Options / Start</source>
+      <translation type="unfinished">Options / Start</translation>
     </message>
     <message>
-        <source>R3</source>
-        <translation type="unfinished"></translation>
+      <source>R3</source>
+      <translation type="unfinished">R3</translation>
     </message>
     <message>
-        <source>Face Buttons</source>
-        <translation type="unfinished"></translation>
+      <source>Face Buttons</source>
+      <translation type="unfinished">Face Buttons</translation>
     </message>
     <message>
-        <source>Triangle / Y</source>
-        <translation type="unfinished"></translation>
+      <source>Triangle / Y</source>
+      <translation type="unfinished">Triangle / Y</translation>
     </message>
     <message>
-        <source>Square / X</source>
-        <translation type="unfinished"></translation>
+      <source>Square / X</source>
+      <translation type="unfinished">Square / X</translation>
     </message>
     <message>
-        <source>Circle / B</source>
-        <translation type="unfinished"></translation>
+      <source>Circle / B</source>
+      <translation type="unfinished">Circle / B</translation>
     </message>
     <message>
-        <source>Cross / A</source>
-        <translation type="unfinished"></translation>
+      <source>Cross / A</source>
+      <translation type="unfinished">Cross / A</translation>
     </message>
     <message>
-        <source>Right Stick Deadzone (def:2, max:127)</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick Deadzone (def:2, max:127)</source>
+      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
     </message>
     <message>
-        <source>Right Deadzone</source>
-        <translation type="unfinished"></translation>
+      <source>Right Deadzone</source>
+      <translation type="unfinished">Right Deadzone</translation>
     </message>
     <message>
-        <source>Right Stick</source>
-        <translation type="unfinished"></translation>
+      <source>Right Stick</source>
+      <translation type="unfinished">Right Stick</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>ElfViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Otwórz folder</translation>
+      <source>Open Folder</source>
+      <translation>Otwórz folder</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInfoClass</name>
     <message>
-        <source>Loading game list, please wait :3</source>
-        <translation>Ładowanie listy gier, proszę poczekaj :3</translation>
+      <source>Loading game list, please wait :3</source>
+      <translation>Ładowanie listy gier, proszę poczekaj :3</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation>Anuluj</translation>
+      <source>Cancel</source>
+      <translation>Anuluj</translation>
     </message>
     <message>
-        <source>Loading...</source>
-        <translation>Ładowanie...</translation>
+      <source>Loading...</source>
+      <translation>Ładowanie...</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameInstallDialog</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Wybierz katalog</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation>shadPS4 - Wybierz katalog</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation>Katalog do instalacji gier</translation>
+      <source>Directory to install games</source>
+      <translation>Katalog do instalacji gier</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation>Przeglądaj</translation>
+      <source>Browse</source>
+      <translation>Przeglądaj</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Błąd</translation>
+      <source>Error</source>
+      <translation>Błąd</translation>
     </message>
     <message>
-        <source>Directory to install DLC</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install DLC</source>
+      <translation type="unfinished">Directory to install DLC</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListFrame</name>
     <message>
-        <source>Icon</source>
-        <translation>Ikona</translation>
+      <source>Icon</source>
+      <translation>Ikona</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation>Nazwa</translation>
+      <source>Name</source>
+      <translation>Nazwa</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation>Numer seryjny</translation>
+      <source>Serial</source>
+      <translation>Numer seryjny</translation>
     </message>
     <message>
-        <source>Compatibility</source>
-        <translation>Zgodność</translation>
+      <source>Compatibility</source>
+      <translation>Zgodność</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation>Region</translation>
+      <source>Region</source>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
-        <source>Firmware</source>
-        <translation>Oprogramowanie</translation>
+      <source>Firmware</source>
+      <translation>Oprogramowanie</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation>Rozmiar</translation>
+      <source>Size</source>
+      <translation>Rozmiar</translation>
     </message>
     <message>
-        <source>Version</source>
-        <translation>Wersja</translation>
+      <source>Version</source>
+      <translation>Wersja</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation>Ścieżka</translation>
+      <source>Path</source>
+      <translation>Ścieżka</translation>
     </message>
     <message>
-        <source>Play Time</source>
-        <translation>Czas gry</translation>
+      <source>Play Time</source>
+      <translation>Czas gry</translation>
     </message>
     <message>
-        <source>Never Played</source>
-        <translation>Nigdy nie grane</translation>
+      <source>Never Played</source>
+      <translation>Nigdy nie grane</translation>
     </message>
     <message>
-        <source>h</source>
-        <translation>h</translation>
+      <source>h</source>
+      <translation type="unfinished">h</translation>
     </message>
     <message>
-        <source>m</source>
-        <translation>m</translation>
+      <source>m</source>
+      <translation type="unfinished">m</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Compatibility is untested</source>
-        <translation>Kompatybilność nie została przetestowana</translation>
+      <source>Compatibility is untested</source>
+      <translation>Kompatybilność nie została przetestowana</translation>
     </message>
     <message>
-        <source>Game does not initialize properly / crashes the emulator</source>
-        <translation>Gra nie inicjuje się poprawnie / zawiesza się emulator</translation>
+      <source>Game does not initialize properly / crashes the emulator</source>
+      <translation>Gra nie inicjuje się poprawnie / zawiesza się emulator</translation>
     </message>
     <message>
-        <source>Game boots, but only displays a blank screen</source>
-        <translation>Gra uruchamia się, ale wyświetla tylko pusty ekran</translation>
+      <source>Game boots, but only displays a blank screen</source>
+      <translation>Gra uruchamia się, ale wyświetla tylko pusty ekran</translation>
     </message>
     <message>
-        <source>Game displays an image but does not go past the menu</source>
-        <translation>Gra wyświetla obraz, ale nie przechodzi do menu</translation>
+      <source>Game displays an image but does not go past the menu</source>
+      <translation>Gra wyświetla obraz, ale nie przechodzi do menu</translation>
     </message>
     <message>
-        <source>Game has game-breaking glitches or unplayable performance</source>
-        <translation>Gra ma usterki przerywające rozgrywkę lub niegrywalną wydajność</translation>
+      <source>Game has game-breaking glitches or unplayable performance</source>
+      <translation>Gra ma usterki przerywające rozgrywkę lub niegrywalną wydajność</translation>
     </message>
     <message>
-        <source>Game can be completed with playable performance and no major glitches</source>
-        <translation>Grę można ukończyć z grywalną wydajnością i bez większych usterek</translation>
+      <source>Game can be completed with playable performance and no major glitches</source>
+      <translation>Grę można ukończyć z grywalną wydajnością i bez większych usterek</translation>
     </message>
     <message>
-        <source>Click to see details on github</source>
-        <translation>Kliknij, aby zobaczyć szczegóły na GitHub</translation>
+      <source>Click to see details on github</source>
+      <translation>Kliknij, aby zobaczyć szczegóły na GitHub</translation>
     </message>
     <message>
-        <source>Last updated</source>
-        <translation>Ostatnia aktualizacja</translation>
+      <source>Last updated</source>
+      <translation>Ostatnia aktualizacja</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GameListUtils</name>
     <message>
-        <source>B</source>
-        <translation>B</translation>
+      <source>B</source>
+      <translation type="unfinished">B</translation>
     </message>
     <message>
-        <source>KB</source>
-        <translation>KB</translation>
+      <source>KB</source>
+      <translation type="unfinished">KB</translation>
     </message>
     <message>
-        <source>MB</source>
-        <translation>MB</translation>
+      <source>MB</source>
+      <translation type="unfinished">MB</translation>
     </message>
     <message>
-        <source>GB</source>
-        <translation>GB</translation>
+      <source>GB</source>
+      <translation type="unfinished">GB</translation>
     </message>
     <message>
-        <source>TB</source>
-        <translation>TB</translation>
+      <source>TB</source>
+      <translation type="unfinished">TB</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>GuiContextMenus</name>
     <message>
-        <source>Create Shortcut</source>
-        <translation>Utwórz skrót</translation>
+      <source>Create Shortcut</source>
+      <translation>Utwórz skrót</translation>
     </message>
     <message>
-        <source>Cheats / Patches</source>
-        <translation>Kody / poprawki</translation>
+      <source>Cheats / Patches</source>
+      <translation>Kody / poprawki</translation>
     </message>
     <message>
-        <source>SFO Viewer</source>
-        <translation>Menedżer plików SFO</translation>
+      <source>SFO Viewer</source>
+      <translation>Menedżer plików SFO</translation>
     </message>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Menedżer trofeów</translation>
+      <source>Trophy Viewer</source>
+      <translation>Menedżer trofeów</translation>
     </message>
     <message>
-        <source>Open Folder...</source>
-        <translation>Otwórz Folder...</translation>
+      <source>Open Folder...</source>
+      <translation>Otwórz Folder...</translation>
     </message>
     <message>
-        <source>Open Game Folder</source>
-        <translation>Otwórz Katalog Gry</translation>
+      <source>Open Game Folder</source>
+      <translation>Otwórz Katalog Gry</translation>
     </message>
     <message>
-        <source>Open Save Data Folder</source>
-        <translation>Otwórz Folder Danych Zapisów</translation>
+      <source>Open Save Data Folder</source>
+      <translation>Otwórz Folder Danych Zapisów</translation>
     </message>
     <message>
-        <source>Open Log Folder</source>
-        <translation>Otwórz Folder Dziennika</translation>
+      <source>Open Log Folder</source>
+      <translation>Otwórz Folder Dziennika</translation>
     </message>
     <message>
-        <source>Copy info...</source>
-        <translation>Kopiuj informacje...</translation>
+      <source>Copy info...</source>
+      <translation>Kopiuj informacje...</translation>
     </message>
     <message>
-        <source>Copy Name</source>
-        <translation>Kopiuj nazwę</translation>
+      <source>Copy Name</source>
+      <translation>Kopiuj nazwę</translation>
     </message>
     <message>
-        <source>Copy Serial</source>
-        <translation>Kopiuj numer seryjny</translation>
+      <source>Copy Serial</source>
+      <translation>Kopiuj numer seryjny</translation>
     </message>
     <message>
-        <source>Copy All</source>
-        <translation>Kopiuj wszystko</translation>
+      <source>Copy Version</source>
+      <translation type="unfinished">Copy Version</translation>
     </message>
     <message>
-        <source>Delete...</source>
-        <translation>Usuń...</translation>
+      <source>Copy Size</source>
+      <translation type="unfinished">Copy Size</translation>
     </message>
     <message>
-        <source>Delete Game</source>
-        <translation>Usuń Grę</translation>
+      <source>Copy All</source>
+      <translation>Kopiuj wszystko</translation>
     </message>
     <message>
-        <source>Delete Update</source>
-        <translation>Usuń Aktualizację</translation>
+      <source>Delete...</source>
+      <translation>Usuń...</translation>
     </message>
     <message>
-        <source>Delete DLC</source>
-        <translation>Usuń DLC</translation>
+      <source>Delete Game</source>
+      <translation>Usuń Grę</translation>
     </message>
     <message>
-        <source>Compatibility...</source>
-        <translation>kompatybilność...</translation>
+      <source>Delete Update</source>
+      <translation>Usuń Aktualizację</translation>
     </message>
     <message>
-        <source>Update database</source>
-        <translation>Zaktualizuj bazę danych</translation>
+      <source>Delete DLC</source>
+      <translation>Usuń DLC</translation>
     </message>
     <message>
-        <source>View report</source>
-        <translation>Wyświetl zgłoszenie</translation>
+      <source>Compatibility...</source>
+      <translation>kompatybilność...</translation>
     </message>
     <message>
-        <source>Submit a report</source>
-        <translation>Wyślij zgłoszenie</translation>
+      <source>Update database</source>
+      <translation>Zaktualizuj bazę danych</translation>
     </message>
     <message>
-        <source>Shortcut creation</source>
-        <translation>Tworzenie skrótu</translation>
+      <source>View report</source>
+      <translation>Wyświetl zgłoszenie</translation>
     </message>
     <message>
-        <source>Shortcut created successfully!</source>
-        <translation>Utworzenie skrótu zakończone pomyślnie!</translation>
+      <source>Submit a report</source>
+      <translation>Wyślij zgłoszenie</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation>Błąd</translation>
+      <source>Shortcut creation</source>
+      <translation>Tworzenie skrótu</translation>
     </message>
     <message>
-        <source>Error creating shortcut!</source>
-        <translation>Utworzenie skrótu zakończone niepowodzeniem!</translation>
+      <source>Shortcut created successfully!</source>
+      <translation>Utworzenie skrótu zakończone pomyślnie!</translation>
     </message>
     <message>
-        <source>Install PKG</source>
-        <translation>Zainstaluj PKG</translation>
+      <source>Error</source>
+      <translation>Błąd</translation>
     </message>
     <message>
-        <source>Game</source>
-        <translation>Gra</translation>
+      <source>Error creating shortcut!</source>
+      <translation>Utworzenie skrótu zakończone niepowodzeniem!</translation>
     </message>
     <message>
-        <source>This game has no update to delete!</source>
-        <translation>Ta gra nie ma aktualizacji do usunięcia!</translation>
+      <source>Install PKG</source>
+      <translation>Zainstaluj PKG</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Aktualizacja</translation>
+      <source>Game</source>
+      <translation>Gra</translation>
     </message>
     <message>
-        <source>This game has no DLC to delete!</source>
-        <translation>Ta gra nie ma DLC do usunięcia!</translation>
+      <source>This game has no update to delete!</source>
+      <translation>Ta gra nie ma aktualizacji do usunięcia!</translation>
     </message>
     <message>
-        <source>DLC</source>
-        <translation>DLC</translation>
+      <source>Update</source>
+      <translation>Aktualizacja</translation>
     </message>
     <message>
-        <source>Delete %1</source>
-        <translation>Usuń %1</translation>
+      <source>This game has no DLC to delete!</source>
+      <translation>Ta gra nie ma DLC do usunięcia!</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-        <translation>Czy na pewno chcesz usunąć katalog %1 z %2?</translation>
+      <source>DLC</source>
+      <translation type="unfinished">DLC</translation>
     </message>
     <message>
-        <source>Open Update Folder</source>
-        <translation type="unfinished"></translation>
+      <source>Delete %1</source>
+      <translation>Usuń %1</translation>
     </message>
     <message>
-        <source>Copy Version</source>
-        <translation type="unfinished"></translation>
+      <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
+      <translation>Czy na pewno chcesz usunąć katalog %1 z %2?</translation>
     </message>
     <message>
-        <source>Copy Size</source>
-        <translation type="unfinished"></translation>
+      <source>Open Update Folder</source>
+      <translation type="unfinished">Open Update Folder</translation>
     </message>
     <message>
-        <source>Delete Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Delete Save Data</source>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
-        <source>This game has no update folder to open!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no update folder to open!</source>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
-        <source>Failed to convert icon.</source>
-        <translation type="unfinished"></translation>
+      <source>Failed to convert icon.</source>
+      <translation type="unfinished">Failed to convert icon.</translation>
     </message>
     <message>
-        <source>This game has no save data to delete!</source>
-        <translation type="unfinished"></translation>
+      <source>This game has no save data to delete!</source>
+      <translation type="unfinished">This game has no save data to delete!</translation>
     </message>
     <message>
-        <source>Save Data</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data</source>
+      <translation type="unfinished">Save Data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Wybierz katalog</translation>
+      <source>shadPS4 - Choose directory</source>
+      <translation>shadPS4 - Wybierz katalog</translation>
     </message>
     <message>
-        <source>Select which directory you want to install to.</source>
-        <translation>Wybierz katalog, do którego chcesz zainstalować.</translation>
+      <source>Select which directory you want to install to.</source>
+      <translation>Wybierz katalog, do którego chcesz zainstalować.</translation>
     </message>
     <message>
-        <source>Install All Queued to Selected Folder</source>
-        <translation type="unfinished"></translation>
+      <source>Install All Queued to Selected Folder</source>
+      <translation type="unfinished">Install All Queued to Selected Folder</translation>
     </message>
     <message>
-        <source>Delete PKG File on Install</source>
-        <translation type="unfinished"></translation>
+      <source>Delete PKG File on Install</source>
+      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>MainWindow</name>
     <message>
-        <source>Open/Add Elf Folder</source>
-        <translation>Otwórz/Dodaj folder Elf</translation>
+      <source>Open/Add Elf Folder</source>
+      <translation>Otwórz/Dodaj folder Elf</translation>
     </message>
     <message>
-        <source>Install Packages (PKG)</source>
-        <translation>Zainstaluj paczkę (PKG)</translation>
+      <source>Install Packages (PKG)</source>
+      <translation>Zainstaluj paczkę (PKG)</translation>
     </message>
     <message>
-        <source>Boot Game</source>
-        <translation>Uruchom grę</translation>
+      <source>Boot Game</source>
+      <translation>Uruchom grę</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Sprawdź aktualizacje</translation>
+      <source>Check for Updates</source>
+      <translation>Sprawdź aktualizacje</translation>
     </message>
     <message>
-        <source>About shadPS4</source>
-        <translation>O programie</translation>
+      <source>About shadPS4</source>
+      <translation>O programie</translation>
     </message>
     <message>
-        <source>Configure...</source>
-        <translation>Konfiguruj...</translation>
+      <source>Configure...</source>
+      <translation>Konfiguruj...</translation>
     </message>
     <message>
-        <source>Install application from a .pkg file</source>
-        <translation>Zainstaluj aplikacje z pliku .pkg</translation>
+      <source>Install application from a .pkg file</source>
+      <translation>Zainstaluj aplikacje z pliku .pkg</translation>
     </message>
     <message>
-        <source>Recent Games</source>
-        <translation>Ostatnie gry</translation>
+      <source>Recent Games</source>
+      <translation>Ostatnie gry</translation>
     </message>
     <message>
-        <source>Open shadPS4 Folder</source>
-        <translation>Otwórz folder shadPS4</translation>
+      <source>Open shadPS4 Folder</source>
+      <translation>Otwórz folder shadPS4</translation>
     </message>
     <message>
-        <source>Exit</source>
-        <translation>Wyjdź</translation>
+      <source>Exit</source>
+      <translation>Wyjdź</translation>
     </message>
     <message>
-        <source>Exit shadPS4</source>
-        <translation>Wyjdź z shadPS4</translation>
+      <source>Exit shadPS4</source>
+      <translation>Wyjdź z shadPS4</translation>
     </message>
     <message>
-        <source>Exit the application.</source>
-        <translation>Wyjdź z aplikacji.</translation>
+      <source>Exit the application.</source>
+      <translation>Wyjdź z aplikacji.</translation>
     </message>
     <message>
-        <source>Show Game List</source>
-        <translation>Pokaż listę gier</translation>
+      <source>Show Game List</source>
+      <translation>Pokaż listę gier</translation>
     </message>
     <message>
-        <source>Game List Refresh</source>
-        <translation>Odśwież listę gier</translation>
+      <source>Game List Refresh</source>
+      <translation>Odśwież listę gier</translation>
     </message>
     <message>
-        <source>Tiny</source>
-        <translation>Malutkie</translation>
+      <source>Tiny</source>
+      <translation>Malutkie</translation>
     </message>
     <message>
-        <source>Small</source>
-        <translation>Małe</translation>
+      <source>Small</source>
+      <translation>Małe</translation>
     </message>
     <message>
-        <source>Medium</source>
-        <translation>Średnie</translation>
+      <source>Medium</source>
+      <translation>Średnie</translation>
     </message>
     <message>
-        <source>Large</source>
-        <translation>Wielkie</translation>
+      <source>Large</source>
+      <translation>Wielkie</translation>
     </message>
     <message>
-        <source>List View</source>
-        <translation>Widok listy</translation>
+      <source>List View</source>
+      <translation>Widok listy</translation>
     </message>
     <message>
-        <source>Grid View</source>
-        <translation>Widok siatki</translation>
+      <source>Grid View</source>
+      <translation>Widok siatki</translation>
     </message>
     <message>
-        <source>Elf Viewer</source>
-        <translation>Menedżer plików ELF</translation>
+      <source>Elf Viewer</source>
+      <translation>Menedżer plików ELF</translation>
     </message>
     <message>
-        <source>Game Install Directory</source>
-        <translation>Katalog zainstalowanych gier</translation>
+      <source>Game Install Directory</source>
+      <translation>Katalog zainstalowanych gier</translation>
     </message>
     <message>
-        <source>Download Cheats/Patches</source>
-        <translation>Pobierz kody / poprawki</translation>
+      <source>Download Cheats/Patches</source>
+      <translation>Pobierz kody / poprawki</translation>
     </message>
     <message>
-        <source>Dump Game List</source>
-        <translation>Zgraj listę gier</translation>
+      <source>Dump Game List</source>
+      <translation>Zgraj listę gier</translation>
     </message>
     <message>
-        <source>PKG Viewer</source>
-        <translation>Menedżer plików PKG</translation>
+      <source>PKG Viewer</source>
+      <translation>Menedżer plików PKG</translation>
     </message>
     <message>
-        <source>Search...</source>
-        <translation>Szukaj...</translation>
+      <source>Search...</source>
+      <translation>Szukaj...</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation>Plik</translation>
+      <source>File</source>
+      <translation>Plik</translation>
     </message>
     <message>
-        <source>View</source>
-        <translation>Widok</translation>
+      <source>View</source>
+      <translation>Widok</translation>
     </message>
     <message>
-        <source>Game List Icons</source>
-        <translation>Ikony w widoku listy</translation>
+      <source>Game List Icons</source>
+      <translation>Ikony w widoku listy</translation>
     </message>
     <message>
-        <source>Game List Mode</source>
-        <translation>Tryb listy gier</translation>
+      <source>Game List Mode</source>
+      <translation>Tryb listy gier</translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation>Ustawienia</translation>
+      <source>Settings</source>
+      <translation>Ustawienia</translation>
     </message>
     <message>
-        <source>Utils</source>
-        <translation>Narzędzia</translation>
+      <source>Utils</source>
+      <translation>Narzędzia</translation>
     </message>
     <message>
-        <source>Themes</source>
-        <translation>Motywy</translation>
+      <source>Themes</source>
+      <translation>Motywy</translation>
     </message>
     <message>
-        <source>Help</source>
-        <translation>Pomoc</translation>
+      <source>Help</source>
+      <translation>Pomoc</translation>
     </message>
     <message>
-        <source>Dark</source>
-        <translation>Ciemny</translation>
+      <source>Dark</source>
+      <translation>Ciemny</translation>
     </message>
     <message>
-        <source>Light</source>
-        <translation>Jasny</translation>
+      <source>Light</source>
+      <translation>Jasny</translation>
     </message>
     <message>
-        <source>Green</source>
-        <translation>Zielony</translation>
+      <source>Green</source>
+      <translation>Zielony</translation>
     </message>
     <message>
-        <source>Blue</source>
-        <translation>Niebieski</translation>
+      <source>Blue</source>
+      <translation>Niebieski</translation>
     </message>
     <message>
-        <source>Violet</source>
-        <translation>Fioletowy</translation>
+      <source>Violet</source>
+      <translation>Fioletowy</translation>
     </message>
     <message>
-        <source>toolBar</source>
-        <translation>Pasek narzędzi</translation>
+      <source>toolBar</source>
+      <translation>Pasek narzędzi</translation>
     </message>
     <message>
-        <source>Game List</source>
-        <translation>Lista gier</translation>
+      <source>Game List</source>
+      <translation>Lista gier</translation>
     </message>
     <message>
-        <source> * Unsupported Vulkan Version</source>
-        <translation> * Nieobsługiwana wersja Vulkan</translation>
+      <source> * Unsupported Vulkan Version</source>
+      <translation> * Nieobsługiwana wersja Vulkan</translation>
     </message>
     <message>
-        <source>Download Cheats For All Installed Games</source>
-        <translation>Pobierz kody do wszystkich zainstalowanych gier</translation>
+      <source>Download Cheats For All Installed Games</source>
+      <translation>Pobierz kody do wszystkich zainstalowanych gier</translation>
     </message>
     <message>
-        <source>Download Patches For All Games</source>
-        <translation>Pobierz poprawki do wszystkich gier</translation>
+      <source>Download Patches For All Games</source>
+      <translation>Pobierz poprawki do wszystkich gier</translation>
     </message>
     <message>
-        <source>Download Complete</source>
-        <translation>Pobieranie zakończone</translation>
+      <source>Download Complete</source>
+      <translation>Pobieranie zakończone</translation>
     </message>
     <message>
-        <source>You have downloaded cheats for all the games you have installed.</source>
-        <translation>Pobrałeś kody do wszystkich zainstalowanych gier.</translation>
+      <source>You have downloaded cheats for all the games you have installed.</source>
+      <translation>Pobrałeś kody do wszystkich zainstalowanych gier.</translation>
     </message>
     <message>
-        <source>Patches Downloaded Successfully!</source>
-        <translation>Poprawki pobrane pomyślnie!</translation>
+      <source>Patches Downloaded Successfully!</source>
+      <translation>Poprawki pobrane pomyślnie!</translation>
     </message>
     <message>
-        <source>All Patches available for all games have been downloaded.</source>
-        <translation>Wszystkie poprawki dostępne dla wszystkich gier zostały pobrane.</translation>
+      <source>All Patches available for all games have been downloaded.</source>
+      <translation>Wszystkie poprawki dostępne dla wszystkich gier zostały pobrane.</translation>
     </message>
     <message>
-        <source>Games: </source>
-        <translation>Gry: </translation>
+      <source>Games: </source>
+      <translation>Gry: </translation>
     </message>
     <message>
-        <source>ELF files (*.bin *.elf *.oelf)</source>
-        <translation>Pliki ELF (*.bin *.elf *.oelf)</translation>
+      <source>ELF files (*.bin *.elf *.oelf)</source>
+      <translation>Pliki ELF (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
-        <source>Game Boot</source>
-        <translation>Uruchomienie gry</translation>
+      <source>Game Boot</source>
+      <translation>Uruchomienie gry</translation>
     </message>
     <message>
-        <source>Only one file can be selected!</source>
-        <translation>Można wybrać tylko jeden plik!</translation>
+      <source>Only one file can be selected!</source>
+      <translation>Można wybrać tylko jeden plik!</translation>
     </message>
     <message>
-        <source>PKG Extraction</source>
-        <translation>Wypakowywanie PKG</translation>
+      <source>PKG Extraction</source>
+      <translation>Wypakowywanie PKG</translation>
     </message>
     <message>
-        <source>Patch detected!</source>
-        <translation>Wykryto łatkę!</translation>
+      <source>Patch detected!</source>
+      <translation>Wykryto łatkę!</translation>
     </message>
     <message>
-        <source>PKG and Game versions match: </source>
-        <translation>Wersje PKG i gry są zgodne: </translation>
+      <source>PKG and Game versions match: </source>
+      <translation>Wersje PKG i gry są zgodne: </translation>
     </message>
     <message>
-        <source>Would you like to overwrite?</source>
-        <translation>Czy chcesz nadpisać?</translation>
+      <source>Would you like to overwrite?</source>
+      <translation>Czy chcesz nadpisać?</translation>
     </message>
     <message>
-        <source>PKG Version %1 is older than installed version: </source>
-        <translation>Wersja PKG %1 jest starsza niż zainstalowana wersja: </translation>
+      <source>PKG Version %1 is older than installed version: </source>
+      <translation>Wersja PKG %1 jest starsza niż zainstalowana wersja: </translation>
     </message>
     <message>
-        <source>Game is installed: </source>
-        <translation>Gra jest zainstalowana: </translation>
+      <source>Game is installed: </source>
+      <translation>Gra jest zainstalowana: </translation>
     </message>
     <message>
-        <source>Would you like to install Patch: </source>
-        <translation>Czy chcesz zainstalować łatkę: </translation>
+      <source>Would you like to install Patch: </source>
+      <translation>Czy chcesz zainstalować łatkę: </translation>
     </message>
     <message>
-        <source>DLC Installation</source>
-        <translation>Instalacja DLC</translation>
+      <source>DLC Installation</source>
+      <translation>Instalacja DLC</translation>
     </message>
     <message>
-        <source>Would you like to install DLC: %1?</source>
-        <translation>Czy chcesz zainstalować DLC: %1?</translation>
+      <source>Would you like to install DLC: %1?</source>
+      <translation>Czy chcesz zainstalować DLC: %1?</translation>
     </message>
     <message>
-        <source>DLC already installed:</source>
-        <translation>DLC już zainstalowane:</translation>
+      <source>DLC already installed:</source>
+      <translation>DLC już zainstalowane:</translation>
     </message>
     <message>
-        <source>Game already installed</source>
-        <translation>Gra już zainstalowana</translation>
+      <source>Game already installed</source>
+      <translation>Gra już zainstalowana</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation>BŁĄD PKG</translation>
+      <source>PKG ERROR</source>
+      <translation>BŁĄD PKG</translation>
     </message>
     <message>
-        <source>Extracting PKG %1/%2</source>
-        <translation>Wypakowywanie PKG %1/%2</translation>
+      <source>Extracting PKG %1/%2</source>
+      <translation>Wypakowywanie PKG %1/%2</translation>
     </message>
     <message>
-        <source>Extraction Finished</source>
-        <translation>Wypakowywanie zakończone</translation>
+      <source>Extraction Finished</source>
+      <translation>Wypakowywanie zakończone</translation>
     </message>
     <message>
-        <source>Game successfully installed at %1</source>
-        <translation>Gra pomyślnie zainstalowana w %1</translation>
+      <source>Game successfully installed at %1</source>
+      <translation>Gra pomyślnie zainstalowana w %1</translation>
     </message>
     <message>
-        <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>Plik nie wydaje się być prawidłowym plikiem PKG</translation>
+      <source>File doesn&apos;t appear to be a valid PKG file</source>
+      <translation>Plik nie wydaje się być prawidłowym plikiem PKG</translation>
     </message>
     <message>
-        <source>Run Game</source>
-        <translation type="unfinished"></translation>
+      <source>Run Game</source>
+      <translation type="unfinished">Run Game</translation>
     </message>
     <message>
-        <source>Eboot.bin file not found</source>
-        <translation type="unfinished"></translation>
+      <source>Eboot.bin file not found</source>
+      <translation type="unfinished">Eboot.bin file not found</translation>
     </message>
     <message>
-        <source>PKG File (*.PKG *.pkg)</source>
-        <translation type="unfinished"></translation>
+      <source>PKG File (*.PKG *.pkg)</source>
+      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
     </message>
     <message>
-        <source>PKG is a patch or DLC, please install the game first!</source>
-        <translation type="unfinished"></translation>
+      <source>PKG is a patch or DLC, please install the game first!</source>
+      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
-        <source>Game is already running!</source>
-        <translation type="unfinished"></translation>
+      <source>Game is already running!</source>
+      <translation type="unfinished">Game is already running!</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation type="unfinished">shadPS4</translation>
+      <source>shadPS4</source>
+      <translation type="unfinished">shadPS4</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>PKGViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Otwórz folder</translation>
+      <source>Open Folder</source>
+      <translation>Otwórz folder</translation>
     </message>
     <message>
-        <source>Name</source>
-        <translation type="unfinished">Nazwa</translation>
+      <source>PKG ERROR</source>
+      <translation>BŁĄD PKG</translation>
     </message>
     <message>
-        <source>Serial</source>
-        <translation type="unfinished">Numer seryjny</translation>
+      <source>Name</source>
+      <translation>Nazwa</translation>
     </message>
     <message>
-        <source>Installed</source>
-        <translation type="unfinished"></translation>
+      <source>Serial</source>
+      <translation>Numer seryjny</translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation type="unfinished">Rozmiar</translation>
+      <source>Installed</source>
+      <translation type="unfinished">Installed</translation>
     </message>
     <message>
-        <source>Category</source>
-        <translation type="unfinished"></translation>
+      <source>Size</source>
+      <translation>Rozmiar</translation>
     </message>
     <message>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
+      <source>Category</source>
+      <translation type="unfinished">Category</translation>
     </message>
     <message>
-        <source>App Ver</source>
-        <translation type="unfinished"></translation>
+      <source>Type</source>
+      <translation type="unfinished">Type</translation>
     </message>
     <message>
-        <source>FW</source>
-        <translation type="unfinished"></translation>
+      <source>App Ver</source>
+      <translation type="unfinished">App Ver</translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation type="unfinished">Region</translation>
+      <source>FW</source>
+      <translation type="unfinished">FW</translation>
     </message>
     <message>
-        <source>Flags</source>
-        <translation type="unfinished"></translation>
+      <source>Region</source>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation type="unfinished">Ścieżka</translation>
+      <source>Flags</source>
+      <translation type="unfinished">Flags</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation type="unfinished">Plik</translation>
+      <source>Path</source>
+      <translation>Ścieżka</translation>
     </message>
     <message>
-        <source>PKG ERROR</source>
-        <translation type="unfinished">BŁĄD PKG</translation>
+      <source>File</source>
+      <translation>Plik</translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation type="unfinished">Nieznany</translation>
+      <source>Unknown</source>
+      <translation>Nieznany</translation>
     </message>
     <message>
-        <source>Package</source>
-        <translation type="unfinished"></translation>
+      <source>Package</source>
+      <translation type="unfinished">Package</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>SettingsDialog</name>
     <message>
-        <source>Settings</source>
-        <translation>Ustawienia</translation>
+      <source>Settings</source>
+      <translation>Ustawienia</translation>
     </message>
     <message>
-        <source>General</source>
-        <translation>Ogólne</translation>
+      <source>General</source>
+      <translation>Ogólne</translation>
     </message>
     <message>
-        <source>System</source>
-        <translation>System</translation>
+      <source>System</source>
+      <translation type="unfinished">System</translation>
     </message>
     <message>
-        <source>Console Language</source>
-        <translation>Język konsoli</translation>
+      <source>Console Language</source>
+      <translation>Język konsoli</translation>
     </message>
     <message>
-        <source>Emulator Language</source>
-        <translation>Język emulatora</translation>
+      <source>Emulator Language</source>
+      <translation>Język emulatora</translation>
     </message>
     <message>
-        <source>Emulator</source>
-        <translation>Emulator</translation>
+      <source>Emulator</source>
+      <translation type="unfinished">Emulator</translation>
     </message>
     <message>
-        <source>Enable Fullscreen</source>
-        <translation>Włącz pełny ekran</translation>
+      <source>Enable Fullscreen</source>
+      <translation>Włącz pełny ekran</translation>
     </message>
     <message>
-        <source>Fullscreen Mode</source>
-        <translation>Tryb Pełnoekranowy</translation>
+      <source>Fullscreen Mode</source>
+      <translation>Tryb Pełnoekranowy</translation>
     </message>
     <message>
-        <source>Enable Separate Update Folder</source>
-        <translation>Włącz oddzielny folder aktualizacji</translation>
+      <source>Enable Separate Update Folder</source>
+      <translation>Włącz oddzielny folder aktualizacji</translation>
     </message>
     <message>
-        <source>Default tab when opening settings</source>
-        <translation>Domyślna zakładka podczas otwierania ustawień</translation>
+      <source>Default tab when opening settings</source>
+      <translation>Domyślna zakładka podczas otwierania ustawień</translation>
     </message>
     <message>
-        <source>Show Game Size In List</source>
-        <translation>Pokaż rozmiar gry na liście</translation>
+      <source>Show Game Size In List</source>
+      <translation>Pokaż rozmiar gry na liście</translation>
     </message>
     <message>
-        <source>Show Splash</source>
-        <translation>Pokaż ekran powitania</translation>
+      <source>Show Splash</source>
+      <translation>Pokaż ekran powitania</translation>
     </message>
     <message>
-        <source>Enable Discord Rich Presence</source>
-        <translation>Włącz Discord Rich Presence</translation>
+      <source>Enable Discord Rich Presence</source>
+      <translation>Włącz Discord Rich Presence</translation>
     </message>
     <message>
-        <source>Username</source>
-        <translation>Nazwa użytkownika</translation>
+      <source>Username</source>
+      <translation>Nazwa użytkownika</translation>
     </message>
     <message>
-        <source>Trophy Key</source>
-        <translation>Klucz trofeów</translation>
+      <source>Trophy Key</source>
+      <translation>Klucz trofeów</translation>
     </message>
     <message>
-        <source>Trophy</source>
-        <translation>Trofeum</translation>
+      <source>Trophy</source>
+      <translation>Trofeum</translation>
     </message>
     <message>
-        <source>Logger</source>
-        <translation>Dziennik zdarzeń</translation>
+      <source>Logger</source>
+      <translation>Dziennik zdarzeń</translation>
     </message>
     <message>
-        <source>Log Type</source>
-        <translation>Typ dziennika</translation>
+      <source>Log Type</source>
+      <translation>Typ dziennika</translation>
     </message>
     <message>
-        <source>Log Filter</source>
-        <translation>Filtrowanie dziennika</translation>
+      <source>Log Filter</source>
+      <translation>Filtrowanie dziennika</translation>
     </message>
     <message>
-        <source>Open Log Location</source>
-        <translation>Otwórz lokalizację dziennika</translation>
+      <source>Open Log Location</source>
+      <translation>Otwórz lokalizację dziennika</translation>
     </message>
     <message>
-        <source>Input</source>
-        <translation>Wejście</translation>
+      <source>Input</source>
+      <translation>Wejście</translation>
     </message>
     <message>
-        <source>Cursor</source>
-        <translation>Kursor</translation>
+      <source>Cursor</source>
+      <translation>Kursor</translation>
     </message>
     <message>
-        <source>Hide Cursor</source>
-        <translation>Ukryj kursor</translation>
+      <source>Hide Cursor</source>
+      <translation>Ukryj kursor</translation>
     </message>
     <message>
-        <source>Hide Cursor Idle Timeout</source>
-        <translation>Czas oczekiwania na ukrycie kursora przy bezczynności</translation>
+      <source>Hide Cursor Idle Timeout</source>
+      <translation>Czas oczekiwania na ukrycie kursora przy bezczynności</translation>
     </message>
     <message>
-        <source>s</source>
-        <translation>s</translation>
+      <source>s</source>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
-        <source>Controller</source>
-        <translation>Kontroler</translation>
+      <source>Controller</source>
+      <translation>Kontroler</translation>
     </message>
     <message>
-        <source>Back Button Behavior</source>
-        <translation>Zachowanie przycisku wstecz</translation>
+      <source>Back Button Behavior</source>
+      <translation>Zachowanie przycisku wstecz</translation>
     </message>
     <message>
-        <source>Graphics</source>
-        <translation>Grafika</translation>
+      <source>Graphics</source>
+      <translation>Grafika</translation>
     </message>
     <message>
-        <source>GUI</source>
-        <translation>Interfejs</translation>
+      <source>GUI</source>
+      <translation>Interfejs</translation>
     </message>
     <message>
-        <source>User</source>
-        <translation>Użytkownik</translation>
+      <source>User</source>
+      <translation>Użytkownik</translation>
     </message>
     <message>
-        <source>Graphics Device</source>
-        <translation>Karta graficzna</translation>
+      <source>Graphics Device</source>
+      <translation>Karta graficzna</translation>
     </message>
     <message>
-        <source>Width</source>
-        <translation>Szerokość</translation>
+      <source>Width</source>
+      <translation>Szerokość</translation>
     </message>
     <message>
-        <source>Height</source>
-        <translation>Wysokość</translation>
+      <source>Height</source>
+      <translation>Wysokość</translation>
     </message>
     <message>
-        <source>Vblank Divider</source>
-        <translation>Dzielnik przerwy pionowej (Vblank)</translation>
+      <source>Vblank Divider</source>
+      <translation>Dzielnik przerwy pionowej (Vblank)</translation>
     </message>
     <message>
-        <source>Advanced</source>
-        <translation>Zaawansowane</translation>
+      <source>Advanced</source>
+      <translation>Zaawansowane</translation>
     </message>
     <message>
-        <source>Enable Shaders Dumping</source>
-        <translation>Włącz zgrywanie cieni</translation>
+      <source>Enable Shaders Dumping</source>
+      <translation>Włącz zgrywanie cieni</translation>
     </message>
     <message>
-        <source>Enable NULL GPU</source>
-        <translation>Wyłącz kartę graficzną</translation>
+      <source>Enable NULL GPU</source>
+      <translation>Wyłącz kartę graficzną</translation>
     </message>
     <message>
-        <source>Paths</source>
-        <translation>Ścieżki</translation>
+      <source>Enable HDR</source>
+      <translation type="unfinished">Enable HDR</translation>
     </message>
     <message>
-        <source>Game Folders</source>
-        <translation>Foldery gier</translation>
+      <source>Paths</source>
+      <translation>Ścieżki</translation>
     </message>
     <message>
-        <source>Add...</source>
-        <translation>Dodaj...</translation>
+      <source>Game Folders</source>
+      <translation>Foldery gier</translation>
     </message>
     <message>
-        <source>Remove</source>
-        <translation>Usuń</translation>
+      <source>Add...</source>
+      <translation>Dodaj...</translation>
     </message>
     <message>
-        <source>Debug</source>
-        <translation>Debugowanie</translation>
+      <source>Remove</source>
+      <translation>Usuń</translation>
     </message>
     <message>
-        <source>Enable Debug Dumping</source>
-        <translation>Włącz zgrywanie debugowania</translation>
+      <source>Debug</source>
+      <translation>Debugowanie</translation>
     </message>
     <message>
-        <source>Enable Vulkan Validation Layers</source>
-        <translation>Włącz warstwy walidacji Vulkan</translation>
+      <source>Enable Debug Dumping</source>
+      <translation>Włącz zgrywanie debugowania</translation>
     </message>
     <message>
-        <source>Enable Vulkan Synchronization Validation</source>
-        <translation>Włącz walidację synchronizacji Vulkan</translation>
+      <source>Enable Vulkan Validation Layers</source>
+      <translation>Włącz warstwy walidacji Vulkan</translation>
     </message>
     <message>
-        <source>Enable RenderDoc Debugging</source>
-        <translation>Włącz debugowanie RenderDoc</translation>
+      <source>Enable Vulkan Synchronization Validation</source>
+      <translation>Włącz walidację synchronizacji Vulkan</translation>
     </message>
     <message>
-        <source>Enable Crash Diagnostics</source>
-        <translation>Enable Crash Diagnostics</translation>
+      <source>Enable RenderDoc Debugging</source>
+      <translation>Włącz debugowanie RenderDoc</translation>
     </message>
     <message>
-        <source>Collect Shaders</source>
-        <translation>Collect Shaders</translation>
+      <source>Enable Crash Diagnostics</source>
+      <translation type="unfinished">Enable Crash Diagnostics</translation>
     </message>
     <message>
-        <source>Copy GPU Buffers</source>
-        <translation>Copy GPU Buffers</translation>
+      <source>Collect Shaders</source>
+      <translation type="unfinished">Collect Shaders</translation>
     </message>
     <message>
-        <source>Host Debug Markers</source>
-        <translation>Host Debug Markers</translation>
+      <source>Copy GPU Buffers</source>
+      <translation type="unfinished">Copy GPU Buffers</translation>
     </message>
     <message>
-        <source>Guest Debug Markers</source>
-        <translation>Guest Debug Markers</translation>
+      <source>Host Debug Markers</source>
+      <translation type="unfinished">Host Debug Markers</translation>
     </message>
     <message>
-        <source>Update</source>
-        <translation>Aktualizacja</translation>
+      <source>Guest Debug Markers</source>
+      <translation type="unfinished">Guest Debug Markers</translation>
     </message>
     <message>
-        <source>Check for Updates at Startup</source>
-        <translation>Sprawdź aktualizacje przy starcie</translation>
+      <source>Update</source>
+      <translation>Aktualizacja</translation>
     </message>
     <message>
-        <source>Always Show Changelog</source>
-        <translation>Zawsze pokazuj dziennik zmian</translation>
+      <source>Check for Updates at Startup</source>
+      <translation>Sprawdź aktualizacje przy starcie</translation>
     </message>
     <message>
-        <source>Update Channel</source>
-        <translation>Kanał Aktualizacji</translation>
+      <source>Always Show Changelog</source>
+      <translation>Zawsze pokazuj dziennik zmian</translation>
     </message>
     <message>
-        <source>Check for Updates</source>
-        <translation>Sprawdź aktualizacje</translation>
+      <source>Update Channel</source>
+      <translation>Kanał Aktualizacji</translation>
     </message>
     <message>
-        <source>GUI Settings</source>
-        <translation>Ustawienia Interfejsu</translation>
+      <source>Check for Updates</source>
+      <translation>Sprawdź aktualizacje</translation>
     </message>
     <message>
-        <source>Title Music</source>
-        <translation>Title Music</translation>
+      <source>GUI Settings</source>
+      <translation>Ustawienia Interfejsu</translation>
     </message>
     <message>
-        <source>Disable Trophy Pop-ups</source>
-        <translation>Wyłącz wyskakujące okienka trofeów</translation>
+      <source>Title Music</source>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
-        <source>Play title music</source>
-        <translation>Odtwórz muzykę tytułową</translation>
+      <source>Disable Trophy Pop-ups</source>
+      <translation>Wyłącz wyskakujące okienka trofeów</translation>
     </message>
     <message>
-        <source>Update Compatibility Database On Startup</source>
-        <translation>Aktualizuj bazę danych zgodności podczas uruchamiania</translation>
+      <source>Background Image</source>
+      <translation type="unfinished">Background Image</translation>
     </message>
     <message>
-        <source>Game Compatibility</source>
-        <translation>Kompatybilność gier</translation>
+      <source>Show Background Image</source>
+      <translation type="unfinished">Show Background Image</translation>
     </message>
     <message>
-        <source>Display Compatibility Data</source>
-        <translation>Wyświetl dane zgodności</translation>
+      <source>Opacity</source>
+      <translation type="unfinished">Opacity</translation>
     </message>
     <message>
-        <source>Update Compatibility Database</source>
-        <translation>Aktualizuj bazę danych zgodności</translation>
+      <source>Play title music</source>
+      <translation>Odtwórz muzykę tytułową</translation>
     </message>
     <message>
-        <source>Volume</source>
-        <translation>Głośność</translation>
+      <source>Update Compatibility Database On Startup</source>
+      <translation>Aktualizuj bazę danych zgodności podczas uruchamiania</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation>Zapisz</translation>
+      <source>Game Compatibility</source>
+      <translation>Kompatybilność gier</translation>
     </message>
     <message>
-        <source>Apply</source>
-        <translation>Zastosuj</translation>
+      <source>Display Compatibility Data</source>
+      <translation>Wyświetl dane zgodności</translation>
     </message>
     <message>
-        <source>Restore Defaults</source>
-        <translation>Przywróć ustawienia domyślne</translation>
+      <source>Update Compatibility Database</source>
+      <translation>Aktualizuj bazę danych zgodności</translation>
     </message>
     <message>
-        <source>Close</source>
-        <translation>Zamknij</translation>
+      <source>Volume</source>
+      <translation>Głośność</translation>
     </message>
     <message>
-        <source>Point your mouse at an option to display its description.</source>
-        <translation>Najedź kursorem na opcję, aby wyświetlić jej opis.</translation>
+      <source>Save</source>
+      <translation>Zapisz</translation>
     </message>
     <message>
-        <source>consoleLanguageGroupBox</source>
-        <translation>Język konsoli:\nUstala język, który używa gra PS4.\nZaleca się ustawienie tego na język, który obsługuje gra, co może się różnić w zależności od regionu.</translation>
+      <source>Apply</source>
+      <translation>Zastosuj</translation>
     </message>
     <message>
-        <source>emulatorLanguageGroupBox</source>
-        <translation>Język emulatora:\nUstala język interfejsu użytkownika emulatora.</translation>
+      <source>Restore Defaults</source>
+      <translation>Przywróć ustawienia domyślne</translation>
     </message>
     <message>
-        <source>fullscreenCheckBox</source>
-        <translation>Włącz tryb pełnoekranowy:\nAutomatycznie przełącza okno gry w tryb pełnoekranowy.\nMożna to wyłączyć naciskając klawisz F11.</translation>
+      <source>Close</source>
+      <translation>Zamknij</translation>
     </message>
     <message>
-        <source>separateUpdatesCheckBox</source>
-        <translation>Włącz oddzielny folder aktualizacji:\nUmożliwia instalowanie aktualizacji gier w oddzielnym folderze w celu łatwego zarządzania.</translation>
+      <source>Point your mouse at an option to display its description.</source>
+      <translation>Najedź kursorem na opcję, aby wyświetlić jej opis.</translation>
     </message>
     <message>
-        <source>showSplashCheckBox</source>
-        <translation>Wyświetl ekran powitalny:\nPodczas uruchamiania gry wyświetla ekran powitalny (specjalny obraz).</translation>
+      <source>consoleLanguageGroupBox</source>
+      <translation>Język konsoli:\nUstala język, który używa gra PS4.\nZaleca się ustawienie tego na język, który obsługuje gra, co może się różnić w zależności od regionu.</translation>
     </message>
     <message>
-        <source>discordRPCCheckbox</source>
-        <translation>Włącz Discord Rich Presence:\nWyświetla ikonę emulatora i odpowiednie informacje na twoim profilu Discord.</translation>
+      <source>emulatorLanguageGroupBox</source>
+      <translation>Język emulatora:\nUstala język interfejsu użytkownika emulatora.</translation>
     </message>
     <message>
-        <source>userName</source>
-        <translation>Nazwa użytkownika:\nUstala nazwę użytkownika konta PS4, która może być wyświetlana w niektórych grach.</translation>
+      <source>fullscreenCheckBox</source>
+      <translation>Włącz tryb pełnoekranowy:\nAutomatycznie przełącza okno gry w tryb pełnoekranowy.\nMożna to wyłączyć naciskając klawisz F11.</translation>
     </message>
     <message>
-        <source>TrophyKey</source>
-        <translation>Klucz trofeów:\nKlucz używany do odszyfrowywania trofeów. Musi być uzyskany z konsoli po jailbreaku. Musi zawierać tylko znaki w kodzie szesnastkowym.</translation>
+      <source>separateUpdatesCheckBox</source>
+      <translation>Włącz oddzielny folder aktualizacji:\nUmożliwia instalowanie aktualizacji gier w oddzielnym folderze w celu łatwego zarządzania.</translation>
     </message>
     <message>
-        <source>logTypeGroupBox</source>
-        <translation>Typ logu:\nUstala, czy synchronizować wyjście okna dziennika dla wydajności. Może to mieć negatywny wpływ na emulację.</translation>
+      <source>showSplashCheckBox</source>
+      <translation>Wyświetl ekran powitalny:\nPodczas uruchamiania gry wyświetla ekran powitalny (specjalny obraz).</translation>
     </message>
     <message>
-        <source>logFilter</source>
-        <translation>Filtr logu:\nFiltruje dziennik, aby drukować tylko określone informacje.\nPrzykłady: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Poziomy: Trace, Debug, Info, Warning, Error, Critical - w tej kolejności, konkretny poziom wycisza wszystkie wcześniejsze poziomy w liście i rejestruje wszystkie poziomy później.</translation>
+      <source>discordRPCCheckbox</source>
+      <translation>Włącz Discord Rich Presence:\nWyświetla ikonę emulatora i odpowiednie informacje na twoim profilu Discord.</translation>
     </message>
     <message>
-        <source>updaterGroupBox</source>
-        <translation>Aktualizator:\nRelease: Oficjalne wersje wydawane co miesiąc, które mogą być bardzo przestarzałe, ale są niezawodne i przetestowane.\nNightly: Wersje rozwojowe, które zawierają wszystkie najnowsze funkcje i poprawki błędów, ale mogą mieć błędy i być mniej stabilne.</translation>
+      <source>userName</source>
+      <translation>Nazwa użytkownika:\nUstala nazwę użytkownika konta PS4, która może być wyświetlana w niektórych grach.</translation>
     </message>
     <message>
-        <source>GUIMusicGroupBox</source>
-        <translation>Odtwórz muzykę tytułową:\nJeśli gra to obsługuje, aktywuje odtwarzanie specjalnej muzyki podczas wybierania gry w GUI.</translation>
+      <source>TrophyKey</source>
+      <translation>Klucz trofeów:\nKlucz używany do odszyfrowywania trofeów. Musi być uzyskany z konsoli po jailbreaku. Musi zawierać tylko znaki w kodzie szesnastkowym.</translation>
     </message>
     <message>
-        <source>disableTrophycheckBox</source>
-        <translation>Wyłącz wyskakujące okienka trofeów:\nWyłącz powiadomienia o trofeach w grze. Postępy w zdobywaniu trofeów można nadal śledzić za pomocą przeglądarki trofeów (kliknij prawym przyciskiem myszy grę w oknie głównym).</translation>
+      <source>logTypeGroupBox</source>
+      <translation>Typ logu:\nUstala, czy synchronizować wyjście okna dziennika dla wydajności. Może to mieć negatywny wpływ na emulację.</translation>
     </message>
     <message>
-        <source>hideCursorGroupBox</source>
-        <translation>Ukryj kursor:\nWybierz, kiedy kursor zniknie:\nNigdy: Zawsze będziesz widział myszkę.\nNieaktywny: Ustaw czas, po którym zniknie po bezczynności.\nZawsze: nigdy nie zobaczysz myszki.</translation>
+      <source>logFilter</source>
+      <translation>Filtr logu:\nFiltruje dziennik, aby drukować tylko określone informacje.\nPrzykłady: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Poziomy: Trace, Debug, Info, Warning, Error, Critical - w tej kolejności, konkretny poziom wycisza wszystkie wcześniejsze poziomy w liście i rejestruje wszystkie poziomy później.</translation>
     </message>
     <message>
-        <source>idleTimeoutGroupBox</source>
-        <translation>Ustaw czas, po którym mysz zniknie po bezczynności.</translation>
+      <source>updaterGroupBox</source>
+      <translation>Aktualizator:\nRelease: Oficjalne wersje wydawane co miesiąc, które mogą być bardzo przestarzałe, ale są niezawodne i przetestowane.\nNightly: Wersje rozwojowe, które zawierają wszystkie najnowsze funkcje i poprawki błędów, ale mogą mieć błędy i być mniej stabilne.</translation>
     </message>
     <message>
-        <source>backButtonBehaviorGroupBox</source>
-        <translation>Zachowanie przycisku Wstecz:\nUstawia przycisk Wstecz kontrolera tak, aby emulował dotknięcie określonego miejsca na panelu dotykowym PS4.</translation>
+      <source>GUIBackgroundImageGroupBox</source>
+      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
     </message>
     <message>
-        <source>enableCompatibilityCheckBox</source>
-        <translation>Wyświetl dane zgodności:\nWyświetla informacje o kompatybilności gry w widoku tabeli. Włącz opcję „Aktualizuj zgodność przy uruchomieniu”, aby uzyskać aktualne informacje.</translation>
+      <source>GUIMusicGroupBox</source>
+      <translation>Odtwórz muzykę tytułową:\nJeśli gra to obsługuje, aktywuje odtwarzanie specjalnej muzyki podczas wybierania gry w GUI.</translation>
     </message>
     <message>
-        <source>checkCompatibilityOnStartupCheckBox</source>
-        <translation>Aktualizuj zgodność przy uruchomieniu:\nAutomatycznie aktualizuj bazę danych kompatybilności podczas uruchamiania shadPS4.</translation>
+      <source>disableTrophycheckBox</source>
+      <translation>Wyłącz wyskakujące okienka trofeów:\nWyłącz powiadomienia o trofeach w grze. Postępy w zdobywaniu trofeów można nadal śledzić za pomocą przeglądarki trofeów (kliknij prawym przyciskiem myszy grę w oknie głównym).</translation>
     </message>
     <message>
-        <source>updateCompatibilityButton</source>
-        <translation>Zaktualizuj bazę danych zgodności:\nNatychmiast zaktualizuj bazę danych zgodności.</translation>
+      <source>hideCursorGroupBox</source>
+      <translation>Ukryj kursor:\nWybierz, kiedy kursor zniknie:\nNigdy: Zawsze będziesz widział myszkę.\nNieaktywny: Ustaw czas, po którym zniknie po bezczynności.\nZawsze: nigdy nie zobaczysz myszki.</translation>
     </message>
     <message>
-        <source>Never</source>
-        <translation>Nigdy</translation>
+      <source>idleTimeoutGroupBox</source>
+      <translation>Ustaw czas, po którym mysz zniknie po bezczynności.</translation>
     </message>
     <message>
-        <source>Idle</source>
-        <translation>Bezczynny</translation>
+      <source>backButtonBehaviorGroupBox</source>
+      <translation>Zachowanie przycisku Wstecz:\nUstawia przycisk Wstecz kontrolera tak, aby emulował dotknięcie określonego miejsca na panelu dotykowym PS4.</translation>
     </message>
     <message>
-        <source>Always</source>
-        <translation>Zawsze</translation>
+      <source>enableCompatibilityCheckBox</source>
+      <translation>Wyświetl dane zgodności:\nWyświetla informacje o kompatybilności gry w widoku tabeli. Włącz opcję „Aktualizuj zgodność przy uruchomieniu”, aby uzyskać aktualne informacje.</translation>
     </message>
     <message>
-        <source>Touchpad Left</source>
-        <translation>Touchpad Lewy</translation>
+      <source>checkCompatibilityOnStartupCheckBox</source>
+      <translation>Aktualizuj zgodność przy uruchomieniu:\nAutomatycznie aktualizuj bazę danych kompatybilności podczas uruchamiania shadPS4.</translation>
     </message>
     <message>
-        <source>Touchpad Right</source>
-        <translation>Touchpad Prawy</translation>
+      <source>updateCompatibilityButton</source>
+      <translation>Zaktualizuj bazę danych zgodności:\nNatychmiast zaktualizuj bazę danych zgodności.</translation>
     </message>
     <message>
-        <source>Touchpad Center</source>
-        <translation>Touchpad Środkowy</translation>
+      <source>Never</source>
+      <translation>Nigdy</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Brak</translation>
+      <source>Idle</source>
+      <translation>Bezczynny</translation>
     </message>
     <message>
-        <source>graphicsAdapterGroupBox</source>
-        <translation>Urządzenie graficzne:\nW systemach z wieloma GPU, wybierz GPU, który emulator ma używać z rozwijanego menu,\n lub wybierz &quot;Auto Select&quot;, aby ustawić go automatycznie.</translation>
+      <source>Always</source>
+      <translation>Zawsze</translation>
     </message>
     <message>
-        <source>resolutionLayout</source>
-        <translation>Szerokość/Wysokość:\nUstala rozmiar okna emulatora podczas uruchamiania, który może być zmieniany w trakcie gry.\nTo różni się od rozdzielczości w grze.</translation>
+      <source>Touchpad Left</source>
+      <translation>Touchpad Lewy</translation>
     </message>
     <message>
-        <source>heightDivider</source>
-        <translation>Dzielnik Vblank:\nWskaźnik klatek, z jakim emulator jest odświeżany, pomnożony przez tę liczbę. Zmiana tego może mieć negatywne skutki, takie jak przyspieszenie gry lub zniszczenie krytycznej funkcjonalności gry, która nie spodziewa się, że to zostanie zmienione!</translation>
+      <source>Touchpad Right</source>
+      <translation>Touchpad Prawy</translation>
     </message>
     <message>
-        <source>dumpShadersCheckBox</source>
-        <translation>Włącz zrzucanie shaderów:\nDla technicznego debugowania zapisuje shadery z gry w folderze podczas renderowania.</translation>
+      <source>Touchpad Center</source>
+      <translation>Touchpad Środkowy</translation>
     </message>
     <message>
-        <source>nullGpuCheckBox</source>
-        <translation>Włącz Null GPU:\nDla technicznego debugowania dezaktywuje renderowanie gry tak, jakby nie było karty graficznej.</translation>
+      <source>None</source>
+      <translation>Brak</translation>
     </message>
     <message>
-        <source>gameFoldersBox</source>
-        <translation>Foldery gier:\nLista folderów do sprawdzenia zainstalowanych gier.</translation>
+      <source>graphicsAdapterGroupBox</source>
+      <translation>Urządzenie graficzne:\nW systemach z wieloma GPU, wybierz GPU, który emulator ma używać z rozwijanego menu,\n lub wybierz &quot;Auto Select&quot;, aby ustawić go automatycznie.</translation>
     </message>
     <message>
-        <source>addFolderButton</source>
-        <translation>Dodaj:\nDodaj folder do listy.</translation>
+      <source>resolutionLayout</source>
+      <translation>Szerokość/Wysokość:\nUstala rozmiar okna emulatora podczas uruchamiania, który może być zmieniany w trakcie gry.\nTo różni się od rozdzielczości w grze.</translation>
     </message>
     <message>
-        <source>removeFolderButton</source>
-        <translation>Usuń:\nUsuń folder z listy.</translation>
+      <source>heightDivider</source>
+      <translation>Dzielnik Vblank:\nWskaźnik klatek, z jakim emulator jest odświeżany, pomnożony przez tę liczbę. Zmiana tego może mieć negatywne skutki, takie jak przyspieszenie gry lub zniszczenie krytycznej funkcjonalności gry, która nie spodziewa się, że to zostanie zmienione!</translation>
     </message>
     <message>
-        <source>debugDump</source>
-        <translation>Włącz zrzut debugowania:\nZapisuje symbole importu i eksportu oraz informacje nagłówkowe pliku dla aktualnie działającej aplikacji PS4 w katalogu.</translation>
+      <source>dumpShadersCheckBox</source>
+      <translation>Włącz zrzucanie shaderów:\nDla technicznego debugowania zapisuje shadery z gry w folderze podczas renderowania.</translation>
     </message>
     <message>
-        <source>vkValidationCheckBox</source>
-        <translation>Włącz warstwę walidacji Vulkan:\nWłącza system, który waliduje stan renderera Vulkan i loguje informacje o jego wewnętrznym stanie. Zmniejszy to wydajność i prawdopodobnie zmieni zachowanie emulacji.</translation>
+      <source>nullGpuCheckBox</source>
+      <translation>Włącz Null GPU:\nDla technicznego debugowania dezaktywuje renderowanie gry tak, jakby nie było karty graficznej.</translation>
     </message>
     <message>
-        <source>vkSyncValidationCheckBox</source>
-        <translation>Włącz walidację synchronizacji Vulkan:\nWłącza system, który waliduje timing zadań renderowania Vulkan. Zmniejszy to wydajność i prawdopodobnie zmieni zachowanie emulacji.</translation>
+      <source>enableHDRCheckBox</source>
+      <translation type="unfinished">enableHDRCheckBox</translation>
     </message>
     <message>
-        <source>rdocCheckBox</source>
-        <translation>Włącz debugowanie RenderDoc:\nJeśli włączone, emulator zapewnia kompatybilność z Renderdoc, aby umożliwić nagrywanie i analizowanie aktualnie renderowanej klatki.</translation>
+      <source>gameFoldersBox</source>
+      <translation>Foldery gier:\nLista folderów do sprawdzenia zainstalowanych gier.</translation>
     </message>
     <message>
-        <source>collectShaderCheckBox</source>
-        <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <source>addFolderButton</source>
+      <translation>Dodaj:\nDodaj folder do listy.</translation>
     </message>
     <message>
-        <source>crashDiagnosticsCheckBox</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <source>removeFolderButton</source>
+      <translation>Usuń:\nUsuń folder z listy.</translation>
     </message>
     <message>
-        <source>copyGPUBuffersCheckBox</source>
-        <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <source>debugDump</source>
+      <translation>Włącz zrzut debugowania:\nZapisuje symbole importu i eksportu oraz informacje nagłówkowe pliku dla aktualnie działającej aplikacji PS4 w katalogu.</translation>
     </message>
     <message>
-        <source>hostMarkersCheckBox</source>
-        <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkValidationCheckBox</source>
+      <translation>Włącz warstwę walidacji Vulkan:\nWłącza system, który waliduje stan renderera Vulkan i loguje informacje o jego wewnętrznym stanie. Zmniejszy to wydajność i prawdopodobnie zmieni zachowanie emulacji.</translation>
     </message>
     <message>
-        <source>guestMarkersCheckBox</source>
-        <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <source>vkSyncValidationCheckBox</source>
+      <translation>Włącz walidację synchronizacji Vulkan:\nWłącza system, który waliduje timing zadań renderowania Vulkan. Zmniejszy to wydajność i prawdopodobnie zmieni zachowanie emulacji.</translation>
     </message>
     <message>
-        <source>Borderless</source>
-        <translation type="unfinished"></translation>
+      <source>rdocCheckBox</source>
+      <translation>Włącz debugowanie RenderDoc:\nJeśli włączone, emulator zapewnia kompatybilność z Renderdoc, aby umożliwić nagrywanie i analizowanie aktualnie renderowanej klatki.</translation>
     </message>
     <message>
-        <source>True</source>
-        <translation type="unfinished"></translation>
+      <source>collectShaderCheckBox</source>
+      <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-        <source>Enable HDR</source>
-        <translation type="unfinished"></translation>
+      <source>crashDiagnosticsCheckBox</source>
+      <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-        <source>Release</source>
-        <translation type="unfinished"></translation>
+      <source>copyGPUBuffersCheckBox</source>
+      <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-        <source>Nightly</source>
-        <translation type="unfinished"></translation>
+      <source>hostMarkersCheckBox</source>
+      <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>guestMarkersCheckBox</source>
+      <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-        <source>Show Background Image</source>
-        <translation type="unfinished"></translation>
+      <source>saveDataBox</source>
+      <translation type="unfinished">saveDataBox</translation>
     </message>
     <message>
-        <source>Opacity</source>
-        <translation type="unfinished"></translation>
+      <source>browseButton</source>
+      <translation type="unfinished">browseButton</translation>
     </message>
     <message>
-        <source>Set the volume of the background music.</source>
-        <translation type="unfinished"></translation>
+      <source>Borderless</source>
+      <translation type="unfinished">Borderless</translation>
     </message>
     <message>
-        <source>Enable Motion Controls</source>
-        <translation type="unfinished"></translation>
+      <source>True</source>
+      <translation type="unfinished">True</translation>
     </message>
     <message>
-        <source>Save Data Path</source>
-        <translation type="unfinished"></translation>
+      <source>Release</source>
+      <translation type="unfinished">Release</translation>
     </message>
     <message>
-        <source>Browse</source>
-        <translation type="unfinished">Przeglądaj</translation>
+      <source>Nightly</source>
+      <translation type="unfinished">Nightly</translation>
     </message>
     <message>
-        <source>async</source>
-        <translation type="unfinished"></translation>
+      <source>Set the volume of the background music.</source>
+      <translation type="unfinished">Set the volume of the background music.</translation>
     </message>
     <message>
-        <source>sync</source>
-        <translation type="unfinished"></translation>
+      <source>Enable Motion Controls</source>
+      <translation type="unfinished">Enable Motion Controls</translation>
     </message>
     <message>
-        <source>Auto Select</source>
-        <translation type="unfinished"></translation>
+      <source>Save Data Path</source>
+      <translation type="unfinished">Save Data Path</translation>
     </message>
     <message>
-        <source>Directory to install games</source>
-        <translation type="unfinished">Katalog do instalacji gier</translation>
+      <source>Browse</source>
+      <translation>Przeglądaj</translation>
     </message>
     <message>
-        <source>Directory to save data</source>
-        <translation type="unfinished"></translation>
+      <source>async</source>
+      <translation type="unfinished">async</translation>
     </message>
     <message>
-        <source>GUIBackgroundImageGroupBox</source>
-        <translation type="unfinished"></translation>
+      <source>sync</source>
+      <translation type="unfinished">sync</translation>
     </message>
     <message>
-        <source>enableHDRCheckBox</source>
-        <translation type="unfinished"></translation>
+      <source>Auto Select</source>
+      <translation type="unfinished">Auto Select</translation>
     </message>
     <message>
-        <source>saveDataBox</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to install games</source>
+      <translation>Katalog do instalacji gier</translation>
     </message>
     <message>
-        <source>browseButton</source>
-        <translation type="unfinished"></translation>
+      <source>Directory to save data</source>
+      <translation type="unfinished">Directory to save data</translation>
     </message>
-</context>
-<context>
+  </context>
+  <context>
     <name>TrophyViewer</name>
     <message>
-        <source>Trophy Viewer</source>
-        <translation>Menedżer trofeów</translation>
+      <source>Trophy Viewer</source>
+      <translation>Menedżer trofeów</translation>
     </message>
-</context>
+  </context>
 </TS>
