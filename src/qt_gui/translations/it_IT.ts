@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download completato</translation>
+      <translation>Download Completato</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
@@ -349,7 +349,7 @@
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Inizio aggiornamento...</translation>
+      <translation>Inizio Aggiornamento...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
