@@ -1289,7 +1289,7 @@
     </message>
     <message>
       <source>Show Splash</source>
-      <translation>Hiển thịn splash</translation>
+      <translation>Hiển thị splash</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
