@@ -96,7 +96,7 @@ u32 m_window_size_H = 720;
 std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
-std::string emulator_language = "en";
+std::string emulator_language = "en_US";
 static int backgroundImageOpacity = 50;
 static bool showBackgroundImage = true;
 
@@ -768,7 +768,7 @@ void load(const std::filesystem::path& path) {
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
-        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en");
+        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
         backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
         showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
     }
@@ -954,7 +954,7 @@ void setDefaultValues() {
     vkHostMarkers = false;
     vkGuestMarkers = false;
     rdocEnable = false;
-    emulator_language = "en";
+    emulator_language = "en_US";
     m_language = 1;
     gpuId = -1;
     separateupdatefolder = false;
