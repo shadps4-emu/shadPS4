@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -439,7 +439,7 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Мёртвая зона левого стика (по умолч:2 макс:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Кнопки действий</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -523,7 +523,7 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Мёртвая зона правого стика (по умолч:2 макс:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
@@ -1171,7 +1171,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Установлено</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1210,11 +1210,11 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Версия приложения</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>Прошивка</translation>
     </message>
     <message>
       <source>Region</source>
@@ -1601,7 +1601,7 @@
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Время скрытия курсора при бездействии:\nУстановите время, через которое курсор исчезнет при бездействии.</translation>
+      <translation>Время скрытия курсора при бездействии:\nВремя (в секундах), через которое курсор исчезнет при бездействии.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
@@ -1693,7 +1693,7 @@
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Включить валидацию синхронизации Vulkan:\nВключает систему, которая проверяет тайминг задач рендеринга Vulkan. Это снизит производительность и, вероятно, изменит поведение эмуляции.</translation>
+      <translation>Включить валидацию синхронизации Vulkan:\nВключает систему, которая проверяет тайминг задач рендеринга Vulkan.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -1705,7 +1705,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Диагностика сбоев:\nСоздает .yaml файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
+      <translation>Диагностика сбоев:\nСоздает .yaml-файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -1741,7 +1741,7 @@
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
