@@ -1656,7 +1656,7 @@
       <translation>Szélesség/Magasság:\nBeállítja az emulátor ablakának méretét induláskor, amely a játék során átméretezhető.\nEz különbözik a játékbeli felbontástól.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank elosztó:\nAz emulátor frissítési sebessége e számot megszorozva működik. Ennek megváltoztatása kedvezőtlen hatásokat okozhat, például növelheti a játék sebességét, vagy megszakíthat kritikus játékfunkciókat, amelyek nem számítanak arra, hogy ez megváltozik!</translation>
     </message>
     <message>

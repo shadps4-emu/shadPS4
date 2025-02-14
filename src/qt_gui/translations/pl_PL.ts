@@ -1656,7 +1656,7 @@
       <translation>Szerokość/Wysokość:\nUstala rozmiar okna emulatora podczas uruchamiania, który może być zmieniany w trakcie gry.\nTo różni się od rozdzielczości w grze.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Dzielnik Vblank:\nWskaźnik klatek, z jakim emulator jest odświeżany, pomnożony przez tę liczbę. Zmiana tego może mieć negatywne skutki, takie jak przyspieszenie gry lub zniszczenie krytycznej funkcjonalności gry, która nie spodziewa się, że to zostanie zmienione!</translation>
     </message>
     <message>

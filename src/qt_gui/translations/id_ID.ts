@@ -1656,7 +1656,7 @@
       <translation>Lebar/Tinggi:\nMenetapkan ukuran jendela emulator saat diluncurkan, yang dapat diubah ukurannya selama permainan.\nIni berbeda dari resolusi dalam permainan.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Pembagi Vblank:\nKecepatan bingkai di mana emulator menyegarkan dikalikan dengan angka ini. Mengubah ini dapat memiliki efek buruk, seperti meningkatkan kecepatan permainan, atau merusak fungsi kritis permainan yang tidak mengharapkan ini berubah!</translation>
     </message>
     <message>

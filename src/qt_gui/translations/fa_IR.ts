@@ -1656,7 +1656,7 @@
       <translation>عرض/ارتفاع:\nاندازه پنجره شبیه‌ساز را در هنگام راه‌اندازی تنظیم می‌کند، که در حین بازی قابل تغییر اندازه است.\nاین با وضوح داخل بازی متفاوت است.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>تقسیم‌کننده Vblank:\nمیزان فریم ریت که شبیه‌ساز با آن به‌روزرسانی می‌شود، در این عدد ضرب می‌شود. تغییر این مقدار ممکن است تأثیرات منفی داشته باشد، مانند افزایش سرعت بازی یا خراب شدن عملکردهای حیاتی بازی که انتظار تغییر آن را ندارند!</translation>
     </message>
     <message>

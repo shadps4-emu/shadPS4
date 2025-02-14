@@ -1656,7 +1656,7 @@
       <translation>Chiều rộng/Cao:\nChọn kích thước cửa sổ của trình giả lập khi khởi động, có thể điều chỉnh trong quá trình chơi.\nĐiều này khác với độ phân giải trong trò chơi.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Bộ chia Vblank:\nTốc độ khung hình mà trình giả lập làm mới được nhân với số này. Thay đổi này có thể có tác động tiêu cực như tăng tốc độ trò chơi hoặc làm hỏng chức năng quan trọng mà trò chơi không mong đợi thay đổi điều này!</translation>
     </message>
     <message>

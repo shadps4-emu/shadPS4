@@ -1656,7 +1656,7 @@
       <translation>Ширина/Висота:\nВстановіть розмір вікна емулятора під час запуску, який може бути змінений під час гри.\nЦе відрізняється від роздільної здатності в грі.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Розділювач Vblank:\nЧастота кадрів, з якою оновлюється емулятор, множиться на це число. Зміна цього параметра може мати негативні наслідки, такі як збільшення швидкості гри або порушення критичних функцій гри, які цього не очікують!</translation>
     </message>
     <message>

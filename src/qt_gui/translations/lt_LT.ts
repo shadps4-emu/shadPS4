@@ -1656,7 +1656,7 @@
       <translation>Plotis/Aukštis:\nNustato emuliatoriaus lango dydį paleidimo metu, kurį galima keisti žaidimo metu.\nTai skiriasi nuo žaidimo rezoliucijos.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank daliklis:\nKadrų dažnis, kuriuo emuliatorius atnaujinamas, dauginamas iš šio skaičiaus. Pakeitus tai gali turėti neigiamą poveikį, pvz., padidinti žaidimo greitį arba sukelti kritinių žaidimo funkcijų sugadinimą, kurios to nesitikėjo!</translation>
     </message>
     <message>

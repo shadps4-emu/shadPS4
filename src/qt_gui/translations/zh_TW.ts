@@ -1656,7 +1656,7 @@
       <translation>寬度/高度:\n設定模擬器啟動時的窗口大小，可以在遊戲過程中調整。\n這與遊戲內解析度不同。</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank分隔符:\n模擬器的幀速率將乘以這個數字。更改此數字可能會有不良影響，例如增加遊戲速度，或破壞不預期此變化的關鍵遊戲功能！</translation>
     </message>
     <message>

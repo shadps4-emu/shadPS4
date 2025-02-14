@@ -1656,7 +1656,7 @@
       <translation>Ανάλυση Οθόνης:\nΚαθορίζει το μέγεθος του παραθύρου του εξομοιωτή κατά την αναπαραγωγή, το οποίο μπορεί να αλλάξει κατά τη διάρκεια του παιχνιδιού.\nΑυτό είναι διαφορετικό από την ανάλυση του ίδιου του παιχνιδιού.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Διαιρέτης Συχνότητας Ανανέωσης:\nΠολλαπλασιάζει τον ρυθμό με τον οποίο ο εξομοιωτής ενημερώνει την εικόνα με αυτόν τον αριθμό. Η αλλαγή αυτής της ρύθμισης μπορεί να έχει αρνητικές επιπτώσεις, όπως ταχύτερο παιχνίδι ή σπασμένες λειτουργίες!</translation>
     </message>
     <message>

@@ -1656,7 +1656,7 @@
       <translation>Breedte/Hoogte:\nStelt de grootte van het emulatorvenster bij het opstarten in, wat tijdens het spelen kan worden gewijzigd.\nDit is anders dan de resolutie in de game.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank deler:\nDe frame-rate waartegen de emulator wordt vernieuwd, vermenigvuldigd met dit getal. Dit veranderen kan nadelige effecten hebben, zoals het versnellen van het spel of het verpesten van kritieke gamefunctionaliteiten die niet verwachtten dat dit zou veranderen!</translation>
     </message>
     <message>

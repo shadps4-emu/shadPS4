@@ -1656,7 +1656,7 @@
       <translation>Largeur/Hauteur:\nDéfinit la taille de la fenêtre de l&apos;émulateur au démarrage, qui peut être redimensionnée pendant le jeu.\nCela diffère de la résolution interne du jeu.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Diviseur Vblank:\nLe taux de rafraîchissement de l&apos;émulateur est multiplié par ce nombre. Changer cela peut avoir des effets négatifs, tels qu&apos;une augmentation de la vitesse du jeu ou la rupture de fonctionnalités critiques du jeu qui ne s&apos;attendent pas à ce changement !</translation>
     </message>
     <message>

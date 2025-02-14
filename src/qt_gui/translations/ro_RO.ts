@@ -1656,7 +1656,7 @@
       <translation>Lățime/Înălțime:\nSetează dimensiunea ferestrei emulatorului la lansare, care poate fi redimensionată în timpul jocului.\nAceasta este diferită de rezoluția din joc.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Împărțitor Vblank:\nRata de cadre cu care emulatorul se reîmprospătează este multiplicată cu acest număr. Schimbarea acestuia poate avea efecte adverse, cum ar fi creșterea vitezei jocului sau distrugerea funcționalității critice a jocului care nu se așteaptă ca aceasta să se schimbe!</translation>
     </message>
     <message>

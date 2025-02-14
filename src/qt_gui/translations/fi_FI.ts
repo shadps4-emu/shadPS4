@@ -1656,7 +1656,7 @@
       <translation>Leveys/Korkeus:\nAsettaa käynnistetyn emulaattori-ikkunan koon, jota voidaan muuttaa pelin aikana.\nTämä on eri, kuin pelin sisäinen resoluutio.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation></source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank Jakaja:\nEmulaattorin virkistystaajuus kerrotaan tällä numerolla. Tämän muuttaminen voi vaikuttaa haitallisesti, kuten lisätä pelin nopeutta tai rikkoa kriittisiä pelitoimintoja, jotka eivät odota tämän muuttuvan!</translation>
     </message>
     <message>
