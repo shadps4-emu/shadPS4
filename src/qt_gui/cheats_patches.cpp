@@ -91,9 +91,11 @@ void CheatsPatches::setupUI() {
     gameVersionLabel->setAlignment(Qt::AlignLeft);
     gameInfoLayout->addWidget(gameVersionLabel);
 
-    QLabel* gameSizeLabel = new QLabel(tr("Size: ") + m_gameSize);
-    gameSizeLabel->setAlignment(Qt::AlignLeft);
-    gameInfoLayout->addWidget(gameSizeLabel);
+    if (m_gameSize.left(4) != "0.00") {
+        QLabel* gameSizeLabel = new QLabel(tr("Size: ") + m_gameSize);
+        gameSizeLabel->setAlignment(Qt::AlignLeft);
+        gameInfoLayout->addWidget(gameSizeLabel);
+    }
 
     // Add a text area for instructions and 'Patch' descriptions
     instructionsTextEdit = new QTextEdit();
