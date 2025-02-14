@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\n</translation>
+      <translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte os problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -170,7 +170,7 @@
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Você baixou os cheats com sucesso. Para esta versão do jogo a partir do repositório selecionado. Você pode tentar baixar de outro repositório, se estiver disponível, também será possível usá-lo selecionando o arquivo da lista.</translation>
+      <translation>Você baixou os cheats para esta versão do jogo do repositório selecionado com sucesso. É possível tentar baixar de outro repositório, se estiver disponível, também será possível utilizá-lo selecionando o arquivo da lista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -186,7 +186,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com os Cheats. Se o patch não aparecer, pode ser que ele não exista para o número de série e a versão específicos do jogo.</translation>
+      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Cheats. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -1277,7 +1277,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>Habilitar Pasta de Atualização Separada</translation>
+      <translation>Ativar Pasta de Atualização Separada</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1293,7 +1293,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>Habilitar Discord Rich Presence</translation>
+      <translation>Ativar Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1541,7 +1541,7 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Idioma do console:\nDefine o idioma usado pelo jogo no PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
+      <translation>Idioma do console:\nDefine o idioma usado pelo jogo do PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
@@ -1549,11 +1549,11 @@
     </message>
     <message>
       <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Habilitar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
+      <translation>Ativar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Habilitar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.</translation>
+      <translation>Ativar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1561,7 +1561,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>Habilitar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
+      <translation>Ativar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
@@ -1573,7 +1573,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo de Registro:\nDefine se a saída da janela de log deve ser sincronizada para melhorar o desempenho. Isso pode impactar negativamente a emulação.</translation>
+      <translation>Tipo do Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1609,7 +1609,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na janela principal.\nHabilitar &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
+      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na visualização de tabela.\nAtivar &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1661,11 +1661,11 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Habilitar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
+      <translation>Ativar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Habilitar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse nenhuma placa gráfica.</translation>
+      <translation>Ativar GPU NULA:\nDesativa a renderização do jogo para fins de depuração técnica, como se não houvesse placa de vídeo.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1685,27 +1685,27 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Habilitar Depuração de Dumping:\nArmazena os símbolos de importação e exportação e as informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
+      <translation>Ativar Depuração de Dumping:\nArmazena os símbolos de importação, exportação e informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Habilitar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+      <translation>Ativar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno.\nIsso diminuirá o desempenho e provavelmente mudará o comportamento da emulação.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Habilitar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+      <translation>Ativar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsso diminuirá o desempenho e provavelmente mudará o comportamento da emulação.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>Habilitar Depuração por RenderDoc:\nSe ativado, permite que o emulador tenha compatibilidade com RenderDoc para gravação e análise do quadro renderizado atual.</translation>
+      <translation>Ativar Depuração por RenderDoc:\nSe habilitado, o emulador fornecerá compatibilidade com RenderDoc para permitir a captura e análise do quadro atualmente renderizado.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>Coletar Shaders:\nVocê precisa habilitar isso para editar shaders com o menu de depuração (Ctrl + F10).</translation>
+      <translation>Coletar Shaders:\nVocê precisa dessa opção ativada para editar shaders com o menu de depuração (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depurar erros de &apos;Device lost&apos;. Se você tiver isso habilitado, você deve habilitar os Marcadores de Depuração de Host e de Convidado.\nNão funciona em GPUs da Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o SDK do Vulkan para que isso funcione.</translation>
+      <translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se você tiver isto habilitado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -1713,11 +1713,11 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Host:\nInsere informações do lado do emulador, como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, você deve habilitar o &quot;Diagnóstico de Falha&quot;.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração de Host:\nInsere informações vindo do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, você deve habilitar &quot;Diagnóstico de Falha&quot;.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -1749,7 +1749,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>Habilitar Controles de Movimento</translation>
+      <translation>Ativar Controles de Movimento</translation>
     </message>
     <message>
       <source>Save Data Path</source>
