@@ -186,7 +186,7 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
-Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
@@ -287,6 +287,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return EmitReadStepRate(ctx, 0);
     case IR::Attribute::InstanceId1:
         return EmitReadStepRate(ctx, 1);
+    case IR::Attribute::WorkgroupIndex:
+        return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
     case IR::Attribute::LocalInvocationId:

@@ -95,10 +95,9 @@ void Visit(Info& info, const IR::Inst& inst) {
 }
 
 void CollectShaderInfoPass(IR::Program& program) {
-    Info& info{program.info};
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(info, inst);
+            Visit(program.info, inst);
         }
     }
 }

@@ -45,6 +45,7 @@ public:
 
     void DefineBufferOffsets();
     void DefineInterpolatedAttribs();
+    void DefineWorkgroupIndex();
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
@@ -200,8 +201,10 @@ public:
     std::array<Id, 30> patches{};
 
     Id workgroup_id{};
+    Id num_workgroups_id{};
+    Id workgroup_index_id{};
     Id local_invocation_id{};
-    Id invocation_id{}; // for instanced geoshaders or output vertices within TCS patch
+    Id invocation_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
 

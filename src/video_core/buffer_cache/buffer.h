@@ -168,7 +168,7 @@ public:
     void Commit();
 
     /// Maps and commits a memory region with user provided data
-    u64 Copy(VAddr src, size_t size, size_t alignment = 0) {
+    u64 Copy(auto src, size_t size, size_t alignment = 0) {
         const auto [data, offset] = Map(size, alignment);
         std::memcpy(data, reinterpret_cast<const void*>(src), size);
         Commit();

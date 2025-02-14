@@ -215,8 +215,7 @@ void EmitContext::DefineInterpolatedAttribs() {
     if (!profile.needs_manual_interpolation) {
         return;
     }
-    // Iterate all input attributes, load them and manually interpolate with barycentric
-    // coordinates.
+    // Iterate all input attributes, load them and manually interpolate.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
         const u32 semantic = input.param_index;
@@ -239,6 +238,19 @@ void EmitContext::DefineInterpolatedAttribs() {
         Name(params.id, fmt::format("fs_in_attr{}", semantic));
         params.is_loaded = true;
     }
+}
+
+void EmitContext::DefineWorkgroupIndex() {
+    const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
+    const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
+    const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
+    const Id workgroup_z{OpCompositeExtract(U32[1], workgroup_id_val, 2)};
+    const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
+    const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
+    const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
+    workgroup_index_id = OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
+                                        OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
+    Name(workgroup_index_id, "workgroup_index");
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -309,9 +321,15 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment:
-        frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
-        frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+            frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+        }
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.loads.Get(IR::Attribute::IsFrontFace)) {
+            front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        }
         if (profile.needs_manual_interpolation) {
             gl_bary_coord_id =
                 DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
@@ -346,9 +364,16 @@ void EmitContext::DefineInputs() {
         }
         break;
     case LogicalStage::Compute:
-        workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
-        local_invocation_id =
-            DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) || info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+            workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
+            num_workgroups_id = DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
+            local_invocation_id =
+                DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
         break;
     case LogicalStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
@@ -810,6 +835,7 @@ void EmitContext::DefineSharedMemory() {
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
+    LOG_ERROR(Render_Recompiler, "Defined {:#x} num_elements = {}, shared_memory_size = {}", info.pgm_hash, num_elements, shared_memory_size);
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
