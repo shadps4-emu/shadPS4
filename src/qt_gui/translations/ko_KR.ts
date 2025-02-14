@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -162,7 +162,7 @@
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
+      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
@@ -170,7 +170,7 @@
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
+      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -186,7 +186,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
+      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -242,7 +242,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>Can&apos;t apply cheats before the game is started.</translation>
+      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
     </message>
     <message>
       <source>Close</source>
@@ -1541,23 +1541,23 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
+      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
+      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
     </message>
     <message>
       <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</translation>
+      <translation type="unfinished">Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
+      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
+      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
@@ -1565,23 +1565,23 @@
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
+      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
+      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Levels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1589,35 +1589,35 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
+      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
+      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Set a time for the mouse to disappear after being after being idle.</translation>
+      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
+      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1649,23 +1649,23 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
+      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
+      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
+      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
+      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1673,51 +1673,51 @@
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>Game Folders:\nThe list of folders to check for installed games.</translation>
+      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Add:\nAdd a folder to the list.</translation>
+      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>Remove:\nRemove a folder from the list.</translation>
+      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
+      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state. This will reduce performance and likely change the behavior of emulation.</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks. This will reduce performance and likely change the behavior of emulation.</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
