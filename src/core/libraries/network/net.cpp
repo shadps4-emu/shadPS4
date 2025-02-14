@@ -16,6 +16,8 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "core/libraries/network/netctl.h"
+#include "core/libraries/network/net_util.h"
 
 #include "net_error.h"
 #include "netctl.h"
@@ -744,18 +746,10 @@ int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr,
         LOG_ERROR(Lib_Net, "addr is null!");
         return ORBIS_NET_EINVAL;
     }
-#ifdef _WIN32
-    IP_ADAPTER_INFO AdapterInfo[16];
-    DWORD dwBufLen = sizeof(AdapterInfo);
-    if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
-        LOG_ERROR(Lib_Net, "Can't retrieve adapter info");
-        return ORBIS_NET_EINVAL;
-    } else {
-        memcpy(addr->data, AdapterInfo[0].Address, 6);
-    }
-#else
-    LOG_ERROR(Lib_Net, "FixMe no support for MacOS,linux");
-#endif
+    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    netinfo->RetrieveEthernetAddr();
+    memcpy(addr->data, netinfo->GetEthernetAddr().data(), 6);
+
     return ORBIS_OK;
 }
 
