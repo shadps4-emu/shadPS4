@@ -142,6 +142,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
+    ui->toolBar->addWidget(ui->keyboardButton);
     QFrame* line = new QFrame(this);
     line->setFrameShape(QFrame::StyledPanel);
     line->setFrameShadow(QFrame::Sunken);
@@ -325,6 +326,11 @@ void MainWindow::CreateConnects() {
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
         auto configWindow = new ControlSettings(m_game_info, this);
         configWindow->exec();
+    });
+
+    connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
+        auto kbmWindow = new EditorDialog(this);
+        kbmWindow->exec();
     });
 
 #ifdef ENABLE_UPDATER
@@ -1106,6 +1112,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
+    ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
