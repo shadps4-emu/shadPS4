@@ -117,7 +117,12 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
         layout->addWidget(image_label);
         layout->addWidget(name_label);
 
-        name_label->setStyleSheet("color: white; font-size: 12px; font-weight: bold;");
+        // Resizing of font-size.
+        float fontSize = (Config::getIconSizeGrid() / 5.5f);
+        QString styleSheet =
+            QString("color: white; font-weight: bold; font-size: %1px;").arg(fontSize);
+        name_label->setStyleSheet(styleSheet);
+
         QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
         shadowEffect->setBlurRadius(5);               // Set the blur radius of the shadow
         shadowEffect->setColor(QColor(0, 0, 0, 160)); // Set the color and opacity of the shadow
