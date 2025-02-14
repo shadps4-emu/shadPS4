@@ -110,7 +110,11 @@ private:
     QComboBox* patchesComboBox;
     QListView* patchesListView;
 
-    QString defaultTextEdit;
+    // Strings
+    QString defaultTextEdit_MSG;
+    QString CheatsNotFound_MSG;
+    QString CheatsDownloadedSuccessfully_MSG;
+    QString DownloadComplete_MSG;
 };
 
 #endif // CHEATS_PATCHES_H
