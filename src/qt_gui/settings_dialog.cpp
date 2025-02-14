@@ -58,6 +58,7 @@ QStringList languageNames = {"Arabic",
 
 const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
+QMap<QString, QString> channelMap;
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
@@ -70,6 +71,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
+
+    channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
 
     // Add list of available GPUs
     ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
@@ -149,7 +152,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 #endif
 
         connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
-                [](const QString& channel) { Config::setUpdateChannel(channel.toStdString()); });
+                [this](const QString& channel) {
+                    if (channelMap.contains(channel)) {
+                        Config::setUpdateChannel(channelMap.value(channel).toStdString());
+                    }
+                });
 
         connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
             auto checkUpdate = new CheckUpdate(true);
@@ -373,8 +380,9 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
-    ui->logTypeComboBox->setCurrentText(
-        QString::fromStdString(toml::find_or<std::string>(data, "General", "logType", "async")));
+    std::string logType = Config::getLogType();
+    ui->logTypeComboBox->setCurrentText(logType == "async" ? tr("async")
+                                                           : (logType == "sync" ? tr("sync") : ""));
     ui->logFilterLineEdit->setText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logFilter", "")));
     ui->userNameLineEdit->setText(
@@ -405,15 +413,12 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
     ui->changelogCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "alwaysShowChangelog", false));
-    std::string updateChannel = toml::find_or<std::string>(data, "General", "updateChannel", "");
-    if (updateChannel != "Release" && updateChannel != "Nightly") {
-        if (Common::isRelease) {
-            updateChannel = "Release";
-        } else {
-            updateChannel = "Nightly";
-        }
-    }
-    ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
+
+    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    ui->updateComboBox->setCurrentText(
+        channelMap.key(updateChannel != "Release" && updateChannel != "Nightly"
+                           ? (Common::isRelease ? "Release" : "Nightly")
+                           : updateChannel));
 #endif
 
     std::string chooseHomeTab = toml::find_or<std::string>(data, "General", "chooseHomeTab", "");
@@ -637,7 +642,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
-    Config::setLogType(ui->logTypeComboBox->currentText().toStdString());
+    Config::setLogType((ui->logTypeComboBox->currentText() == tr("async") ? "async" : "sync"));
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
     Config::setUserName(ui->userNameLineEdit->text().toStdString());
     Config::setTrophyKey(ui->trophyKeyLineEdit->text().toStdString());
@@ -666,7 +671,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
-    Config::setUpdateChannel(ui->updateComboBox->currentText().toStdString());
+    Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
     Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
