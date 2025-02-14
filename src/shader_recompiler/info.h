@@ -37,12 +37,20 @@ enum class TextureType : u32 {
 };
 constexpr u32 NUM_TEXTURE_TYPES = 7;
 
+enum class BufferType : u32 {
+    Guest,
+    ReadConstUbo,
+    GdsBuffer,
+    SharedMemory,
+};
+
 struct Info;
 
 struct BufferResource {
     u32 sharp_idx;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
+    BufferType buffer_type;
     bool is_gds_buffer{};
     bool is_instance_data{};
     u8 instance_attrib{};

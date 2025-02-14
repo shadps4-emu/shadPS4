@@ -227,16 +227,33 @@ public:
         bool is_storage = false;
     };
 
-    struct BufferDefinition {
+    enum class BufferAlias : u32 {
+        U8,
+        U16,
+        U32,
+        F32,
+        NumAlias,
+    };
+
+    struct BufferSpv {
         Id id;
-        Id offset;
-        Id offset_dwords;
-        u32 binding;
-        const VectorIds* data_types;
         Id pointer_type;
     };
 
+    struct BufferDefinition {
+        u32 binding;
+        BufferType buffer_type;
+        Id offset;
+        Id offset_dwords;
+        std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
+
+        constexpr auto& operator[](this auto&& self, BufferAlias alias) {
+            return self.aliases[u32(alias)];
+        }
+    };
+
     Bindings& binding;
+    boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
     BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
@@ -278,6 +295,9 @@ private:
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+
+    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
+                           BufferType buffer_type, Id data_type);
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);

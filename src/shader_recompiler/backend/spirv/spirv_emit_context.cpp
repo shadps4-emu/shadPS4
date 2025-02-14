@@ -588,78 +588,62 @@ void EmitContext::DefinePushDataBlock() {
     interfaces.push_back(push_data_block);
 }
 
-void EmitContext::DefineBuffers() {
-    boost::container::small_vector<Id, 8> type_ids;
-    const auto define_struct = [&](Id record_array_type, bool is_instance_data,
-                                   std::optional<std::string_view> explicit_name = {}) {
-        const Id struct_type{TypeStruct(record_array_type)};
-        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
-            return struct_type;
-        }
-        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-        auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
-                                     : fmt::format("{}_cbuf_block_f32", stage);
-        name = explicit_name.value_or(name);
-        Name(struct_type, name);
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
+                                                 BufferType buffer_type, Id data_type) {
+    // Define array type.
+    const Id max_num_items = ConstU32(u32(profile.max_ubo_size) >> elem_shift);
+    const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
+                                          : TypeArray(data_type, max_num_items)};
+    // Define block struct type. Don't perform decorations twice on the same Id.
+    const Id struct_type{TypeStruct(record_array_type)};
+    if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) == buf_type_ids.end()) {
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 1 << elem_shift);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
         MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-        type_ids.push_back(record_array_type);
-        return struct_type;
-    };
-
-    if (info.has_readconst) {
-        const Id data_type = U32[1];
-        const auto storage_class = spv::StorageClass::Uniform;
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id record_array_type{
-            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.size())))};
-
-        const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
-
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        buf_type_ids.push_back(record_array_type);
+    }
+    // Define buffer binding interface.
+    const auto storage_class =
+        is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+    const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+    const Id pointer_type = TypePointer(storage_class, data_type);
+    const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+    Decorate(id, spv::Decoration::Binding, binding.unified);
+    Decorate(id, spv::Decoration::DescriptorSet, 0U);
+    if (is_storage && !is_written) {
+        Decorate(id, spv::Decoration::NonWritable);
+    }
+    switch (buffer_type) {
+    case Shader::BufferType::GdsBuffer:
+        Name(id, "gds_buffer");
+        break;
+    case Shader::BufferType::ReadConstUbo:
         Name(id, "srt_flatbuf_ubo");
+        break;
+    case Shader::BufferType::SharedMemory:
+        Name(id, "ssbo_shmem");
+        break;
+    default:
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "ubo", binding.buffer));
+    }
+    interfaces.push_back(id);
+    return {id, pointer_type};
+};
 
-        srt_flatbuf = {
-            .id = id,
-            .binding = binding.buffer++,
-            .pointer_type = pointer_type,
-        };
-        interfaces.push_back(id);
+void EmitContext::DefineBuffers() {
+    if (info.has_readconst) {
+        srt_flatbuf[BufferAlias::U32] = DefineBuffer(false, false, 2, BufferType::ReadConstUbo, U32[1]);
+        srt_flatbuf.binding = binding.buffer++;
+        ++binding.unified;
     }
 
     for (const auto& desc : info.buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(sharp, profile);
-        const u32 array_size = profile.max_ubo_size >> 2;
-        const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
-        const Id data_type = (*data_types)[1];
-        const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(array_size))};
-        const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
-
-        const auto storage_class =
-            is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        if (is_storage && !desc.is_written) {
-            Decorate(id, spv::Decoration::NonWritable);
-        }
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sharp_idx));
-
-        buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .data_types = data_types,
-            .pointer_type = pointer_type,
-        });
-        interfaces.push_back(id);
+        const auto buf_sharp = desc.GetSharp(info);
+        const bool is_storage = desc.IsStorage(buf_sharp, profile);
+        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        spv_buffer[BufferAlias::U32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+        ++binding.unified;
     }
 }
 

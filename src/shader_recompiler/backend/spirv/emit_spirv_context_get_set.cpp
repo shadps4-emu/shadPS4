@@ -160,21 +160,23 @@ void EmitGetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+using BufferAlias = EmitContext::BufferAlias;
+
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
-    u32 flatbuf_off_dw = inst->Flags<u32>();
-    ASSERT(ctx.srt_flatbuf.binding >= 0);
-    ASSERT(flatbuf_off_dw > 0);
-    Id index = ctx.ConstU32(flatbuf_off_dw);
-    auto& buffer = ctx.srt_flatbuf;
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+    const u32 flatbuf_off_dw = inst->Flags<u32>();
+    ASSERT(ctx.srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0);
+    const auto& buffer = ctx.srt_flatbuf;
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
     return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    auto& buffer = ctx.buffers[handle];
+    const auto& buffer = ctx.buffers[handle];
     index = ctx.OpIAdd(ctx.U32[1], index, buffer.offset_dwords);
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-    return ctx.OpLoad(buffer.data_types->Get(1), ptr);
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
@@ -398,21 +400,22 @@ void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
 
 template <u32 N>
 static Id EmitLoadBufferU32xN(EmitContext& ctx, u32 handle, Id address) {
-    auto& buffer = ctx.buffers[handle];
+    const auto& buffer = ctx.buffers[handle];
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-        return ctx.OpLoad(buffer.data_types->Get(1), ptr);
+        const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+        return ctx.OpLoad(ctx.U32[1], ptr);
     } else {
         boost::container::static_vector<Id, N> ids;
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
             const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i)};
-            ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
+                ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i)};
+            ids.push_back(ctx.OpLoad(ctx.U32[1], ptr));
         }
-        return ctx.OpCompositeConstruct(buffer.data_types->Get(N), ids);
+        return ctx.OpCompositeConstruct(ctx.U32[N], ids);
     }
 }
 
@@ -470,16 +473,17 @@ template <u32 N>
 static void EmitStoreBufferU32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     auto& buffer = ctx.buffers[handle];
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
         ctx.OpStore(ptr, value);
     } else {
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
             const Id ptr =
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(buffer.data_types->Get(1), value, i));
+                ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
+            ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.U32[1], value, i));
         }
     }
 }
