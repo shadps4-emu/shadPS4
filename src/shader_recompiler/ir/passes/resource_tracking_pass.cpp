@@ -78,7 +78,20 @@ bool IsDataRingInstruction(const IR::Inst& inst) {
 }
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
-    return IR::Type::U32;
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::StoreBufferU8:
+        return IR::Type::U8;
+    case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::StoreBufferU16:
+        return IR::Type::U16;
+    case IR::Opcode::LoadBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32:
+        // Formatted buffer loads can use a variety of types.
+        return IR::Type::U32 | IR::Type::F32 | IR::Type::U16 | IR::Type::U8;
+    default:
+        return IR::Type::U32;
+    }
 }
 
 bool IsImageAtomicInstruction(const IR::Inst& inst) {

@@ -107,6 +107,8 @@ Id EmitContext::Def(const IR::Value& value) {
 void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
+    U8 = Name(TypeUInt(8), "u8_id");
+    U16 = Name(TypeUInt(16), "u16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");
@@ -638,8 +640,21 @@ void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
+
+        // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
-        spv_buffer[BufferAlias::U32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+        if (True(desc.used_types & IR::Type::U32)) {
+            spv_buffer[BufferAlias::U32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+        }
+        if (True(desc.used_types & IR::Type::F32)) {
+            spv_buffer[BufferAlias::F32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
+        }
+        if (True(desc.used_types & IR::Type::U16)) {
+            spv_buffer[BufferAlias::U16] = DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
+        }
+        if (True(desc.used_types & IR::Type::U8)) {
+            spv_buffer[BufferAlias::U8] = DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+        }
         ++binding.unified;
     }
 }
