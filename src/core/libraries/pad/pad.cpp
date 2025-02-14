@@ -261,6 +261,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
         if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
+    scePadResetLightBar(1);
     return 1; // dummy
 }
 
@@ -412,7 +413,13 @@ int PS4_SYSV_ABI scePadReadStateExt() {
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_INFO(Lib_Pad, "(DUMMY) called");
+    if (handle != 1) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
+    auto* controller = Common::Singleton<GameController>::Instance();
+    int* rgb = Config::GetControllerCustomColor();
+    controller->SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
     return ORBIS_OK;
 }
 
@@ -472,6 +479,9 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 }
 
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
+    if (Config::GetOverrideControllerColor()) {
+        return ORBIS_OK;
+    }
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "called handle = {} rgb = {} {} {}", handle, pParam->r, pParam->g,
                   pParam->b);

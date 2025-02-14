@@ -47,6 +47,10 @@ int getSpecialPadClass();
 bool getIsMotionControlsEnabled();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
+bool GetOverrideControllerColor();
+void SetOverrideControllerColor(bool enable);
+int* GetControllerCustomColor();
+void SetControllerCustomColor(int r, int b, int g);
 
 u32 getScreenWidth();
 u32 getScreenHeight();
