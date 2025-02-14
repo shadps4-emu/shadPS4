@@ -507,7 +507,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
                 .used_types = IR::Type::F32,
-                .is_instance_data = true,
                 .instance_attrib = attrib.semantic,
             });
         }

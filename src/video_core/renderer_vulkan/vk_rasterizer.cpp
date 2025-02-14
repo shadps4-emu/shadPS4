@@ -519,27 +519,12 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         }
     }
 
-    // Bind a SSBO to act as shared memory in case of not being able to use a workgroup buffer
-    // (e.g. when the compute shared memory is bigger than the GPU's shared memory)
-    if (stage.has_emulated_shared_memory) {
-        const auto* lds_buf = buffer_cache.GetLdsBuffer();
-        buffer_infos.emplace_back(lds_buf->Handle(), 0, lds_buf->SizeBytes());
-        set_writes.push_back({
-            .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding.unified++,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .pBufferInfo = &buffer_infos.back(),
-        });
-        ++binding.buffer;
-    }
-
     // Second pass to re-bind buffers that were updated after binding
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
         const auto& [buffer_id, vsharp] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
         const bool is_storage = desc.IsStorage(vsharp, pipeline_cache.GetProfile());
+        // Buffer is not from the cache, either a special buffer or unbound.
         if (!buffer_id) {
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();

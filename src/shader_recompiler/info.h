@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-#include <algorithm>
 #include <span>
 #include <vector>
 #include <boost/container/small_vector.hpp>
@@ -19,7 +18,6 @@
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader {
@@ -51,7 +49,6 @@ struct BufferResource {
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
     BufferType buffer_type;
-    bool is_instance_data{};
     u8 instance_attrib{};
     bool is_written{};
     bool is_formatted{};
@@ -203,10 +200,8 @@ struct Info {
     bool uses_unpack_10_11_11{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
-    bool translation_failed{}; // indicates that shader has unsupported instructions
-    bool has_emulated_shared_memory{};
+    bool translation_failed{};
     bool has_readconst{};
-    u32 shared_memory_size{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
@@ -243,10 +238,8 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers =
-            buffers.size() + (has_emulated_shared_memory ? 1 : 0);
-        bnd.buffer += total_buffers;
-        bnd.unified += total_buffers + images.size() + samplers.size();
+        bnd.buffer += buffers.size();
+        bnd.unified += buffers.size() + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
     }
 
