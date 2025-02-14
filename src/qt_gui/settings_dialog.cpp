@@ -61,6 +61,7 @@ const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 2
 QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
 QMap<QString, QString> fullscreenModeMap;
+QMap<QString, QString> chooseHomeTabMap;
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
@@ -77,6 +78,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
     logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
     fullscreenModeMap = {{tr("Borderless"), "Borderless"}, {tr("True"), "True"}};
+    chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
+                        {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
+                        {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
+                        {tr("Debug"), "Debug"}};
 
     // Add list of available GPUs
     ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
@@ -429,13 +434,19 @@ void SettingsDialog::LoadValuesFromConfig() {
                            : updateChannel));
 #endif
 
-    std::string chooseHomeTab = toml::find_or<std::string>(data, "General", "chooseHomeTab", "");
-    ui->chooseHomeTabComboBox->setCurrentText(QString::fromStdString(chooseHomeTab));
+    std::string chooseHomeTab =
+        toml::find_or<std::string>(data, "General", "chooseHomeTab", "General");
+    QString translatedText = chooseHomeTabMap.key(QString::fromStdString(chooseHomeTab));
+    if (translatedText.isEmpty()) {
+        translatedText = tr("General");
+    }
+    ui->chooseHomeTabComboBox->setCurrentText(translatedText);
+
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
                             tr("Input"),   tr("Paths"), tr("Debug")};
-    QString chooseHomeTabQString = QString::fromStdString(chooseHomeTab);
-    int indexTab = tabNames.indexOf(chooseHomeTabQString);
-    indexTab = (indexTab == -1) ? 0 : indexTab;
+    int indexTab = tabNames.indexOf(translatedText);
+    if (indexTab == -1)
+        indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 
     QString backButtonBehavior = QString::fromStdString(
@@ -678,7 +689,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
-    Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
+    Config::setChooseHomeTab(
+        chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
     Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
