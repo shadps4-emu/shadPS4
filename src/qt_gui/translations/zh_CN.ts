@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation>Package</translation>
+      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>
@@ -1377,7 +1377,7 @@
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation>Vblank Divider</translation>
+      <translation type="unfinished">Vblank Divider</translation>
     </message>
     <message>
       <source>Advanced</source>
