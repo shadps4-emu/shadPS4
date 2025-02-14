@@ -214,7 +214,7 @@ public:
         keyboardButton = new QPushButton(centralWidget);
         keyboardButton->setFlat(true);
         keyboardButton->setIcon(QIcon(":images/keyboard_icon.png"));
-        keyboardButton->setIconSize(QSize(40, 40));
+        keyboardButton->setIconSize(QSize(48, 44));
 
         sizeSliderContainer = new QWidget(centralWidget);
         sizeSliderContainer->setObjectName("sizeSliderContainer");
