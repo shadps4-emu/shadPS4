@@ -845,8 +845,6 @@ void EmitContext::DefineSharedMemory() {
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
-    LOG_ERROR(Render_Recompiler, "Defined {:#x} num_elements = {}, shared_memory_size = {}",
-              info.pgm_hash, num_elements, shared_memory_size);
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
