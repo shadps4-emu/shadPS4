@@ -10,7 +10,7 @@
 #include "common/config.h"
 #include "common/path_util.h"
 #include "game_info.h"
-#include "src/sdl_window.h"
+#include "sdl_window.h"
 
 #include <QCheckBox>
 #include <QCloseEvent>
@@ -39,15 +39,6 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     // Create the game selection combo box
     gameComboBox = new QComboBox(this);
     gameComboBox->addItem("default"); // Add default option
-                                      /*
-                                          gameComboBox = new QComboBox(this);
-                                          layout->addWidget(gameComboBox); // Add the combobox for selecting game configurations
-                                  
-                                          // Populate the combo box with game configurations
-                                          QStringList gameConfigs = GameInfoClass::GetGameInfo(this);
-                                          gameComboBox->addItems(gameConfigs);
-                                          gameComboBox->setCurrentText("default.ini"); // Set the default selection
-                                      */
     // Load all installed games
     loadInstalledGames();
 
@@ -60,7 +51,6 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
         Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
     });
     // Create Save, Cancel, and Help buttons
-    Config::SetUseUnifiedInputConfig(!Config::GetUseUnifiedInputConfig());
     QPushButton* saveButton = new QPushButton("Save", this);
     QPushButton* cancelButton = new QPushButton("Cancel", this);
     QPushButton* helpButton = new QPushButton("Help", this);
