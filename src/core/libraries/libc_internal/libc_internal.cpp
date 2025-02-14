@@ -10507,9 +10507,9 @@ s32 PS4_SYSV_ABI internal_localtime_s() {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI internal_longjmp(std::jmp_buf env, int status) {
-    LOG_INFO(Lib_LibcInternal, "called");
-    std::longjmp(env, status);
+s32 PS4_SYSV_ABI internal_longjmp() {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI internal_lrand48() {
