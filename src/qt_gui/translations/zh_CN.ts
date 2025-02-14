@@ -576,7 +576,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>安装 DLC 的目录</translation>
     </message>
   </context>
   <context>
@@ -868,11 +868,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>安装所有 PKG 到选定的文件夹</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>安装后删除 PKG 文件</translation>
     </message>
   </context>
   <context>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>打开 shadPS4 文件夹</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -1151,11 +1151,11 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>运行游戏</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>找不到 Eboot.bin 文件</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
@@ -1163,11 +1163,11 @@
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG是一个补丁或 DLC，请先安装游戏！</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>游戏已经在运行中！</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -1393,7 +1393,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>启用 HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1729,11 +1729,11 @@
     </message>
     <message>
       <source>Borderless</source>
-      <translation type="unfinished">Borderless</translation>
+      <translation>无边框全屏</translation>
     </message>
     <message>
       <source>True</source>
-      <translation type="unfinished">True</translation>
+      <translation>真全屏</translation>
     </message>
     <message>
       <source>Release</source>
@@ -1745,15 +1745,15 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>设置背景音乐的音量。</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>启用动态控制</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>保存数据路径</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1769,7 +1769,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>自动选择</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1777,7 +1777,7 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>存档数据目录</translation>
     </message>
   </context>
   <context>
