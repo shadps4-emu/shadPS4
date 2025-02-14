@@ -1721,11 +1721,11 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Percorso Dati Salvataggio:\n La cartella dove verranno archiviati i salvataggi di gioco.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Esplora:\nEsplora una cartella da impostare come percorso dati di salvataggio.</translation>
     </message>
     <message>
       <source>Borderless</source>
