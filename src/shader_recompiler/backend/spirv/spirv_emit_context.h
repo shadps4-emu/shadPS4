@@ -255,7 +255,6 @@ public:
     Bindings& binding;
     boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
-    BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 

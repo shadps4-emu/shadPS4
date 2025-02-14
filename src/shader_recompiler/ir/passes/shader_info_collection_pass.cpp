@@ -74,7 +74,14 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_lane_id = true;
         break;
     case IR::Opcode::ReadConst:
-        info.has_readconst = true;
+        if (!info.has_readconst) {
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .inline_cbuf = AmdGpu::Buffer::Null(),
+                .buffer_type = BufferType::ReadConstUbo,
+            });
+            info.has_readconst = true;
+        }
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;

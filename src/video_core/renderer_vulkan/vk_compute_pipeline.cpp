@@ -3,11 +3,9 @@
 
 #include <boost/container/small_vector.hpp>
 
-#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
@@ -34,14 +32,6 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
         bindings.push_back({
             .binding = binding++,
             .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
-    if (info->has_readconst) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });

@@ -436,16 +436,13 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
         // Assume if a shader reads and writes metas at the same time, it is a copy shader.
-        bool meta_read = false;
-        for (const auto& desc : info.buffers) {
-            if (desc.is_gds_buffer) {
-                continue;
-            }
-            if (!desc.is_written) {
+        const bool meta_read = std::ranges::any_of(info.buffers, [&](const auto& desc) {
+            if (!desc.IsSpecial() && !desc.is_written) {
                 const VAddr address = desc.GetSharp(info).base_address;
-                meta_read = texture_cache.IsMeta(address);
+                return texture_cache.IsMeta(address);
             }
-        }
+            return false;
+        });
 
         // Most of the time when a metadata is updated with a shader it gets cleared. It means
         // we can skip the whole dispatch and update the tracked state instead. Also, it is not
@@ -514,7 +511,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
 
     for (const auto& desc : stage.buffers) {
         const auto vsharp = desc.GetSharp(stage);
-        if (!desc.is_gds_buffer && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
+        if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
             const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, vsharp.GetSize());
             buffer_bindings.emplace_back(buffer_id, vsharp);
         } else {
@@ -538,31 +535,19 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         ++binding.buffer;
     }
 
-    // Bind the flattened user data buffer as a UBO so it's accessible to the shader
-    if (stage.has_readconst) {
-        const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(stage.flattened_ud_buf);
-        buffer_infos.emplace_back(vk_buffer->Handle(), offset,
-                                  stage.flattened_ud_buf.size() * sizeof(u32));
-        set_writes.push_back({
-            .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding.unified++,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .pBufferInfo = &buffer_infos.back(),
-        });
-        ++binding.buffer;
-    }
-
     // Second pass to re-bind buffers that were updated after binding
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
         const auto& [buffer_id, vsharp] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
         const bool is_storage = desc.IsStorage(vsharp, pipeline_cache.GetProfile());
         if (!buffer_id) {
-            if (desc.is_gds_buffer) {
+            if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
+            } else if (desc.buffer_type == Shader::BufferType::ReadConstUbo) {
+                const auto [vk_buffer, offset] = buffer_cache.ObtainHostUBO(stage.flattened_ud_buf);
+                buffer_infos.emplace_back(vk_buffer->Handle(), offset,
+                                          stage.flattened_ud_buf.size() * sizeof(u32));
             } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {

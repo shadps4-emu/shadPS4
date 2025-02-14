@@ -121,11 +121,8 @@ public:
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
-            // Only one GDS binding can exist.
-            if (desc.is_gds_buffer && existing.is_gds_buffer) {
-                return true;
-            }
-            return desc.sharp_idx == existing.sharp_idx && desc.inline_cbuf == existing.inline_cbuf;
+            return desc.sharp_idx == existing.sharp_idx && desc.inline_cbuf == existing.inline_cbuf &&
+                   desc.buffer_type == existing.buffer_type;
         })};
         auto& buffer = buffer_resources[index];
         buffer.used_types |= desc.used_types;
@@ -272,6 +269,7 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
         .sharp_idx = std::numeric_limits<u32>::max(),
         .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
         .inline_cbuf = cbuf,
+        .buffer_type = BufferType::Guest,
     });
 }
 
@@ -286,6 +284,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
+            .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
                             inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
@@ -402,13 +401,10 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
 }
 
 void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    // Insert gds binding in the shader if it doesn't exist already.
-    // The buffer is used for append/consume counters.
-    constexpr static AmdGpu::Buffer GdsSharp{.base_address = 1};
     const u32 binding = descriptors.Add(BufferResource{
         .used_types = IR::Type::U32,
-        .inline_cbuf = GdsSharp,
-        .is_gds_buffer = true,
+        .inline_cbuf = AmdGpu::Buffer::Null(),
+        .buffer_type = BufferType::GdsBuffer,
         .is_written = true,
     });
 
@@ -420,12 +416,12 @@ void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descripto
     };
 
     // Attempt to deduce the GDS address of counter at compile time.
-    const u32 gds_addr = [&] {
-        const IR::Value& gds_offset = inst.Arg(0);
-        if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            return gds_offset.U32() & 0xFFFF;
-        }
+    u32 gds_addr = 0;
+    const IR::Value& gds_offset = inst.Arg(0);
+    if (gds_offset.IsImmediate()) {
+        // Nothing to do, offset is known.
+        gds_addr = gds_offset.U32() & 0xFFFF;
+    } else {
         const auto result = IR::BreadthFirstSearch(&inst, pred);
         ASSERT_MSG(result, "Unable to track M0 source");
 
@@ -436,8 +432,8 @@ void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descripto
         if (prod->GetOpcode() == IR::Opcode::IAdd32) {
             m0_val += prod->Arg(1).U32();
         }
-        return m0_val & 0xFFFF;
-    }();
+        gds_addr = m0_val & 0xFFFF;
+    }
 
     // Patch instruction.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};

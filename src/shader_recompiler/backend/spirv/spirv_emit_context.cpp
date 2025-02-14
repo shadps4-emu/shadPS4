@@ -193,6 +193,9 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 
 void EmitContext::DefineBufferOffsets() {
     for (BufferDefinition& buffer : buffers) {
+        if (buffer.buffer_type != BufferType::Guest) {
+            continue;
+        }
         const u32 binding = buffer.binding;
         const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
@@ -632,12 +635,6 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 };
 
 void EmitContext::DefineBuffers() {
-    if (info.has_readconst) {
-        srt_flatbuf[BufferAlias::U32] = DefineBuffer(false, false, 2, BufferType::ReadConstUbo, U32[1]);
-        srt_flatbuf.binding = binding.buffer++;
-        ++binding.unified;
-    }
-
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
