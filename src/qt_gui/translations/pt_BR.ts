@@ -1269,7 +1269,7 @@
     </message>
     <message>
       <source>Enable Fullscreen</source>
-      <translation>Habilitar Tela Cheia</translation>
+      <translation>Ativar Tela Cheia</translation>
     </message>
     <message>
       <source>Fullscreen Mode</source>
