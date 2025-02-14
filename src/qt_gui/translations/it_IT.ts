@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Immagine di sfondo:\nControlla l'opacità dell'immagine di sfondo del gioco.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1669,7 +1669,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Abilita HDR:\nAbilita HDR nei giochi che lo supportano.\nIl tuo monitor deve avere il supporto per lo spazio colore BT2020 PQ e il formato swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
