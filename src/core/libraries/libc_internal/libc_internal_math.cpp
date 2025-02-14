@@ -566,7 +566,7 @@ s32 PS4_SYSV_ABI internal_tanl() {
     return ORBIS_OK;
 }
 
-float PS4_SYSV_ABI internal__Fsin(float arg, unsigned int m, int n) {
+float PS4_SYSV_ABI internal__FSin(float arg, unsigned int m, int n) {
     ASSERT(n == 0);
     if (m != 0) {
         return cosf(arg);
