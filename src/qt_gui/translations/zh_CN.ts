@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>正面按钮</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Package</translation>
     </message>
   </context>
   <context>
@@ -1377,7 +1377,7 @@
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation type="unfinished">Vblank Divider</translation>
+      <translation>Vblank Divider</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1669,7 +1669,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>启用 HDR：\n在支持 HDR 的游戏中启用 HDR。\n您的显示器必须支持 BT2020 PQ 色彩空间和 RGB10A2 交换链格式。</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
