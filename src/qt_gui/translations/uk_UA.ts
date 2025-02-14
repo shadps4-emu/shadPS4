@@ -29,8 +29,8 @@
       <translation>Чити та Патчі для </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Чити та Патчі є експериментальними.\nВикористовуйте з обережністю.\n\nЗавантажуйте чити окремо, вибравши репозиторій і натиснувши кнопку завантаження.\nУ вкладці &quot;Патчі&quot; ви можете завантажити всі патчі відразу, вибрати, які з них ви хочете використовувати, і зберегти свій вибір.\n\nОскільки ми не займаємося розробкою читів/патчів,\nбудь ласка, повідомляйте про проблеми автору чита/патча.\n\nСтворили новий чит? Відвідайте:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Чити та Патчі є експериментальними.\nВикористовуйте з обережністю.\n\nЗавантажуйте чити окремо, вибравши репозиторій і натиснувши кнопку завантаження.\nУ вкладці &quot;Патчі&quot; ви можете завантажити всі патчі відразу, вибрати, які з них ви хочете використовувати, і зберегти свій вибір.\n\nОскільки ми не займаємося розробкою читів/патчів,\nбудь ласка, повідомляйте про проблеми автору чита/патча.\n\nСтворили новий чит? Відвідайте:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Читів не знайдено</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>У вибраному репозиторії не знайдено Читів для цієї гри, спробуйте інший репозиторій або іншу версію гри.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Чити успішно завантажено</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Ви успішно завантажили чити для цієї версії гри з обраного репозиторія. Ви можете спробувати завантажити з іншого репозиторія, якщо він буде доступним, ви також зможете скористатися ним, вибравши файл зі списку.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Заватнаження завершено</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Патчі успішно завантажено! Всі доступні патчі для усіх ігор, завантажено, немає необхідності завантажувати їх окремо для кожної гри, як це відбувається у випадку з читами. Якщо патч не з’являється, можливо, його не існує для конкретного серійного номера та версії гри. Можливо, необхідно оновити гру.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Мережева помилка:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Автооновлення дозволяє до 60 перевірок оновлень на годину.\nВи досягли цього ліміту. Будь ласка, спробуйте пізніше.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Наведіть курсор миші на опцію, щоб відобразити її опис.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Мова консолі:\nВстановіть мову, яка буде використовуватись у іграх PS4.\nРекомендується встановити мову котра підтримується грою, оскільки вона може відрізнятися в залежності від регіону.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Мова емулятора:\nВстановіть мову користувацького інтерфейсу емулятора.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Повноекранний режим:\nАвтоматично переводить вікно гри у повноекранний режим.\nВи можете відключити це, натиснувши клавішу F11.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Окрема папка для оновлень:\nДає змогу встановлювати оновлення гри в окрему папку для зручності.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Показувати заставку:\nВідображає заставку гри (спеціальне зображення) під час запуску гри.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Увімкнути Discord Rich Presence:\nВідображає значок емулятора та відповідну інформацію у вашому профілі Discord.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Ім&apos;я користувача:\nВстановіть ім&apos;я користувача акаунта PS4. Воно може відображатися в деяких іграх.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Ключ трофеїв:\nКлюч для розшифровки трофеїв. Може бути отриманий зі зламаної консолі.\nПовинен містити лише шістнадцяткові символи.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Тип логів:\nВстановіть, чи синхронізувати виведення вікна логів заради продуктивності. Це може негативно вплинути на емуляцію.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Фільтр логів:\nФільтрує логи, щоб показувати тільки певну інформацію.\nПриклади: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Рівні: Trace, Debug, Info, Warning, Error, Critical - у цьому порядку, конкретний рівень глушить усі попередні рівні у списку і показує всі наступні рівні.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Оновлення:\nРелізний: Офіційні версії, які випускаються щомісяця і можуть бути дуже старими, але вони більш надійні та перевірені.\nТестовий: Версії для розробників, які мають усі найновіші функції та виправлення, але можуть містити помилки та є менш стабільними.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
       <translation>Фонове зображення:\nКерує непрозорістю фонового зображення гри.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Грати титульну музику:\nВмикає відтворення спеціальної музики під час вибору гри в списку, якщо вона це підтримує.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Вимкнути спливаючі вікна трофеїв:\nВимикає сповіщення про ігрові трофеї. Прогрес трофея все ще можна відстежувати за допомогою &quot;Перегляд трофеїв&quot; (клацніть правою кнопкою миші на грі у головному вікні).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Приховувати курсор:\nВиберіть, коли курсор зникатиме:\nНіколи: Курсор миші завжди буде видимий.\nПри бездіяльності: Встановіть час, через який курсор зникне в разі бездіяльності.\nЗавжди: Курсор миші завжди буде прихований.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Встановіть час, через який курсор зникне в разі бездіяльності.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Перепризначення кнопки «Назад»:\nНалаштовує кнопку «Назад» контролера на емуляцію натискання на зазначену область на сенсорній панелі контролера PS4.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Відображати данні ігрової сумістністі:\nВідображає інформацію про сумісність ігор у вигляді таблиці. Увімкніть &quot;Оновлення даних ігрової сумісності під час запуску&quot; для отримання актуальної інформації.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Оновлення даних ігрової сумісності під час запуску:\nАвтоматично оновлює базу даних ігрової сумісності під час запуску shadPS4.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Оновити данні ігрової сумістності:\nНегайно оновить базу даних ігрової сумісності.</translation>
     </message>
     <message>
@@ -1648,83 +1648,83 @@
       <translation>Без змін</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Графічний пристрій:\nУ системах із кількома GPU виберіть з випадаючого списку GPU, який буде використовувати емулятор,\nабо виберіть &quot;Автовибір&quot;, щоб визначити його автоматично.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Ширина/Висота:\nВстановіть розмір вікна емулятора під час запуску, який може бути змінений під час гри.\nЦе відрізняється від роздільної здатності в грі.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Розділювач Vblank:\nЧастота кадрів, з якою оновлюється емулятор, множиться на це число. Зміна цього параметра може мати негативні наслідки, такі як збільшення швидкості гри або порушення критичних функцій гри, які цього не очікують!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Увімкнути дамп шейдерів:\nДля технічного налагодження зберігає шейдери ігор у папку під час рендерингу.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Увімкнути NULL GPU:\nДля технічного налагодження відключає рендеринг гри так, ніби графічної карти немає.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Ігрові папки:\nСписок папок, що скануватимуться для виявлення ігор.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Додати:\nДодати папку в список.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Вилучити:\nВилучити папку зі списку.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Увімкнути налагоджувальні дампи:\nЗберігає символи імпорту, експорту та інформацію про заголовок файлу поточної виконуваної програми PS4 у папку.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Увімкнути шари валідації Vulkan:\nВключає систему, яка перевіряє стан рендерера Vulkan і логує інформацію про його внутрішній стан. Це знизить продуктивність і, ймовірно, змінить поведінку емуляції.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Увімкнути валідацію синхронізації Vulkan:\nВключає систему, яка перевіряє таймінг завдань рендерингу Vulkan. Це знизить продуктивність і, ймовірно, змінить поведінку емуляції.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Увімкнути налагодження RenderDoc:\nЯкщо увімкнено, емулятор забезпечить сумісність із Renderdoc, даючи змогу захоплювати й аналізувати поточні кадри під час рендерингу.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Збирати шейдери:\nВам потрібно увімкнути цю опцію, щоб редагувати шейдери за допомогою меню налагодження (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Діагностика збоїв:\nСтворює .yaml файл з інформацією про стан Vulkan на момент збою.\nКорисно для налагодження помилок &apos;Device lost&apos;. Якщо у вас увімкнено цей параметр, вам слід увімкнути маркери налагодження Хоста ТА Гостя.\nНе працює на графічних процесорах Intel.\nДля цього вам потрібно увімкнути шари валідації Vulkan і мати Vulkan SDK.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Копіювати буфери GPU:\nДозволяє обійти проблеми синхронізації, пов&apos;язані з відправленням даних на GPU\nМоже як допомогти, так і не вплинути на збої типу PM4 (тип 0).</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Хостові маркери налагодження:\nДодає інформацію емулятора, наприклад маркери для конкретних команд AMDGPU у Vulkan, також присвоює ресурсам налагоджувані назви.\nЯкщо ця опція увімкнена, рекомендується також активувати діагностику збоїв.\nКорисно для програм на кшталт RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Гостьові маркери налагодження:\nВставляє налагоджувані маркери, які сама гра додала до командного буфера.\nЯкщо ця опція увімкнена, рекомендується також активувати діагностику збоїв.\nКорисно для програм на кшталт RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
       <translation>Шлях до файлів збережень:\nПапка, де будуть зберігатися ігрові збереження.</translation>
     </message>
     <message>
-      <source>browseButton</source>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
       <translation>Вибрати:\nВиберіть папку для ігрових збережень.</translation>
     </message>
     <message>
