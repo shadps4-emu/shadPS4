@@ -11108,8 +11108,8 @@ s32 PS4_SYSV_ABI internal_setenv() {
 }
 
 s32 PS4_SYSV_ABI internal_setjmp(std::jmp_buf buf) {
-    LOG_ERROR(Lib_LibcInternal, "(TEST) called");
-    return _setjmp(buf); // todo this feels platform specific but maybe not
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI internal_setlocale() {
