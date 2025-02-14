@@ -71,6 +71,8 @@ static bool rdocEnable = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
+static bool overrideControllerColor = false;
+static int controllerCustomColorRGB[3] = {0, 0, 255};
 static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
@@ -113,6 +115,24 @@ bool GetUseUnifiedInputConfig() {
 
 void SetUseUnifiedInputConfig(bool use) {
     useUnifiedInputConfig = use;
+}
+
+bool GetOverrideControllerColor() {
+    return overrideControllerColor;
+}
+
+void SetOverrideControllerColor(bool enable) {
+    overrideControllerColor = enable;
+}
+
+int* GetControllerCustomColor() {
+    return controllerCustomColorRGB;
+}
+
+void SetControllerCustomColor(int r, int b, int g) {
+    controllerCustomColorRGB[0] = r;
+    controllerCustomColorRGB[1] = b;
+    controllerCustomColorRGB[2] = g;
 }
 
 std::string getTrophyKey() {
@@ -1046,6 +1066,8 @@ axis_right_y = axis_right_y
 # Range of deadzones: 1 (almost none) to 127 (max)
 analog_deadzone = leftjoystick, 2, 127
 analog_deadzone = rightjoystick, 2, 127
+
+override_controller_color = false, 0, 0, 255
 )";
 }
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
