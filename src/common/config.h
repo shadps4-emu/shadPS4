@@ -67,6 +67,7 @@ bool copyGPUCmdBuffers();
 bool dumpShaders();
 bool patchShaders();
 bool isRdocEnabled();
+bool fpsColor();
 u32 vblankDiv();
 
 void setDebugDump(bool enable);

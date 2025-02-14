@@ -68,6 +68,7 @@ static bool vkCrashDiagnostic = false;
 static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
+static bool isFpsColor = true;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
@@ -280,6 +281,10 @@ bool patchShaders() {
 
 bool isRdocEnabled() {
     return rdocEnable;
+}
+
+bool fpsColor() {
+    return isFpsColor;
 }
 
 u32 vblankDiv() {
@@ -757,6 +762,7 @@ void load(const std::filesystem::path& path) {
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
+        isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
     }
 
     if (data.contains("GUI")) {
@@ -881,6 +887,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
+    data["Debug"]["FPSColor"] = isFpsColor;
 
     data["Keys"]["TrophyKey"] = trophyKey;
 
