@@ -47,6 +47,7 @@ enum class Class : u8 {
     Lib,                   ///< HLE implementation of system library. Each major library
                            ///< should have its own subclass.
     Lib_LibC,              ///< The LibC implementation.
+    Lib_LibcInternal,      ///< The LibcInternal implementation.
     Lib_Kernel,            ///< The LibKernel implementation.
     Lib_Pad,               ///< The LibScePad implementation.
     Lib_GnmDriver,         ///< The LibSceGnmDriver implementation.
