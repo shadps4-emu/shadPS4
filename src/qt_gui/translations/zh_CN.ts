@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>作弊码/补丁是实验性的。\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\n</translation>
+      <translation>作弊码/补丁是实验性的，\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
