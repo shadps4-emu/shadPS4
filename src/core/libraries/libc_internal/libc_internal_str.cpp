@@ -168,7 +168,7 @@ s32 PS4_SYSV_ABI internal_strcspn(const char* str1, const char* str2) {
     return std::strcspn(str1, str2);
 }
 
-char* PS4_SYSV_ABI internal_strdup() {
+char* PS4_SYSV_ABI internal_strdup(const char* str1) {
     LOG_DEBUG(Lib_LibcInternal, "called");
     char* dup = (char*)std::malloc(std::strlen(str1) + 1);
     if (dup != NULL)
