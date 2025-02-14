@@ -19,6 +19,20 @@
 
 namespace Vulkan {
 
+static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
+    Shader::PushData push_data{};
+    push_data.step0 = regs.vgt_instance_step_rate_0;
+    push_data.step1 = regs.vgt_instance_step_rate_1;
+
+    // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
+    // is encountered and implemented in the recompiler.
+    push_data.xoffset = regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
+    push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
+    push_data.yoffset = regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
+    push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
+    return push_data;
+}
+
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
@@ -426,87 +440,64 @@ void Rasterizer::Finish() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    buffer_infos.clear();
-    buffer_views.clear();
-    image_infos.clear();
-
-    const auto& regs = liverpool->regs;
-
-    if (pipeline->IsCompute()) {
-        const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
-
-        // Assume if a shader reads and writes metas at the same time, it is a copy shader.
-        const bool meta_read = std::ranges::any_of(info.buffers, [&](const auto& desc) {
-            if (!desc.IsSpecial() && !desc.is_written) {
-                const VAddr address = desc.GetSharp(info).base_address;
-                return texture_cache.IsMeta(address);
-            }
-            return false;
-        });
-
-        // Most of the time when a metadata is updated with a shader it gets cleared. It means
-        // we can skip the whole dispatch and update the tracked state instead. Also, it is not
-        // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
-        // will need its full emulation anyways. For cases of metadata read a warning will be
-        // logged.
-        if (!meta_read) {
-            for (const auto& desc : info.buffers) {
-                const auto sharp = desc.GetSharp(info);
-                const VAddr address = sharp.base_address;
-                if (desc.is_written) {
-                    // Assume all slices were updates
-                    if (texture_cache.ClearMeta(address)) {
-                        LOG_TRACE(Render_Vulkan, "Metadata update skipped");
-                        return false;
-                    }
-                } else {
-                    if (texture_cache.IsMeta(address)) {
-                        LOG_WARNING(Render_Vulkan,
-                                    "Unexpected metadata read by a CS shader (buffer)");
-                    }
-                }
-            }
-        }
+    if (IsComputeMetaClear(pipeline)) {
+        return false;
     }
 
     set_writes.clear();
     buffer_barriers.clear();
+    buffer_infos.clear();
+    buffer_views.clear();
+    image_infos.clear();
 
     // Bind resource buffers and textures.
-    Shader::PushData push_data{};
     Shader::Backend::Bindings binding{};
-
+    Shader::PushData push_data = MakeUserData(liverpool->regs);
     for (const auto* stage : pipeline->GetStages()) {
         if (!stage) {
             continue;
         }
-        push_data.step0 = regs.vgt_instance_step_rate_0;
-        push_data.step1 = regs.vgt_instance_step_rate_1;
-
-        // TODO(roamic): add support for multiple viewports and geometry shaders when ViewportIndex
-        // is encountered and implemented in the recompiler.
-        if (stage->stage == Shader::Stage::Vertex) {
-            push_data.xoffset =
-                regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
-            push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
-            push_data.yoffset =
-                regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
-            push_data.yscale = regs.viewport_control.yscale_enable ? regs.viewports[0].yscale : 1.f;
-        }
         stage->PushUd(binding, push_data);
-
-        BindBuffers(*stage, binding, push_data, set_writes, buffer_barriers);
-        BindTextures(*stage, binding, set_writes);
+        BindBuffers(*stage, binding, push_data);
+        BindTextures(*stage, binding);
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
-
     return true;
 }
 
+bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
+    if (!pipeline->IsCompute()) {
+        return false;
+    }
+
+    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+
+    // Assume if a shader reads and writes metas at the same time, it is a copy shader.
+    for (const auto& desc : info.buffers) {
+        const VAddr address = desc.GetSharp(info).base_address;
+        if (!desc.IsSpecial() && !desc.is_written && texture_cache.IsMeta(address)) {
+            return false;
+        }
+    }
+
+    // Most of the time when a metadata is updated with a shader it gets cleared. It means
+    // we can skip the whole dispatch and update the tracked state instead. Also, it is not
+    // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
+    // will need its full emulation anyways.
+    for (const auto& desc : info.buffers) {
+        const VAddr address = desc.GetSharp(info).base_address;
+        if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
+            // Assume all slices were updates
+            LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+            return true;
+        }
+    }
+    return false;
+}
+
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                             Shader::PushData& push_data, Pipeline::DescriptorWrites& set_writes,
-                             Pipeline::BufferBarriers& buffer_barriers) {
+                             Shader::PushData& push_data) {
     buffer_bindings.clear();
 
     for (const auto& desc : stage.buffers) {
@@ -536,8 +527,6 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                                                   instance.UniformMinAlignment());
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
-                // Bind a SSBO to act as shared memory in case of not being able to use a workgroup
-                // buffer
                 auto& lds_buffer = buffer_cache.GetStreamBuffer();
                 const auto& cs_program = liverpool->GetCsRegs();
                 const auto lds_size = cs_program.SharedMemSize() * cs_program.NumWorkgroups();
@@ -587,8 +576,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     }
 }
 
-void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                              Pipeline::DescriptorWrites& set_writes) {
+void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
     image_bindings.clear();
 
     for (const auto& image_desc : stage.images) {

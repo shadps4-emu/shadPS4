@@ -8,7 +8,7 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/profile.h"
 
 namespace Shader::Backend::SPIRV {
@@ -250,8 +250,12 @@ public:
         Id offset_dwords;
         std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
 
-        constexpr auto& operator[](this auto&& self, BufferAlias alias) {
-            return self.aliases[u32(alias)];
+        const BufferSpv& operator[](BufferAlias alias) const {
+            return aliases[u32(alias)];
+        }
+
+        BufferSpv& operator[](BufferAlias alias) {
+            return aliases[u32(alias)];
         }
     };
 
