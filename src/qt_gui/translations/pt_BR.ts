@@ -439,11 +439,11 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>Deadzone do Analógico Esquerdo (Pad: 2, Máx: 127)</translation>
+      <translation>Zona Morta do Analógico Esquerdo (Pad: 2, Máx: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>Deadzone Esquerdo</translation>
+      <translation>Zona Morta Esquerda</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -523,11 +523,11 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation>Deadzone do Analógico Direito (Pad: 2, Máx: 127)</translation>
+      <translation>Zona Morta do Analógico Direito (Pad: 2, Máx: 127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation>Deadzone Direito</translation>
+      <translation>Zona Morta Direita</translation>
     </message>
     <message>
       <source>Right Stick</source>
