@@ -28,7 +28,8 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     }
 }
 
-void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_info, const Profile& profile) {
+void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_info,
+                               const Profile& profile) {
     if (program.info.stage != Stage::Compute) {
         return;
     }
@@ -55,34 +56,41 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
             // Replace shared atomics first
             switch (inst.GetOpcode()) {
             case IR::Opcode::SharedAtomicAnd32:
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicAnd(handle, inst.Arg(0), inst.Arg(1), {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicAnd(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicIAdd32:
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicIAdd(handle, inst.Arg(0), inst.Arg(1), {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicIAdd(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicOr32:
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicOr(handle, inst.Arg(0), inst.Arg(1), {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicOr(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicSMax32:
             case IR::Opcode::SharedAtomicUMax32: {
                 const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicIMax(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicIMax(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
                 continue;
             }
             case IR::Opcode::SharedAtomicSMin32:
             case IR::Opcode::SharedAtomicUMin32: {
                 const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicIMin(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicIMin(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
                 continue;
             }
             case IR::Opcode::SharedAtomicXor32:
-                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicXor(handle, inst.Arg(0), inst.Arg(1), {}));
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicXor(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
             default:
                 break;
             }
             // Replace shared operations.
-            const IR::U32 offset = ir.IMul(ir.GetAttributeU32(IR::Attribute::WorkgroupIndex), ir.Imm32(shared_memory_size));
+            const IR::U32 offset = ir.IMul(ir.GetAttributeU32(IR::Attribute::WorkgroupIndex),
+                                           ir.Imm32(shared_memory_size));
             const IR::U32 address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
             switch (inst.GetOpcode()) {
             case IR::Opcode::LoadSharedU32:

@@ -134,7 +134,8 @@ public:
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx && desc.inline_cbuf == existing.inline_cbuf &&
+            return desc.sharp_idx == existing.sharp_idx &&
+                   desc.inline_cbuf == existing.inline_cbuf &&
                    desc.buffer_type == existing.buffer_type;
         })};
         auto& buffer = buffer_resources[index];

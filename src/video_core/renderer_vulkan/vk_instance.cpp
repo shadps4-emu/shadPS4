@@ -203,14 +203,12 @@ std::string Instance::GetDriverVersionName() {
 }
 
 bool Instance::CreateDevice() {
-    const vk::StructureChain feature_chain =
-        physical_device
-            .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
-                          vk::PhysicalDeviceVulkan12Features,
-                          vk::PhysicalDeviceRobustness2FeaturesEXT,
-                          vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                          vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-                          vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+    const vk::StructureChain feature_chain = physical_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceRobustness2FeaturesEXT,
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+        vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     features = feature_chain.get().features;
 #ifdef __APPLE__
     portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();

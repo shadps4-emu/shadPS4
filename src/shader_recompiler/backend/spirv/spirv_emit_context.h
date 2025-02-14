@@ -298,8 +298,8 @@ private:
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
 
-    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
-                           BufferType buffer_type, Id data_type);
+    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
+                           Id data_type);
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);

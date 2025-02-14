@@ -165,9 +165,11 @@ using BufferAlias = EmitContext::BufferAlias;
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
     const auto& srt_flatbuf = ctx.buffers.back();
-    ASSERT(srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0 && srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    ASSERT(srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0 &&
+           srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
     const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
-    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
+    const Id ptr{
+        ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
     return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
@@ -416,8 +418,7 @@ static Id EmitLoadBufferB32xN(EmitContext& ctx, u32 handle, Id address) {
         boost::container::static_vector<Id, N> ids;
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr{
-                ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i)};
+            const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i)};
             ids.push_back(ctx.OpLoad(data_types[1], ptr));
         }
         return ctx.OpCompositeConstruct(data_types[N], ids);
@@ -496,8 +497,7 @@ static void EmitStoreBufferB32xN(EmitContext& ctx, u32 handle, Id address, Id va
     } else {
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr =
-            ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
+            const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
             ctx.OpStore(ptr, ctx.OpCompositeExtract(data_types[1], value, i));
         }
     }

@@ -532,14 +532,17 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             } else if (desc.buffer_type == Shader::BufferType::ReadConstUbo) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
                 const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
-                const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size, instance.UniformMinAlignment());
+                const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size,
+                                                  instance.UniformMinAlignment());
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
-                // Bind a SSBO to act as shared memory in case of not being able to use a workgroup buffer
+                // Bind a SSBO to act as shared memory in case of not being able to use a workgroup
+                // buffer
                 auto& lds_buffer = buffer_cache.GetStreamBuffer();
                 const auto& cs_program = liverpool->GetCsRegs();
                 const auto lds_size = cs_program.SharedMemSize() * cs_program.NumWorkgroups();
-                const auto [data, offset] = lds_buffer.Map(lds_size, instance.StorageMinAlignment());
+                const auto [data, offset] =
+                    lds_buffer.Map(lds_size, instance.StorageMinAlignment());
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
             } else if (instance.IsNullDescriptorSupported()) {

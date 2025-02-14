@@ -248,8 +248,9 @@ void EmitContext::DefineWorkgroupIndex() {
     const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
     const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
     const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
-    workgroup_index_id = OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
-                                        OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
+    workgroup_index_id =
+        OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
+               OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
     Name(workgroup_index_id, "workgroup_index");
 }
 
@@ -328,7 +329,8 @@ void EmitContext::DefineInputs() {
             frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
-            front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+            front_facing =
+                DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         }
         if (profile.needs_manual_interpolation) {
             gl_bary_coord_id =
@@ -364,11 +366,14 @@ void EmitContext::DefineInputs() {
         }
         break;
     case LogicalStage::Compute:
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) || info.loads.GetAny(IR::Attribute::WorkgroupId)) {
-            workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
+            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+            workgroup_id =
+                DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
         }
         if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
-            num_workgroups_id = DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+            num_workgroups_id =
+                DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
         }
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
@@ -625,7 +630,8 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
                                           : TypeArray(data_type, max_num_items)};
     // Define block struct type. Don't perform decorations twice on the same Id.
     const Id struct_type{TypeStruct(record_array_type)};
-    if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) == buf_type_ids.end()) {
+    if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) ==
+        buf_type_ids.end()) {
         Decorate(record_array_type, spv::Decoration::ArrayStride, 1 << elem_shift);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
@@ -668,16 +674,20 @@ void EmitContext::DefineBuffers() {
         // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U32)) {
-            spv_buffer[BufferAlias::U32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+            spv_buffer[BufferAlias::U32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
-            spv_buffer[BufferAlias::F32] = DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
+            spv_buffer[BufferAlias::F32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
-            spv_buffer[BufferAlias::U16] = DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
+            spv_buffer[BufferAlias::U16] =
+                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
-            spv_buffer[BufferAlias::U8] = DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+            spv_buffer[BufferAlias::U8] =
+                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
         }
         ++binding.unified;
     }
@@ -835,7 +845,8 @@ void EmitContext::DefineSharedMemory() {
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
-    LOG_ERROR(Render_Recompiler, "Defined {:#x} num_elements = {}, shared_memory_size = {}", info.pgm_hash, num_elements, shared_memory_size);
+    LOG_ERROR(Render_Recompiler, "Defined {:#x} num_elements = {}, shared_memory_size = {}",
+              info.pgm_hash, num_elements, shared_memory_size);
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
