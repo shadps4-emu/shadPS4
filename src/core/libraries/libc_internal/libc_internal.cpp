@@ -10172,17 +10172,14 @@ s32 PS4_SYSV_ABI internal_getwchar() {
     return ORBIS_OK;
 }
 
-tm* PS4_SYSV_ABI internal_gmtime(time_t* timer) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::gmtime(timer);
+s32 PS4_SYSV_ABI internal_gmtime(time_t* timer) {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
-tm* PS4_SYSV_ABI internal_gmtime_s(time_t* timer, u64 flags) {
-    LOG_DEBUG(Lib_LibcInternal, "called");
-    if (timer == nullptr || flags == 0) {
-        return 0;
-    }
-    return std::gmtime(timer);
+s32 PS4_SYSV_ABI internal_gmtime_s(time_t* timer, u64 flags) {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI internal_hypot() {
@@ -12478,8 +12475,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__Frprep);
     LIB_FUNCTION("XwRd4IpNEss", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__FRteps);
-    LIB_FUNCTION("ZtjspkJQ+vw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal__FSin);
     LIB_FUNCTION("fQ+SWrQUQBg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__FSincos);
     LIB_FUNCTION("O4L+0oCN9zA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
@@ -12823,7 +12818,6 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
                  internal__Setgloballocale);
     LIB_FUNCTION("KDFy-aPxHVE", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__Shared_ptr_flag);
-    LIB_FUNCTION("cCXjU72Z0Ow", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal__Sin);
     LIB_FUNCTION("j9SGTLclro8", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal__Sincos);
     LIB_FUNCTION("MU25eqxSDTw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,

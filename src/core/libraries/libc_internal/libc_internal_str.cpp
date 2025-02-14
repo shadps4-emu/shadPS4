@@ -168,9 +168,12 @@ s32 PS4_SYSV_ABI internal_strcspn(const char* str1, const char* str2) {
     return std::strcspn(str1, str2);
 }
 
-s32 PS4_SYSV_ABI internal_strdup() {
-    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
-    return ORBIS_OK;
+char* PS4_SYSV_ABI internal_strdup() {
+    LOG_DEBUG(Lib_LibcInternal, "called");
+    char* dup = (char*)std::malloc(std::strlen(str1) + 1);
+    if (dup != NULL)
+        strcpy(dup, str1);
+    return dup;
 }
 
 s32 PS4_SYSV_ABI internal_strerror() {

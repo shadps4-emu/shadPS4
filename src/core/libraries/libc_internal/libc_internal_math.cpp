@@ -566,6 +566,19 @@ s32 PS4_SYSV_ABI internal_tanl() {
     return ORBIS_OK;
 }
 
+float PS4_SYSV_ABI internal__Fsin(float arg, unsigned int m, int n) {
+    ASSERT(n == 0);
+    if (m != 0) {
+        return cosf(arg);
+    } else {
+        return sinf(arg);
+    }
+}
+
+double PS4_SYSV_ABI internal__Sin(double x) {
+    return sin(x);
+}
+
 void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ye20uNnlglA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_abs);
     LIB_FUNCTION("JBcgYuW8lPU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_acos);
@@ -752,6 +765,9 @@ void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JCmHsYVc2eo", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_tanhl);
     LIB_FUNCTION("QL+3q43NfEA", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_tanl);
+    LIB_FUNCTION("ZtjspkJQ+vw", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal__FSin);
+    LIB_FUNCTION("cCXjU72Z0Ow", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal__Sin);
 }
 
 } // namespace Libraries::LibcInternal

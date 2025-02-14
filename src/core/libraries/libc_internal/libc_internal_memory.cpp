@@ -49,18 +49,14 @@ s32 PS4_SYSV_ABI internal__sceLibcGetMallocParam() {
     return ORBIS_OK;
 }
 
-void* PS4_SYSV_ABI internal_operator_new(size_t size) {
-    if (size == 0) {
-        // Size of 1 is used if 0 is provided.
-        size = 1;
-    }
-    void* ptr = std::malloc(size);
-    ASSERT_MSG(ptr, "Failed to allocate new object with size {}", size);
-    return ptr;
+s32 PS4_SYSV_ABI internal_operator_new(size_t size) {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
-void* PS4_SYSV_ABI internal_malloc(size_t size) {
-    return std::malloc(size);
+s32 PS4_SYSV_ABI internal_malloc(size_t size) {
+    LOG_ERROR(Lib_LibcInternal, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI internal_malloc_check_memory_bounds() {
