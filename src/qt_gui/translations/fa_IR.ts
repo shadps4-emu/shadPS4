@@ -1417,19 +1417,19 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Debug Dumping</translation>
+      <translation type="unfinished">Enable Debug Dumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Vulkan Validation Layers</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Vulkan Synchronization Validation</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>RenderDoc Debugging</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
@@ -1577,7 +1577,7 @@
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Levels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
@@ -1689,11 +1689,11 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state. This will reduce performance and likely change the behavior of emulation.</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks. This will reduce performance and likely change the behavior of emulation.</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
