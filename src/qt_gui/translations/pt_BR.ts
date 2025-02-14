@@ -70,7 +70,7 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>Você pode excluir os cheats que não deseja após baixá-las.</translation>
+      <translation>Você pode excluir os cheats que não deseja após baixá-los.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download Completo</translation>
+      <translation>Download Concluído</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Visualizador de Troféu</translation>
+      <translation>Visualizador de Troféus</translation>
     </message>
     <message>
       <source>Open Folder...</source>
@@ -1055,7 +1055,7 @@
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download Completo</translation>
+      <translation>Download Concluído</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
@@ -1401,7 +1401,7 @@
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>Pastas dos Jogos</translation>
+      <translation>Pastas de Jogos</translation>
     </message>
     <message>
       <source>Add...</source>
@@ -1577,11 +1577,11 @@
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Filtro de Registro:\nImprime apenas informações específicas.\nExemplos: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNíveis: Trace, Debug, Info, Warning, Error, Critical - assim, um nível específico desativa todos os níveis anteriores na lista e registra todos os níveis subsequentes.</translation>
+      <translation>Filtro de Registro:\nFiltra o registro para exibir apenas informações específicas.\nExemplos: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNíveis: Trace, Debug, Info, Warning, Error, Critical - nesta ordem, um nível específico silencia todos os níveis anteriores na lista e registra todos os níveis após ele.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Atualizações:\nRelease: Versões oficiais que são lançadas todo mês e podem ser bastante antigas, mas são mais confiáveis e testadas.\nNightly: Versões de desenvolvimento que têm todos os novos recursos e correções, mas podem ter bugs e ser instáveis.</translation>
+      <translation>Atualizações:\nRelease: Versões oficiais lançadas todos os meses que podem estar muito desatualizadas, mas são mais confiáveis e testadas.\nNightly: Versões de desenvolvimento que têm todos os novos recursos e correções, mas podem conter bugs e são menos estáveis.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1589,11 +1589,11 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
+      <translation>Reproduzir Música do Título:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface de usuário.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>Desabilitar pop-ups dos troféus:\nDesabilite notificações de troféus no jogo. O progresso do troféu ainda pode ser rastreado usando o Trophy Viewer (clique com o botão direito do mouse no jogo na janela principal).</translation>
+      <translation>Desabilitar Pop-ups dos Troféus:\nDesabilite notificações de troféus em jogo. O progresso do troféu ainda pode ser rastreado usando o Visualizador de Troféus (clique com o botão direito do mouse no jogo na janela principal).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
@@ -1601,11 +1601,11 @@
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Defina um tempo em segundos para o mouse desaparecer após ficar inativo.</translation>
+      <translation>Tempo de Inatividade para Ocultar Cursor:\nDefina um tempo em segundos para o mouse desaparecer após ficar inativo.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportamento do botão Voltar:\nDefine o botão Voltar do controle para emular o toque na posição especificada no touchpad do PS4.</translation>
+      <translation>Comportamento do Botão Voltar:\nDefine o botão voltar do controle para emular o toque na posição especificada no touchpad do PS4.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
@@ -1613,7 +1613,7 @@
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>Atualizar Compatibilidade ao inicializar:\nAtualiza automaticamente o banco de dados de compatibilidade quando o SHADPS4 é iniciado.</translation>
+      <translation>Atualizar Compatibilidade ao Inicializar:\nAtualiza automaticamente o banco de dados de compatibilidade quando o shadPS4 é iniciado.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
@@ -1649,15 +1649,15 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Placa de Vídeo:\nEm sistemas com múltiplas GPUs, escolha qual GPU o emulador usará da lista suspensa,\nou escolha &quot;Auto Select&quot; para que ele determine automaticamente.</translation>
+      <translation>Placa de Vídeo:\nEm sistemas com múltiplas GPUs, escolha qual GPU o emulador utilizará da lista suspensa,\nou escolha &quot;Seleção Automática&quot; para escolher automaticamente o mesmo.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Largura/Altura:\nDefine o tamanho da janela do emulador no momento da inicialização, que pode ser redimensionado durante o jogo.\nIsso é diferente da resolução dentro do jogo.</translation>
+      <translation>Largura/Altura:\nDefine o tamanho da janela do emulador na inicialização, que pode ser redimensionado enquanto joga.\nIsso difere da resolução do jogo.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Divisor Vblank:\nA taxa de quadros que o emulador atualiza é multiplicada por este número. Mudar isso pode ter efeitos negativos, como aumentar a velocidade do jogo ou quebrar funções vitais do jogo que não esperam que isso mude!</translation>
+      <translation>Divisor Vblank:\nA taxa de quadros em que o emulador atualiza é multiplicada por este número. Mudar isso pode ter efeitos negativos, como aumentar a velocidade do jogo ou quebrar a funcionalidade vital do jogo que não espera que isso mude!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
@@ -1669,15 +1669,15 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation>Ativar HDR:\nAtiva o HDR em jogos que o suportem.\nSeu monitor deve possuir suporte para o espaço de cores BT2020 PQ e ao formato swapchain RGB10A2.</translation>
+      <translation>Ativar HDR:\nAtiva o HDR em jogos que o suportem.\nSeu monitor deve possuir suporte para o espaço de cores BT2020 PQ e ao formato de swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>Pastas dos jogos:\nA lista de pastas para verificar se há jogos instalados.</translation>
+      <translation>Pastas de Jogos:\nLista de pastas para verificar por jogos instalados.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Adicionar:\nAdicione uma pasta à lista.</translation>
+      <translation>Adicionar:\nAdiciona uma pasta à lista.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
@@ -1784,7 +1784,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Visualizador de Troféu</translation>
+      <translation>Visualizador de Troféus</translation>
     </message>
   </context>
 </TS>
