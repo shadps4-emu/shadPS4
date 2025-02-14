@@ -29,8 +29,8 @@
       <translation>Juks / Programrettelser for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juks/Programrettelse,\nvær vennlig å rapportere problemer til juks/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juks/Programrettelse,\nvær vennlig å rapportere problemer til juks/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Fant ikke juks</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Ingen juks funnet for dette spillet i denne versjonen av den valgte pakkebrønnen,prøv en annen pakkebrønn eller en annen versjon av spillet.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Juks ble lastet ned</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Du har lastet ned juks for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Nedlasting fullført</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Programrettelser ble lastet ned! Alle programrettelsene tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med juks. Hvis programrettelsen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Nettverksfeil:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Den automatiske oppdateringen tillater opptil 60 oppdateringssjekker per time.\nDu har nådd denne grensen. Prøv igjen senere.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Pek musen over et alternativ for å vise beskrivelsen.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Konsollspråk:\nAngir språket som PS4-spillet bruker.\nDet anbefales å sette dette til et språk som spillet støtter, noe som kan variere avhengig av region.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulatorspråket:\nAngir språket for emulatorens brukergrensesnitt.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Aktiver fullskjerm:\nSetter spillvinduet automatisk i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Aktiver separat oppdateringsmappe:\nAktiverer installering av spill i en egen mappe for enkel administrasjon.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Vis velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevant informasjon på Discord-profilen din.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Brukernavn:\nAngir brukernavnet for PS4-kontoen, som kan vises av enkelte spill.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trofénøkkel:\nNøkkel brukes til å dekryptere trofeer. Må hentes fra din konsoll (jailbroken).\nMå bare inneholde sekskantede tegn.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Logg type:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for emulatoren.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Logg filter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Oppdatering:\nRelease: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNightly: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
       <translation>Bakgrunnsbilde:\nEndrer synligheten til spillets bakgrunnsbilde.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Spille tittelmusikk:\nHvis et spill støtter det, så aktiveres det spesiell musikk når du velger spillet i menyen.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Deaktiver trofé hurtigmeny:\nDeaktiver trofévarsler i spillet. Trofé-fremgang kan fortsatt ved help av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Skjul musepeker:\nVelg når musepekeren skal forsvinne:\nAldri: Du vil alltid se musepekeren.\nInaktiv: Sett en tid for at den skal forsvinne etter å ha vært inaktiv.\nAlltid: du vil aldri se musepekeren.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Sett en tid for når musepekeren forsvinner etter å ha vært inaktiv.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Atferd for tilbaketasten:\nSetter tilbaketasten på kontrolleren til å imitere et trykk på den angitte posisjonen på PS4s berøringsplate.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Aktiver &quot;Oppdater kompatibilitets-data ved oppstart&quot; for oppdatert informasjon.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Oppdater database ved oppstart:\nOppdaterer kompatibilitets-databasen automatisk når shadPS4 starter.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Oppdater kompatibilitets-database:\nOppdater kompatibilitets-databasen nå.</translation>
     </message>
     <message>
@@ -1648,83 +1648,83 @@
       <translation>Ingen</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller velg &quot;Auto Select&quot; for å velge automatisk.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Bredde/Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank skillelinje:\nBildehastigheten som emulatoren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Aktiver skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillets-gjengivelse som om det ikke var noe grafikkort.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Spillmapper:\nListe over mapper som brukes for å se etter installerte spill.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Legg til:\nLegg til en mappe til listen.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Fjern:\nFjern en mappe fra listen.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Aktiver feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil emulatoren gi kompatibilitet med RenderDoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Lagre skyggeleggere:\nDu trenger dette aktivert for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Kopier GPU-buffere:\nKommer rundt løpsforhold som involverer GPU-innsendinger.\nKan muligens hjelpe med PM4 type 0 krasj.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Vertsfeilsøkingsmarkører:\nSetter inn emulator-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
       <translation>Lagrede datamappe:\nListe over data shadPS4 lagrer.</translation>
     </message>
     <message>
-      <source>browseButton</source>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
       <translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
     </message>
     <message>

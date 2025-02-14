@@ -29,8 +29,8 @@
       <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>作弊/補丁為實驗性功能。\n請小心使用。\n\n透過選擇儲存庫並點擊下載按鈕來單獨下載作弊程式。\n在“補丁”標籤頁中，您可以一次下載所有補丁，選擇要使用的補丁並保存您的選擇。\n\n由於我們不開發作弊/補丁，\n請將問題報告給作弊程式的作者。\n\n創建了新的作弊程式？請訪問：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>作弊/補丁為實驗性功能。\n請小心使用。\n\n透過選擇儲存庫並點擊下載按鈕來單獨下載作弊程式。\n在“補丁”標籤頁中，您可以一次下載所有補丁，選擇要使用的補丁並保存您的選擇。\n\n由於我們不開發作弊/補丁，\n請將問題報告給作弊程式的作者。\n\n創建了新的作弊程式？請訪問：\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>未找到作弊碼</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>在此版本的儲存庫中未找到該遊戲的作弊碼，請嘗試另一個儲存庫或不同版本的遊戲。</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>作弊碼下載成功</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>您已成功下載該遊戲版本的作弊碼 從選定的儲存庫中。 您可以嘗試從其他儲存庫下載，如果可用，您也可以選擇從列表中選擇檔案來使用它。</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>下載完成</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>修補檔下載成功！所有遊戲的修補檔已下載完成，無需像作弊碼那樣為每個遊戲單獨下載。如果補丁未顯示，可能是該補丁不適用於特定的序號和遊戲版本。</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>網路錯誤：</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>自動更新程式每小時最多允許 60 次更新檢查。\n您已達到此限制。請稍後再試。</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>將鼠標指向選項以顯示其描述。</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>主機語言:\n設定PS4遊戲使用的語言。\n建議將其設置為遊戲支持的語言，這會因地區而異。</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>模擬器語言:\n設定模擬器的用戶介面的語言。</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>啟用全螢幕:\n自動將遊戲視窗設置為全螢幕模式。\n可以按F11鍵進行切換。</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>顯示啟動畫面:\n在遊戲啟動時顯示遊戲的啟動畫面（特殊圖片）。</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>啟用 Discord Rich Presence:\n在您的 Discord 個人檔案上顯示模擬器圖標和相關信息。</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>用戶名:\n設定PS4帳號的用戶名，某些遊戲中可能會顯示。</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>日誌類型:\n設定是否同步日誌窗口的輸出以提高性能。可能對模擬產生不良影響。</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>日誌過濾器:\n過濾日誌以僅打印特定信息。\n範例：&quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; 等級: Trace, Debug, Info, Warning, Error, Critical - 以此順序，特定級別靜音所有前面的級別，並記錄其後的每個級別。</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>更新:\nRelease: 每月發布的官方版本，可能非常舊，但更可靠且經過測試。\nNightly: 開發版本，擁有所有最新的功能和修復，但可能包含錯誤，穩定性較差。</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>播放標題音樂:\n如果遊戲支持，啟用在GUI中選擇遊戲時播放特殊音樂。</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>隱藏游標:\n選擇游標何時消失:\n從不: 您將始終看到滑鼠。\n閒置: 設定在閒置後消失的時間。\n始終: 您將永遠看不到滑鼠。</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>設定滑鼠在閒置後消失的時間。</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>返回按鈕行為:\n設定控制器的返回按鈕模擬在 PS4 觸控板上指定位置的觸碰。</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>無</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>圖形設備:\n在多GPU系統中，從下拉列表中選擇模擬器將使用的GPU，\n或選擇「自動選擇」以自動確定。</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>寬度/高度:\n設定模擬器啟動時的窗口大小，可以在遊戲過程中調整。\n這與遊戲內解析度不同。</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank分隔符:\n模擬器的幀速率將乘以這個數字。更改此數字可能會有不良影響，例如增加遊戲速度，或破壞不預期此變化的關鍵遊戲功能！</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>啟用著色器轉儲:\n為了技術調試，將遊戲的著色器在渲染時保存到文件夾中。</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>啟用空GPU:\n為了技術調試，禁用遊戲渲染，彷彿沒有顯示卡。</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>遊戲資料夾:\n檢查已安裝遊戲的資料夾列表。</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>添加:\n將資料夾添加到列表。</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>移除:\n從列表中移除資料夾。</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>啟用調試轉儲:\n將當前運行的PS4程序的輸入和輸出符號及文件頭信息保存到目錄中。</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>啟用Vulkan驗證層:\n啟用一個系統來驗證Vulkan渲染器的狀態並記錄其內部狀態的信息。這將降低性能並可能改變模擬行為。</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>啟用Vulkan同步驗證:\n啟用一個系統來驗證Vulkan渲染任務的時間。這將降低性能並可能改變模擬行為。</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>啟用RenderDoc調試:\n如果啟用，模擬器將提供與Renderdoc的兼容性，以允許捕獲和分析當前渲染的幀。</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

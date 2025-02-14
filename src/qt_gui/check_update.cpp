@@ -70,8 +70,11 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 403) {
                 QString response = reply->readAll();
                 if (response.startsWith("{\"message\":\"API rate limit exceeded for")) {
-                    QMessageBox::warning(this, tr("Auto Updater"),
-                                         tr("Error_Github_limit_MSG").replace("\\n", "\n"));
+                    QMessageBox::warning(
+                        this, tr("Auto Updater"),
+                        // clang-format off
+tr("The Auto Updater allows up to 60 update checks per hour.\\nYou have reached this limit. Please try again later.").replace("\\n", "\n"));
+                    // clang-format on
                 } else {
                     QMessageBox::warning(
                         this, tr("Error"),

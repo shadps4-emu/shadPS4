@@ -29,8 +29,8 @@
       <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Οι cheats/patches είναι πειραματικά.\nΧρησιμοποιήστε τα με προσοχή.\n\nΚατεβάστε τους cheats μεμονωμένα επιλέγοντας το αποθετήριο και κάνοντας κλικ στο κουμπί λήψης.\nΣτην καρτέλα Patches, μπορείτε να κατεβάσετε όλα τα patches ταυτόχρονα, να επιλέξετε ποια θέλετε να χρησιμοποιήσετε και να αποθηκεύσετε την επιλογή.\n\nΔεδομένου ότι δεν αναπτύσσουμε τους cheats/patches,\nπαρακαλώ αναφέρετε προβλήματα στον δημιουργό του cheat.\n\nΔημιουργήσατε ένα νέο cheat; Επισκεφθείτε:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Οι cheats/patches είναι πειραματικά.\nΧρησιμοποιήστε τα με προσοχή.\n\nΚατεβάστε τους cheats μεμονωμένα επιλέγοντας το αποθετήριο και κάνοντας κλικ στο κουμπί λήψης.\nΣτην καρτέλα Patches, μπορείτε να κατεβάσετε όλα τα patches ταυτόχρονα, να επιλέξετε ποια θέλετε να χρησιμοποιήσετε και να αποθηκεύσετε την επιλογή.\n\nΔεδομένου ότι δεν αναπτύσσουμε τους cheats/patches,\nπαρακαλώ αναφέρετε προβλήματα στον δημιουργό του cheat.\n\nΔημιουργήσατε ένα νέο cheat; Επισκεφθείτε:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Δεν βρέθηκαν Cheats</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Δεν βρέθηκαν cheats για αυτό το παιχνίδι στην τρέχουσα έκδοση του επιλεγμένου αποθετηρίου. Δοκιμάστε να κατεβάσετε από άλλο αποθετήριο ή άλλη έκδοση του παιχνιδιού.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Cheats κατεβάστηκαν επιτυχώς</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Κατεβάσατε επιτυχώς cheats για αυτή την έκδοση του παιχνιδιού από το επιλεγμένο αποθετήριο. Μπορείτε να δοκιμάσετε να κατεβάσετε από άλλο αποθετήριο. Αν είναι διαθέσιμο, μπορείτε να το επιλέξετε επιλέγοντας το αρχείο από τη λίστα.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Η λήψη ολοκληρώθηκε</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Τα Patches κατεβάστηκαν επιτυχώς! Όλα τα Patches για όλα τα παιχνίδια έχουν κατέβει, δεν είναι απαραίτητο να τα κατεβάσετε ένα-ένα για κάθε παιχνίδι, όπως με τα Cheats. Εάν η ενημέρωση δεν εμφανίζεται, μπορεί να μην υπάρχει για τον συγκεκριμένο σειριακό αριθμό και έκδοση του παιχνιδιού.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Σφάλμα δικτύου:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Ο Αυτόματος Ενημερωτής επιτρέπει έως και 60 ελέγχους ενημερώσεων ανά ώρα.\nΈχετε φτάσει αυτό το όριο. Παρακαλώ δοκιμάστε ξανά αργότερα.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Τοποθετήστε το ποντίκι σας πάνω σε μια επιλογή για να εμφανίσετε την περιγραφή της.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Γλώσσα Κονσόλας:\nΡυθμίζει τη γλώσσα που θα χρησιμοποιήσει το παιχνίδι PS4.\nΣυνιστάται να επιλέξετε μία από τις γλώσσες που υποστηρίζονται από το παιχνίδι, η οποία ενδέχεται να διαφέρει ανάλογα με την περιοχή.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Γλώσσα Εξομοιωτή:\nΡυθμίζει τη γλώσσα του γραφικού περιβάλλοντος του εξομοιωτή.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Ενεργοποίηση Πλήρους Οθόνης:\nΑυτόματα μετατρέπει το παράθυρο του παιχνιδιού σε λειτουργία πλήρους οθόνης.\nΜπορεί να ενεργοποιηθεί/απενεργοποιηθεί πατώντας το πλήκτρο F11.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Εμφάνιση Splash Screen:\nΕμφανίζει ειδική γραφική οθόνη κατά την εκκίνηση.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Ενεργοποίηση Discord Rich Presence:\nΕμφανίζει το εικονίδιο του emulator και σχετικές πληροφορίες στο προφίλ σας στο Discord.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Όνομα Χρήστη:\nΟρίζει το όνομα του λογαριασμού PS4, το οποίο μπορεί να εμφανιστεί σε ορισμένα παιχνίδια.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Τύπος Καταγραφής:\nΚαθορίζει αν η έξοδος του παραθύρου καταγραφής θα συγχρονιστεί για αύξηση της απόδοσης. Αυτό μπορεί να επηρεάσει αρνητικά τις επιδόσεις του εξομοιωτή.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Φίλτρο Καταγραφής:\nΦιλτράρει τις καταγραφές ώστε να εκτυπώνονται μόνο συγκεκριμένες πληροφορίες.\nΠαραδείγματα: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Επίπεδα: Trace, Debug, Info, Warning, Error, Critical - με τη σειρά αυτή, κάθε επίπεδο που επιλέγεται αποκλείει τα προηγούμενα και εμφανίζει τα επόμενα επίπεδα.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Ενημερώσεις:\nRelease: Επίσημες εκδόσεις που κυκλοφορούν μηνιαίως, είναι παλαιότερες αλλά πιο σταθερές και δοκιμασμένες.\nNightly: Εκδόσεις προγραμματιστών με νέες δυνατότητες και διορθώσεις, αλλά μπορεί να περιέχουν σφάλματα και να είναι λιγότερο σταθερές.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Αναπαραγωγή Μουσικής Τίτλων:\nΕάν το παιχνίδι το υποστηρίζει, ενεργοποιεί ειδική μουσική κατά την επιλογή του παιχνιδιού από τη διεπαφή χρήστη.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Απόκρυψη Κέρσορα:\nΕπιλέξτε πότε θα εξαφανιστεί ο κέρσορας:\nΠοτέ: θα βλέπετε πάντα το ποντίκι.\nΑδρανές: ορίστε έναν χρόνο για να εξαφανιστεί μετά από αδράνεια.\nΠάντα: δεν θα δείτε ποτέ το ποντίκι.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Ορίστε έναν χρόνο για να εξαφανιστεί το ποντίκι μετά από αδράνεια.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Συμπεριφορά Κουμπιού Επιστροφής:\nΟρίζει το κουμπί επιστροφής του ελεγκτή να προσομοιώνει το πάτημα της καθορισμένης θέσης στην οθόνη αφής PS4.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>Κανένα</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Προσαρμογέας Γραφικών:\nΣε συστήματα με πολλές GPU, επιλέξτε από το μενού την GPU που θα χρησιμοποιήσει ο εξομοιωτής,\nή επιλέξτε &quot;Auto Select&quot; για αυτόματη επιλογή.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Ανάλυση Οθόνης:\nΚαθορίζει το μέγεθος του παραθύρου του εξομοιωτή κατά την αναπαραγωγή, το οποίο μπορεί να αλλάξει κατά τη διάρκεια του παιχνιδιού.\nΑυτό είναι διαφορετικό από την ανάλυση του ίδιου του παιχνιδιού.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Διαιρέτης Συχνότητας Ανανέωσης:\nΠολλαπλασιάζει τον ρυθμό με τον οποίο ο εξομοιωτής ενημερώνει την εικόνα με αυτόν τον αριθμό. Η αλλαγή αυτής της ρύθμισης μπορεί να έχει αρνητικές επιπτώσεις, όπως ταχύτερο παιχνίδι ή σπασμένες λειτουργίες!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Ενεργοποίηση Καταγραφής Σκιάσεων (Shaders):\nΓια τεχνικό εντοπισμό σφαλμάτων, αποθηκεύει τις σκιάσεις του παιχνιδιού σε φάκελο κατά τη διάρκεια της αναπαραγωγής.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Ενεργοποίηση Εικονικής GPU:\nΓια τεχνικό εντοπισμό σφαλμάτων, απενεργοποιεί την εμφάνιση του παιχνιδιού σαν να μην υπάρχει κάρτα γραφικών.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Φάκελοι Παιχνιδιών:\nΗ λίστα των φακέλων για έλεγχο των εγκατεστημένων παιχνιδιών.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Προσθήκη:\nΠροσθέστε έναν φάκελο στη λίστα.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Αφαίρεση:\nΑφαιρέστε έναν φάκελο από τη λίστα.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Ενεργοποίηση Καταγραφής Αποσφαλμάτωσης:\nΑποθηκεύει τα σύμβολα εισαγωγής/εξαγωγής και τις κεφαλίδες πληροφοριών του τρέχοντος προγράμματος PS4 σε έναν φάκελο.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Ενεργοποίηση Επικύρωσης Vulkan:\nΕνεργοποιεί ένα σύστημα που επικυρώνει την κατάσταση του προγράμματος οδήγησης Vulkan και καταγράφει πληροφορίες για την εσωτερική του κατάσταση. Αυτό θα μειώσει την απόδοση και ενδέχεται να αλλάξει τη συμπεριφορά του εξομοιωτή.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Ενεργοποίηση Επικύρωσης Συγχρονισμού Vulkan:\nΕνεργοποιεί ένα σύστημα που επικυρώνει τον συγχρονισμό των εργασιών απόδοσης του Vulkan. Αυτό θα μειώσει την απόδοση και ενδέχεται να αλλάξει τη συμπεριφορά του εξομοιωτή.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Ενεργοποίηση Καταγραφής RenderDoc:\nΌταν είναι ενεργοποιημένο, ο εξομοιωτής είναι συμβατός με το RenderDoc για τη λήψη και ανάλυση του τρέχοντος καρέ.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

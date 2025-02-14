@@ -29,8 +29,8 @@
       <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Cheats/Patches là các tính năng thử nghiệm.\nHãy sử dụng cẩn thận.\n\nTải xuống các cheat riêng lẻ bằng cách chọn kho lưu trữ và nhấp vào nút tải xuống.\nTại tab Patches, bạn có thể tải xuống tất cả các patch cùng một lúc, chọn cái nào bạn muốn sử dụng và lưu lựa chọn của mình.\n\nVì chúng tôi không phát triển Cheats/Patches,\nxin vui lòng báo cáo các vấn đề cho tác giả cheat.\n\nBạn đã tạo ra một cheat mới? Truy cập:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Cheats/Patches là các tính năng thử nghiệm.\nHãy sử dụng cẩn thận.\n\nTải xuống các cheat riêng lẻ bằng cách chọn kho lưu trữ và nhấp vào nút tải xuống.\nTại tab Patches, bạn có thể tải xuống tất cả các patch cùng một lúc, chọn cái nào bạn muốn sử dụng và lưu lựa chọn của mình.\n\nVì chúng tôi không phát triển Cheats/Patches,\nxin vui lòng báo cáo các vấn đề cho tác giả cheat.\n\nBạn đã tạo ra một cheat mới? Truy cập:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Không tìm thấy Cheat</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Không tìm thấy Cheat cho trò chơi này trong phiên bản kho lưu trữ đã chọn,hãy thử kho lưu trữ khác hoặc phiên bản khác của trò chơi.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Cheat đã tải xuống thành công</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Bạn đã tải xuống các cheat thành công. Cho phiên bản trò chơi này từ kho lưu trữ đã chọn. Bạn có thể thử tải xuống từ kho lưu trữ khác, nếu có, bạn cũng có thể sử dụng bằng cách chọn tệp từ danh sách.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Tải xuống hoàn tất</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Bản vá đã tải xuống thành công! Tất cả các bản vá có sẵn cho tất cả các trò chơi đã được tải xuống, không cần tải xuống riêng lẻ cho mỗi trò chơi như trong Cheat. Nếu bản vá không xuất hiện, có thể là nó không tồn tại cho số seri và phiên bản cụ thể của trò chơi.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Lỗi mạng:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Trình cập nhật tự động cho phép tối đa 60 lần kiểm tra cập nhật mỗi giờ.\nBạn đã đạt đến giới hạn này. Vui lòng thử lại sau.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Di chuyển chuột đến tùy chọn để hiển thị mô tả của nó.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Ngôn ngữ console:\nChọn ngôn ngữ mà trò chơi PS4 sẽ sử dụng.\nKhuyên bạn nên đặt tùy chọn này thành một ngôn ngữ mà trò chơi hỗ trợ, có thể thay đổi tùy theo vùng.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Ngôn ngữ của trình giả lập:\nChọn ngôn ngữ của giao diện người dùng của trình giả lập.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Bật chế độ toàn màn hình:\nTự động đặt cửa sổ trò chơi ở chế độ toàn màn hình.\nĐiều này có thể bị vô hiệu hóa bằng cách nhấn phím F11.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Hiển thị màn hình khởi động:\nHiển thị màn hình khởi động của trò chơi (một hình ảnh đặc biệt) trong khi trò chơi khởi động.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Bật Discord Rich Presence:\nHiển thị biểu tượng trình giả lập và thông tin liên quan trên hồ sơ Discord của bạn.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Tên người dùng:\nChọn tên người dùng của tài khoản PS4, có thể được một số trò chơi hiển thị.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Loại nhật ký:\nChọn xem có đồng bộ hóa đầu ra cửa sổ nhật ký cho hiệu suất hay không. Điều này có thể có tác động tiêu cực đến việc giả lập.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Bộ lọc nhật ký:\nLọc nhật ký để in chỉ thông tin cụ thể.\nVí dụ: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Các mức: Trace, Debug, Info, Warning, Error, Critical - theo thứ tự này, một mức cụ thể làm tắt tất cả các mức trước trong danh sách và ghi lại tất cả các mức sau đó.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Cập nhật:\nRelease: Các phiên bản chính thức được phát hành hàng tháng; có thể khá cũ nhưng đáng tin cậy hơn và đã được thử nghiệm.\nNightly: Các phiên bản phát triển có tất cả các tính năng và sửa lỗi mới nhất; có thể có lỗi và ít ổn định hơn.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Phát nhạc tiêu đề trò chơi:\nNếu một trò chơi hỗ trợ điều này, hãy kích hoạt phát nhạc đặc biệt khi bạn chọn trò chơi trong GUI.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Ẩn con trỏ:\nChọn khi nào con trỏ sẽ biến mất:\nKhông bao giờ: Bạn sẽ luôn thấy chuột.\nKhông hoạt động: Đặt một khoảng thời gian để nó biến mất sau khi không hoạt động.\nLuôn luôn: bạn sẽ không bao giờ thấy chuột.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Đặt thời gian để chuột biến mất sau khi không hoạt động.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Hành vi nút quay lại:\nĐặt nút quay lại của tay cầm để mô phỏng việc chạm vào vị trí đã chỉ định trên touchpad của PS4.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>Không có</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Thiết bị đồ họa:\nTrên các hệ thống có GPU đa năng, hãy chọn GPU mà trình giả lập sẽ sử dụng từ danh sách thả xuống,\hoặc chọn &quot;Auto Select&quot; để tự động xác định.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Chiều rộng/Cao:\nChọn kích thước cửa sổ của trình giả lập khi khởi động, có thể điều chỉnh trong quá trình chơi.\nĐiều này khác với độ phân giải trong trò chơi.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Bộ chia Vblank:\nTốc độ khung hình mà trình giả lập làm mới được nhân với số này. Thay đổi này có thể có tác động tiêu cực như tăng tốc độ trò chơi hoặc làm hỏng chức năng quan trọng mà trò chơi không mong đợi thay đổi điều này!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Bật xuất shader:\nĐể mục đích gỡ lỗi kỹ thuật, lưu shader của trò chơi vào một thư mục khi chúng được kết xuất.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Bật GPU Null:\nĐể mục đích gỡ lỗi kỹ thuật, vô hiệu hóa việc kết xuất trò chơi như thể không có card đồ họa.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Thư mục trò chơi:\nDanh sách các thư mục để kiểm tra các trò chơi đã cài đặt.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Thêm:\nThêm một thư mục vào danh sách.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Xóa:\nXóa một thư mục khỏi danh sách.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Bật xuất gỡ lỗi:\nLưu biểu tượng nhập và xuất và thông tin tiêu đề tệp cho ứng dụng PS4 hiện đang chạy vào một thư mục.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Bật lớp xác thực Vulkan:\nKích hoạt một hệ thống xác thực trạng thái của bộ kết xuất Vulkan và ghi lại thông tin về trạng thái nội bộ của nó. Điều này sẽ giảm hiệu suất và có thể thay đổi hành vi của việc giả lập.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Bật xác thực đồng bộ Vulkan:\nKích hoạt một hệ thống xác thực thời gian của nhiệm vụ kết xuất Vulkan. Điều này sẽ giảm hiệu suất và có thể thay đổi hành vi của việc giả lập.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Bật gỡ lỗi RenderDoc:\nNếu được kích hoạt, trình giả lập sẽ cung cấp tính tương thích với Renderdoc để cho phép bắt và phân tích khung hình hiện tại đang được kết xuất.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

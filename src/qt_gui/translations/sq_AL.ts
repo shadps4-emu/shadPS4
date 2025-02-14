@@ -29,8 +29,8 @@
       <translation>Mashtrime / Arna për </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Mashtrimet/Arnat janë eksperimentale.\nPërdori me kujdes.\n\nShkarko mashtrimet individualisht duke zgjedhur depon dhe duke klikuar butonin e shkarkimit.\nNë skedën Arna, mund t&apos;i shkarkosh të gjitha arnat menjëherë, të zgjidhësh cilat dëshiron të përdorësh dhe të ruash zgjedhjen tënde.\n\nMeqenëse ne nuk zhvillojmë Mashtrimet/Arnat,\ntë lutem raporto problemet te autori i mashtrimit.\n\nKe krijuar një mashtrim të ri? Vizito:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Mashtrimet/Arnat janë eksperimentale.\nPërdori me kujdes.\n\nShkarko mashtrimet individualisht duke zgjedhur depon dhe duke klikuar butonin e shkarkimit.\nNë skedën Arna, mund t&apos;i shkarkosh të gjitha arnat menjëherë, të zgjidhësh cilat dëshiron të përdorësh dhe të ruash zgjedhjen tënde.\n\nMeqenëse ne nuk zhvillojmë Mashtrimet/Arnat,\ntë lutem raporto problemet te autori i mashtrimit.\n\nKe krijuar një mashtrim të ri? Vizito:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Mashtrimet nuk u gjetën</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Nuk u gjetën mashtrime për këtë lojë në këtë version të depove të përzgjedhura, provo një depo tjetër ose një version tjetër të lojës.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Mashtrimet u shkarkuan me sukses</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Ke shkarkuar me sukses mashtrimet për këtë version të lojës nga depoja e përzgjedhur. Mund të provosh të shkarkosh nga një depo tjetër, nëse ofrohet do të jetë e mundur gjithashtu ta përdorësh duke përzgjedhur skedarin nga lista.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Shkarkimi përfundoi</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t&apos;i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse arna nuk shfaqet, mund të mos ekzistojë për numrin e serikut dhe versionin specifik të lojës.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Gabim rrjeti:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Përditësuesi Automatik lejon deri në 60 kontrolle për përditësime në orë.\nKe arritur këtë kufi. Të lutem provo përsëri më vonë.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Vendos miun mbi një rregullim për të shfaqur përshkrimin e tij.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nKëshillohet të caktosh një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Gjuha e emulatorit:\nPërcakton gjuhën e ndërfaqes së përdoruesit të emulatorit.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Aktivizo ekranin e plotë:\nVendos automatikisht dritaren e lojës në mënyrën e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur tastin F11.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Aktivizo dosjen e ndarë të përditësimit:\nAktivizon instalimin e përditësimeve të lojërave në dosje të veçanta për menaxhim më të lehtë.\nKjo mund të krijohet manualisht duke shtuar përditësimin e shpaketuar në dosjen e lojës me emrin &quot;CUSA00000-UPDATE&quot; ku ID-ja CUSA përputhet me ID-në e lojës.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një pamje e veçantë) gjatë fillimit të lojës.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Aktivizo Discord Rich Presence:\nShfaq ikonën e emulatorit dhe informacionin përkatës në profilin tënd në Discord.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Përdoruesi:\nPërcakton emrin e përdoruesit të llogarisë PS4, i cili mund të shfaqet nga disa lojra.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Çelësi i Trofeve:\nÇelësi përdoret për të deshifruar trofetë. Duhet të merret nga konsola jote me jailbreak.\nDuhet të përmbajë vetëm karaktere hex.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Lloji i ditarit:\nPërcakton nëse të sinkronizohet dalja e dritares së ditarit për performancë. Mund të ketë efekte të këqija në emulim.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Filtri i ditarit:\nFiltron ditarin për të shfaqur vetëm informacione specifike.\nShembuj: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas atij.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Përditësimi:\nRelease: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të provuara.\nNightly: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
       <translation>Imazhi i Sfondit:\nKontrollo tejdukshmërinë e imazhit të sfondit të lojës.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Luaj muzikën e titullit:\nNëse një lojë e mbështet, aktivizohet luajtja e muzikës të veçantë kur të zgjidhësh lojën në ndërfaqe.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Çaktivizo njoftimet për Trofetë:\nÇaktivizo njoftimet për trofetë gjatë lojës. Përparimi i trofeve mund të ndiqet duke përdorur Shikuesin e Trofeve (kliko me të djathtën mbi lojën në dritaren kryesore).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Fsheh kursorin:\nZgjidh kur do të fshihet kursori:\nKurrë: Do ta shohësh gjithmonë miun.\nJoaktiv: Vendos një kohë për ta fshehur pas mosveprimit.\nGjithmonë: nuk do ta shohësh kurrë miun.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Koha për fshehjen e kursorit joaktiv:\nKohëzgjatja (në sekonda) pas së cilës kursori që nuk ka qënë në veprim fshihet.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të tastierës prekëse do të imitojë një prekje butoni mprapa.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Shfaq të dhënat e përputhshmërisë:\nShfaq informacionin e përputhshmërisë së lojës në formë tabele. Aktivizo &apos;Përditëso përputhshmërinë gjatë nisjes&apos; për të marrë informacion të përditësuar.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Përditëso përputhshmërinë gjatë nisjes:\nPërditëson automatikisht bazën e të dhënave të përputhshmërisë kur shadPS4 niset.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Përditëso bazën e të dhënave të përputhshmërisë:\nPërditëso menjëherë bazën e të dhënave të përputhshmërisë.</translation>
     </message>
     <message>
@@ -1648,83 +1648,83 @@
       <translation>Asnjë</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Pajisja grafike:\nNë sistemet me GPU të shumëfishta, zgjidh GPU-në që do të përdorë emulatori nga lista rënëse,\nose zgjidh &quot;Auto Select&quot; për ta përcaktuar automatikisht.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Gjerësia/Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Ndarësi Vblank:\nFrekuenca pamore me të cilën rifreskohet emulatori shumëzohet me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose prishja e punimit thelbësor të lojës që nuk e pret këtë ndryshim!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Aktivizo zbrazjen e shaders-ave:\nPër qëllime të korrigjimit teknik, ruan shaders-at e lojës në një dosje ndërsa ato pasqyrohen.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Aktivizo GPU-në Null:\nPër qëllime të korrigjimit teknik, çaktivizon pasqyrimin e lojës sikur nuk ka një kartë grafike.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Dosjet e lojërave:\nLista e dosjeve për të kontrolluar lojërat e instaluara.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Shto:\nShto një dosje në listë.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Hiq:\nHiq një dosje nga lista.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Aktivizo zbrazjen për korrigjim:\nRuan simbolet e importit dhe eksportit dhe informacionin e kreut të skedarit për aplikacionin PS4 që po ekzekutohet në një dosje.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Aktivizo shtresat e vlefshmërisë Vulkan:\nAktivizon një sistem që vërteton gjendjen e pasqyruesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Aktivizo vërtetimin e sinkronizimit Vulkan:\nAktivizon një sistem që vërteton kohën e detyrave të pasqyrimit Vulkan. Kjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Mblidh Shader-at:\nDuhet ta aktivizosh këtë për të redaktuar shader-at me menynë e korrigjimit (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Diagnoza e rënies:\nKrijon një skedar .yaml me informacion rreth gjendjes së Vulkan-it në momentin e rënies.\nE dobishme për zgjidhjen e gabimeve &apos;Device lost&apos;. Nëse e ke aktivizuar këtë, duhet të aktivizosh Shënjuesit e korrigjimit të host-it DHE të guest-it.\nNuk punon me GPU-t Intel.\nDuhet të kesh aktivizuar Shtresat e Vlefshmërisë Vulkan dhe Vulkan SDK që kjo të punojë.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Kopjo buffer-ët e GPU-së:\nShmang kushtet e garës (race conditions) që lidhen me dërgimet e GPU-së.\nMund të ndihmojë, ose jo, në rast rëniesh të llojit PM4 0.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Shënjuesit e korrigjimit të host-it:\nShton informacion nga ana e emulatorit, si shënjues për komandat specifike AMDGPU rreth komandave Vulkan, si dhe jep burimeve emra korrigjimi.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Shënjuesit e korrigjimit të guest-it:\nShton çdo shënjues për korrigjim që loja vetë ka shtuar në buffer-in e komandave.\nNëse e ke aktivizuar këtë, duhet të aktivizosh diagnozën e rënieve.\nE dobishme për programe si RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
       <translation>Shtegu i Ruajtjes së të Dhënave:\nDosja ku do të ruhen të dhënat e ruajtjes së lojës.</translation>
     </message>
     <message>
-      <source>browseButton</source>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
       <translation>Shfleto:\nShfleto për të vendosur një dosje si shteg të ruajtjes së të dhënave.</translation>
     </message>
     <message>

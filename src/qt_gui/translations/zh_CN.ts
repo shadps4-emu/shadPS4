@@ -29,8 +29,8 @@
       <translation>作弊码/补丁：</translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>作弊码/补丁是实验性的。\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>作弊码/补丁是实验性的。\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>未找到作弊码</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>在所选存储库的版本中找不到该游戏的作弊码，请尝试其他存储库或游戏版本。</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>作弊码下载成功</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>您已从所选存储库中成功下载了该游戏版本的作弊码。您还可以尝试从其他存储库下载，或通过从列表中选择文件来使用它们。</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>下载完成</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>补丁下载成功！所有可用的补丁已下载完成，无需像作弊码那样单独下载每个游戏的补丁。如果补丁没有出现，可能是该补丁不适用于当前游戏的序列号和版本。</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>网络错误：</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>自动更新程序每小时最多允许 60 次更新检查。\n您已达到此限制。请稍后再试。</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>将鼠标指针指向选项以显示其描述。</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>主机语言：\n设置 PS4 游戏中使用的语言。\n建议设置为支持的语言，这将因地区而异。</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>启用全屏：\n以全屏模式启动游戏。\n您可以按 F11 键切换回窗口模式。</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>启用单独的更新目录：\n启用安装游戏更新到一个单独的目录中以更便于管理。</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>显示启动画面：\n在游戏启动时显示游戏的启动画面（特殊图像）。</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>启用 Discord Rich Presence：\n在您的 Discord 个人资料上显示模拟器图标和相关信息。</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>用户名：\n设置 PS4 帐户的用户名，某些游戏中可能会显示此名称。</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>奖杯密钥：\n用于解密奖杯的密钥。必须从您的越狱主机中获得。\n仅包含十六进制字符。</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>日志类型：\n设置日志窗口输出的同步方式以提高性能。可能会对模拟产生不良影响。</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>日志过滤器：\n过滤日志，仅打印特定信息。\n例如：&quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
       <translation>背景图片：\n控制游戏背景图片的可见度。</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>播放标题音乐：\n如果游戏支持，在图形界面选择游戏时播放特殊音乐。</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>禁止弹出奖杯：\n禁用游戏内奖杯通知。可以在奖杯查看器中继续跟踪奖杯进度（在主窗口中右键点击游戏）。</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>隐藏光标：\n选择光标何时消失：\n从不: 从不隐藏光标。\n闲置：光标在闲置若干秒后消失。\n始终：始终隐藏光标。</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>光标隐藏闲置时长：\n光标自动隐藏之前的闲置时长。</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>返回按钮行为：\n设置手柄的返回按钮模拟在 PS4 触控板上指定位置的点击。</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>显示兼容性数据：\n在列表视图中显示游戏兼容性信息。启用“启动时更新兼容性数据库”以获取最新信息。</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>启动时更新兼容性数据库：\n当 shadPS4 启动时自动更新兼容性数据库。</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>更新兼容性数据库：\n立即更新兼容性数据库。</translation>
     </message>
     <message>
@@ -1648,83 +1648,83 @@
       <translation>无</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>图形设备：\n在具有多个 GPU 的系统中，从下拉列表中选择要使用的 GPU，\n或者选择“自动选择”由模拟器决定。</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>宽度/高度：\n设置启动游戏时的窗口大小，游戏过程中可以调整。\n这与游戏内的分辨率不同。</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank Divider：\n模拟器刷新的帧率会乘以此数字。改变此项可能会导致游戏速度加快，或破坏游戏中不期望此变化的关键功能！</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>启用着色器转储：\n用于技术调试，在渲染期间将游戏着色器保存到文件夹中。</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>启用 NULL GPU：\n用于技术调试，禁用游戏渲染，就像没有显卡一样。</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>游戏文件夹：\n检查已安装游戏的文件夹列表。</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>添加：\n将文件夹添加到列表。</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>移除：\n从列表中移除文件夹。</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>启用调试转储：\n将当前正在运行的 PS4 程序的导入和导出符号及文件头信息保存到目录中。</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>启用 Vulkan 验证层：\n启用一个系统来验证 Vulkan 渲染器的状态并记录其内部状态的信息。\n这将降低性能并可能改变模拟的行为。</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>启用 Vulkan 同步验证：\n启用一个系统来验证 Vulkan 渲染任务的时间。\n这将降低性能并可能改变模拟的行为。</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>收集着色器：\n您需要启用此功能才能使用调试菜单（Ctrl + F10）编辑着色器。</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层并安装 Vulkan SDK 才能使用此功能。</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>复制 GPU 缓冲区：\n绕过涉及 GPU 提交的竞态条件。\n对于 PM4 type 0 崩溃可能有帮助，也可能没有帮助。</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host 调试标记：\n在 Vulkan 命令周围插入模拟器端信息，如特定 AMD GPU 命令的标记，以及为资源提供调试名称。\n如果您已启用此功能，应同时启用崩溃诊断。\n对 RenderDoc 等程序很有用。</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest 调试标记：\n在命令缓冲区中插入游戏本身添加的任何调试标记。\n如果您已启用此功能，应同时启用崩溃诊断。\n对 RenderDoc 等程序很有用。</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
       <translation>存档数据路径：\n保存游戏存档数据的目录。</translation>
     </message>
     <message>
-      <source>browseButton</source>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
       <translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
     </message>
     <message>

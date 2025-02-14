@@ -29,8 +29,8 @@
       <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Cheats Nu au fost găsite</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Nu au fost găsite cheats pentru acest joc în această versiune a repository-ului selectat, încearcă un alt repository sau o versiune diferită a jocului.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Cheats descărcate cu succes</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Ai descărcat cu succes cheats-urile pentru această versiune a jocului din repository-ul selectat. Poți încerca descărcarea din alt repository; dacă este disponibil, va fi posibil să-l folosești selectând fișierul din listă.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Descărcare completă</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Patches descărcate cu succes! Toate Patches disponibile pentru toate jocurile au fost descărcate; nu este nevoie să le descarci individual pentru fiecare joc, așa cum se întâmplă cu Cheats. Dacă patch-ul nu apare, este posibil să nu existe pentru seria și versiunea specifică a jocului.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Eroare de rețea:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Actualizatorul automat permite până la 60 de verificări de actualizare pe oră.\nAți atins această limită. Vă rugăm să încercați din nou mai târziu.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Indicați mouse-ul asupra unei opțiuni pentru a afișa descrierea acesteia.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Limba consolei:\nSetează limba pe care o folosește jocul PS4.\nSe recomandă să setezi această opțiune pe o limbă pe care jocul o suportă, ceea ce poate varia în funcție de regiune.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Limba emulatorului:\nSetează limba interfeței utilizatorului a emulatorului.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Activează modul pe ecran complet:\nPune automat fereastra jocului în modul pe ecran complet.\nAceasta poate fi dezactivată apăsând tasta F11.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Afișează ecranul de încărcare:\nAfișează ecranul de încărcare al jocului (o imagine specială) în timp ce jocul pornește.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Activați Discord Rich Presence:\nAfișează pictograma emulatorului și informații relevante pe profilul dumneavoastră Discord.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Nume utilizator:\nSetează numele de utilizator al contului PS4, care poate fi afișat de unele jocuri.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Tip jurnal:\nSetează dacă să sincronizezi ieșirea ferestrei de jurnal pentru performanță. Aceasta poate avea efecte adverse asupra emulării.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Filtrul jurnalului:\nFiltrează jurnalul pentru a imprima doar informații specifice.\nExemple: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveluri: Trace, Debug, Info, Warning, Error, Critical - în această ordine, un nivel specific reduce toate nivelurile anterioare din listă și înregistrează toate nivelurile ulterioare.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Actualizare:\nRelease: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nNightly: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Redă muzica titlului:\nDacă un joc o suportă, activează redarea muzicii speciale când selectezi jocul în GUI.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Ascunde cursorul:\nAlegeți când va dispărea cursorul:\nNiciodată: Vei vedea întotdeauna mouse-ul.\nInactiv: Setează un timp pentru a dispărea după inactivitate.\nÎntotdeauna: nu vei vedea niciodată mouse-ul.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Setați un timp pentru ca mouse-ul să dispară după ce a fost inactiv.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Comportamentul butonului înapoi:\nSetează butonul înapoi al controlerului să imite atingerea poziției specificate pe touchpad-ul PS4.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>Niciunul</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Dispozitiv grafic:\nPe sistemele cu mai multe GPU-uri, alege GPU-ul pe care emulatorul îl va folosi din lista derulantă,\nsau selectează &quot;Auto Select&quot; pentru a-l determina automat.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Lățime/Înălțime:\nSetează dimensiunea ferestrei emulatorului la lansare, care poate fi redimensionată în timpul jocului.\nAceasta este diferită de rezoluția din joc.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Împărțitor Vblank:\nRata de cadre cu care emulatorul se reîmprospătează este multiplicată cu acest număr. Schimbarea acestuia poate avea efecte adverse, cum ar fi creșterea vitezei jocului sau distrugerea funcționalității critice a jocului care nu se așteaptă ca aceasta să se schimbe!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Activează salvarea shaderelor:\nÎn scopuri de depanare tehnică, salvează shader-urile jocului într-un folder pe măsură ce sunt randate.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Activează GPU Null:\nÎn scopuri de depanare tehnică, dezactivează redarea jocului ca și cum nu ar exista o placă grafică.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Folderele jocurilor:\nLista folderelor pentru a verifica jocurile instalate.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Adăugați:\nAdăugați un folder la listă.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Eliminați:\nÎndepărtați un folder din listă.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Activează salvarea pentru depanare:\nSalvează simbolurile de import și export și informațiile din antetul fișierului pentru aplicația PS4 care rulează în prezent într-un director.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Activează straturile de validare Vulkan:\nActivează un sistem care validează starea renderer-ului Vulkan și înregistrează informații despre starea sa internă. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Activează validarea sincronizării Vulkan:\nActivează un sistem care validează sincronizarea sarcinilor de redare Vulkan. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Activează depanarea RenderDoc:\nDacă este activat, emulatorul va oferi compatibilitate cu Renderdoc pentru a permite capturarea și analiza cadrului redat în prezent.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

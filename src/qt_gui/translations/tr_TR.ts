@@ -29,8 +29,8 @@
       <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Cheats/Patches deneysel niteliktedir.\nDikkatli kullanın.\n\nCheat&apos;leri ayrı ayrı indirerek, depo seçerek ve indirme düğmesine tıklayarak indirin.\nPatches sekmesinde tüm patch&apos;leri bir kerede indirebilir, hangi patch&apos;leri kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nCheats/Patches&apos;i geliştirmediğimiz için,\nproblemleri cheat yazarına bildirin.\n\nYeni bir cheat mi oluşturduğunuz? Şu adresi ziyaret edin:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Cheats/Patches deneysel niteliktedir.\nDikkatli kullanın.\n\nCheat&apos;leri ayrı ayrı indirerek, depo seçerek ve indirme düğmesine tıklayarak indirin.\nPatches sekmesinde tüm patch&apos;leri bir kerede indirebilir, hangi patch&apos;leri kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nCheats/Patches&apos;i geliştirmediğimiz için,\nproblemleri cheat yazarına bildirin.\n\nYeni bir cheat mi oluşturduğunuz? Şu adresi ziyaret edin:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Hileler Bulunamadı</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Bu oyun için seçilen depoda hile bulunamadı.Başka bir depo veya oyun sürümü deneyin.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Hileler Başarıyla İndirildi</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Bu oyun sürümü için hileleri başarıyla indirdiniz. Başka bir depodan indirmeyi deneyebilirsiniz. Eğer mevcutsa, listeden dosyayı seçerek de kullanılabilir.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>İndirme Tamamlandı</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi. Yamanın görünmemesi durumunda, belirli seri numarası ve oyun sürümü için mevcut olmayabilir.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Ağ hatası:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Otomatik Güncelleyici, saat başına en fazla 60 güncelleme kontrolüne izin verir.\nBu sınıra ulaştınız. Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Seçenek üzerinde farenizi tutarak açıklamasını görüntüleyin.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Konsol Dili:\nPS4 oyununun kullandığı dili ayarlar.\nBu seçeneği, oyunun desteklediği bir dilde ayarlamanız önerilir; bu durum bölgeye göre değişebilir.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emülatör Dili:\nEmülatörün kullanıcı arayüzünün dilini ayarlar.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Tam Ekranı Etkinleştir:\nOyun penceresini otomatik olarak tam ekran moduna alır.\nBu, F11 tuşuna basarak geçiş yapılabilir.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Açılış Ekranını Göster:\nOyun açılırken (özel bir görüntü) açılış ekranını gösterir.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Discord Rich Presence&apos;i etkinleştir:\nEmülatör simgesini ve Discord profilinizdeki ilgili bilgileri gösterir.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Kullanıcı Adı:\nBazı oyunlar tarafından gösterilebilen PS4 hesabının kullanıcı adını ayarlar.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Günlük Türü:\nPerformans için günlük penceresi çıkışını senkronize etme durumunu ayarlar. Bu, emülasyonda olumsuz etkilere yol açabilir.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Günlük Filtre:\nSadece belirli bilgileri yazdırmak için günlüğü filtreler.\nÖrnekler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Düzeyler: Trace, Debug, Info, Warning, Error, Critical - bu sırada, belirli bir seviye listede önceki tüm seviyeleri susturur ve sonraki tüm seviyeleri kaydeder.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Güncelleme:\nRelease: Her ay yayınlanan resmi sürümler; çok eski olabilirler, ancak daha güvenilirdir ve test edilmiştir.\nNightly: Tüm en son özellikler ve düzeltmeler ile birlikte geliştirme sürümleri; hatalar içerebilir ve daha az kararlıdırlar.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI&apos;de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>İmleci gizle:\nİmlecin ne zaman kaybolacağını seçin:\nAsla: Fareyi her zaman göreceksiniz.\nPasif: Hareketsiz kaldıktan sonra kaybolması için bir süre belirleyin.\nHer zaman: fareyi asla göremeyeceksiniz.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Hareket etmeden sonra imlecin kaybolacağı süreyi ayarlayın.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Geri düğmesi davranışı:\nKontrol cihazındaki geri düğmesini, PS4&apos;ün dokunmatik panelindeki belirlenen noktaya dokunmak için ayarlar.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>Yok</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Grafik Aygıtı:\nBirden fazla GPU&apos;ya sahip sistemlerde, emülatörün kullanacağı GPU&apos;yu açılır listeden seçin,\nor &quot;Auto Select&quot; seçeneğini seçerek otomatik olarak belirlenmesini sağlayın.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Genişlik/Yükseklik:\nEmülatör penceresinin açılışta boyutunu ayarlar; bu, oyun sırasında yeniden boyutlandırılabilir.\nBu, oyundaki çözünürlükten farklıdır.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank Bölücü:\nEmülatörün yenileme hızı bu sayı ile çarpılır. Bu değerin değiştirilmesi olumsuz etkilere yol açabilir; oyun hızını artırabilir veya oyunun beklemediği kritik işlevselliği bozabilir!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Shader&apos;ları Dışa Aktarmayı Etkinleştir:\nTeknik hata ayıklama amacıyla, shader&apos;ları render edildikçe bir klasöre kaydeder.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Null GPU&apos;yu Etkinleştir:\nTeknik hata ayıklama amacıyla, oyunun render edilmesini grafik kartı yokmuş gibi devre dışı bırakır.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Oyun klasörleri:\nYüklenmiş oyunları kontrol etmek için klasörlerin listesi.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Ekle:\nListeye bir klasör ekle.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Kaldır:\nListeden bir klasörü kaldır.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Hata Ayıklama için Dışa Aktarmayı Etkinleştir:\nŞu anda çalışan PS4 uygulaması için içe aktarılan ve dışa aktarılan sembolleri ve dosya başlık bilgilerini bir dizine kaydedin.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Vulkan Doğrulama Katmanlarını Etkinleştir:\nVulkan renderlayıcısının durumunu doğrulayan ve iç durum hakkında bilgi kaydeden bir sistemi etkinleştirir. Bu, performansı düşürür ve muhtemelen emülasyon davranışını değiştirir.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Vulkan Senkronizasyon Doğrulamasını Etkinleştir:\nVulkan renderlama görevlerinin senkronizasyonunu doğrulayan bir sistemi etkinleştirir. Bu, performansı düşürür ve muhtemelen emülasyon davranışını değiştirir.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>RenderDoc Hata Ayıklamayı Etkinleştir:\nEğer etkinleştirilirse, emülatör mevcut render edilmiş çerçeveyi yakalamak ve analiz etmek için Renderdoc ile uyumluluk sunar.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

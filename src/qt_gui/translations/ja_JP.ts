@@ -29,8 +29,8 @@
       <translation>のチート/パッチ</translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>チート/パッチは実験的です。\n使用には注意してください。\n\nリポジトリを選択し、ダウンロードボタンをクリックしてチートを個別にダウンロードします。\n「Patches」タブでは、すべてのパッチを一度にダウンロードし、使用したいものを選択して選択を保存できます。\n\nチート/パッチは開発を行っていないため、\n問題があればチートの作者に報告してください。\n\n新しいチートを作成しましたか？\nhttps://github.com/shadps4-emu/ps4_cheats を訪問してください。</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>チート/パッチは実験的です。\n使用には注意してください。\n\nリポジトリを選択し、ダウンロードボタンをクリックしてチートを個別にダウンロードします。\n「Patches」タブでは、すべてのパッチを一度にダウンロードし、使用したいものを選択して選択を保存できます。\n\nチート/パッチは開発を行っていないため、\n問題があればチートの作者に報告してください。\n\n新しいチートを作成しましたか？\n を訪問してください。</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>チートが見つかりません</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>このゲームのこのバージョンのチートが選択されたリポジトリに見つかりませんでした。別のリポジトリまたはゲームの別のバージョンを試してください。</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>チートが正常にダウンロードされました</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>このゲームのこのバージョンのチートをリポジトリから正常にダウンロードしました。 別のリポジトリからのダウンロードも試せます。利用可能であれば、リストからファイルを選択して使用することも可能です。</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>ダウンロード完了</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>ネットワークエラー:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>自動アップデーターは1時間に最大60回の更新チェックを許可します。\nこの制限に達しました。後でもう一度お試しください。</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>設定項目にマウスをホバーすると、説明が表示されます。</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>コンソールの言語:\nPS4ゲームが使用する言語を設定します。\nゲームでサポートされている言語に設定することをお勧めしますが、地域によって異なる場合があります。</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>エミュレーターの言語:\nエミュレーターのユーザーインターフェースの言語を設定します。</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>全画面モードを有効にする:\nゲームウィンドウを自動的に全画面モードにします。\nF11キーを押すことで切り替えることができます。</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Enable Separate Update Folder:\nゲームのアップデートを別のフォルダにインストールすることで、管理が容易になります。</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>スプラッシュスクリーンを表示:\nゲーム起動中にゲームのスプラッシュスクリーン（特別な画像）を表示します。</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Discord Rich Presenceを有効にする:\nエミュレーターのアイコンと関連情報をDiscordプロフィールに表示します。</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>ユーザー名:\nPS4のアカウントユーザー名を設定します。これは、一部のゲームで表示される場合があります。</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>トロフィーキー:\nトロフィーの復号に使用されるキーです。脱獄済みのコンソールから取得することができます。\n16進数のみを受け入れます。</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>ログタイプ:\nパフォーマンスのためにログウィンドウの出力を同期させるかどうかを設定します。エミュレーションに悪影響を及ぼす可能性があります。</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>ログフィルター:\n特定の情報のみを印刷するようにログをフィルタリングします。\n例: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; \nレベル: Trace, Debug, Info, Warning, Error, Critical - レベルはこの並び通りに処理され、指定されたレベルより前のレベル ログを抑制し、それ以外のすべてのレベルをログに記録します。</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>更新:\nRelease: 最新の機能を利用できない可能性がありますが、より信頼性が高くテストされた公式バージョンが毎月リリースされます。\nNightly: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>タイトルミュージックを再生:\nゲームでサポートされている場合に、GUIでゲームを選択したときに特別な音楽を再生する機能を有効にします。</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>トロフィーのポップアップを無効化:\nゲーム内でのトロフィー通知を無効化します。 トロフィーの進行状況は、トロフィービューアーを使用して確認できます。(メインウィンドウでゲームを右クリック)</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>カーソルを隠す:\nカーソルが消えるタイミングを選択してください:\n無効: 常にカーソルが表示されます。\n非アクティブ時: カーソルの非アクティブ期間が指定した時間を超えた場合にカーソルを隠します。\n常に: カーソルは常に隠れた状態になります。</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>カーソルが非アクティブになってから隠すまでの時間を設定します。</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>戻るボタンの動作:\nコントローラーの戻るボタンを、PS4のタッチパッドの指定された位置をタッチするように設定します。</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>互換性に関するデータを表示:\nゲームの互換性に関する情報を表として表示します。常に最新情報を取得したい場合、&quot;起動時に互換性データベースを更新する&quot; を有効化してください。</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>起動時に互換性データベースを更新する:\nshadPS4の起動時に自動で互換性データベースを更新します。</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>互換性データベースを更新する:\n今すぐ互換性データベースを更新します。</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>なし</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>グラフィックデバイス:\nシステムに複数のGPUが搭載されている場合、ドロップダウンリストからエミュレーターで使用するGPUを選択するか、\n「自動選択」を選択して自動的に決定します。</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>幅/高さ:\n起動時にエミュレーターウィンドウのサイズを設定します。ゲーム中でもサイズを変更することができます。\nこれはゲーム内の解像度とは異なります。</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblankディバイダー:\nエミュレーターが更新されるフレームレートにこの数を掛けます。これを変更すると、ゲームの速度が上がったり、想定外の変更がある場合、ゲームの重要な機能が壊れる可能性があります!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>シェーダーダンプを有効にする:\n技術的なデバッグの目的で、レンダリング中にゲームのシェーダーをフォルダーに保存します。</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Null GPUを有効にする:\n技術的なデバッグの目的で、グラフィックスカードがないかのようにゲームのレンダリングを無効にします。</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>ゲームフォルダ:\nインストールされたゲームを確認するためのフォルダのリスト。</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>追加:\nリストにフォルダを追加します。</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>削除:\nリストからフォルダを削除します。</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>デバッグダンプを有効にする:\n現在実行中のPS4プログラムのインポートおよびエクスポートシンボルとファイルヘッダー情報をディレクトリに保存します。</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Vulkanバリデーションレイヤーを有効にする:\nVulkanのレンダリングステータスを検証し、内部状態に関する情報をログに記録するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Vulkan同期バリデーションを有効にする:\nVulkanのレンダリングタスクのタイミングを検証するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>RenderDocデバッグを有効にする:\n有効にすると、エミュレーターはRenderdocとの互換性を提供し、現在レンダリング中のフレームのキャプチャと分析を可能にします。</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>

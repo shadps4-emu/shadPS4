@@ -29,8 +29,8 @@
       <translation>Huijaukset / Paikkaukset pelille </translation>
     </message>
     <message>
-      <source>defaultTextEdit_MSG</source>
-      <translation>Huijaukset/Paikkaukset ovat kokeellisia.\nKäytä varoen.\n\nLataa huijaukset yksitellen valitsemalla repositorion ja napsauttamalla latauspainiketta.\nPaikkaukset-välilehdessä voit ladata kaikki paikkaukset kerralla, valita, mitä haluat käyttää ja tallentaa valinnan.\n\nKoska me emme kehitä Huijauksia/Paikkauksia,\nole hyvä ja ilmoita ongelmista huijauksen tekijälle.\n\nLoitko uuden huijauksen? Käy osoitteessa:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+      <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
+      <translation>Huijaukset/Paikkaukset ovat kokeellisia.\nKäytä varoen.\n\nLataa huijaukset yksitellen valitsemalla repositorion ja napsauttamalla latauspainiketta.\nPaikkaukset-välilehdessä voit ladata kaikki paikkaukset kerralla, valita, mitä haluat käyttää ja tallentaa valinnan.\n\nKoska me emme kehitä Huijauksia/Paikkauksia,\nole hyvä ja ilmoita ongelmista huijauksen tekijälle.\n\nLoitko uuden huijauksen? Käy osoitteessa:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -161,7 +161,7 @@
       <translation>Huijauksia Ei Löytynyt</translation>
     </message>
     <message>
-      <source>CheatsNotFound_MSG</source>
+      <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
       <translation>Huijauksia ei löytynyt tälle pelin versiolle valitusta repositoriosta. Kokeile toista repositoriota tai eri versiota pelistä.</translation>
     </message>
     <message>
@@ -169,7 +169,7 @@
       <translation>Huijaukset Ladattu Onnistuneesti</translation>
     </message>
     <message>
-      <source>CheatsDownloadedSuccessfully_MSG</source>
+      <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>Olet ladannut huijaukset onnistuneesti valitusta repositoriosta tälle pelin versiolle. Voit yrittää ladata toisesta repositoriosta. Jos se on saatavilla, voit myös käyttää sitä valitsemalla tiedoston listasta.</translation>
     </message>
     <message>
@@ -185,7 +185,7 @@
       <translation>Lataus valmis</translation>
     </message>
     <message>
-      <source>DownloadComplete_MSG</source>
+      <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
       <translation>Paikkaukset ladattu onnistuneesti! Kaikki saatavilla olevat paikkaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille, kuten huijausten kohdalla. Jos paikkausta ei näy, saattaa olla, että sitä ei ole saatavilla kyseiselle sarjanumerolle ja peliversiolle.</translation>
     </message>
     <message>
@@ -264,7 +264,7 @@
       <translation>Verkkovirhe:</translation>
     </message>
     <message>
-      <source>Error_Github_limit_MSG</source>
+      <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
       <translation>Automaattinen päivitys sallii enintään 60 päivitystarkistusta tunnissa.\nOlet saavuttanut tämän rajan. Yritä myöhemmin uudelleen.</translation>
     </message>
     <message>
@@ -1540,83 +1540,83 @@
       <translation>Siirrä hiiri vaihtoehdon päälle näyttääksesi sen kuvauksen.</translation>
     </message>
     <message>
-      <source>consoleLanguageGroupBox</source>
+      <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
       <translation>Konsolin Kieli:\nAseta PS4-pelin käyttämä kieli.\nOn suositeltavaa asettaa tämä kieleksi, jota peli tukee, mikä vaihtelee alueittain.</translation>
     </message>
     <message>
-      <source>emulatorLanguageGroupBox</source>
+      <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulaattorin Kieli:\nAsettaa emulaattorin käyttöliittymän kielen.</translation>
     </message>
     <message>
-      <source>fullscreenCheckBox</source>
+      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
       <translation>Ota Koko Näytön Tila Käyttöön:\nAvaa pelin ikkunan automaattisesti koko näytön tilassa.\nTilaa voi vaihtaa painamalla F11-näppäintä.</translation>
     </message>
     <message>
-      <source>separateUpdatesCheckBox</source>
+      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
       <translation>Ota Käyttöön Erillinen Päivityskansio:\nOttaa käyttöön päivitysten asennuksen erilliseen kansioon helpottamaan niiden hallintaa.\nTämä on tehtävissä manuaalisesti lisäämällä puretun päivityksen pelikansioon &quot;CUSA00000-UPDATE&quot; nimellä, missä CUSA ID vastaa pelin ID:tä.</translation>
     </message>
     <message>
-      <source>showSplashCheckBox</source>
+      <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Näytä Aloitusnäyttö:\nNäyttää pelin aloitusnäytön (erityinen kuva) pelin käynnistyessä.</translation>
     </message>
     <message>
-      <source>discordRPCCheckbox</source>
+      <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
       <translation>Ota käyttöön Discord Rich Presence:\nNäyttää emulaattorin kuvakkeen ja asiaankuuluvat tiedot Discord-profiilissasi.</translation>
     </message>
     <message>
-      <source>userName</source>
+      <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
       <translation>Käyttäjänimi:\nAsettaa PS4-tilin käyttäjänimen, joka voi näkyä joissain peleissä.</translation>
     </message>
     <message>
-      <source>TrophyKey</source>
+      <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
       <translation>Trophy Avain:\nThrophyjen dekryptoinnissa käytetty avain. Pitää hankkia jailbreakatusta konsolista.\nSaa sisältää vain hex-merkkejä.</translation>
     </message>
     <message>
-      <source>logTypeGroupBox</source>
+      <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
       <translation>Lokityyppi:\nAsettaa, synkronoidaanko loki-ikkunan ulostulo suorituskyvyn vuoksi. Tämä voi vaikuttaa haitallisesti emulointiin.</translation>
     </message>
     <message>
-      <source>logFilter</source>
+      <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
       <translation>Lokisuodatin:\nSuodattaa lokia tulostamaan vain määrättyä tietoa.\nEsimerkkejä: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nTasot: Trace, Debug, Info, Warning, Error, Critical - tässä järjestyksessä. Valittu taso vaientaa kaikki edeltävät tasot luettelossa ja kirjaa kaikki tasot sen jälkeen.</translation>
     </message>
     <message>
-      <source>updaterGroupBox</source>
+      <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
       <translation>Päivitys:\nRelease: Viralliset versiot, jotka julkaistaan kuukausittain ja saattavat olla hyvin vanhoja, mutta ovat luotettavampia ja testatumpia.\nNightly: Kehitysversiot, joissa on kaikki uusimmat ominaisuudet ja korjaukset, mutta ne saattavat sisältää virheitä ja ovat vähemmän vakaita.</translation>
     </message>
     <message>
-      <source>GUIBackgroundImageGroupBox</source>
-      <translation type="unfinished">GUIBackgroundImageGroupBox</translation>
+      <source>Background Image:\nControl the opacity of the game background image.</source>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
-      <source>GUIMusicGroupBox</source>
+      <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
       <translation>Soita Otsikkomusiikkia:\nJos peli tukee sitä, ota käyttöön erityisen musiikin soittaminen pelin valinnan yhteydessä käyttöliittymässä.</translation>
     </message>
     <message>
-      <source>disableTrophycheckBox</source>
+      <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
       <translation>Poista Trophy Pop-upit Käytöstä:\nPoista trophy ilmoitukset pelin aikana. Trophyjen edistystä voi silti seurata Trophy Selainta käyttämällä (klikkaa peliä hiiren oikealla emulaattorin pääikkunassa).</translation>
     </message>
     <message>
-      <source>hideCursorGroupBox</source>
+      <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
       <translation>Piilota kursori:\nValitse, milloin kursori häviää:\nEi koskaan: Näet hiiren aina.\nInaktiivinen: Aseta aika, jolloin se häviää oltuaan aktiivinen.\nAina: et koskaan näe hiirtä.</translation>
     </message>
     <message>
-      <source>idleTimeoutGroupBox</source>
+      <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
       <translation>Aseta aika, milloin hiiri häviää oltuaan aktiivinen.</translation>
     </message>
     <message>
-      <source>backButtonBehaviorGroupBox</source>
+      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
       <translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
     </message>
     <message>
-      <source>enableCompatibilityCheckBox</source>
+      <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Näytä Yhteensopivuustiedot:\nNäyttää pelien yhteensopivuustiedot listanäkymässä. Ota käyttöön &quot;Päivitä Yhteensopivuustietokanta Käynnistäessä&quot; saadaksesi ajantasaista tietoa.</translation>
     </message>
     <message>
-      <source>checkCompatibilityOnStartupCheckBox</source>
+      <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
       <translation>Päivitä Yhteensopivuustiedot Käynnistäessä:\nPäivitä yhteensopivuustiedot automaattisesti shadPS4:n käynnistyessä.</translation>
     </message>
     <message>
-      <source>updateCompatibilityButton</source>
+      <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Päivitä Yhteensopivuustietokanta:\nPäivitää yhteensopivuustietokannan heti.</translation>
     </message>
     <message>
@@ -1648,84 +1648,84 @@
       <translation>Ei mitään</translation>
     </message>
     <message>
-      <source>graphicsAdapterGroupBox</source>
+      <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
       <translation>Näytönohjain:\nUseamman näytönohjaimen järjestelmissä, valitse pudotusvalikosta, mitä näytönohjainta emulaattori käyttää,\n tai valitse &quot;Auto Select&quot; automaattiseen määritykseen.</translation>
     </message>
     <message>
-      <source>resolutionLayout</source>
+      <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Leveys/Korkeus:\nAsettaa käynnistetyn emulaattori-ikkunan koon, jota voidaan muuttaa pelin aikana.\nTämä on eri, kuin pelin sisäinen resoluutio.</translation>
     </message>
     <message>
-      <source>heightDivider</source>
+      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank Jakaja:\nEmulaattorin virkistystaajuus kerrotaan tällä numerolla. Tämän muuttaminen voi vaikuttaa haitallisesti, kuten lisätä pelin nopeutta tai rikkoa kriittisiä pelitoimintoja, jotka eivät odota tämän muuttuvan!</translation>
     </message>
     <message>
-      <source>dumpShadersCheckBox</source>
+      <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Ota Käyttöön Varjostinvedokset:\nTeknistä vianetsintää varten. Pelin varjostimia tallennetaan hakemistoon niiden renderöityessä.</translation>
     </message>
     <message>
-      <source>nullGpuCheckBox</source>
+      <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
       <translation>Ota Null GPU käyttöön:\nTeknistä vianetsintää varten. Pelin renderöinti estetään, ikään kuin näytönohjainta ei olisi.</translation>
     </message>
     <message>
-      <source>enableHDRCheckBox</source>
-      <translation type="unfinished">enableHDRCheckBox</translation>
+      <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
-      <source>gameFoldersBox</source>
+      <source>Game Folders:\nThe list of folders to check for installed games.</source>
       <translation>Pelihakemistot:\nLista hakemistoista, joista pelejä haetaan.</translation>
     </message>
     <message>
-      <source>addFolderButton</source>
+      <source>Add:\nAdd a folder to the list.</source>
       <translation>Lisää:\nLisää hakemisto listalle.</translation>
     </message>
     <message>
-      <source>removeFolderButton</source>
+      <source>Remove:\nRemove a folder from the list.</source>
       <translation>Poista:\nPoista hakemisto listalta.</translation>
     </message>
     <message>
-      <source>debugDump</source>
+      <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>Ota Käyttöön Virheenkorjausvedokset:\nTallentaa käynnissä olevan PS4-ohjelman tuonti- ja vientisymbolit ja tiedosto-otsikkotiedot hakemistoon.</translation>
     </message>
     <message>
-      <source>vkValidationCheckBox</source>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Ota Käyttöön Vulkan-validointikerrokset:\nAktivoi järjestelmä, joka validoi Vulkan-renderöijän tilan ja kirjaa tietoa sen sisäisestä tilasta. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
     </message>
     <message>
-      <source>vkSyncValidationCheckBox</source>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
       <translation>Ota Käyttöön Vulkan-synkronointivalidointi:\nAktivoi järjestelmä, joka validoi Vulkan-renderöinnin tehtävien aikataulutuksen. Tämä heikentää suorituskykyä ja todennäköisesti muuttaa emulaation käyttäytymistä.</translation>
     </message>
     <message>
-      <source>rdocCheckBox</source>
+      <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Ota Käyttöön RenderDoc Virheenkorjaus:\nJos käytössä, emulaattori tarjoaa Renderdoc-yhteensopivuuden, mikä mahdollistaa renderöidyn kehyksen tallennuksen ja analysoinnin.</translation>
     </message>
     <message>
-      <source>collectShaderCheckBox</source>
+      <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
       <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>crashDiagnosticsCheckBox</source>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
-      <source>copyGPUBuffersCheckBox</source>
+      <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
-      <source>hostMarkersCheckBox</source>
+      <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>guestMarkersCheckBox</source>
+      <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
       <translation>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
-      <source>saveDataBox</source>
-      <translation type="unfinished">saveDataBox</translation>
+      <source>Save Data Path:\nThe folder where game save data will be saved.</source>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
-      <source>browseButton</source>
-      <translation type="unfinished">browseButton</translation>
+      <source>Browse:\nBrowse for a folder to set as the save data path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>
