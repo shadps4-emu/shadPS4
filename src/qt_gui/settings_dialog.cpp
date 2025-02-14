@@ -59,6 +59,9 @@ QStringList languageNames = {"Arabic",
 const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 24, 29, 5,  0, 9,
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 QMap<QString, QString> channelMap;
+QMap<QString, QString> logTypeMap;
+QMap<QString, QString> fullscreenModeMap;
+QMap<QString, QString> chooseHomeTabMap;
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
@@ -73,6 +76,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
 
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
+    logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
+    fullscreenModeMap = {{tr("Borderless"), "Borderless"}, {tr("True"), "True"}};
+    chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
+                        {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
+                        {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
+                        {tr("Debug"), "Debug"}};
 
     // Add list of available GPUs
     ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
@@ -374,15 +383,19 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
-    ui->fullscreenModeComboBox->setCurrentText(QString::fromStdString(
-        toml::find_or<std::string>(data, "General", "FullscreenMode", "Borderless")));
+    QString translatedText_FullscreenMode =
+        fullscreenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
+    if (!translatedText_FullscreenMode.isEmpty()) {
+        ui->fullscreenModeComboBox->setCurrentText(translatedText_FullscreenMode);
+    }
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
-    std::string logType = Config::getLogType();
-    ui->logTypeComboBox->setCurrentText(logType == "async" ? tr("async")
-                                                           : (logType == "sync" ? tr("sync") : ""));
+    QString translatedText_logType = logTypeMap.key(QString::fromStdString(Config::getLogType()));
+    if (!translatedText_logType.isEmpty()) {
+        ui->logTypeComboBox->setCurrentText(translatedText_logType);
+    }
     ui->logFilterLineEdit->setText(
         QString::fromStdString(toml::find_or<std::string>(data, "General", "logFilter", "")));
     ui->userNameLineEdit->setText(
@@ -421,13 +434,19 @@ void SettingsDialog::LoadValuesFromConfig() {
                            : updateChannel));
 #endif
 
-    std::string chooseHomeTab = toml::find_or<std::string>(data, "General", "chooseHomeTab", "");
-    ui->chooseHomeTabComboBox->setCurrentText(QString::fromStdString(chooseHomeTab));
+    std::string chooseHomeTab =
+        toml::find_or<std::string>(data, "General", "chooseHomeTab", "General");
+    QString translatedText = chooseHomeTabMap.key(QString::fromStdString(chooseHomeTab));
+    if (translatedText.isEmpty()) {
+        translatedText = tr("General");
+    }
+    ui->chooseHomeTabComboBox->setCurrentText(translatedText);
+
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
                             tr("Input"),   tr("Paths"), tr("Debug")};
-    QString chooseHomeTabQString = QString::fromStdString(chooseHomeTab);
-    int indexTab = tabNames.indexOf(chooseHomeTabQString);
-    indexTab = (indexTab == -1) ? 0 : indexTab;
+    int indexTab = tabNames.indexOf(translatedText);
+    if (indexTab == -1)
+        indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 
     QString backButtonBehavior = QString::fromStdString(
@@ -634,12 +653,13 @@ void SettingsDialog::UpdateSettings() {
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
     Config::setIsFullscreen(ui->fullscreenCheckBox->isChecked());
-    Config::setFullscreenMode(ui->fullscreenModeComboBox->currentText().toStdString());
+    Config::setFullscreenMode(
+        fullscreenModeMap.value(ui->fullscreenModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
-    Config::setLogType((ui->logTypeComboBox->currentText() == tr("async") ? "async" : "sync"));
+    Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
     Config::setUserName(ui->userNameLineEdit->text().toStdString());
     Config::setTrophyKey(ui->trophyKeyLineEdit->text().toStdString());
@@ -669,7 +689,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
     Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
-    Config::setChooseHomeTab(ui->chooseHomeTabComboBox->currentText().toStdString());
+    Config::setChooseHomeTab(
+        chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
     Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
