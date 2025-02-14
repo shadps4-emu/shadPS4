@@ -411,11 +411,11 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>配置按键</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
+      <translation>按键配置</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -451,15 +451,15 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>配置选择</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>通用配置</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>使用每个游戏的配置</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -471,11 +471,11 @@
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
+      <translation>键鼠</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
+      <translation>键鼠配置</translation>
     </message>
     <message>
       <source>Back</source>
@@ -833,27 +833,27 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>打开更新文件夹</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>删除存档数据</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>这个游戏没有可打开的更新文件夹！</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>转换图标失败。</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>这个游戏没有更新可以删除！</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>存档数据</translation>
     </message>
   </context>
   <context>
