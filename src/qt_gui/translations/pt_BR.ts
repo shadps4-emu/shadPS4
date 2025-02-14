@@ -1385,15 +1385,15 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Habilitar Dumping de Shaders</translation>
+      <translation>Ativar Dumping de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation>Habilitar GPU NULA</translation>
+      <translation>Ativar GPU NULA</translation>
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation>Habilitar HDR</translation>
+      <translation>Ativar HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1417,23 +1417,23 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Habilitar Depuração de Dumping</translation>
+      <translation>Ativar Depuração de Dumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Habilitar Camadas de Validação do Vulkan</translation>
+      <translation>Ativar Camadas de Validação do Vulkan</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Habilitar Validação de Sincronização do Vulkan</translation>
+      <translation>Ativar Validação de Sincronização do Vulkan</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>Habilitar Depuração do RenderDoc</translation>
+      <translation>Ativar Depuração por RenderDoc</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation>Habilitar Diagnóstico de Falhas</translation>
+      <translation>Ativar Diagnóstico de Falhas</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
@@ -1569,7 +1569,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Chave de Troféu:\nChave usada para descriptografar troféus. Deve ser obtida a partir do seu console desbloqueado.\nDeve conter apenas caracteres hexadecimais.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Imagem de fundo:\nControle a opacidade da imagem de fundo do jogo.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1669,7 +1669,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Ativar HDR:\nAtiva o HDR em jogos que o suportem.\nSeu monitor deve possuir suporte para o espaço de cores BT2020 PQ e ao formato swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1721,11 +1721,11 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Diretório dos Dados Salvos:\nA pasta que onde os dados de salvamento de jogo serão salvos.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Navegar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
     </message>
     <message>
       <source>Borderless</source>
