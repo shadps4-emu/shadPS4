@@ -311,6 +311,7 @@ void ControlSettings::SetDefault() {
     ui->GSlider->setValue(0);
     ui->BSlider->setValue(255);
     ui->LightbarCheckBox->setChecked(false);
+    ui->PerGameCheckBox->setChecked(false);
 }
 
 void ControlSettings::AddBoxItems() {
