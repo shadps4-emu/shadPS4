@@ -6,8 +6,9 @@
 #include <filesystem>
 #include <thread>
 #include "common/elf_info.h"
-
+#ifdef ENABLE_QT_GUI
 #include <QString>
+#endif
 #include "common/singleton.h"
 #include "core/linker.h"
 #include "input/controller.h"
