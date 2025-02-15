@@ -117,22 +117,40 @@ int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         int e = 0;
-        if (read) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write && (create || truncate)) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (write && create && append) { // CUSA04729 (appends app0/shaderlist.txt)
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-        } else if (rdwr) {
-            if (create) { // Create an empty file first.
-                Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+
+        if (create) {
+            if (excl && std::filesystem::exists(file->m_host_name)) {
+                // Error if file exists
+                return ORBIS_KERNEL_ERROR_EEXIST;
             }
-            // RW, then scekernelWrite is called and savedata is written just fine now.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            // Create file if it doesn't exist
+            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+        }
+
+        if (truncate && std::filesystem::exists(file->m_host_name)) {
+            // If the file exists, it's size should be truncated to 0
+            file->f.SetSize(0);
+        }
+
+        if (read) {
+            // Read only
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (write) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            // Write only
+            if (append) {
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+            } else {
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            }
+        } else if (rdwr) {
+            // Read and write
+            if (append) {
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+            } else {
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            }
         } else {
-            UNREACHABLE();
+            UNREACHABLE_MSG("Invalid flags!");
         }
         if (e != 0) {
             h->DeleteHandle(handle);
