@@ -201,7 +201,8 @@ void GameListFrame::RefreshListBackgroundImage() {
     QPalette palette;
     if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
         palette.setBrush(QPalette::Base,
-                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
+                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio,
+                                                       Qt::SmoothTransformation)));
     }
     QColor transparentColor = QColor(135, 206, 235, 40);
     palette.setColor(QPalette::Highlight, transparentColor);
