@@ -3,9 +3,9 @@
 
 #include <fstream>
 #include <QMessageBox>
+#include <QPushButton>
 #include "common/path_util.h"
 #include "control_settings.h"
-#include "kbm_config_dialog.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -16,7 +16,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 
     AddBoxItems();
     SetUIValuestoMappings();
-    ui->KBMButton->setFocus();
+    UpdateLightbarColor();
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -29,11 +29,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     });
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
-    connect(ui->KBMButton, &QPushButton::clicked, this, [this] {
-        auto KBMWindow = new EditorDialog(this);
-        KBMWindow->exec();
-        SetUIValuestoMappings();
-    });
+
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
         GetGameTitle();
         SetUIValuestoMappings();
@@ -61,6 +57,27 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
             [this](int value) { ui->RStickLeftBox->setCurrentIndex(value); });
     connect(ui->RStickLeftBox, &QComboBox::currentIndexChanged, this,
             [this](int value) { ui->RStickRightBox->setCurrentIndex(value); });
+
+    connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString RValue = "R: " + RedValue;
+        ui->RLabel->setText(RValue);
+        UpdateLightbarColor();
+    });
+
+    connect(ui->GSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString GreenValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString GValue = "G: " + GreenValue;
+        ui->GLabel->setText(GValue);
+        UpdateLightbarColor();
+    });
+
+    connect(ui->BSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString BlueValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString BValue = "B: " + BlueValue;
+        ui->BLabel->setText(BValue);
+        UpdateLightbarColor();
+    });
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
@@ -505,6 +522,15 @@ void ControlSettings::GetGameTitle() {
             }
         }
     }
+}
+
+void ControlSettings::UpdateLightbarColor() {
+    ui->LightbarColorFrame->setStyleSheet("");
+    QString RValue = QString::number(ui->RSlider->value());
+    QString GValue = QString::number(ui->GSlider->value());
+    QString BValue = QString::number(ui->BSlider->value());
+    QString colorstring = "background-color: rgb(" + RValue + "," + GValue + "," + BValue + ")";
+    ui->LightbarColorFrame->setStyleSheet(colorstring);
 }
 
 ControlSettings::~ControlSettings() {}
