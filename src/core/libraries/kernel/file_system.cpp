@@ -57,7 +57,7 @@ static std::map<std::string, FactoryDevice> available_device = {
 
 namespace Libraries::Kernel {
 
-int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
+s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -161,9 +161,8 @@ int PS4_SYSV_ABI sceKernelOpen(const char* raw_path, int flags, u16 mode) {
     return handle;
 }
 
-int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
-    LOG_INFO(Kernel_Fs, "posix open redirect to sceKernelOpen");
-    int result = sceKernelOpen(path, flags, mode);
+s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
+    s32 result = sceKernelOpen(path, flags, mode);
     // Posix calls different only for their return values
     if (result < 0) {
         ErrSceToPosix(result);
@@ -172,9 +171,8 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     return result;
 }
 
-int PS4_SYSV_ABI open(const char* filename, const char* mode) {
-    LOG_INFO(Kernel_Fs, "open redirect to sceKernelOpen");
-    int result = sceKernelOpen(filename, ORBIS_KERNEL_O_RDWR, 0);
+s32 PS4_SYSV_ABI open(const char* filename, s32 flags) {
+    s32 result = sceKernelOpen(filename, flags, 0);
     if (result < 0) {
         return -1;
     }
