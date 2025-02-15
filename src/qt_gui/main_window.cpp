@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
+#include <iostream>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QPlainTextEdit>
 #include <QProgressDialog>
+#include <SDL3/SDL_events.h>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -143,6 +146,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
     ui->toolBar->addWidget(ui->keyboardButton);
+    ui->toolBar->addWidget(ui->restartButton);
     QFrame* line = new QFrame(this);
     line->setFrameShape(QFrame::StyledPanel);
     line->setFrameShadow(QFrame::Sunken);
@@ -276,6 +280,8 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
+    connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::RestartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -761,6 +767,10 @@ void MainWindow::BootGame() {
     }
 }
 
+QString MainWindow::getLastEbootPath() {
+    return QString();
+}
+
 void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
         std::string failreason;
@@ -1113,6 +1123,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
+    ui->restartButton->setIcon(RecolorIcon(ui->restartButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
@@ -1241,4 +1252,46 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     });
     emulator_thread.detach();
 #endif
+}
+
+void MainWindow::StopGame() {
+    if (!isGameRunning) {
+        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        return;
+    }
+
+    // Get the emulator instance and stop it
+    Core::Emulator& emulator = Core::Emulator::GetInstance(); // Use the correct instance method
+    emulator.StopEmulation();
+
+    isGameRunning = false;
+    QMessageBox::information(this, tr("Stop Game"), tr("Game has been stopped successfully."));
+
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT + 1;
+    SDL_PushEvent(&quitEvent);
+}
+
+void MainWindow::RestartGame() {
+    if (!isGameRunning) {
+        QMessageBox::warning(this, tr("Restart Game"), tr("No game is running to restart."));
+        return;
+    }
+
+    std::vector<std::string> recentFiles = Config::getRecentFiles();
+    if (recentFiles.empty()) {
+        QMessageBox::warning(this, tr("Restart Game"), tr("No recent game found."));
+        return;
+    }
+
+    QString lastGamePath = QString::fromStdString(recentFiles.front());
+
+    // Stop the current game first
+    StopGame();
+
+    // Wait for cleanup
+    QThread::sleep(1);
+
+    // Restart the game
+    StartEmulator(Common::FS::PathFromQString(lastGamePath));
 }
