@@ -384,10 +384,9 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::RelaunchEmulator() {
+#ifdef Q_OS_WIN
     QString emulatorPath = QCoreApplication::applicationFilePath(); // Get current executable path
     QString emulatorDir = QFileInfo(emulatorPath).absolutePath();   // Get working directory
-
-#ifdef Q_OS_WIN
     QString scriptFileName =
         QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/relaunch.ps1";
     QString scriptContent =
@@ -410,6 +409,8 @@ void WindowSDL::RelaunchEmulator() {
     }
 
 #elif defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+    QString emulatorPath = QCoreApplication::applicationFilePath(); // Get current executable path
+    QString emulatorDir = QFileInfo(emulatorPath).absolutePath();   // Get working directory
     QString scriptFileName = "/tmp/relaunch.sh";
     QString scriptContent = QStringLiteral("#!/bin/bash\n"
                                            "sleep 2\n"
