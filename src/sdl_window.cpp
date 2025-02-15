@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifdef ENABLE_QT_GUI
-#include <QString>
 #include <QCoreApplication>
+#include <QString>
 #include "common/memory_patcher.h"
 #endif
 #include <QFileInfo>

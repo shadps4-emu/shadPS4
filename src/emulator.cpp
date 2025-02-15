@@ -14,9 +14,9 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
-#include <QtCore>
-#include <QString>
 #include <QCoreApplication>
+#include <QString>
+#include <QtCore>
 #include "common/memory_patcher.h"
 #endif
 #include "common/assert.h"
