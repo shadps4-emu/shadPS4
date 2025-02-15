@@ -536,7 +536,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "fullscreenCheckBox") {
         text = tr("Enable Full Screen:\\nAutomatically puts the game window into full-screen mode.\\nThis can be toggled by pressing the F11 key.");
     } else if (elementName == "separateUpdatesCheckBox") {
-        text = tr("Enable Separate Update Folder:\\nEnables installing game updates into a separate folder for easy management.\\nThis can be manually created by adding the extracted update to the game folder with the name 'CUSA00000-UPDATE' where the CUSA ID matches the game's ID.");
+        text = tr("Enable Separate Update Folder:\\nEnables installing game updates into a separate folder for easy management.\\nThis can be manually created by adding the extracted update to the game folder with the name \"CUSA00000-UPDATE\" where the CUSA ID matches the game's ID.");
     } else if (elementName == "showSplashCheckBox") {
         text = tr("Show Splash Screen:\\nShows the game's splash screen (a special image) while the game is starting.");
     } else if (elementName == "discordRPCCheckbox") {
@@ -548,8 +548,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "logTypeGroupBox") {
         text = tr("Log Type:\\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.");
     } else if (elementName == "logFilter") {
-        text = tr("Log Filter:\nFilters the log to only print specific information.\nExamples: 'Core:Trace' 'Lib.Pad:Debug Common.Filesystem:Error' '*:Critical'\\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.");
-#ifdef ENABLE_UPDATER
+        text = tr("Log Filter:\\nFilters the log to only print specific information.\\nExamples: \"Core:Trace\" \"Lib.Pad:Debug Common.Filesystem:Error\" \"*:Critical\"\\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.");
+    #ifdef ENABLE_UPDATER
     } else if (elementName == "updaterGroupBox") {
         text = tr("Update:\\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.");
 #endif
@@ -562,7 +562,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "disableTrophycheckBox") {
         text = tr("Disable Trophy Pop-ups:\\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).");
     } else if (elementName == "enableCompatibilityCheckBox") {
-        text = tr("Display Compatibility Data:\\nDisplays game compatibility information in table view. Enable 'Update Compatibility On Startup' to get up-to-date information.");
+        text = tr("Display Compatibility Data:\\nDisplays game compatibility information in table view. Enable \"Update Compatibility On Startup\" to get up-to-date information.");
     } else if (elementName == "checkCompatibilityOnStartupCheckBox") {
         text = tr("Update Compatibility On Startup:\\nAutomatically update the compatibility database when shadPS4 starts.");
     } else if (elementName == "updateCompatibilityButton") {
@@ -580,7 +580,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
 
     // Graphics
     if (elementName == "graphicsAdapterGroupBox") {
-        text = tr("Graphics Device:\\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\\nor select 'Auto Select' to automatically determine it.");
+        text = tr("Graphics Device:\\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\\nor select \"Auto Select\" to automatically determine it.");
     } else if (elementName == "widthGroupBox" || elementName == "heightGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
