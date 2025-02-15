@@ -164,6 +164,8 @@ public:
         return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
     }
 
+    u64 ClampRangeSize(VAddr virtual_addr, u64 size);
+
     bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
