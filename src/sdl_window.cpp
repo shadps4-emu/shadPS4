@@ -5,11 +5,11 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QString>
+#include <QThread>
 #include "common/memory_patcher.h"
 #endif
-#include <QStandardPaths>
-#include <QThread>
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"

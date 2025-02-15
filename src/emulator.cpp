@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <set>
-#include <QProcess>
-#include <QSettings>
-#include <QThread>
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/debug.h"
@@ -14,7 +11,10 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
+#include <QProcess>
+#include <QSettings>
 #include <QString>
+#include <QThread>
 #include <QtCore>
 #include "common/memory_patcher.h"
 #endif
