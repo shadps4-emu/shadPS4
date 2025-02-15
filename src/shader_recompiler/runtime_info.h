@@ -167,6 +167,17 @@ enum class MrtSwizzle : u8 {
 };
 static constexpr u32 MaxColorBuffers = 8;
 
+struct PsColorBuffer {
+    AmdGpu::NumberFormat num_format : 4;
+    AmdGpu::NumberConversion num_conversion : 2;
+    AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
+    u32 needs_unorm_fixup : 1;
+    u32 pad : 21;
+    AmdGpu::CompMapping swizzle;
+
+    auto operator<=>(const PsColorBuffer&) const noexcept = default;
+};
+
 struct FragmentRuntimeInfo {
     struct PsInput {
         u8 param_index;
@@ -184,15 +195,6 @@ struct FragmentRuntimeInfo {
     AmdGpu::Liverpool::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
-    struct PsColorBuffer {
-        AmdGpu::NumberFormat num_format : 4;
-        AmdGpu::NumberConversion num_conversion : 2;
-        AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
-        u32 needs_unorm_fixup : 1;
-        AmdGpu::CompMapping swizzle;
-
-        auto operator<=>(const PsColorBuffer&) const noexcept = default;
-    };
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {

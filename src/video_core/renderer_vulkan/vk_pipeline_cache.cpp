@@ -345,7 +345,7 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_buffers[remapped_cb] = {
+        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
             .export_format = regs.color_export_format.GetFormat(cb),
