@@ -29,12 +29,11 @@ public:
     ~Emulator();
 
     void Run(const std::filesystem::path& file, const std::vector<std::string> args = {});
-    void UpdatePlayTime(const std::string& serial);
+    void UpdatePlayTime(const std::string& serial) const;
     static Emulator& GetInstance();
     void StopEmulation();
     bool is_running = false;
     void Restart();
-    void Shutdown();
 
 private:
     void LoadSystemModules(const std::string& game_serial);

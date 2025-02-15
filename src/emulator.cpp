@@ -107,9 +107,8 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+void Core::Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
     isRunning = true;
-
     const auto eboot_name = file.filename().string();
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
@@ -351,9 +350,11 @@ QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
 QString emulatorPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
                        "/shadps4.app/Contents/MacOS/shadps4";
 QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
-    isRunning = true;
+
+isRunning = true;
+
 #endif
-}
+} // namespace Core
 
 void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr std::array<SysModules, 11> ModulesToLoad{
@@ -401,7 +402,7 @@ void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
 }
 
 #ifdef ENABLE_QT_GUI
-void Emulator::UpdatePlayTime(const std::string& serial) {
+void Core::Emulator::UpdatePlayTime(const std::string& serial) const {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
 
@@ -468,6 +469,5 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     }
     LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
 }
+}
 #endif
-
-} // namespace Core
