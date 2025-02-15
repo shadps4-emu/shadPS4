@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>1043</width>
-    <height>822</height>
+    <height>792</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,21 +22,26 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTabWidget" name="TabWidget">
-     <property name="currentIndex">
-      <number>0</number>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <widget class="QWidget" name="RemapTab">
-      <attribute name="title">
-       <string>Controller Remapping</string>
-      </attribute>
-      <widget class="QWidget" name="">
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>1019</width>
+        <height>732</height>
+       </rect>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>10</y>
-         <width>1004</width>
-         <height>711</height>
+         <x>0</x>
+         <y>0</y>
+         <width>1021</width>
+         <height>731</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="RemapLayout">
