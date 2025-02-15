@@ -36,6 +36,7 @@ path = [
     "src/images/github.png",
     "src/images/grid_icon.png",
     "src/images/keyboard_icon.png",
+    "src/images/restart_icon.png",
     "src/images/iconsize_icon.png",
     "src/images/ko-fi.png",
     "src/images/list_icon.png",

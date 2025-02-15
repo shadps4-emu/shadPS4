@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef ENABLE_QT_GUI
+#include <QString>
 #include <QCoreApplication>
+#include "common/memory_patcher.h"
+#endif
 #include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
@@ -372,7 +376,7 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
-    case SDL_EVENT_QUIT + 1: 
+    case SDL_EVENT_QUIT + 1:
         is_open = false;
         RelaunchEmulator();
         break;
