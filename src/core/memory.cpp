@@ -314,11 +314,11 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     if (type == VMAType::Direct) {
         new_vma.phys_base = phys_addr;
-        rasterizer->MapMemory(mapped_addr, size);
     }
     if (type == VMAType::Flexible) {
         flexible_usage += size;
     }
+    rasterizer->MapMemory(mapped_addr, size);
 
     return ORBIS_OK;
 }
@@ -406,12 +406,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (type == VMAType::Free) {
         return adjusted_size;
     }
-    if (type == VMAType::Direct || type == VMAType::Pooled) {
-        rasterizer->UnmapMemory(virtual_addr, adjusted_size);
-    }
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
     }
+    rasterizer->UnmapMemory(virtual_addr, adjusted_size);
 
     // Mark region as free and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, adjusted_size);
