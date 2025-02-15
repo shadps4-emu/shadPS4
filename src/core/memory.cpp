@@ -56,6 +56,22 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
              total_flexible_size, total_direct_size);
 }
 
+u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
+    static constexpr u64 MinSizeToClamp = 1_GB;
+    // Dont bother with clamping if the size is small so we dont pay a map lookup on every buffer.
+    if (size < MinSizeToClamp) {
+        return size;
+    }
+    const auto vma = FindVMA(virtual_addr);
+    ASSERT_MSG(vma != vma_map.end(), "Attempted to access invalid GPU address {:#x}", virtual_addr);
+    const u64 clamped_size = std::min<u64>(size, vma->second.base + vma->second.size - virtual_addr);
+    if (size != clamped_size) {
+        LOG_WARNING(Kernel_Vmm, "Clamped requested buffer range addr={:#x}, size={:#x} to {:#x}",
+                    virtual_addr, size, clamped_size);
+    }
+    return clamped_size;
+}
+
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
