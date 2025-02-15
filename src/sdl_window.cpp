@@ -3,10 +3,10 @@
 
 #ifdef ENABLE_QT_GUI
 #include <QCoreApplication>
+#include <QFileInfo>
 #include <QString>
 #include "common/memory_patcher.h"
 #endif
-#include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QThread>

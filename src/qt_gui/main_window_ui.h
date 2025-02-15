@@ -50,7 +50,6 @@ public:
     QPushButton* keyboardButton;
     QPushButton* restartButton;
 
-
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
     QSlider* sizeSlider;
