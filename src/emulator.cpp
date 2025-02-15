@@ -295,6 +295,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     std::quick_exit(0);
 }
 
+#ifdef ENABLE_QT_GUI
 void Emulator::saveLastEbootPath(const QString& path) {
     lastEbootPath = path;
 }
@@ -336,7 +337,7 @@ void Emulator::Restart() {
         LOG_ERROR(Loader, "No previous EBOOT path found! Cannot restart.");
         return;
     }
-
+#endif
     // Relaunch emulator with last game
 #ifdef Q_OS_WIN
     QString emulatorPath =

@@ -67,7 +67,10 @@ private:
     void SetUiIcons(bool isWhite);
     void InstallPkg();
     void BootGame();
+#ifdef ENABLE_QT_GUI
     QString getLastEbootPath();
+    std::filesystem::path lastGamePath;
+#endif
     void AddRecentFiles(QString filePath);
     void LoadTranslation();
     void PlayBackgroundMusic();

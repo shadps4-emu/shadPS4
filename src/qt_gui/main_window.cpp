@@ -766,10 +766,12 @@ void MainWindow::BootGame() {
         }
     }
 }
+#ifdef ENABLE_QT_GUI
 
 QString MainWindow::getLastEbootPath() {
     return QString();
 }
+#endif
 
 void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
@@ -1240,7 +1242,10 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
         QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
         return;
     }
+
+    lastGamePath = path; // Store the last played game
     isGameRunning = true;
+
 #ifdef __APPLE__
     // SDL on macOS requires main thread.
     Core::Emulator emulator;
@@ -1253,6 +1258,8 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     emulator_thread.detach();
 #endif
 }
+
+#ifdef ENABLE_QT_GUI
 
 void MainWindow::StopGame() {
     if (!isGameRunning) {
@@ -1278,20 +1285,21 @@ void MainWindow::RestartGame() {
         return;
     }
 
-    std::vector<std::string> recentFiles = Config::getRecentFiles();
-    if (recentFiles.empty()) {
+    if (lastGamePath.empty()) {
         QMessageBox::warning(this, tr("Restart Game"), tr("No recent game found."));
         return;
     }
 
-    QString lastGamePath = QString::fromStdString(recentFiles.front());
-
-    // Stop the current game first
+    // Stop the current game properly
     StopGame();
 
-    // Wait for cleanup
-    QThread::sleep(1);
+    // Ensure the game has fully stopped before restarting
+    while (isGameRunning) {
+        QCoreApplication::processEvents();
+        QThread::msleep(100); // Small delay to allow cleanup
+    }
 
-    // Restart the game
-    StartEmulator(Common::FS::PathFromQString(lastGamePath));
+    // Restart the emulator with the last played game
+    StartEmulator(lastGamePath);
 }
+#endif

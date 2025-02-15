@@ -39,9 +39,12 @@ public:
 private:
     void LoadSystemModules(const std::string& game_serial);
     Common::ElfInfo game_info;
+
+#ifdef ENABLE_QT_GUI
     QString lastEbootPath;
     void saveLastEbootPath(const QString& path);
     QString getLastEbootPath();
+#endif
     bool isRunning = false;
     Core::MemoryManager* memory;
     Input::GameController* controller;
