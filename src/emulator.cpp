@@ -344,20 +344,18 @@ void Emulator::Restart() {
         QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/shadps4.exe";
     QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
 #elif defined(Q_OS_LINUX)
-    QString emulatorPath =
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Shadps4-qt.AppImage";
-    QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
+QString emulatorPath =
+    QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Shadps4-qt.AppImage";
+QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
 #elif defined(Q_OS_MAC)
-    QString emulatorPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-                           "/shadps4.app/Contents/MacOS/shadps4";
-    QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
-#endif
-
-    LOG_INFO(Loader, "Emulator restarted successfully.");
+QString emulatorPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+                       "/shadps4.app/Contents/MacOS/shadps4";
+QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
     isRunning = true;
+#endif
 }
 
-void Emulator::LoadSystemModules(const std::string& game_serial) {
+void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr std::array<SysModules, 11> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
