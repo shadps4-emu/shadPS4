@@ -1309,7 +1309,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registro-Log</translation>
+      <translation>Registros de Log</translation>
     </message>
     <message>
       <source>Log Type</source>
