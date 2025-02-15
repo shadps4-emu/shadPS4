@@ -19,7 +19,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>Este programa não deve ser usado para jogar títulos não obtidos legalmente.</translation>
     </message>
   </context>
   <context>
