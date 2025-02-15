@@ -443,7 +443,7 @@
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Sol Ölü Bölge</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Eylem Düğmeleri</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -527,7 +527,7 @@
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Sağ Ölü Bölge</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -849,7 +849,7 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Bu oyunun silinecek kayıt verisi yok!</translation>
     </message>
     <message>
       <source>Save Data</source>
