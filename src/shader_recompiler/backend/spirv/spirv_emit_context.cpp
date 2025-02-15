@@ -192,32 +192,49 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
+Id EmitContext::GetBufferSize(const u32 sharp_idx) {
+    const auto& srt_flatbuf = buffers.back();
+    ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+
+    const auto rsrc1{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
+    const auto rsrc2{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 2)))};
+
+    const auto stride{OpBitFieldUExtract(U32[1], rsrc1, ConstU32(16u), ConstU32(14u))};
+    const auto num_records{rsrc2};
+
+    const auto stride_zero{OpIEqual(U1[1], stride, u32_zero_value)};
+    const auto stride_size{OpIMul(U32[1], num_records, stride)};
+    return OpSelect(U32[1], stride_zero, num_records, stride_size);
+}
+
 void EmitContext::DefineBufferProperties() {
     for (BufferDefinition& buffer : buffers) {
         if (buffer.buffer_type != BufferType::Guest) {
             continue;
         }
         const u32 binding = buffer.binding;
-        const u32 offset_half = PushData::BufOffsetIndex + (binding >> 4);
-        const u32 offset_comp = (binding & 0xf) >> 2;
-        const u32 offset_bit = (binding & 0x3) << 3;
-        const Id offset_ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                          push_data_block, ConstU32(offset_half),
-                                          ConstU32(offset_comp))};
-        const Id offset_value{OpLoad(U32[1], offset_ptr)};
-        buffer.offset =
-            OpBitFieldUExtract(U32[1], offset_value, ConstU32(offset_bit), ConstU32(8U));
+        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
+        buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
         Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
 
-        if (!profile.supports_robust_buffer_access) {
-            const u32 size_field = PushData::BufSizesIndex + (binding >> 2);
-            const u32 size_comp = binding & 0x3;
-            const Id size_ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                            push_data_block, ConstU32(size_field),
-                                            ConstU32(size_comp))};
-            buffer.size = OpLoad(U32[1], size_ptr);
+        // Only need to load size if performing bounds checks and the buffer is both guest and not
+        // inline.
+        if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
+            if (buffer.desc.sharp_idx == std::numeric_limits<u32>::max()) {
+                buffer.size = ConstU32(buffer.desc.inline_cbuf.GetSize());
+            } else {
+                buffer.size = GetBufferSize(buffer.desc.sharp_idx);
+            }
             Name(buffer.size, fmt::format("buf{}_size", binding));
             buffer.size_shorts = OpShiftRightLogical(U32[1], buffer.size, ConstU32(1U));
             Name(buffer.size_shorts, fmt::format("buf{}_short_size", binding));
@@ -606,8 +623,7 @@ void EmitContext::DefineOutputs() {
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
     const Id struct_type{Name(TypeStruct(U32[1], U32[1], F32[1], F32[1], F32[1], F32[1], U32[4],
-                                         U32[4], U32[4], U32[4], U32[4], U32[4], U32[4], U32[4],
-                                         U32[4], U32[4], U32[4], U32[4], U32[4], U32[4]),
+                                         U32[4], U32[4], U32[4], U32[4], U32[4]),
                               "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, PushData::Step0Index, "sr0");
@@ -622,14 +638,6 @@ void EmitContext::DefinePushDataBlock() {
     MemberName(struct_type, PushData::UdRegsIndex + 3, "ud_regs3");
     MemberName(struct_type, PushData::BufOffsetIndex + 0, "buf_offsets0");
     MemberName(struct_type, PushData::BufOffsetIndex + 1, "buf_offsets1");
-    MemberName(struct_type, PushData::BufSizesIndex + 0, "buf_sizes0");
-    MemberName(struct_type, PushData::BufSizesIndex + 1, "buf_sizes1");
-    MemberName(struct_type, PushData::BufSizesIndex + 2, "buf_sizes2");
-    MemberName(struct_type, PushData::BufSizesIndex + 3, "buf_sizes3");
-    MemberName(struct_type, PushData::BufSizesIndex + 4, "buf_sizes4");
-    MemberName(struct_type, PushData::BufSizesIndex + 5, "buf_sizes5");
-    MemberName(struct_type, PushData::BufSizesIndex + 6, "buf_sizes6");
-    MemberName(struct_type, PushData::BufSizesIndex + 7, "buf_sizes7");
     MemberDecorate(struct_type, PushData::Step0Index, spv::Decoration::Offset, 0U);
     MemberDecorate(struct_type, PushData::Step1Index, spv::Decoration::Offset, 4U);
     MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 8U);
@@ -642,14 +650,6 @@ void EmitContext::DefinePushDataBlock() {
     MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 72U);
     MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 88U);
     MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 104U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 0, spv::Decoration::Offset, 120U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 1, spv::Decoration::Offset, 136U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 2, spv::Decoration::Offset, 152U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 3, spv::Decoration::Offset, 168U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 4, spv::Decoration::Offset, 184U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 5, spv::Decoration::Offset, 200U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 6, spv::Decoration::Offset, 216U);
-    MemberDecorate(struct_type, PushData::BufSizesIndex + 7, spv::Decoration::Offset, 232U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
@@ -694,18 +694,28 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         break;
     default:
         Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "ubo", binding.buffer));
+        break;
     }
     interfaces.push_back(id);
     return {id, pointer_type};
 };
 
 void EmitContext::DefineBuffers() {
+    if (!profile.supports_robust_buffer_access && !info.has_readconst) {
+        // In case ReadConstUbo has not already been bound by IR and is needed
+        // to query buffer sizes, bind it now.
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .inline_cbuf = AmdGpu::Buffer::Null(),
+            .buffer_type = BufferType::ReadConstUbo,
+        });
+    }
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
 
         // Define aliases depending on the shader usage.
-        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type, desc);
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer[BufferAlias::U32] =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);

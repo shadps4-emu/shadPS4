@@ -246,6 +246,7 @@ public:
     struct BufferDefinition {
         u32 binding;
         BufferType buffer_type;
+        const BufferResource& desc;
         Id offset;
         Id offset_dwords;
         Id size;
@@ -310,6 +311,8 @@ private:
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
+
+    Id GetBufferSize(u32 sharp_idx);
 };
 
 } // namespace Shader::Backend::SPIRV

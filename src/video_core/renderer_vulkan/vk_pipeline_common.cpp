@@ -38,11 +38,7 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers&
     }
 
     const auto stage_flags = IsCompute() ? vk::ShaderStageFlagBits::eCompute : AllGraphicsStageBits;
-    // If not emulating buffer bounds checks, buffer sizes are not needed.
-    const auto push_constants_size = instance.IsRobustBufferAccess2Supported()
-                                         ? offsetof(Shader::PushData, buf_sizes)
-                                         : sizeof(Shader::PushData);
-    cmdbuf.pushConstants(*pipeline_layout, stage_flags, 0u, push_constants_size, &push_data);
+    cmdbuf.pushConstants(*pipeline_layout, stage_flags, 0u, sizeof(push_data), &push_data);
 
     // Bind descriptor set.
     if (set_writes.empty()) {

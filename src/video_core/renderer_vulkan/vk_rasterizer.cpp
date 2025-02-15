@@ -548,7 +548,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
-            push_data.AddBuffer(binding.buffer, adjust, vsharp.GetSize());
+            push_data.AddOffset(binding.buffer, adjust);
             buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned,
                                       vsharp.GetSize() + adjust);
             if (auto barrier =

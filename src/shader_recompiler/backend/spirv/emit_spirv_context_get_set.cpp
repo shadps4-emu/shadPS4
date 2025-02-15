@@ -178,7 +178,14 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     index = ctx.OpIAdd(ctx.U32[1], index, buffer.offset_dwords);
     const auto [id, pointer_type] = buffer[BufferAlias::U32];
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
-    return ctx.OpLoad(ctx.U32[1], ptr);
+    const Id result{ctx.OpLoad(ctx.U32[1], ptr)};
+
+    if (Sirit::ValidId(buffer.size_dwords)) {
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer.size_dwords);
+        return ctx.OpSelect(ctx.U32[1], in_bounds, result, ctx.u32_zero_value);
+    } else {
+        return result;
+    }
 }
 
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
