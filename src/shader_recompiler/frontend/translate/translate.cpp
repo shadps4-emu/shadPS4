@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
@@ -470,8 +471,29 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 
 void Translator::EmitFetch(const GcnInst& inst) {
     // Read the pointer to the fetch shader assembly.
+    const auto code_sgpr_base = inst.src[0].code;
+    if (!profile.supports_robust_buffer_access) {
+        // The fetch shader must be inlined to access as regular buffers, so that
+        // bounds checks can be emitted to emulate robust buffer access.
+        const auto* code = GetFetchShaderCode(info, code_sgpr_base);
+        GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
+        GcnDecodeContext decoder;
+
+        // Decode and save instructions
+        u32 sub_pc = 0;
+        while (!slice.atEnd()) {
+            const auto sub_inst = decoder.decodeInstruction(slice);
+            if (sub_inst.opcode == Opcode::S_SETPC_B64) {
+                // Assume we're swapping back to the main shader.
+                break;
+            }
+            TranslateInstruction(sub_inst, sub_pc++);
+        }
+        return;
+    }
+
     info.has_fetch_shader = true;
-    info.fetch_shader_sgpr_base = inst.src[0].code;
+    info.fetch_shader_sgpr_base = code_sgpr_base;
 
     const auto fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
@@ -520,6 +542,40 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
+void Translator::TranslateInstruction(const GcnInst& inst, const u32 pc) {
+    // Emit instructions for each category.
+    switch (inst.category) {
+    case InstCategory::DataShare:
+        EmitDataShare(inst);
+        break;
+    case InstCategory::VectorInterpolation:
+        EmitVectorInterpolation(inst);
+        break;
+    case InstCategory::ScalarMemory:
+        EmitScalarMemory(inst);
+        break;
+    case InstCategory::VectorMemory:
+        EmitVectorMemory(inst);
+        break;
+    case InstCategory::Export:
+        EmitExport(inst);
+        break;
+    case InstCategory::FlowControl:
+        EmitFlowControl(pc, inst);
+        break;
+    case InstCategory::ScalarALU:
+        EmitScalarAlu(inst);
+        break;
+    case InstCategory::VectorALU:
+        EmitVectorAlu(inst);
+        break;
+    case InstCategory::DebugProfile:
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
 void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info,
                const RuntimeInfo& runtime_info, const Profile& profile) {
     if (inst_list.empty()) {
@@ -537,37 +593,7 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
             continue;
         }
 
-        // Emit instructions for each category.
-        switch (inst.category) {
-        case InstCategory::DataShare:
-            translator.EmitDataShare(inst);
-            break;
-        case InstCategory::VectorInterpolation:
-            translator.EmitVectorInterpolation(inst);
-            break;
-        case InstCategory::ScalarMemory:
-            translator.EmitScalarMemory(inst);
-            break;
-        case InstCategory::VectorMemory:
-            translator.EmitVectorMemory(inst);
-            break;
-        case InstCategory::Export:
-            translator.EmitExport(inst);
-            break;
-        case InstCategory::FlowControl:
-            translator.EmitFlowControl(pc, inst);
-            break;
-        case InstCategory::ScalarALU:
-            translator.EmitScalarAlu(inst);
-            break;
-        case InstCategory::VectorALU:
-            translator.EmitVectorAlu(inst);
-            break;
-        case InstCategory::DebugProfile:
-            break;
-        default:
-            UNREACHABLE();
-        }
+        translator.TranslateInstruction(inst, pc);
     }
 }
 

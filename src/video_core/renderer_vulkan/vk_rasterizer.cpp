@@ -447,7 +447,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     set_writes.clear();
     buffer_barriers.clear();
     buffer_infos.clear();
-    buffer_views.clear();
     image_infos.clear();
 
     // Bind resource buffers and textures.
@@ -549,7 +548,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
-            push_data.AddOffset(binding.buffer, adjust);
+            push_data.AddBuffer(binding.buffer, adjust, vsharp.GetSize());
             buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned,
                                       vsharp.GetSize() + adjust);
             if (auto barrier =

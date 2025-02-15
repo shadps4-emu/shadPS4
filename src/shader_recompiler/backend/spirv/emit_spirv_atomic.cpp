@@ -31,7 +31,14 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer[EmitContext::BufferAlias::U32];
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+
+    const Id result = (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+    if (Sirit::ValidId(buffer.size_dwords)) {
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer.size_dwords);
+        return ctx.OpSelect(ctx.U32[1], in_bounds, result, ctx.u32_zero_value);
+    } else {
+        return result;
+    }
 }
 
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
