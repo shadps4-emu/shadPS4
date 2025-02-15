@@ -7,18 +7,13 @@
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
-#include "common/io_file.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
-#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
@@ -356,14 +351,6 @@ void GraphicsPipeline::BuildDescSetLayout() {
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
-        }
-        if (stage->has_readconst) {
-            bindings.push_back({
-                .binding = binding++,
-                .descriptorType = vk::DescriptorType::eUniformBuffer,
-                .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
-            });
         }
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(*stage);
