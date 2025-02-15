@@ -99,7 +99,7 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
         file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
             h->DeleteHandle(handle);
-            return ORBIS_KERNEL_ERROR_ENOTDIR;
+            return ORBIS_KERNEL_ERROR_ENOENT;
         } else {
             if (create) {
                 return handle; // dir already exists
@@ -174,6 +174,7 @@ s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, /* SceKernelMode*/ u16 
 s32 PS4_SYSV_ABI open(const char* filename, s32 flags) {
     s32 result = sceKernelOpen(filename, flags, 0);
     if (result < 0) {
+        ErrSceToPosix(result);
         return -1;
     }
     return result;
