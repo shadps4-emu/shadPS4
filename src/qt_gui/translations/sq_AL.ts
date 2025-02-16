@@ -325,7 +325,7 @@
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>Fshih ndryshimet</translation>
+      <translation>Fshih Ndryshimet</translation>
     </message>
     <message>
       <source>Changes</source>
@@ -757,11 +757,11 @@
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Fshi lojën</translation>
+      <translation>Fshi Lojën</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Fshi përditësimin</translation>
+      <translation>Fshi Përditësimin</translation>
     </message>
     <message>
       <source>Delete DLC</source>
@@ -837,7 +837,7 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>Fshi të dhënat e ruajtjes</translation>
+      <translation>Fshi të Dhënat e Ruajtjes</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>Hap dosjen e shadPS4</translation>
+      <translation>Hap Dosjen e shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -1261,7 +1261,7 @@
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation>Gjuha e emulatorit</translation>
+      <translation>Gjuha e Emulatorit</translation>
     </message>
     <message>
       <source>Emulator</source>
@@ -1737,7 +1737,7 @@
     </message>
     <message>
       <source>Release</source>
-      <translation>Botimi</translation>
+      <translation>Release</translation>
     </message>
     <message>
       <source>Nightly</source>
