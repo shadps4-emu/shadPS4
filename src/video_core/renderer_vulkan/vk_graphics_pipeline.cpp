@@ -19,6 +19,15 @@ namespace Vulkan {
 
 using Shader::Backend::SPIRV::AuxShaderType;
 
+static constexpr std::array LogicalStageToStageBit = {
+    vk::ShaderStageFlagBits::eFragment,
+    vk::ShaderStageFlagBits::eTessellationControl,
+    vk::ShaderStageFlagBits::eTessellationEvaluation,
+    vk::ShaderStageFlagBits::eVertex,
+    vk::ShaderStageFlagBits::eGeometry,
+    vk::ShaderStageFlagBits::eCompute,
+};
+
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
@@ -34,7 +43,7 @@ GraphicsPipeline::GraphicsPipeline(
     const auto debug_str = GetDebugString();
 
     const vk::PushConstantRange push_constants = {
-        .stageFlags = gp_stage_flags,
+        .stageFlags = AllGraphicsStageBits,
         .offset = 0,
         .size = sizeof(Shader::PushData),
     };
@@ -352,6 +361,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
+        const auto stage_bit = LogicalStageToStageBit[u32(stage->l_stage)];
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
@@ -360,7 +370,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                                       ? vk::DescriptorType::eStorageBuffer
                                       : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
         for (const auto& image : stage->images) {
@@ -369,7 +379,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
                                                    : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
         for (const auto& sampler : stage->samplers) {
@@ -377,7 +387,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .binding = binding++,
                 .descriptorType = vk::DescriptorType::eSampler,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
     }
