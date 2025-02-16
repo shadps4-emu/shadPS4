@@ -8,13 +8,6 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
-#include <QCoreApplication>
-#include <QDebug>
-#include <QFile>
-#include <QProcess>
-#include <QSettings>
-#include <QString>
-#include <QThread>
 #include <QtCore>
 #include "common/memory_patcher.h"
 #endif
