@@ -321,12 +321,16 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
-    {
-        using namespace std::chrono;
-        auto elapsed_time = CurrentTime();
-        if (elapsed_time < frame->info.timestamp) {
-            if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
-                                  [&] { return elapsed_time >= frame->info.timestamp; })) {
+    if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default && m_audio_stream_index.has_value()) {
+        const auto audio_ts = m_last_audio_packet_time;
+        if (audio_ts < frame->info.timestamp) {
+            using namespace std::chrono;
+            const auto start = high_resolution_clock::now();
+            if (!m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - audio_ts), [&] {
+                    const auto passed =
+                        duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+                    return (audio_ts + passed) >= frame->info.timestamp;
+                })) {
                 return false;
             }
         }
@@ -355,23 +359,13 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
         return false;
     }
 
-    {
-        using namespace std::chrono;
-        auto elapsed_time = CurrentTime();
-        if (elapsed_time < frame->info.timestamp) {
-            if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
-                                  [&] { return elapsed_time >= frame->info.timestamp; })) {
-                return false;
-            }
-        }
-    }
-
     // return the buffer to the queue
     if (m_current_audio_frame.has_value()) {
         m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
         m_audio_buffers_cv.Notify();
     }
     m_current_audio_frame = std::move(frame->buffer);
+    m_last_audio_packet_time = frame->info.timestamp;
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;

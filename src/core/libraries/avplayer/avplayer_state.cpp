@@ -217,6 +217,10 @@ bool AvPlayerState::Resume() {
     return true;
 }
 
+void AvPlayerState::SetAvSyncMode(AvPlayerAvSyncMode sync_mode) {
+    m_sync_mode = sync_mode;
+}
+
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
     using std::chrono::milliseconds;
     Common::SetCurrentThreadName("shadPS4:AvController");
@@ -335,6 +339,10 @@ bool AvPlayerState::SetLooping(bool is_looping) {
 void AvPlayerState::OnWarning(u32 id) {
     // Forward to CONTROLLER thread
     WarningEvent(id);
+}
+
+AvPlayerAvSyncMode AvPlayerState::GetSyncMode() {
+    return m_sync_mode;
 }
 
 void AvPlayerState::OnError() {
