@@ -246,7 +246,6 @@ public:
     struct BufferDefinition {
         u32 binding;
         BufferType buffer_type;
-        const BufferResource& desc;
         Id offset;
         Id offset_dwords;
         Id size;

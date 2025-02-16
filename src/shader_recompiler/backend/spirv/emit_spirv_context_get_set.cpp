@@ -419,11 +419,9 @@ static Id EmitLoadBufferBoundsCheck(EmitContext& ctx, Id index, Id buffer_size, 
         auto zero_value = is_float ? ctx.f32_zero_value : ctx.u32_zero_value;
         if (N > 1) {
             compare_index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(N - 1));
-            boost::container::static_vector<Id, N> zero_ids;
-            for (u32 i = 0; i < N; i++) {
-                zero_ids.push_back(zero_value);
-            }
-            zero_value = ctx.OpCompositeConstruct(result_type, zero_ids);
+            std::array<Id, N> zero_ids;
+            zero_ids.fill(zero_value);
+            zero_value = ctx.ConstantComposite(result_type, zero_ids);
         }
         const Id in_bounds = ctx.OpULessThan(ctx.U1[1], compare_index, buffer_size);
         return ctx.OpSelect(result_type, in_bounds, result, zero_value);

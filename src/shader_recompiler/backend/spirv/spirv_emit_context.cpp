@@ -211,7 +211,8 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
 }
 
 void EmitContext::DefineBufferProperties() {
-    for (BufferDefinition& buffer : buffers) {
+    for (u32 i = 0; i < buffers.size(); i++) {
+        BufferDefinition& buffer = buffers[i];
         if (buffer.buffer_type != BufferType::Guest) {
             continue;
         }
@@ -230,10 +231,11 @@ void EmitContext::DefineBufferProperties() {
         // Only need to load size if performing bounds checks and the buffer is both guest and not
         // inline.
         if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
-            if (buffer.desc.sharp_idx == std::numeric_limits<u32>::max()) {
-                buffer.size = ConstU32(buffer.desc.inline_cbuf.GetSize());
+            const BufferResource& desc = info.buffers[i];
+            if (desc.sharp_idx == std::numeric_limits<u32>::max()) {
+                buffer.size = ConstU32(desc.inline_cbuf.GetSize());
             } else {
-                buffer.size = GetBufferSize(buffer.desc.sharp_idx);
+                buffer.size = GetBufferSize(desc.sharp_idx);
             }
             Name(buffer.size, fmt::format("buf{}_size", binding));
             buffer.size_shorts = OpShiftRightLogical(U32[1], buffer.size, ConstU32(1U));
@@ -715,7 +717,7 @@ void EmitContext::DefineBuffers() {
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
 
         // Define aliases depending on the shader usage.
-        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type, desc);
+        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer[BufferAlias::U32] =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
