@@ -33,6 +33,7 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#include <SDL3/SDL_messagebox.h>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -766,12 +767,6 @@ void MainWindow::BootGame() {
         }
     }
 }
-#ifdef ENABLE_QT_GUI
-
-QString MainWindow::getLastEbootPath() {
-    return QString();
-}
-#endif
 
 void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
@@ -1223,6 +1218,10 @@ void MainWindow::OnLanguageChanged(const std::string& locale) {
     LoadTranslation();
 }
 
+static void ShowMessageBox(const std::string& title, const std::string& message) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, title.c_str(), message.c_str(), NULL);
+}
+
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -1242,10 +1241,7 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
         QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
         return;
     }
-
-    lastGamePath = path; // Store the last played game
     isGameRunning = true;
-
 #ifdef __APPLE__
     // SDL on macOS requires main thread.
     Core::Emulator emulator;
@@ -1259,47 +1255,44 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
 #endif
 }
 
-#ifdef ENABLE_QT_GUI
-
 void MainWindow::StopGame() {
     if (!isGameRunning) {
-        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        ShowMessageBox("Stop Game", "No game is currently running.");
         return;
     }
 
-    // Get the emulator instance and stop it
-    Core::Emulator& emulator = Core::Emulator::GetInstance(); // Use the correct instance method
+    Core::Emulator& emulator = Core::Emulator::GetInstance();
     emulator.StopEmulation();
 
-    isGameRunning = false;
-    QMessageBox::information(this, tr("Stop Game"), tr("Game has been stopped successfully."));
-
+    if (isGameRunning == true)
+        ;
+    ShowMessageBox("Stop Game", "Game has been stopped successfully.");
     SDL_Event quitEvent;
     quitEvent.type = SDL_EVENT_QUIT + 1;
     SDL_PushEvent(&quitEvent);
 }
 
+std::string MainWindow::getLastEbootPath() {
+    return std::string();
+}
+
 void MainWindow::RestartGame() {
     if (!isGameRunning) {
-        QMessageBox::warning(this, tr("Restart Game"), tr("No game is running to restart."));
+        ShowMessageBox("Restart Game", "No game is running to restart.");
         return;
     }
+
+    std::string lastGamePath = getLastEbootPath();
 
     if (lastGamePath.empty()) {
-        QMessageBox::warning(this, tr("Restart Game"), tr("No recent game found."));
-        return;
+        ShowMessageBox("Restart Game", "No recent game found.");
     }
 
-    // Stop the current game properly
     StopGame();
 
-    // Ensure the game has fully stopped before restarting
     while (isGameRunning) {
-        QCoreApplication::processEvents();
-        QThread::msleep(100); // Small delay to allow cleanup
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    // Restart the emulator with the last played game
     StartEmulator(lastGamePath);
 }
-#endif

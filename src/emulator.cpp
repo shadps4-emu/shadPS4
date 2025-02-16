@@ -294,12 +294,11 @@ void Core::Emulator::Run(const std::filesystem::path& file, const std::vector<st
     std::quick_exit(0);
 }
 
-#ifdef ENABLE_QT_GUI
-void Emulator::saveLastEbootPath(const QString& path) {
+void Emulator::saveLastEbootPath(const std::string& path) {
     lastEbootPath = path;
 }
 
-QString Emulator::getLastEbootPath() {
+std::string Emulator::getLastEbootPath() const {
     return lastEbootPath;
 }
 
@@ -313,7 +312,7 @@ void Emulator::StopEmulation() {
         return;
 
     is_running = false;
-    qDebug() << "Stopping emulator...";
+    LOG_INFO(Loader, "Stopping emulator...");
 }
 
 void Emulator::Restart() {
@@ -328,32 +327,14 @@ void Emulator::Restart() {
     StopEmulation();
 
     // Wait a moment before restarting
-    QThread::sleep(2);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Retrieve last known EBOOT path
-    QString lastEbootPath = getLastEbootPath();
-    if (lastEbootPath.isEmpty()) {
+    std::string lastEbootPath = getLastEbootPath();
+    if (lastEbootPath.empty()) {
         LOG_ERROR(Loader, "No previous EBOOT path found! Cannot restart.");
         return;
     }
-#endif
-    // Relaunch emulator with last game
-#ifdef Q_OS_WIN
-    QString emulatorPath =
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/shadps4.exe";
-    QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
-#elif defined(Q_OS_LINUX)
-QString emulatorPath =
-    QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/Shadps4-qt.AppImage";
-QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
-#elif defined(Q_OS_MAC)
-QString emulatorPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-                       "/shadps4.app/Contents/MacOS/shadps4";
-QProcess::startDetached(emulatorPath, QStringList() << lastEbootPath);
-
-isRunning = true;
-
-#endif
 } // namespace Core
 
 void Core::Emulator::LoadSystemModules(const std::string& game_serial) {

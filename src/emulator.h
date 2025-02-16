@@ -34,16 +34,13 @@ public:
     void StopEmulation();
     bool is_running = false;
     void Restart();
+    void saveLastEbootPath(const std::string& path);
+    std::string getLastEbootPath() const;
 
 private:
     void LoadSystemModules(const std::string& game_serial);
     Common::ElfInfo game_info;
-
-#ifdef ENABLE_QT_GUI
-    QString lastEbootPath;
-    void saveLastEbootPath(const QString& path);
-    QString getLastEbootPath();
-#endif
+    std::string lastEbootPath;
     bool isRunning = false;
     Core::MemoryManager* memory;
     Input::GameController* controller;

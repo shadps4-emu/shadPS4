@@ -10,6 +10,11 @@
 #include <QThread>
 #include "common/memory_patcher.h"
 #endif
+#include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <thread>
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
@@ -31,6 +36,11 @@
 
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 namespace Input {
@@ -384,52 +394,67 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::RelaunchEmulator() {
-#ifdef Q_OS_WIN
-    QString emulatorPath = QCoreApplication::applicationFilePath(); // Get current executable path
-    QString emulatorDir = QFileInfo(emulatorPath).absolutePath();   // Get working directory
-    QString scriptFileName =
-        QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/relaunch.ps1";
-    QString scriptContent =
-        QStringLiteral(
-            "Start-Sleep -Seconds 2\n"
-            "Start-Process -FilePath '%1' -WorkingDirectory ([WildcardPattern]::Escape('%2'))\n")
-            .arg(emulatorPath, emulatorDir);
+#ifdef _WIN32
+    char emulatorPath[MAX_PATH];
+    GetModuleFileNameA(nullptr, emulatorPath, MAX_PATH); // Get current executable path
 
-    QFile scriptFile(scriptFileName);
-    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&scriptFile);
-        scriptFile.write("\xEF\xBB\xBF"); // UTF-8 BOM
-        out << scriptContent;
+    std::string emulatorDir = std::string(emulatorPath);
+    size_t pos = emulatorDir.find_last_of("\\/");
+    if (pos != std::string::npos) {
+        emulatorDir = emulatorDir.substr(0, pos); // Extract directory
+    }
+
+    std::string scriptFileName = std::getenv("TEMP") + std::string("\\relaunch.ps1");
+    std::ofstream scriptFile(scriptFileName);
+
+    if (scriptFile.is_open()) {
+        scriptFile << "Start-Sleep -Seconds 2\n"
+                   << "Start-Process -FilePath '" << emulatorPath
+                   << "' -WorkingDirectory ([WildcardPattern]::Escape('" << emulatorDir << "'))\n";
         scriptFile.close();
 
         // Execute PowerShell script
-        QProcess::startDetached("powershell.exe", QStringList() << "-ExecutionPolicy"
-                                                                << "Bypass"
-                                                                << "-File" << scriptFileName);
+        std::string command =
+            "powershell.exe -ExecutionPolicy Bypass -File \"" + scriptFileName + "\"";
+        system(command.c_str());
+    } else {
+        std::cerr << "Failed to create relaunch script" << std::endl;
     }
 
-#elif defined(Q_OS_LINUX) || defined(Q_OS_MAC)
-    QString emulatorPath = QCoreApplication::applicationFilePath(); // Get current executable path
-    QString emulatorDir = QFileInfo(emulatorPath).absolutePath();   // Get working directory
-    QString scriptFileName = "/tmp/relaunch.sh";
-    QString scriptContent = QStringLiteral("#!/bin/bash\n"
-                                           "sleep 2\n"
-                                           "cd '%2'\n"
-                                           "./'%1' &\n")
-                                .arg(QFileInfo(emulatorPath).fileName(), emulatorDir);
+#elif defined(__linux__) || defined(__APPLE__)
+    char emulatorPath[1024];
+    ssize_t count = readlink("/proc/self/exe", emulatorPath, sizeof(emulatorPath) - 1);
+    if (count != -1) {
+        emulatorPath[count] = '\0';
+    } else {
+        std::cerr << "Failed to get executable path" << std::endl;
+        return;
+    }
 
-    QFile scriptFile(scriptFileName);
-    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&scriptFile);
-        out << scriptContent;
+    std::string emulatorDir = std::string(emulatorPath);
+    size_t pos = emulatorDir.find_last_of("/");
+    if (pos != std::string::npos) {
+        emulatorDir = emulatorDir.substr(0, pos); // Extract directory
+    }
+
+    std::string scriptFileName = "/tmp/relaunch.sh";
+    std::ofstream scriptFile(scriptFileName);
+
+    if (scriptFile.is_open()) {
+        scriptFile << "#!/bin/bash\n"
+                   << "sleep 2\n"
+                   << "cd '" << emulatorDir << "'\n"
+                   << "./'" << emulatorPath + pos + 1 << "' &\n";
         scriptFile.close();
 
         // Make script executable
-        scriptFile.setPermissions(QFileDevice::ExeOwner | QFileDevice::ReadOwner |
-                                  QFileDevice::WriteOwner);
+        chmod(scriptFileName.c_str(), S_IRWXU);
 
         // Execute bash script
-        QProcess::startDetached("bash", QStringList() << scriptFileName);
+        std::string command = "bash " + scriptFileName;
+        system(command.c_str());
+    } else {
+        std::cerr << "Failed to create relaunch script" << std::endl;
     }
 #endif
 }
