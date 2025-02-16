@@ -1589,7 +1589,7 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI&apos;de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
+      <translation>Oyun Müziklerini Çal:\nEğer oyun destekliyorsa, arayüzde oyunu seçtiğinizde özel müzik çalmasını etkinleştirir.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
