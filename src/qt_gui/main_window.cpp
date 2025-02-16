@@ -86,6 +86,10 @@ bool MainWindow::Init() {
     CheckUpdateMain(true);
 #endif
 
+    // Makes the Pause and Stop buttons non-activatable (No game is launched).
+    ui->pauseButton->setEnabled(false);
+    ui->stopButton->setEnabled(false);
+
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     statusBar.reset(new QStatusBar);
@@ -1229,6 +1233,11 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
         QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
         return;
     }
+
+    // Makes the Pause and Stop buttons activatable (A game is launched).
+    ui->pauseButton->setEnabled(true);
+    ui->stopButton->setEnabled(true);
+
     isGameRunning = true;
 #ifdef __APPLE__
     // SDL on macOS requires main thread.
