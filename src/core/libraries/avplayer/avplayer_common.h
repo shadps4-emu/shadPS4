@@ -84,6 +84,6 @@ private:
     std::queue<T> m_queue{};
 };
 
-SceAvPlayerSourceType GetSourceType(std::string_view path);
+AvPlayerSourceType GetSourceType(std::string_view path);
 
 } // namespace Libraries::AvPlayer
