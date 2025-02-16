@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string_view>
+#include <utility>
 #include "common/hash.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -63,6 +64,8 @@ bool Value::operator==(const Value& other) const {
         return vreg == other.vreg;
     case Type::Attribute:
         return attribute == other.attribute;
+    case Type::Patch:
+        return patch == other.patch;
     case Type::U1:
         return imm_u1 == other.imm_u1;
     case Type::U8:
@@ -71,13 +74,15 @@ bool Value::operator==(const Value& other) const {
     case Type::F16:
         return imm_u16 == other.imm_u16;
     case Type::U32:
-    case Type::F32:
         return imm_u32 == other.imm_u32;
+    case Type::F32:
+        return imm_f32 == other.imm_f32;
     case Type::U64:
-    case Type::F64:
         return imm_u64 == other.imm_u64;
+    case Type::F64:
+        return imm_f64 == other.imm_f64;
     case Type::StringLiteral:
-        return std::string_view(string_literal) == other.string_literal;
+        return std::string_view(string_literal) == std::string_view(other.string_literal);
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
@@ -114,24 +119,29 @@ std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) cons
     case Type::Opaque:
         return reinterpret_cast<u64>(v.InstRecursive());
     case Type::ScalarReg:
-        return HashCombine(static_cast<u64>(v.sreg), h);
+        return HashCombine(static_cast<u64>(std::to_underlying(v.sreg)), h);
     case Type::VectorReg:
-        return HashCombine(static_cast<u64>(v.vreg), h);
+        return HashCombine(static_cast<u64>(std::to_underlying(v.vreg)), h);
     case Type::Attribute:
-        return HashCombine(static_cast<u64>(v.attribute), h);
+        return HashCombine(std::to_underlying(v.attribute), h);
+    case Type::Patch:
+        return HashCombine(std::to_underlying(v.patch), h);
     case Type::U1:
-        return HashCombine(static_cast<u64>(v.attribute), h);
+        return HashCombine(static_cast<u64>(v.imm_u1), h);
     case Type::U8:
         return HashCombine(static_cast<u64>(v.imm_u8), h);
     case Type::U16:
     case Type::F16:
         return HashCombine(static_cast<u64>(v.imm_u16), h);
     case Type::U32:
-    case Type::F32:
         return HashCombine(static_cast<u64>(v.imm_u32), h);
+    case Type::F32:
+        return HashCombine(static_cast<u64>(v.imm_f32), h);
     case Type::U64:
-    case Type::F64:
         return HashCombine(static_cast<u64>(v.imm_u64), h);
+    case Type::F64:
+        return HashCombine(static_cast<u64>(v.imm_f64), h);
+    case Type::StringLiteral:
     case Type::U32x2:
     case Type::U32x3:
     case Type::U32x4:
