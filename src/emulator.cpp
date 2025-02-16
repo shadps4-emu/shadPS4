@@ -336,119 +336,119 @@ void Emulator::Restart() {
         return;
     }
 }
-    void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
-        constexpr std::array<SysModules, 11> ModulesToLoad{
-            {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
-             {"libSceUlt.sprx", nullptr},
-             {"libSceJson.sprx", nullptr},
-             {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
-             {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
-             {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-             {"libSceCesCs.sprx", nullptr},
-             {"libSceFont.sprx", nullptr},
-             {"libSceFontFt.sprx", nullptr},
-             {"libSceFreeTypeOt.sprx", nullptr}}};
+void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
+    constexpr std::array<SysModules, 11> ModulesToLoad{
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+         {"libSceUlt.sprx", nullptr},
+         {"libSceJson.sprx", nullptr},
+         {"libSceJson2.sprx", nullptr},
+         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
+         {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
+         {"libSceCesCs.sprx", nullptr},
+         {"libSceFont.sprx", nullptr},
+         {"libSceFontFt.sprx", nullptr},
+         {"libSceFreeTypeOt.sprx", nullptr}}};
 
-        std::vector<std::filesystem::path> found_modules;
-        const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
-        for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
-            found_modules.push_back(entry.path());
-        }
-        for (const auto& [module_name, init_func] : ModulesToLoad) {
-            const auto it = std::ranges::find_if(
-                found_modules, [&](const auto& path) { return path.filename() == module_name; });
-            if (it != found_modules.end()) {
-                LOG_INFO(Loader, "Loading {}", it->string());
-                if (linker->LoadModule(*it) != -1) {
-                    continue;
-                }
-            }
-            if (init_func) {
-                LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
-                init_func(&linker->GetHLESymbols());
-            } else {
-                LOG_INFO(Loader, "No HLE available for {} module", module_name);
+    std::vector<std::filesystem::path> found_modules;
+    const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
+        found_modules.push_back(entry.path());
+    }
+    for (const auto& [module_name, init_func] : ModulesToLoad) {
+        const auto it = std::ranges::find_if(
+            found_modules, [&](const auto& path) { return path.filename() == module_name; });
+        if (it != found_modules.end()) {
+            LOG_INFO(Loader, "Loading {}", it->string());
+            if (linker->LoadModule(*it) != -1) {
+                continue;
             }
         }
-        if (!game_serial.empty() && std::filesystem::exists(sys_module_path / game_serial)) {
-            for (const auto& entry :
-                 std::filesystem::directory_iterator(sys_module_path / game_serial)) {
-                LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),
-                         game_serial);
-                linker->LoadModule(entry.path());
-            }
+        if (init_func) {
+            LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
+            init_func(&linker->GetHLESymbols());
+        } else {
+            LOG_INFO(Loader, "No HLE available for {} module", module_name);
         }
     }
+    if (!game_serial.empty() && std::filesystem::exists(sys_module_path / game_serial)) {
+        for (const auto& entry :
+             std::filesystem::directory_iterator(sys_module_path / game_serial)) {
+            LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),
+                     game_serial);
+            linker->LoadModule(entry.path());
+        }
+    }
+}
 
 #ifdef ENABLE_QT_GUI
-    void Core::Emulator::UpdatePlayTime(const std::string& serial) const {
-        const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-        QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
+void Core::Emulator::UpdatePlayTime(const std::string& serial) const {
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
 
-        QFile file(filePath);
-        if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-            LOG_INFO(Loader, "Error opening play_time.txt");
-            return;
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+        LOG_INFO(Loader, "Error opening play_time.txt");
+        return;
+    }
+
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+    int totalSeconds = duration.count();
+
+    QTextStream in(&file);
+    QStringList lines;
+    QString content;
+    while (!in.atEnd()) {
+        content += in.readLine() + "\n";
+    }
+    file.close();
+
+    QStringList existingLines = content.split('\n', Qt::SkipEmptyParts);
+    int accumulatedSeconds = 0;
+    bool found = false;
+
+    for (const QString& line : existingLines) {
+        QStringList parts = line.split(' ');
+        if (parts.size() == 2 && parts[0] == QString::fromStdString(serial)) {
+            QStringList timeParts = parts[1].split(':');
+            if (timeParts.size() == 3) {
+                int hours = timeParts[0].toInt();
+                int minutes = timeParts[1].toInt();
+                int seconds = timeParts[2].toInt();
+                accumulatedSeconds = hours * 3600 + minutes * 60 + seconds;
+                found = true;
+                break;
+            }
         }
+    }
+    accumulatedSeconds += totalSeconds;
+    int hours = accumulatedSeconds / 3600;
+    int minutes = (accumulatedSeconds % 3600) / 60;
+    int seconds = accumulatedSeconds % 60;
+    QString playTimeSaved = QString::number(hours) + ":" +
+                            QString::number(minutes).rightJustified(2, '0') + ":" +
+                            QString::number(seconds).rightJustified(2, '0');
 
-        auto end_time = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-        int totalSeconds = duration.count();
-
-        QTextStream in(&file);
-        QStringList lines;
-        QString content;
-        while (!in.atEnd()) {
-            content += in.readLine() + "\n";
-        }
-        file.close();
-
-        QStringList existingLines = content.split('\n', Qt::SkipEmptyParts);
-        int accumulatedSeconds = 0;
-        bool found = false;
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        bool lineUpdated = false;
 
         for (const QString& line : existingLines) {
-            QStringList parts = line.split(' ');
-            if (parts.size() == 2 && parts[0] == QString::fromStdString(serial)) {
-                QStringList timeParts = parts[1].split(':');
-                if (timeParts.size() == 3) {
-                    int hours = timeParts[0].toInt();
-                    int minutes = timeParts[1].toInt();
-                    int seconds = timeParts[2].toInt();
-                    accumulatedSeconds = hours * 3600 + minutes * 60 + seconds;
-                    found = true;
-                    break;
-                }
-            }
-        }
-        accumulatedSeconds += totalSeconds;
-        int hours = accumulatedSeconds / 3600;
-        int minutes = (accumulatedSeconds % 3600) / 60;
-        int seconds = accumulatedSeconds % 60;
-        QString playTimeSaved = QString::number(hours) + ":" +
-                                QString::number(minutes).rightJustified(2, '0') + ":" +
-                                QString::number(seconds).rightJustified(2, '0');
-
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&file);
-            bool lineUpdated = false;
-
-            for (const QString& line : existingLines) {
-                if (line.startsWith(QString::fromStdString(serial))) {
-                    out << QString::fromStdString(serial) + " " + playTimeSaved + "\n";
-                    lineUpdated = true;
-                } else {
-                    out << line << "\n";
-                }
-            }
-
-            if (!lineUpdated) {
+            if (line.startsWith(QString::fromStdString(serial))) {
                 out << QString::fromStdString(serial) + " " + playTimeSaved + "\n";
+                lineUpdated = true;
+            } else {
+                out << line << "\n";
             }
         }
-        LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
+
+        if (!lineUpdated) {
+            out << QString::fromStdString(serial) + " " + playTimeSaved + "\n";
+        }
     }
+    LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
+}
 
 #endif
 } // namespace Core
