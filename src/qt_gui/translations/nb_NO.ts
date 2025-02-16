@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Handlingsknapper</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -1669,7 +1669,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Bruk HDR:\nTillater bruk av HDR i spill som støtter det.\nSkjermen din må ha støtte for BT2020 PQ fargerom og RGB10A2 swapchain-format.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1729,11 +1729,11 @@
     </message>
     <message>
       <source>Borderless</source>
-      <translation type="unfinished">Borderless</translation>
+      <translation>Kantløs</translation>
     </message>
     <message>
       <source>True</source>
-      <translation type="unfinished">True</translation>
+      <translation>Sant</translation>
     </message>
     <message>
       <source>Release</source>
@@ -1745,11 +1745,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Sett volumet til bakgrunnsmusikken.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Bruk bevegelseskontroller</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1769,7 +1769,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Velg automatisk</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1777,7 +1777,7 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Mappe for lagring av data</translation>
     </message>
   </context>
   <context>
