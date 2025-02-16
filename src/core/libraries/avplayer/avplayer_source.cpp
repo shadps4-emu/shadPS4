@@ -29,7 +29,7 @@ AvPlayerSource::~AvPlayerSource() {
     Stop();
 }
 
-bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view path) {
+bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view path) {
     m_memory_replacement = init_data.memory_replacement,
     m_num_output_video_framebuffers =
         std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
@@ -76,17 +76,17 @@ s32 AvPlayerSource::GetStreamCount() {
     return m_avformat_context->nb_streams;
 }
 
-static SceAvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
+static AvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
     switch (codec_type) {
     case AVMediaType::AVMEDIA_TYPE_VIDEO:
-        return SceAvPlayerStreamType::Video;
+        return AvPlayerStreamType::Video;
     case AVMediaType::AVMEDIA_TYPE_AUDIO:
-        return SceAvPlayerStreamType::Audio;
+        return AvPlayerStreamType::Audio;
     case AVMediaType::AVMEDIA_TYPE_SUBTITLE:
-        return SceAvPlayerStreamType::TimedText;
+        return AvPlayerStreamType::TimedText;
     default:
         LOG_ERROR(Lib_AvPlayer, "Unexpected AVMediaType {}", magic_enum::enum_name(codec_type));
-        return SceAvPlayerStreamType::Unknown;
+        return AvPlayerStreamType::Unknown;
     }
 }
 
@@ -94,7 +94,7 @@ static f32 AVRationalToF32(const AVRational rational) {
     return f32(rational.num) / rational.den;
 }
 
-bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info.", stream_index);
@@ -115,7 +115,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
-    case SceAvPlayerStreamType::Video: {
+    case AvPlayerStreamType::Video: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
@@ -133,7 +133,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SceAvPlayerStreamType::Audio: {
+    case AvPlayerStreamType::Audio: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
@@ -144,7 +144,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SceAvPlayerStreamType::TimedText: {
+    case AvPlayerStreamType::TimedText: {
         LOG_WARNING(Lib_AvPlayer, "Stream {} is a timedtext stream.", stream_index);
         info.details.subs.font_size = 12;
         info.details.subs.text_size = 12;
@@ -280,25 +280,25 @@ bool AvPlayerSource::Stop() {
     return true;
 }
 
-bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfo& video_info) {
+bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
     if (!IsActive()) {
         return false;
     }
 
-    SceAvPlayerFrameInfoEx info{};
+    AvPlayerFrameInfoEx info{};
     if (!GetVideoData(info)) {
         return false;
     }
     video_info = {};
     video_info.timestamp = u64(info.timestamp);
-    video_info.pData = reinterpret_cast<u8*>(info.pData);
+    video_info.p_data = reinterpret_cast<u8*>(info.p_data);
     video_info.details.video.aspect_ratio = info.details.video.aspect_ratio;
     video_info.details.video.width = info.details.video.width;
     video_info.details.video.height = info.details.video.height;
     return true;
 }
 
-bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
+bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     if (!IsActive()) {
         return false;
     }
@@ -333,7 +333,7 @@ bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
     return true;
 }
 
-bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
+bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
     if (!IsActive()) {
         return false;
     }
@@ -367,7 +367,7 @@ bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
-    audio_info.pData = reinterpret_cast<u8*>(frame->info.pData);
+    audio_info.p_data = reinterpret_cast<u8*>(frame->info.p_data);
     audio_info.details.audio.sample_rate = frame->info.details.audio.sample_rate;
     audio_info.details.audio.size = frame->info.details.audio.size;
     audio_info.details.audio.channel_count = frame->info.details.audio.channel_count;
@@ -572,7 +572,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
         .buffer = std::move(buffer),
         .info =
             {
-                .pData = p_buffer,
+                .p_data = p_buffer,
                 .timestamp = timestamp,
                 .details =
                     {
@@ -702,7 +702,7 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
         .buffer = std::move(buffer),
         .info =
             {
-                .pData = p_buffer,
+                .p_data = p_buffer,
                 .timestamp = timestamp,
                 .details =
                     {
