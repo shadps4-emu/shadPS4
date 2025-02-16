@@ -1,20 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#ifdef ENABLE_QT_GUI
-#include <QCoreApplication>
-#include <QFileInfo>
-#include <QProcess>
-#include <QStandardPaths>
-#include <QString>
-#include <QThread>
-#include "common/memory_patcher.h"
-#endif
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <thread>
+#include <sys/stat.h>
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
