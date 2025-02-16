@@ -9,8 +9,8 @@
 #include "string"
 
 class EditorDialog : public QDialog {
-    Q_OBJECT // Necessary for using Qt's meta-object system (signals/slots)
-        public : explicit EditorDialog(QWidget* parent = nullptr); // Constructor
+Q_OBJECT // Necessary for using Qt's meta-object system (signals/slots)
+    public : explicit EditorDialog(QWidget* parent = nullptr); // Constructor
 
 protected:
     void closeEvent(QCloseEvent* event) override; // Override close event

@@ -339,7 +339,9 @@ void CondvarWait(Condvar& cv, std::unique_lock<Lock>& lk, std::stop_token token,
     }
 
     std::stop_callback callback(token, [&] {
-        { std::scoped_lock lk2{*lk.mutex()}; }
+        {
+            std::scoped_lock lk2{*lk.mutex()};
+        }
         cv.notify_all();
     });
 
