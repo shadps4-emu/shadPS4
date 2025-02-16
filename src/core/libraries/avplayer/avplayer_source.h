@@ -30,6 +30,8 @@ class AvPlayerStateCallback {
 public:
     virtual ~AvPlayerStateCallback() = default;
 
+    virtual AvPlayerAvSyncMode GetSyncMode() = 0;
+
     virtual void OnWarning(u32 id) = 0;
     virtual void OnError() = 0;
     virtual void OnEOF() = 0;
@@ -216,6 +218,7 @@ private:
     std::chrono::high_resolution_clock::time_point m_start_time{};
     std::chrono::high_resolution_clock::time_point m_last_paused_time{};
     std::chrono::high_resolution_clock::duration m_stalled_time{};
+    u64 m_last_audio_packet_time{};
 };
 
 } // namespace Libraries::AvPlayer

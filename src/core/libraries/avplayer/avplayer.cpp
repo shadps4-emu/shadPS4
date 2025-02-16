@@ -188,11 +188,11 @@ s32 PS4_SYSV_ABI sceAvPlayerResume(AvPlayerHandle handle) {
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(AvPlayerHandle handle, AvPlayerAvSyncMode sync_mode) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_TRACE(Lib_AvPlayer, "(STUBBED) called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->SetAvSyncMode(sync_mode);
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(AvPlayerLogCallback log_cb, void* user_data) {

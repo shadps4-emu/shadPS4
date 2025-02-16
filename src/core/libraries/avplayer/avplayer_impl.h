@@ -30,6 +30,7 @@ public:
     s32 Start();
     s32 Pause();
     s32 Resume();
+    s32 SetAvSyncMode(AvPlayerAvSyncMode sync_mode);
     bool GetAudioData(AvPlayerFrameInfo& audio_info);
     bool GetVideoData(AvPlayerFrameInfo& video_info);
     bool GetVideoData(AvPlayerFrameInfoEx& video_info);
