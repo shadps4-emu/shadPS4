@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation>Cheats/Patches são experimentais.\nUse com caução.\n\nTransfira os cheats individualmente selecionando o repositório e clicando no botão de transferência.\nNa aba Patches, poderá transferir todos os Patches de uma vez, escolher o qual deseja usar e guardar as suas definições.\n\nComo nós não desenvolvemos os Cheats/Patches,\npor favor, reporte os problemas relacionados com o cheat ao autor deste.\n\nCriou um novo cheat? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -38,7 +38,7 @@
     </message>
     <message>
       <source>Serial: </source>
-      <translation type="unfinished">Serial: </translation>
+      <translation>Número de série: </translation>
     </message>
     <message>
       <source>Version: </source>
@@ -110,7 +110,7 @@
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation type="unfinished">No patch file found for the current serial.</translation>
+      <translation>Nenhum ficheiro de patch encontrado para o número de série atual.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
@@ -186,15 +186,15 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
+      <translation>Patches Transferidos com Sucesso! Foram transferidos todos os patches disponíveis para todos os jogos, não sendo necessário transferir individualmente para cada jogo como acontece com os Cheats. Se o patch não aparecer, pode ser que não esteja disponível para o número de série e versão específicos do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
+      <translation>Falha ao interpretar dados JSON através do HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation type="unfinished">Failed to retrieve HTML page.</translation>
+      <translation>Falha ao recuperar a página HTML.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
@@ -202,11 +202,11 @@
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
+      <translation>O patch transferido só funciona na versão: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation type="unfinished">You may need to update your game.</translation>
+      <translation>Talvez seja necessário atualizar o seu jogo.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -230,7 +230,7 @@
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation type="unfinished">Directory does not exist:</translation>
+      <translation>A pasta não existe:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
@@ -242,7 +242,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
+      <translation>Não é possível aplicar cheats antes de iniciar o jogo</translation>
     </message>
     <message>
       <source>Close</source>
@@ -411,15 +411,15 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Configurar Comandos</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
+      <translation>Definições do Comando</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Botões de Direção</translation>
     </message>
     <message>
       <source>Up</source>
@@ -451,15 +451,15 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Seleção de Configuração</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Configuração Comum</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Utilizar configurações por jogo</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -471,11 +471,11 @@
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
+      <translation>Controlo KBM</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
+      <translation>Editor KBM</translation>
     </message>
     <message>
       <source>Back</source>
@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Opções / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -591,7 +591,7 @@
     </message>
     <message>
       <source>Serial</source>
-      <translation type="unfinished">Serial</translation>
+      <translation>Número de Série</translation>
     </message>
     <message>
       <source>Compatibility</source>
@@ -615,7 +615,7 @@
     </message>
     <message>
       <source>Path</source>
-      <translation type="unfinished">Path</translation>
+      <translation>Caminho</translation>
     </message>
     <message>
       <source>Play Time</source>
@@ -639,27 +639,27 @@
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation type="unfinished">Compatibility is untested</translation>
+      <translation>A compatibilidade não foi testada</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>O jogo não arranca corretamente / bloqueia o emulador</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>O jogo arranca, mas não exibe nada</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>O jogo exibe imagem, mas não passa do menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
+      <translation>O jogo tem falhas ou desempenho que o tornam injogável</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
+      <translation>O jogo pode ser concluído com desempenho jogável e sem grandes problemas</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
@@ -721,59 +721,59 @@
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation type="unfinished">Open Save Data Folder</translation>
+      <translation>Abrir Pasta de Dados Guardados</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation type="unfinished">Open Log Folder</translation>
+      <translation>Abrir Pasta de Registo</translation>
     </message>
     <message>
       <source>Copy info...</source>
-      <translation type="unfinished">Copy info...</translation>
+      <translation>Copiar informação...</translation>
     </message>
     <message>
       <source>Copy Name</source>
-      <translation type="unfinished">Copy Name</translation>
+      <translation>Copiar Nome</translation>
     </message>
     <message>
       <source>Copy Serial</source>
-      <translation type="unfinished">Copy Serial</translation>
+      <translation>Copiar Número de Série</translation>
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>Copiar Versão</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>Copiar Tamanho</translation>
     </message>
     <message>
       <source>Copy All</source>
-      <translation type="unfinished">Copy All</translation>
+      <translation>Copiar Tudo</translation>
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>Eliminar...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>Eliminar Jogo</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation type="unfinished">Delete Update</translation>
+      <translation>Eliminar Atualização</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation type="unfinished">Delete DLC</translation>
+      <translation>Eliminar DLC</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation type="unfinished">Compatibility...</translation>
+      <translation>Compatibilidade...</translation>
     </message>
     <message>
       <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
+      <translation>Atualizar Base de Dados</translation>
     </message>
     <message>
       <source>View report</source>
@@ -813,7 +813,7 @@
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>Atualizar</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
@@ -833,7 +833,7 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Abrir Pasta da Atualização</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
@@ -853,7 +853,7 @@
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Dados Guardados</translation>
     </message>
   </context>
   <context>
@@ -864,11 +864,11 @@
     </message>
     <message>
       <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
+      <translation>Selecione o diretório em que deseja instalar.</translation>
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Instalar Todos os Pendentes para a Pasta Selecionada</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
@@ -971,7 +971,7 @@
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation type="unfinished">Dump Game List</translation>
+      <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -991,11 +991,11 @@
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation type="unfinished">Game List Icons</translation>
+      <translation>Ícones da Lista de Jogos</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation type="unfinished">Game List Mode</translation>
+      <translation>Modo da Lista de Jogos</translation>
     </message>
     <message>
       <source>Settings</source>
@@ -1047,11 +1047,11 @@
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation type="unfinished">Download Cheats For All Installed Games</translation>
+      <translation>Transferir Cheats para Todos os Jogos Instalados</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation type="unfinished">Download Patches For All Games</translation>
+      <translation>Transferir Patches para Todos os Jogos</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -1079,11 +1079,11 @@
     </message>
     <message>
       <source>Game Boot</source>
-      <translation type="unfinished">Game Boot</translation>
+      <translation>Arranque do Jogo</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation type="unfinished">Only one file can be selected!</translation>
+      <translation>Apenas um ficheiro pode ser selecionado!</translation>
     </message>
     <message>
       <source>PKG Extraction</source>
@@ -1103,11 +1103,11 @@
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
-      <translation type="unfinished">PKG Version %1 is older than installed version: </translation>
+      <translation>A versão do PKG %1 é mais antiga do que a versão instalada: </translation>
     </message>
     <message>
       <source>Game is installed: </source>
-      <translation type="unfinished">Game is installed: </translation>
+      <translation>O jogo está instalado: </translation>
     </message>
     <message>
       <source>Would you like to install Patch: </source>
@@ -1115,7 +1115,7 @@
     </message>
     <message>
       <source>DLC Installation</source>
-      <translation type="unfinished">DLC Installation</translation>
+      <translation>Instalação de DLC</translation>
     </message>
     <message>
       <source>Would you like to install DLC: %1?</source>
@@ -1139,35 +1139,35 @@
     </message>
     <message>
       <source>Extraction Finished</source>
-      <translation type="unfinished">Extraction Finished</translation>
+      <translation>Extração Finalizada</translation>
     </message>
     <message>
       <source>Game successfully installed at %1</source>
-      <translation type="unfinished">Game successfully installed at %1</translation>
+      <translation>Jogo instalado com sucesso em %1</translation>
     </message>
     <message>
       <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation type="unfinished">File doesn&apos;t appear to be a valid PKG file</translation>
+      <translation>O ficheiro não aparenta ser um ficheiro PKG válido</translation>
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Executar Jogo</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Ficheiro eboot.bin não encontrado</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>Ficheiro PKG (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>Este PKG é um patch ou DLC, por favor instale o respetivo jogo primeiro!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>O jogo já está a ser executado!</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -1190,7 +1190,7 @@
     </message>
     <message>
       <source>Serial</source>
-      <translation type="unfinished">Serial</translation>
+      <translation>Número de Série</translation>
     </message>
     <message>
       <source>Installed</source>
@@ -1289,7 +1289,7 @@
     </message>
     <message>
       <source>Show Splash</source>
-      <translation type="unfinished">Show Splash</translation>
+      <translation>Mostrar Splash</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1485,15 +1485,15 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Imagem de Fundo</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Mostrar Imagem de Fundo</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Opacidade</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1501,19 +1501,19 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation type="unfinished">Update Compatibility Database On Startup</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade no Arranque</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
-      <translation type="unfinished">Game Compatibility</translation>
+      <translation>Compatibilidade dos Jogos</translation>
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation type="unfinished">Display Compatibility Data</translation>
+      <translation>Exibir Dados de Compatibilidade</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation type="unfinished">Update Compatibility Database</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade</translation>
     </message>
     <message>
       <source>Volume</source>
@@ -1537,7 +1537,7 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
+      <translation>Passe o ponteiro do rato sobre uma opção para exibir a sua descrição.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
