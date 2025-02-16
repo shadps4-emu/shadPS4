@@ -42,71 +42,71 @@
     </message>
     <message>
       <source>Version: </source>
-      <translation type="unfinished">Version: </translation>
+      <translation>Versão: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation type="unfinished">Size: </translation>
+      <translation>Tamanho: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation type="unfinished">Select Cheat File:</translation>
+      <translation>Selecionar Ficheiro de Cheat:</translation>
     </message>
     <message>
       <source>Repository:</source>
-      <translation type="unfinished">Repository:</translation>
+      <translation>Repositório:</translation>
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation type="unfinished">Download Cheats</translation>
+      <translation>Transferir Cheats</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation type="unfinished">Delete File</translation>
+      <translation>Eliminar Ficheiro</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation type="unfinished">No files selected.</translation>
+      <translation>Nenhum ficheiro selecionado.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
+      <translation>Poderá eliminar os cheats que não deseja após os transferir.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
+      <translation>Pretende eliminar o ficheiro selecionado?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation type="unfinished">Select Patch File:</translation>
+      <translation>Selecionar Ficheiro de Patch:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation type="unfinished">Download Patches</translation>
+      <translation>Transferir Patches</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Guardar</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>Cheats</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation type="unfinished">Patches</translation>
+      <translation>Patches</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation type="unfinished">No patch selected.</translation>
+      <translation>Nenhum patch selecionado.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation type="unfinished">Unable to open files.json for reading.</translation>
+      <translation>Não foi possível abrir files.json para leitura.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
@@ -114,75 +114,75 @@
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation type="unfinished">Unable to open the file for reading.</translation>
+      <translation>Não foi possível abrir o ficheiro para leitura.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation type="unfinished">Unable to open the file for writing.</translation>
+      <translation>Não foi possível abrir o ficheiro para escrita.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation type="unfinished">Failed to parse XML: </translation>
+      <translation>Erro ao interpretar XML: </translation>
     </message>
     <message>
       <source>Success</source>
-      <translation type="unfinished">Success</translation>
+      <translation>Sucesso</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation type="unfinished">Options saved successfully.</translation>
+      <translation>Opções guardadas com sucesso.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation type="unfinished">Invalid Source</translation>
+      <translation>Fonte Inválida</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation type="unfinished">The selected source is invalid.</translation>
+      <translation>A fonte selecionada é inválida.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation type="unfinished">File Exists</translation>
+      <translation>O Ficheiro já Existe</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
+      <translation>O ficheiro já existe. Deseja substituí-lo?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation type="unfinished">Failed to save file:</translation>
+      <translation>Erro ao guardar o ficheiro:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation type="unfinished">Failed to download file:</translation>
+      <translation>Erro ao transferir o ficheiro:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation type="unfinished">Cheats Not Found</translation>
+      <translation>Cheats Não Encontrados</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
+      <translation>Não foi encontrado nenhum Cheat para esta versão do jogo no repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation type="unfinished">Cheats Downloaded Successfully</translation>
+      <translation>Cheats Transferidos com Sucesso</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
+      <translation>Transferiu os cheats para esta versão do jogo através do repositório selecionado com sucesso. Poderá tentar transferir de outro repositório, e se disponível, será possível utilizá-lo selecionando o ficheiro a partir da lista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation type="unfinished">Failed to save:</translation>
+      <translation>Erro ao guardar:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation type="unfinished">Failed to download:</translation>
+      <translation>Erro ao transferir:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>Transferência Concluída</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
@@ -198,7 +198,7 @@
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation type="unfinished">The game is in version: %1</translation>
+      <translation>O jogo está na versão: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
@@ -210,23 +210,23 @@
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation type="unfinished">Incompatibility Notice</translation>
+      <translation>Aviso de Incompatibilidade</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation type="unfinished">Failed to open file:</translation>
+      <translation>Erro ao abrir o ficheiro:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation type="unfinished">XML ERROR:</translation>
+      <translation>ERRO XML:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation type="unfinished">Failed to open files.json for writing</translation>
+      <translation>Não foi possível abrir files.json para escrita</translation>
     </message>
     <message>
       <source>Author: </source>
-      <translation type="unfinished">Author: </translation>
+      <translation>Autor: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
@@ -404,7 +404,7 @@
     </message>
     <message>
       <source>Playable</source>
-      <translation type="unfinished">Playable</translation>
+      <translation>Jogável</translation>
     </message>
   </context>
   <context>
@@ -423,19 +423,19 @@
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Cima</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Esquerda</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Direita</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Baixo</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
@@ -507,19 +507,19 @@
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Triângulo / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Quadrado / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Círculo / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Cruz / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -538,56 +538,56 @@
     <name>ElfViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
+      <translation>Abrir Pasta</translation>
     </message>
   </context>
   <context>
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation type="unfinished">Loading game list, please wait :3</translation>
+      <translation>A carregar a lista de jogos, por favor aguarde :3</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Cancelar</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation type="unfinished">Loading...</translation>
+      <translation>A Carregar...</translation>
     </message>
   </context>
   <context>
     <name>GameInstallDialog</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
+      <translation>shadPS4 - Escolher diretório</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation type="unfinished">Directory to install games</translation>
+      <translation>Diretório onde instalar os jogos</translation>
     </message>
     <message>
       <source>Browse</source>
-      <translation type="unfinished">Browse</translation>
+      <translation>Procurar</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Diretório onde instalar os DLC</translation>
     </message>
   </context>
   <context>
     <name>GameListFrame</name>
     <message>
       <source>Icon</source>
-      <translation type="unfinished">Icon</translation>
+      <translation>Ícone</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation type="unfinished">Name</translation>
+      <translation>Nome</translation>
     </message>
     <message>
       <source>Serial</source>
@@ -595,23 +595,23 @@
     </message>
     <message>
       <source>Compatibility</source>
-      <translation type="unfinished">Compatibility</translation>
+      <translation>Compatibilidade</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Região</translation>
     </message>
     <message>
       <source>Firmware</source>
-      <translation type="unfinished">Firmware</translation>
+      <translation>Firmware</translation>
     </message>
     <message>
       <source>Size</source>
-      <translation type="unfinished">Size</translation>
+      <translation>Tamanho</translation>
     </message>
     <message>
       <source>Version</source>
-      <translation type="unfinished">Version</translation>
+      <translation>Versão</translation>
     </message>
     <message>
       <source>Path</source>
@@ -927,39 +927,39 @@
     </message>
     <message>
       <source>Show Game List</source>
-      <translation type="unfinished">Show Game List</translation>
+      <translation>Mostrar Lista de Jogos</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
-      <translation type="unfinished">Game List Refresh</translation>
+      <translation>Atualizar Lista de Jogos</translation>
     </message>
     <message>
       <source>Tiny</source>
-      <translation type="unfinished">Tiny</translation>
+      <translation>Muito Pequeno</translation>
     </message>
     <message>
       <source>Small</source>
-      <translation type="unfinished">Small</translation>
+      <translation>Pequeno</translation>
     </message>
     <message>
       <source>Medium</source>
-      <translation type="unfinished">Medium</translation>
+      <translation>Médio</translation>
     </message>
     <message>
       <source>Large</source>
-      <translation type="unfinished">Large</translation>
+      <translation>Grande</translation>
     </message>
     <message>
       <source>List View</source>
-      <translation type="unfinished">List View</translation>
+      <translation>Visualizar em Lista</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation type="unfinished">Grid View</translation>
+      <translation>Visualizar em Grelha</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
-      <translation type="unfinished">Elf Viewer</translation>
+      <translation>Visualizador Elf</translation>
     </message>
     <message>
       <source>Game Install Directory</source>
@@ -979,11 +979,11 @@
     </message>
     <message>
       <source>Search...</source>
-      <translation type="unfinished">Search...</translation>
+      <translation>Procurar...</translation>
     </message>
     <message>
       <source>File</source>
-      <translation type="unfinished">File</translation>
+      <translation>Ficheiro</translation>
     </message>
     <message>
       <source>View</source>
@@ -999,51 +999,51 @@
     </message>
     <message>
       <source>Settings</source>
-      <translation type="unfinished">Settings</translation>
+      <translation>Definições</translation>
     </message>
     <message>
       <source>Utils</source>
-      <translation type="unfinished">Utils</translation>
+      <translation>Utilidades</translation>
     </message>
     <message>
       <source>Themes</source>
-      <translation type="unfinished">Themes</translation>
+      <translation>Temas</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Ajuda</translation>
     </message>
     <message>
       <source>Dark</source>
-      <translation type="unfinished">Dark</translation>
+      <translation>Escuro</translation>
     </message>
     <message>
       <source>Light</source>
-      <translation type="unfinished">Light</translation>
+      <translation>Claro</translation>
     </message>
     <message>
       <source>Green</source>
-      <translation type="unfinished">Green</translation>
+      <translation>Verde</translation>
     </message>
     <message>
       <source>Blue</source>
-      <translation type="unfinished">Blue</translation>
+      <translation>Azul</translation>
     </message>
     <message>
       <source>Violet</source>
-      <translation type="unfinished">Violet</translation>
+      <translation>Violeta</translation>
     </message>
     <message>
       <source>toolBar</source>
-      <translation type="unfinished">toolBar</translation>
+      <translation>Barra de Ferramentas</translation>
     </message>
     <message>
       <source>Game List</source>
-      <translation type="unfinished">Game List</translation>
+      <translation>Lista de Jogos</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Versão do Vulkan não suportada</translation>
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
@@ -1055,27 +1055,27 @@
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>Transferência Concluída</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
+      <translation>Transferiu cheats para todos os jogos instalados.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation type="unfinished">Patches Downloaded Successfully!</translation>
+      <translation>Patches Transferidos com Sucesso!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
+      <translation>Foram transferidos todos os Patches disponíveis para os jogos.</translation>
     </message>
     <message>
       <source>Games: </source>
-      <translation type="unfinished">Games: </translation>
+      <translation>Jogos: </translation>
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
+      <translation>Ficheiros ELF (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
@@ -1087,7 +1087,7 @@
     </message>
     <message>
       <source>PKG Extraction</source>
-      <translation type="unfinished">PKG Extraction</translation>
+      <translation>Extração de PKG</translation>
     </message>
     <message>
       <source>Patch detected!</source>
@@ -1253,11 +1253,11 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>Sistema</translation>
     </message>
     <message>
       <source>Console Language</source>
-      <translation type="unfinished">Console Language</translation>
+      <translation>Idioma da Consola</translation>
     </message>
     <message>
       <source>Emulator Language</source>
@@ -1333,7 +1333,7 @@
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation type="unfinished">Hide Cursor</translation>
+      <translation>Ocultar Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
@@ -1345,7 +1345,7 @@
     </message>
     <message>
       <source>Controller</source>
-      <translation type="unfinished">Controller</translation>
+      <translation>Comando</translation>
     </message>
     <message>
       <source>Back Button Behavior</source>
@@ -1353,47 +1353,47 @@
     </message>
     <message>
       <source>Graphics</source>
-      <translation type="unfinished">Graphics</translation>
+      <translation>Gráficos</translation>
     </message>
     <message>
       <source>GUI</source>
-      <translation type="unfinished">GUI</translation>
+      <translation>GUI</translation>
     </message>
     <message>
       <source>User</source>
-      <translation type="unfinished">User</translation>
+      <translation>Utilizador</translation>
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation type="unfinished">Graphics Device</translation>
+      <translation>Placa Gráfica</translation>
     </message>
     <message>
       <source>Width</source>
-      <translation type="unfinished">Width</translation>
+      <translation>Largura</translation>
     </message>
     <message>
       <source>Height</source>
-      <translation type="unfinished">Height</translation>
+      <translation>Altura</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation type="unfinished">Vblank Divider</translation>
+      <translation>Divisor Vblank</translation>
     </message>
     <message>
       <source>Advanced</source>
-      <translation type="unfinished">Advanced</translation>
+      <translation>Avançado</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation type="unfinished">Enable Shaders Dumping</translation>
+      <translation>Ativar Dumping de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation type="unfinished">Enable NULL GPU</translation>
+      <translation>Ativar GPU NULL</translation>
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Ativar HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1405,15 +1405,15 @@
     </message>
     <message>
       <source>Add...</source>
-      <translation type="unfinished">Add...</translation>
+      <translation>Adicionar...</translation>
     </message>
     <message>
       <source>Remove</source>
-      <translation type="unfinished">Remove</translation>
+      <translation>Remover</translation>
     </message>
     <message>
       <source>Debug</source>
-      <translation type="unfinished">Debug</translation>
+      <translation>Depuração</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
@@ -1517,23 +1517,23 @@
     </message>
     <message>
       <source>Volume</source>
-      <translation type="unfinished">Volume</translation>
+      <translation>Volume</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Guardar</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Aplicar</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Restaurar Predefinições</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>Fechar</translation>
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
@@ -1621,7 +1621,7 @@
     </message>
     <message>
       <source>Never</source>
-      <translation type="unfinished">Never</translation>
+      <translation>Nunca</translation>
     </message>
     <message>
       <source>Idle</source>
@@ -1629,7 +1629,7 @@
     </message>
     <message>
       <source>Always</source>
-      <translation type="unfinished">Always</translation>
+      <translation>Sempre</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -1645,7 +1645,7 @@
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Nenhum</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
@@ -1745,11 +1745,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Definir o volume da música de fundo.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Ativar Comandos de Movimento</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1757,7 +1757,7 @@
     </message>
     <message>
       <source>Browse</source>
-      <translation type="unfinished">Browse</translation>
+      <translation>Procurar</translation>
     </message>
     <message>
       <source>async</source>
@@ -1773,18 +1773,18 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation type="unfinished">Directory to install games</translation>
+      <translation>Diretório onde instalar os jogos</translation>
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Diretório onde guardar os dados</translation>
     </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>Visualizador de Troféus</translation>
     </message>
   </context>
 </TS>
