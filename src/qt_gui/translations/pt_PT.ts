@@ -2,12 +2,12 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="zh_CN" sourcelanguage="en">
+<TS version="2.1" language="pt_PT" sourcelanguage="en">
   <context>
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation>关于 shadPS4</translation>
+      <translation>Sobre o shadPS4</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -15,1776 +15,1776 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 是一款实验性质的开源 PlayStation 4 模拟器软件。</translation>
+      <translation>shadPS4 é um emulador de código aberto experimental para o PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>本软件不得用于运行未经合法授权而获得的游戏。</translation>
+      <translation>Este programa não deve ser usado para jogar títulos não obtidos legalmente.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>作弊码/补丁：</translation>
+      <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>作弊码/补丁是实验性的，\n请小心使用。\n\n通过选择存储库并点击下载按钮，下载该游戏的作弊码。\n在“补丁”选项卡中，您可以一次性下载所有补丁，选择要使用的补丁并保存选择。\n\n由于我们不开发作弊码/补丁，\n请将问题报告给作弊码/补丁的作者。\n\n创建了新的作弊码/补丁？欢迎提交到我们的仓库：\n</translation>
+      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>没有可用的图片</translation>
+      <translation type="unfinished">No Image Available</translation>
     </message>
     <message>
       <source>Serial: </source>
-      <translation>序列号：</translation>
+      <translation type="unfinished">Serial: </translation>
     </message>
     <message>
       <source>Version: </source>
-      <translation>版本：</translation>
+      <translation type="unfinished">Version: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation>大小：</translation>
+      <translation type="unfinished">Size: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>选择作弊码文件：</translation>
+      <translation type="unfinished">Select Cheat File:</translation>
     </message>
     <message>
       <source>Repository:</source>
-      <translation>存储库：</translation>
+      <translation type="unfinished">Repository:</translation>
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>下载作弊码</translation>
+      <translation type="unfinished">Download Cheats</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation>删除文件</translation>
+      <translation type="unfinished">Delete File</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation>没有选择文件。</translation>
+      <translation type="unfinished">No files selected.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>您可以在下载后删除不想要的作弊码。</translation>
+      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>您要删除选中的文件吗？\n%1</translation>
+      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>选择补丁文件：</translation>
+      <translation type="unfinished">Select Patch File:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>下载补丁</translation>
+      <translation type="unfinished">Download Patches</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>保存</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation>作弊码</translation>
+      <translation type="unfinished">Cheats</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation>补丁</translation>
+      <translation type="unfinished">Patches</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>错误</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation>没有选择补丁。</translation>
+      <translation type="unfinished">No patch selected.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>无法打开 files.json 进行读取。</translation>
+      <translation type="unfinished">Unable to open files.json for reading.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>未找到当前序列号的补丁文件。</translation>
+      <translation type="unfinished">No patch file found for the current serial.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>无法打开文件进行读取。</translation>
+      <translation type="unfinished">Unable to open the file for reading.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>无法打开文件进行写入。</translation>
+      <translation type="unfinished">Unable to open the file for writing.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>解析 XML 失败：</translation>
+      <translation type="unfinished">Failed to parse XML: </translation>
     </message>
     <message>
       <source>Success</source>
-      <translation>成功</translation>
+      <translation type="unfinished">Success</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation>选项已成功保存。</translation>
+      <translation type="unfinished">Options saved successfully.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation>无效的来源</translation>
+      <translation type="unfinished">Invalid Source</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation>选择的来源无效。</translation>
+      <translation type="unfinished">The selected source is invalid.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation>文件已存在</translation>
+      <translation type="unfinished">File Exists</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>文件已存在，您要替换它吗？</translation>
+      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>保存文件失败：</translation>
+      <translation type="unfinished">Failed to save file:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>下载文件失败：</translation>
+      <translation type="unfinished">Failed to download file:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>未找到作弊码</translation>
+      <translation type="unfinished">Cheats Not Found</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>在所选存储库的版本中找不到该游戏的作弊码，请尝试其他存储库或游戏版本。</translation>
+      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>作弊码下载成功</translation>
+      <translation type="unfinished">Cheats Downloaded Successfully</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>您已从所选存储库中成功下载了该游戏版本的作弊码。您还可以尝试从其他存储库下载，或通过从列表中选择文件来使用它们。</translation>
+      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>保存失败：</translation>
+      <translation type="unfinished">Failed to save:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>下载失败：</translation>
+      <translation type="unfinished">Failed to download:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>下载完成</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>补丁下载成功！所有可用的补丁已下载完成，无需像作弊码那样单独下载每个游戏的补丁。如果补丁没有出现，可能是该补丁不适用于当前游戏的序列号和版本。</translation>
+      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>无法解析 HTML 中的 JSON 数据。</translation>
+      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>无法获取 HTML 页面。</translation>
+      <translation type="unfinished">Failed to retrieve HTML page.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>游戏版本：%1</translation>
+      <translation type="unfinished">The game is in version: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation>下载的补丁仅适用于版本：%1</translation>
+      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>您可能需要更新您的游戏。</translation>
+      <translation type="unfinished">You may need to update your game.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>不兼容通知</translation>
+      <translation type="unfinished">Incompatibility Notice</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>无法打开文件：</translation>
+      <translation type="unfinished">Failed to open file:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>XML 错误：</translation>
+      <translation type="unfinished">XML ERROR:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation>无法打开 files.json 进行写入</translation>
+      <translation type="unfinished">Failed to open files.json for writing</translation>
     </message>
     <message>
       <source>Author: </source>
-      <translation>作者：</translation>
+      <translation type="unfinished">Author: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>目录不存在：</translation>
+      <translation type="unfinished">Directory does not exist:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>无法打开 files.json 进行读取。</translation>
+      <translation type="unfinished">Failed to open files.json for reading.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation>名称：</translation>
+      <translation type="unfinished">Name:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>在游戏启动之前无法应用作弊码。</translation>
+      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>关闭</translation>
+      <translation type="unfinished">Close</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>自动更新程序</translation>
+      <translation type="unfinished">Auto Updater</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>错误</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation>网络错误：</translation>
+      <translation type="unfinished">Network error:</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>自动更新程序每小时最多允许 60 次更新检查。\n您已达到此限制。请稍后再试。</translation>
+      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>无法解析更新信息。</translation>
+      <translation type="unfinished">Failed to parse update information.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation>未找到预发布版本。</translation>
+      <translation type="unfinished">No pre-releases found.</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation>无效的发布数据。</translation>
+      <translation type="unfinished">Invalid release data.</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>未找到指定资源的下载地址。</translation>
+      <translation type="unfinished">No download URL found for the specified asset.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation>您的版本已经是最新的！</translation>
+      <translation type="unfinished">Your version is already up to date!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation>可用更新</translation>
+      <translation type="unfinished">Update Available</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>更新频道</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation>当前版本</translation>
+      <translation type="unfinished">Current Version</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>最新版本</translation>
+      <translation type="unfinished">Latest Version</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation>您想要更新吗？</translation>
+      <translation type="unfinished">Do you want to update?</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation>显示更新日志</translation>
+      <translation type="unfinished">Show Changelog</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>启动时检查更新</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>更新</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>No</source>
-      <translation>否</translation>
+      <translation type="unfinished">No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>隐藏更新日志</translation>
+      <translation type="unfinished">Hide Changelog</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation>更新日志</translation>
+      <translation type="unfinished">Changes</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>尝试访问网址时发生网络错误</translation>
+      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>下载完成</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>更新已下载，请按 OK 安装。</translation>
+      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>无法保存更新文件到</translation>
+      <translation type="unfinished">Failed to save the update file at</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>正在开始更新...</translation>
+      <translation type="unfinished">Starting Update...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>无法创建更新脚本文件</translation>
+      <translation type="unfinished">Failed to create the update script file</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>正在获取兼容性数据，请稍等</translation>
+      <translation type="unfinished">Fetching compatibility data, please wait</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>取消</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>加载中...</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>错误</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>无法更新兼容性数据！稍后再试。</translation>
+      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>无法打开 compatibility_data.json 进行写入。</translation>
+      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation>未知</translation>
+      <translation type="unfinished">Unknown</translation>
     </message>
     <message>
       <source>Nothing</source>
-      <translation>无法启动</translation>
+      <translation type="unfinished">Nothing</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>可启动</translation>
+      <translation type="unfinished">Boots</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>可进入菜单</translation>
+      <translation type="unfinished">Menus</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>可进入游戏内</translation>
+      <translation type="unfinished">Ingame</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>可通关</translation>
+      <translation type="unfinished">Playable</translation>
     </message>
   </context>
   <context>
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>配置按键</translation>
+      <translation type="unfinished">Configure Controls</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation>按键配置</translation>
+      <translation type="unfinished">Control Settings</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation type="unfinished">D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation>上</translation>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation>左</translation>
+      <translation type="unfinished">Left</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation>右</translation>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation>下</translation>
+      <translation type="unfinished">Down</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>左摇杆死区（默认：2  最大：127）</translation>
+      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>左死区</translation>
+      <translation type="unfinished">Left Deadzone</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation>左摇杆</translation>
+      <translation type="unfinished">Left Stick</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>配置选择</translation>
+      <translation type="unfinished">Config Selection</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation>通用配置</translation>
+      <translation type="unfinished">Common Config</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>使用每个游戏的配置</translation>
+      <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
+      <translation type="unfinished">L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
+      <translation type="unfinished">L2 / LT</translation>
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation>键鼠</translation>
+      <translation type="unfinished">KBM Controls</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation>键鼠配置</translation>
+      <translation type="unfinished">KBM Editor</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation>Back</translation>
+      <translation type="unfinished">Back</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
+      <translation type="unfinished">R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
+      <translation type="unfinished">R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation>L3</translation>
+      <translation type="unfinished">L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation>Options / Start</translation>
+      <translation type="unfinished">Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation>R3</translation>
+      <translation type="unfinished">R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>正面按钮</translation>
+      <translation type="unfinished">Face Buttons</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation>Triangle / Y</translation>
+      <translation type="unfinished">Triangle / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation>Square / X</translation>
+      <translation type="unfinished">Square / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation>Circle / B</translation>
+      <translation type="unfinished">Circle / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation>Cross / A</translation>
+      <translation type="unfinished">Cross / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation>右摇杆死区（默认：2  最大：127）</translation>
+      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation>右死区</translation>
+      <translation type="unfinished">Right Deadzone</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation>右摇杆</translation>
+      <translation type="unfinished">Right Stick</translation>
     </message>
   </context>
   <context>
     <name>ElfViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>打开文件夹</translation>
+      <translation type="unfinished">Open Folder</translation>
     </message>
   </context>
   <context>
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation>加载游戏列表中, 请稍等 :3</translation>
+      <translation type="unfinished">Loading game list, please wait :3</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>取消</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>加载中...</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
   </context>
   <context>
     <name>GameInstallDialog</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - 选择文件目录</translation>
+      <translation type="unfinished">shadPS4 - Choose directory</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>要安装游戏的目录</translation>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
       <source>Browse</source>
-      <translation>浏览</translation>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>错误</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation>安装 DLC 的目录</translation>
+      <translation type="unfinished">Directory to install DLC</translation>
     </message>
   </context>
   <context>
     <name>GameListFrame</name>
     <message>
       <source>Icon</source>
-      <translation>图标</translation>
+      <translation type="unfinished">Icon</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation>名称</translation>
+      <translation type="unfinished">Name</translation>
     </message>
     <message>
       <source>Serial</source>
-      <translation>序列号</translation>
+      <translation type="unfinished">Serial</translation>
     </message>
     <message>
       <source>Compatibility</source>
-      <translation>兼容性</translation>
+      <translation type="unfinished">Compatibility</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation>区域</translation>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
       <source>Firmware</source>
-      <translation>固件</translation>
+      <translation type="unfinished">Firmware</translation>
     </message>
     <message>
       <source>Size</source>
-      <translation>大小</translation>
+      <translation type="unfinished">Size</translation>
     </message>
     <message>
       <source>Version</source>
-      <translation>版本</translation>
+      <translation type="unfinished">Version</translation>
     </message>
     <message>
       <source>Path</source>
-      <translation>路径</translation>
+      <translation type="unfinished">Path</translation>
     </message>
     <message>
       <source>Play Time</source>
-      <translation>游戏时间</translation>
+      <translation type="unfinished">Play Time</translation>
     </message>
     <message>
       <source>Never Played</source>
-      <translation>未玩过</translation>
+      <translation type="unfinished">Never Played</translation>
     </message>
     <message>
       <source>h</source>
-      <translation>小时</translation>
+      <translation type="unfinished">h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation>分钟</translation>
+      <translation type="unfinished">m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation>秒</translation>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation>兼容性未经测试</translation>
+      <translation type="unfinished">Compatibility is untested</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>游戏无法正确初始化/模拟器崩溃</translation>
+      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation>游戏启动，但只显示白屏</translation>
+      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation>游戏显示图像但无法通过菜单页面</translation>
+      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>游戏有严重的 Bug 或太卡无法游玩</translation>
+      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation>游戏能在可玩的性能下通关且没有重大 Bug</translation>
+      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>点击查看 GitHub 上的详细信息</translation>
+      <translation type="unfinished">Click to see details on github</translation>
     </message>
     <message>
       <source>Last updated</source>
-      <translation>最后更新</translation>
+      <translation type="unfinished">Last updated</translation>
     </message>
   </context>
   <context>
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation>B</translation>
+      <translation type="unfinished">B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation>KB</translation>
+      <translation type="unfinished">KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation>MB</translation>
+      <translation type="unfinished">MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation>GB</translation>
+      <translation type="unfinished">GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation>TB</translation>
+      <translation type="unfinished">TB</translation>
     </message>
   </context>
   <context>
     <name>GuiContextMenus</name>
     <message>
       <source>Create Shortcut</source>
-      <translation>创建快捷方式</translation>
+      <translation type="unfinished">Create Shortcut</translation>
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>作弊码/补丁</translation>
+      <translation type="unfinished">Cheats / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation>SFO 查看器</translation>
+      <translation type="unfinished">SFO Viewer</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>奖杯查看器</translation>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>打开文件夹...</translation>
+      <translation type="unfinished">Open Folder...</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation>打开游戏文件夹</translation>
+      <translation type="unfinished">Open Game Folder</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>打开存档数据文件夹</translation>
+      <translation type="unfinished">Open Save Data Folder</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>打开日志文件夹</translation>
+      <translation type="unfinished">Open Log Folder</translation>
     </message>
     <message>
       <source>Copy info...</source>
-      <translation>复制信息...</translation>
+      <translation type="unfinished">Copy info...</translation>
     </message>
     <message>
       <source>Copy Name</source>
-      <translation>复制名称</translation>
+      <translation type="unfinished">Copy Name</translation>
     </message>
     <message>
       <source>Copy Serial</source>
-      <translation>复制序列号</translation>
+      <translation type="unfinished">Copy Serial</translation>
     </message>
     <message>
       <source>Copy Version</source>
-      <translation>复制版本</translation>
+      <translation type="unfinished">Copy Version</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>复制大小</translation>
+      <translation type="unfinished">Copy Size</translation>
     </message>
     <message>
       <source>Copy All</source>
-      <translation>复制全部</translation>
+      <translation type="unfinished">Copy All</translation>
     </message>
     <message>
       <source>Delete...</source>
-      <translation>删除...</translation>
+      <translation type="unfinished">Delete...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>删除游戏</translation>
+      <translation type="unfinished">Delete Game</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>删除更新</translation>
+      <translation type="unfinished">Delete Update</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>删除 DLC</translation>
+      <translation type="unfinished">Delete DLC</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation>兼容性...</translation>
+      <translation type="unfinished">Compatibility...</translation>
     </message>
     <message>
       <source>Update database</source>
-      <translation>更新数据库</translation>
+      <translation type="unfinished">Update database</translation>
     </message>
     <message>
       <source>View report</source>
-      <translation>查看报告</translation>
+      <translation type="unfinished">View report</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation>提交报告</translation>
+      <translation type="unfinished">Submit a report</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
-      <translation>创建快捷方式</translation>
+      <translation type="unfinished">Shortcut creation</translation>
     </message>
     <message>
       <source>Shortcut created successfully!</source>
-      <translation>创建快捷方式成功！</translation>
+      <translation type="unfinished">Shortcut created successfully!</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>错误</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Error creating shortcut!</source>
-      <translation>创建快捷方式出错！</translation>
+      <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
       <source>Install PKG</source>
-      <translation>安装 PKG</translation>
+      <translation type="unfinished">Install PKG</translation>
     </message>
     <message>
       <source>Game</source>
-      <translation>游戏</translation>
+      <translation type="unfinished">Game</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation>这个游戏没有更新可以删除！</translation>
+      <translation type="unfinished">This game has no update to delete!</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>更新</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>这个游戏没有 DLC 可以删除！</translation>
+      <translation type="unfinished">This game has no DLC to delete!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation>DLC</translation>
+      <translation type="unfinished">DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
-      <translation>删除 %1</translation>
+      <translation type="unfinished">Delete %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>您确定要删除 %1 的%2目录？</translation>
+      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation>打开更新文件夹</translation>
+      <translation type="unfinished">Open Update Folder</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>删除存档数据</translation>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>这个游戏没有可打开的更新文件夹！</translation>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation>转换图标失败。</translation>
+      <translation type="unfinished">Failed to convert icon.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation>这个游戏没有更新可以删除！</translation>
+      <translation type="unfinished">This game has no save data to delete!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation>存档数据</translation>
+      <translation type="unfinished">Save Data</translation>
     </message>
   </context>
   <context>
     <name>InstallDirSelect</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - 选择文件目录</translation>
+      <translation type="unfinished">shadPS4 - Choose directory</translation>
     </message>
     <message>
       <source>Select which directory you want to install to.</source>
-      <translation>选择您想要安装到的目录。</translation>
+      <translation type="unfinished">Select which directory you want to install to.</translation>
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation>安装所有 PKG 到选定的文件夹</translation>
+      <translation type="unfinished">Install All Queued to Selected Folder</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation>安装后删除 PKG 文件</translation>
+      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation>打开/添加 Elf 文件夹</translation>
+      <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
       <source>Install Packages (PKG)</source>
-      <translation>安装 Packages (PKG)</translation>
+      <translation type="unfinished">Install Packages (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
-      <translation>启动游戏</translation>
+      <translation type="unfinished">Boot Game</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>检查更新</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>About shadPS4</source>
-      <translation>关于 shadPS4</translation>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
       <source>Configure...</source>
-      <translation>设置...</translation>
+      <translation type="unfinished">Configure...</translation>
     </message>
     <message>
       <source>Install application from a .pkg file</source>
-      <translation>从 .pkg 文件安装应用程序</translation>
+      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
-      <translation>最近启动的游戏</translation>
+      <translation type="unfinished">Recent Games</translation>
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>打开 shadPS4 文件夹</translation>
+      <translation type="unfinished">Open shadPS4 Folder</translation>
     </message>
     <message>
       <source>Exit</source>
-      <translation>退出</translation>
+      <translation type="unfinished">Exit</translation>
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation>退出 shadPS4</translation>
+      <translation type="unfinished">Exit shadPS4</translation>
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation>退出应用程序。</translation>
+      <translation type="unfinished">Exit the application.</translation>
     </message>
     <message>
       <source>Show Game List</source>
-      <translation>显示游戏列表</translation>
+      <translation type="unfinished">Show Game List</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
-      <translation>刷新游戏列表</translation>
+      <translation type="unfinished">Game List Refresh</translation>
     </message>
     <message>
       <source>Tiny</source>
-      <translation>微小</translation>
+      <translation type="unfinished">Tiny</translation>
     </message>
     <message>
       <source>Small</source>
-      <translation>小</translation>
+      <translation type="unfinished">Small</translation>
     </message>
     <message>
       <source>Medium</source>
-      <translation>中</translation>
+      <translation type="unfinished">Medium</translation>
     </message>
     <message>
       <source>Large</source>
-      <translation>大</translation>
+      <translation type="unfinished">Large</translation>
     </message>
     <message>
       <source>List View</source>
-      <translation>列表视图</translation>
+      <translation type="unfinished">List View</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>表格视图</translation>
+      <translation type="unfinished">Grid View</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
-      <translation>Elf 查看器</translation>
+      <translation type="unfinished">Elf Viewer</translation>
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation>游戏安装目录</translation>
+      <translation type="unfinished">Game Install Directory</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>下载作弊码/补丁</translation>
+      <translation type="unfinished">Download Cheats/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>导出游戏列表</translation>
+      <translation type="unfinished">Dump Game List</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
-      <translation>PKG 查看器</translation>
+      <translation type="unfinished">PKG Viewer</translation>
     </message>
     <message>
       <source>Search...</source>
-      <translation>搜索...</translation>
+      <translation type="unfinished">Search...</translation>
     </message>
     <message>
       <source>File</source>
-      <translation>文件</translation>
+      <translation type="unfinished">File</translation>
     </message>
     <message>
       <source>View</source>
-      <translation>显示</translation>
+      <translation type="unfinished">View</translation>
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation>游戏列表图标</translation>
+      <translation type="unfinished">Game List Icons</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>游戏列表模式</translation>
+      <translation type="unfinished">Game List Mode</translation>
     </message>
     <message>
       <source>Settings</source>
-      <translation>设置</translation>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
       <source>Utils</source>
-      <translation>工具</translation>
+      <translation type="unfinished">Utils</translation>
     </message>
     <message>
       <source>Themes</source>
-      <translation>主题</translation>
+      <translation type="unfinished">Themes</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation>帮助</translation>
+      <translation type="unfinished">Help</translation>
     </message>
     <message>
       <source>Dark</source>
-      <translation>深色</translation>
+      <translation type="unfinished">Dark</translation>
     </message>
     <message>
       <source>Light</source>
-      <translation>浅色</translation>
+      <translation type="unfinished">Light</translation>
     </message>
     <message>
       <source>Green</source>
-      <translation>绿色</translation>
+      <translation type="unfinished">Green</translation>
     </message>
     <message>
       <source>Blue</source>
-      <translation>蓝色</translation>
+      <translation type="unfinished">Blue</translation>
     </message>
     <message>
       <source>Violet</source>
-      <translation>紫色</translation>
+      <translation type="unfinished">Violet</translation>
     </message>
     <message>
       <source>toolBar</source>
-      <translation>工具栏</translation>
+      <translation type="unfinished">toolBar</translation>
     </message>
     <message>
       <source>Game List</source>
-      <translation>游戏列表</translation>
+      <translation type="unfinished">Game List</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation> * 不支持的 Vulkan 版本</translation>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>下载所有已安装游戏的作弊码</translation>
+      <translation type="unfinished">Download Cheats For All Installed Games</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>下载所有游戏的补丁</translation>
+      <translation type="unfinished">Download Patches For All Games</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>下载完成</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>您已下载了所有已安装游戏的作弊码。</translation>
+      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>补丁下载成功！</translation>
+      <translation type="unfinished">Patches Downloaded Successfully!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>所有游戏的可用补丁都已下载。</translation>
+      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
     </message>
     <message>
       <source>Games: </source>
-      <translation>游戏：</translation>
+      <translation type="unfinished">Games: </translation>
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation>ELF 文件 (*.bin *.elf *.oelf)</translation>
+      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>启动游戏</translation>
+      <translation type="unfinished">Game Boot</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation>只能选择一个文件！</translation>
+      <translation type="unfinished">Only one file can be selected!</translation>
     </message>
     <message>
       <source>PKG Extraction</source>
-      <translation>PKG 解压</translation>
+      <translation type="unfinished">PKG Extraction</translation>
     </message>
     <message>
       <source>Patch detected!</source>
-      <translation>检测到补丁！</translation>
+      <translation type="unfinished">Patch detected!</translation>
     </message>
     <message>
       <source>PKG and Game versions match: </source>
-      <translation>PKG 和游戏版本匹配：</translation>
+      <translation type="unfinished">PKG and Game versions match: </translation>
     </message>
     <message>
       <source>Would you like to overwrite?</source>
-      <translation>您想要覆盖吗？</translation>
+      <translation type="unfinished">Would you like to overwrite?</translation>
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG 版本 %1 比已安装版本更旧：</translation>
+      <translation type="unfinished">PKG Version %1 is older than installed version: </translation>
     </message>
     <message>
       <source>Game is installed: </source>
-      <translation>游戏已安装：</translation>
+      <translation type="unfinished">Game is installed: </translation>
     </message>
     <message>
       <source>Would you like to install Patch: </source>
-      <translation>您想安装补丁吗：</translation>
+      <translation type="unfinished">Would you like to install Patch: </translation>
     </message>
     <message>
       <source>DLC Installation</source>
-      <translation>DLC 安装</translation>
+      <translation type="unfinished">DLC Installation</translation>
     </message>
     <message>
       <source>Would you like to install DLC: %1?</source>
-      <translation>您想安装 DLC：%1 吗？</translation>
+      <translation type="unfinished">Would you like to install DLC: %1?</translation>
     </message>
     <message>
       <source>DLC already installed:</source>
-      <translation>DLC 已经安装：</translation>
+      <translation type="unfinished">DLC already installed:</translation>
     </message>
     <message>
       <source>Game already installed</source>
-      <translation>游戏已经安装</translation>
+      <translation type="unfinished">Game already installed</translation>
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>PKG 错误</translation>
+      <translation type="unfinished">PKG ERROR</translation>
     </message>
     <message>
       <source>Extracting PKG %1/%2</source>
-      <translation>正在解压 PKG %1/%2</translation>
+      <translation type="unfinished">Extracting PKG %1/%2</translation>
     </message>
     <message>
       <source>Extraction Finished</source>
-      <translation>解压完成</translation>
+      <translation type="unfinished">Extraction Finished</translation>
     </message>
     <message>
       <source>Game successfully installed at %1</source>
-      <translation>游戏成功安装在 %1</translation>
+      <translation type="unfinished">Game successfully installed at %1</translation>
     </message>
     <message>
       <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>文件似乎不是有效的 PKG 文件</translation>
+      <translation type="unfinished">File doesn&apos;t appear to be a valid PKG file</translation>
     </message>
     <message>
       <source>Run Game</source>
-      <translation>运行游戏</translation>
+      <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation>找不到 Eboot.bin 文件</translation>
+      <translation type="unfinished">Eboot.bin file not found</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG 文件（*.PKG *.pkg）</translation>
+      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG是一个补丁或 DLC，请先安装游戏！</translation>
+      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation>游戏已经在运行中！</translation>
+      <translation type="unfinished">Game is already running!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation>shadPS4</translation>
+      <translation type="unfinished">shadPS4</translation>
     </message>
   </context>
   <context>
     <name>PKGViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>打开文件夹</translation>
+      <translation type="unfinished">Open Folder</translation>
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>PKG 错误</translation>
+      <translation type="unfinished">PKG ERROR</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation>名称</translation>
+      <translation type="unfinished">Name</translation>
     </message>
     <message>
       <source>Serial</source>
-      <translation>序列号</translation>
+      <translation type="unfinished">Serial</translation>
     </message>
     <message>
       <source>Installed</source>
-      <translation>已安装</translation>
+      <translation type="unfinished">Installed</translation>
     </message>
     <message>
       <source>Size</source>
-      <translation>大小</translation>
+      <translation type="unfinished">Size</translation>
     </message>
     <message>
       <source>Category</source>
-      <translation>分类</translation>
+      <translation type="unfinished">Category</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation>类型</translation>
+      <translation type="unfinished">Type</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation>版本</translation>
+      <translation type="unfinished">App Ver</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation>固件</translation>
+      <translation type="unfinished">FW</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation>区域</translation>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
       <source>Flags</source>
-      <translation>标志</translation>
+      <translation type="unfinished">Flags</translation>
     </message>
     <message>
       <source>Path</source>
-      <translation>路径</translation>
+      <translation type="unfinished">Path</translation>
     </message>
     <message>
       <source>File</source>
-      <translation>文件</translation>
+      <translation type="unfinished">File</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation>未知</translation>
+      <translation type="unfinished">Unknown</translation>
     </message>
     <message>
       <source>Package</source>
-      <translation>Package</translation>
+      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>
     <name>SettingsDialog</name>
     <message>
       <source>Settings</source>
-      <translation>设置</translation>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
       <source>General</source>
-      <translation>常规</translation>
+      <translation type="unfinished">General</translation>
     </message>
     <message>
       <source>System</source>
-      <translation>系统</translation>
+      <translation type="unfinished">System</translation>
     </message>
     <message>
       <source>Console Language</source>
-      <translation>主机语言</translation>
+      <translation type="unfinished">Console Language</translation>
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation>模拟器语言</translation>
+      <translation type="unfinished">Emulator Language</translation>
     </message>
     <message>
       <source>Emulator</source>
-      <translation>模拟器</translation>
+      <translation type="unfinished">Emulator</translation>
     </message>
     <message>
       <source>Enable Fullscreen</source>
-      <translation>启用全屏</translation>
+      <translation type="unfinished">Enable Fullscreen</translation>
     </message>
     <message>
       <source>Fullscreen Mode</source>
-      <translation>全屏模式</translation>
+      <translation type="unfinished">Fullscreen Mode</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>启用单独的更新目录</translation>
+      <translation type="unfinished">Enable Separate Update Folder</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>打开设置时的默认选项卡</translation>
+      <translation type="unfinished">Default tab when opening settings</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>在列表中显示游戏大小</translation>
+      <translation type="unfinished">Show Game Size In List</translation>
     </message>
     <message>
       <source>Show Splash</source>
-      <translation>显示启动画面</translation>
+      <translation type="unfinished">Show Splash</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>启用 Discord Rich Presence</translation>
+      <translation type="unfinished">Enable Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
-      <translation>用户名</translation>
+      <translation type="unfinished">Username</translation>
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation>奖杯密钥</translation>
+      <translation type="unfinished">Trophy Key</translation>
     </message>
     <message>
       <source>Trophy</source>
-      <translation>奖杯</translation>
+      <translation type="unfinished">Trophy</translation>
     </message>
     <message>
       <source>Logger</source>
-      <translation>日志</translation>
+      <translation type="unfinished">Logger</translation>
     </message>
     <message>
       <source>Log Type</source>
-      <translation>日志类型</translation>
+      <translation type="unfinished">Log Type</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>日志过滤</translation>
+      <translation type="unfinished">Log Filter</translation>
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>打开日志位置</translation>
+      <translation type="unfinished">Open Log Location</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation>输入</translation>
+      <translation type="unfinished">Input</translation>
     </message>
     <message>
       <source>Cursor</source>
-      <translation>光标</translation>
+      <translation type="unfinished">Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>隐藏光标</translation>
+      <translation type="unfinished">Hide Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>光标隐藏闲置时长</translation>
+      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
     </message>
     <message>
       <source>s</source>
-      <translation>秒</translation>
+      <translation type="unfinished">s</translation>
     </message>
     <message>
       <source>Controller</source>
-      <translation>手柄</translation>
+      <translation type="unfinished">Controller</translation>
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>返回按钮行为</translation>
+      <translation type="unfinished">Back Button Behavior</translation>
     </message>
     <message>
       <source>Graphics</source>
-      <translation>图像</translation>
+      <translation type="unfinished">Graphics</translation>
     </message>
     <message>
       <source>GUI</source>
-      <translation>界面</translation>
+      <translation type="unfinished">GUI</translation>
     </message>
     <message>
       <source>User</source>
-      <translation>用户</translation>
+      <translation type="unfinished">User</translation>
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>图形设备</translation>
+      <translation type="unfinished">Graphics Device</translation>
     </message>
     <message>
       <source>Width</source>
-      <translation>宽度</translation>
+      <translation type="unfinished">Width</translation>
     </message>
     <message>
       <source>Height</source>
-      <translation>高度</translation>
+      <translation type="unfinished">Height</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation>Vblank Divider</translation>
+      <translation type="unfinished">Vblank Divider</translation>
     </message>
     <message>
       <source>Advanced</source>
-      <translation>高级</translation>
+      <translation type="unfinished">Advanced</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>启用着色器转储</translation>
+      <translation type="unfinished">Enable Shaders Dumping</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation>启用 NULL GPU</translation>
+      <translation type="unfinished">Enable NULL GPU</translation>
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation>启用 HDR</translation>
+      <translation type="unfinished">Enable HDR</translation>
     </message>
     <message>
       <source>Paths</source>
-      <translation>路径</translation>
+      <translation type="unfinished">Paths</translation>
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>游戏文件夹</translation>
+      <translation type="unfinished">Game Folders</translation>
     </message>
     <message>
       <source>Add...</source>
-      <translation>添加...</translation>
+      <translation type="unfinished">Add...</translation>
     </message>
     <message>
       <source>Remove</source>
-      <translation>删除</translation>
+      <translation type="unfinished">Remove</translation>
     </message>
     <message>
       <source>Debug</source>
-      <translation>调试</translation>
+      <translation type="unfinished">Debug</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>启用调试转储</translation>
+      <translation type="unfinished">Enable Debug Dumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>启用 Vulkan 验证层</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>启用 Vulkan 同步验证</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>启用 RenderDoc 调试</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation>启用崩溃诊断</translation>
+      <translation type="unfinished">Enable Crash Diagnostics</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>收集着色器</translation>
+      <translation type="unfinished">Collect Shaders</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation>复制 GPU 缓冲区</translation>
+      <translation type="unfinished">Copy GPU Buffers</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation>Host 调试标记</translation>
+      <translation type="unfinished">Host Debug Markers</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation>Geust 调试标记</translation>
+      <translation type="unfinished">Guest Debug Markers</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>更新</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>启动时检查更新</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>始终显示变更日志</translation>
+      <translation type="unfinished">Always Show Changelog</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>更新频道</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>检查更新</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>GUI Settings</source>
-      <translation>界面设置</translation>
+      <translation type="unfinished">GUI Settings</translation>
     </message>
     <message>
       <source>Title Music</source>
-      <translation>标题音乐</translation>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups</source>
-      <translation>禁止弹出奖杯</translation>
+      <translation type="unfinished">Disable Trophy Pop-ups</translation>
     </message>
     <message>
       <source>Background Image</source>
-      <translation>背景图片</translation>
+      <translation type="unfinished">Background Image</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation>显示背景图片</translation>
+      <translation type="unfinished">Show Background Image</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation>可见度</translation>
+      <translation type="unfinished">Opacity</translation>
     </message>
     <message>
       <source>Play title music</source>
-      <translation>播放标题音乐</translation>
+      <translation type="unfinished">Play title music</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>启动时更新兼容性数据库</translation>
+      <translation type="unfinished">Update Compatibility Database On Startup</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
-      <translation>游戏兼容性</translation>
+      <translation type="unfinished">Game Compatibility</translation>
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation>显示兼容性数据</translation>
+      <translation type="unfinished">Display Compatibility Data</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation>更新兼容性数据库</translation>
+      <translation type="unfinished">Update Compatibility Database</translation>
     </message>
     <message>
       <source>Volume</source>
-      <translation>音量</translation>
+      <translation type="unfinished">Volume</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>保存</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation>应用</translation>
+      <translation type="unfinished">Apply</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>恢复默认</translation>
+      <translation type="unfinished">Restore Defaults</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>关闭</translation>
+      <translation type="unfinished">Close</translation>
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>将鼠标指针指向选项以显示其描述。</translation>
+      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>主机语言：\n设置 PS4 游戏中使用的语言。\n建议设置为支持的语言，这将因地区而异。</translation>
+      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
+      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
     </message>
     <message>
       <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>启用全屏：\n以全屏模式启动游戏。\n您可以按 F11 键切换回窗口模式。</translation>
+      <translation type="unfinished">Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>启用单独的更新目录：\n启用安装游戏更新到一个单独的目录中以更便于管理。</translation>
+      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>显示启动画面：\n在游戏启动时显示游戏的启动画面（特殊图像）。</translation>
+      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>启用 Discord Rich Presence：\n在您的 Discord 个人资料上显示模拟器图标和相关信息。</translation>
+      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>用户名：\n设置 PS4 帐户的用户名，某些游戏中可能会显示此名称。</translation>
+      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation>奖杯密钥：\n用于解密奖杯的密钥。必须从您的越狱主机中获得。\n仅包含十六进制字符。</translation>
+      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>日志类型：\n设置日志窗口输出的同步方式以提高性能。可能会对模拟产生不良影响。</translation>
+      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>日志过滤器：\n过滤日志，仅打印特定信息。\n例如：&quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; 级别: Trace, Debug, Info, Warning, Error, Critical - 按此顺序，特定级别将静默列表中所有先前的级别，并记录所有后续级别。</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>更新：\nRelease：每月发布的官方版本可能非常过时，但更可靠且经过测试。\nNightly：包含所有最新功能和修复的开发版本，但可能包含错误且稳定性较低。</translation>
+      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>背景图片：\n控制游戏背景图片的可见度。</translation>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>播放标题音乐：\n如果游戏支持，在图形界面选择游戏时播放特殊音乐。</translation>
+      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>禁止弹出奖杯：\n禁用游戏内奖杯通知。可以在奖杯查看器中继续跟踪奖杯进度（在主窗口中右键点击游戏）。</translation>
+      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>隐藏光标：\n选择光标何时消失：\n从不: 从不隐藏光标。\n闲置：光标在闲置若干秒后消失。\n始终：始终隐藏光标。</translation>
+      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>光标隐藏闲置时长：\n光标自动隐藏之前的闲置时长。</translation>
+      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>返回按钮行为：\n设置手柄的返回按钮模拟在 PS4 触控板上指定位置的点击。</translation>
+      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>显示兼容性数据：\n在列表视图中显示游戏兼容性信息。启用“启动时更新兼容性数据库”以获取最新信息。</translation>
+      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>启动时更新兼容性数据库：\n当 shadPS4 启动时自动更新兼容性数据库。</translation>
+      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>更新兼容性数据库：\n立即更新兼容性数据库。</translation>
+      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
       <source>Never</source>
-      <translation>从不</translation>
+      <translation type="unfinished">Never</translation>
     </message>
     <message>
       <source>Idle</source>
-      <translation>闲置</translation>
+      <translation type="unfinished">Idle</translation>
     </message>
     <message>
       <source>Always</source>
-      <translation>始终</translation>
+      <translation type="unfinished">Always</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>触控板左侧</translation>
+      <translation type="unfinished">Touchpad Left</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>触控板右侧</translation>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>触控板中间</translation>
+      <translation type="unfinished">Touchpad Center</translation>
     </message>
     <message>
       <source>None</source>
-      <translation>无</translation>
+      <translation type="unfinished">None</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>图形设备：\n在具有多个 GPU 的系统中，从下拉列表中选择要使用的 GPU，\n或者选择“自动选择”由模拟器决定。</translation>
+      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>宽度/高度：\n设置启动游戏时的窗口大小，游戏过程中可以调整。\n这与游戏内的分辨率不同。</translation>
+      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider：\n模拟器刷新的帧率会乘以此数字。改变此项可能会导致游戏速度加快，或破坏游戏中不期望此变化的关键功能！</translation>
+      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>启用着色器转储：\n用于技术调试，在渲染期间将游戏着色器保存到文件夹中。</translation>
+      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>启用 NULL GPU：\n用于技术调试，禁用游戏渲染，就像没有显卡一样。</translation>
+      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation>启用 HDR：\n在支持 HDR 的游戏中启用 HDR。\n您的显示器必须支持 BT2020 PQ 色彩空间和 RGB10A2 交换链格式。</translation>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>游戏文件夹：\n检查已安装游戏的文件夹列表。</translation>
+      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>添加：\n将文件夹添加到列表。</translation>
+      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>移除：\n从列表中移除文件夹。</translation>
+      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>启用调试转储：\n将当前正在运行的 PS4 程序的导入和导出符号及文件头信息保存到目录中。</translation>
+      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>启用 Vulkan 验证层：\n启用一个系统来验证 Vulkan 渲染器的状态并记录其内部状态的信息。\n这将降低性能并可能改变模拟的行为。</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>启用 Vulkan 同步验证：\n启用一个系统来验证 Vulkan 渲染任务的时间。\n这将降低性能并可能改变模拟的行为。</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>收集着色器：\n您需要启用此功能才能使用调试菜单（Ctrl + F10）编辑着色器。</translation>
+      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层并安装 Vulkan SDK 才能使用此功能。</translation>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation>复制 GPU 缓冲区：\n绕过涉及 GPU 提交的竞态条件。\n对于 PM4 type 0 崩溃可能有帮助，也可能没有帮助。</translation>
+      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Host 调试标记：\n在 Vulkan 命令周围插入模拟器端信息，如特定 AMD GPU 命令的标记，以及为资源提供调试名称。\n如果您已启用此功能，应同时启用崩溃诊断。\n对 RenderDoc 等程序很有用。</translation>
+      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Guest 调试标记：\n在命令缓冲区中插入游戏本身添加的任何调试标记。\n如果您已启用此功能，应同时启用崩溃诊断。\n对 RenderDoc 等程序很有用。</translation>
+      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation>存档数据路径：\n保存游戏存档数据的目录。</translation>
+      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
     </message>
     <message>
       <source>Borderless</source>
-      <translation>无边框全屏</translation>
+      <translation type="unfinished">Borderless</translation>
     </message>
     <message>
       <source>True</source>
-      <translation>真全屏</translation>
+      <translation type="unfinished">True</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation>稳定版</translation>
+      <translation type="unfinished">Release</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation>预览版</translation>
+      <translation type="unfinished">Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation>设置背景音乐的音量。</translation>
+      <translation type="unfinished">Set the volume of the background music.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>启用体感控制</translation>
+      <translation type="unfinished">Enable Motion Controls</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation>保存数据路径</translation>
+      <translation type="unfinished">Save Data Path</translation>
     </message>
     <message>
       <source>Browse</source>
-      <translation>浏览</translation>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
       <source>async</source>
-      <translation>异步</translation>
+      <translation type="unfinished">async</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation>同步</translation>
+      <translation type="unfinished">sync</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation>自动选择</translation>
+      <translation type="unfinished">Auto Select</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>要安装游戏的目录</translation>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation>存档数据目录</translation>
+      <translation type="unfinished">Directory to save data</translation>
     </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>奖杯查看器</translation>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
   </context>
 </TS>

@@ -443,7 +443,7 @@
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Sol Ölü Bölge</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Yapılandırma Seçimi</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -459,7 +459,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Oyuna özel yapılandırmaları kullan</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Seçenekler / Başlat</translation>
     </message>
     <message>
       <source>R3</source>
@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Eylem Düğmeleri</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -527,7 +527,7 @@
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Sağ Ölü Bölge</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -655,7 +655,7 @@
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
+      <translation>Oyunu bozan hatalar ya da oynanamayan performans</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
@@ -725,7 +725,7 @@
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Log Klasörünü Aç</translation>
+      <translation>Günlük Klasörünü Aç</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -809,7 +809,7 @@
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>Bu oyunun silinecek güncellemesi yok!</translation>
     </message>
     <message>
       <source>Update</source>
@@ -817,7 +817,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>Bu oyunun silinecek indirilebilir içeriği yok!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -841,7 +841,7 @@
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Bu oyunun açılacak güncelleme klasörü yok!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -849,7 +849,7 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Bu oyunun silinecek kayıt verisi yok!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1206,15 +1206,15 @@
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Tür</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Uygulama Sürümü</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>Sistem Yazılımı</translation>
     </message>
     <message>
       <source>Region</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Geri Dön Butonu Davranışı</translation>
+      <translation>Geri Dönme Butonu Davranışı</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1437,19 +1437,19 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>Gölgelendiricileri Topla</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>GPU Arabelleklerini Kopyala</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation type="unfinished">Host Debug Markers</translation>
+      <translation>Ana Bilgisayar Hata Ayıklama İşaretleyicileri</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation type="unfinished">Guest Debug Markers</translation>
+      <translation>Konuk Hata Ayıklama İşaretleyicileri</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1569,7 +1569,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Kupa Anahtarı:\nKupaların şifresini çözmek için kullanılan anahtardır. Jailbreak yapılmış konsolunuzdan alınmalıdır.\nYalnızca onaltılık karakterler içermelidir.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1585,11 +1585,11 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Arka Plan Resmi:\nOyunun arka plan resmi görünürlüğünü ayarlayın.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Başlık Müziklerini Çal:\nEğer bir oyun bunu destekliyorsa, GUI&apos;de oyunu seçtiğinizde özel müziklerin çalmasını etkinleştirir.</translation>
+      <translation>Oyun Müziklerini Çal:\nEğer oyun destekliyorsa, arayüzde oyunu seçtiğinizde özel müzik çalmasını etkinleştirir.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
@@ -1613,11 +1613,11 @@
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>Başlangıçta Uyumluluk Veritabanını Güncelle:\nshadPS4 başlatıldığında uyumluluk veritabanını otomatik olarak güncelleyin.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>Uyumluluk Veritabanını Güncelle:\nUyumluluk veri tabanını hemen güncelleyin.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1721,7 +1721,7 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Kayıt Verileri Yolu:\nOyun kayıt verilerinin kaydedileceği klasördür.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
