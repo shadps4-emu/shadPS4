@@ -5,6 +5,7 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 
@@ -448,6 +449,7 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
             if (res == AVERROR_EOF) {
                 if (m_is_looping) {
                     LOG_INFO(Lib_AvPlayer, "EOF reached in demuxer. Looping the source...");
+                    m_state.OnWarning(ORBIS_AVPLAYER_ERROR_WAR_LOOPING_BACK);
                     avio_seek(m_avformat_context->pb, 0, SEEK_SET);
                     if (m_video_stream_index.has_value()) {
                         const auto index = m_video_stream_index.value();
