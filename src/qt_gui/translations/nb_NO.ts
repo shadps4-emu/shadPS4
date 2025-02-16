@@ -475,23 +475,23 @@
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
+      <translation>Rediger mus/tastatur</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Tilbake</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
@@ -499,7 +499,7 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -507,31 +507,31 @@
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Triangel / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Firkant / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Sirkel / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Kryss / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Høyre analog dødsone (def:2, maks:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Høyre dødsone</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Høyre analog</translation>
     </message>
   </context>
   <context>
@@ -576,7 +576,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Mappe for å installere DLC</translation>
     </message>
   </context>
   <context>
@@ -599,7 +599,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -627,15 +627,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -674,23 +674,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
@@ -821,7 +821,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -833,27 +833,27 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Åpne oppdateringsmappa</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Slett lagret data</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Dette spillet har ingen oppdateringsmappe å åpne!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Klarte ikke konvertere ikon.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Dette spillet har ingen lagret data å slette!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Lagret data</translation>
     </message>
   </context>
   <context>
@@ -868,11 +868,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Installer alle i kø til den valgte mappa</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Slett PKG-fila ved installering</translation>
     </message>
   </context>
   <context>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Åpne shadPS4 mappa</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -943,7 +943,7 @@
     </message>
     <message>
       <source>Medium</source>
-      <translation type="unfinished">Medium</translation>
+      <translation>Middels</translation>
     </message>
     <message>
       <source>Large</source>
@@ -1151,27 +1151,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Kjør spill</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Klarte ikke finne Eboot.bin-fila</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>PKG-fil (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG er en programrettelse eller DLC. Installer spillet først!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Spillet kjører allerede!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Installert</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1202,27 +1202,27 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategori</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Type</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Programversjon</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FV</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Flagg</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Pakke</translation>
     </message>
   </context>
   <context>
@@ -1253,7 +1253,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -1265,7 +1265,7 @@
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulator</translation>
     </message>
     <message>
       <source>Enable Fullscreen</source>
@@ -1309,7 +1309,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation type="unfinished">Logger</translation>
+      <translation>Loggføring</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1341,7 +1341,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1393,7 +1393,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Bruk HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1461,7 +1461,7 @@
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation type="unfinished">Always Show Changelog</translation>
+      <translation>Vis alltid endringsloggen</translation>
     </message>
     <message>
       <source>Update Channel</source>
