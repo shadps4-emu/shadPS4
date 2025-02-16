@@ -57,7 +57,7 @@ bool MainWindow::Init() {
     SetLastIconSizeBullet();
     GetPhysicalDevices();
     // show ui
-    setMinimumSize(350, minimumSizeHint().height());
+    setMinimumSize(720, 405);
     std::string window_title = "";
     if (Common::isRelease) {
         window_title = fmt::format("shadPS4 v{}", Common::VERSION);
