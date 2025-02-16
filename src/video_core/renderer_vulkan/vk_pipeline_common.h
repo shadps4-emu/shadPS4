@@ -15,7 +15,7 @@ class BufferCache;
 
 namespace Vulkan {
 
-static constexpr auto gp_stage_flags =
+static constexpr auto AllGraphicsStageBits =
     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl |
     vk::ShaderStageFlagBits::eTessellationEvaluation | vk::ShaderStageFlagBits::eGeometry |
     vk::ShaderStageFlagBits::eFragment;
