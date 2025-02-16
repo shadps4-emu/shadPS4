@@ -16,6 +16,7 @@
 namespace Libraries::AvPlayer {
 
 enum class AvState {
+    Unknown,
     Initial,
     AddingSource,
     Ready,

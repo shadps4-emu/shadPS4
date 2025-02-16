@@ -280,6 +280,16 @@ bool AvPlayerSource::Stop() {
     return true;
 }
 
+void AvPlayerSource::Pause() {
+    m_last_paused_time = std::chrono::high_resolution_clock::now();
+    m_is_paused = true;
+}
+
+void AvPlayerSource::Resume() {
+    m_stalled_time += std::chrono::high_resolution_clock::now() - m_last_paused_time;
+    m_is_paused = false;
+}
+
 bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
     if (!IsActive()) {
         return false;
@@ -299,7 +309,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
 }
 
 bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
-    if (!IsActive()) {
+    if (!IsActive() || m_is_paused) {
         return false;
     }
 
@@ -313,8 +323,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 
     {
         using namespace std::chrono;
-        auto elapsed_time =
-            duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
+        auto elapsed_time = CurrentTime();
         if (elapsed_time < frame->info.timestamp) {
             if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
                                   [&] { return elapsed_time >= frame->info.timestamp; })) {
@@ -334,7 +343,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 }
 
 bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
-    if (!IsActive()) {
+    if (!IsActive() || m_is_paused) {
         return false;
     }
 
@@ -348,8 +357,7 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
 
     {
         using namespace std::chrono;
-        auto elapsed_time =
-            duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
+        auto elapsed_time = CurrentTime();
         if (elapsed_time < frame->info.timestamp) {
             if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
                                   [&] { return elapsed_time >= frame->info.timestamp; })) {
@@ -379,7 +387,8 @@ u64 AvPlayerSource::CurrentTime() {
         return 0;
     }
     using namespace std::chrono;
-    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
+    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time - m_stalled_time)
+        .count();
 }
 
 bool AvPlayerSource::IsActive() {

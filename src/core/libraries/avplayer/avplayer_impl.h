@@ -28,6 +28,8 @@ public:
     s32 GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     s32 EnableStream(u32 stream_index);
     s32 Start();
+    s32 Pause();
+    s32 Resume();
     bool GetAudioData(AvPlayerFrameInfo& audio_info);
     bool GetVideoData(AvPlayerFrameInfo& video_info);
     bool GetVideoData(AvPlayerFrameInfoEx& video_info);
