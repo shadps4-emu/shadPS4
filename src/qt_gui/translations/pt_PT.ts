@@ -34,7 +34,7 @@
     </message>
     <message>
       <source>No Image Available</source>
-      <translation type="unfinished">No Image Available</translation>
+      <translation>Nenhuma Imagem Disponível</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -234,11 +234,11 @@
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation type="unfinished">Failed to open files.json for reading.</translation>
+      <translation>Não foi possível abrir files.json para leitura.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>Nome:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
@@ -246,161 +246,161 @@
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>Fechar</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation type="unfinished">Auto Updater</translation>
+      <translation>Atualizador Automático</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation type="unfinished">Network error:</translation>
+      <translation>Erro de rede:</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
+      <translation>O Atualizador Automático permite até 60 verificações de atualização por hora.\nJá atingiu este limite. Por favor, tente novamente mais tarde.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation type="unfinished">Failed to parse update information.</translation>
+      <translation>Falha ao interpretar as informações de atualização.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation type="unfinished">No pre-releases found.</translation>
+      <translation>Nenhuma versão de pré-lançamento encontrada.</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation type="unfinished">Invalid release data.</translation>
+      <translation>Dados de lançamento inválidos.</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation type="unfinished">No download URL found for the specified asset.</translation>
+      <translation>Nenhum URL de transferência encontrado para o recurso especificado.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation type="unfinished">Your version is already up to date!</translation>
+      <translation>A sua versão já é a mais recente!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation type="unfinished">Update Available</translation>
+      <translation>Atualização Disponível</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation type="unfinished">Update Channel</translation>
+      <translation>Canal de Atualização</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation type="unfinished">Current Version</translation>
+      <translation>Versão Atual</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation type="unfinished">Latest Version</translation>
+      <translation>Última Versão</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation type="unfinished">Do you want to update?</translation>
+      <translation>Deseja atualizar?</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation type="unfinished">Show Changelog</translation>
+      <translation>Mostrar Lista de Alterações</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation type="unfinished">Check for Updates at Startup</translation>
+      <translation>Procurar Atualizações ao Iniciar</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>Atualizar</translation>
     </message>
     <message>
       <source>No</source>
-      <translation type="unfinished">No</translation>
+      <translation>Não</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation type="unfinished">Hide Changelog</translation>
+      <translation>Ocultar Lista de Alterações</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation type="unfinished">Changes</translation>
+      <translation>Alterações</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
+      <translation>Ocorreu um erro de rede ao tentar aceder ao URL</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>Transferência Concluída</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
+      <translation>A atualização foi transferida, pressione OK para instalar.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation type="unfinished">Failed to save the update file at</translation>
+      <translation>Erro ao guardar o ficheiro de atualização em</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation type="unfinished">Starting Update...</translation>
+      <translation>A Iniciar Atualização...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation type="unfinished">Failed to create the update script file</translation>
+      <translation>Erro ao criar o ficheiro de script de atualização</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation type="unfinished">Fetching compatibility data, please wait</translation>
+      <translation>A obter dados de compatibilidade, por favor aguarde</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Cancelar</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation type="unfinished">Loading...</translation>
+      <translation>A Carregar...</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
+      <translation>Não foi possível atualizar os dados de compatibilidade! Tente novamente mais tarde.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
+      <translation>Não foi possível abrir compatibility_data.json para escrita.</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation type="unfinished">Unknown</translation>
+      <translation>Desconhecido</translation>
     </message>
     <message>
       <source>Nothing</source>
-      <translation type="unfinished">Nothing</translation>
+      <translation>Nada</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation type="unfinished">Boots</translation>
+      <translation>Arranca</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation type="unfinished">Menus</translation>
+      <translation>Menus</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation type="unfinished">Ingame</translation>
+      <translation>Em Jogo</translation>
     </message>
     <message>
       <source>Playable</source>
@@ -439,15 +439,15 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Zona Morta do Manípulo Esquerdo (def: 2, max: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Zona Morta Esquerda</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Manípulo Esquerdo</translation>
     </message>
     <message>
       <source>Config Selection</source>
@@ -463,11 +463,11 @@
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>KBM Controls</source>
@@ -479,19 +479,19 @@
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Voltar</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
@@ -499,11 +499,11 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Botões Frontais</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -523,15 +523,15 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Zona Morta do Manípulo Direito (def: 2, max: 127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Zona Morta Direita</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Manípulo Direito</translation>
     </message>
   </context>
   <context>
@@ -619,23 +619,23 @@
     </message>
     <message>
       <source>Play Time</source>
-      <translation type="unfinished">Play Time</translation>
+      <translation>Tempo de Jogo</translation>
     </message>
     <message>
       <source>Never Played</source>
-      <translation type="unfinished">Never Played</translation>
+      <translation>Nunca Jogado</translation>
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -663,61 +663,61 @@
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation type="unfinished">Click to see details on github</translation>
+      <translation>Clique para ver os detalhes no github</translation>
     </message>
     <message>
       <source>Last updated</source>
-      <translation type="unfinished">Last updated</translation>
+      <translation>Última atualização</translation>
     </message>
   </context>
   <context>
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
     <name>GuiContextMenus</name>
     <message>
       <source>Create Shortcut</source>
-      <translation type="unfinished">Create Shortcut</translation>
+      <translation>Criar Atalho</translation>
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation type="unfinished">Cheats / Patches</translation>
+      <translation>Cheats / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation type="unfinished">SFO Viewer</translation>
+      <translation>Visualizador SFO</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>Visualizador de Troféus</translation>
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation type="unfinished">Open Folder...</translation>
+      <translation>Abrir Pasta...</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation type="unfinished">Open Game Folder</translation>
+      <translation>Abrir Pasta do Jogo</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
@@ -777,39 +777,39 @@
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>Ver relatório</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
+      <translation>Submeter um relatório</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
-      <translation type="unfinished">Shortcut creation</translation>
+      <translation>Criação de atalho</translation>
     </message>
     <message>
       <source>Shortcut created successfully!</source>
-      <translation type="unfinished">Shortcut created successfully!</translation>
+      <translation>Atalho criado com sucesso!</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>Error creating shortcut!</source>
-      <translation type="unfinished">Error creating shortcut!</translation>
+      <translation>Erro ao criar atalho!</translation>
     </message>
     <message>
       <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
+      <translation>Instalar PKG</translation>
     </message>
     <message>
       <source>Game</source>
-      <translation type="unfinished">Game</translation>
+      <translation>Jogo</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>Este jogo não tem nenhuma atualização para eliminar!</translation>
     </message>
     <message>
       <source>Update</source>
@@ -817,19 +817,19 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>Este jogo não tem nenhum DLC para eliminar!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
-      <translation type="unfinished">Delete %1</translation>
+      <translation>Eliminar %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <translation>Tem certeza de que deseja eliminar o diretório %2 de %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -837,19 +837,19 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Eliminar Dados Guardados</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Este jogo não tem nenhuma pasta de atualização para abrir!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Falha ao converter ícone.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Este jogo não tem dados guardados para eliminar!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -860,7 +860,7 @@
     <name>InstallDirSelect</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
+      <translation>shadPS4 - Escolher diretório</translation>
     </message>
     <message>
       <source>Select which directory you want to install to.</source>
@@ -872,58 +872,58 @@
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Eliminar Ficheiro PKG após Instalação</translation>
     </message>
   </context>
   <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation type="unfinished">Open/Add Elf Folder</translation>
+      <translation>Abrir/Adicionar pasta Elf</translation>
     </message>
     <message>
       <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
+      <translation>Instalar Pacotes (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
-      <translation type="unfinished">Boot Game</translation>
+      <translation>Iniciar Jogo</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation type="unfinished">Check for Updates</translation>
+      <translation>Procurar Atualizações</translation>
     </message>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>Sobre o shadPS4</translation>
     </message>
     <message>
       <source>Configure...</source>
-      <translation type="unfinished">Configure...</translation>
+      <translation>Configurar...</translation>
     </message>
     <message>
       <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
+      <translation>Instalar aplicação através de um ficheiro .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
-      <translation type="unfinished">Recent Games</translation>
+      <translation>Jogos Recentes</translation>
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Abrir Pasta do shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
-      <translation type="unfinished">Exit</translation>
+      <translation>Sair</translation>
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation type="unfinished">Exit shadPS4</translation>
+      <translation>Sair do shadPS4</translation>
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation type="unfinished">Exit the application.</translation>
+      <translation>Sair da aplicação.</translation>
     </message>
     <message>
       <source>Show Game List</source>
@@ -963,11 +963,11 @@
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation type="unfinished">Game Install Directory</translation>
+      <translation>Diretório de Instalação dos Jogos</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation type="unfinished">Download Cheats/Patches</translation>
+      <translation>Transferir Cheats/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -975,7 +975,7 @@
     </message>
     <message>
       <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
+      <translation>Visualizador PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -987,7 +987,7 @@
     </message>
     <message>
       <source>View</source>
-      <translation type="unfinished">View</translation>
+      <translation>Ver</translation>
     </message>
     <message>
       <source>Game List Icons</source>
@@ -1091,15 +1091,15 @@
     </message>
     <message>
       <source>Patch detected!</source>
-      <translation type="unfinished">Patch detected!</translation>
+      <translation>Patch detetado!</translation>
     </message>
     <message>
       <source>PKG and Game versions match: </source>
-      <translation type="unfinished">PKG and Game versions match: </translation>
+      <translation>As versões do PKG e do Jogo coincidem: </translation>
     </message>
     <message>
       <source>Would you like to overwrite?</source>
-      <translation type="unfinished">Would you like to overwrite?</translation>
+      <translation>Gostaria de substituir?</translation>
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
@@ -1171,22 +1171,22 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
     <name>PKGViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
+      <translation>Abrir Pasta</translation>
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation type="unfinished">PKG ERROR</translation>
+      <translation>ERRO PKG</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation type="unfinished">Name</translation>
+      <translation>Nome</translation>
     </message>
     <message>
       <source>Serial</source>
@@ -1194,19 +1194,19 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Instalado</translation>
     </message>
     <message>
       <source>Size</source>
-      <translation type="unfinished">Size</translation>
+      <translation>Tamanho</translation>
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Categoria</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Tipo</translation>
     </message>
     <message>
       <source>App Ver</source>
@@ -1214,11 +1214,11 @@
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FW</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Região</translation>
     </message>
     <message>
       <source>Flags</source>
@@ -1226,30 +1226,30 @@
     </message>
     <message>
       <source>Path</source>
-      <translation type="unfinished">Path</translation>
+      <translation>Caminho</translation>
     </message>
     <message>
       <source>File</source>
-      <translation type="unfinished">File</translation>
+      <translation>Ficheiro</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation type="unfinished">Unknown</translation>
+      <translation>Desconhecido</translation>
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Pacote</translation>
     </message>
   </context>
   <context>
     <name>SettingsDialog</name>
     <message>
       <source>Settings</source>
-      <translation type="unfinished">Settings</translation>
+      <translation>Definições</translation>
     </message>
     <message>
       <source>General</source>
-      <translation type="unfinished">General</translation>
+      <translation>Geral</translation>
     </message>
     <message>
       <source>System</source>
@@ -1261,31 +1261,31 @@
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation type="unfinished">Emulator Language</translation>
+      <translation>Idioma do Emulador</translation>
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulador</translation>
     </message>
     <message>
       <source>Enable Fullscreen</source>
-      <translation type="unfinished">Enable Fullscreen</translation>
+      <translation>Ativar Ecrã Inteiro</translation>
     </message>
     <message>
       <source>Fullscreen Mode</source>
-      <translation type="unfinished">Fullscreen Mode</translation>
+      <translation>Modo de Ecrã Inteiro</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation type="unfinished">Enable Separate Update Folder</translation>
+      <translation>Ativar Pasta de Atualizações Separada</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation type="unfinished">Default tab when opening settings</translation>
+      <translation>Aba padrão ao abrir as definições</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation type="unfinished">Show Game Size In List</translation>
+      <translation>Mostrar Tamanho do Jogo na Lista</translation>
     </message>
     <message>
       <source>Show Splash</source>
@@ -1293,11 +1293,11 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation type="unfinished">Enable Discord Rich Presence</translation>
+      <translation>Ativar Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
-      <translation type="unfinished">Username</translation>
+      <translation>Nome de Utilizador</translation>
     </message>
     <message>
       <source>Trophy Key</source>
@@ -1313,7 +1313,7 @@
     </message>
     <message>
       <source>Log Type</source>
-      <translation type="unfinished">Log Type</translation>
+      <translation>Tipo de Registo</translation>
     </message>
     <message>
       <source>Log Filter</source>
@@ -1321,15 +1321,15 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation type="unfinished">Open Log Location</translation>
+      <translation>Abrir Localização do Registo</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation type="unfinished">Input</translation>
+      <translation>Entrada</translation>
     </message>
     <message>
       <source>Cursor</source>
-      <translation type="unfinished">Cursor</translation>
+      <translation>Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
@@ -1337,7 +1337,7 @@
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
+      <translation>Tempo de Espera para Ocultar Cursor</translation>
     </message>
     <message>
       <source>s</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation type="unfinished">Back Button Behavior</translation>
+      <translation>Comportamento do Botão Voltar</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1397,11 +1397,11 @@
     </message>
     <message>
       <source>Paths</source>
-      <translation type="unfinished">Paths</translation>
+      <translation>Caminhos</translation>
     </message>
     <message>
       <source>Game Folders</source>
-      <translation type="unfinished">Game Folders</translation>
+      <translation>Pastas de Jogos</translation>
     </message>
     <message>
       <source>Add...</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation type="unfinished">Play title music</translation>
+      <translation>Reproduzir Música de Título</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1633,15 +1633,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Esquerda do Touchpad</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Direita do Touchpad</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Centro do Touchpad</translation>
     </message>
     <message>
       <source>None</source>
@@ -1677,11 +1677,11 @@
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
+      <translation>Adicionar:\nAdicionar uma pasta à lista.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
+      <translation>Remover:\nRemover uma pasta da lista.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
@@ -1769,7 +1769,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Seleção Automática</translation>
     </message>
     <message>
       <source>Directory to install games</source>
