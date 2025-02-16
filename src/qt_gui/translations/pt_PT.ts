@@ -26,7 +26,7 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation type="unfinished">Cheats / Patches for </translation>
+      <translation>Cheats / Patches para </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
