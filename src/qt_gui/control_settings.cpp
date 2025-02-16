@@ -306,6 +306,12 @@ void ControlSettings::SetDefault() {
 
     ui->LeftDeadzoneSlider->setValue(2);
     ui->RightDeadzoneSlider->setValue(2);
+
+    ui->RSlider->setValue(0);
+    ui->GSlider->setValue(0);
+    ui->BSlider->setValue(255);
+    ui->LightbarCheckBox->setChecked(false);
+    ui->PerGameCheckBox->setChecked(false);
 }
 
 void ControlSettings::AddBoxItems() {
