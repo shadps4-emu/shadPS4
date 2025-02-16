@@ -11,6 +11,9 @@ void EmitPrologue(EmitContext& ctx) {
     if (ctx.stage == Stage::Fragment) {
         ctx.DefineInterpolatedAttribs();
     }
+    if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
+        ctx.DefineWorkgroupIndex();
+    }
     ctx.DefineBufferOffsets();
 }
 

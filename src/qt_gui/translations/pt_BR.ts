@@ -1309,7 +1309,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registro-Log</translation>
+      <translation>Registros de Log</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Reproduzir música de abertura</translation>
+      <translation>Reproduzir Música do Título</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1573,7 +1573,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo do Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>Imagem de fundo:\nControle a opacidade da imagem de fundo do jogo.</translation>
+      <translation>Imagem de Fundo:\nControla a opacidade da imagem de fundo do jogo.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1705,7 +1705,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se você tiver isto habilitado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
+      <translation>Diagnóstico de Falhas:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se isto estiver ativado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -1721,11 +1721,11 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation>Diretório dos Dados Salvos:\nA pasta que onde os dados de salvamento de jogo serão salvos.</translation>
+      <translation>Caminho dos Dados Salvos:\nA pasta que onde os dados de salvamento de jogo serão salvos.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation>Navegar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
+      <translation>Procurar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
     </message>
     <message>
       <source>Borderless</source>

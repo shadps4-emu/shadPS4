@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-#include <algorithm>
 #include <span>
 #include <vector>
 #include <boost/container/small_vector.hpp>
@@ -19,7 +18,6 @@
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader {
@@ -37,21 +35,30 @@ enum class TextureType : u32 {
 };
 constexpr u32 NUM_TEXTURE_TYPES = 7;
 
+enum class BufferType : u32 {
+    Guest,
+    ReadConstUbo,
+    GdsBuffer,
+    SharedMemory,
+};
+
 struct Info;
 
 struct BufferResource {
     u32 sharp_idx;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
-    bool is_gds_buffer{};
-    bool is_instance_data{};
+    BufferType buffer_type;
     u8 instance_attrib{};
     bool is_written{};
     bool is_formatted{};
 
-    [[nodiscard]] bool IsStorage(const AmdGpu::Buffer& buffer,
-                                 const Profile& profile) const noexcept {
-        return buffer.GetSize() > profile.max_ubo_size || is_written || is_gds_buffer;
+    bool IsSpecial() const noexcept {
+        return buffer_type != BufferType::Guest;
+    }
+
+    bool IsStorage(const AmdGpu::Buffer& buffer, const Profile& profile) const noexcept {
+        return buffer.GetSize() > profile.max_ubo_size || is_written;
     }
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
@@ -193,10 +200,8 @@ struct Info {
     bool uses_unpack_10_11_11{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
-    bool translation_failed{}; // indicates that shader has unsupported instructions
-    bool has_emulated_shared_memory{};
+    bool translation_failed{};
     bool has_readconst{};
-    u32 shared_memory_size{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
@@ -233,10 +238,8 @@ struct Info {
     }
 
     void AddBindings(Backend::Bindings& bnd) const {
-        const auto total_buffers =
-            buffers.size() + (has_readconst ? 1 : 0) + (has_emulated_shared_memory ? 1 : 0);
-        bnd.buffer += total_buffers;
-        bnd.unified += total_buffers + images.size() + samplers.size();
+        bnd.buffer += buffers.size();
+        bnd.unified += buffers.size() + images.size() + samplers.size();
         bnd.user_data += ud_mask.NumRegs();
     }
 
@@ -283,14 +286,3 @@ constexpr AmdGpu::Image FMaskResource::GetSharp(const Info& info) const noexcept
 }
 
 } // namespace Shader
-
-template <>
-struct fmt::formatter<Shader::Stage> {
-    constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-    auto format(const Shader::Stage stage, format_context& ctx) const {
-        constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
-        return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
-    }
-};

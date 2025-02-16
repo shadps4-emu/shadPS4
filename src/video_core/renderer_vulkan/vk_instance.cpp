@@ -1,14 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <ranges>
-#include <span>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -206,13 +203,12 @@ std::string Instance::GetDriverVersionName() {
 }
 
 bool Instance::CreateDevice() {
-    const vk::StructureChain feature_chain =
-        physical_device
-            .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features,
-                          vk::PhysicalDeviceRobustness2FeaturesEXT,
-                          vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                          vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-                          vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+    const vk::StructureChain feature_chain = physical_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceRobustness2FeaturesEXT,
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+        vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     features = feature_chain.get().features;
 #ifdef __APPLE__
     portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
@@ -319,6 +315,7 @@ bool Instance::CreateDevice() {
 
     const auto topology_list_restart_features =
         feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+    const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
@@ -351,12 +348,17 @@ bool Instance::CreateDevice() {
             },
         },
         vk::PhysicalDeviceVulkan11Features{
-            .shaderDrawParameters = true,
+            .storageBuffer16BitAccess = vk11_features.storageBuffer16BitAccess,
+            .uniformAndStorageBuffer16BitAccess = vk11_features.uniformAndStorageBuffer16BitAccess,
+            .shaderDrawParameters = vk11_features.shaderDrawParameters,
         },
         vk::PhysicalDeviceVulkan12Features{
             .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
             .drawIndirectCount = vk12_features.drawIndirectCount,
+            .storageBuffer8BitAccess = vk12_features.storageBuffer8BitAccess,
+            .uniformAndStorageBuffer8BitAccess = vk12_features.uniformAndStorageBuffer8BitAccess,
             .shaderFloat16 = vk12_features.shaderFloat16,
+            .shaderInt8 = vk12_features.shaderInt8,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
             .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
             .separateDepthStencilLayouts = vk12_features.separateDepthStencilLayouts,

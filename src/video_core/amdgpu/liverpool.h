@@ -197,6 +197,10 @@ struct Liverpool {
             return settings.lds_dwords.Value() * 128 * 4;
         }
 
+        u32 NumWorkgroups() const noexcept {
+            return dim_x * dim_y * dim_z;
+        }
+
         bool IsTgidEnabled(u32 i) const noexcept {
             return (settings.tgid_enable.Value() >> i) & 1;
         }
