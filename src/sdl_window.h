@@ -97,6 +97,7 @@ private:
     void OnResize();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
+    void RelaunchEmulator();
 
 private:
     s32 width;
@@ -106,6 +107,7 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
+    bool restartRequested = false;
 };
 
 } // namespace Frontend

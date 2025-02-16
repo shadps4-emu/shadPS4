@@ -3,7 +3,6 @@
 
 #include <set>
 #include <fmt/core.h>
-
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
@@ -101,7 +100,8 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+void Core::Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+    isRunning = true;
     const auto eboot_name = file.filename().string();
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
@@ -251,7 +251,6 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     // Load the module with the linker
     const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
     linker->LoadModule(eboot_path);
-
     // check if we have system modules to load
     LoadSystemModules(game_info.game_serial);
 
@@ -288,7 +287,49 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     std::quick_exit(0);
 }
 
-void Emulator::LoadSystemModules(const std::string& game_serial) {
+void Emulator::saveLastEbootPath(const std::string& path) {
+    lastEbootPath = path;
+}
+
+std::string Emulator::getLastEbootPath() const {
+    return lastEbootPath;
+}
+
+Emulator& Emulator::GetInstance() {
+    static Emulator instance;
+    return instance;
+}
+
+void Emulator::StopEmulation() {
+    if (!is_running)
+        return;
+
+    is_running = false;
+    LOG_INFO(Loader, "Stopping emulator...");
+}
+
+void Emulator::Restart() {
+    if (!isRunning) {
+        LOG_INFO(Loader, "Emulator is not running. Starting normally...");
+        return;
+    }
+
+    LOG_INFO(Loader, "Restarting the emulator...");
+
+    // Stop current emulator session
+    StopEmulation();
+
+    // Wait a moment before restarting
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    // Retrieve last known EBOOT path
+    std::string lastEbootPath = getLastEbootPath();
+    if (lastEbootPath.empty()) {
+        LOG_ERROR(Loader, "No previous EBOOT path found! Cannot restart.");
+        return;
+    }
+}
+void Core::Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr std::array<SysModules, 11> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
@@ -334,7 +375,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
 }
 
 #ifdef ENABLE_QT_GUI
-void Emulator::UpdatePlayTime(const std::string& serial) {
+void Core::Emulator::UpdatePlayTime(const std::string& serial) const {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
 
@@ -401,6 +442,6 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     }
     LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
 }
-#endif
 
+#endif
 } // namespace Core
