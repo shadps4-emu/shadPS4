@@ -185,6 +185,38 @@ bool AvPlayerState::Start() {
     return true;
 }
 
+// Called inside GAME thread
+bool AvPlayerState::Pause() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_current_state == AvState::EndOfFile) {
+        return true;
+    }
+    if (m_up_source == nullptr || m_current_state == AvState::Pause ||
+        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
+        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
+        LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
+        return false;
+    }
+    m_up_source->Pause();
+    SetState(AvState::Pause);
+    OnPlaybackStateChanged(AvState::Pause);
+    return true;
+}
+
+// Called inside GAME thread
+bool AvPlayerState::Resume() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr || m_current_state != AvState::Pause) {
+        LOG_ERROR(Lib_AvPlayer, "Could not resume playback.");
+        return false;
+    }
+    m_up_source->Resume();
+    const auto state = m_previous_state.load();
+    SetState(state);
+    OnPlaybackStateChanged(state);
+    return true;
+}
+
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
     using std::chrono::milliseconds;
     Common::SetCurrentThreadName("shadPS4:AvController");

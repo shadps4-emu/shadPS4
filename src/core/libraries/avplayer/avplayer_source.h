@@ -130,6 +130,8 @@ public:
     std::optional<bool> HasFrames(u32 num_frames);
     bool Start();
     bool Stop();
+    void Pause();
+    void Resume();
     bool GetAudioData(AvPlayerFrameInfo& audio_info);
     bool GetVideoData(AvPlayerFrameInfo& video_info);
     bool GetVideoData(AvPlayerFrameInfoEx& video_info);
@@ -170,6 +172,7 @@ private:
     u32 m_num_output_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
+    std::atomic_bool m_is_paused = false;
     std::atomic_bool m_is_eof = false;
 
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
@@ -211,6 +214,8 @@ private:
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 
     std::chrono::high_resolution_clock::time_point m_start_time{};
+    std::chrono::high_resolution_clock::time_point m_last_paused_time{};
+    std::chrono::high_resolution_clock::duration m_stalled_time{};
 };
 
 } // namespace Libraries::AvPlayer

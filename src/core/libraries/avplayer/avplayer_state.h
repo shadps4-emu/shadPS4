@@ -28,6 +28,8 @@ public:
     bool EnableStream(u32 stream_index);
     bool Start();
     bool Stop();
+    bool Pause();
+    bool Resume();
     bool GetAudioData(AvPlayerFrameInfo& audio_info);
     bool GetVideoData(AvPlayerFrameInfo& video_info);
     bool GetVideoData(AvPlayerFrameInfoEx& video_info);
