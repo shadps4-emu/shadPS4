@@ -725,7 +725,7 @@
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Log Klasörünü Aç</translation>
+      <translation>Günlük Klasörünü Aç</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Geri Dön Butonu Davranışı</translation>
+      <translation>Geri Dönme Butonu Davranışı</translation>
     </message>
     <message>
       <source>Graphics</source>
