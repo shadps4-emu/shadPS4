@@ -58,6 +58,8 @@ public:
     explicit Translator(IR::Block* block_, Info& info, const RuntimeInfo& runtime_info,
                         const Profile& profile);
 
+    void TranslateInstruction(const GcnInst& inst, u32 pc);
+
     // Instruction categories
     void EmitPrologue();
     void EmitFetch(const GcnInst& inst);

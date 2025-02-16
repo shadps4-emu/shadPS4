@@ -9,6 +9,12 @@
 
 namespace Shader::Gcn {
 
+const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base) {
+    const u32* code;
+    std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
+    return code;
+}
+
 /**
  * s_load_dwordx4 s[8:11], s[2:3], 0x00
  * s_load_dwordx4 s[12:15], s[2:3], 0x04
@@ -38,9 +44,8 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
     if (!info.has_fetch_shader) {
         return std::nullopt;
     }
-    const u32* code;
-    std::memcpy(&code, &info.user_data[info.fetch_shader_sgpr_base], sizeof(code));
 
+    const auto* code = GetFetchShaderCode(info, info.fetch_shader_sgpr_base);
     FetchShaderData data{.code = code};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
