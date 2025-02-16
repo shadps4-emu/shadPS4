@@ -19,7 +19,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>Este programa não deve ser usado para jogar jogos piratas.</translation>
+      <translation>Este programa não deve ser usado para jogar jogos que tenham sido obtidos ilegalmente.</translation>
     </message>
   </context>
   <context>
@@ -281,7 +281,7 @@
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>Nenhuma URL de download encontrada para o asset especificado.</translation>
+      <translation>Nenhuma URL de download encontrada para o recurso especificado.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>Imagem de Fundo:\nControla a opacidade da imagem de fundo do jogo.</translation>
+      <translation>Imagem de Fundo:\nControla a transparência da imagem de fundo do jogo.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
