@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation>选项 / 开始</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
