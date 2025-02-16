@@ -168,6 +168,14 @@ s32 AvPlayer::Resume() {
     return ORBIS_OK;
 }
 
+s32 AvPlayer::SetAvSyncMode(AvPlayerAvSyncMode sync_mode) {
+    if (m_state == nullptr) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    m_state->SetAvSyncMode(sync_mode);
+    return ORBIS_OK;
+}
+
 bool AvPlayer::GetVideoData(AvPlayerFrameInfo& video_info) {
     if (m_state == nullptr) {
         return false;

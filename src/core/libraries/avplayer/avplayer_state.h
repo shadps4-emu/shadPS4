@@ -30,6 +30,7 @@ public:
     bool Stop();
     bool Pause();
     bool Resume();
+    void SetAvSyncMode(AvPlayerAvSyncMode sync_mode);
     bool GetAudioData(AvPlayerFrameInfo& audio_info);
     bool GetVideoData(AvPlayerFrameInfo& video_info);
     bool GetVideoData(AvPlayerFrameInfoEx& video_info);
@@ -45,6 +46,7 @@ private:
     static void PS4_SYSV_ABI DefaultEventCallback(void* handle, AvPlayerEvents event_id,
                                                   s32 source_id, void* event_data);
 
+    AvPlayerAvSyncMode GetSyncMode() override;
     void OnWarning(u32 id) override;
     void OnError() override;
     void OnEOF() override;
@@ -72,6 +74,7 @@ private:
     AvPlayerEventReplacement m_event_replacement{};
     bool m_auto_start{};
     char m_default_language[4]{};
+    AvPlayerAvSyncMode m_sync_mode = AvPlayerAvSyncMode::Default;
 
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
