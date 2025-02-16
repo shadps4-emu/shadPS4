@@ -608,7 +608,11 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
-    if (False(image.flags & ImageFlagBits::GpuModified)) {
+    // Only perform sync if image is:
+    // - GPU modified; otherwise there are no changes to synchronize.
+    // - Not CPU modified; otherwise we could overwrite CPU changes with stale GPU changes.
+    if (False(image.flags & ImageFlagBits::GpuModified) ||
+        True(image.flags & ImageFlagBits::CpuDirty)) {
         return false;
     }
     ASSERT_MSG(device_addr == image.info.guest_address,
