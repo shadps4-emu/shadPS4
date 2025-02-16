@@ -322,15 +322,16 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
-    if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default && m_audio_stream_index.has_value()) {
-        const auto audio_ts = m_last_audio_packet_time;
-        if (audio_ts < frame->info.timestamp) {
+    if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
+        const auto desired_time =
+            m_audio_stream_index.has_value() ? m_last_audio_packet_time : CurrentTime();
+        if (desired_time < frame->info.timestamp) {
             using namespace std::chrono;
             const auto start = high_resolution_clock::now();
-            if (!m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - audio_ts), [&] {
+            if (!m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - desired_time), [&] {
                     const auto passed =
                         duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
-                    return (audio_ts + passed) >= frame->info.timestamp;
+                    return (desired_time + passed) >= frame->info.timestamp;
                 })) {
                 return false;
             }
