@@ -10,10 +10,6 @@
       <translation>shadPS4 Hakkında</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4, PlayStation 4 için deneysel bir açık kaynak kodlu emülatördür.</translation>
     </message>
@@ -526,16 +522,16 @@
       <translation>Renk Ayarları</translation>
     </message>
     <message>
-      <source>R: 000</source>
-      <translation>K: 000</translation>
+      <source>R:</source>
+      <translation type="unfinished">R:</translation>
     </message>
     <message>
-      <source>G: 000</source>
-      <translation>Y: 000</translation>
+      <source>G:</source>
+      <translation type="unfinished">G:</translation>
     </message>
     <message>
-      <source>B: 255</source>
-      <translation>B: 255</translation>
+      <source>B:</source>
+      <translation type="unfinished">B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -1609,7 +1605,7 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>Kupa Açılır Pencerelerini Devre Dışı Bırak:\nOyun için kupa bildirimlerini devre dışı bırakın. Kupa ilerlemesi hala Kupa Görüntüleyicisi kullanılarak takip edilebilir (ana menüde oyuna sağ tıklayın).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
