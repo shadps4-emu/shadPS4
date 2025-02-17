@@ -289,6 +289,7 @@ size_t PS4_SYSV_ABI _writev(int fd, const SceKernelIovec* iov, int iovcn) {
 }
 
 s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
+    LOG_TRACE(Kernel_Fs, "called: offset {} whence {}", offset, whence);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -321,10 +322,6 @@ s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
     if (result < 0) {
         LOG_ERROR(Kernel_Pthread, "posix_lseek: error = {}", result);
         ErrSceToPosix(result);
-        // Workaround for XNA AudioEngine
-        if (whence == SEEK_SET && (s32)offset == -1) {
-            return offset;
-        }
         return -1;
     }
     return result;
