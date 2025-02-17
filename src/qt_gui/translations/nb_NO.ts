@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -230,7 +230,7 @@
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>Mappen eksisterer ikke:</translation>
+      <translation>Mappa eksisterer ikke:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
@@ -411,87 +411,87 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Sett opp kontroller</translation>
     </message>
     <message>
       <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
+      <translation>Kontrollinnstillinger</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Opp</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Venstre</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Høyre</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Ned</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Venstre analog dødsone (def:2, maks:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Venstre dødsone</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Venstre analog</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Utvalg av oppsett</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Felles oppsett</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
+      <translation>Mus/tastatur oppsett</translation>
     </message>
     <message>
       <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
+      <translation>Rediger mus/tastatur</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Tilbake</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
@@ -499,39 +499,39 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Handlingsknapper</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Triangel / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Firkant / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Sirkel / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Kryss / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Høyre analog dødsone (def:2, maks:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Høyre dødsone</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Høyre analog</translation>
     </message>
   </context>
   <context>
@@ -576,7 +576,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Mappe for å installere DLC</translation>
     </message>
   </context>
   <context>
@@ -599,7 +599,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -627,15 +627,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -674,23 +674,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
@@ -717,15 +717,15 @@
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation>Åpne spillmappen</translation>
+      <translation>Åpne spillmappa</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Åpne lagrede datamappen</translation>
+      <translation>Åpne lagrede datamappa</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Åpne loggmappen</translation>
+      <translation>Åpne loggmappa</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -821,7 +821,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -833,27 +833,27 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Åpne oppdateringsmappa</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Slett lagret data</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Dette spillet har ingen oppdateringsmappe å åpne!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Klarte ikke konvertere ikon.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Dette spillet har ingen lagret data å slette!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Lagret data</translation>
     </message>
   </context>
   <context>
@@ -868,11 +868,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Installer alle i kø til den valgte mappa</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Slett PKG-fila ved installering</translation>
     </message>
   </context>
   <context>
@@ -899,7 +899,7 @@
     </message>
     <message>
       <source>Configure...</source>
-      <translation>Konfigurer...</translation>
+      <translation>Sett opp...</translation>
     </message>
     <message>
       <source>Install application from a .pkg file</source>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Åpne shadPS4 mappa</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -943,7 +943,7 @@
     </message>
     <message>
       <source>Medium</source>
-      <translation type="unfinished">Medium</translation>
+      <translation>Middels</translation>
     </message>
     <message>
       <source>Large</source>
@@ -1151,27 +1151,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Kjør spill</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Klarte ikke finne Eboot.bin-fila</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>PKG-fil (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG er en programrettelse eller DLC. Installer spillet først!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Spillet kjører allerede!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Installert</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1202,27 +1202,27 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategori</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Type</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Programversjon</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FV</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Flagg</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Pakke</translation>
     </message>
   </context>
   <context>
@@ -1253,7 +1253,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -1265,11 +1265,11 @@
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulator</translation>
     </message>
     <message>
       <source>Enable Fullscreen</source>
-      <translation>Aktiver fullskjerm</translation>
+      <translation>Bruk fullskjerm</translation>
     </message>
     <message>
       <source>Fullscreen Mode</source>
@@ -1277,7 +1277,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>Aktiver seperat oppdateringsmappe</translation>
+      <translation>Bruk seperat oppdateringsmappe</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1293,7 +1293,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>Aktiver Discord Rich Presence</translation>
+      <translation>Bruk Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1309,7 +1309,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation type="unfinished">Logger</translation>
+      <translation>Loggføring</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1341,7 +1341,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1385,15 +1385,15 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Aktiver skyggeleggerdumping</translation>
+      <translation>Bruk skyggeleggerdumping</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation>Aktiver NULL GPU</translation>
+      <translation>Bruk NULL GPU</translation>
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Bruk HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1417,23 +1417,23 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Aktiver feilrettingsdumping</translation>
+      <translation>Bruk feilrettingsdumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Aktiver Vulkan Validation Layers</translation>
+      <translation>Bruk Vulkan Validation Layers</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Aktiver Vulkan synkroniseringslag</translation>
+      <translation>Bruk Vulkan Validation Layers</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>Aktiver RenderDoc feilretting</translation>
+      <translation>Bruk RenderDoc feilsøking</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation>Aktiver krasjdiagnostikk</translation>
+      <translation>Bruk krasjdiagnostikk</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
@@ -1461,7 +1461,7 @@
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation type="unfinished">Always Show Changelog</translation>
+      <translation>Vis alltid endringsloggen</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1549,11 +1549,11 @@
     </message>
     <message>
       <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Aktiver fullskjerm:\nSetter spillvinduet automatisk i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
+      <translation>Bruk fullskjerm:\nSetter spillvinduet automatisk i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Aktiver separat oppdateringsmappe:\nAktiverer installering av spill i en egen mappe for enkel administrasjon.</translation>
+      <translation>Bruk separat oppdateringsmappe:\n Gjør det mulig å installere spilloppdateringer i en egen mappe for enkel administrasjon.\nDette kan gjøres manuelt ved å legge til den utpakkede oppdateringen, til spillmappa med navnet &quot;CUSA00000-UPDATE&quot; der CUSA-ID-en samsvarer med spillets-ID.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1561,7 +1561,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>Aktiver Discord Rich Presence:\nViser emulatorikonet og relevant informasjon på Discord-profilen din.</translation>
+      <translation>Bruk Discord Rich Presence:\nViser emulatorikonet og relevant informasjon på Discord-profilen din.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
@@ -1589,7 +1589,7 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Spille tittelmusikk:\nHvis et spill støtter det, så aktiveres det spesiell musikk når du velger spillet i menyen.</translation>
+      <translation>Spill av tittelmusikk:\nHvis et spill støtter det, så brukes det spesiell musikk når du velger spillet i menyen.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
@@ -1609,7 +1609,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Aktiver &quot;Oppdater kompatibilitets-data ved oppstart&quot; for oppdatert informasjon.</translation>
+      <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Bruk &quot;Oppdater kompatibilitets-data ved oppstart&quot; for oppdatert informasjon.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1649,7 +1649,7 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller velg &quot;Auto Select&quot; for å velge automatisk.</translation>
+      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller &quot;Velg automatisk&quot;.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
@@ -1661,15 +1661,15 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Aktiver skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
+      <translation>Bruk skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillets-gjengivelse som om det ikke var noe grafikkort.</translation>
+      <translation>Bruk Null GPU:\nFor teknisk feilsøking deaktiverer spillets-gjengivelse som om det ikke var noen grafikkort.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Bruk HDR:\nTillater bruk av HDR i spill som støtter det.\nSkjermen din må ha støtte for BT2020 PQ fargerom og RGB10A2 swapchain-format.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1685,27 +1685,27 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Aktiver feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
+      <translation>Bruk feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktiver Vulkan Validation Layers:\nAktiverer et system som validerer tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
+      <translation>Bruk Vulkan Validation Layers:\nAktiverer et system som bekrefter tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand.\n Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer frekvens tiden av Vulkan-gjengivelsensoppgaver. Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
+      <translation>Bruk Vulkan synkronisering validering:\nEt system som bekrefter frekvens tiden av Vulkan-gjengivelseoppgaver.\nDette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil emulatoren gi kompatibilitet med RenderDoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
+      <translation>Bruk RenderDoc feilsøking:\nHvis brukt, vil emulatoren gi kompatibilitet med RenderDoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>Lagre skyggeleggere:\nDu trenger dette aktivert for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
+      <translation>Lagre skyggeleggere:\nDu trenger dette for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis du har dette aktivert, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
+      <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis dette brukes, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -1713,11 +1713,11 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Vertsfeilsøkingsmarkører:\nSetter inn emulator-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
+      <translation>Vertsfeilsøkingsmarkører:\nSetter inn emulator-side informasjon som markører for spesifikke AMDGPU-kommandoer rundt Vulkan-kommandoer, i tillegg til å gi ressurser feilrettingsnavn.\nHvis dette brukes, burde du også bruke krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis du har dette aktivert, burde du aktivere krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
+      <translation>Gjestefeilsøkingsmarkører:\nSetter inn eventuelle feilsøkingsmarkører spillet selv har lagt til kommandobufferen.\nHvis dette brukes, burde du også bruke krasjdiagnostikk.\nNyttig for programmer som RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -1729,11 +1729,11 @@
     </message>
     <message>
       <source>Borderless</source>
-      <translation type="unfinished">Borderless</translation>
+      <translation>Kantløs</translation>
     </message>
     <message>
       <source>True</source>
-      <translation type="unfinished">True</translation>
+      <translation>Sant</translation>
     </message>
     <message>
       <source>Release</source>
@@ -1745,11 +1745,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Sett volumet til bakgrunnsmusikken.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Bruk bevegelseskontroller</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1769,7 +1769,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Velg automatisk</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1777,7 +1777,7 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Mappe for lagring av data</translation>
     </message>
   </context>
   <context>
