@@ -44,11 +44,20 @@ Frontend::WindowSDL* g_window = nullptr;
 namespace Core {
 
 Emulator::Emulator() {
-    // Initialize NT API functions and set high priority
+    // Initialize NT API functions and set high priority.
 #ifdef _WIN32
     Common::NtApi::Initialize();
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
+
+    // Renaming shad_log.txt to shad_log.old.txt when booting.
+    const auto LogDir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
+    const auto CurrentLog = LogDir / "shad_log.txt";
+    const auto NewLogName = LogDir / "shad_log.old.txt";
+    // Avoid crash due to shad_log.txt not existing.
+    if (std::filesystem::exists(CurrentLog)) {
+        rename(CurrentLog, NewLogName);
+    }
 
     // Start logger.
     Common::Log::Initialize();
