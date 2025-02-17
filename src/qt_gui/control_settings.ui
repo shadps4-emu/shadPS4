@@ -912,7 +912,7 @@
                       </font>
                      </property>
                      <property name="text">
-                      <string>R: 000</string>
+                      <string notr="true">R: 000</string>
                      </property>
                     </widget>
                    </item>
@@ -944,7 +944,7 @@
                       </font>
                      </property>
                      <property name="text">
-                      <string>G: 000</string>
+                      <string notr="true">G: 000</string>
                      </property>
                     </widget>
                    </item>
@@ -976,7 +976,7 @@
                       </font>
                      </property>
                      <property name="text">
-                      <string>B: 255</string>
+                      <string notr="true">B: 255</string>
                      </property>
                     </widget>
                    </item>
