@@ -167,16 +167,17 @@ s32 PS4_SYSV_ABI posix_open(const char* raw_path, s32 flags, u16 mode) {
     return handle;
 }
 
+s32 PS4_SYSV_ABI open(const char* filename, s32 flags) {
+    return posix_open(filename, flags, 0);
+}
+
 s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
     s32 result = posix_open(path, flags, mode);
     if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_open: error = {}", result);
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
-}
-
-s32 PS4_SYSV_ABI open(const char* filename, s32 flags) {
-    return posix_open(filename, flags, 0);
 }
 
 int PS4_SYSV_ABI sceKernelClose(int d) {
