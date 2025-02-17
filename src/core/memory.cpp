@@ -64,7 +64,8 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     }
     const auto vma = FindVMA(virtual_addr);
     ASSERT_MSG(vma != vma_map.end(), "Attempted to access invalid GPU address {:#x}", virtual_addr);
-    const u64 clamped_size = std::min<u64>(size, vma->second.base + vma->second.size - virtual_addr);
+    const u64 clamped_size =
+        std::min<u64>(size, vma->second.base + vma->second.size - virtual_addr);
     if (size != clamped_size) {
         LOG_WARNING(Kernel_Vmm, "Clamped requested buffer range addr={:#x}, size={:#x} to {:#x}",
                     virtual_addr, size, clamped_size);
