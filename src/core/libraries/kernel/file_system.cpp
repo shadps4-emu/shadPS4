@@ -123,6 +123,7 @@ s32 PS4_SYSV_ABI posix_open(const char* raw_path, s32 flags, u16 mode) {
         if (create) {
             if (excl && std::filesystem::exists(file->m_host_name)) {
                 // Error if file exists
+                h->DeleteHandle(handle);
                 *__Error() = POSIX_EEXIST;
                 return -1;
             }
@@ -157,8 +158,8 @@ s32 PS4_SYSV_ABI posix_open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         if (e != 0) {
-            h->DeleteHandle(handle);
             // IOFile code uses platform specific errnos, they must be converted to POSIX errnos.
+            h->DeleteHandle(handle);
             SetPosixErrno(e);
             return -1;
         }
