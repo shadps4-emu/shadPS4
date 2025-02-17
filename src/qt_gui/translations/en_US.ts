@@ -414,10 +414,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Control Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>D-Pad</source>
         <translation type="unfinished"></translation>
     </message>
@@ -467,14 +463,6 @@
     </message>
     <message>
         <source>L2 / LT</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KBM Controls</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KBM Editor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -531,6 +519,30 @@
     </message>
     <message>
         <source>Right Stick</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Adjustment</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R: 000</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>G: 000</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>B: 255</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Override Lightbar Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Override Color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -853,6 +865,10 @@
     </message>
     <message>
         <source>Save Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SFO Viewer for </source>
         <translation type="unfinished"></translation>
     </message>
 </context>
